@@ -1933,12 +1933,21 @@ doCompileMul(IRList *irl, Operand *lhs, Operand *rhs, int gethi, Operand *dest)
             return temp;
         }
     }
-    if (gl_p2 && gethi == 0) {
-        lhs = Dereference(irl, lhs);
-        rhs = Dereference(irl, rhs);
-        EmitOp2(irl, OPC_QMUL, lhs, rhs);
-        EmitOp1(irl, OPC_GETQX, temp);
-        return temp;
+    if (gl_p2) {
+        if (gethi == 0) {
+            lhs = Dereference(irl, lhs);
+            rhs = Dereference(irl, rhs);
+            EmitOp2(irl, OPC_QMUL, lhs, rhs);
+            EmitOp1(irl, OPC_GETQX, temp);
+            return temp;
+        }
+        if (isUnsigned && gethi) {
+            lhs = Dereference(irl, lhs);
+            rhs = Dereference(irl, rhs);
+            EmitOp2(irl, OPC_QMUL, lhs, rhs);
+            EmitOp1(irl, OPC_GETQY, temp);
+            return temp;
+        }
     }
     
     if (!mulfunc) {
@@ -1949,7 +1958,7 @@ doCompileMul(IRList *irl, Operand *lhs, Operand *rhs, int gethi, Operand *dest)
     }
     EmitMove(irl, muldiva, lhs);
     EmitMove(irl, muldivb, rhs);
-    if (isUnsigned) {
+    if (isUnsigned || !gethi) {
         EmitOp1(irl, OPC_CALL, unsmulfunc);
     } else {
         EmitOp1(irl, OPC_CALL, mulfunc);

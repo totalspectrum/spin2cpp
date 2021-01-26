@@ -871,6 +871,8 @@ ConstructDefaultValue(AST *decl, AST *val)
 %token C_BUILTIN_ABS    "__builtin_abs"
 %token C_BUILTIN_CLZ    "__builtin_clz"
 %token C_BUILTIN_SQRT   "__builtin_sqrt"
+%token C_BUILTIN_MULH   "__builtin_mulh"
+%token C_BUILTIN_MULUH  "__builtin_muluh"
 
 %token C_BUILTIN_ALLOCA "__builtin_alloca"
 %token C_BUILTIN_COGSTART "__builtin_cogstart"
@@ -947,6 +949,52 @@ postfix_expression
                 // PropGCC defines __builtin_rev to match the ASM instruction,
                 // not the >< operator, hence the 32 - arg2
                 $$ = AstOperator(K_REV, arg1, AstOperator('-', AstInteger(32), arg2));
+            }
+        | C_BUILTIN_MULUH '(' argument_expression_list ')'
+            {
+                AST *list;
+                AST *arg1, *arg2;
+                
+                list = $3;
+                if (!list || !list->left)
+                {
+                    SYNTAX_ERROR("Missing argument to __builtin_muluh");
+                    arg1 = AstInteger(1);
+                } else {
+                    arg1 = list->left;
+                }
+                if (list && list->right) {
+                    arg2 = list->right->left;
+                    if (list->right->right) {
+                        SYNTAX_ERROR("Too many arguments to __builtin_muluh");
+                    }
+                } else {
+                    arg2 = AstInteger(0);
+                }
+                $$ = AstOperator(K_UNS_HIGHMULT, arg1, arg2);
+            }
+        | C_BUILTIN_MULH '(' argument_expression_list ')'
+            {
+                AST *list;
+                AST *arg1, *arg2;
+                
+                list = $3;
+                if (!list || !list->left)
+                {
+                    SYNTAX_ERROR("Missing argument to __builtin_muluh");
+                    arg1 = AstInteger(1);
+                } else {
+                    arg1 = list->left;
+                }
+                if (list && list->right) {
+                    arg2 = list->right->left;
+                    if (list->right->right) {
+                        SYNTAX_ERROR("Too many arguments to __builtin_muluh");
+                    }
+                } else {
+                    arg2 = AstInteger(0);
+                }
+                $$ = AstOperator(K_HIGHMULT, arg1, arg2);
             }
         | C_BUILTIN_VA_START '(' unary_expression ',' C_IDENTIFIER ')'
             {

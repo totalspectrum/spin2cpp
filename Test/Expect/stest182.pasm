@@ -17,7 +17,7 @@ LR__0001
 LR__0002
 	mov	muldiva_, _var01
 	mov	muldivb_, #27
-	call	#multiply_
+	call	#unsmultiply_
 	mov	result1, muldiva_
 _checkit_ret
 	ret

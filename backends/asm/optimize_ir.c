@@ -492,12 +492,12 @@ IsMathInstr(IR *ir)
     }
 }
 
-extern Operand *mulfunc, *divfunc, *unsdivfunc, *muldiva, *muldivb;
+extern Operand *mulfunc, *unsmulfunc, *divfunc, *unsdivfunc, *muldiva, *muldivb;
 
 
 static bool FuncUsesArg(Operand *func, Operand *arg)
 {
-    if (func == mulfunc || func == divfunc || func == unsdivfunc) {
+    if (func == mulfunc || func == unsmulfunc || func == divfunc || func == unsdivfunc) {
         return (arg == muldiva) || (arg == muldivb);
     }
     return true;
@@ -1258,7 +1258,14 @@ DeleteMulDivSequence(IRList *irl, IR *ir, Operand *lastop, Operand *opa, Operand
     if (!ir3) return false;
     if (ir2->opc != OPC_MOV) return false;
     if (ir2->dst != muldivb || !SameOperand(ir2->src, opb)) return false;
-    if (ir3->opc != OPC_CALL || ir3->dst != lastop) return false;
+    if (ir3->opc != OPC_CALL) return false;
+    if (ir3->dst != lastop) {
+        // There is a case here where we might want to
+        // merge "multiply" (getting low word) and "unsigned multiply"
+        // (getting high word)
+        // not sure how to do that yet...
+        return false;
+    }
     ir->opc = OPC_DUMMY;
     ir2->opc = OPC_DUMMY;
     ir3->opc = OPC_DUMMY;
@@ -1311,7 +1318,7 @@ OptimizeMulDiv(IRList *irl)
         } else if (opb && InstrModifies(ir, opb)) {
             opb = NULL;
         } else if (ir->opc == OPC_CALL) {
-            if (ir->dst == mulfunc || ir->dst == divfunc || ir->dst == unsdivfunc) {
+            if (ir->dst == mulfunc || ir->dst == unsmulfunc || ir->dst == divfunc || ir->dst == unsdivfunc) {
                 lastop = ir->dst;
             } else {
                 lastop = NULL;
@@ -3949,11 +3956,27 @@ static PeepholePattern pat_shl16setword[] = {
 };
 
 // mov x, y; and x, #1; add z, x => test y, #1 wz; if_nz add z, #1
-
 static PeepholePattern pat_mov_and_add[] = {
     { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
     { COND_TRUE, OPC_AND, PEEP_OP_MATCH|0, PEEP_OP_IMM|1, PEEP_FLAGS_NONE },
     { COND_TRUE, OPC_ADD, PEEP_OP_SET|2, PEEP_OP_MATCH_DEAD|0, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
+// qmul x, y; getqx z; qmul x, y; getqy w -> qmul x, y; getqx z; getqy w
+static PeepholePattern pat_qmul_qmul1[] = {
+    { COND_TRUE, OPC_QMUL, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQX, PEEP_OP_SET|2, OPERAND_ANY, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_QMUL, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQY, PEEP_OP_SET|3, OPERAND_ANY, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+// qmul x, y; getqx z; qmul x, y; getqy w -> qmul x, y; getqx z; getqy w
+static PeepholePattern pat_qmul_qmul2[] = {
+    { COND_TRUE, OPC_QMUL, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQY, PEEP_OP_SET|2, OPERAND_ANY, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_QMUL, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQX, PEEP_OP_SET|3, OPERAND_ANY, PEEP_FLAGS_NONE },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
@@ -4237,6 +4260,29 @@ static int FixupAndAdd(int arg, IRList *irl, IR *ir0)
     return 1;
 }
 
+// pattern is
+//   qmul x, y
+//   getqx z
+//   qmul x, y
+//   getqx w
+//
+// check that z != x and z != y
+// if so, delete second qmul
+//
+
+static int FixupQmuls(int arg, IRList *irl, IR *ir0)
+{
+    IR *ir1, *ir2;
+
+    ir1 = ir0->next;
+    ir2 = ir1->next;
+
+    if (InstrModifies(ir1, ir0->src) || InstrModifies(ir2, ir0->dst)) {
+        return 0;
+    }
+    DeleteIR(irl, ir2);
+    return 1;
+}
 
 struct Peepholes {
     PeepholePattern *check;
@@ -4295,6 +4341,9 @@ struct Peepholes {
     { pat_setc2, 0, FixupSetC },
 
     { pat_mov_and_add, 0, FixupAndAdd },
+
+    { pat_qmul_qmul1, 0, FixupQmuls },
+    { pat_qmul_qmul2, 0, FixupQmuls },
 };
 
 

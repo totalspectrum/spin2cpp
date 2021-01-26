@@ -62,7 +62,7 @@ _times10_ret
 _times11
 	mov	muldiva_, arg01
 	mov	muldivb_, #11
-	call	#multiply_
+	call	#unsmultiply_
 	mov	result1, muldiva_
 _times11_ret
 	ret

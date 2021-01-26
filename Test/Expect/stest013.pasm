@@ -7,7 +7,7 @@ entry
 _prod
 	mov	muldiva_, arg01
 	mov	muldivb_, arg02
-	call	#multiply_
+	call	#unsmultiply_
 	mov	result1, muldiva_
 _prod_ret
 	ret
@@ -15,11 +15,11 @@ _prod_ret
 _cube
 	mov	muldiva_, arg01
 	mov	muldivb_, arg01
-	call	#multiply_
+	call	#unsmultiply_
 	mov	result1, muldiva_
 	mov	muldivb_, result1
 	mov	muldiva_, arg01
-	call	#multiply_
+	call	#unsmultiply_
 	mov	result1, muldiva_
 _cube_ret
 	ret

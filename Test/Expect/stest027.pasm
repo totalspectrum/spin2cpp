@@ -7,11 +7,11 @@ entry
 _hyp
 	mov	muldiva_, arg01
 	mov	muldivb_, arg01
-	call	#multiply_
+	call	#unsmultiply_
 	mov	_var01, muldiva_
 	mov	muldiva_, arg02
 	mov	muldivb_, arg02
-	call	#multiply_
+	call	#unsmultiply_
 	add	_var01, muldiva_
 	mov	result1, _var01
 _hyp_ret

@@ -22,7 +22,7 @@ _factorial_enter
 	sub	local02, #1
 	mov	muldiva_, local01
 	mov	muldivb_, arg01
-	call	#multiply_
+	call	#unsmultiply_
 	mov	arg02, muldiva_
 	mov	arg01, local02
 	jmp	#_factorial_enter
