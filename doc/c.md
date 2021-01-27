@@ -293,6 +293,20 @@ The amount of space required for the stack depends on the complexity of the code
 
 Indicates the expected value for an expression. `__builtin_expect(x, y)` evaluates `x`, and indicates to the optimizer that the value will normally be `y`. This is provided for GCC compatibility, and the expected value is ignored by FlexC (so `__builtin_expect(x, y)` is treated the same as `(x)`).
 
+### MULH
+
+```
+x = __builtin_mulh(`a`, `b`)
+```
+Calculates the upper 32 bits of the 64 bit product of (signed) integers a and b.
+
+### MULUH
+
+```
+x = __builtin_muluh(a, b)
+```
+Calculates the upper 32 bits of the 64 bit product of (unsigned) integers `a` and `b`.
+
 ### REV
 
 ```
