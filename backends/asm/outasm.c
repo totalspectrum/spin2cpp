@@ -5372,14 +5372,14 @@ CompileToIR_hub(IRList *irl, Module *P)
  * emit builtin functions like mul and div
  */
 static const char *builtin_mul_p1 =
-"\nunsmultiply_\n"
-"\tmov\titmp2_, #0\n"
-"\tjmp\t#do_multiply_\n"
 "\nmultiply_\n"
 "\tmov\titmp2_, muldiva_\n"
 "\txor\titmp2_, muldivb_\n"
 "\tabs\tmuldiva_, muldiva_\n"
 "\tabs\tmuldivb_, muldivb_\n"
+"\tjmp\t#do_multiply_\n"    
+"\nunsmultiply_\n"
+"\tmov\titmp2_, #0\n"
 "do_multiply_\n"
 "\tmov\tresult1, #0\n"
 "\tmov\titmp1_, #32\n"
@@ -5395,18 +5395,19 @@ static const char *builtin_mul_p1 =
 " if_nz\tneg\tmuldiva_, muldiva_ wz\n"
 " if_nz\tsub\tmuldivb_, #1\n"
 "multiply__ret\n"
+"unsmultiply__ret\n"
 "\tret\n"
 ;
 
 static const char *builtin_mul_p1_fast =
-"\nunsmultiply_\n"
-"       mov    itmp2_, #0\n"
-"       jmp    #do_multiply_\n"
 "\nmultiply_\n"
 "       mov    itmp2_, muldiva_\n"
 "       xor    itmp2_, muldivb_\n"
 "       abs    muldiva_, muldiva_\n"
 "       abs    muldivb_, muldivb_\n"
+"       jmp    #do_multiply_\n"
+"unsmultiply_\n"
+"       mov    itmp2_, #0\n"
 "do_multiply_\n"
 "	mov    result1, #0\n"
 "mul_lp_\n"
@@ -5417,6 +5418,7 @@ static const char *builtin_mul_p1_fast =
 "       shr    itmp2_, #31 wz\n"
 "       negnz  muldiva_, result1\n"
 "multiply__ret\n"
+"unsmultiply__ret\n"
 "	ret\n"
 ;
 

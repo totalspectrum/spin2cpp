@@ -41,15 +41,14 @@ LR__0001
 _factorial_ret
 	ret
 
-unsmultiply_
-       mov    itmp2_, #0
-       jmp    #do_multiply_
-
 multiply_
        mov    itmp2_, muldiva_
        xor    itmp2_, muldivb_
        abs    muldiva_, muldiva_
        abs    muldivb_, muldivb_
+       jmp    #do_multiply_
+unsmultiply_
+       mov    itmp2_, #0
 do_multiply_
 	mov    result1, #0
 mul_lp_
@@ -60,6 +59,7 @@ mul_lp_
        shr    itmp2_, #31 wz
        negnz  muldiva_, result1
 multiply__ret
+unsmultiply__ret
 	ret
 
 __lockreg

@@ -126,15 +126,15 @@ LR__0006
 __system___float_Pack_ret
 	ret
 
-unsmultiply_
-	mov	itmp2_, #0
-	jmp	#do_multiply_
-
 multiply_
 	mov	itmp2_, muldiva_
 	xor	itmp2_, muldivb_
 	abs	muldiva_, muldiva_
 	abs	muldivb_, muldivb_
+	jmp	#do_multiply_
+
+unsmultiply_
+	mov	itmp2_, #0
 do_multiply_
 	mov	result1, #0
 	mov	itmp1_, #32
@@ -149,6 +149,7 @@ mul_lp_
  if_nz	neg	muldiva_, muldiva_ wz
  if_nz	sub	muldivb_, #1
 multiply__ret
+unsmultiply__ret
 	ret
 
 __lockreg

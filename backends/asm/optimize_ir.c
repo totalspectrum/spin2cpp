@@ -210,7 +210,7 @@ InstrUses(IR *ir, Operand *reg)
     if (dst == reg && InstrReadsDst(ir)) {
         return true;
     }
-    if (src && src->kind == IMM_COG_LABEL) {
+    if (src && src->kind == IMM_COG_LABEL && reg) {
         if (!strcmp(reg->name, src->name)) {
             return true;
         }
@@ -1247,7 +1247,7 @@ PropagateConstForward(IRList *irl, IR *orig_ir, Operand *orig, Operand *immval)
 }
 
 static bool
-DeleteMulDivSequence(IRList *irl, IR *ir, Operand *lastop, Operand *opa, Operand *opb)
+DeleteMulDivSequence(IRList *irl, IR *ir, Operand *lastop, Operand *opa, Operand *opb, IR *lastir)
 {
     IR *ir2, *ir3;
     
@@ -1264,7 +1264,11 @@ DeleteMulDivSequence(IRList *irl, IR *ir, Operand *lastop, Operand *opa, Operand
         // merge "multiply" (getting low word) and "unsigned multiply"
         // (getting high word)
         // not sure how to do that yet...
-        return false;
+        if (lastop == unsmulfunc && ir3->dst == mulfunc && lastir) {
+            lastir->dst = ir3->dst;
+        } else {
+            return false;
+        }
     }
     ir->opc = OPC_DUMMY;
     ir2->opc = OPC_DUMMY;
@@ -1280,12 +1284,15 @@ OptimizeMulDiv(IRList *irl)
     Operand *opb = NULL;  // second operand to multiply or divide
     Operand *lastop = NULL;
     IR *ir;
+    IR *lastir = NULL;
     int change = 0;
+    int hiresult_used = 0;
     
     ir = irl->head;
     while (ir != 0) {
         if (IsLabel(ir)) {
             opa = opb = lastop = NULL;
+            hiresult_used = 0;
         } else if (IsDummy(ir)) {
             // do nothing
         } else if (InstrModifies(ir, muldiva)) {
@@ -1297,12 +1304,13 @@ OptimizeMulDiv(IRList *irl)
                 // if so, see if we have just done that sequence previously
                 // so that the proper results are already in their
                 // registers
-                if (opa == ir->src && DeleteMulDivSequence(irl, ir, lastop, opa, opb)) {
+                if (opa == ir->src && DeleteMulDivSequence(irl, ir, lastop, opa, opb, hiresult_used ? 0 : lastir)) {
                     change = 1;
                 } else {
                     opa = ir->src;
                     opb = NULL;
                     lastop = NULL;
+                    hiresult_used = 0;
                 }
             } else {
                 opa = opb = lastop = NULL;
@@ -1312,16 +1320,23 @@ OptimizeMulDiv(IRList *irl)
                 opb = ir->src;
             } else if (InstrSetsDst(ir)) {
                 opb = NULL;
+                hiresult_used = 0;
             }
+        } else if (InstrUses(ir, muldivb)) {
+            hiresult_used = 1;
         } else if (opa && InstrModifies(ir, opa)) {
             opa = NULL;
         } else if (opb && InstrModifies(ir, opb)) {
             opb = NULL;
+            hiresult_used = 0;
         } else if (ir->opc == OPC_CALL) {
             if (ir->dst == mulfunc || ir->dst == unsmulfunc || ir->dst == divfunc || ir->dst == unsdivfunc) {
-                lastop = ir->dst;
+                lastir = ir;
+                lastop = lastir->dst;
+                hiresult_used = 0;
             } else {
                 lastop = NULL;
+                hiresult_used = 1;
             }
         }
         ir = ir->next;
