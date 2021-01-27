@@ -2332,6 +2332,9 @@ MarkUsedBody(AST *body, const char *caller)
         case K_SCAS:
             UseInternal("_scas");
             break;
+        case K_FRAC64:
+            UseInternal("_qfrac");
+            break;
         case '?':
             if (body->left) {
                 UseInternal("_lfsr_forward");

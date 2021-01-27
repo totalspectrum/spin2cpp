@@ -302,4 +302,36 @@ pri bytemove(dst, src, count) : origdst
       dst -= 1
       src -= 1
       byte[dst] := byte[src]
-      
+
+''
+'' divide (n<<32) by d, producing q (FRAC operation)
+''
+pri _qfrac(n, dlo) : qlo | q, r, rlo, d, nlo
+  if dlo == 0
+    q := -1
+    r := -1
+    return
+    
+  d := nlo := rlo := r := 0
+  qlo := q := 0
+  repeat 64
+    asm
+        ' Q <<= 1
+        shl qlo, #1 wc
+        rcl q, #1
+        ' R <<= 1
+        shl rlo, #1 wc	' r := r<<1
+        rcl r, #1
+	' bit 0 of r gets hi bit of n
+	shl nlo, #1 wc
+        rcl n, #1 wc		' bit 0 of r gets hi bit of n
+        muxc rlo, #1
+	
+        cmp  rlo, dlo wc	' check for r <= d (r-d >= 0)
+        cmpx r, d wc,wz
+ if_b   jmp  #zz_skipfrac
+        sub  rlo, dlo wc
+        subx r, d
+        or   qlo, #1
+zz_skipfrac
+   endasm

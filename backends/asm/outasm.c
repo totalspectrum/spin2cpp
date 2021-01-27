@@ -2595,6 +2595,19 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
       AstReportDone(&saveinfo);
       return left;
   }
+  case K_FRAC64:
+  {
+        AST *fcall;
+        ASTReportInfo saveinfo;
+      
+        AstReportAs(expr, &saveinfo);
+        fcall = NewAST(AST_FUNCCALL, AstIdentifier("_qfrac"),
+                       NewAST(AST_EXPRLIST, expr->left,
+                              NewAST(AST_EXPRLIST, expr->right, NULL)));
+        left = CompileFunccallFirstResult(irl, fcall);
+        AstReportDone(&saveinfo);
+        return left;
+  }
   case '?':
   {
       AST *fcall;
@@ -2677,8 +2690,6 @@ CompileOperator(IRList *irl, AST *expr, Operand *dest)
         return CompileDiv(irl, expr, 2, dest);
     case K_UNS_MOD:
         return CompileDiv(irl, expr, 3, dest);
-    case K_FRAC64:
-        return CompileDiv(irl, expr, 4, dest);
     case '&':
         if (expr->right->kind == AST_OPERATOR && expr->right->d.ival == K_BIT_NOT) {
             Operand *temp = dest ? dest : NewFunctionTempRegister();

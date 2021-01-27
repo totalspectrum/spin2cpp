@@ -339,6 +339,12 @@ pri _polxy(d, angle) : x, y
     getqy y
   endasm
 
+pri _qfrac(x, y) : r
+  asm
+    qfrac x, y
+    getqx r
+  endasm
+  
 pri _xypol(x, y) : d, angle
   asm
     qvector x, y
