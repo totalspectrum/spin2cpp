@@ -871,6 +871,7 @@ ConstructDefaultValue(AST *decl, AST *val)
 %token C_BUILTIN_ABS    "__builtin_abs"
 %token C_BUILTIN_CLZ    "__builtin_clz"
 %token C_BUILTIN_SQRT   "__builtin_sqrt"
+%token C_BUILTIN_FRAC   "__builtin_frac"
 %token C_BUILTIN_MULH   "__builtin_mulh"
 %token C_BUILTIN_MULUH  "__builtin_muluh"
 
@@ -950,6 +951,29 @@ postfix_expression
                 // not the >< operator, hence the 32 - arg2
                 $$ = AstOperator(K_REV, arg1, AstOperator('-', AstInteger(32), arg2));
             }
+        | C_BUILTIN_FRAC '(' argument_expression_list ')'
+            {
+                AST *list;
+                AST *arg1, *arg2;
+                
+                list = $3;
+                if (!list || !list->left)
+                {
+                    SYNTAX_ERROR("Missing argument to __builtin_frac");
+                    arg1 = AstInteger(1);
+                } else {
+                    arg1 = list->left;
+                }
+                if (list && list->right) {
+                    arg2 = list->right->left;
+                    if (list->right->right) {
+                        SYNTAX_ERROR("Too many arguments to __builtin_frac");
+                    }
+                } else {
+                    arg2 = AstInteger(0);
+                }
+                $$ = AstOperator(K_FRAC64, arg1, arg2);
+            }
         | C_BUILTIN_MULUH '(' argument_expression_list ')'
             {
                 AST *list;
@@ -981,7 +1005,7 @@ postfix_expression
                 list = $3;
                 if (!list || !list->left)
                 {
-                    SYNTAX_ERROR("Missing argument to __builtin_muluh");
+                    SYNTAX_ERROR("Missing argument to __builtin_mulh");
                     arg1 = AstInteger(1);
                 } else {
                     arg1 = list->left;
@@ -989,7 +1013,7 @@ postfix_expression
                 if (list && list->right) {
                     arg2 = list->right->left;
                     if (list->right->right) {
-                        SYNTAX_ERROR("Too many arguments to __builtin_muluh");
+                        SYNTAX_ERROR("Too many arguments to __builtin_mulh");
                     }
                 } else {
                     arg2 = AstInteger(0);
