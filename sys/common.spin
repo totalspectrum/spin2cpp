@@ -125,6 +125,12 @@ pri _basic_print_fixed(h, x, fmt, ch) : r | i, f
 }}
 
 ''
+'' Spin2 FRAC operator: divide (n<<32) by d producing q
+''
+pri _qfrac(n, d) : q | r
+  q,r := _div64(n, 0, d)
+  
+''
 '' x*y >> 30, signed scaled multiply
 ''
 pri _scas(x, y) : r | hi, lo

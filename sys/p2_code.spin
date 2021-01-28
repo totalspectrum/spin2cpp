@@ -339,10 +339,13 @@ pri _polxy(d, angle) : x, y
     getqy y
   endasm
 
-pri _qfrac(x, y) : r
+' divide (ahi, alo) by b to produce 32 bit quotient q and remainder r
+pri _div64(ahi, alo, b) : q,r
   asm
-    qfrac x, y
-    getqx r
+    setq ahi
+    qdiv alo, b
+    getqx q
+    getqy r
   endasm
   
 pri _xypol(x, y) : d, angle
