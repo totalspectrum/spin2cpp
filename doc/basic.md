@@ -2363,9 +2363,12 @@ prints its message to the device previously `open`ed as device #2.
 
 Formats output using a string. The general form of this is:
 ```
-  print using STRING; expr [,expr...] [;]
+  print [#n] using STRING; expr [,expr...] [;]
 ```
-where `STRING` is a string literal and `expr` is one or more expressions.
+where `STRING` is a string literal and `expr` is one or more expressions. To use it with an opened file, put the `using` after the file number, like:
+```
+  print #2 using "##.# Degrees"; x#
+```
 
 Within the string literal output fields are specified by special forms, which are replaced by the various expressions.
 
