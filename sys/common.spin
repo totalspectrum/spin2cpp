@@ -363,6 +363,7 @@ pri file "libsys/fmt.c" _basic_print_nl(h)
 pri file "libsys/fmt.c" _basic_print_char(h, c, fmt = 0)
 pri file "libsys/fmt.c" _basic_print_string(h, ptr, fmt = 0)
 pri file "libsys/fmt.c" _basic_print_integer(h, x, fmt = 0, base=10)
+pri file "libsys/fmt.c" _basic_print_unsigned(h, x, fmt = 0, base=10)
 pri file "libsys/fmt.c" _basic_get_char(h)
 
 '' format functions

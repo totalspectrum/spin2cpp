@@ -1,6 +1,7 @@
 Version 5.1.0
 - Allow semicolons to seperate lines in C inline assembly (this makes it possible to put inline assembly in macros)
 - Fixed another optimizer issue affecting C struct returns
+- Fixed undefined _basic_print_unsigned error.
 - Implemented FRAC operator for P1
 - New functions __builtin_frac, __builtin_mulh and __builin_muluh for C
 
