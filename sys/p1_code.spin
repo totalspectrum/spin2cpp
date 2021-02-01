@@ -335,3 +335,8 @@ pri _div64(n, nlo, dlo) : qlo, rlo | q, r, d
         or   qlo, #1
 zz_skipfrac
    endasm
+
+pri _muldiv64(mult1, mult2, divisor) : r | mlo, mhi
+  mlo := mult1 * mult2
+  mhi := mult1 +** mult2
+  r := _div64(mhi, mlo, divisor)
