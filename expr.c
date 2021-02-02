@@ -363,56 +363,27 @@ ExprContainsSubexpr(AST *expr, AST *subexpr)
 
 /*
  * Replace a complicated AST with a variable that's initialized at the
- * start of the current function.
- * checks the initialized variables at the start of the function to
- * see if we already have such a variable; if so, use it
- *
+ * start of the current expression
+ * FIXME: this does not work yet, needs some way to insert code at the beginning of
+ * the whole expression!!!
  */
 AST *
-ReplaceExprWithVariable(const char *prefix, AST *expr)
+ReplaceExprWithVariable(const char *prefix, AST *expr, AST **inits)
 {
-    AST *ast;
     AST *exprvar;
-    AST *list;
-    AST *exprinit;
-    AST **lastptr;
-    Symbol *sym;
+    AST *initexpr;
     if (expr->kind == AST_IDENTIFIER || expr->kind == AST_SYMBOL || expr->kind == AST_LOCAL_IDENTIFIER)
         return expr; // already an identifier!
 
-    // FIXME: need to make sure "expr" is invariant in the function,
+    // Need to make sure there are no side effects
     // otherwise we may get the wrong value
-    // until then, punt
-    if (1)
+    if (ExprHasSideEffects(expr)) {
         return expr;
-    
-    // check initialization at start of curfunc
-    lastptr = &curfunc->body;
-
-    for (list = *lastptr; list; (lastptr = &list->right),(list = *lastptr)) {
-        ast = list->left;
-        if (ast->kind != AST_ASSIGN) {
-            break;
-        }
-        exprvar = ast->left;
-        if (exprvar->kind != AST_IDENTIFIER) break;
-        // make sure this is an internal variable
-        // (user variables may be modified before we use them)
-        sym = LookupSymbol(exprvar->d.string);
-        if (!sym || sym->kind != SYM_TEMPVAR) break;
-        if (AstMatch(ast->right, expr)) {
-            // use this variable, no need for a new one
-            return exprvar;
-        }
     }
-    // didn't find a variable, create a new one
+
     exprvar = AstTempLocalVariable(prefix, NULL);
-    exprinit = NewAST(AST_STMTLIST,
-                      AstAssign(exprvar, expr),
-                      NULL);
-    // insert it in the initialization sequence
-    exprinit->right = *lastptr;
-    *lastptr = exprinit;
+    initexpr = AstAssign(exprvar, expr);
+    *inits = AddToList(*inits, NewAST(AST_SEQUENCE, initexpr, NULL));
     return exprvar;
 }
 
@@ -599,6 +570,17 @@ CheckAddBits(AST *expr)
     }
 }
 
+// create a new expression that puts the inits first, then the actual expression
+static AST *
+FixupInits(AST *result, AST *inits)
+{
+    AST *seq;
+    if (!inits) return result;
+    seq = NewAST(AST_SEQUENCE, result, NULL);
+    seq = AddToList(inits, seq);
+    return seq;
+}
+
 /*
  * special code for printing a range expression
  * dst->left is the hardware register; or, it may be an AST_REGPAIR
@@ -628,6 +610,7 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
     AST *hwreg2 = NULL;
     ASTReportInfo saveinfo;
     AST *result;
+    AST *inits = NULL;
     
     if (!dst) return dst;
     if (!dst->right || dst->right->kind != AST_RANGE) {
@@ -642,7 +625,7 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
     AstReportAs(dst, &saveinfo);  // set up error messages as if coming from "dst"
     /* change x.[a addbits b] to x.[(b+a)..a] */
     CheckAddBits(dst->right);
-
+    
     hwreg = dst->left;
     if (hwreg->kind == AST_REGPAIR) {
         AST *assign, *assign2;
@@ -710,7 +693,7 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
     } else {
         AST *hiexpr;
         AST *needrev;
-        
+
         hiexpr = FoldIfConst(dst->right->left);
         loexpr = FoldIfConst(dst->right->right);
 
@@ -722,13 +705,14 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         if (IsConstExpr(nbits)) {
             nbits = FoldIfConst(nbits);
         } else {
-            nbits = ReplaceExprWithVariable("_nbits", nbits);
+            nbits = ReplaceExprWithVariable("_nbits", nbits, &inits);
         }
         needrev = FoldIfConst(AstOperator('<', hiexpr, loexpr));
+        loexpr = AstOperator(K_LIMITMAX, loexpr, hiexpr);
         if (IsConstExpr(loexpr)) {
-            loexpr = FoldIfConst(AstOperator(K_LIMITMAX, loexpr, hiexpr));
-        } else if (loexpr->kind != AST_IDENTIFIER && loexpr->kind != AST_LOCAL_IDENTIFIER) {
-            loexpr = ReplaceExprWithVariable("_lo", loexpr);
+            loexpr = FoldIfConst(loexpr);
+        } else {
+            loexpr = ReplaceExprWithVariable("_lo", loexpr, &inits);
         }
         revsrc = AstOperator(K_REV, src, nbits);
         if (IsConstExpr(needrev)) {
@@ -753,13 +737,13 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         if (bitset == 0 || (bitset&mask) == mask) {
             result = RangeBitSet(dst, mask, bitset);
             AstReportDone(&saveinfo);
-            return result;
+            return FixupInits(result, inits);
         }
     }
     if (IsConstExpr(nbits) && EvalConstExpr(nbits) >= 32) {
         result = AstAssign(dst->left, FoldIfConst(src));
         AstReportDone(&saveinfo);
-        return result;
+        return FixupInits(result, inits);
     }
 
     /*
@@ -784,14 +768,11 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         shift = AstOperator(K_SHL, AstInteger(1), loexpr);
         maskassign = AstAssign(maskvar, shift);
         maskassign = NewAST(AST_STMTLIST, maskassign, NULL);
-#if 0        
-        // insert the mask assignment at the beginning of the function
-        // NO! WE CANNOT DO THIS IF LOEXPR IS NOT CONSTANT AND
-        // DEPENDS ON SOMETHING BETWEEN THE START OF FUNCTION AND HERE
-        maskassign->right = curfunc->body;
-        curfunc->body = maskassign;
-#endif
-        
+        if (inits) {
+            maskassign = AddToList(maskassign,
+                                   NewAST(AST_STMTLIST, inits, NULL));
+            inits = NULL;
+        }
         /* dst->left is the destination assignment */
         /* it may be an AST_LISTHOLDER, in which case it
            represents a pair of registers */
@@ -823,10 +804,10 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         AST *andexpr;
         AST *orexpr;
         if (!IsConstExpr(loexpr) && loexpr->kind != AST_IDENTIFIER && loexpr->kind != AST_LOCAL_IDENTIFIER) {
-            loexpr = ReplaceExprWithVariable("lo_", loexpr);
+            loexpr = ReplaceExprWithVariable("lo_", loexpr, &inits);
         }
         if (!IsConstExpr(maskexpr)) {
-            maskexpr = ReplaceExprWithVariable("mask_", maskexpr);
+            maskexpr = ReplaceExprWithVariable("mask_", maskexpr, &inits);
         }
 
         andexpr = AstOperator(K_SHL, maskexpr, loexpr);
@@ -840,7 +821,7 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         orexpr = NewAST(AST_MASKMOVE, dst->left, AstOperator('|', andexpr, orexpr));
         result = AstAssign(dst->left, orexpr);
         AstReportDone(&saveinfo);
-        return result;
+        return FixupInits(result, inits);
     }
 }
 
@@ -860,6 +841,7 @@ TransformRangeUse(AST *src)
     AST *lo;
     AST *range;
     ASTReportInfo saveinfo;
+    AST *inits = NULL;
     
     if (!curfunc) {
         ERROR(src, "Internal error, could not find function");
@@ -927,7 +909,7 @@ TransformRangeUse(AST *src)
         if (IsConstExpr(nbits)) {
             nbits = FoldIfConst(nbits);
         } else {
-            nbits = ReplaceExprWithVariable("_bits", nbits);
+            nbits = ReplaceExprWithVariable("_bits", nbits, &inits);
         }
         lo = NewAST(AST_CONDRESULT,
                         test,
@@ -935,7 +917,7 @@ TransformRangeUse(AST *src)
         if (IsConstExpr(lo)) {
             lo = AstInteger(EvalConstExpr(lo));
         } else {
-            lo = ReplaceExprWithVariable("_lo_", lo);
+            lo = ReplaceExprWithVariable("_lo_", lo, &inits);
         }
     }
     //mask = AstInteger((1U<<nbits) - 1);
@@ -944,7 +926,7 @@ TransformRangeUse(AST *src)
     if (IsConstExpr(mask)) {
         mask = FoldIfConst(mask);
     } else {
-        mask = ReplaceExprWithVariable("_mask_", mask);
+        mask = ReplaceExprWithVariable("_mask_", mask, &inits);
     }
     
     /* we want to end up with:
@@ -978,7 +960,7 @@ TransformRangeUse(AST *src)
                             val));
     }
     AstReportDone(&saveinfo);
-    return val;
+    return FixupInits(val, inits);
 }
 
 static float
