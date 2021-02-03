@@ -27,6 +27,23 @@ static int string_read(FILE *fil, void *bufp, size_t siz)
     return r;
 }
 
+static int string_getc(FILE *fil)
+{
+    _STRING_FILE *f = (_STRING_FILE *)fil;
+    size_t pos = f->pos;
+    size_t len = f->len;
+    const char *ptr = f->ptr;
+    int r;
+    if (pos >= len) {
+        return -1;
+    }
+    r = *ptr++;
+    pos++;
+    f->pos = pos;
+    f->ptr = ptr;
+    return r;
+}
+
 FILE *__string_file(_STRING_FILE *fp, const char *str, const char *mode, size_t len)
 {
     memset(fp, 0, sizeof(*fp));
@@ -34,6 +51,7 @@ FILE *__string_file(_STRING_FILE *fp, const char *str, const char *mode, size_t 
     fp->len = len;
     fp->pos = 0;
     fp->file.read = string_read;
+    fp->file.getcf = string_getc;
     return &fp->file;
 }
 
