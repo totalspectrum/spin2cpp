@@ -506,6 +506,11 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
                 AST *bfield_list = 0;
                 int tsize;
                 int bsize = EvalConstExpr(bfield_ast);
+                Symbol *sym = FindSymbol(&P->objsyms, GetIdentifierName(ident));
+
+                if (sym && sym->kind == SYM_ALIAS) {
+                    goto skip_decl;
+                }
                 tsize = TypeSize(bfield_typ) * 8;
                 if (max_bitfield_size == 0 || max_bitfield_size != tsize || bitfield_offset + bsize > max_bitfield_size) {
                     // start a new bitfield
@@ -530,6 +535,8 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
                 bfield_list = NewAST(AST_LISTHOLDER, bfield_list, NULL);
                 P->pendingvarblock = ListInsertBefore(P->pendingvarblock, last_pos, bfield_list);
                 bitfield_offset += bsize;
+            skip_decl:
+                ;
             } else {
                 // not in a bitfield
                 max_bitfield_size = bitfield_size = bitfield_offset = 0;
