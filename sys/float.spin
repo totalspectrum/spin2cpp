@@ -85,32 +85,6 @@ pri _float_sqrt(singleA = float) : single = float | s, x, m, root
     return _float_Pack(s, x, m)             'pack result
 
 
-pri _float_add(singleA = float, singleB = float) : single = float | sa, xa, ma, sb, xb, mb
-
-''Add singleA and singleB
-
-  (sa,xa,ma) := _float_Unpack(singleA)          'unpack inputs
-  (sb,xb,mb) := _float_Unpack(singleB)
-
-  if sa                         'handle mantissa negation
-    ma := -ma
-  if sb
-    mb := -mb
-
-  result := ||(xa - xb) <# 31   'get exponent difference
-  if xa > xb                    'shift lower-exponent mantissa down
-    mb ~>= result
-  else
-    ma ~>= result
-    xa := xb
-
-  ma += mb                      'add mantissas
-  sa := ma < 0                  'get sign
-  ||ma                          'absolutize result
-
-  return _float_Pack(sa, xa, ma)              'pack result
-
-
 pri _float_sub(singleA = float, singleB = float) : single = float
 
 ''Subtract singleB from singleA
@@ -118,39 +92,9 @@ pri _float_sub(singleA = float, singleB = float) : single = float
   return _float_add(singleA, _float_negate(singleB))
 
              
-pri _float_mul(singleA=float, singleB=float) : single=float | sa, xa, ma, sb, xb, mb
-
-''Multiply singleA by singleB
-
-  (sa,xa,ma) := _float_Unpack(singleA)          'unpack inputs
-  (sb,xb,mb) := _float_Unpack(singleB)
-
-  sa ^= sb                      'xor signs
-  xa += xb                      'add exponents
-  ma := (ma ** mb) << 3         'multiply mantissas and justify
-
-  return _float_Pack(sa, xa, ma)              'pack result
-
-
-pri _float_div(singleA=float, singleB=float) : single=float | sa, xa, ma, sb, xb, mb
-
-''Divide singleA by singleB
-
-  (sa,xa,ma) := _float_Unpack(singleA)          'unpack inputs
-  (sb,xb,mb) := _float_Unpack(singleB)
-
-  sa ^= sb                      'xor signs
-  xa -= xb                      'subtract exponents
-
-  repeat 30                     'divide mantissas
-    result <<= 1
-    if ma => mb
-      ma -= mb
-      result++        
-    ma <<= 1
-  ma := result
-
-  return _float_Pack(sa, xa, ma)              'pack result
+pri file "libsys/ieee32.c" _float_mul(singleA=float, singleB=float) : single=float
+pri file "libsys/ieee32.c" _float_div(singleA=float, singleB=float) : single=float
+pri file "libsys/ieee32.c" _float_add(singleA = float, singleB = float) : single = float
 
 ''
 '' compare a and b;
