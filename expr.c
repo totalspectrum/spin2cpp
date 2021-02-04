@@ -1320,7 +1320,7 @@ EvalExprInState(Module *P, AST *expr, unsigned flags, int *valid, int depth)
  * evaluate an expression
  * if unable to evaluate, return 0 and set "*valid" to 0
  */
-#define MAX_DEPTH 50
+#define MAX_DEPTH 80
 
 static ExprVal
 EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
