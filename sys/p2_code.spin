@@ -107,6 +107,12 @@ pri _sqrt(a) | r
     getqx r
   endasm
   return r
+pri _sqrt64(hi, lo) | r
+  asm
+    qsqrt lo, hi
+    getqx r
+  endasm
+  return r
 pri _coginit(id, code, param)
   asm
     setq param

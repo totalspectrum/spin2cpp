@@ -107,6 +107,17 @@ pri _sqrt(a) | r, bit, tmp
     bit := bit >> 2
   return r
 
+' not necessarily very accurate, but close enough
+' for what we want to do with it (floating point)
+pri _sqrt64(ahi, alo) | x0, x1
+  if (ahi < 0)
+    return 0
+
+  ' get an initial estimate
+  x0 := _sqrt(ahi)<<16
+  x1 := (x0 + _div64(ahi, alo, x0)) >> 1
+  return x1
+
 con
  _rxpin = 31
  _txpin = 30
