@@ -64,37 +64,17 @@ pri _float_abs(singleA = float) : single = float
   return singleA & $7FFF_FFFF   'clear sign bit
   
 
-pri _float_sqrt(singleA = float) : single = float | s, x, m, root
 
-''Compute square root of singleA
-
-  if singleA > 0                'if a =< 0, result 0
-
-    (s,x,m) := _float_Unpack(singleA)
-    m >>= !x & 1                'if exponent even, shift mantissa down
-    x ~>= 1                     'get root exponent
-
-    root := $4000_0000          'compute square root of mantissa
-    repeat 31
-      result |= root
-      if result ** result > m
-        result ^= root
-      root >>= 1
-    m := result >> 1
-  
-    return _float_Pack(s, x, m)             'pack result
-
-
-pri _float_sub(singleA = float, singleB = float) : single = float
+pri file "libsys/ieee32.c" _float_add(singleA = float, singleB = float) : single = float
 
 ''Subtract singleB from singleA
-
+pri _float_sub(singleA = float, singleB = float) : single = float
   return _float_add(singleA, _float_negate(singleB))
 
              
+pri file "libsys/ieee32.c" _float_sqrt(singleA = float) : single = float
 pri file "libsys/ieee32.c" _float_mul(singleA=float, singleB=float) : single=float
 pri file "libsys/ieee32.c" _float_div(singleA=float, singleB=float) : single=float
-pri file "libsys/ieee32.c" _float_add(singleA = float, singleB = float) : single = float
 
 ''
 '' compare a and b;

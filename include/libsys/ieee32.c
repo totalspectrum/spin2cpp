@@ -502,3 +502,59 @@ b_underflow:
     }
     return pack(a, alo, aexp - 127, aflag);
 }
+
+float _float_sqrt(float af)
+{
+    uint32_t a, alo, aflag;
+    int aexp;
+    UNPACK(af, a, aexp, aflag);
+
+    // check for sqrt(0)
+    if (aexp == 0) {
+        goto a_underflow;
+    }
+    a |= FLOAT_ONE;
+calc:    
+    // check for sqrt(negative number)
+    if (aflag) {
+        return DEFAULT_NAN;
+    }
+    // check for sqrt(inf) or sqrt(nan)
+    if (aexp == 0xff) {
+        return af;
+    }
+    aexp -= 127;
+    if (aexp & 1) {
+        a = a<<1;
+        --aexp;
+    }
+    aexp = aexp/2;
+    // a is currently 2.23
+    // shift it up to 2.28
+    a = a<<5;
+    a = _sqrt64(a, 0);
+    // a is now 1.30
+    // take it down to .23
+    alo = a<<25;
+    a = a>>7;
+    //__builtin_printf("... rescaled: aexp=%d a=%08x alo=%08x\n", aexp, a, alo);
+    if (a > FLOAT_TWO) {
+        ++aexp;
+        a=a>>1;
+        //__builtin_printf("... adjust: aexp=%d a=%08x alo=%08x\n", aexp, a, alo);
+    }
+    return pack(a, alo, aexp, aflag);
+
+a_underflow:
+    if (a == 0) {
+        // sqrt(0) or sqrt(-0) should return original value
+        return af;
+    }
+    // denormalized number
+    a = a<<1;
+    while (a < FLOAT_ONE) {
+        aexp--;
+        a=a<<1;
+    }
+    goto calc;
+}
