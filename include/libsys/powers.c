@@ -169,7 +169,7 @@ float __builtin_log2f(float x)
     // at this point r is a 5.27 fixed point number giving log2(mant)
     // note that mant was 1.23 by construction, so the upper 5 bits
     // is "24", i.e. we have 0xbnnnnnn
-    __builtin_printf("... mant=0x%08x r=0x%08x exp=%d\n", mant, r, exp);
+    //__builtin_printf("... mant=0x%08x r=0x%08x exp=%d\n", mant, r, exp);
 
 #ifdef __fixedreal__
     r = (r>>(27-16)-1) & 0x1ffff;

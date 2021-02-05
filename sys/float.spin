@@ -336,4 +336,4 @@ pri file "libsys/powers.c" __builtin_log2f(x = float) : r=float
 pri file "libsys/powers.c" __builtin_log10f(x = float) : r=float
 pri file "libsys/powers.c" __builtin_powf(x = float, y = float) : r=float
 pri file "libsys/powers.c" __builtin_logbase(x = float, y = float) : r=float
-pri file "libsys/float_support.c" _float_pow_n(b=float, a=float, n=long) : r=float
+pri file "libsys/ieee32.c"   _float_pow_n(b=float, a=float, n=long) : r=float
