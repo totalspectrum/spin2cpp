@@ -124,6 +124,9 @@ _openraw(void *fil_ptr, const char *orig_name, int flags, mode_t mode)
         if (rdwr != O_WRONLY) {
             state |= _VFS_STATE_RDOK;
         }
+        if (flags & O_APPEND) {
+            state |= (_VFS_STATE_APPEND|_VFS_STATE_NEEDSEEK);
+        }
 #ifdef _DEBUG
         __builtin_printf("openraw rdwr=%d state=%d\n", rdwr, state);
 #endif    
@@ -231,6 +234,12 @@ ssize_t _vfswrite(vfs_file_t *f, const void *vbuf, size_t count)
     if (! (f->state & _VFS_STATE_WROK) ) {
         return _seterror(EACCES);
     }
+    if (f->state & _VFS_STATE_APPEND) {
+        if (f->state & _VFS_STATE_NEEDSEEK) {
+            r = (*f->lseek)(f, 0L, SEEK_END);
+            f->state &= ~_VFS_STATE_NEEDSEEK;
+        }
+    }
     if (f->write) {
         r = (*f->write)(f, vbuf, count);
         if (r < 0) {
@@ -327,6 +336,10 @@ off_t lseek(int fd, off_t offset, int whence)
     f = &__filetab[fd];
     if (!f->lseek) {
         return _seterror(ENOSYS);
+    }
+    if (f->state & _VFS_STATE_APPEND) {
+        // if we want to write again, make sure to seek to end of file
+        f->state |= _VFS_STATE_NEEDSEEK;
     }
     r = (*f->lseek)(f, offset, whence);
     if (r < 0) {

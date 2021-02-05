@@ -198,10 +198,10 @@ static int do_fs_walk(fs9_file *dir, fs9_file *newfile, const char *path, int sk
         }
 
         r = (*sendRecv)(txbuf, ptr, maxlen);
-	sentone = 1;
-        if (txbuf[4] != r_walk) {
+        if (txbuf[4] != r_walk && sentone) {
             return -EINVAL;
         }
+	sentone = 1;
     } while (*path);
     return 0;
 }

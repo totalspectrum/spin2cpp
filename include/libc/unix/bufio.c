@@ -14,6 +14,12 @@ int __default_flush(vfs_file_t *f)
     __builtin_printf("default_flush: cnt=%d\n", cnt);
 #endif    
     if (cnt > 0) {
+        if (f->state & _VFS_STATE_APPEND) {
+            if (f->state & _VFS_STATE_NEEDSEEK) {
+                r = (*f->lseek)(f, 0L, SEEK_END);
+                f->state &= ~_VFS_STATE_NEEDSEEK;
+            }
+        }
         r = (*f->write)(f, b->buf, cnt);
     } else {
         r = 0;

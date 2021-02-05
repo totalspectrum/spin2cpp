@@ -8,14 +8,14 @@
 char *				/* found char, or NULL if none */
 strrchr(const char *s, int charwanted)
 {
-	char c;
+	int c;
 	const char *place;
 
 	place = NULL;
 	while ((c = *s++) != 0)
-		if (c == (char) charwanted)
+		if (c == charwanted)
 			place = s - 1;
-	if ((char) charwanted == '\0')
-		return((char *)--s);
+	if (charwanted == '\0')
+		place = (--s);
 	return (char *)place;
 }

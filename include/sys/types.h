@@ -76,5 +76,7 @@ typedef int (*getcfunc_t)(vfs_file_t *fil);
 #define _VFS_STATE_INUSE (0x04)
 #define _VFS_STATE_EOF (0x10)
 #define _VFS_STATE_ERR (0x20)
+#define _VFS_STATE_APPEND (0x40)
+#define _VFS_STATE_NEEDSEEK (0x80)
 
 #endif

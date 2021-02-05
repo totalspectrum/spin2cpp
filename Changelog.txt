@@ -7,8 +7,10 @@ Version 5.1.0
 - Fixed sscanf() and similar string functions not working
 - Fixed type of RECV() pointer in Spin2
 - Implemented FRAC operator for P1
-- New functions __builtin_frac, __builtin_mulh and __builin_muluh for C
 - Implemented new (more accurate) IEEE floating point math routines
+- Made "append" mode force seeks to end of file before writes
+- New functions __builtin_frac, __builtin_mulh and __builin_muluh for C
+
 
 Version 5.0.8
 - Added a warning for casting const pointers to non-const
