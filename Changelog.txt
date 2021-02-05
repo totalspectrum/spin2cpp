@@ -5,6 +5,7 @@ Version 5.1.0
 - Fixed a bug with pin ranges where the limits are variables and are given in (lo, hi) order
 - Fixed bitfields in C structs being multiply defined
 - Fixed sscanf() and similar string functions not working
+- Fixed type of RECV() pointer in Spin2
 - Implemented FRAC operator for P1
 - New functions __builtin_frac, __builtin_mulh and __builin_muluh for C
 

@@ -82,6 +82,7 @@ AST *ast_type_bitfield;
 AST *ast_type_long64, *ast_type_unsigned_long64;
 AST *ast_type_generic_funcptr;
 AST *ast_type_sendptr;
+AST *ast_type_recvptr;
 
 const char *gl_progname = "spin2cpp";
 char *gl_header1 = NULL;
@@ -812,6 +813,7 @@ Init()
 
     // a generic function for Spin2 SEND type functionality
     ast_type_sendptr = NewAST(AST_MODIFIER_SEND_ARGS, GenericFunctionPtr(0), NULL);
+    ast_type_recvptr = GenericFunctionPtr(0);
     
     initSpinLexer(gl_p2);
 

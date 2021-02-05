@@ -212,8 +212,9 @@ extern AST *ast_type_bitfield;
 extern AST *ast_type_long64;
 extern AST *ast_type_unsigned_long64;
 extern AST *ast_type_generic_funcptr;
-// special function pointer used for Spin2 SEND builtin
+// special function pointer used for Spin2 SEND and RECV builtins
 extern AST *ast_type_sendptr;
+extern AST *ast_type_recvptr;
 
 /* structure describing a dat block label */
 typedef struct label {
