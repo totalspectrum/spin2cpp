@@ -98,7 +98,7 @@ unsigned __builtin_qexp(unsigned orig_num)
 //
 // floating point: calculate log base 2 of a float number
 //
-float _log2f(float x)
+float __builtin_log2f(float x)
 {
     unsigned u = __asuint(x);
     int exp;
@@ -169,7 +169,7 @@ float _log2f(float x)
     // at this point r is a 5.27 fixed point number giving log2(mant)
     // note that mant was 1.23 by construction, so the upper 5 bits
     // is "24", i.e. we have 0xbnnnnnn
-    //printf("... mant=0x%08x r=0x%08x exp=%d\n", mant, r, exp);
+    __builtin_printf("... mant=0x%08x r=0x%08x exp=%d\n", mant, r, exp);
 
 #ifdef __fixedreal__
     r = (r>>(27-16)-1) & 0x1ffff;
@@ -192,7 +192,7 @@ float _log2f(float x)
 
 // calculate 2^x
 #ifdef __fixedreal__
-float _exp2f(float x)
+float __builtin_exp2f(float x)
 {
     int n;
     unsigned u, r;
@@ -224,7 +224,7 @@ float _exp2f(float x)
     return __asfloat(r);
 }
 #else
-float _exp2f(float x)
+float __builtin_exp2f(float x)
 {
     int n;
     float y;
@@ -288,8 +288,8 @@ float __builtin_powf(float x, float y)
         return 0;
     }
     // calculate x^y as 2^(log_2(x)*y)
-    a = _log2f(x) * y;
-    return _exp2f(a);
+    a = __builtin_log2f(x) * y;
+    return __builtin_exp2f(a);
 }
 
 //
@@ -297,8 +297,8 @@ float __builtin_powf(float x, float y)
 //
 float __builtin_logbase(float b, float x)
 {
-    float xx = _log2f(x);
-    float bb = _log2f(b);
+    float xx = __builtin_log2f(x);
+    float bb = __builtin_log2f(b);
 
     return xx / bb;
 }
