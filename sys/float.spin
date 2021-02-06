@@ -79,14 +79,18 @@ pri file "libsys/ieee32.c" _float_div(singleA=float, singleB=float) : single=flo
 ''
 '' compare a and b;
 '' return 0 if a = b, -N if a < b, +N if a > b
-'' for a or b NaN, should return $8000000
+'' for a or b NaN, should return the value u
 '' generally we return a-b
 
 con
   f_infinity = $7f800000
   f_unordered = $80000000
 
-pri _float_cmp(a=float, b=float) : r=long
+pri _float_cmp(a=float, b=float, u=1) : r=long
+  if (a > $7f800000) or (b > $7f800000)
+    return u
+  if (a +> $ff800000) or (a +> $ff800000)
+    return u
   if (a < 0)
     if (b < 0)
       return b - a

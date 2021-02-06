@@ -459,6 +459,25 @@ IsBasicString(AST *typ)
     return 0;
 }
 
+/*
+ * provide a result for unordered comparisons
+ * like NaN = NaN
+ */
+static int
+UnorderedResult(int op)
+{
+    switch (op) {
+    case '>':
+    case K_GE:
+        return -1;
+    case '<':
+    case K_LE:
+    case K_EQ:
+    case K_NE:
+    default:
+        return 1;
+    }
+}
 
 void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
 {
@@ -479,7 +498,7 @@ void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
         if (gl_fixedreal) {
             // we're good
         } else {
-            ast->left = MakeOperatorCall(float_cmp, ast->left, ast->right, NULL);
+            ast->left = MakeOperatorCall(float_cmp, ast->left, ast->right, AstInteger(UnorderedResult(op)));
             ast->right = AstInteger(0);
         }
         return;
@@ -813,11 +832,11 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
     case K_BOOL_AND:
     case K_BOOL_OR:
         if (IsFloatType(lefttype)) {
-            ast->left = MakeOperatorCall(float_cmp, ast->left, AstInteger(0), NULL);
+            ast->left = MakeOperatorCall(float_cmp, ast->left, AstInteger(0), AstInteger(1));
             lefttype = ast_type_long;
         }
         if (IsFloatType(righttype)) {
-            ast->right = MakeOperatorCall(float_cmp, ast->right, AstInteger(0), NULL);
+            ast->right = MakeOperatorCall(float_cmp, ast->right, AstInteger(0), AstInteger(1));
             righttype = ast_type_long;
         }
         if (lefttype && !IsBoolCompatibleType(lefttype)) {
