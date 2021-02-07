@@ -348,7 +348,9 @@ Examples:
 
 #### Arrays
 
-Arrays must be declared with the `dim` keyword. FlexBASIC supports only one and two dimensional arrays, but they may be of any type. Examples of array declarations:
+Arrays must be declared with the `dim` keyword. FlexBASIC supports only one and two dimensional arrays, but they may be of any type. Higher dimensional arrays may be emulated by creating type definitions and making arrays of those, i.e. arrays of arrays.
+
+Examples of array declarations:
 ```
   rem an array of 10 integers
   rem note that dim gives the last index
@@ -385,7 +387,7 @@ The array definition may have an explicit lower bound given, for example:
    dim a(1 to 10)  ' array of 10 items
    dim b(0 to 10)  ' array of 11 items
 ```
-This only works for one dimensional arrays. For two dimensional arrays both dimensions must have the same lower bound, and both must start from the default set by the last `option base`.
+For two dimensional arrays both dimensions must have the same lower bound.
 
 Note that pointer dereferences (using array notation) always use the last value set for `option base` in the file, since we cannot know at run time what the actual base of the pointed to object was. So it is best to set this just once.
 
@@ -497,7 +499,7 @@ In general for all of the comparison operators, if either `a` or `b` is a float,
 
 `a andalso b` evaluates `a`, and then only if `a` is true (nonzero) it evaluates `b`. It is similar to `and` but avoids evaluating one argument if it is not necessary. This is useful if the second argument is an expression which is only valid if the first argument is true, e.g. something like:
 ```
-   if a <> nil andthen a(0) == 2 then
+   if a <> nil andalso a(0) == 2 then
       ' do something
    end if
 ```
