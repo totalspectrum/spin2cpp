@@ -1060,7 +1060,7 @@ doCast(AST *desttype, AST *srctype, AST *src)
                 AST *srcbase, *dstbase;
                 srcbase = BaseType(srctype);
                 dstbase = BaseType(desttype);
-                if (IsConstType(srcbase) && !IsConstType(dstbase)) {
+                if (IsConstType(srcbase) && !IsConstType(dstbase) && !(curfunc && IsCLang(curfunc->language)) ) {
                     WARNING(src, "cast removes const from pointer type");
                 }
             }
