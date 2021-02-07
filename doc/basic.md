@@ -286,6 +286,7 @@ lpad$
 ltrim$
 mid$
 mount
+number$
 oct$
 outa
 outb
@@ -2136,6 +2137,13 @@ A special pointer value that indicates an invalid pointer. `nil` may be returned
 Inverts all bits in the destination. This is basically the same as `b xor -1`.
 
 In logical (boolean) conditions, since the TRUE condition is all 1 bits set, this operation has its usual effect of reversing TRUE and FALSE.
+
+### NUMBER$
+
+```
+  s = number$(x, d, base)
+```
+Convert `x` into a string with `d` digits in base `base`. If `x` is too big to fit in `d` digits then only the lower `d` digits are returned.
 
 ### OCT$
 
