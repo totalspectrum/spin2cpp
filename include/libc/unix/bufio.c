@@ -50,7 +50,7 @@ int __default_putc(int c,  vfs_file_t *f)
 {
     struct _default_buffer *b = (struct _default_buffer *)f->vfsdata;
     int i = b->cnt;
-#ifdef _DEBUG    
+#ifdef _DEBUG_EXTRA
     __builtin_printf("putc: %d f=%x b=%x cnt=%d\n", c, (unsigned)f, (unsigned)b, i);
 #endif    
     b->buf[i++] = c;
@@ -69,12 +69,12 @@ int __default_getc(vfs_file_t *f) {
     int i = b->cnt;
     unsigned char *ptr;
 
-#ifdef _DEBUG    
+#ifdef _DEBUG_EXTRA
     __builtin_printf("getc: %d\n", i);
 #endif    
     if (i == 0) {
         i = __default_filbuf(f);
-#ifdef _DEBUG        
+#ifdef _DEBUG_EXTRA  
         __builtin_printf("filbuf: %d\n", i);
 #endif        
     }

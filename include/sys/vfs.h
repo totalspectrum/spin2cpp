@@ -46,7 +46,11 @@ struct vfs *_vfs_open_sdcard(void) _IMPL("filesys/fatfs/fatfs_vfs.c");
 /* put a "struct _default_buffer" at the start of your vfsdata to use the
  * default versions of putc and getc
  */
+#ifdef __P2__
+#define _DEFAULT_BUFSIZ 1024
+#else
 #define _DEFAULT_BUFSIZ 128
+#endif
 
 struct _default_buffer {
     int cnt;
