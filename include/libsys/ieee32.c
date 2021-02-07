@@ -363,7 +363,7 @@ a_underflow:
     // a is 0, b is not infinite, so return correctly signed 0
     // EXCEPTION: if b is 0, return NaN
     if (bexp == 0 && b == 0) {
-        return pack(0, 0, 0, aflag | FLAG_NAN);
+        return DEFAULT_NAN;
     }
     return pack(0, 0, 0, aflag | FLAG_ZERO);
 b_underflow:
