@@ -2136,7 +2136,7 @@ A special pointer value that indicates an invalid pointer. `nil` may be returned
 ```
 Inverts all bits in the destination. This is basically the same as `b xor -1`.
 
-In logical (boolean) conditions, since the TRUE condition is all 1 bits set, this operation has its usual effect of reversing TRUE and FALSE.
+In logical (boolean) conditions, since the TRUE condition is all 1 bits set, this operation has its usual effect of reversing TRUE and FALSE. Beware though that `not x` will behave differently if `x` is neither the canonical TRUE nor canonical FALSE value; in this case, `x` will act like TRUE (since it is non-zero) but `not x` may as well (the inverted bits may not all be 0 if `x` wasn't the usual TRUE).
 
 ### NUMBER$
 
