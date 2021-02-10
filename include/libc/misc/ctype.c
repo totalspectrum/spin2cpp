@@ -120,3 +120,11 @@ int isblank(int c)
 {
   return __isctype(c, _CTb);
 }
+
+#ifdef __FLEXC__
+unsigned __ctype_get(unsigned int c)
+{
+    if (c > 128) c = 128;
+    return __ctype[c];
+}
+#endif

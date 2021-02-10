@@ -10,16 +10,18 @@
 #ifndef _SYS_CTYPE_H
 #define _SYS_CTYPE_H
 
-#ifndef __FLEXC__
+#ifdef __FLEXC__
+unsigned __ctype_get(unsigned c) __fromfile("libc/misc/ctype.c");
+#else
 /* internal definitions for ctype.h and wctype.h */
 /* we have an array of 129 bytes (0..128) */
 extern unsigned char __ctype[];
-#endif
 
 #if defined(__GNUC__)
 #define __ctype_get(c) __extension__({unsigned int _i_ = c; if (_i_ > 128) _i_ = 128; __ctype[_i_];}) 
 #else
 #define __ctype_get(c) __ctype[((unsigned int)(c) > 128 ? 128 : (c))]
+#endif
 #endif
 
 #define _CTc    0x01            /* control character */
