@@ -39,10 +39,12 @@ int fgetc(FILE *f) _IMPL("libc/stdio/fputs.c");
 #define getchar() fgetc(stdin)
 
 int sprintf(char *str, const char *format, ...) _IMPL("libc/stdio/sprintf.c");
+int snprintf(char *str, size_t size, const char *format, ...) _IMPL("libc/stdio/sprintf.c");
 int printf(const char *format, ...) _IMPL("libc/stdio/fprintf.c");
 int fprintf(FILE *f, const char *format, ...) _IMPL("libc/stdio/fprintf.c");
 
 int vsprintf(char *str, const char *format, unsigned long ap) _IMPL("libc/stdio/sprintf.c");
+int vsnprintf(char *str, size_t size, const char *format, unsigned long ap) _IMPL("libc/stdio/sprintf.c");
 int vprintf(const char *format, unsigned long ap) _IMPL("libc/stdio/fprintf.c");
 int vfprintf(FILE *f, const char *format, unsigned long ap) _IMPL("libc/stdio/fprintf.c");
 
