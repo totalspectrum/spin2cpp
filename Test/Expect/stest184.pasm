@@ -736,7 +736,7 @@ LR__0044
 	byte	" !!! corrupted heap??? !!! "
 	byte	0
 LR__0045
-	byte	" !!! out of memory !!! "
+	byte	" !!! out of heap memory !!! "
 	byte	0
 LR__0046
 	byte	" !!! corrupted heap !!! "
