@@ -425,7 +425,7 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
                 } else {
                     break;
                 }
-                if (c >= 0 && c < 16) {
+                if ( ((int)c >= 0) && (c < 16) ) {
                     ff = ff + hexplace * c;
                     hexplace /= 16.0f;
                     sawdigit = 1;
