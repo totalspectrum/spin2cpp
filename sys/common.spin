@@ -320,12 +320,22 @@ pri file "libsys/readdata.spin" _basic_get_integer(src = "") : r=long, ptr
 pri file "libsys/readdata.spin" _basic_get_float(src = "") : r=float, ptr
 
 '' pause for m milliseconds
-pri _waitms(m=long)
-  _waitx(m * (__clkfreq_var / 1000))
+pri _waitms(m=long) | freq
+  freq := __clkfreq_var
+  repeat while m > 1000
+    _waitx(freq)
+    m -= 1000
+  if m > 0
+    _waitx(m * freq / 1000)
 
 '' pause for m microseconds
-pri _waitus(m=long)
-  _waitx(m * (__clkfreq_var / 1000000))
+pri _waitus(m=long) | freq
+  freq := __clkfreq_var
+  repeat while m > 1000000
+    _waitx(freq)
+    m -= 1000000
+  if m > 0
+    _waitx(m * freq / 1000000)
 
 ' check to see if cnt > x
 pri _pollct(x) : flag
