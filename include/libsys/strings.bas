@@ -4,52 +4,65 @@
 '
 ' LIST OF FUNCTIONS:
 '
-'*__strs_cl			(private class)
-'*Bin$(n%)			Returns a binary string representation of N%
-'*Chr$(n%)			Returns a string character with ASCII code N%
-' CountStr(x$, s$)		Counts the number of occurances of string S in string X
-'*Decuns$(n%)			Returns a decimal string representation of N%
-' Delete$(t$,o%,c%)		Deletes characters in T$ starting at offset O% and continuing for C% characters
-'*Hex$(n%)			Returns a hexadecimal string representation of N%
-' Insert$(b$,i$,o%)		Inserts I$ into B$ at offset O% 
-' Instr(o%,s$,t$)		Returns the first occurance of T$ in S$ beginning at offset O%. Search direction is left-to-right
-' InstrRev(o%,s$,t$		Reverse-acting version of INSTR$(). Search direction is right-to-left
-'*Left$(x$,c%)			Returns the leftmost C% chars of X$
-' LCase$(x$)			Changes all upper case characters in X$ to lower case
-' LPad$(x$,w%,ch$)		Returns a string of W length consisting of X$ padded on the left side with the character CH$
-' LTrim$(x$)			Removes leading spaces from X$
-'*Mid$(x$,o%,c%)		Returns a substring of X$ starting at offset O% consisting of C% characters
-'*Number			(private function)
-'*Oct$(n%)			Returns an octal string representation of N%
-'*Pfunc				(private function)
+'*__strs_cl						(private class)
+' __ScanForChar(s$, t%, idx%, d)	(private function. searches for T% in S$ starting at offset IDX. D=direction (0=fwd, !0=rev)
+'*Bin$(n%)						Returns a binary string representation of N%
+'*Chr$(n%)						Returns a string character with ASCII code N%
+' CountStr(x$, s$)			Counts the number of occurances of string S in string X
+'*Decuns$(n%)					Returns a decimal string representation of N%
+' Delete$(t$,o%,c%)			Deletes characters in T$ starting at offset O% and continuing for C% characters
+'*Hex$(n%)						Returns a hexadecimal string representation of N%
+' Insert$(b$,i$,o%)			Inserts I$ into B$ at offset O% 
+' Instr(o%,s$,t$)				Returns the first occurance of T$ in S$ beginning at offset O%. Search direction is left-to-right
+' InstrRev(o%,s$,t$			Reverse-acting version of INSTR$(). Search direction is right-to-left
+'*Left$(x$,c%)					Returns the leftmost C% chars of X$
+' LCase$(x$)					Changes all upper case characters in X$ to lower case
+' LPad$(x$,w%,ch$)			Returns a string of W length consisting of X$ padded on the left side with the character CH$
+' LTrim$(x$)					Removes leading spaces from X$
+'*Mid$(x$,o%,c%)				Returns a substring of X$ starting at offset O% consisting of C% characters
+'*Number							(private function)
+'*Oct$(n%)						Returns an octal string representation of N%
+'*Pfunc							(private function)
 ' RemoveChar$(x$, s$) 		Removes all occurances of character S in string X
 ' ReplaceChar$(x$,s$,r$)	Replaces all occurances of character S in string X with character R
-' Reverse$(x$)			Reverses the position of the characters in X$ (swaps first for last, etc)
-'*Right$(x$,c%)			Returns the rightmost C% characters from X$
-' RPad$(x$,w%,ch$)		Returns a string of W length consisting of X$ padded on the right side with the character CH$
-' RTrim$(x$)			Removes trailing spaces from X$
-' Space$(count%)		Returns a string of CNT length consisting of space characters
-'*Str$(n%)			Returns a string representation of N% (ie converts N% to a string)
-' String$(cnt, x$)		Returns a string of CNT length consisting of the character X$
-' STRInt$(num%)			Integer-only version of STR$() that avoids floating-point math.  About 8x faster than STR$()
-' Trim$(x$) 				Removes spaces from the left and right side of string X
-' UCase$(x$)				Changes all lower case characters in X$ to upper case
+' Reverse$(x$)					Reverses the position of the characters in X$ (swaps first for last, etc)
+'*Right$(x$,c%)				Returns the rightmost C% characters from X$
+' RPad$(x$,w%,ch$)			Returns a string of W length consisting of X$ padded on the right side with the character CH$
+' RTrim$(x$)					Removes trailing spaces from X$
+' Space$(count%)				Returns a string of CNT length consisting of space characters
+'*Str$(n%)						Returns a string representation of N% (ie converts N% to a string)
+' String$(cnt, x$)			Returns a string of CNT length consisting of the character X$
+' STRInt$(num%)				Integer-only version of STR$() that avoids floating-point math.  About 8x faster than STR$()
+' Trim$(x$) 					Removes spaces from the left and right side of string X
+' UCase$(x$)					Changes all lower case characters in X$ to upper case
 '
 ' NOTE: "*" denotes original ERSmith code copied in unmodified form from the V5.0.7 FlexProp distribution dated 14-Jan-2021.
 ' All other code by JRoark, except as noted:
 
 ' Changes for FlexProp 5.0.8 release:
-'    Count renamed CountStr and made to handle arbitrary string matches
-'    Remove$ renamed RemoveChar$ and slightly optimized
-'    Replace$ renamed ReplaceChar$ and slightly optimized
+'		Count renamed CountStr and made to handle arbitrary string matches
+'		Remove$ renamed RemoveChar$ and slightly optimized
+'		Replace$ renamed ReplaceChar$ and slightly optimized
+'
+' Changes for FlexProp 5.0.9 release:
+'		Improved COUNT() speed by ~1.5x for multi-char targets and ~10% for single char targets
+'		Improved INSTR() speed by 10-50x.
+'		Improved INSTRREV() speed by 10-50x.
+'		Improved UCASE$() speed (esp on longer strings, ie > 64 chars) by ~15% - 30% (optimizer level dependent)
+'		Improved LCASE$() speed (esp on longer strings, ie > 64 chars) by ~15% - 30% (optimizer level dependent)
+'
+'
+
+
+'
 '=================================================================================================================================
 '
 FUNCTION CountStr(x as string, s as string) as integer
 '
 '	Purpose:		Counts all occurances of the string S in X
 '	Errors:		None known
-'	Author:		JRoark 16Jan2020 / ersmith 19Jan2021
-'	Version:		2.0 of 16Jan2021
+'	Author:		JRoark 16Jan2020 / ersmith 19Jan2021 / JRoark 28Jan2021
+'	Version:		2.2 of 28Jan2021
 '	Requires:	Nothing
 '	RefDoc:		N/A		
 '	RelSpeed:	Fast	
@@ -58,52 +71,63 @@ FUNCTION CountStr(x as string, s as string) as integer
   	dim i, j, m, z as integer			' i,j=loop cntr, m=len of input string, z=result
 	dim slen as integer					' length of source string
 	dim ch as integer						' temp variable
-
+	dim s0 as integer
+	
   	m = __builtin_strlen(x)				' get the length of the input string
   	
-  	if (m = 0) then 						' trap for zero length input string
+  	if (m < 1) then 						' trap for zero length input string
   		return 0								' return a count of zero
 	end if
 
 	slen = __builtin_strlen(s)
-	if slen = 0 then						' trap for zero-length S argument
-		return m								' return appropriate number of matches
+	if (slen = 0) then						' trap for zero-length S argument
+		return m									' return appropriate number of matches
 	end if
 	
-	z = 0										' initialize count
-
-	slen -= 1								' adjust for starting index of 0
-	m -= 1									' ditto
-	m -= slen								' only need to check first (m-slen) positions
+	if (slen > m) then						' trap for target string longer than input string
+		return 0									' no possible matches so return zero
+	end if
 	
-	if m < 0 then
+	slen -= 1									' adjust for starting index of 0
+	m -= 1										' ditto
+	m -= slen									' only need to check first (m-slen) positions
+	
+	if (m < 0) then
 	    return 0
 	end if
+
+	s0 = s(0)									' get ascii val of first char (for speed later)
+	z = 0											' set initial match count to zero
+	i = -1
 	
-	' special case fast match for single character
-	if slen = 0 then						' searching a single character
-		ch = s(0)							' fetch that character
-		for i = 0 to m						' iterate through input
-			if x(i) = ch then
-				z += 1
+	' special case fast match for a single character target
+	if slen = 0 then							' searching a single character
+		do
+			i+=1
+			if x(i) = s0 then					' did we match?
+				z += 1							' yep. add 1 to match count
 			end if
-		next i
-		return z
+		loop until i = m
+		return z									' done. return the match count
 	end if
 
-	' for longer strings
-	for i = 0 to m							' iterate through the input string
-		ch = 1								' assume a match
-		for j = 0 to slen
-			if (x(i+j) <> s(j)) then	' look char-by-char for a match in X with S
-				ch = 0						' no match possible
-				exit for						' break out of the loop
-			end if
-		next j
-		z += ch
-	next i
+	' for longer target strings 
+	do
+		i += 1									' add 1 to search offset
+		ch = 0									' assume no match
+		if (x(i) = s0) then					' check first character for match
+			ch = 1								' possible match. dig deeper
+			for j = 1 to slen					' iterate thru the remaining search string
+				if (x(i+j) <> s(j)) then	' look char-by-char for a match in X with S
+					ch = 0						' nope. no match 
+					exit for						' break out of the loop
+				end if
+			next j
+		end if
+		z += ch									' add 0(nomatch) or 1(match) to running match count
+	loop until i = m
 
-	return z									' return count of how many S's were found in X
+	return z										' return count of how many S's were found in X
 	
 END FUNCTION
 '
@@ -129,7 +153,7 @@ FUNCTION Delete$(target$ as string, offset as integer, count as integer) as stri
   	m = __builtin_strlen(target$)		' get length of passed string
 
 	if (m < 1) then						' trap for zero-length string
-		return 0								' return a null string
+		return ""							' return a null string
 	end if
 	
 	if (offset > m) then 				' trap for offset beyond length of TARGET$
@@ -165,7 +189,7 @@ FUNCTION Delete$(target$ as string, offset as integer, count as integer) as stri
 		return p								' return the new string
 	end if
 	
-  	return 0									' if here, memory alloc was unsuccessful. return null string
+  	return p									' if here, memory alloc was unsuccessful. return null string
  
 END FUNCTION
 '
@@ -223,7 +247,7 @@ FUNCTION Insert$(base$ as string, toInsert$ as string, offset as integer) as str
   		return p								' return the new string
 	end if
 	
-	return 0									' if here then the memory alloc failed, so return an empty string
+	return p									' if here then the memory alloc failed, so return an empty string
 
 END FUNCTION
 '
@@ -234,89 +258,215 @@ FUNCTION Instr(Offset% as integer, Source$ as string, Target$ as string) as inte
 '	Purpose:		Returns the position of the first occurance of Target$ in Source$. The search begins at the Offset% character.
 '					If the Target$ isn't found in Source$, the function returns zero.
 '	Errors:		None known
-'	Author:		JRoark 11Sep2019
-'	Requires:	MID$()
+'	Author:		JRoark 28Jan2021
+'	Requires:	MID$(), SCANFOR()
 '	Notes:		None	
 '	RefDoc:		N/A		
-'	Speed:		Average	
+'	Speed:		Fast (~15x faster)	
+
+' This is a recode of INSTR() designed for better speed. It employs a "pre-scan" of the SOURCE$ in order to
+' determine the offset of the first character of TARGET$. If the first char of TARGET$ isn't found, then logically
+' there is no need to go any further and the operation aborts. If the first char of TARGET$ *is* found in 
+' SOURCE$, then that offset is passed to MID$() to determine if the *rest* of the TARGET$ can be matched.
+' This strategy is always faster than the earlier version unless the TARGET$ is located at offset 1, in which
+' case it is slightly slower.  For all other cases (offset >= 2) it is progressively faster.  It becomes MUCH 
+' faster (10x to 50x) as the lengths of SOURCE$ and TARGET$ increase. There is also accelerated handling for
+' when TARGET$ is a single character. This results in very fast results even on long strings.
 
    dim targetSize% as integer
    dim sourceSize% as integer
-   dim idx% as integer
+   dim idx%, ret%, t%  as integer
+	dim tmp$ as string
 
-   targetSize% = len(Target$)			' get length of TARGET$
-   sourceSize% = len(Source$)			' get length of SOURCE$
-
-   if sourceSize% = 0 then				' Trap for zero-length SOURCE$ string.
-      return 0								' Return a zero (no-match) if true
+   targetSize% = __builtin_strlen(Target$)	' get length of TARGET$
+   sourceSize% = __builtin_strlen(Source$)	' get length of SOURCE$
+	
+	
+   if (sourceSize% = 0) then			' trap for zero-length SOURCE$ string.
+      return 0								' return a zero (no-match) if true
    end if
 
-   if targetSize% = 0 then				' Trap for zero-length TARGET$ string. 
-      return 0								' Return a zero (no-match) if true
+   if (targetSize% = 0) then			' trap for zero-length TARGET$ string. 
+      return 0								' return a zero (no-match) if true
    end if
 
-   if Offset% > sourceSize% then		' Trap for an OFFSET% that exceeds the length of the Source. 
-      return 0								' Return a zero (no-match) if true
+   if (Offset% > sourceSize%) then	' trap for an OFFSET% that exceeds the length of the Source. 
+      return 0								' return a zero (no-match) if true
    end if
 
-   if Offset% < 1 then					' Trap & correction for a missing or negative Offset% 
-      Offset% = 1							' Fix it quietly and continue without error
+   if (Offset% < 1) then				' trap & correction for a missing or negative Offset% 
+      Offset% = 1							' rix it quietly and continue without error
    end if
 
-   for idx% = Offset% to sourceSize%
-      if Mid$(Source$, idx%, targetSize%) = Target$ then 
-			return idx%  
-		end if
-   next idx%
+	t% = (target$(0))
 
-   return 0									' If here then no match was found. return zero	
+	if (targetSize% = 1) then									' trap and shortcut for single-character target
+		return __ScanForChar(source$, t%, offset%, 0)	' calc offset using SCANFOR and return it (fast!) 	
+	end if
 
+	idx% = offset%
+	do
+		ret% = __ScanForChar(source$, t%, idx%, 0)		' find offset of the FIRST char of TARGET$
+		if ret% then												' if the offset != 0 then
+      	tmp$ = Mid$(Source$, ret%, targetSize%)		' use the offset to return a candidate string of TARGETSIZE length 
+      	if tmp$ = target$ then								' is the returned string = TARGET$?
+      		return ret%											' return the offset
+      	else
+      		idx% = ret% + targetSize%						' only the first char matched. Set scan pointer to next possible offset
+      	end if
+      else
+      	return 0													' no match was found. return zero
+      end if 			
+	loop 
+	
 END FUNCTION
 '
 '=================================================================================================================================
 '
 FUNCTION InstrRev(Offset% as integer, Source$ as string, Target$ as string) as integer
 '
-'	Purpose:		Returns the position of the LAST occurance of Target$ in Source$. The search begins at the Offset% character.
+'	Purpose:		Returns the position of the first occurance of Target$ in Source$. The search begins at the Offset% character.
 '					If the Target$ isn't found in Source$, the function returns zero.
 '	Errors:		None known
-'	Author:		JRoark 11Sep2019
-'	Requires:	MID$()
+'	Author:		JRoark 19Jan2021
+'	Requires:	MID$(), SCANFOR()
 '	Notes:		None	
 '	RefDoc:		N/A		
-'	Speed:		Average	
+'	Speed:		Fast	
+
+' This is a recode of INSTRREV() designed for better speed. It employs a "pre-scan" of the SOURCE$ in order to
+' determine the offset of the first character of TARGET$. If the first char of TARGET$ isn't found, then logically
+' there is no need to go any further and the operation aborts. If the first char of TARGET$ *is* found in 
+' SOURCE$, then that offset is passed to MID$() to determine if the *rest* of the TARGET$ can be matched.
+' This strategy is always faster than the earlier version unless the TARGET$ is located at offset 1, in which
+' case it is slightly slower.  For all other cases (offset >= 2) it is progressively faster.  It becomes MUCH 
+' faster (10x to 50x) as the lengths of SOURCE$ and TARGET$ increase. There is also accelerated handling for
+' when TARGET$ is a single character. This results in very fast results even on long strings.
 
    dim targetSize% as integer
    dim sourceSize% as integer
-   dim idx% as integer
+   dim idx%, ret%, t%  as integer
+	dim tmp$ as string
 
    targetSize% = __builtin_strlen(Target$)	' get length of TARGET$
    sourceSize% = __builtin_strlen(Source$)	' get length of SOURCE$
-
-   if sourceSize% = 0 then				' Trap for zero-length SOURCE$ string.
-      return 0								' Return a zero (no-match) if true
+	
+	
+   if (sourceSize% = 0) then			' trap for zero-length SOURCE$ string.
+       return 0							' return a zero (no-match) if true
    end if
 
-   if targetSize% = 0 then				' Trap for zero-length TARGET$ string. 
-      return 0								' Return a zero (no-match) if true
+   if (targetSize% = 0) then			' trap for zero-length TARGET$ string. 
+      return 0								' return a zero (no-match) if true
    end if
 
-   if Offset% < 1 then					' Trap & correction for a missing or negative Offset% 
-      Offset% = 1							' Fix it quietly and continue without error
+   if (Offset% > sourceSize%) then	' trap for an OFFSET% that exceeds the length of the Source. 
+      Offset% = sourceSize%			' fix it quietly and continue without error
    end if
 
-   if Offset% > sourceSize% then		' Trap for an OFFSET% that exceeds the length of the Source. 
-      return 0								' Return a zero (no-match) if true
+   if (Offset% < 1) then				' trap & correction for a missing, zero, or negative Offset% 
+      Offset% = 1							' fix it quietly and continue without error
    end if
 
-   for idx% =  sourceSize% to Offset% step -1
-      if mid$(Source$, idx%, targetSize%) = Target$ then
-         return idx%		'match found. return position of first char of match
+	t% = target$(0)						' extract first character from possibly multi-char TARGET$ 
+
+	if (targetSize% = 1) then									' trap and shortcut for single-character target
+		return __ScanForChar(source$, t%, Offset%, 1)	' calc offset using SCANFOR and return it (fast!)
+	end if
+
+	idx% = targetSize%-1										' set position offset in SOURCE$ to start the matching process
+
+	do
+		ret% = __ScanForChar(source$, t%, idx%, 1)	' find offset of the FIRST char of TARGET$
+		if ret% then											' if the offset != 0 then
+      	tmp$ = Mid$(Source$, ret%, targetSize%)	' use the offset to return a candidate string of TARGETSIZE length 
+      	if tmp$ = target$ then							' is the returned string = TARGET$?
+      		return ret%										' return the offset
+      	else
+      		idx% = ret% - targetSize%					' only the first char matched. Set scan pointer to next possible offset
+      	end if
+      else
+      	return 0												' no match was ever found. return zero
+      end if 			
+	loop 
+	
+END FUNCTION
+'
+'=================================================================================================================================
+'
+FUNCTION __ScanForChar(x as string, s as ubyte, o = 1 as uinteger, d = 0 as integer) as integer
+'
+'	Synopsis:	Scans for and returns the position of S in X. S must be a single character. 
+'					Optional argument O specifies an offset to start scanning from.
+'						- Default (if d=0/"forward") is leftmost char in X
+'						- Default (if d!=0/"reverse") is rightmost char in X
+'					Optional argument D specifies the scanning direction: 
+'						0=left to right ("normal"), 
+'						!0=right to left ("backwards")
+'						- Default is forwards
+'	Issues:   	None known
+'	Author:   	JRoark 19Jan2021
+'	Requires: 	Nothing
+'	Notes:		None
+'	RefDoc:		N/A
+'	Speed:		Weapons grade.	
+
+	dim i, m as uinteger					' i=loop cntr, m=len of input string, y=pre-calc'd offset value, z=pointer offset
+  	
+	m = __builtin_strlen(x)				' get length of input string
+		
+	' None of this input conditioning should really be needed since
+	' the calling functions should already have vetted all input params
+	' but we'll leave it in for now  
+	
+	if (m = 0) then						' trap for zero-length input string
+		return 0								' return zero
+	end if
+
+	if (s = 0) then						' trap for zero target string
+		return 0								' return zero
+	end if
+
+	if (o < 1) then						' trap/fix for zero/negative offset
+		if (d = 0) then					' fwd direction
+			o = 1								' fix it. set o to first char and continue without error
+		else
+			' rev direction
+			return 0							' return zero
 		end if
-   next idx%
+	end if
 
-   return 0									' If here then no match was found. return zero	
+	if (o > m) then						' trap for offset past end of input string
+		if (d = 0) then					' fwd direction	
+			return 0							' return zero
+		else
+			' rev direction
+			o = m								' fix it quietly and continue without error
+		end if
+	end if
+	
+' Do the scan:
+	
+	o = o - 1								' adjust for zero-based index
+	
+	if (d=0) then
+		' do a FORWARD scan
+		for i = o to (m-1)				' step through the input string FORWARD char-by-char
+			if (x(i)=s) then				' found a match?
+				return i+1					' Yes: return the "human-based" (ordinal) position of the match
+			end if
+		next i								' next character
+	else
+		' do a REVERSE scan
+		for i = o to 0 step -1			' step through the input string BACKWARDS char-by-char
+			if (x(i)=s) then				' found a match?
+				return i+1					' Yes: return the "human-based" (ordinal) position of the match
+			end if
+		next i								' next character
+	end if
 
+	return 0									' if here then the target character was not found. Return 0
+	
 END FUNCTION
 '
 '=================================================================================================================================
@@ -326,36 +476,39 @@ FUNCTION LCase$(x as string) as string
 '	Synopsis:	Turns any upper case characters in X to lower case. 
 '					Any non upper case characters are passed thru unaffected.
 '	Issues:		None known
-'	Author:		JRoark 09Jan2021
+'	Author:		JRoark 28Jan2021
 '	Requires:	Nothing
 '	Notes:		None
 '	RefDoc:		N/A
 '	Speed:		Fast	
 
 	dim p as ubyte pointer				' setup p as a pointer to ubytes
-  	dim i, m as integer					' i=loop cntr, m=len of input string
+  	dim i, m, ch as integer				' i=loop cntr, m=len of input string
 	
   	m = __builtin_strlen(x)				' get the length of the input string
   	
   	if (m=0) then							' trap for zero length input string
-  		return 0								' return null string					
+  		return ""							' return null string					
 	end if
 	
   	p = new ubyte(m+1)					' attempt to set pointer P to a new array of ubytes 
 
 	if p then  								' check if memory alloc was successful
- 		for i = 0 to m-1					' iterate through the input string
- 			if (x(i) > 64) andalso (x(i) < 91) then	' check if its an upper case char
-				p(i) = x(i) + 32			' Yes. its upper case. change it to lower case
+		i = -1								' preset offset to -1
+		do										' iterate through the input string
+			i += 1							' add one to offset
+			ch = x(i)						' extract a single character
+ 			if (ch > 64) andalso (ch < 91) then	' check if its an upper case char
+				p(i) = ch + 32				' Yes. its upper case. change it to lower case
 			else
-				p(i) = x(i)					' No. its either already lower case or it isn't a letter. so just copy it
+				p(i) = ch					' No. its either already lower case or it isn't a letter. so just copy it
 			end if
-		next i
+		loop until i = m-1				' keep going until we reach the end of the string
 		p(m) = 0								' set end-of-string terminator char
 		return p								' return the new string
 	end if
 	
-	return 0									' if here then memory alloc failed. return null string
+	return p									' if here then memory alloc failed. return nil pointer
 	
 END FUNCTION
 '
@@ -407,7 +560,7 @@ FUNCTION LPad$(x as string, width as ulong, pchar as string) as string
 		return p								' c'ya..
 	end if
 	
-	return 0									' if here then memory alloc failed. Return null string		
+	return p									' if here then memory alloc failed. return nil pointer		
   
 END FUNCTION
 '
@@ -427,7 +580,7 @@ FUNCTION LTrim$(x as string) as string
   	dim i, m as integer					' i=loop cntr, m=len of input string
 	
   	m = __builtin_strlen(x)				' get the length of the input string
-  	if (m=0) return 0						' trap for zero-length input string
+  	if (m=0) return ""					' trap for zero-length input string
   	
   	for i = 0 to m-1 						' iterate through the input string
   		if (x(i) <> 32) then				' found a non-space, so copy everything to the right of it and quit
@@ -437,7 +590,7 @@ FUNCTION LTrim$(x as string) as string
   				p(m-i) = 0					' terminate the string
 				return p						' return the string
 			else
-				return 						' if here then memory alloc failed. return null
+				return p						' if here then memory alloc failed. return nil pointer
 			end if
 		end if
 	next i
@@ -456,7 +609,7 @@ FUNCTION RemoveChar$(x as string, s as string) as string
 '	Errors:		None known
 '	Author:		JRoark 16Jan2020
 '	Version:		2.0 of 16Jan2021
-'	Requires:	COUNT()
+'	Requires:	COUNTSTR()
 '	RefDoc:		N/A		
 '	RelSpeed:	Fast	
 
@@ -467,7 +620,7 @@ FUNCTION RemoveChar$(x as string, s as string) as string
   	m = __builtin_strlen(x)				' get the length of the input string
   	
   	if (m = 0) then 						' trap for zero length input string
-  		return 0								' return a null string
+  		return ""							' return a null string
 	end if
 
 	if __builtin_strlen(s) = 0 then	' trap for zero-length S argument
@@ -479,8 +632,9 @@ FUNCTION RemoveChar$(x as string, s as string) as string
 	
   	p = new ubyte(m-z+1)					' attempt to set pointer P to a new array of ubytes 
 
-	removeC = s(0)
+	removeC = s(0)							' extract char
 	z = 0  									' zero Z for reuse below
+	
   	if p then								' check if memory alloc was successful
   		for i = 0 to m-1					' iterate through the input string
   			if (x(i) = removeC) then		' if the byte is the same as our target byte...
@@ -494,7 +648,7 @@ FUNCTION RemoveChar$(x as string, s as string) as string
 	  	return p								' return new string
 	end if
 	
-	return 0									' if here, memory alloc failed. return a null string
+	return p									' if here, memory alloc failed. return nil pointer
 	
 END FUNCTION
 '
@@ -519,7 +673,7 @@ FUNCTION ReplaceChar$(x as string, s as string, r as string) as string
   	m = __builtin_strlen(x)				' get the length of the input string
   	
   	if (m = 0) then 				' trap for zero length input string
-  		return 0				' return a null string
+  		return ""					' return a null string
 	end if
 
 	if __builtin_strlen(s) = 0 then	' trap for zero-length S argument
@@ -534,20 +688,20 @@ FUNCTION ReplaceChar$(x as string, s as string, r as string) as string
 
 	origC = s(0)
 	replaceC = r(0)
-	
-  	if p then					' check if memory alloc was successful
-  		for i = 0 to m-1			' iterate through the input string
-  			if (x(i) = origC) then		' is this our target char?
+		
+  	if p then							' check if memory alloc was successful
+  		for i = 0 to m-1				' iterate through the input string
+  			if (x(i) = origC) then	' is this our target char?
 				p(i) = replaceC		' yes. change to new char 
 			else
-				p(i) = x(i)		' no. dont change. just copy it to output string
+				p(i) = x(i)				' no. dont change. just copy it to output string
 			end if
 		next i
-		p(m) = 0				' append string terminator char
-	  	return p				' return new string
+		p(m) = 0							' append string terminator char
+	  	return p							' return new string
 	end if
 	
-	return 0					' if here, memory alloc failed. return a null string
+	return p								' if here, memory alloc failed. return nil pointer
 	
 END FUNCTION
 '
@@ -567,7 +721,7 @@ FUNCTION Reverse$(x as string) as string
 	dim i, m, z as uinteger				' i=loop cntr, m=len of input string, z=offset value
   	
 	m = __builtin_strlen(x)				' get length of input string
-	if (m=0) return 0						' if zero lenght, return a null string
+	if (m=0) return ""					' if zero lenght, return a null string
 
 	p = new ubyte(m+1)					' attempt to set pointer P to a new array of ubytes 
 	z = m										' copy M to Z (Z=pointer offset)
@@ -581,7 +735,7 @@ FUNCTION Reverse$(x as string) as string
 		return p								' return the result
 	end if
 	
-	return 0									' if here then memory alloc failed. Return null string
+	return p									' if here then memory alloc failed. return nil pointer
 	
 END FUNCTION
 '
@@ -630,7 +784,7 @@ FUNCTION RPad$(x as string, width as long, pchar as string) as string
 		return p								' return the new string
 	end if	
 		
-	return 0									' if here then memory alloc failed. return null string
+	return p									' if here then memory alloc failed. return nil pointer
   
 END FUNCTION
 '
@@ -652,7 +806,7 @@ FUNCTION RTrim$(x as string) as string
   	m = __builtin_strlen(x)				' get the length of the input string
   	
   	if (m=0) then							' trap for zero-length input string
-  		return 0								' return a null string
+  		return ""							' return a null string
 	end if
 	
   	for i = m-1 to 0 step -1			' iterate backwards through the input string
@@ -663,12 +817,12 @@ FUNCTION RTrim$(x as string) as string
   				p(i+1) = 0					' terminate the string
 				return p						' return the new string
 			else
-				return 0						' memory alloc failed. return null string
+				return p						' memory alloc failed. return nil pointer
 			end if
 		end if
 	next i
 	
-	return 0									' if here, the input string was all spaces. return a null string
+	return ""								' if here, the input string was all spaces. return a null string
   
 END FUNCTION
 '
@@ -707,11 +861,11 @@ FUNCTION String$(cnt as integer, x = " " as string) as string
 	m = __builtin_strlen(x)				' get length of input string
 	
 	if (m = 0) then						' trap for a zero-length input string
-		return 0								' return null string
+		return ""							' return null string
 	end if
 
 	if (cnt <= 0) then					' trap for zero or negative CNT
-		return 0								' return null string
+		return ""							' return null string
 	end if
 	
 	p = new ubyte(cnt+1)					' attempt to set pointer P to a new array of ubytes 
@@ -722,7 +876,7 @@ FUNCTION String$(cnt as integer, x = " " as string) as string
 		return p								' return the new string
 	end if
 	
-	return 0									' if here, the memory alloc was unsuccessful. return null string
+	return p									' if here, the memory alloc was unsuccessful. return nil pointer
 
 END FUNCTION
 '
@@ -741,51 +895,55 @@ FUNCTION STRInt$(number as long) as string
 '	RefDoc:		N/A
 '	Speed:		Fast	
 
-	dim p as ubyte pointer				' setup p as a pointer to ubytes		
-	dim divisor, i as long				' i=loop cntr							' 
-	dim temp as ulong						' running residual
+	dim p as ubyte pointer					' setup p as a pointer to ubytes		
+	dim divisor, i as long					' i=loop cntr							' 
+	dim temp as ulong							' running residual
 
-	p = new ubyte(12)						' set p to a new array of ubytes (the output string, max 12 chars)
-	i = 0										' zero the byte pointer
+	p = new ubyte(12)							' set p to a new array of ubytes (the output string, max 12 chars)
 
-	if (number < 0) then					' is number negative?
-		p(i) = 45							' add-in a "-" as first character (ascii 45)
-		i += 1								' increment the byte pointer for the next use
-		if (number = &h80000000) then
-			p(i) = asc("2")						' add-in a "2" as next char (ascii 50)
-			i += 1							' increment the byte pointer for the next use
-			number += 2_000_000_000		' add 2 million to number
+	if p then									' check for successful memory alloc
+		i = 0										' zero the byte pointer
+
+		if (number < 0) then					' is number negative?
+			p(i) = 45							' add-in a "-" as first character (ascii 45)
+			i += 1								' increment the byte pointer for the next use
+			if (number = &h80000000) then
+				p(i) = asc("2")						' add-in a "2" as next char (ascii 50)
+				i += 1							' increment the byte pointer for the next use
+				number += 2_000_000_000		' add 2 million to number
+			end if
+			number = -number					' negate number
+		else if (number = 0) then			' is number a zero?
+			p(i) = asc("0")							' yes. force an ASCII zero character into byte string...
+			i += 1								' increment the byte pointer for the next use 
+			p(i) = 0								' add a zero to indicate end-of-string
+			return p								' return the string to the caller
 		end if
-		number = -number					' negate number
-	else if (number = 0) then			' is number a zero?
-		p(i) = asc("0")							' yes. force an ASCII zero character into byte string...
-		i += 1								' increment the byte pointer for the next use 
-		p(i) = 0								' add a zero to indicate end-of-string
-		return p								' return the string to the caller
+
+		divisor = 1_000_000_000				' force divisor to 1 million 
+		while (divisor > number)			' while the divisor is bigger than number...
+			divisor /= 10						' divide the divisor by 10
+		end while
+
+		while (divisor > 0)					' while divisor > 0
+			temp = number / divisor			' divide number by divisor and save to temp
+			p(i) = temp + asc("0")					' convert tmp to ASCII (add 48) and save to output byte string
+			i += 1								' increment the byte pointer for the next use
+			number -= (temp * divisor)		' subtract temp*divisor from number
+			divisor /= 10						' divide divisor by 10
+		end while
+
+		p(i) = 0									' add a zero to indicate end-of-string
+		return p									' return the string to the caller
+	else
+		return p									' if here, the memory alloc was unsuccessful. return nil pointer 
 	end if
-
-	divisor = 1_000_000_000				' force divisor to 1 million 
-	while (divisor > number)			' while the divisor is bigger than number...
-		divisor /= 10						' divide the divisor by 10
-	end while
-
-	while (divisor > 0)					' while divisor > 0
-		temp = number / divisor			' divide number by divisor and save to temp
-		p(i) = temp + asc("0")					' convert tmp to ASCII (add 48) and save to output byte string
-		i += 1								' increment the byte pointer for the next use
-		number -= (temp * divisor)		' subtract temp*divisor from number
-		divisor /= 10						' divide divisor by 10
-	end while
-
-	p(i) = 0									' add a zero to indicate end-of-string
 	
-	return p									' return the string to the caller
-
 END FUNCTION
 '
 '=================================================================================================================================
 '
-FUNCTION TRIM$(x as string) as string
+FUNCTION Trim$(x as string) as string
 '
 ' 	Purpose:		Removes leading and trailing spaces from X
 '	Issues:   	None known
@@ -798,6 +956,7 @@ FUNCTION TRIM$(x as string) as string
 	return LTrim$(RTrim$(x))
 
 END FUNCTION
+
 '
 '=================================================================================================================================
 '
@@ -813,201 +972,278 @@ FUNCTION UCase$(x as string) as string
 '	Speed:		Fast
 
 	dim p as ubyte pointer				' setup P as a pointer to ubytes
-  	dim i, m as integer					' I=loop cntr, M=len of input string						
+  	dim i, m, ch as integer				' I=loop cntr, M=len of input string						
 	
   	m = __builtin_strlen(x)				' get the length of the input string
   	
   	if (m = 0) then 						' trap for zero length input string
-  		return 0								' return a null string
+  		return ""							' return a null string
 	end if
 	
   	p = new ubyte(m+1)					' attempt to set pointer P to a new array of ubytes
   	
   	if p then								' check if memory alloc was successful
   		for i = 0 to m-1					' iterate through the input string
-  			if (x(i) > 96) andalso (x(i) < 123) then		' test for a lower-case character
-				p(i) = x(i) - 32			' Found one. change to upper case
+  			ch = x(i)						' extract a character to test				
+  			if (ch > 96) andalso (ch < 123) then		' test for a lower-case character
+				p(i) = ch - 32				' Found lower case char. change to upper case
 			else
-				p(i) = x(i)					' Not lower case, so copy it without changing case
+				p(i) = ch					' Not a lower case, so copy it without changing case
 			end if
 		next i
 		p(m) = 0								' append string terminator char
 	  	return p								' return new string
 	end if
 	
-	return 0									' if here, memory alloc failed. return a null string
+	return p									' if here, memory alloc failed. return nil pointer
 	
 END FUNCTION
-
 '
 '=================================================================================================================================
 '=================================================================================================================================
 '=================================================================================================================================
 ' 
 ' The original, unmodified string handling code by ERSmith follows.
-' This code is a cut/copy from the original STRINGS.BAS that was
+' This code is a reformatted cut/copy from the original STRINGS.BAS that was
 ' included in FlexBASIC V5.0.7 dated Jan 14, 2021 
+' No code changes have been made, only reformating and addl commentary was added
 '
 '=================================================================================================================================
 '=================================================================================================================================
 '=================================================================================================================================
-
-' retrieve the leftmost n characters from a string
-function left$(x as string, n as integer) as string
-  dim p as ubyte pointer
-  dim i, m as integer
-
-  if (n <= 0) return ""
-  m = __builtin_strlen(x)
-  if (m <= n) return x
-  p = new ubyte(n+1)
-  if (p) then
-    bytemove(p, x, n)
-    p(n) = 0
-  end if
-  return p
-end function
-
-' retrieve the rightmost n characters from a string
-function right$(x as string, n as integer) as string
-  dim p as ubyte pointer
-  dim i, m as integer
-
-  if (n <= 0) return ""
-  m = __builtin_strlen(x)
-  if (m <= n) return x
-  p = new ubyte(n+1)
-  if (p) then
-    i = m - n
-    bytemove(p, @x(i), n+1)
-  end if
-  return p
-end function
-
-' retrieve the middle substring starting at i and j characters long
-function mid$(x as string, i=1, j=9999999) as string
-  dim p as ubyte pointer
-  dim m, n
-  if (j <= 0) return ""
-  i = i-1 ' convert from 1 based to 0 based
-  m = __builtin_strlen(x)
-  if (m < i) return ""
-
-  ' calculate number of chars we will copy
-  n = (m-i)
-  if (n > j) then
-    n = j
-  endif
-  p = new ubyte(n+1)
-  if p then
-    bytemove(p, @x(i), n)
-    p(n) = 0
-  end if
-  return p
-end function
-
-' convert an integer to a single character string
-function chr$(x as integer) as string
-  dim p as ubyte pointer
-  p = new ubyte(2)
-  if (p) then
-    p(0) = x
-    p(1) = 0
-  end if
-  return p
-end function
-
-class __strs_cl
-  dim p as ubyte pointer
-  dim i as integer
-  function pfunc(c as integer) as integer
-    if (i < 16) then
-      p(i) = c
-      i = i+1
-      return 1
-    else
-      return -1
-    end if
-  end function
-end class
-
-' format a floating point number as a string
-function str$(x as single) as string
-  dim p as ubyte pointer
-  dim i as integer
-  dim g as __strs_cl pointer
-  p = new ubyte(15)
-  i = 0
-  if p then
-    g = __builtin_alloca(8)
-    g(0).p = p
-    g(0).i = i
-    _fmtfloat(@g(0).pfunc, 0, x, ASC("g"))
-  end if
-  '' FIXME: should we check here that i is sensible?
-  return p
-end function
-
 '
-' convert a number val in base B to a string with n digits
-' if n == 0 then we just use enough digits to fit
+FUNCTION Left$(x as string, n as integer) as string
+' retrieve the leftmost N characters from string X
+
+	dim p as ubyte pointer
+	dim i, m as integer
+
+	if (n <= 0) then
+		return ""
+	end if
+	
+	m = __builtin_strlen(x)
+	
+	if (m <= n) then
+		return x
+	end if
+	
+	p = new ubyte(n+1)
+	
+	if (p) then
+		bytemove(p, x, n)
+		p(n) = 0
+	end if
+	
+	return p
+	
+END FUNCTION
 '
-function number$(val as uinteger, n as uinteger, B as uinteger) as string
-  dim s as ubyte ptr
-  dim d as uinteger
-  dim tmp as uinteger
-  dim lasttmp as uinteger
+'=================================================================================================================================
+'
+FUNCTION Mid$(x as string, i=1, j=9999999) as string
+' retrieve the middle substring starting at I and J characters long
+
+	dim p as ubyte pointer
+	dim m, n
+	
+	if (j <= 0) then
+		return ""
+	end if
+	
+	i = i-1 								' convert from 1 based to 0 based
+	m = __builtin_strlen(x)
+	if (m < i) then
+		return ""
+	end if
+
+	' calculate number of chars we will copy
+	n = (m-i)
+	if (n > j) then
+		n = j
+	endif
+	
+	p = new ubyte(n+1)
+	if p then
+		bytemove(p, @x(i), n)
+		p(n) = 0
+	end if
+	
+	return p
+	
+END FUNCTION
+'
+'=================================================================================================================================
+'
+
+FUNCTION Right$(x as string, n as integer) as string
+' retrieve the rightmost N characters from string X
+
+	dim p as ubyte pointer
+	dim i, m as integer
+
+	if (n <= 0) then
+		return ""
+	end if
+	
+	m = __builtin_strlen(x)
+	if (m <= n) then
+		return x
+	end if
+	
+	p = new ubyte(n+1)
+	if (p) then
+		i = m - n
+		bytemove(p, @x(i), n+1)
+	end if
+	
+	return p
+	
+END FUNCTION
+'
+'=================================================================================================================================
+'
+FUNCTION Chr$(x as integer) as string
+' convert an integer X into a single character string
+
+	dim p as ubyte pointer
+	
+	p = new ubyte(2)
+	if (p) then
+		p(0) = x
+		p(1) = 0
+	end if
+	
+	return p
+	
+END FUNCTION
+'
+'=================================================================================================================================
+'
+CLASS __strs_cl
+
+	dim p as ubyte pointer
+	dim i as integer
+	
+	FUNCTION pfunc(c as integer) as integer
+		if (i < 16) then
+			p(i) = c
+			i = i+1
+			return 1
+		else
+			return -1
+		end if
+  END FUNCTION
   
-  if n = 0 then
-     ' figure out how many digits we need
-     n = 1
-     tmp = B
-     lasttmp = 1
-     ' we have to watch out for overflow in very large
-     ' numbers; if tmp wraps around (so tmp < last tmp)
-     ' then stop
-     while tmp <= val and lasttmp < tmp
-       lasttmp = tmp
-       tmp = tmp * B
-       n = n + 1
-     end while
-  end if
-  ' for 32 bit numbers we'll never need more than 32 digits
-  if n > 32 then
-    n = 32
-  endif
-  s = new ubyte(n+1)
-  s[n] = 0
-  while n > 0
-    n -= 1
-    d = val mod B
-    val = val / B
-    if d < 10 then
-      d = d + ASC("0")
-    else
-      d = (d - 10) + ASC("A")
-    endif
-    s[n] = d
-  end while
-  return s
-end function
+END CLASS
+'
+'=================================================================================================================================
+'
+FUNCTION str$(x as single) as string
+' format floating point number X as a string
 
-function hex$(v as uinteger, n=0 as uinteger)
+	dim p as ubyte pointer
+	dim i as integer
+	dim g as __strs_cl pointer
+  
+	p = new ubyte(15)
+	i = 0
+  
+	if p then
+		g = __builtin_alloca(8)
+		g(0).p = p
+		g(0).i = i
+		_fmtfloat(@g(0).pfunc, 0, x, ASC("g"))
+	end if
+	'' FIXME: should we check here that i is sensible?
+	
+  return p
+  
+END FUNCTION
+'
+'=================================================================================================================================
+'
+FUNCTION Number$(val as uinteger, n as uinteger, B as uinteger) as string
+' convert a number VAL in base B to a string with N digits
+' if N == 0 then we just use enough digits to fit
+'
+	dim s as ubyte ptr
+	dim d as uinteger
+	dim tmp as uinteger
+	dim lasttmp as uinteger
+  
+	if n = 0 then
+		' figure out how many digits we need
+		n = 1
+		tmp = B
+		lasttmp = 1
+		' we have to watch out for overflow in very large
+		' numbers; if tmp wraps around (so tmp < last tmp)
+		' then stop
+		while tmp <= val and lasttmp < tmp
+			lasttmp = tmp
+			tmp = tmp * B
+			n = n + 1
+		end while
+	end if
+	
+	' for 32 bit numbers we'll never need more than 32 digits
+	if n > 32 then
+		n = 32
+	end if
+	s = new ubyte(n+1)
+	s[n] = 0
+	while n > 0
+		n -= 1
+		d = val mod B
+		val = val / B
+		if d < 10 then
+			d = d + ASC("0")
+		else
+			d = (d - 10) + ASC("A")
+		end if
+		s[n] = d
+	end while
+	
+	return s
+	
+END FUNCTION
+'
+'=================================================================================================================================
+'
+FUNCTION Hex$(v as uinteger, n=0 as uinteger)
+' returns a string containing a hexadecimal representation of V of width N chars
+
   return number$(v, n, 16)
-end function
+  
+END FUNCTION
+'
+'=================================================================================================================================
+'
+FUNCTION Bin$(v as uinteger, n=0 as uinteger)
+' returns a string containing a binary representation of V of width N chars
 
-function bin$(v as uinteger, n=0 as uinteger)
   return number$(v, n, 2)
-end function
+  
+END FUNCTION
+'
+'=================================================================================================================================
+'
+FUNCTION Decuns$(v as uinteger, n=0 as uinteger)
+' returns a string containing an unsigned decimal representation of V of width N chars
 
-function decuns$(v as uinteger, n=0 as uinteger)
   return number$(v, n, 10)
-end function
+  
+END FUNCTION
+'
+'=================================================================================================================================
+'
+FUNCTION Oct$(v as uinteger, n=0 as uinteger)
+' returns a string containing an octal representation of V of width N chars
 
-function oct$(v as uinteger, n=0 as uinteger)
   return number$(v, n, 8)
-end function
-
+  
+END FUNCTION
 '
 '=================================================================================================================================
 '
@@ -1032,5 +1268,4 @@ end function
 '=================================================================================================================================
 '
 ' (OPEN SOURCE INITIATIVE APPROVED)
-'
 '
