@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2020 Total Spectrum Software Inc.
+ * Copyright 2011-2021 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -29,6 +29,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <math.h>
 #include "common.h"
 #include "preprocess.h"
 #include "version.h"
@@ -550,6 +551,13 @@ DeclareConstants(Module *P, AST **conlist_ptr)
     }
     completed_declarations = AddToList(completed_declarations, conlist);
     *conlist_ptr = completed_declarations;
+
+    /* for the top level module, calculate frequency and declare constants if necessary */
+    if (IsTopLevel(P)) {
+        if (gl_p2) {
+        } else {
+        }
+    }
 }
 
 #if 0
@@ -1733,4 +1741,214 @@ Symbol *AddSymbolPlaced(SymbolTable *table, const char *name, int type, void *va
         sym->def = (void *)def;
     }
     return sym;
+}
+
+int32_t EvalConstSym(Symbol *sym)
+{
+    AST *ast;
+    ast = (AST *)sym->val;
+    return EvalConstExpr(ast);
+}
+
+// find _clkmode and _clkfreq settings for P1
+int
+GetClkFreqP1(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr)
+{
+    // look up in P->objsyms
+    Symbol *clkmodesym = P ? FindSymbol(&P->objsyms, "_clkmode") : NULL;
+    Symbol *sym;
+    AST *ast;
+    int32_t clkmode, clkfreq, xinfreq;
+    int32_t multiplier = 1;
+    uint8_t clkreg;
+    
+    if (!clkmodesym || clkmodesym->kind == SYM_ALIAS) {
+        return 0;  // nothing to do
+    }
+    ast = (AST *)clkmodesym->val;
+    if (clkmodesym->kind != SYM_CONSTANT) {
+        WARNING(ast, "_clkmode is not a constant");
+        return 0;
+    }
+    clkmode = EvalConstExpr(ast);
+    // now we need to figure out the frequency
+    clkfreq = 0;
+    sym = FindSymbol(&P->objsyms, "_clkfreq");
+    if (sym && sym->kind != SYM_WEAK_ALIAS) {
+        if (sym->kind == SYM_CONSTANT) {
+            clkfreq = EvalConstExpr((AST*)sym->val);
+        } else {
+            WARNING((AST*)sym->val, "_clkfreq is not a constant");
+        }
+    }
+    xinfreq = 0;
+    sym = FindSymbol(&P->objsyms, "_xinfreq");
+    if (sym) {
+        if (sym->kind == SYM_CONSTANT) {
+            xinfreq = EvalConstExpr((AST*)sym->val);
+        } else {
+            WARNING((AST*)sym->val, "_xinfreq is not a constant");
+        }
+    }
+    // calculate the multiplier
+    clkreg = 0;
+    if (clkmode & RCFAST) {
+        // nothing to do here
+    } else if (clkmode & RCSLOW) {
+        clkreg |= 0x01;   // CLKSELx
+    } else if (clkmode & (XINPUT)) {
+        clkreg |= (1<<5); // OSCENA
+        clkreg |= 0x02;   // CLKSELx
+    } else {
+        clkreg |= (1<<5); // OSCENA
+        clkreg |= (1<<6); // PLLENA
+        if (clkmode & XTAL1) {
+            clkreg |= (1<<3);
+        } else if (clkmode & XTAL2) {
+            clkreg |= (2<<3);
+        } else {
+            clkreg |= (3<<3);
+        }
+        if (clkmode & PLL1X) {
+            multiplier = 1;
+            clkreg |= 0x3;  // CLKSELx
+        } else if (clkmode & PLL2X) {
+            multiplier = 2;
+            clkreg |= 0x4;  // CLKSELx
+        } else if (clkmode & PLL4X) {
+            multiplier = 4;
+            clkreg |= 0x5;  // CLKSELx
+        } else if (clkmode & PLL8X) {
+            multiplier = 8;
+            clkreg |= 0x6;  // CLKSELx
+        } else if (clkmode & PLL16X) {
+            multiplier = 16;
+            clkreg |= 0x7;  // CLKSELx
+        }
+    }
+    
+    // validate xinfreq and clkfreq
+    if (xinfreq == 0) {
+        if (clkfreq == 0) {
+            ERROR(NULL, "Must set at least one of _XINFREQ or _CLKFREQ");
+            return 0;
+        }
+    } else {
+        int32_t calcfreq = xinfreq * multiplier;
+        if (clkfreq != 0) {
+            if (calcfreq != clkfreq) {
+                ERROR(NULL, "Inconsistent values for _XINFREQ and _CLKFREQ");
+                return 0;
+            }
+        }
+        clkfreq = calcfreq;
+    }
+
+    *clkfreqptr = clkfreq;
+    *clkregptr = clkreg;
+    return 1;
+}
+
+/* calculate frequencies for P2 */
+int
+GetClkFreqP2(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr)
+{
+    // look up in P->objsyms
+    Symbol *clkmodesym = P ? FindSymbol(&P->objsyms, "_clkmode") : NULL;
+    Symbol *clkfreqsym = P ? FindSymbol(&P->objsyms, "_clkfreq") : NULL;
+    Symbol *xtlfreqsym = P ? FindSymbol(&P->objsyms, "_xtlfreq") : NULL;
+    Symbol *xinfreqsym = P ? FindSymbol(&P->objsyms, "_xinfreq") : NULL;
+    Symbol *errfreqsym = P ? FindSymbol(&P->objsyms, "_errfreq") : NULL;
+
+    double clkfreq;
+    double xinfreq = 20000000.0;  // default crystal frequency
+    double errtolerance = 100000.0;
+    uint32_t clkmode = 0;
+    uint32_t zzzz = 11; // 0b10_11
+    uint32_t pppp;
+    double error;
+
+    if (IsSpinLang(P->mainLanguage)) {
+        clkfreq = 20000000.0; // actually we want RCFAST mode
+    } else {
+        clkfreq = 160000000.0;
+    }
+    if (xinfreqsym) {
+        if (xtlfreqsym) {
+            ERROR(NULL, "Only one of _xtlfreq or _xinfreq may be specified");
+            return 0;
+        }
+        clkfreq = xinfreq = (double)EvalConstSym(xinfreqsym);
+        zzzz = 7; // 0b01_11
+    } else if (xtlfreqsym) {
+        clkfreq = xinfreq = (double)EvalConstSym(xtlfreqsym);
+        if (xinfreq >= 16000000.0) {
+            zzzz = 11; // 0b10_11
+        } else {
+            zzzz = 15; // 0b11_11
+        }
+    }
+    if (clkmodesym && clkmodesym->kind == SYM_CONSTANT) {
+        if (xinfreqsym || xtlfreqsym) {
+            ERROR(NULL, "_xinfreq and _xtlfreq are redundant with _clkmode");
+            return 0;
+        }
+        if (!clkfreqsym) {
+            ERROR(NULL, "_clkmode definition requires _clkfreq as well");
+            return 0;
+        }
+        *clkregptr = EvalConstSym(clkmodesym);
+        *clkfreqptr = EvalConstSym(clkfreqsym);
+        return 1;
+    } else {
+        clkmodesym = 0;
+    }
+    if (clkfreqsym && clkfreqsym->kind == SYM_CONSTANT) {
+        clkfreq = (double)EvalConstSym(clkfreqsym);
+    } else {
+        clkfreqsym = 0;
+    }
+    if (errfreqsym) {
+        errtolerance = (double)EvalConstSym(errfreqsym);
+    }
+    
+    // figure out clock mode based on frequency
+    uint32_t divd;
+    double e, post, mult, Fpfd, Fvco, Fout;
+    double result_mult = 0;
+    double result_Fout = 0;
+    uint32_t result_pppp = 0, result_divd = 0;
+    error = 1e9;
+    for (pppp = 0; pppp <= 15; pppp++) {
+        if (pppp == 0) {
+            post = 1.0;
+        } else {
+            post = pppp * 2.0;
+        }
+        for (divd = 64; divd >= 1; --divd) {
+            Fpfd = round(xinfreq / (double)divd);
+            mult = round(clkfreq * post / Fpfd);
+            Fvco = round(Fpfd * mult);
+            Fout = round(Fvco / post);
+            e = fabs(Fout - clkfreq);
+            if ( (e <= error) && (Fpfd >= 250000) && (mult <= 1024) && (Fvco > 99e6) && ((Fvco <= 201e6) || (Fvco <= clkfreq + 1e6)) ) {
+                result_divd = divd;
+                result_mult = mult;
+                result_pppp = (pppp-1) & 15;
+                result_Fout = Fout;
+                error = e;
+            }
+        }
+    }
+    if (error > errtolerance) {
+        ERROR(NULL, "Unable to find clock settings for freq %f Hz with input freq %f Hz", clkfreq, xinfreq);
+        return 0;
+    }
+    uint32_t D, M;
+    D = result_divd - 1;
+    M = ((uint32_t)result_mult) - 1;
+    clkmode = zzzz | (result_pppp<<4) | (M<<8) | (D<<18) | (1<<24);
+    *clkfreqptr = (uint32_t)round(result_Fout);
+    *clkregptr = clkmode;
+    return 1;
 }
