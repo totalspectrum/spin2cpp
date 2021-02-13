@@ -682,7 +682,7 @@ Other debug directives are ignored, with a warning.
 
 ### ASMCLK instruction
 
-The `ASMCLK` pseudo-instruction is not supported in FlexProp at this time.
+The `ASMCLK` pseudo-instruction is supported as a preprocessor macro in FlexSpin, so only the spellings `ASMCLK` and `asmclk` will work (e.g. `AsmClk` will not work).
 
 ### REGLOAD/REGEXEC
 
