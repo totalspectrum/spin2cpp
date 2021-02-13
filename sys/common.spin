@@ -319,6 +319,13 @@ pri file "libsys/readdata.spin" _basic_get_integer(src = "") : r=long, ptr
 '' read a float from a string
 pri file "libsys/readdata.spin" _basic_get_float(src = "") : r=float, ptr
 
+'' pause for m seconds
+pri _waitsec(m=long) | freq
+  freq := __clkfreq_var
+  while m > 0
+    _waitx(freq)
+    m--
+    
 '' pause for m milliseconds
 pri _waitms(m=long) | freq
   freq := __clkfreq_var

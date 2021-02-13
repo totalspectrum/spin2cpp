@@ -291,6 +291,7 @@ oct$
 outa
 outb
 pausems
+pausesec
 pauseus
 pi
 rdpin
@@ -2274,14 +2275,19 @@ Also note that before using a pin as output its direction should be set as outpu
 
 ### PAUSEMS
 
-
 A built-in subroutine to pause for a number of milliseconds. For example, to pause for 2 seconds, do
 ```
   pausems 2000
 ```
 
-### PAUSEUS
+### PAUSESEC
 
+A built-in subroutine to pause for a number of seconds. For example, to pause for 60 seconds, do
+```
+  pausesec 60
+```
+
+### PAUSEUS
 
 A built-in subroutine to pause for a number of microseconds. For example, to pause for 1/2 millisecond, do
 ```

@@ -218,6 +218,7 @@ Aliases basicalias[] = {
     { "len", "__builtin_strlen" },
     { "mount", "_mount" },
     { "pausems", "_waitms" },
+    { "pausesec", "_waitsec" },
     { "pauseus", "_waitus" },
     { "pinlo", "_drvl" },
     { "pinhi", "_drvh" },
