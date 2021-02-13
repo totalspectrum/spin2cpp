@@ -123,6 +123,11 @@ Aliases spinalias[] = {
     { NULL, NULL },
 };
 Aliases spin2alias[] = {
+    /* special constants */
+    { "clkmode_", "__clkmode_con" },
+    { "clkfreq_", "__clkfreq_con" },
+    
+    /* other symbols */
     { "cnt", "_getcnt" },
     { "cogchk", "_cogchk" },
 
@@ -190,6 +195,7 @@ Aliases spin2alias[] = {
     { "wrpin_", "__builtin_propeller_wrpin" },
     { "wxpin_", "__builtin_propeller_wxpin" },
     { "wypin_", "__builtin_propeller_wypin" },
+
     { NULL, NULL },
 };
 Aliases basicalias[] = {
@@ -260,6 +266,10 @@ Aliases calias[] = {
     { "mount", "_mount" },
     { NULL, NULL },
 };
+
+// forward declarations
+static int CalcClkFreqP1(Module *P);
+static int CalcClkFreqP2(Module *P);
 
 //
 // create aliases appropriate to the language
@@ -555,7 +565,9 @@ DeclareConstants(Module *P, AST **conlist_ptr)
     /* for the top level module, calculate frequency and declare constants if necessary */
     if (IsTopLevel(P)) {
         if (gl_p2) {
+            CalcClkFreqP2(P);
         } else {
+            CalcClkFreqP1(P);
         }
     }
 }
@@ -1751,8 +1763,8 @@ int32_t EvalConstSym(Symbol *sym)
 }
 
 // find _clkmode and _clkfreq settings for P1
-int
-GetClkFreqP1(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr)
+static int
+CalcClkFreqP1(Module *P)
 {
     // look up in P->objsyms
     Symbol *clkmodesym = P ? FindSymbol(&P->objsyms, "_clkmode") : NULL;
@@ -1762,7 +1774,7 @@ GetClkFreqP1(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr)
     int32_t multiplier = 1;
     uint8_t clkreg;
     
-    if (!clkmodesym || clkmodesym->kind == SYM_ALIAS) {
+    if (!clkmodesym || clkmodesym->kind == SYM_ALIAS || clkmodesym->kind == SYM_WEAK_ALIAS) {
         return 0;  // nothing to do
     }
     ast = (AST *)clkmodesym->val;
@@ -1844,14 +1856,15 @@ GetClkFreqP1(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr)
         clkfreq = calcfreq;
     }
 
-    *clkfreqptr = clkfreq;
-    *clkregptr = clkreg;
+    // define built in constants for these
+    AddSymbol(&P->objsyms, "__clkfreq_con", SYM_CONSTANT, AstInteger(clkfreq), NULL);
+    AddSymbol(&P->objsyms, "__clkmode_con", SYM_CONSTANT, AstInteger(clkreg), NULL);
     return 1;
 }
 
 /* calculate frequencies for P2 */
-int
-GetClkFreqP2(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr)
+static int
+CalcClkFreqP2(Module *P)
 {
     // look up in P->objsyms
     Symbol *clkmodesym = P ? FindSymbol(&P->objsyms, "_clkmode") : NULL;
@@ -1864,6 +1877,7 @@ GetClkFreqP2(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr)
     double xinfreq = 20000000.0;  // default crystal frequency
     double errtolerance = 100000.0;
     uint32_t clkmode = 0;
+    uint32_t finalfreq = 0;
     uint32_t zzzz = 11; // 0b10_11
     uint32_t pppp;
     double error;
@@ -1897,9 +1911,9 @@ GetClkFreqP2(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr)
             ERROR(NULL, "_clkmode definition requires _clkfreq as well");
             return 0;
         }
-        *clkregptr = EvalConstSym(clkmodesym);
-        *clkfreqptr = EvalConstSym(clkfreqsym);
-        return 1;
+        clkmode = EvalConstSym(clkmodesym);
+        finalfreq = EvalConstSym(clkfreqsym);
+        goto set_symbols;
     } else {
         clkmodesym = 0;
     }
@@ -1948,7 +1962,37 @@ GetClkFreqP2(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr)
     D = result_divd - 1;
     M = ((uint32_t)result_mult) - 1;
     clkmode = zzzz | (result_pppp<<4) | (M<<8) | (D<<18) | (1<<24);
-    *clkfreqptr = (uint32_t)round(result_Fout);
-    *clkregptr = clkmode;
+
+    
+    finalfreq = (uint32_t)round(result_Fout);
+set_symbols:
+    // define built in constants for these
+    AddSymbol(&P->objsyms, "__clkfreq_con", SYM_CONSTANT, AstInteger(finalfreq), NULL);
+    AddSymbol(&P->objsyms, "__clkmode_con", SYM_CONSTANT, AstInteger(clkmode), NULL);
+    
+    return 1;
+}
+
+/*
+ * utility functions to fetch previously calculated clock frequency
+ */
+int GetClkFreq(Module *P, unsigned int *clkfreqptr, unsigned int *clkmodeptr)
+{
+    Symbol *freqsym, *modesym;
+
+    freqsym = P ? FindSymbol(&P->objsyms, "__clkfreq_con") : NULL;
+    modesym = P ? FindSymbol(&P->objsyms, "__clkmode_con") : NULL;
+
+    if (!freqsym || !modesym) {
+        return 0;
+    }
+    if (freqsym->kind != SYM_CONSTANT) {
+        return 0;
+    }
+    if (modesym->kind != SYM_CONSTANT) {
+        return 0;
+    }
+    *clkfreqptr = EvalConstSym(freqsym);
+    *clkmodeptr = EvalConstSym(modesym);
     return 1;
 }

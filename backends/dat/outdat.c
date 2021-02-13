@@ -43,7 +43,7 @@ OutputSpinHeader(Flexbuf *f, Module *P)
     unsigned int clkfreq;
     unsigned int clkmodeval;
 
-    if (!GetClkFreqP1(P, &clkfreq, &clkmodeval)) {
+    if (!GetClkFreq(P, &clkfreq, &clkmodeval)) {
         // use defaults
         clkfreq = 80000000;
         clkmodeval = 0x6f;

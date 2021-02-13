@@ -1,7 +1,7 @@
 //
 // Pasm data output for spin2cpp
 //
-// Copyright 2016-2020 Total Spectrum Software Inc.
+// Copyright 2016-2021 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -6105,7 +6105,7 @@ EmitMain_P2(IRList *irl, Module *P, Operand *lutstart)
     } else {
         EmitMove(irl, stackptr, stacklabel);
     }
-    if (!GetClkFreqP2(P, &clkfreq, &clkmode)) {
+    if (!GetClkFreq(P, &clkfreq, &clkmode)) {
         clkfreq = 160000000;
         clkmode = 0x010007fb;
     }

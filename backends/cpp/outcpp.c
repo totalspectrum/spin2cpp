@@ -910,7 +910,7 @@ OutputClkFreq(Flexbuf *f, Module *P)
     if (gl_p2) {
         /* nothing yet */
     } else {
-        if (GetClkFreqP1(P, &clkfreq, &clkreg)) {
+        if (GetClkFreq(P, &clkfreq, &clkreg)) {
             IfdefPropGCC(f);
             // now output the clkfreq and clkmode settings
             OutputAsmEquate(f, "__clkfreqval", clkfreq);
