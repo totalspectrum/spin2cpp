@@ -333,7 +333,7 @@ pri _waitms(m=long) | freq
     _waitx(freq)
     m -= 1000
   if m > 0
-    _waitx(m * freq / 1000)
+    _waitx(m * (freq / 1000))
 
 '' pause for m microseconds
 pri _waitus(m=long) | freq
@@ -342,7 +342,7 @@ pri _waitus(m=long) | freq
     _waitx(freq)
     m -= 1000000
   if m > 0
-    _waitx(m * freq / 1000000)
+    _waitx(m * (freq / 1000000))
 
 ' check to see if cnt > x
 pri _pollct(x) : flag
