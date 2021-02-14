@@ -2,6 +2,7 @@ con
 	CLOCKFREQ = 200000000
 	_CLKFREQ = 200000000
 dat
+	nop
 	cogid	pa
 	coginit	pa,##$400
 	orgh	$10

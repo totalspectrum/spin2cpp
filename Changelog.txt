@@ -16,7 +16,7 @@ Version 5.1.0
 - Made "_waitms" and "_waitus" work for long waits (more than a system counter rollover)
 - More improvements to the BASIC strings library, again courtesy of JRoark
 - New functions __builtin_frac, __builtin_mulh and __builin_muluh for C
-
+- Put a "nop" at P2 address 0, so NULL pointers will act like empty strings
 
 Version 5.0.8
 - Added a warning for casting const pointers to non-const

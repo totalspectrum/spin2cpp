@@ -872,6 +872,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                     clkfreq = 160000000;
                     clkreg = 0x010007fb;
                 }
+                flexbuf_addstr(fb, "\tnop\n");
                 flexbuf_addstr(fb, "\tcogid\tpa\n");
                 flexbuf_printf(fb, "\tcoginit\tpa,##$%x\n", P2_HUB_BASE);
                 flexbuf_printf(fb, "\torgh\t$%x\n", P2_CONFIG_BASE);

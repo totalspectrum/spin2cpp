@@ -1,4 +1,5 @@
 dat
+	nop
 	cogid	pa
 	coginit	pa,##$400
 	orgh	$10
