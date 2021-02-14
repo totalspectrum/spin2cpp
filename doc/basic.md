@@ -294,6 +294,13 @@ pausems
 pausesec
 pauseus
 pi
+pinfloat
+pinhi
+pinlo
+pinread
+pinrnd
+pinset
+pintoggle
 rdpin
 _reboot
 removechar$
@@ -2298,6 +2305,13 @@ A built-in subroutine to pause for a number of microseconds. For example, to pau
 
 Predefined single precision constant 3.1415926.
 
+### PINFLOAT
+
+Force a pin to be an input
+```
+  pinfloat(p)
+```
+
 ### PINLO
 
 Force a pin to be output as 0.
@@ -2311,6 +2325,13 @@ Force a pin to be output as 1.
 ```
   pinhi(p)
 ```
+
+### PINREAD
+
+```
+  b = pinread(p)
+```
+Reads a bit from a pin. The pin is not necessarily forced to be an input (so this function can read the current output state of a pin); use `pinflt` or some other mechanism to set it as input if desired.
 
 ### PINRND (P2 only)
 
@@ -2425,7 +2446,7 @@ The statements in the top level of the file (not inside any subroutine or functi
 
 ### RDPIN (available on P2 only)
 
-`rdpin(p)` reads the current value of the smartpin Z register for pin `p`.
+`rdpin(p)` reads the current value of the smartpin Z register for pin `p`. Do not confuse this with `pinread`, which reads the value of the underlying pin itself. Use `rdpin` with pins configured as smartpins, and `pinread` for pins configured for bit-banged I/O.
 
 ### READ
 
