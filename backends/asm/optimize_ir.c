@@ -547,6 +547,10 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
             // this label isn't a jump target, so don't worry about it
             continue;
         }
+        if (!ir->next) {
+            // last label in the function, again, no need to worry
+            continue;
+        }
         if (!comefrom) {
             // we don't know what branches come here,
             // so for caution give up
