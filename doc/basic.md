@@ -269,6 +269,7 @@ _gc_alloc_managed
 _gc_collect
 _gc_free
 getcnt
+geterr
 getms
 getrnd
 getsec
@@ -316,6 +317,8 @@ sendrecvdevice
 _setbaud
 sin
 str$
+strerror$
+strint$
 tan
 true
 ucase$
@@ -1806,6 +1809,16 @@ Propeller specific builtin function.
 ```
 Returns the current cycle counter. This is an unsigned 32 bit value that counts the number of system clocks elapsed since the device was turned on. It wraps after approximately 54 seconds on propeller 1 and 27 seconds on propeller 2.
 
+### GETERR
+
+Propeller specific builtin function.
+
+```
+  function geterr() as integer
+  e = geterr()
+```
+Returns the error number `e` corresponding to the last system error. (This is the same as `errno` in C.) This number may be converted to a user-displayable string via `strerror$(e)`.
+
 ### GETMS
 
 ```
@@ -2638,6 +2651,13 @@ will print 2, 4, 6, and 8 on separate lines.
 ### STR$
 
 Convert a number to a string. The input is a floating point number (integers will automatically be converted to `single`) and the output is a string representing the number. Unlike the format used for regular `print`, `str$` tries to avoid trailing zeros, so the output is somewhat more compact than `print`.
+
+### STRERROR$
+
+```
+msg$ = strerror$(e)
+```
+Find an error message corresponding to the integer error number `e`. `e` is either the value thrown as an error by `open` (or a similar function), or else the system error returned by the `geterr()` function.
 
 ### STRINT$
 

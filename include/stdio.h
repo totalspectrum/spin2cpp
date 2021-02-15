@@ -71,7 +71,7 @@ size_t fwrite(const void *ptr, size_t size, size_t n, FILE *f) _IMPL("libc/stdio
 size_t fread(void *ptr, size_t size, size_t n, FILE *f) _IMPL("libc/stdio/fwrite.c");
 
 void clearerr(FILE *f) _IMPL("libc/stdio/clearerr.c");
-void perror(const char *s) _IMPL("libc/string/strerror.c");
+void perror(const char *s) _IMPL("libc/stdio/perror.c");
 
 int fileno(FILE *f) _IMPL("libc/stdio/fileno.c");
 

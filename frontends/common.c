@@ -209,8 +209,8 @@ Aliases basicalias[] = {
     { "cpuchk",  "_cogchk" },
     { "cpuid",   "_cogid" },
     { "cpuwait", "_cogwait" },
-    { "err", "_geterror" },
     { "getcnt",  "_getcnt" },
+    { "geterr", "_geterror" },
     { "getrnd", "_getrnd" },
     { "getms", "_getms" },
     { "getus", "_getus" },
@@ -228,6 +228,7 @@ Aliases basicalias[] = {
     { "pinset", "_drvw" },
     { "pintoggle", "_drvnot" },
     { "rnd", "_basic_rnd" },
+    { "strerror$", "_strerror" },
     { "val", "__builtin_atof" },
     { "val%", "__builtin_atoi" },
 

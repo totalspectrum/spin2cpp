@@ -423,4 +423,6 @@ pri file "libc/stdlib/errno.c" _seterror(r)
 pri file "libc/stdlib/errno.c" _geterror(): r=long
 pri file "libc/stdlib/errno.c" _geterrnoptr(): r=@long
 
+pri file "libc/string/strerror.c" _strerror(e=long): r=string
+
 pri file "libsys/c_startup.c" _c_startup()

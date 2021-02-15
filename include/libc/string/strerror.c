@@ -1,9 +1,8 @@
-#include <stdio.h>
 #include <errno.h>
 #include <string.h>
 
 char *_sys_errlist[] = {
-  "Unknown error",
+  "OK",
   "Numerical argument out of domain",
   "Result not representable",
   "Illegal multibyte sequence",
@@ -23,23 +22,19 @@ char *_sys_errlist[] = {
   "Directory not empty",
   "Name too long",
   "Device not seekable",
+  "Unknown error",
 };
 
 #define ENUMERRORS (sizeof(_sys_errlist)/sizeof(_sys_errlist[0]))
 
-char *strerror(int errnum)
+char *_strerror(int errnum)
 {
     if (errnum < 0 || errnum >= (int)ENUMERRORS)
-        errnum = 0;
+        errnum = ENUMERRORS-1;
     return _sys_errlist[errnum];
 }
 
-void perror(const char *s)
+char *strerror(int errnum)
 {
-  int err = _geterror();
-
-  fputs(s, stderr);
-  fputs(": ", stderr);
-  fputs(strerror(err), stderr);
-  fputs("\n", stderr);
+    return _strerror(errnum);
 }
