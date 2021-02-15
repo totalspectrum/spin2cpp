@@ -1661,6 +1661,7 @@ struct reservedword basic_keywords[] = {
   { "byref", BAS_BYREF },
   { "byte", BAS_BYTE },
   { "byval", BAS_BYVAL },
+  { "call", BAS_CALL },
   { "case", BAS_CASE },
   { "cast", BAS_CAST },
   { "catch", BAS_CATCH },

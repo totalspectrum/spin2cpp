@@ -1,6 +1,6 @@
 /*
  * BASIC compiler parser
- * Copyright (c) 2011-2020 Total Spectrum Software Inc.
+ * Copyright (c) 2011-2021 Total Spectrum Software Inc.
  * See the file COPYING for terms of use.
  */
 
@@ -396,9 +396,10 @@ AdjustParamForByVal(AST *param)
 %token BAS_BYREF      "byref"
 %token BAS_BYTE       "byte"
 %token BAS_BYVAL      "byval"
-%token BAS_CATCH      "catch"
+%token BAS_CALL       "call"
 %token BAS_CASE       "case"
 %token BAS_CAST       "cast"
+%token BAS_CATCH      "catch"
 %token BAS_CLASS      "class"
 %token BAS_CLOSE      "close"
 %token BAS_CONST      "const"
@@ -629,6 +630,24 @@ statement:
         AST *params;
         params = $2;
         $$ = NewAST(AST_FUNCCALL, $1, params);
+    }
+  | BAS_CALL BAS_IDENTIFIER
+    {
+        AST *params;
+        params = NULL;
+        $$ = NewAST(AST_FUNCCALL, $2, params);
+    }  
+  | BAS_CALL BAS_IDENTIFIER '(' ')'
+    {
+        AST *params;
+        params = NULL;
+        $$ = NewAST(AST_FUNCCALL, $2, params);
+    }  
+  | BAS_CALL BAS_IDENTIFIER '(' exprlist ')'
+    {
+        AST *params;
+        params = $4;
+        $$ = NewAST(AST_FUNCCALL, $2, params);
     }
   | BAS_VAR BAS_IDENTIFIER '=' expr
     {

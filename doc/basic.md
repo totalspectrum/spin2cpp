@@ -158,7 +158,9 @@ __builtin_alloca
 byref
 byte
 byval
+call
 case
+cast
 catch
 class
 close
@@ -1111,6 +1113,16 @@ A signed 8 bit integer, occupying one byte of computer memory. The unsigned vers
 Specifies that a parameter is to be passed by value. This is the default for simple integers, floats, and strings, but arrays and classes are normally passed by reference. If `byval` is specified for such a parameter, a copy will be made of the array or class and that copy will be passed in to the function. This can be expensive if the parameter is large.
 
 Note that strings and pointers that are passed `byval` do _not_ cause the underlying memory to be copied. Changes to the pointer value itself do not affect the caller, but changes to the pointed to memory _are_ globally visible.
+
+### CALL
+
+Used to explicitly signify a subroutine call. Its use is optional, and in fact deprecated; `call` is included mainly for compatibility with older BASIC dialects.
+If `foo` is a subroutine that expects one argument, the following statements are basically equivalent:
+```
+call foo(x)
+foo(x)
+foo x
+```
 
 ### CASE
 
