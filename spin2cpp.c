@@ -35,7 +35,7 @@
 #include "version.h"
 #include "cmdline.h"
 
-Module *allparse = NULL;
+extern Module *allparse; /* declared in common.c */
 extern int spinyydebug;
 
 static void

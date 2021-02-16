@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2020 Total Spectrum Software Inc.
+ * Copyright 2011-2021 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -36,7 +36,7 @@
 #include "version.h"
 #include "cmdline.h"
 
-const char *gl_progname;
+extern const char *gl_progname; /* defined in common.c */
 const char *gl_cc = NULL;
 const char *gl_intstring = "int32_t";
 

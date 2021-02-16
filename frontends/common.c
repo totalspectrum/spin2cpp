@@ -36,8 +36,8 @@
 
 /* declarations common to all front ends */
 
-Module *current;
-Module *allparse;
+Module *current = NULL;
+Module *allparse = NULL;
 Module *globalModule;
 SymbolTable *currentTypes;
 
