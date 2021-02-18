@@ -539,7 +539,7 @@ The lexer and parser are different from the Parallax ones, so they may
 well report errors on code the Parallax compiler accepts.
 
 
-## Differences
+## Known Differences
 
 ### Timing
 
@@ -554,6 +554,10 @@ I2C, SPI and similar functions.
 The Spin1 `@@` operator always truncates its result to 16 bits; flexspin does not do this. This won't matter in typical use (on the P1 addresses always fit in 16 bits anyway) but may be noticeable for some exotic uses.
 
 ## Symbols
+
+### Local variables may shadow method names
+
+In FlexSpin local variables may have the same name as methods in the object. In the original Spin and Spin2 compilers this will produce an error. The FlexSpin way is more "traditional" (matches how most compilers/languages work).
 
 ### Special characters in identifiers
 
