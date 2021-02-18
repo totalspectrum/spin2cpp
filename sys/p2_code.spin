@@ -364,12 +364,12 @@ pri _xypol(x, y) : d, angle
 pri _qsin(len, angle, twopi) : y | x
   if twopi
     angle, _ := div64(angle, 0, twopi)
-  x, y := _polxy(length, angle)
+  x, y := _rotxy(length, 0, angle)
 
 pri _qcos(len, angle, twopi) : x | y
   if twopi
     angle, _ := div64(angle, 0, twopi)
-  x, y := _polxy(length, angle)
+  x, y := _rotxy(length, 0, angle)
   
 ' synthetic smartpin instruction for setting up smartpin parameters
 pri _pinsetup(pin, mode, xval, yval)
