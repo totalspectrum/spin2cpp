@@ -393,9 +393,13 @@ DSTATUS disk_initialize (
 	UINT tmr;
 	DSTATUS s;
 
-        //printf("disk_initialize\n");
+#ifdef _DEBUG	
+        printf("disk_initialize\n");
+#endif	
 	if (drv) {
-            //printf("bad drv %d\n", drv);
+#ifdef _DEBUG	  
+            printf("bad drv %d\n", drv);
+#endif	    
             return RES_NOTRDY;
         }
 
@@ -409,7 +413,9 @@ DSTATUS disk_initialize (
 
 	ty = 0;
 	if (send_cmd(CMD0, 0) == 1) {			/* Enter Idle state */
-            //printf("idle OK\n");
+#ifdef _DEBUG	  
+            printf("idle OK\n");
+#endif	    
 		if (send_cmd(CMD8, 0x1AA) == 1) {	/* SDv2? */
 			rcvr_mmc(buf, 4);							/* Get trailing return value of R7 resp */
 			if (buf[2] == 0x01 && buf[3] == 0xAA) {		/* The card can work at vdd range of 2.7-3.6V */
@@ -438,7 +444,9 @@ DSTATUS disk_initialize (
                         }
 		}
 	}
-        //printf("ty = %d\n", ty);
+#ifdef _DEBUG	
+        printf("ty = %d\n", ty);
+#endif	
 	CardType = ty;
 	s = ty ? 0 : STA_NOINIT;
 	Stat = s;

@@ -167,10 +167,12 @@ Aliases spin2alias[] = {
     { "rdpin", "_rdpin" },
     { "rqpin", "_rqpin" },
 
-    { "rotxy", "_rotxy" },
     { "polxy", "_polxy" },
+    { "qcos",  "_qcos" },
+    { "qsin",  "_qsin" },
+    { "rotxy", "_rotxy" },
     { "xypol", "_xypol" },
-
+    
     { "cogatn", "_cogatn" },
     { "pollatn", "_pollatn" },
     { "waitatn", "_waitatn" },
