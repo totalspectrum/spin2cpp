@@ -18,7 +18,7 @@ char *__getfilebuffer()
 }
 
 struct vfs *
-__getvfsforfile(char *name, const char *orig_name)
+__getvfsforfile(char *name, const char *orig_name, char *full_path = 0)
 {
     int i, len;
     struct vfs *v;
@@ -42,6 +42,9 @@ __getvfsforfile(char *name, const char *orig_name)
                 len++;
             }
             /* remove prefix */
+            if (full_path) {
+                strncpy(full_path, name, _PATH_MAX);
+            }
             strcpy(name, name+len+1);
 #ifdef _DEBUG
             __builtin_printf("_getvfsforfile: slot %d returning %x for %s\n", i, (unsigned)v, name);
@@ -144,8 +147,8 @@ int chdir(const char *path)
         strncpy(curdir, path, _PATH_MAX);
     } else {
         tmp = __getfilebuffer();
-        __getvfsforfile(tmp, path);
-        strncat(curdir, tmp, _PATH_MAX);
+        strncpy(tmp, curdir, _PATH_MAX);
+        __getvfsforfile(tmp, path, curdir);
     }
     return 0;
 }
