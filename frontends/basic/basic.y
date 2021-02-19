@@ -1204,6 +1204,17 @@ exitstmt:
         }
         $$ = NewAST(AST_QUITLOOP, modifier, NULL);
     }
+  | BAS_EXIT BAS_LOOP
+    {
+        int curLoop = GetCurrentLoop(BAS_DO);
+        AST *modifier = NULL;
+        if (!curLoop) {
+            SYNTAX_ERROR("'exit loop' is not inside a do loop");
+        } else {
+            modifier = AstInteger(curLoop);
+        }
+        $$ = NewAST(AST_QUITLOOP, modifier, NULL);
+    }
   | BAS_EXIT
     {
         int curLoop = GetCurrentLoop(0);

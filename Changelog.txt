@@ -1,5 +1,6 @@
 Version 5.1.1
 - Added QCOS and QSIN to Spin2
+- Made EXIT LOOP a synonym for EXIT DO
 
 Version 5.1.0
 - Added support for Spin2 constants clkmode_ and clkfreq_

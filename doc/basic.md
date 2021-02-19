@@ -1647,6 +1647,10 @@ end function
 ```
 returns `x+y` if a is nonzero, and 0 otherwise.
 
+#### EXIT LOOP
+
+Exit from the innermost enclosing loop if it is a `do` loop. If it is not a `do` loop then the compiler will print an error. (This is the same as `exit do`)
+
 #### EXIT SUB
 
 Returns from the current subroutine. Same as the `return` statement.
