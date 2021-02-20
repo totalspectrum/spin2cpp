@@ -1,7 +1,7 @@
 //
 // IR optimizer
 //
-// Copyright 2016-2020 Total Spectrum Software Inc.
+// Copyright 2016-2021 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -3571,6 +3571,8 @@ LoopCanBeFcached(IRList *irl, IR *root, int size_left)
                 } else {
                     break;
                 }
+            } else if (ir->opc == OPC_CALL && MaybeHubDest(ir->dst)) {
+                break;
             } else if (!IsDummy(ir)) {
                 --n;
                 --size_left;
