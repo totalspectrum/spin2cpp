@@ -3,6 +3,7 @@
  * Implementation of stdio library functions
  *
  * Copyright (c) 2011 Parallax, Inc.
+ * Copyright (c) 2021 Total Spectrum Software Inc.
  * Written by Eric R. Smith, Total Spectrum Software Inc.
  * MIT licensed (see terms at end of file)
  */
@@ -23,7 +24,9 @@ fgets(char *buf, int size, FILE *fp)
         if (c == '\r') {
             c = '\n';
         } else if (c == '\b' || c == 127) {
-            if (count > 0) --count;
+            if (count > 0) {
+                --count;
+            }
             continue;
         }
     }

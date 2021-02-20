@@ -234,7 +234,10 @@ pri _rx : r
   if (r == 13) and ((__rxtxflags & _rxtx_crnl) <> 0)
     r := 10
   if (__rxtxflags & _rxtx_echo)
-    _tx(r)
+    if r == 127
+      _tx(8) ' backspace
+    else
+      _tx(r)
 
 pri __sendstring(func, str) | c
   repeat
