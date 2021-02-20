@@ -4,6 +4,7 @@ Version 5.1.1
 - Added mkdir() function for host file system
 - Fixed handling of getcwd for subdirectories
 - Fixed handling of DEL in fgets() function
+- Fixed GOSUB (it had bit-rotted and no longer worked properly)
 - Made EXIT LOOP a synonym for EXIT DO
 
 Version 5.1.0

@@ -2137,7 +2137,11 @@ MarkLabelUses(IRList *irl, IR *irlabel)
     IR *ir;
     Operand *label = irlabel->dst;
     Operand *dst;
-    
+
+    if (label->used >= 9999) {
+        // GOSUB labels get flagged with a large used value so they do not get taken away
+        irlabel->flags |= FLAG_LABEL_USED;
+    }
     for (ir = irl->head; ir; ir = ir->next) {
         if (IsDummy(ir)) continue;
         if (IsJump(ir)) {

@@ -112,6 +112,7 @@ static Operand *ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset, int
 
 static void AssignOneFuncName(Function *f);
 static void ValidatePushregs(void);
+static void ValidateGosub(void);
 
 static bool IsCogMem(Operand *addr);
 static int InCog(Function *f) {
@@ -339,7 +340,7 @@ ValidateAbortFuncs(void)
     }
 }
 
-static Operand *pushregs_, *popregs_, *count_;
+static Operand *pushregs_, *popregs_, *count_, *gosub_;
 
 static void
 ValidatePushregs(void)
@@ -356,7 +357,13 @@ ValidatePushregs(void)
         }
     }
 }
-        
+static void
+ValidateGosub(void)
+{
+    ValidatePushregs();
+    gosub_ = NewOperand(IMM_COG_LABEL, "gosub_", 0);
+}
+
 static int IsMemRef(Operand *op)
 {
     return op && (op->kind >= HUBMEM_REF) && (op->kind <= COGMEM_REF);
@@ -4525,6 +4532,11 @@ static AST *GetResultExpr(AST *resultval)
     return resultval;
 }
 
+static void MarkUsedLabel(IRList *irl, Operand *label)
+{
+    label->used = 9999; // make sure label is not removed
+}
+
 static void CompileStatement(IRList *irl, AST *ast)
 {
     AST *retval;
@@ -4653,9 +4665,12 @@ static void CompileStatement(IRList *irl, AST *ast)
         break;
     case AST_GOSUB:
         EmitDebugComment(irl, ast);
+        ValidateGosub();
         op = GetLabelFromSymbol(ast, ast->left->d.string);
         if (op) {
-            EmitOp1(irl, OPC_CALL, op);
+            EmitMove(irl, GetArgReg(0), op);
+            EmitOp1(irl, OPC_CALL, gosub_);
+            MarkUsedLabel(irl, op);
         }
         break;
     case AST_WHILE:
@@ -5558,6 +5573,15 @@ const char *builtin_pushregs_p1 =
     "    long 0\n"
     "prcnt_\n"
     "    long 0\n"
+    "gosub_\n"
+    "      wrlong pc, sp\n"
+    "      add    sp, #4\n"
+    "      mov    COUNT_, #0\n"
+    "      call   #pushregs_\n"
+    "      mov    pc, arg01\n"
+    "      jmp    #LMM_LOOP\n"
+    "gosub__ret\n"
+    "      ret\n"
     "pushregs_\n"
     "      movd  :write, #local01\n"
     "      mov   prcnt_, COUNT_ wz\n"
@@ -5601,6 +5625,11 @@ const char *builtin_pushregs_p2 =
     "    long 0\n"
     "fp\n"
     "    long 0\n"
+    "gosub_\n"
+    "    mov  COUNT_, #0\n"
+    "    mov  pa, arg01\n"
+    "    pop  RETADDR_\n"
+    "    jmp  #pushregs_done_\n"
     "pushregs_\n"
     "    pop  pa\n"
     "    pop  RETADDR_\n"
