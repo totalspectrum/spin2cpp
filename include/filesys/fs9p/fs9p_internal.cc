@@ -248,10 +248,14 @@ int fs_create(fs9_file *f, const char *path, uint32_t permissions)
     fs9_file dir;
     uint8_t *ptr;
     const char *lastname;
+    uint32_t mode;
     
     // first, walk to the directory containing our target file
     r = do_fs_walk(&rootdir, f, path, 1);
     if (r < 0) {
+#ifdef _DEBUG
+        __builtin_printf("do_fs_walk failed on [%s]\n", path);
+#endif	
         // directory not found
         return -ENOTDIR;
     }
@@ -261,14 +265,19 @@ int fs_create(fs9_file *f, const char *path, uint32_t permissions)
     } else {
         lastname++;
     }
-    // try to create the file
+    // try to create the file (or directory, if permissions has that bit
+    if (permissions & FS_MODE_DIR) {
+        mode = FS_MODE_DIR;
+    } else {
+        mode = FS_MODE_TRUNC | FS_MODE_WRITE;
+    }
     ptr = doPut4(txbuf, 0); // space for size
     ptr = doPut1(ptr, t_create);
     ptr = doPut2(ptr, NOTAG);
     ptr = doPut4(ptr, (uint32_t)f);
     ptr = doPutStr(ptr, lastname);
     ptr = doPut4(ptr, permissions);
-    ptr = doPut1(ptr, FS_MODE_TRUNC | FS_MODE_WRITE);
+    ptr = doPut1(ptr, mode);
     r = (*sendRecv)(txbuf, ptr, maxlen);
     if (r >= 0 && txbuf[4] == r_create) {
       return 0;
@@ -726,7 +735,22 @@ static int v_ioctl(vfs_file_t *fil, unsigned long req, void *argp)
 
 static int v_mkdir(const char *name, mode_t mode)
 {
-    return -EACCES;
+    int r;
+    fs9_file *f = malloc(sizeof(*f));
+
+    if (!f) {
+        return _seterror(ENOMEM);
+    }
+    memset(f, 0, sizeof(*f));
+    r = fs_create(f, name, mode | FS_MODE_DIR);
+#ifdef _DEBUG
+    __builtin_printf("v_mkdir(%s, %o) returned %d\n", name, mode, r);
+#endif
+    free(f);
+    if (r) {
+      return _seterror(-r);
+    }
+    return 0;
 }
 
 static int v_remove(const char *name)

@@ -1,6 +1,7 @@
 Version 5.1.1
 - Added QCOS and QSIN to Spin2
 - Added _execve() and CHAIN functions to chain programs
+- Added mkdir() function for host file system
 - Fixed handling of getcwd for subdirectories
 - Fixed handling of DEL in fgets() function
 - Made EXIT LOOP a synonym for EXIT DO

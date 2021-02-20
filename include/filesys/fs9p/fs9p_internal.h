@@ -68,6 +68,7 @@ int fs_open(fs9_file *f, char *path, int fs_mode);
 #define FS_MODE_READ 0
 #define FS_MODE_WRITE 1
 #define FS_MODE_TRUNC 16
+#define FS_MODE_DIR   0x80000000
 
 // create a new file if necessary, or truncate an existing one
 int fs_create(fs9_file *f, const char *path);
