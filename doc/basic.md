@@ -250,6 +250,7 @@ xor
 A number of functions and variables are predefined. These names may be redefined (for example as local variable names inside a function), but changing them at the global level is probably unwise; at the very least it will cause confusion for readers of your code.
 ```
 bin$
+chain
 _clkfreq
 clkfreq
 clkset
@@ -1247,6 +1248,26 @@ Using Spin objects with `class using` is straightforward, but there are some thi
 #### Interoperation with C
 
 C files may be used as classes, but there are some restrictions. BASIC and Spin are both case insensitive languages, which means that the BASIC symbols `AVariable`, `avariable`, and `AVARIABLE` are all the same, and all are translated internally to `avariable`. In C the case of identifiers matters. This makes accessing C symbols from BASIC somewhat tricky. Only C symbols that are all lower case may be accessed from BASIC.
+
+### CHAIN
+
+Replaces the currently running program with another one loaded from a file system (which must previously have been set up using `mount`. For example, something like:
+```
+mount "/sd", _vfs_open_sdcard()
+chain "/sd/prog.bin"
+```
+will start the program "prog.bin" from the SD card. The new program completely replaces the currently running program, and will not return to it (although it may itself use `chain` to start the original again.
+
+#### Limitations of CHAIN
+
+`chain` has a number of significant limitations:
+
+(1) The most significant is memory. Both the original program and the new program must (briefly) both be in memory together, so the total size of both programs cannot exceed the memory available. Note that once the new program has started it will have access to all of HUB memory, as usual, it's just during the transition that both programs must fit. This makes `chain` of very limited utility on P1.
+
+(2) `chain` does not automatically stop any other running cpus (COGs). This is a feature, but a dangerous one, since HUB memory is about to be replaced by the contents of the new program. In practice it will be difficult to craft a stand-alone routine that can survive its HUB memory being replaced. Usually you should manually stop any processes running in other CPUs before calling `chain`.
+
+(3) On P2, the clock frequency is reset to its default boot value (RCFAST) before the chained program starts.
+
 
 ### _CLKFREQ
 

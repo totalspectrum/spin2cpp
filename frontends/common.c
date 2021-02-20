@@ -207,6 +207,7 @@ Aliases basicalias[] = {
     { "clkfreq", "__clkfreq_var" },
     { "clkmode", "__clkmode_var" },
     /* the rest of these are OK, I think */
+    { "chain",  "_execve" },
     { "clkset", "_clkset" },
     { "cpuchk",  "_cogchk" },
     { "cpuid",   "_cogid" },
