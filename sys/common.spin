@@ -371,6 +371,7 @@ pri file "libc/unix/vfs.c" _setrootvfs(root)
 pri file "libc/unix/mount.c" _mount(name, volume)
 pri file "libc/unix/mount.c" __getfilebuffer() : r=@byte
 pri file "libc/unix/mount.c" __getvfsforfile(name, orig_name)
+pri file "libc/unix/exec.c" _execve(name=string, argv=0, envp=0)
 
 '' I/O functions
 pri file "libsys/fmt.c" _basic_open(h, sendf, recf, closef)

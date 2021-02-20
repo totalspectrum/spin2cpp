@@ -58,6 +58,8 @@ extern "C" {
 #define getgid() (0)
 #define getpid() (1)
     
+  int _execve(const char *path, char **args, char **env) _IMPL("libc/unix/exec.c");
+
 #if defined(__cplusplus)
 }
 #endif
