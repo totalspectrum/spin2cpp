@@ -129,9 +129,20 @@ pri _cogchk(id) : r
   endasm
   return r
 
+''
+'' serial send/receive code
+'' this code uses smarpins, so doesn't require a COG. The down side is that
+'' the smartpin has only a single character buffer.
+'' Following a suggestion from forum user evanh, we improve this for receive
+'' by putting the smartpin into 28 bit mode rather than 8 bit, and then manually
+'' checking for start/stop bits in the bottom 20 bits. This effectively
+'' creates a 6 character buffer: 3 characters in the Z register, and 3 characters
+'' internally to the smartpin
+''
 dat
     orgh
 _bitcycles long 0
+_rx_temp   long 0
 
 con
  _rxpin = 63
@@ -149,7 +160,7 @@ pri _setbaud(baudrate) | bitperiod, bit_mode
   _wrpin(_txpin, _txmode)
   _wxpin(_txpin, bit_mode)
   _wrpin(_rxpin, _rxmode)
-  _wxpin(_rxpin, bit_mode)
+  _wxpin(_rxpin, bit_mode + 20)  ' async using 28 bits instead of 8
   _dirh(_txpin)
   _dirh(_rxpin)
   
@@ -164,18 +175,36 @@ pri _txraw(c) | z
   return 1
 
 ' timeout is approximately in milliseconds (actually in 1024ths of a second)
-pri _rxraw(timeout = 0) : rxbyte = long | z, endtime
+pri _rxraw(timeout = 0) : rxbyte = long | z, endtime, temp2, rxpin
   if _bitcycles == 0
     _setbaud(230_400)
   if timeout
     endtime := _getcnt() + timeout * (__clkfreq_var >> 10)
   rxbyte := -1
+  rxpin := _rxpin
+  z := 0
+  temp2 := _rx_temp
+  '' slightly tricky code for pulling out the bytes from the 28 bits
+  '' of data presented by the smartpin
+  '' Courtesy of evanh
   repeat
-    z := _pinr(_rxpin)
+    asm
+          testb  temp2, #8 wc     ' check framing of prior character for valid character   
+          testbn temp2, #9 andc   ' more framing check (1 then 0)
+	  shr    temp2, #10       ' shift down next character, if any
+  if_c    mov    z, #1
+  if_c    jmp    #.breakone
+          testp  rxpin wz
+  if_z    mov    z, #1
+  if_z    rdpin  temp2, rxpin
+  if_z    shr    temp2, #32 - 28
+.breakone
+    endasm
   until z or (timeout and (_getcnt() - endtime < 0))
   if z
-    rxbyte := _rdpin(_rxpin)>>24
-
+    rxbyte := temp2 & $ff
+  _rx_temp := temp2
+  
 pri _call_method(o, f, x=0) | r
   asm
     wrlong objptr, ptra
