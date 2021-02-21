@@ -423,6 +423,7 @@ AdjustParamForByVal(AST *param)
 %token BAS_FIXED      "fixed"
 %token BAS_FOR        "for"
 %token BAS_FUNCTION   "function"
+%token BAS_GET        "get"
 %token BAS_GOTO       "goto"
 %token BAS_GOSUB      "gosub"
 %token BAS_IF         "if"
@@ -1398,6 +1399,7 @@ np_primary_expr:
     {
         $$ = NewAST(AST_ALLOCA, ast_type_ptr_void, $3);
     }
+;
 
 primary_expr:
   np_primary_expr

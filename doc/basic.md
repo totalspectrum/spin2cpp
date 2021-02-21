@@ -185,6 +185,7 @@ exit
 fixed
 for
 function
+get
 gosub
 goto
 if
@@ -1824,6 +1825,10 @@ function for "cog" toupper(c as ubyte) as ubyte
 end function
 ```
 
+### GET
+
+`get` is reserved for future use in I/O
+
 ### GETCNT
 
 Propeller specific builtin function.
@@ -2493,6 +2498,10 @@ The statements in the top level of the file (not inside any subroutine or functi
 ### PTR
 
 `ptr` is a synonym for `pointer` used for compatibility with FreeBasic. Please use the longer `pointer` form; `ptr` may go away in future versions of FlexBASIC.
+
+### PUT
+
+`put` is reserved for now.
 
 ### RDPIN (available on P2 only)
 

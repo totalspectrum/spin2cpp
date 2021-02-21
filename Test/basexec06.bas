@@ -6,7 +6,7 @@ class counter
   sub incr()
     n = n+1
   end sub
-  function get() as integer
+  function value() as integer
     return n
   end function
 end class
@@ -15,23 +15,23 @@ dim as counter a
 
 a.set(1)
 
-print "Initial counter value="; a.get()
+print "Initial counter value="; a.value()
 
 incrbyref(a)
-print "Outside sub counter value="; a.get()
+print "Outside sub counter value="; a.value()
 
 incrbyval(a)
-print "Outside sub counter value="; a.get()
+print "Outside sub counter value="; a.value()
 
 
 sub incrbyref(byref x as counter)
   x.incr()
-  print "inside sub: counter="; x.get()
+  print "inside sub: counter="; x.value()
 end sub
 
 sub incrbyval(byval y as counter)
   y.incr()
-  print "inside sub: counter="; y.get()
+  print "inside sub: counter="; y.value()
 end sub
 
 ''
