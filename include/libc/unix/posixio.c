@@ -138,7 +138,15 @@ _openraw(void *fil_ptr, const char *orig_name, int flags, mode_t mode)
         if (!fil->ioctl) fil->ioctl = v->ioctl;
         if (!fil->lseek) fil->lseek = v->lseek;
         if (!fil->putcf) {
-            fil->putcf = &__default_putc;
+            // check for TTY
+            int ttychk;
+            unsigned int ttyval;
+            ttychk = (*fil->ioctl)(fil, TTYIOCTLGETFLAGS, &ttyval);
+            if (ttychk == 0 && (ttyval & TTY_FLAG_CRNL)) {
+                fil->putcf = &__default_putc_terminal;
+            } else {
+                fil->putcf = &__default_putc;
+            }
 #ifdef _DEBUG
             {
                 unsigned *ptr = (unsigned *)fil->putcf;

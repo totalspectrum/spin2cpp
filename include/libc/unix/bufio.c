@@ -56,7 +56,25 @@ int __default_putc(int c,  vfs_file_t *f)
     b->buf[i++] = c;
     c &= 0xff;
     b->cnt = i;
-    if (c == '\n' || i == _DEFAULT_BUFSIZ) {
+    if ( i == _DEFAULT_BUFSIZ) {
+        if (__default_flush(f)) {
+            c = -1;
+        }
+    }
+    return c;
+}
+
+int __default_putc_terminal(int c,  vfs_file_t *f)
+{
+    struct _default_buffer *b = (struct _default_buffer *)f->vfsdata;
+    int i = b->cnt;
+#ifdef _DEBUG_EXTRA
+    __builtin_printf("putc: %d f=%x b=%x cnt=%d\n", c, (unsigned)f, (unsigned)b, i);
+#endif    
+    b->buf[i++] = c;
+    c &= 0xff;
+    b->cnt = i;
+    if ( c == '\n' || i == _DEFAULT_BUFSIZ) {
         if (__default_flush(f)) {
             c = -1;
         }
