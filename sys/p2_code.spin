@@ -375,6 +375,7 @@ pri _polxy(d, angle) : x, y
   endasm
 
 ' divide (ahi, alo) by b to produce 32 bit quotient q and remainder r
+' unsigned version
 pri _div64(ahi, alo, b) : q,r
   asm
     setq ahi
@@ -382,7 +383,29 @@ pri _div64(ahi, alo, b) : q,r
     getqx q
     getqy r
   endasm
-  
+
+' signed version
+pri _sdiv64(ahi, alo, b) : q,r | shi, slo, sign
+  sign := 0
+  if ahi < 0
+    shi := 0
+    slo := 0
+    asm
+      sub slo, alo wc
+      subx shi, ahi
+    endasm
+    sign := 1
+ else
+   shi, slo := ahi, alo
+ if b < 0
+   sign ^= 1
+   b := -b
+   
+ q,r := _div64(shi, slo, b)
+ if sign
+   q := -q
+
+' various
 pri _xypol(x, y) : d, angle
   asm
     qvector x, y
@@ -392,13 +415,13 @@ pri _xypol(x, y) : d, angle
 
 pri _qsin(len, angle, twopi) : y | x
   if twopi
-    angle, _ := _div64(angle, 0, twopi)
-  x, y := _rotxy(length, 0, angle)
+    angle, x := _sdiv64(angle, 0, twopi)
+  x, y := _rotxy(len, 0, angle)
 
 pri _qcos(len, angle, twopi) : x | y
   if twopi
-    angle, _ := _div64(angle, 0, twopi)
-  x, y := _rotxy(length, 0, angle)
+    angle, x := _sdiv64(angle, 0, twopi)
+  x, y := _rotxy(len, 0, angle)
   
 ' synthetic smartpin instruction for setting up smartpin parameters
 pri _pinsetup(pin, mode, xval, yval)
