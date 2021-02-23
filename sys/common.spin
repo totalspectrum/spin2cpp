@@ -386,6 +386,8 @@ pri file "libsys/fmt.c" _basic_print_string(h, ptr, fmt = 0)
 pri file "libsys/fmt.c" _basic_print_integer(h, x, fmt = 0, base=10)
 pri file "libsys/fmt.c" _basic_print_unsigned(h, x, fmt = 0, base=10)
 pri file "libsys/fmt.c" _basic_get_char(h)
+pri file "libsys/fmt.c" _basic_put(h=long, pos=+long, ptr, elemnts=+long, size=+long)
+pri file "libsys/fmt.c" _basic_get(h=long, pos=+long, ptr, elements=+long, size=+long)
 
 '' format functions
 pri file "libsys/fmt.c" _fmtchar(fn, fmt, c)
@@ -430,3 +432,4 @@ pri file "libc/stdlib/errno.c" _geterrnoptr(): r=@long
 pri file "libc/string/strerror.c" _strerror(e=long): r=string
 
 pri file "libsys/c_startup.c" _c_startup()
+

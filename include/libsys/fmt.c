@@ -876,6 +876,38 @@ int _basic_print_float(unsigned h, FTYPE x, unsigned fmt, int ch)
     return _fmtfloat(tf, fmt, x, ch);
 }
 
+// write "elements" items of size "size" bytes from "data"
+// returns number of bytes (not elements) successfully written
+int _basic_put(int h, unsigned long pos, void *data, unsigned elements, unsigned size)
+{
+    int r;
+    unsigned bytes = elements * size;
+    if (pos != 0) {
+        lseek(h, pos-1, SEEK_SET);
+    }
+    r = write(h, data, bytes);
+    if (r > 0) {
+        r = r / size;
+    }
+    return r;
+}
+
+// read "elements" items of size "size" bytes into "data"
+// returns number of bytes (not elements) successfully read
+int _basic_get(int h, unsigned long pos, void *data, unsigned elements, unsigned size)
+{
+    int r;
+    unsigned bytes = elements * size;
+    if (pos != 0) {
+        lseek(h, pos-1, SEEK_SET);
+    }
+    r = read(h, data, bytes);
+    if (r > 0) {
+        r = r / size;
+    }
+    return r;
+}
+
 #ifdef _TEST_FMT
 #include <stdio.h>
 

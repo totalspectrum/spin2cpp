@@ -1827,7 +1827,30 @@ end function
 
 ### GET
 
-`get` is reserved for future use in I/O
+```
+get #handle, pos, var [,items [,r]]
+```
+
+`get` is used to read binary data from the open file whose handle is `handle`, starting at position `pos` in the file (where `pos` is 1-based). The position is optional, but if omitted a comma must still be placed to indicate that it is missing. `var` is the first variable into which to read the binary data, and `items` is the number of variables to read starting at `var`. `items` is often omitted, in which case just one variable is read. `r` is an optional return value with, if present, is a variable which is set to the number of items actually read.
+
+For example, to read 128 bytes into an array `x` from the current position in file handle 3 one would use:
+```
+dim x(128) as ubyte
+...
+get #3,, x(0), 128
+```
+Note the two commas indicating a missing position argument. To read the first 4 bytes of the file into a long variable y, regardless of where we currently are in the file, we could do:
+```
+dim y as long
+...
+get #3, 1, y
+```
+Several important caveats apply:
+
+(1) The bytes are read as *binary* data, not ASCII.
+(2) Strings may not be read in this way. The compiler will not throw an error for using a string type, but what is read is the 4 byte pointer for the string, not the string data itself.
+(3) The return value `r` is "items read" rather than "bytes read" as it is in FreeBasic.
+(4) If an error occurs, `r` is set to -1.
 
 ### GETCNT
 
@@ -2501,7 +2524,37 @@ The statements in the top level of the file (not inside any subroutine or functi
 
 ### PUT
 
-`put` is reserved for now.
+```
+put #handle, pos, var [,items [,r]]
+```
+
+`put` is used to write binary data to the open file whose handle is `handle`, starting at position `pos` in the file (where `pos` is 1-based). The position is optional, but if omitted a comma must still be placed to indicate that it is missing. `var` is the variable containing the first binary data to write, and `items` is the number of variables to write starting at `var`. `items` is often omitted, in which case only 1 item is written. Note that the total number of bytes written is `items` times the size of each variable.
+
+The optional variable `r`, if present, is set to the number of items actually written.
+
+For example, to write the 128 bytes from an array of ubytes into the current position in file handle 3 one would use:
+```
+dim a(128 as ubyte
+dim r as integer
+...
+put #3,, a(0), 128, r
+if r <> 128
+  print "unable to write all of the bytes"
+end if
+```
+
+To write a single long integer `x` to the first 4 bytes of the file, regardless of where we currently are in the file, we could do:
+```
+put #3, 1, x
+```
+In this case, if `x` contains `0xabcd` then the 4 bytes `0xcd`, `0xab`, `0x00`, and `0x00` are written to the file (the Propeller is a little endian chip, and the data is written directly).
+
+Several important caveats apply:
+
+(1) The bytes are written as *binary* data, not ASCII.
+(2) Strings may not be written in this way. The compiler will not throw an error for using a string type, but what is written is the 4 byte pointer for the string, i.e. the address of the string data, which is not generally useful.
+(3) The optional variable `r` is set to the number of *items* written, not to the number of bytes. This is different from FreeBasic.
+(4) If an error occurs, `r` is set to -1.
 
 ### RDPIN (available on P2 only)
 

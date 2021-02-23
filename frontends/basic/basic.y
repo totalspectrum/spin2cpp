@@ -809,10 +809,6 @@ iostmt:
     { $$ = NewCommentedAST(AST_PRINT, $3, $2, $1); }
   | BAS_PRINT file_handle ',' printlist
     { $$ = NewCommentedAST(AST_PRINT, $4, $2, $1); }
-  | BAS_PUT expr
-    { $$ = NewCommentedAST(AST_PRINT,
-                  NewAST(AST_EXPRLIST, NewAST(AST_HERE, $2, NULL), NULL),
-                           NULL, $1); }
   | BAS_INPUT file_handle inputlist
     { $$ = NewCommentedAST(AST_READ, $3, InputHandle($2), $1); }
   | BAS_INPUT file_handle BAS_STRING ',' inputlist
@@ -898,6 +894,46 @@ iostmt:
                     AstIdentifier("_basic_close"),
                              NewAST(AST_EXPRLIST, $3, NULL), $1);
     }
+  | BAS_GET '#' putgetargs
+    {
+        AST *params = $3;
+        AST *thefunc = AstIdentifier("_basic_get");
+        AST *result = NULL;
+        AST *call;
+        AST *comment = $1;
+        if (params && params->kind == AST_ASSIGN) {
+            result = params->left;
+            params = params->right;
+        }
+        call = NewAST(AST_FUNCCALL, thefunc, params);
+        if (result) {
+            call = NewAST(AST_ASSIGN, result, call);
+        }
+        if (comment) {
+            call = NewAST(AST_COMMENTEDNODE, call, comment);
+        }
+        $$ = call;
+    }
+  | BAS_PUT '#' putgetargs
+    {
+        AST *params = $3;
+        AST *thefunc = AstIdentifier("_basic_put");
+        AST *result = NULL;
+        AST *call;
+        AST *comment = $1;
+        if (params && params->kind == AST_ASSIGN) {
+            result = params->left;
+            params = params->right;
+        }
+        call = NewAST(AST_FUNCCALL, thefunc, params);
+        if (result) {
+            call = NewAST(AST_ASSIGN, result, call);
+        }
+        if (comment) {
+            call = NewAST(AST_COMMENTEDNODE, call, comment);
+        }
+        $$ = call;
+    }
 ;
 
 inputitem:
@@ -960,6 +996,74 @@ printlist:
   | BAS_USING BAS_STRING ';' usingprintlist ';'
     { $$ = NewAST(AST_USING, $2, $4); }
 ;
+
+/* parse handle ',' position ',' data ',' size 
+   position is optional
+   size is optional, and the size of the data is used if it is omitted
+*/
+putgetargs:
+  expritem ',' optzeroexpritem ',' expr
+  {
+      AST *filenum = $1;
+      AST *position = $3;
+      AST *data = $5;
+      AST *amount = AstInteger(1);
+      AST *size = NewAST(AST_SIZEOF, data, NULL);
+
+      amount = NewAST(AST_EXPRLIST, amount, NULL);
+      size = NewAST(AST_EXPRLIST, size, NULL);
+      data = NewAST(AST_ADDROF, data, NULL);
+      data = NewAST(AST_EXPRLIST, data, NULL);
+      amount->right = size;
+      data->right = amount;
+      position->right = data;
+      filenum->right = position;
+      $$ = filenum;
+  }
+  | expritem ',' optzeroexpritem ',' expr ',' expritem optvar
+  {
+      AST *filenum = $1;
+      AST *position = $3;
+      AST *data = $5;
+      AST *amount = $7;
+      AST *var = $8;
+      AST *size = NewAST(AST_SIZEOF, data, NULL);
+      size = NewAST(AST_EXPRLIST, size, NULL);
+      
+      data = NewAST(AST_ADDROF, data, NULL);
+      data = NewAST(AST_EXPRLIST, data, NULL);
+      amount->right = size;
+      data->right = amount;
+      position->right = data;
+      filenum->right = position;
+
+      if (var) {
+          filenum = NewAST(AST_ASSIGN, var, filenum);
+      }
+      $$ = filenum;
+  }
+;
+
+optzeroexpritem:
+  /* nothing */
+    {
+        AST *zero = AstInteger(0);
+        $$ = NewAST(AST_EXPRLIST, zero, NULL);
+    }
+  | expritem
+    { $$ = $1; }
+;
+
+optvar:
+  /* nothing */
+    {
+        AST *zero = AstInteger(0);
+        $$ = NewAST(AST_EXPRLIST, zero, NULL);
+    }
+  | ',' expr
+    { $$ = $1; }
+;
+
 
 ifstmt:
   BAS_IF expr BAS_THEN eoln thenelseblock
