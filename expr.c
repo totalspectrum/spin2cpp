@@ -2764,26 +2764,26 @@ AST *SimpleOptimizeExpr(AST *expr)
         int op = expr->d.ival;
         if (op == K_NEGATE) {
             //   -(-x) => x
-            if (rhs->kind == AST_OPERATOR && rhs->d.ival == K_NEGATE) {
+            if (rhs && rhs->kind == AST_OPERATOR && rhs->d.ival == K_NEGATE) {
                 return rhs->right;
             }
         } else if (op == '+' || op == '-') {
             int oppositeOp = (op == '+') ? '-' : '+';
             // (A+N)-N => A, similarly for (A-N)+N
-            if (lhs->kind == AST_OPERATOR && lhs->d.ival == oppositeOp) {
+            if (lhs && lhs->kind == AST_OPERATOR && lhs->d.ival == oppositeOp) {
                 if (IsConstExpr(rhs) && AstMatch(lhs->right, rhs)) {
                     return lhs->left;
                 }
-            } else if (rhs->kind == AST_INTEGER && rhs->d.ival == 0) {
+            } else if (rhs && rhs->kind == AST_INTEGER && rhs->d.ival == 0) {
                 return lhs;
             }
         }
         // optimize integer expressions
-        if (rhs->kind == AST_INTEGER) {
+        if (rhs && rhs->kind == AST_INTEGER) {
             if ( (rhs->d.ival == 0) && ((op == '+') || (op == '-')) ) {
                 return lhs;
             }
-            if (lhs->kind == AST_INTEGER) {
+            if (lhs && lhs->kind == AST_INTEGER) {
                 return AstInteger(EvalConstExpr(expr));
             }
         }
