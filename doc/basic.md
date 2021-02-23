@@ -579,6 +579,8 @@ dim shared as integer a(5) = { _
 ```
 Note that only shared arrays may be initialized like this.
 
+IMPORTANT: the `_` character *must* be the last thing on the line. Nothing can come after it, not even space or comments.
+
 ### Multiple statements per line
 
 Generally speaking, you may place multiple statements on one line if you separate them with a colon (`:`). For example, these two bits of code are the same:
