@@ -2347,15 +2347,9 @@ getProgramPath(const char **argv, char *path, int size)
 {
 #if defined(WIN32)
 
-#if defined(Q_OS_WIN32) || defined(MINGW)
     /* get the full path to the executable */
     if (!GetModuleFileNameA(NULL, path, size))
         return -1;
-#else
-    /* get the full path to the executable */
-    if (!GetModuleFileNameEx(GetCurrentProcess(), NULL, path, size))
-        return -1;
-#endif  /* Q_OS_WIN32 */
 
 #elif defined(LINUX)
     int r;
