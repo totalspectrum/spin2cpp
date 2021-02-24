@@ -5829,8 +5829,6 @@ static FRESULT create_partition (
 	return FR_OK;
 }
 
-
-
 FRESULT f_mkfs (
 	const TCHAR* path,		/* Logical drive number */
 	const MKFS_PARM* opt,	/* Format options */
@@ -7231,4 +7229,9 @@ struct vfs *
 get_vfs()
 {
     return &fat_vfs;
+}
+
+int set_pins(int drv, int pclk, int pss, int pdi, int pdo)
+{
+    disk_setpins(drv, pclk, pss, pdi, pdo);
 }

@@ -36,21 +36,17 @@
 
 #include <propeller2.h>			/* Include device specific declareation file here */
 
-#ifndef PIN_CLK
-#define PIN_CLK  61
-#endif
-#ifndef PIN_SS
-#define PIN_SS   60
-#endif
-#ifndef PIN_MOSI
-#define PIN_MOSI 59
-#endif
-#ifndef PIN_MISO
-#define PIN_MISO 58
-#endif
+static int _pin_clk = 0;
+static int _pin_ss = 0;
+static int _pin_di = 0;
+static int _pin_do = 0;
 
-#define PIN_DO PIN_MISO
-#define PIN_DI PIN_MOSI
+/*
+#define PIN_CLK  _pin_clk
+#define PIN_SS   _pin_ss
+#define PIN_DI   _pin_di
+#define PIN_DO  _pin_do
+*/
 
 // 
 // The values here were tested empirically to work at 300 MHz with some cards
@@ -132,7 +128,10 @@ void xmit_mmc (
 )
 {
 	BYTE d;
-
+	int PIN_SS = _pin_ss;
+	int PIN_CLK = _pin_clk;
+	int PIN_DI = _pin_di;
+	int PIN_DO = _pin_do;
 
 	do {
 		d = *buff++;	/* Get a byte to be sent */
@@ -168,7 +167,10 @@ void rcvr_mmc (
 )
 {
 	BYTE r;
-
+	int PIN_SS = _pin_ss;
+	int PIN_CLK = _pin_clk;
+	int PIN_DI = _pin_di;
+	int PIN_DO = _pin_do;
 
 	DI_H();	/* Send 0xFF */
 
@@ -225,6 +227,10 @@ static
 void deselect (void)
 {
 	BYTE d;
+	int PIN_SS = _pin_ss;
+	int PIN_CLK = _pin_clk;
+	int PIN_DI = _pin_di;
+	int PIN_DO = _pin_do;
 
 	CS_H();				/* Set CS# high */
 	rcvr_mmc(&d, 1);	/* Dummy clock (force DO hi-z for multiple slave SPI) */
@@ -240,7 +246,8 @@ static
 int select (void)	/* 1:OK, 0:Timeout */
 {
 	BYTE d;
-
+	int PIN_SS = _pin_ss;
+	
 	CS_L();				/* Set CS# low */
 	rcvr_mmc(&d, 1);	/* Dummy clock (force DO enabled) */
 	if (wait_ready()) return 1;	/* Wait for card ready */
@@ -392,7 +399,10 @@ DSTATUS disk_initialize (
 	BYTE n, ty, cmd, buf[4];
 	UINT tmr;
 	DSTATUS s;
-
+	int PIN_SS = _pin_ss;
+	int PIN_CLK = _pin_clk;
+	int PIN_DI = _pin_di;
+	int PIN_DO = _pin_do;
 #ifdef _DEBUG	
         printf("disk_initialize\n");
 #endif	
@@ -544,7 +554,6 @@ DRESULT disk_ioctl (
 	BYTE n, csd[16];
 	DWORD cs;
 
-
 	if (disk_status(drv) & STA_NOINIT) return RES_NOTRDY;	/* Check if card is in the socket */
 
 	res = RES_ERROR;
@@ -581,20 +590,11 @@ DRESULT disk_ioctl (
 	return res;
 }
 
-
-/* check for card present */
-int sdmmc_is_present(void) {
-    int i;
-
-    i = _pinr(PIN_DO);
-    if (i == 0) {
-        return 1;
-    }
-    // check for pull-up on pin 60
-    _pinl(PIN_SS);
-    _waitx(400); // wait > 1us
-    _pinf(PIN_SS); // does a fltl
-    _waitx(2000); // wait > 2 us
-    i = _pinr(PIN_SS);
-    return i;
+DRESULT disk_setpins(int drv, int pclk, int pss, int pdi, int pdo)
+{
+    if (drv != 0) return -1;
+    _pin_clk = pclk;
+    _pin_ss  = pss;
+    _pin_di = pdi;
+    _pin_do = pdo;
 }
