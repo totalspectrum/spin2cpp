@@ -350,7 +350,8 @@ This only works on P2, because it requires a lot of HUB memory. Also, the host f
 Available file systems are:
 
   * `_vfs_open_host()` (for the loadp2 Plan 9 file system)
-  * `_vfs_open_sdcard()` for a FAT file system on the P2 SD card.
+  * `_vfs_open_sdcard()` for a FAT file system on the P2 SD card (using default pins 58-61)
+  * `_vfs_open_sdcardx()` for a FAT file system on SD card using custom pins
 
 It is OK to make multiple mount calls, but they should have different names.
 
@@ -358,14 +359,7 @@ It is OK to make multiple mount calls, but they should have different names.
 
 If you define the symbol `FF_USE_LFN` on the command line with an option like `-DFF_USE_LFN` then long file names will be enabled for the SD card.
 
-The pins to use for the SD card may be changed by changing the following defines on the command line:
-```
-PIN_CLK  (default 61)
-PIN_SS   (default 60)
-PIN_MOSI (default 59)
-PIN_MISO (default 58)
-```
-So for example to change to using pins 0-3 for these you would add `-DPIN_MISO=0 -DPIN_MOSI=1 -DPIN_SS=2 -DPIN_CLK=3` to the command line.
+The pins to use for the SD card may be changed by using `_vfs_open_sdcardx` instead of `_vfs_open_sdcard`. The parameters for `_vfs_open_sdcardx` are the clock pin, select pin, data in, and data out pins, in that order. Thus, `_vfs_open_sdcard` is actually equivalent to `_vfs_open_sdcardx(61, 60, 59, 58)`.
 
 ## Command Line Options
 

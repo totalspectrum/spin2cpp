@@ -36,6 +36,13 @@
 
 #include <propeller2.h>			/* Include device specific declareation file here */
 
+#ifdef PIN_CLK
+#error PIN_CLK definition no longer supported, use _vfs_open_sdcardx instead
+#endif
+#ifdef PIN_SS
+#error PIN_SS definition no longer supported, use _vfs_open_sdcardx instead
+#endif
+
 static int _pin_clk = 0;
 static int _pin_ss = 0;
 static int _pin_di = 0;

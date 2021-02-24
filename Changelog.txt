@@ -1,5 +1,6 @@
 Version 5.2.0
 - Added GET as keyword to BASIC
+- Added _vfs_open_sdcardx() to allow explicit setting of pins for SD card
 - Fixed QCOS, QSIN
 - Fixed a crash with negative ending values in repeat
 - Fixed a problem with SEND(func(...)) in Spin2
