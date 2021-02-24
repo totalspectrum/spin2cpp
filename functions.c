@@ -1749,10 +1749,14 @@ CheckFunctionCalls(AST *ast)
         }
         if (doExpandArgs) {
             int numArgs = AstListLen(ast->right);
-            if (numArgs == 1 && ast->right->kind == AST_EXPRLIST) {
-                AST *subexpr = ast->right->left;
-                if (subexpr && subexpr->kind == AST_STRING) {
-                    numArgs = strlen(subexpr->d.string);
+            if (numArgs == 1) {
+                if (ast->right->kind == AST_EXPRLIST) {
+                    AST *subexpr = ast->right->left;
+                    if (subexpr && subexpr->kind == AST_STRING) {
+                        numArgs = strlen(subexpr->d.string);
+                    } else if (subexpr && subexpr->kind == AST_FUNCCALL) {
+                        numArgs = 2; // force ExpandArguments
+                    }
                 }
             }
             if (numArgs > 1) {
