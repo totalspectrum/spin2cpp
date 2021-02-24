@@ -36,10 +36,10 @@
 
 #include <propeller2.h>			/* Include device specific declareation file here */
 
-static int _pin_clk = 61;
-static int _pin_ss = 60;
-static int _pin_di = 59;
-static int _pin_do = 58;
+static int _pin_clk = 0;
+static int _pin_ss = 0;
+static int _pin_di = 0;
+static int _pin_do = 0;
 
 /*
 #define PIN_CLK  _pin_clk
@@ -554,7 +554,6 @@ DRESULT disk_ioctl (
 	BYTE n, csd[16];
 	DWORD cs;
 
-
 	if (disk_status(drv) & STA_NOINIT) return RES_NOTRDY;	/* Check if card is in the socket */
 
 	res = RES_ERROR;
@@ -591,20 +590,11 @@ DRESULT disk_ioctl (
 	return res;
 }
 
-
-/* check for card present */
-int sdmmc_is_present(void) {
-    int i;
-
-    i = _pinr(PIN_DO);
-    if (i == 0) {
-        return 1;
-    }
-    // check for pull-up on pin 60
-    _pinl(PIN_SS);
-    _waitx(400); // wait > 1us
-    _pinf(PIN_SS); // does a fltl
-    _waitx(2000); // wait > 2 us
-    i = _pinr(PIN_SS);
-    return i;
+DRESULT disk_setpins(int drv, int pclk, int pss, int pdi, int pdo)
+{
+    if (drv != 0) return -1;
+    _pin_clk = pclk;
+    _pin_ss  = pss;
+    _pin_di = pdi;
+    _pin_do = pdo;
 }
