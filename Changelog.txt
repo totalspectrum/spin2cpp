@@ -1,5 +1,6 @@
 Version 5.2.0
 - Added GET as keyword to BASIC
+- Added GET and PUT binary I/O to BASIC
 - Added _vfs_open_sdcardx() to allow explicit setting of pins for SD card
 - Changed Spin2 member variables to be layed out in the order declared
 - Fixed QCOS, QSIN

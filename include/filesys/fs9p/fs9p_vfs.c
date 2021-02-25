@@ -53,10 +53,10 @@ static int plain_sendrecv(uint8_t *startbuf, uint8_t *endbuf, int maxlen)
         return -1; // not a valid message
     }
     // loadp2's server looks for magic start sequence of $FF, $01
-    _tx(0xff);
-    _tx(0x01);
+    _txraw(0xff);
+    _txraw(0x01);
     while (len>0) {
-        _tx(*buf++);
+        _txraw(*buf++);
         --len;
     }
     len = zdoGet4();
