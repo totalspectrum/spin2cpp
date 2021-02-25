@@ -5,6 +5,7 @@ Version 5.2.0
 - Fixed QCOS, QSIN
 - Fixed a crash with negative ending values in repeat
 - Fixed a problem with SEND(func(...)) in Spin2
+- Fixed a problem with initializing two dimensional C arrays with strings
 - Modified P2 serial receive to use @evanh's suggestion of 28 bit async receive (so it is effectively 3 characters at a time)
 
 Version 5.1.1

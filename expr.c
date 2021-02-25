@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2020 Total Spectrum Software Inc.
+ * Copyright 2011-2021 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling expressions
@@ -3130,7 +3130,8 @@ FixupInitList(AST *type, AST *initval)
              int a[2][3] = { 1, 2, 3, 4, 5, 6 }
            we need to convert this to { {1, 2, 3}, {4, 5, 6} }
         */
-        if ( (IsArrayType(type) || IsClassType(type) ) && initval->left && initval->left->kind != AST_EXPRLIST) {
+        if ( (IsArrayType(type) || IsClassType(type) ) && initval->left && initval->left->kind != AST_EXPRLIST
+             && !(initval->left->kind == AST_STRINGPTR && IsArrayType(type)) ) {
             AST *rawlist = initval;
             AST *item;
             initval = NULL;
