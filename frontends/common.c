@@ -1733,7 +1733,7 @@ DeclareMemberVariables(Module *P)
     } else {
         offset = P->varsize;
     }
-    if (IsSpinLang(P->mainLanguage)) {
+    if (P->mainLanguage == LANG_SPIN_SPIN1) {
         // Spin always declares longs first, then words, then bytes
         // but other languages may have other preferences
         offset = DeclareMemberVariablesOfSize(P, 4, offset); // also declares >= 4
