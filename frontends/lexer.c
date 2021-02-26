@@ -2342,6 +2342,36 @@ struct constants p2_constants[] = {
 #define DIR_SEP_STR "/"
 #endif
 
+/*
+ * make a file name into an absolute path
+ * needed for some IDEs to understand error messages
+ */
+const char *
+MakeAbsolutePath(const char *name)
+{
+    static char curpath[FILENAME_MAX];
+    if (name[0] == DIR_SEP) {
+        return name;
+    }
+#ifdef WIN32
+    if (name[0] && (name[1] == ':')) {
+        // drive letter
+        return name;
+    }
+    if (name[0] == '/') {
+        // alternate directory separator
+        return name;
+    }
+#endif
+    if (!getcwd(curpath, sizeof(curpath))) {
+        return name; // give up
+    }
+    strncat(curpath, DIR_SEP_STR, sizeof(curpath));
+    strncat(curpath, name, sizeof(curpath));
+    return strdup(curpath);
+}
+
+
 int 
 getProgramPath(const char **argv, char *path, int size)
 {

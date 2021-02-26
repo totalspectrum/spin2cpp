@@ -385,6 +385,7 @@ There are various command line options for the compiler which may modify the com
 		       -O2 apply all optimization (same as -O)
   [ -Wall ]          enable all warnings, including warnings about language extensions
   [ -Werror ]        turn warnings into errors
+  [ -Wabs-paths ]    print absolute paths for file names in errors/warnings
   [ -Wmax-errors=N ] allow at most N errors in a pass before stopping
   [ -D <define> ]    add a define
   [ -2 ]             compile for Prop2
@@ -415,6 +416,7 @@ There are various command line options for the compiler which may modify the com
           -O2 = all optimization
   [ -Wall ]          enable warnings for language extensions and other features
   [ -Werror ]        make warnings into errors
+  [ -Wabs-paths ]    print absolute paths for file names in errors/warnings
   [ -Wmax-errors=N ] allow at most N errors in a pass before stopping
   [ -x ]             capture program exit code (for testing)
   [ --code=cog ]     compile for COG mode instead of LMM

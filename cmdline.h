@@ -28,5 +28,6 @@ typedef struct CmdLineOptions {
 
 void InitializeSystem(CmdLineOptions *opts, const char **argv);
 int ProcessCommandLine(CmdLineOptions *opts);
+int ParseWFlags(const char *flags);
 
 #endif

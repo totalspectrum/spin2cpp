@@ -52,4 +52,7 @@ void NormalizeIdentifier(char *name);
  */
 AST *GetComments(void);
 
+// utility routine: Make a path name absolute
+const char *MakeAbsolutePath(const char *name);
+
 #endif

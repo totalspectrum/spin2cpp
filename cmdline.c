@@ -406,3 +406,25 @@ int ParseOptimizeString(AST *line, const char *str, int *flag_ptr)
     *flag_ptr = flags;
     return 1;
 }
+
+int
+ParseWFlags(const char *flags)
+{
+    if (!strcmp(flags, "all")) {
+        gl_warn_flags = WARN_ALL;
+    } else if (!strcmp(flags, "error")) {
+        gl_warnings_are_errors = 1;
+    } else if (!strcmp(flags, "abs-paths")) {
+        gl_useFullPaths = 1;
+    } else if (!strncmp(flags, "max-errors=", 11)) {
+        int n = strtol(flags+11, NULL, 10);
+        if (n < 1) {
+            fprintf(stderr, "Unrecognized value `%s' for max-errors (must be at least 1)\n", flags+11);
+            return 0;
+        }
+        gl_max_errors = n;
+    } else {
+        return 0;
+    }
+    return 1;
+}

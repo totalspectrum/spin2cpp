@@ -166,6 +166,8 @@ extern int gl_no_coginit;    /* skip coginit code */
 extern int gl_exit_status;   /* after exit return exit code via special sequence */
 extern int gl_relocatable;   /* 1 for position independent output */
 
+extern int gl_useFullPaths;  /* 1 if file name errors should use absolute paths */
+
 /* LMM kind selected */
 extern int gl_lmm_kind;
 #define LMM_KIND_ORIG  0

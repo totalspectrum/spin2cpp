@@ -45,6 +45,8 @@ extern int spinyydebug;
 extern int basicyydebug;
 extern int cgramyydebug;
 
+int gl_useFullPaths = 0;
+
 // process a module after parsing it
 static void ProcessModule(Module *P);
 
@@ -411,6 +413,10 @@ doParseFile(const char *name, Module *P, int *is_dup)
     SymbolTable *saveCurrentTypes = NULL;
     int new_module = 0;
 
+    if (gl_useFullPaths) {
+        name = MakeAbsolutePath(name);
+    }
+    
     // check language to process
     langptr = strrchr(name, '.');
     if (langptr) {

@@ -3,6 +3,7 @@ Version 5.2.0
 - Added GET and PUT binary I/O to BASIC
 - Added _vfs_open_sdcardx() to allow explicit setting of pins for SD card
 - Added new option -Wmax-errors=N to allow more errors to be printed in a run
+- Added new option -Wabs-paths to print absolute paths in error messages
 - Changed Spin2 member variables to be layed out in the order declared
 - Fixed QCOS, QSIN
 - Fixed a crash with negative ending values in repeat
