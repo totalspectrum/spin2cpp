@@ -1919,7 +1919,7 @@ ProcessOneFunc(Function *pf)
         SpinTransform(pf);
     }
 
-    if (last_errors != gl_errors) return;
+    if (last_errors != gl_errors && gl_errors >= gl_max_errors) return;
     
     CheckRecursive(pf);  /* check for recursive functions */
     pf->extradecl = NormalizeFunc(pf->body, pf);

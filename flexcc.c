@@ -51,22 +51,21 @@ PrintInfo(FILE *f)
 static void
 Usage(FILE *f)
 {
-    fprintf(f, "usage: %s [options] filename.spin | filename.bas\n", gl_progname);
+    fprintf(f, "usage: %s [options] file1.c file2.c ...\n", gl_progname);
     fprintf(f, "  [ --help ]         display this help\n");
     fprintf(f, "  [ -c ]             output only .o file\n");
     fprintf(f, "  [ -D <define> ]    add a define\n");
     fprintf(f, "  [ -g ]             include debug info in output\n");
     fprintf(f, "  [ -L or -I <path> ] add a directory to the include path\n");
     fprintf(f, "  [ -o <name> ]      set output filename to <name>\n");
-    fprintf(f, "  [ -2# ]             compile for Prop2\n");
-    fprintf(f, "          -2a = original silicon\n");
-    fprintf(f, "          -2b = rev B or rev C silicon\n");
+    fprintf(f, "  [ -2 ]             compile for Prop2\n");
     fprintf(f, "  [ -O# ]            set optimization level:\n");
     fprintf(f, "          -O0 = no optimization\n");
     fprintf(f, "          -O1 = basic optimization\n");
     fprintf(f, "          -O2 = all optimization\n");
     fprintf(f, "  [ -Wall ]          enable warnings for language extensions and other features\n");
     fprintf(f, "  [ -Werror ]        make warnings into errors\n");
+    fprintf(f, "  [ -Wmax-errors=N ] allow at most N errors in a pass before stopping\n");
     fprintf(f, "  [ -x ]             capture program exit code (for testing)\n");
     //fprintf(f, "  [ -z ]             compress code\n");
     fprintf(f, "  [ --code=cog ]     compile for COG mode instead of LMM\n");
@@ -356,6 +355,13 @@ main(int argc, const char **argv)
                 gl_warn_flags = WARN_ALL;
             } else if (!strcmp(flags, "error")) {
                 gl_warnings_are_errors = 1;
+            } else if (!strncmp(flags, "max-errors=", 11)) {
+                int n = strtol(flags+11, NULL, 10);
+                if (n < 1) {
+                    fprintf(stderr, "Unrecognized value `%s' for max-errors (must be at least 1)\n", flags+11);
+                    Usage(stderr);
+                }
+                gl_max_errors = n;
             } else {
                 fprintf(stderr, "-W option %s is not supported\n", flags);
                 Usage(stderr);

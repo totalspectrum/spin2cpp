@@ -179,6 +179,8 @@ main(int argc, const char **argv)
     const char *outname = NULL;
     const char *listFile = NULL;
     int wantcse = -1;
+
+    gl_max_errors = 1;
     
     /* Initialize the global preprocessor; we need to do this here
        so that the -D command line option can define preprocessor

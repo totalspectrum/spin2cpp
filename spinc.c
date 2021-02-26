@@ -327,7 +327,7 @@ ProcessModule(Module *P)
     }
     DeclareLabels(P);
     /* for all functions, do any language specific stuff */
-    if (gl_errors == 0) {
+    if (gl_errors < gl_max_errors) {
         Function *pf;
         for (pf = P->functions; pf; pf = pf->next) {
             ProcessOneFunc(pf);
@@ -645,7 +645,7 @@ doParseFile(const char *name, Module *P, int *is_dup)
     }
     fclose(f);
 
-    if (gl_errors > 0) {
+    if (gl_errors >= gl_max_errors) {
         free(fname);
         exit(1);
     }
@@ -667,7 +667,7 @@ doParseFile(const char *name, Module *P, int *is_dup)
             current->datname = "dat";
         }
     }
-    if (gl_errors > 0) {
+    if (gl_errors >= gl_max_errors) {
         free(fname);
         exit(1);
     }
@@ -1022,7 +1022,7 @@ FixupCode(Module *P, int isBinary)
 
     /* perform generic high-level optimizations
        (including dead code removal) */
-    if (gl_errors != 0) {
+    if (gl_errors >= gl_max_errors) {
         return;
     }
     
@@ -1036,7 +1036,7 @@ FixupCode(Module *P, int isBinary)
         changes = ResolveSymbols();
     } while (changes && gl_errors == 0);
 
-    if (gl_errors) {
+    if (gl_errors >= gl_max_errors) {
         return;
     }
     RemoveUnusedMethods(isBinary);
@@ -1119,7 +1119,7 @@ ParseTopFiles(const char *argv[], int argc, int outputBin)
         --argc;
     }
     ProcessModule(P);
-    if (P && gl_errors == 0) {
+    if (P && gl_errors < gl_max_errors) {
         FixupCode(P, outputBin);
     }
     return P;

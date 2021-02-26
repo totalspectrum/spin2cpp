@@ -45,6 +45,7 @@ int gl_p2;
 int gl_have_lut;
 int gl_errors;
 int gl_warnings_are_errors;
+int gl_max_errors;
 int gl_output;
 int gl_outputflags;
 int gl_nospin;

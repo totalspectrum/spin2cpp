@@ -363,6 +363,8 @@ The pins to use for the SD card may be changed by using `_vfs_open_sdcardx` inst
 
 ## Command Line Options
 
+### Options for flexspin
+
 There are various command line options for the compiler which may modify the compilation:
 ```
   [ --version ]      print just the compiler version, then exit
@@ -383,6 +385,7 @@ There are various command line options for the compiler which may modify the com
 		       -O2 apply all optimization (same as -O)
   [ -Wall ]          enable all warnings, including warnings about language extensions
   [ -Werror ]        turn warnings into errors
+  [ -Wmax-errors=N ] allow at most N errors in a pass before stopping
   [ -D <define> ]    add a define
   [ -2 ]             compile for Prop2
   [ -w ]             produce Spin wrappers for PASM code
@@ -392,9 +395,36 @@ There are various command line options for the compiler which may modify the com
   [ --fcache=N  ]    set size of FCACHE space in longs (0 to disable)
   [ --fixed ]        use 16.16 fixed point instead of IEEE floating point
 ```
-The `-2` option is new: it is for compiling for the Propeller 2.
 
 `flexspin.exe` checks the name it was invoked by. If the name starts with the string "bstc" (case matters) then its output messages mimic that of the bstc compiler; otherwise it tries to match openspin's messages. This is for compatibility with Propeller IDE. For example, you can use flexspin with the PropellerIDE by renaming `bstc.exe` to `bstc.orig.exe` and then copying `flexspin.exe` to `bstc.exe`.
+
+### Options for flexcc
+
+`flexcc` is similar to `flexspin`, but has arguments more like the traditional `cc` command line compiler.
+```
+  [ --help ]         display this help
+  [ -c ]             output only .o file
+  [ -D <define> ]    add a define
+  [ -g ]             include debug info in output
+  [ -L or -I <path> ] add a directory to the include path
+  [ -o <name> ]      set output filename to <name>
+  [ -2 ]             compile for Prop2
+  [ -O# ]            set optimization level:
+          -O0 = no optimization
+          -O1 = basic optimization
+          -O2 = all optimization
+  [ -Wall ]          enable warnings for language extensions and other features
+  [ -Werror ]        make warnings into errors
+  [ -Wmax-errors=N ] allow at most N errors in a pass before stopping
+  [ -x ]             capture program exit code (for testing)
+  [ --code=cog ]     compile for COG mode instead of LMM
+  [ --fcache=N ]     set FCACHE size to N (0 to disable)
+  [ --fixedreal ]    use 16.16 fixed point in place of floats
+  [ --lmm=xxx ]      use alternate LMM implementation for P1
+           xxx = orig uses original flexspin LMM
+           xxx = slow uses traditional (slow) LMM
+  [ --version ]      just show compiler version
+```
 
 ### Changing Hub address
 

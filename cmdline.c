@@ -47,6 +47,7 @@ void InitializeSystem(CmdLineOptions *cmd, const char **argv)
     memset(cmd, 0, sizeof(*cmd));
     cmd->eepromSize = 32768;
     InitPreprocessor(argv);
+    gl_max_errors = 1;
 }
 
 void
@@ -168,7 +169,7 @@ int ProcessCommandLine(CmdLineOptions *cmd)
         Module *Q;
         int compile_original = 0;
         
-        if (gl_errors > 0) {
+        if (gl_errors >= gl_max_errors) {
             return 1;
         }
         /* set up output file names */
@@ -245,6 +246,8 @@ int ProcessCommandLine(CmdLineOptions *cmd)
             }
             if (cmd->compile)  {
                 if (gl_errors > 0) {
+                    // no point in going all the way to compiling
+                    // the final assembly, it isn't valid anyway
                     remove(binname);
                     if (listFile) {
                         remove(listFile);

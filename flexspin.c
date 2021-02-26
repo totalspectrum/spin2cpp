@@ -88,6 +88,7 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "  [ -w ]             compile for COG with Spin wrappers\n");
     fprintf(f, "  [ -Wall ]          enable warnings for language extensions and other features\n");
     fprintf(f, "  [ -Werror ]        make warnings into errors\n");
+    fprintf(f, "  [ -Wmax-errors=N ] allow at most N errors in a pass before stopping\n");
     fprintf(f, "  [ -C ]             enable case sensitive mode\n");
     fprintf(f, "  [ -x ]             capture program exit code (for testing)\n");
     //fprintf(f, "  [ -z ]             compress code\n");
@@ -419,6 +420,13 @@ main(int argc, const char **argv)
                 gl_warn_flags = WARN_ALL;
             } else if (!strcmp(flags, "error")) {
                 gl_warnings_are_errors = 1;
+            } else if (!strncmp(flags, "max-errors=", 11)) {
+                int n = strtol(flags+11, NULL, 10);
+                if (n < 1) {
+                    fprintf(stderr, "Unrecognized value `%s' for max-errors (must be at least 1)\n", flags+11);
+                    Usage(stderr, cmd->bstcMode);
+                }
+                gl_max_errors = n;
             } else {
                 fprintf(stderr, "-W option %s is not supported\n", flags);
                 Usage(stderr, cmd->bstcMode);
