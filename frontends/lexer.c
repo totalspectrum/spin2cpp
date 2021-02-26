@@ -2384,18 +2384,20 @@ void InitPreprocessor(const char **argv)
 
     // add a path relative to the executable
     if (argv[0] != NULL) {
-        if (getProgramPath(argv, gl_prognamebuf, sizeof(gl_prognamebuf)) != 0) {
-            strcpy(gl_prognamebuf, argv[0]);
-        }
-        progname = strrchr(gl_prognamebuf, '/');
-        if (progname) {
-            progname++;
-        } else {
-            progname = gl_prognamebuf;
-        }
-        strcpy(progname, "../include");
-        pp_add_to_path(&gl_pp, gl_prognamebuf);
+        argv[0] = "flexspin";
     }
+    if (getProgramPath(argv, gl_prognamebuf, sizeof(gl_prognamebuf)) != 0) {
+        strcpy(gl_prognamebuf, argv[0]);
+    }
+    progname = strrchr(gl_prognamebuf, '/');
+    if (progname) {
+        progname++;
+    } else {
+        progname = gl_prognamebuf;
+    }
+    strcpy(progname, "../include");
+    pp_add_to_path(&gl_pp, gl_prognamebuf);
+
     // check for environment variables
     envpath = getenv("FLEXCC_INCLUDE_PATH");
     if (!envpath) {
