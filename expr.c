@@ -3314,7 +3314,8 @@ const char *TypeName(AST *typ)
     int lang;
     int isUnsigned = 0;
     AST *nexttyp;
-
+    int needMore = 0;
+    
     buf[0] = 0;
     if (!typ) {
         return "generic type";
@@ -3336,6 +3337,7 @@ const char *TypeName(AST *typ)
             nexttyp = NULL;
         }
         nexttyp = typ->left;
+        needMore = 0;
         switch (typ->kind) {
         case AST_MODIFIER_SEND_ARGS:
             break;
@@ -3347,15 +3349,19 @@ const char *TypeName(AST *typ)
             break;
         case AST_FUNCTYPE:
             strcat(buf, "function returning ");
+            needMore = 1;
             break;
         case AST_ARRAYTYPE:
             strcat(buf, "array of ");
+            needMore = 1;
             break;
         case AST_PTRTYPE:
             strcat(buf, "pointer to ");
+            needMore = 1;
             break;
         case AST_REFTYPE:
             strcat(buf, "reference to ");
+            needMore = 1;
             break;
         case AST_GENERICTYPE:
             strcat(buf, "any ");
@@ -3442,6 +3448,9 @@ const char *TypeName(AST *typ)
             break;
         }
         typ = nexttyp;
+    }
+    if (needMore) {
+        strcat(buf, "any");
     }
     return strdup(buf);
 }
