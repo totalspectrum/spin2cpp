@@ -6993,7 +6993,7 @@ static int v_readdir(DIR *dir, struct dirent *ent)
         return -1; // EOF
     }
 #if FF_USE_LFN
-    strncpy(ent->d_name, finfo.altname, _NAME_MAX-1);
+    strncpy(ent->d_name, finfo.fname, _NAME_MAX-1);
     ent->d_name[_NAME_MAX-1] = 0;
 #else
     strcpy(ent->d_name, finfo.fname);
