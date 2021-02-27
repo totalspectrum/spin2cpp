@@ -15,6 +15,11 @@
 #include "spinc.h"
 #include "lexer.h"
 #include "preprocess.h"
+#ifdef WIN32
+#include <direct.h>
+#else
+#include <unistd.h>
+#endif
 
 int allow_type_names = 1;
 
@@ -2366,8 +2371,8 @@ MakeAbsolutePath(const char *name)
     if (!getcwd(curpath, sizeof(curpath))) {
         return name; // give up
     }
-    strncat(curpath, DIR_SEP_STR, sizeof(curpath));
-    strncat(curpath, name, sizeof(curpath));
+    strncat(curpath, DIR_SEP_STR, sizeof(curpath)-1);
+    strncat(curpath, name, sizeof(curpath)-1);
     return strdup(curpath);
 }
 
