@@ -474,22 +474,36 @@ Sets the baud rate on the default serial port to `rate`. For example, to change 
 
 #### _getsec
 
-Gets elapsed seconds.
+Gets elapsed seconds since the system was booted. Uses the system clock, which wraps around after about 50 seconds on the P1.
 
 #### _getms
 
-Gets elapsed microseconds.
+Gets elapsed milliseconds since boot.
 
 #### _getus
 
-Gets elapsed microseconds.
+Gets elapsed microseconds since boot.
 
 #### _waitx
 
 ```
 void _waitx(unsigned cycles)
 ```
-Pauses for `cycles` cycles.
+Pauses for `cycles` cycles. Note that the maximum waiting period is about half of the system clock frequency.
+
+#### _waitms
+
+```
+void _waitms(unsigned ms)
+```
+Wait for `ms` milliseconds. For waits of more than a second, this function will loop internally so as to avoid limits of the 32 bit clock counter.
+
+#### _waitus
+
+```
+void _waitus(unsigned us)
+```
+Wait for `us` microseconds. For waits of more than a second, this function will loop internally so as to avoid limits of the 32 bit clock counter.
 
 ### Cog control
 
