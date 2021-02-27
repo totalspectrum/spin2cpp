@@ -691,3 +691,12 @@ The `ASMCLK` pseudo-instruction is supported as a preprocessor macro in FlexSpin
 ### REGLOAD/REGEXEC
 
 The `REGLOAD` and `REGEXEC` Spin2 instructions are not supported at this time, mainly because they depend on a particular layout of memory in the Spin2 interpreter.
+
+### Order of OBJ and VAR declarations
+
+flexspin may sometimes require OBJ declarations to come before their use, where regular Spin2 doesn't care. For example, in:
+```
+VAR
+   byte x[foo.BUF_SIZE]
+```
+the declaration of the object `foo` must come before the declaration of `x`.
