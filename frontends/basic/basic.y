@@ -1429,7 +1429,6 @@ varexpr:
     { $$ = NewAST(AST_ARRAYREF, $1, $3); }
   | varexpr '(' ')'
     { $$ = NewAST(AST_FUNCCALL, $1, NULL); }
-    { $$ = NewAST(AST_FUNCCALL, $1, NULL); }
   | varexpr '(' exprlist ')'
     { $$ = NewAST(AST_FUNCCALL, $1, $3); }
   | varexpr '.' BAS_IDENTIFIER
