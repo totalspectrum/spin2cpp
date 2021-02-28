@@ -1,3 +1,6 @@
+Version 5.2.1
+- Fixed argv[0] handling
+
 Version 5.2.0
 - Added GET as keyword to BASIC
 - Added GET and PUT binary I/O to BASIC

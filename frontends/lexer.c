@@ -2418,7 +2418,7 @@ void InitPreprocessor(const char **argv)
     SetPreprocessorLanguage(LANG_SPIN_SPIN1);
 
     // add a path relative to the executable
-    if (argv[0] != NULL) {
+    if (argv[0] == NULL) {
         argv[0] = "flexspin";
     }
     if (getProgramPath(argv, gl_prognamebuf, sizeof(gl_prognamebuf)) != 0) {
