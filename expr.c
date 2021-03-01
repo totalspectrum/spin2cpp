@@ -2230,11 +2230,14 @@ WidestType(AST *left, AST *right)
     right = RemoveTypeModifiers(right);
     if (!left) return right;
     if (!right) return left;
-    if (left->kind != right->kind) {
-        return ast_type_long;
-    }
     lsize = TypeSize(left);
     rsize = TypeSize(right);
+    if (left->kind != right->kind) {
+        if (lsize > 4 || rsize > 4) {
+            return ast_type_long64;
+        }
+        return ast_type_long;
+    }
     if (lsize < rsize) return right;
     return left;
 }
@@ -2566,8 +2569,19 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
             }
             return WidestType(ltype, rtype);
         case K_ZEROEXTEND:
+            if (TypeSize(ExprType(expr->left)) > LONG_SIZE) {
+                return ast_type_unsigned_long64;
+            }
             return ast_type_unsigned_long;
         default:
+            ltype = ExprTypeRelative(table, expr->left, P);
+            rtype = ExprTypeRelative(table, expr->right, P);
+            if ( TypeSize(ltype) > LONG_SIZE ) {
+                return ast_type_long64;
+            }
+            if ( TypeSize(rtype) > LONG_SIZE ) {
+                return ast_type_long64;
+            }
             return ast_type_long;
         }
     }
