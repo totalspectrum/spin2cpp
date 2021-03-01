@@ -187,7 +187,10 @@ static AST *forcepromote(AST *type, AST *expr)
     }
     tsize = TypeSize(type);
     op = IsUnsignedType(type) ? K_ZEROEXTEND : K_SIGNEXTEND;
-    return dopromote(expr, tsize, LONG_SIZE, op);
+    if (tsize < LONG_SIZE) {
+        return dopromote(expr, tsize, LONG_SIZE, op);
+    }
+    return expr;
 }
 
 //
@@ -202,10 +205,14 @@ AST *MatchIntegerTypes(AST *ast, AST *lefttype, AST *righttype, int force) {
     AST *rettype = lefttype;
     int leftunsigned = IsUnsignedType(lefttype);
     int rightunsigned = IsUnsignedType(righttype);
-    int finalsize = 4;
+    int finalsize;
     
     force = force || (lsize != rsize);
-    
+    if (lsize > LONG_SIZE || rsize > LONG_SIZE) {
+        finalsize = LONG64_SIZE;
+    } else {
+        finalsize = LONG_SIZE;
+    }
     if (lsize < finalsize && force) {
         if (leftunsigned) {
             ast->left = dopromote(ast->left, lsize, finalsize, K_ZEROEXTEND);
@@ -787,6 +794,7 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
             return rettype;
         } else {
             const char *name;
+            int tsize;
             if (op == K_ABS) {
                 name = "abs";
             } else if (op == K_SQRT) {
@@ -797,11 +805,12 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
             if (!VerifyIntegerType(ast, rettype, name))
                 return NULL;
             ast->right = forcepromote(rettype, ast->right);
+            tsize = TypeSize(rettype);
             if (IsUnsignedType(rettype) && op == K_ABS) {
                 *ast = *ast->right; // ignore the ABS
-                return ast_type_unsigned_long;
+                return (tsize <= LONG_SIZE) ? ast_type_unsigned_long : ast_type_unsigned_long64;
             }
-            return ast_type_long;
+            return (tsize <= LONG_SIZE) ? ast_type_long : ast_type_long64;
         }
     case K_ASC:
         if (!CompatibleTypes(righttype, ast_type_string)) {

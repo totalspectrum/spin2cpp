@@ -106,7 +106,8 @@ struct lexstream {
 
 #define NUM_COGS 8
 
-#define LONG_SIZE 4
+#define LONG_SIZE   4
+#define LONG64_SIZE 8
 
 /* some globals */
 
