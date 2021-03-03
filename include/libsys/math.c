@@ -193,13 +193,14 @@ float __builtin_atanf(float y)
     return __builtin_atan2f(y, 1.0f);
 }
 
-float __builtin_asinf(float x)
+float __builtin_asinf(float y)
 {
-    float y = __builtin_sqrt(1-x*x);
-    return __builtin_atan2f(x, y);
+    float x = __builtin_sqrt(1.0f-y*y);
+    return __builtin_atan2f(y, x);
 }
 
 float __builtin_acosf(float x)
 {
-    return PI_2 - __builtin_asinf(x);
+    float y = __builtin_sqrt(1.0f-x*x);
+    return __builtin_atan2f(y, x);
 }
