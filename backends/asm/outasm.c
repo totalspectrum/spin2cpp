@@ -535,6 +535,7 @@ ReplaceJumpTarget(IR *jmpir, Operand *dst)
         jmpir->dst = dst;
         break;
     case OPC_DJNZ:
+    case OPC_GENERIC_BRCOND:
         jmpir->src = dst;
         break;
     default:

@@ -11,13 +11,9 @@ dat
 entry
 
 _sum
-	loc	pa,	#(@LR__0003-@LR__0001)
-	call	#FCACHE_LOAD_
-LR__0001
-	rep	@LR__0002, #4
+	rep	@LR__0001, #4
 	add	arg01, arg01
-LR__0002
-LR__0003
+LR__0001
 	mov	result1, arg01
 _sum_ret
 	ret

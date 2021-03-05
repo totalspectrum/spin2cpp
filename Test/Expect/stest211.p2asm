@@ -15,19 +15,16 @@ entry
 
 _start
 	mov	arg01, #8
-	call	#_djnfTest
 LR__0001
-	jmp	#LR__0001
+	djnf	arg01, #LR__0001
+LR__0002
+	jmp	#LR__0002
 _start_ret
 	ret
 
 _djnfTest
-	loc	pa,	#(@LR__0004-@LR__0002)
-	call	#FCACHE_LOAD_
-LR__0002
 LR__0003
 	djnf	arg01, #LR__0003
-LR__0004
 _djnfTest_ret
 	ret
 
