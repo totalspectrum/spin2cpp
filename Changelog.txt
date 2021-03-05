@@ -1,5 +1,6 @@
 Version 5.2.1
-- Fixed argv[0] handling
+- Fixed argv[0] handling in the command line tools
+- Fixed use of FCACHE in inline assembly in LUT and COG functions
 
 Version 5.2.0
 - Added GET as keyword to BASIC
