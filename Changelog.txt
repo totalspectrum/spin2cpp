@@ -5,6 +5,7 @@ Version 5.2.1
   (this allows flexspin to be used to make the PropLoader fastloader)
 - Fixed argv[0] handling in the command line tools
 - Fixed use of FCACHE in inline assembly in LUT and COG functions
+- Fixed BASIC input when 127 (DEL) is read (Unix terminals use this for backspace)
 
 Version 5.2.0
 - Added GET as keyword to BASIC

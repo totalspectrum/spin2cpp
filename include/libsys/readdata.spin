@@ -14,10 +14,7 @@ pri _basic_read_line(h=0) | c, ptr, s, n, maxn
       quit
     if (c == 10)
       quit
-    if (c == 127) ' backspace on some systems
-      _basic_print_char(h, 8)
-      c := 8
-    if (c == 8)  ' backspace
+    if (c == 8) or (c == 127) ' backspace
       if n > 0
         --n
       next
@@ -95,4 +92,3 @@ pri _basic_get_float(src = "") : r=float, ptr
   ptr := _basic_find_terminator(src)
   if byte[ptr]
     ptr++
-  
