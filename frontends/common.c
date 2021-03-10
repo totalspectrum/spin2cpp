@@ -133,7 +133,7 @@ Aliases spin2alias[] = {
     { "cogchk", "_cogchk" },
 
     { "locktry", "_locktry" },
-    { "lockrel", "lockclr" },
+    { "lockrel", "_lockclr" },
     
     { "pinw", "_pinwrite" },
     { "pinl", "_drvl" },    
@@ -263,6 +263,7 @@ Aliases calias[] = {
     { "_cnthl",  "_getcnthl" },
     { "_clockfreq", "__builtin_clkfreq" },
     { "_clockmode", "__builtin_clkmode" },
+    { "_lockrel", "_lockclr" },
     { "_pinl", "_drvl" },
     { "_pinh", "_drvh" },
     { "_pinnot", "_drvnot" },
