@@ -36,6 +36,8 @@
 #include "version.h"
 #include "cmdline.h"
 
+static int TrivialSpinFunction(Module *P);
+
 extern const char *gl_progname; /* defined in common.c */
 const char *gl_cc = NULL;
 const char *gl_intstring = "int32_t";
@@ -237,8 +239,8 @@ int ProcessCommandLine(CmdLineOptions *cmd)
                     asmname = ReplaceExtension(P->fullname, gl_p2 ? ".p2asm" : ".pasm");
                 }
             }
-            if (P->functions == NULL) {
-                // we can just assemble the .spin file directoy
+            if (TrivialSpinFunction(P)) {
+                // we can just assemble the .spin file directly
                 asmname = strdup(P->fullname);
                 compile_original = 1;
             } else {
@@ -426,5 +428,83 @@ ParseWFlags(const char *flags)
     } else {
         return 0;
     }
+    return 1;
+}
+
+//
+// check to see if the only Spin function in P would
+// start the cog code, in which case we can leave off
+// the Spin code entirely
+//
+static int TrivialSpinFunction(Module *P)
+{
+    Function *pf;
+    AST *body;
+    AST *expr;
+    
+    if (!P) {
+        // no Spin functions at all!
+        return 1;
+    }
+    pf = P->functions;
+    if (pf->next) {
+        // more than one function
+        return 0;
+    }
+    body = pf->body;
+    if (!body) {
+        // hmmm odd, nothing in the Spin code at all?
+        // punt, we are confused
+        return 0;
+    }
+    if (body->kind != AST_STMTLIST) {
+        return 0;
+    }
+    if (body->right != 0) {
+        // more than one statement
+        return 0;
+    }
+    body = body->left;
+    
+    while (body && body->kind == AST_COMMENTEDNODE) {
+        body = body->left;
+    }
+    if (!body) {
+        // odd, no spin code? punt
+        return 0;
+    }
+    if (body->kind != AST_COGINIT) {
+        return 0;
+    }
+    body = body->left;
+    // now check the arguments
+    // we want:
+    //   coginit(0, @addr, 0)
+    // where "addr" is a label
+
+    // check first argument
+    if (!body || body->kind != AST_EXPRLIST) return 0;
+    expr = body->left;
+    body = body->right;
+
+    // check for 0
+    if (!IsConstExpr(expr) || EvalConstExpr(expr) != 0) return 0;
+
+    // check second argument
+    if (!body || body->kind != AST_EXPRLIST) return 0;
+    expr = body->left;
+    body = body->right;
+
+    // check for @
+    if (expr->kind != AST_ADDROF && expr->kind == AST_ABSADDROF) return 0;
+    
+    // check third argument
+    if (!body || body->kind != AST_EXPRLIST) return 0;
+    expr = body->left;
+    body = body->right;
+
+    // check for 0
+    if (!IsConstExpr(expr) || EvalConstExpr(expr) != 0) return 0;
+
     return 1;
 }
