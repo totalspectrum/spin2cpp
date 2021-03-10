@@ -350,8 +350,8 @@ isIdentifierChar(int c)
 static int
 parseNumber(LexStream *L, unsigned int base, uint32_t *num)
 {
-    unsigned long uval, digit;
-    unsigned long tenval;
+    uint32_t uval, digit;
+    uint64_t tenval;
     unsigned int c;
     int sawdigit = 0;
     int kind = SP_NUM;
