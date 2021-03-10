@@ -16,3 +16,12 @@ On most Linux installations you should be able to build with "make", which will 
 On macOS the procedure is similar, but you'll probably have to manually install a newer version of bison (the one that comes with macOS is too old). You'll need at least bison 3.0.
 
 On Windows it should be possible to build using msys or a similar gcc based build environment, but you'll need to install bison 3.0 or later, flex, gcc, and make.
+
+## Tips and Tricks
+
+### Executable Name
+
+If you name your executable "bstc.exe", it will try to act like the BSTC compiler (so it can be used in build scripts and IDEs that use bstc style command lines). For example, flexspin will work this way as the back-end assembler for PropBasic.
+
+If you name your executable something that ends in "spin2" (like "fastspin2.exe") it will compile for P2 by default.
+
