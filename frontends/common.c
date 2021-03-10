@@ -1001,6 +1001,9 @@ DoPropellerChecksum(const char *fname, size_t eepromSize)
         fclose(f);
         return 0;
     }
+#ifdef NEVER
+    // this part is obsolete now, the OutputSpinFooter function
+    // does it
     // update header fields
     fseek(f, 8L, SEEK_SET); // seek to 16 bit vbase field
     fputc(len & 0xff, f);
@@ -1014,7 +1017,8 @@ DoPropellerChecksum(const char *fname, size_t eepromSize)
     // update dcurr = dbase + 2 * sizeof(int)
     fputc( (len+16) & 0xff, f);
     fputc( ((len+16)>>8) & 0xff, f);
-
+#endif
+    
     fseek(f, 0L, SEEK_SET);
     for(;;) {
         c = fgetc(f);

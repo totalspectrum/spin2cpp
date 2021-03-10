@@ -49,29 +49,81 @@ OutputSpinHeader(Flexbuf *f, Module *P)
         clkmodeval = 0x6f;
     }
     
-    putlong(f, clkfreq);
-    putbyte(f, clkmodeval);
+    putlong(f, clkfreq);     // offset 0
+    
+    putbyte(f, clkmodeval);  // offset 4
     putbyte(f, 0);      // checksum
     putword(f, 0x0010); // PBASE
-    putword(f, 0x7fe8); // VBASE
+    
+    putword(f, 0x7fe8); // VBASE offset 8
     putword(f, 0x7ff0); // DBASE
-    putword(f, 0x0018); // PCURR
+    
+    putword(f, 0x0018); // PCURR  offset 12
     putword(f, 0x7ff8); // DCURR
-    putword(f, 0x0008); // object length?
-    putbyte(f, 0x02);
-    putbyte(f, 0x00);
+    
+    putword(f, 0x0008); // object length? this ends up getting PCURR-$10
+    putbyte(f, 0x02);   // seems always to be 02
+    putbyte(f, 0x00);   // object length?
+    
     putword(f, 0x0008);
     putword(f, 0x0000); // initial stack: 0 == first run of program
+}
 
-    // simple spin program
-    putbyte(f, 0x3f);
-    putbyte(f, 0x89);
-    putbyte(f, 0xc7);
-    putbyte(f, 0x10);
-    putbyte(f, 0xa4);
-    putbyte(f, 0x6);
-    putbyte(f, 0x2c);
-    putbyte(f, 0x32);
+/*
+ * change a 16 bit word in a Spin header
+ */
+static void
+placeword(uint8_t *where, uint32_t value)
+{
+    static int warned_once = 0;
+    if ((value > 0xffff) && !warned_once) {
+        WARNING(NULL, "Program size exceeds legal Spin values");
+        warned_once++;
+    }
+    where[0] = value & 0xff;
+    where[1] = (value>>8) & 0xff;
+}
+
+/*
+ * append a simple Spin program to launch
+ * the assembly we just inserted
+ */
+static void
+OutputSpinFooter(Flexbuf *f)
+{
+    size_t curlen;
+    size_t pad;
+    uint8_t *image;
+    
+    // first, round up to longword boundary
+    curlen = flexbuf_curlen(f);
+    pad = ((curlen + 3) & ~3) - curlen;
+    while (pad > 0) {
+        putbyte(f, 0);
+        curlen++;
+    }
+    // output simple spin program to start cog 0
+    putbyte(f, 0x35);   // constant 0
+    putbyte(f, 0xc7);   // memory op long PBASE + 8
+    putbyte(f, 0x08);
+    putbyte(f, 0x35);   // constant 0
+    
+    putbyte(f, 0x2c);   // coginit
+    putbyte(f, 0x32);   // return
+    putbyte(f, 0x00);
+    putbyte(f, 0x00);
+
+    // fixup header at start of program
+    image = (uint8_t *)flexbuf_peek(f);
+
+    // set PCURR to curlen
+    placeword(image+8,  curlen + 8);  // set VBASE to curlen + 8 (end of program)
+    placeword(image+10, curlen + 16); // set DBASE to curlen + 16 (after stack??)
+    placeword(image+12, curlen);      // set PCURR to object entry point
+    placeword(image+14, curlen + 20); // set DCURR to after all program stuff
+    placeword(image+16, curlen - 8); // don't know what this variable is
+    placeword(image+18, 2);           // always seems to get 2
+    placeword(image+20, curlen - 16);
 }
 
 void
@@ -99,6 +151,10 @@ OutputDatFile(const char *fname, Module *P, int prefixBin)
         OutputSpinHeader(&fb, P);
     }
     PrintDataBlock(&fb, P, NULL, NULL);
+    if (prefixBin && !gl_p2) {
+        // output the actual Spin program
+        OutputSpinFooter(&fb);
+    }
     curlen = flexbuf_curlen(&fb);
     fwrite(flexbuf_peek(&fb), curlen, 1, f);
     if (gl_p2) {

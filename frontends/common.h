@@ -156,6 +156,8 @@ extern const char *gl_cc; /* C compiler to use; NULL means default (PropGCC) */
 extern const char *gl_intstring; /* int string to use */
 
 extern int gl_dat_offset; /* offset for @@@ operator */
+#define DEFAULT_P1_DAT_OFFSET 24
+#define DEFAULT_P2_DAT_OFFSET 0
 extern int gl_compress;   /* if instructions should be compressed (NOT IMPLEMENTED) */
 extern int gl_fixedreal;  /* if instead of float we should use 16.16 fixed point */
 #define G_FIXPOINT 16  /* number of bits of fraction */
