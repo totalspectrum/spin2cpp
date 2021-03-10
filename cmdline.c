@@ -442,7 +442,7 @@ static int TrivialSpinFunction(Module *P)
     AST *body;
     AST *expr;
     
-    if (!P) {
+    if (!P || !P->functions) {
         // no Spin functions at all!
         return 1;
     }
