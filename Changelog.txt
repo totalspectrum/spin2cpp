@@ -1,6 +1,8 @@
 Version 5.2.1
 - Added SimpleSerial object for P1/P2 compatibility
 - Allowed pin -1 to mean "no pin" in SmartSerial
+- Changed the trivial Spin stub in P1 code to be compatible with openspin
+  (this allows flexspin to be used to make the PropLoader fastloader)
 - Fixed argv[0] handling in the command line tools
 - Fixed use of FCACHE in inline assembly in LUT and COG functions
 
