@@ -260,6 +260,7 @@ BuildDebugList(AST *exprlist)
 %token SP_IDENTIFIER "identifier"
 %token SP_NUM        "number"
 %token SP_STRING     "string"
+%token SP_BACKTICK_STRING "` string"
 %token SP_FLOATNUM   "float point number"
 %token SP_SPR        "SPR"
 %token SP_COGREG     "REG"
@@ -595,7 +596,18 @@ basicstmt:
 ;
 
 debug_exprlist: exprlist
-    { $$ = $1; }
+    {
+        $$ = $1;
+    }
+  | SP_BACKTICK_STRING
+    {
+        AST *str = $1;
+        if (gl_debug) {
+            WARNING(str, "Backtick debug statements are ignored  by flexspin");
+            str = NULL;
+        }           
+        $$ = str;
+    }
 ;
 
 multiassign:

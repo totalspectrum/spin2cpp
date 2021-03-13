@@ -786,6 +786,43 @@ parseString(LexStream *L, AST **ast_ptr)
     *ast_ptr = ast;
 }
 
+/* parse a backtick string */
+/* this is found only in DEBUG statements in Spin2 */
+static void
+parseBacktickString(LexStream *L, AST **ast_ptr)
+{
+    int c;
+    struct flexbuf fb;
+    AST *ast;
+    int paren_count = 1;
+    
+    ast = NewAST(AST_STRING, NULL, NULL);
+    flexbuf_init(&fb, INCSTR);
+    c = lexgetc(L);
+    while (c > 0 && c < 256) {
+        if (c == 10 || c == 13) {
+            // newline in mid-string, this is bad news
+            SYNTAX_ERROR("unterminated string");
+            lexungetc(L, c);
+            break;
+        } else if (c == '(') {
+            ++paren_count;
+        } else if (c == ')') {
+            --paren_count;
+            if (paren_count <= 0) {
+                lexungetc(L, c);
+                break;
+            }
+        }
+        flexbuf_addchar(&fb, c);
+        c = lexgetc(L);
+    }
+    flexbuf_addchar(&fb, '\0');
+
+    ast->d.string = flexbuf_get(&fb);
+    *ast_ptr = ast;
+}
+
 /* get a character after \ */
 static int
 getEscapedChar(LexStream *L)
@@ -1465,6 +1502,9 @@ getSpinToken(LexStream *L, AST **ast_ptr)
     } else if (c == '"') {
         parseString(L, &ast);
         c = SP_STRING;
+    } else if (c == '`' && L->language == LANG_SPIN_SPIN2) {
+        parseBacktickString(L, &ast);
+        c = SP_BACKTICK_STRING;
     }
     *ast_ptr = last_ast = ast;
     return c;
