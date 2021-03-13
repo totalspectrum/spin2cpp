@@ -1,6 +1,7 @@
 Version 5.2.1
 - Added SimpleSerial object for P1/P2 compatibility
 - Added _lockrel() function for C
+- Added header file with smartpin definitions (not strictly necessary in flexspin, but useful for compatibility with other compilers and Visual Studio)
 - Allowed pin -1 to mean "no pin" in SmartSerial
 - Changed the trivial Spin stub in P1 code to be compatible with openspin
   (this allows flexspin to be used to make the PropLoader fastloader)
