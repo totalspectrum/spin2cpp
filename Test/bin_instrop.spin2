@@ -1,0 +1,6 @@
+dat
+    mov	  pa, #2
+    mov   pa, #4 sar 1
+    long  $80
+    long  decod 7
+

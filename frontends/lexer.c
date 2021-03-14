@@ -81,6 +81,7 @@ SymbolTable cReservedWords;
 SymbolTable cppReservedWords;
 SymbolTable cAsmReservedWords;
 SymbolTable pasmWords;
+SymbolTable pasmInstrWords;
 SymbolTable ckeywords;
 
 static void InitPasm(int flags);
@@ -233,6 +234,7 @@ static void startNewLine(LexStream *L)
     lineInfo.fileName = L->fileName;
     lineInfo.lineno = L->lineCounter;
     flexbuf_addmem(&L->lineInfo, (char *)&lineInfo, sizeof(lineInfo));
+    L->sawInstruction = 0;
 }
 
 #define TAB_STOP 8
@@ -567,9 +569,15 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     idstr = flexbuf_get(&fb);
     lexungetc(L, c);
 
+    sym = NULL;
     /* check for reserved words */
     if (InDatBlock(L)) {
-        sym = FindSymbol(&pasmWords, idstr);
+        if (!L->sawInstruction) {
+            sym = FindSymbol(&pasmInstrWords, idstr);
+        }
+        if (!sym) {
+            sym = FindSymbol(&pasmWords, idstr);
+        }
         if (sym) {
             free(idstr);
             if (sym->kind == SYM_INSTR) {
@@ -580,6 +588,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                     comment_chain = NULL;
                 }
                 *ast_ptr = ast;
+                L->sawInstruction = 1;
                 return SP_INSTR;
             }
             if (sym->kind == SYM_INSTRMODIFIER) {
@@ -672,6 +681,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             case SP_WORD:
                 if (InDatBlock(L)) {
                     gatherComments = 1;
+                    L->sawInstruction = 1;
                 } else {
                     gatherComments = 0;
                 }
@@ -3340,6 +3350,7 @@ InitPasm(int flags)
     }
     
     pasmWords.flags |= SYMTAB_FLAG_NOCASE;
+    pasmInstrWords.flags |= SYMTAB_FLAG_NOCASE;
     
     /* add hardware registers */
     for (i = 0; hwreg[i].name != NULL; i++) {
@@ -3351,7 +3362,7 @@ InitPasm(int flags)
 
     /* add instructions */
     for (i = 0; instr[i].name != NULL; i++) {
-        AddSymbol(&pasmWords, instr[i].name, SYM_INSTR, (void *)&instr[i], NULL);
+        AddSymbol(&pasmInstrWords, instr[i].name, SYM_INSTR, (void *)&instr[i], NULL);
     }
 
     /* instruction modifiers */
@@ -3452,6 +3463,11 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
     // check for ASM
     /* check for reserved words */
     if (InDatBlock(L)) {
+        if (!L->sawInstruction) {
+            sym = FindSymbol(&pasmInstrWords, idstr);
+        } else {
+            sym = NULL;
+        }
         sym = FindSymbol(&pasmWords, idstr);
         if (sym) {
             free(idstr);
@@ -3801,7 +3817,10 @@ parseCIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     // check for ASM
     /* check for reserved words */
     if (InDatBlock(L)) {
-        sym = FindSymbol(&pasmWords, idstr);
+        sym = FindSymbol(&pasmInstrWords, idstr);
+        if (!sym) {
+            sym = FindSymbol(&pasmWords, idstr);
+        }
         if (sym) {
             free(idstr);
             if (sym->kind == SYM_INSTR) {

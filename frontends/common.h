@@ -78,6 +78,9 @@ struct lexstream {
        versus 'lookup(foo() : 1, 2, 3)'
     */
     int look_counter;
+
+    /* flag for Spin2 if we saw an instruction on the line */
+    char sawInstruction;
 };
 
 #define getLineInfoIndex(L) (flexbuf_curlen(&(L)->lineInfo) / sizeof(LineInfo))
