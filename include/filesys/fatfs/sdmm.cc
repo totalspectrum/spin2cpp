@@ -62,7 +62,7 @@ static int _pin_do = 0;
 #define PAUSE()      (_waitx(16))
 #define SHORTPAUSE() (_waitx(8))
 
-#define DO_INIT()	_dirl(PIN_DO)				/* Initialize port for MMC DO as input */
+#define DO_INIT()	_fltl(PIN_DO)				/* Initialize port for MMC DO as input */
 #define DO		(SHORTPAUSE(), (_pinr(PIN_DO) & 1))	/* Test for MMC DO ('H':true, 'L':false) */
 
 #define DI_INIT()	_dirh(PIN_DI)	/* Initialize port for MMC DI as output */
