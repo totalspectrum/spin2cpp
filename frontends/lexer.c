@@ -234,7 +234,6 @@ static void startNewLine(LexStream *L)
     lineInfo.fileName = L->fileName;
     lineInfo.lineno = L->lineCounter;
     flexbuf_addmem(&L->lineInfo, (char *)&lineInfo, sizeof(lineInfo));
-    L->sawInstruction = 0;
 }
 
 #define TAB_STOP 8
@@ -254,6 +253,7 @@ lexgetc(LexStream *L)
         L->lineCounter++;
         L->pendingLine = 0;
         L->colCounter = 0;
+        L->sawInstruction = 0;
     }
     c = (L->getcf(L));
     if (c == '\n') {
@@ -3473,7 +3473,9 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
         } else {
             sym = NULL;
         }
-        sym = FindSymbol(&pasmWords, idstr);
+        if (!sym) {
+            sym = FindSymbol(&pasmWords, idstr);
+        }
         if (sym) {
             free(idstr);
             if (sym->kind == SYM_INSTR) {
