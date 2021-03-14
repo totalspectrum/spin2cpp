@@ -643,6 +643,10 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                 L->block_firstline = L->lineCounter;
                 //EstablishIndent(L, 1);
                 break;
+            case SP_ORGH:
+            case SP_RES:
+                L->sawInstruction = 1;
+                break;
 	    case SP_ASM:
             case SP_ORG:
 	        if (L->block_type == BLOCK_ASM && c == SP_ASM) {
@@ -653,6 +657,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                     if (c == SP_ASM && L->colCounter - L->firstNonBlank > 4) {
                         goto is_identifier;
                     }
+                    L->sawInstruction = 1;
                 } else {
 		    L->save_block = L->block_type;
                     L->block_type = BLOCK_ASM;
