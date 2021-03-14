@@ -1,0 +1,50 @@
+dat
+	nop
+	cogid	pa
+	coginit	pa,##$400
+	orgh	$10
+	long	0	'reserved
+	long	0 ' clock frequency: will default to 20000000
+	long	0 ' clock mode: will default to $100094b
+	orgh	$400
+	org	0
+entry
+
+_checkit
+	mov	checkit_tmp001_, __recvreg
+	rdlong	checkit_tmp002_, checkit_tmp001_
+	add	checkit_tmp001_, #4
+	rdlong	checkit_tmp003_, checkit_tmp001_
+	mov	checkit_tmp005_, objptr
+	mov	objptr, checkit_tmp002_
+	call	checkit_tmp003_
+	mov	objptr, checkit_tmp005_
+	mov	outa, result1
+_checkit_ret
+	ret
+
+__lockreg
+	long	0
+__recvreg
+	long	0
+objptr
+	long	@objmem
+ptr___lockreg_
+	long	@__lockreg
+result1
+	long	0
+COG_BSS_START
+	fit	480
+	orgh
+objmem
+	long	0[0]
+	org	COG_BSS_START
+checkit_tmp001_
+	res	1
+checkit_tmp002_
+	res	1
+checkit_tmp003_
+	res	1
+checkit_tmp005_
+	res	1
+	fit	480

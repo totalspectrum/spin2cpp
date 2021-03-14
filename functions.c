@@ -1675,7 +1675,7 @@ ExpandArguments(AST *sendptr, AST *args)
         if (seq) {
             seq = NewAST(AST_SEQUENCE, seq, call);
         } else {
-            seq = NewAST(AST_SEQUENCE, call, NULL);
+            seq = call;
         }
     }
     return seq;

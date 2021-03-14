@@ -843,7 +843,7 @@ Init()
 
     // a generic function for Spin2 SEND type functionality
     ast_type_sendptr = NewAST(AST_MODIFIER_SEND_ARGS, GenericFunctionPtr(0), NULL);
-    ast_type_recvptr = GenericFunctionPtr(0);
+    ast_type_recvptr = GenericFunctionPtr(1);
     
     initSpinLexer(gl_p2);
 

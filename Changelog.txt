@@ -11,6 +11,7 @@ Version 5.2.1
 - Fixed a problem with parsing floating point numbers with 32 bit compilers
 - Fixed use of instructions as operators in DAT section
 - Ignored backtick statements in Spin2 DEBUG (and issue a warning)
+- Really fixed RECV return value
 
 Version 5.2.0
 - Added GET as keyword to BASIC
