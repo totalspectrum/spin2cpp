@@ -684,6 +684,8 @@ Other debug directives are ignored, with a warning.
 
 `DEBUG` in flexspin is implemented differently than in PNut, so timing when debug is enabled may be different.
 
+`DEBUG` statements containing backticks are (partially) translated so as to output the correct strings, but FlexProp does not have any way to interpret these strings so no graphical debug capabiliites exist.
+
 ### ASMCLK instruction
 
 The `ASMCLK` pseudo-instruction is supported as a preprocessor macro in FlexSpin, so only the most common spellings like `ASMCLK`, `AsmClk`, and `asmclk` will work (e.g. `aSmClk` will not work).

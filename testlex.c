@@ -270,7 +270,19 @@ static const char *token9test =
 static int tokens9[] = 
 { 
   SP_PUB, SP_IDENTIFIER, SP_EOLN,
-  SP_DEBUG, '(', SP_STRING, ',', SP_IDENTIFIER, '(', SP_IDENTIFIER, ')', ')', SP_EOLN,
+  SP_DEBUG, '(', SP_BACKTICK_STRING, ',', SP_IDENTIFIER, '(', SP_IDENTIFIER, ')', ')', SP_EOLN,
+  SP_EOF
+};
+
+static const char *token10test = 
+"pub f\n"
+"  debug(`hello `(a) done)\n"
+;
+
+static int tokens10[] = 
+{ 
+  SP_PUB, SP_IDENTIFIER, SP_EOLN,
+  SP_DEBUG, '(', SP_BACKTICK_STRING, ',', SP_IDENTIFIER, '(', SP_IDENTIFIER, ')', ',', SP_BACKTICK_STRING, ')', SP_EOLN,
   SP_EOF
 };
 
@@ -294,6 +306,7 @@ main()
     testTokenStream(token8test, tokens8, N_ELEM(tokens8));
 
     testTokenStream2(token9test, tokens9, N_ELEM(tokens9));
+    testTokenStream2(token10test, tokens10, N_ELEM(tokens9));
     
     testNumber("0", 0);
     testNumber("00", 0);

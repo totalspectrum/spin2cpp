@@ -821,7 +821,7 @@ parseBacktickString(LexStream *L, AST **ast_ptr, int first)
     while (c > 0 && c < 256) {
         if (c == 10 || c == 13) {
             // newline in mid-string, this is bad news
-            SYNTAX_ERROR("unterminated string");
+            SYNTAX_ERROR("unterminated backtick string");
             lexungetc(L, c);
             break;
         } else if (c == '`') {
@@ -848,7 +848,7 @@ parseBacktickString(LexStream *L, AST **ast_ptr, int first)
         free(ast);
         ast = NULL;
     } else {
-        c = SP_STRING;
+        c = SP_BACKTICK_STRING;
     }
     *ast_ptr = ast;
     return c;
@@ -1477,19 +1477,27 @@ getSpinToken(LexStream *L, AST **ast_ptr)
     int at_startofline = (L->eoln == 1);
     int peekc;
     
+    if (L->backtick_escape == -1) {
+        L->backtick_escape = -2;
+        c = lexpeekc(L);
+        if (c != ')') {
+            *ast_ptr = NULL;
+            return ',';
+        }
+    }
+    if (L->backtick_escape == -2) {
+        // going back into backtick string
+        L->backtick_escape = 0;
+        c = parseBacktickString(L, &ast, 0);
+        return c;
+    }
+    
     c = skipSpace(L, &ast, LANG_SPIN_SPIN1);
 
     if (c == EOF) {
       c = SP_EOF;
     }
     if (L->backtick_escape) {
-        if (L->backtick_escape == -1) {
-            // going back into backtick string
-            L->backtick_escape = 0;
-            c = parseBacktickString(L, &ast, 0);
-            *ast_ptr = last_ast = ast;
-            return c;
-        }
         if (L->backtick_escape == 3) {
             --L->backtick_escape;
             *ast_ptr = last_ast = ast;

@@ -215,13 +215,21 @@ BuildDebugList(AST *exprlist)
         return NULL;
     }
     flexbuf_init(&fb, 1024);
-    flexbuf_addstr(&fb, "Cog%d  ");
-    outlist = NewAST(AST_FUNCCALL,
-                     AstIdentifier("cogid"),
-                     NULL);
-    outlist = NewAST(AST_EXPRLIST, outlist, NULL);
+
+    if (exprlist && exprlist->left && exprlist->left->kind == AST_LABEL) {   
+        flexbuf_addstr(&fb, "Cog%d  ");
+        outlist = NewAST(AST_FUNCCALL,
+                         AstIdentifier("cogid"),
+                         NULL);
+        outlist = NewAST(AST_EXPRLIST, outlist, NULL);
+        exprlist = exprlist->right;
+    } else {
+        outlist = NULL;
+    }
     while (exprlist && exprlist->kind == AST_EXPRLIST) {
         item = exprlist->left;
+        exprlist = exprlist->right;
+        if (!item) continue;
         if (item->kind == AST_STRING) {
             sub = NewAST(AST_STRINGPTR, item, NULL);
             sub = NewAST(AST_EXPRLIST, sub, NULL);
@@ -239,7 +247,6 @@ BuildDebugList(AST *exprlist)
                 outlist = AddToList(outlist, newarg);
             }
         }
-        exprlist = exprlist->right;
     }
     flexbuf_addstr(&fb, "\r\n");
     flexbuf_addchar(&fb, 0);
@@ -595,20 +602,38 @@ basicstmt:
     }
 ;
 
-debug_exprlist: exprlist
-    {
-        $$ = $1;
-    }
-  | SP_BACKTICK_STRING
-    {
-        AST *str = $1;
-        if (gl_debug) {
-            WARNING(str, "Backtick debug statements are ignored  by flexspin");
-            str = NULL;
-        }           
-        $$ = str;
-    }
+debug_exprlist:
+  debug_expritem_first
+  | debug_expritem_first ',' debug_exprlist_continue
+     { $$ = AddToList($1, $3); }
 ;
+
+debug_exprlist_continue:
+   debug_expritem
+   | debug_exprlist_continue ',' debug_expritem
+     { $$ = AddToList($1, $3); }
+   ;
+
+debug_expritem_first:
+  SP_BACKTICK_STRING
+    {
+        $$ = NewAST(AST_EXPRLIST, $1, NULL);
+    }
+  | expritem
+    {
+        AST *list = $1;
+        AST *note = NewAST(AST_LABEL, NULL, NULL);
+
+        $$ = NewAST(AST_EXPRLIST, note, list);
+    }
+  ;
+
+debug_expritem:
+  SP_BACKTICK_STRING
+    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+  | expritem
+    { $$ = $1; }
+  ;
 
 multiassign:
   lhsseq SP_ASSIGN '(' exprlist ')'
