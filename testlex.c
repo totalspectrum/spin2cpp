@@ -144,6 +144,23 @@ testTokenStream(const char *str, int *tokens, int numtokens)
     printf("passed\n");
 }
 
+static void
+testTokenStream2(const char *str, int *tokens, int numtokens)
+{
+    int i;
+    LexStream L;
+    AST *ast;
+    Token t;
+
+    printf("testing tokens [%s]...", str); fflush(stdout);
+    strToLex(&L, str, NULL, LANG_SPIN_SPIN2);
+    for (i = 0; i < numtokens; i++) {
+        t = getSpinToken(&L, &ast);
+        EXPECTEQ(t, tokens[i]);
+    }
+    printf("passed\n");
+}
+
 void
 ERROR(AST *instr, const char *msg, ...)
 {
@@ -245,6 +262,18 @@ static int tokens8[] =
   SP_RETURN, SP_IDENTIFIER, SP_EOLN, SP_EOF
 };
 
+static const char *token9test = 
+"pub f\n"
+"  debug(`hello `(a))\n"
+;
+
+static int tokens9[] = 
+{ 
+  SP_PUB, SP_IDENTIFIER, SP_EOLN,
+  SP_DEBUG, '(', SP_STRING, ',', SP_IDENTIFIER, '(', SP_IDENTIFIER, ')', ')', SP_EOLN,
+  SP_EOF
+};
+
 int
 main()
 {
@@ -264,6 +293,8 @@ main()
     testTokenStream(token7test, tokens7, N_ELEM(tokens7));
     testTokenStream(token8test, tokens8, N_ELEM(tokens8));
 
+    testTokenStream2(token9test, tokens9, N_ELEM(tokens9));
+    
     testNumber("0", 0);
     testNumber("00", 0);
     testNumber("007", 7);

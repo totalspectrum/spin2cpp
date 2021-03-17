@@ -254,6 +254,7 @@ lexgetc(LexStream *L)
         L->pendingLine = 0;
         L->colCounter = 0;
         L->sawInstruction = 0;
+        L->backtick_escape = 0;
     }
     c = (L->getcf(L));
     if (c == '\n') {
@@ -803,22 +804,29 @@ parseString(LexStream *L, AST **ast_ptr)
 
 /* parse a backtick string */
 /* this is found only in DEBUG statements in Spin2 */
-static void
-parseBacktickString(LexStream *L, AST **ast_ptr)
+static int
+parseBacktickString(LexStream *L, AST **ast_ptr, int first)
 {
     int c;
     struct flexbuf fb;
     AST *ast;
     int paren_count = 1;
-    
+
     ast = NewAST(AST_STRING, NULL, NULL);
     flexbuf_init(&fb, INCSTR);
+    if (first) {
+        flexbuf_addchar(&fb, '`');
+    }
     c = lexgetc(L);
     while (c > 0 && c < 256) {
         if (c == 10 || c == 13) {
             // newline in mid-string, this is bad news
             SYNTAX_ERROR("unterminated string");
             lexungetc(L, c);
+            break;
+        } else if (c == '`') {
+            /* we're escaping out of the string now */
+            L->backtick_escape = 3;
             break;
         } else if (c == '(') {
             ++paren_count;
@@ -835,8 +843,60 @@ parseBacktickString(LexStream *L, AST **ast_ptr)
     flexbuf_addchar(&fb, '\0');
 
     ast->d.string = flexbuf_get(&fb);
+    if (ast->d.string[0] == 0) {
+        c = lexgetc(L);
+        free(ast);
+        ast = NULL;
+    } else {
+        c = SP_STRING;
+    }
+    *ast_ptr = ast;
+    return c;
+}
+
+/* handle things like `(a, b) -> sdec_(a, b) */
+static void
+parseBacktickInBacktick(LexStream *L, AST **ast_ptr)
+{
+    int c;
+    char identName[256];
+    int identLen;
+    char *dup;
+    AST *ast;
+    
+    /* first, read the identifier (everything up to the next "(") */
+    identLen = 0;
+    c = lexgetc(L);
+    while (c && c != '(') {
+        if (c == 10 || c == 13) {
+            break;
+        }
+        if (identLen >= sizeof(identName)-1) {
+            SYNTAX_ERROR("bad debug line, expected (");
+            return;
+        }
+        identName[identLen++] = c;
+        c = lexgetc(L);
+    }
+    identName[identLen] = 0;
+    if (identLen == 0) {
+        strcpy(identName, "sdec_");
+    } else if (identLen == 1 && identName[0] == '$') {
+        strcpy(identName, "uhex_");
+    } else if (identLen == 1 && identName[0] == '%') {
+        strcpy(identName, "ubin_");
+    }
+    if (c) {
+        lexungetc(L, c);
+    }
+    // give room for trailing 0 and for name mangling later
+    dup = malloc(strlen(identName)+3);
+    strcpy(dup, identName);
+    ast = NewAST(AST_IDENTIFIER, NULL, NULL);
+    ast->d.string = dup;
     *ast_ptr = ast;
 }
+
 
 /* get a character after \ */
 static int
@@ -1422,6 +1482,37 @@ getSpinToken(LexStream *L, AST **ast_ptr)
     if (c == EOF) {
       c = SP_EOF;
     }
+    if (L->backtick_escape) {
+        if (L->backtick_escape == -1) {
+            // going back into backtick string
+            L->backtick_escape = 0;
+            c = parseBacktickString(L, &ast, 0);
+            *ast_ptr = last_ast = ast;
+            return c;
+        }
+        if (L->backtick_escape == 3) {
+            --L->backtick_escape;
+            *ast_ptr = last_ast = ast;
+            lexungetc(L, c);
+            return ',';
+        }
+        if (L->backtick_escape == 2) {
+            // looking for first identifier after `
+            lexungetc(L, c);
+            L->backtick_escape = 1;
+            parseBacktickInBacktick(L, &ast);
+            c = SP_IDENTIFIER;
+            *ast_ptr = last_ast = ast;
+            return c;
+        }
+        if (c == ')') {
+            // done with the backtick_escape
+            L->backtick_escape = -1;
+            *ast_ptr = last_ast = NULL;
+            return c;
+        }
+    }
+    
 //    printf("L->linecounter=%d\n", L->lineCounter);
     if (c >= 127) {
         *ast_ptr = last_ast = ast;
@@ -1518,8 +1609,7 @@ getSpinToken(LexStream *L, AST **ast_ptr)
         parseString(L, &ast);
         c = SP_STRING;
     } else if (c == '`' && L->language == LANG_SPIN_SPIN2) {
-        parseBacktickString(L, &ast);
-        c = SP_BACKTICK_STRING;
+        c = parseBacktickString(L, &ast, 1); /* first backtick seen */
     }
     *ast_ptr = last_ast = ast;
     return c;

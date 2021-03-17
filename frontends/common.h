@@ -81,6 +81,9 @@ struct lexstream {
 
     /* flag for Spin2 if we saw an instruction on the line */
     char sawInstruction;
+
+    /* another Spin2 flag for backtick */
+    char backtick_escape;
 };
 
 #define getLineInfoIndex(L) (flexbuf_curlen(&(L)->lineInfo) / sizeof(LineInfo))
