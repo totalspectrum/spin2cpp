@@ -699,6 +699,17 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                 L->look_counter++;
                 gatherComments = 0;
                 break;
+            case SP_DEBUG:
+                // if gl_debug is off, we want to ignore the whole debug statement
+                // do this by just skipping the rest of the line
+                if (!gl_debug) {
+                    free(idstr);
+                    do {
+                        c = lexgetc(L);
+                    } while ( (c > 0) && (c != 10) && (c != 13) );
+                    return SP_EOLN;
+                }
+                break;
             default:
                 gatherComments = 0;
                 break;

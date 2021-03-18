@@ -39,6 +39,7 @@ int gl_normalizeIdents = 1;  /* for compatibility with ident tests */
 int gl_dat_offset = 0;
 int gl_infer_ctypes = 0;
 int gl_fixedreal = 0;
+int gl_debug = 1;
 const char *gl_intstring = "int32_t";
 int gl_warn_flags = 0;
 
