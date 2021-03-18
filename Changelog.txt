@@ -5,6 +5,7 @@ Version 5.2.1
 - Allowed pin -1 to mean "no pin" in SmartSerial
 - Changed the trivial Spin stub in P1 code to be compatible with openspin
   (this allows flexspin to be used to make the PropLoader fastloader)
+- Changed handling of ? operator in Spin2 to be compatible with PNut
 - Extended DEBUG() capability to include some backtick features
 - Fixed argv[0] handling in the command line tools
 - Fixed use of FCACHE in inline assembly in LUT and COG functions

@@ -407,12 +407,14 @@ BuildDebugList(AST *exprlist)
 %token SP_QEXP       "QEXP"
 %token SP_DEBUG      "DEBUG"
 %token SP_LOOK_SEP   ":"
+%token SP_CONDITIONAL  "?"
 
 /* operator precedence */
 %right SP_ASSIGN
 %left '\\'
 %right SP_THEN
 %right SP_ELSE
+%left SP_CONDITIONAL
 %left SP_OR SP_XOR SP_ORELSE
 %left SP_AND SP_ANDTHEN
 %left SP_NOT
@@ -1310,6 +1312,8 @@ expr:
   | '(' expr ')' SP_RANDOM expr ':' expr %prec SP_ELSE
     { $$ = NewAST(AST_CONDRESULT, $2, NewAST(AST_THENELSE, $5, $7)); }
   | expr  '?' expr ':' expr %prec SP_ELSE
+    { $$ = NewAST(AST_CONDRESULT, $1, NewAST(AST_THENELSE, $3, $5)); }
+  | expr  SP_CONDITIONAL expr ':' expr %prec SP_ELSE
     { $$ = NewAST(AST_CONDRESULT, $1, NewAST(AST_THENELSE, $3, $5)); }
   | '(' expr ')'
     { $$ = $2; }

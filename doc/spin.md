@@ -206,7 +206,7 @@ This may also be written in C / Verilog style as:
 ```
 r := (a) ? b : c
 ```
-In the latter form the parentheses around `a` are mandatory to avoid confusion with the random number operator `?`.
+In the latter form the parentheses around `a` are mandatory in Spin1 to avoid confusion with the random number operator `?`. In Spin2 the question mark is no longer used for random numbers, so the issue does not arise there.
 
 ### Default function parameters
 

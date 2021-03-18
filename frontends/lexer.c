@@ -1630,7 +1630,11 @@ getSpinToken(LexStream *L, AST **ast_ptr)
     } else if (c == '`' && L->language == LANG_SPIN_SPIN2) {
         c = parseBacktickString(L, &ast, 1); /* first backtick seen */
     }
+    if (c == '?' && L->language == LANG_SPIN_SPIN2) {
+        c = SP_CONDITIONAL;
+    }
     *ast_ptr = last_ast = ast;
+        
     return c;
 }
 
