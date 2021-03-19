@@ -359,7 +359,8 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
     int sawdigit = 0;
     int kind = SP_NUM;
     int lang;
-
+    int ignored_digits = 0;
+    
     lang = L->language;
     uval = 0;
     tenval = 0;
@@ -379,7 +380,11 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
         }
         if (base <= 10 && digit < 10) {
             // keep parallel track of the interpretation in base 10
-            tenval = 10 * tenval + digit;
+            if (tenval < 0x1000000000000000ULL) {
+                tenval = 10 * tenval + digit;
+            } else {
+                ignored_digits++;
+            }
         }
         if (digit < base) {
             uval = base * uval + digit;
@@ -395,7 +400,7 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
          || (base == 16 && (c=='.' || c == 'p' || c == 'P') ) )
     {
         /* potential floating point number */
-        float f = (base == 16) ? (float)uval : (float)tenval;
+        float f = (base == 16) ? (float)uval : (float)(double)tenval;
         float ff = 0.0;
         static float divby[45] = {
             1e-1f, 1e-2f, 1e-3f, 1e-4f, 1e-5f,
@@ -409,7 +414,7 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
             1e-41f, 1e-42f, 1e-43f, 1e-44f, 1e-45f,
         };
         int counter = 0;
-        int exponent = 0;
+        int exponent = ignored_digits;
 
         if (c == '.') {
             c = lexgetc(L);

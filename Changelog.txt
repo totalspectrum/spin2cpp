@@ -12,6 +12,7 @@ Version 5.3.0
 - Fixed BASIC input when 127 (DEL) is read (Unix terminals use this for backspace)
 - Fixed a problem with parsing floating point numbers with 32 bit compilers
 - Fixed use of instructions as operators in DAT section
+- Fixed parsing of large floating point numbers
 - Ignored DEBUG statements completely unless -g is given
 - Really fixed RECV return value
 
