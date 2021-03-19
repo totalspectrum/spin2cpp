@@ -713,8 +713,14 @@ doPruneMethods(Module *P)
     for(;;) {
         pf = *oldptr;
         if (!pf) break;
-        if (pf->callSites == 0 && pf->used_as_ptr == 0) {
-            *oldptr = pf->next; // remove this function
+        if (!pf->used_as_ptr) {
+            if (pf->callSites == 0) {
+                *oldptr = pf->next; // remove this function
+            } else if (pf->body && pf->body->kind == AST_STRING) {
+                *oldptr = pf->next; // also remove
+            } else {
+                oldptr = &pf->next;
+            }
         } else {
             oldptr = &pf->next;
         }
