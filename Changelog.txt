@@ -1,4 +1,4 @@
-Version 5.2.1
+Version 5.3.0
 - Added SimpleSerial object for P1/P2 compatibility
 - Added _lockrel() function for C
 - Added header file with smartpin definitions (not strictly necessary in flexspin, but useful for compatibility with other compilers and Visual Studio)
