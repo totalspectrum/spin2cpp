@@ -1591,7 +1591,11 @@ CheckRetStatement(Function *func, AST *ast)
         lhs = ast->left;
         rhs = ast->right;
         if (IsResultVar(func, lhs)) {
-            SetFunctionReturnType(func, ForceExprType(rhs));
+            // watch out for multiple returns
+            AST *typ = ForceExprType(rhs);
+            if (typ && typ->kind != AST_TUPLE_TYPE) {
+                SetFunctionReturnType(func, typ);
+            }
         }
         sawreturn = 0;
         break;
