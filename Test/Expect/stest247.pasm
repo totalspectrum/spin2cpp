@@ -5,6 +5,8 @@ dat
 entry
 
 _toReal
+	mov	arg02, imm_1199570944_
+	call	#__system___float_mul
 	mov	arg01, result1
 	mov	arg02, #0
 	call	#__system___float_tointeger
@@ -59,6 +61,8 @@ __system___float_tointeger_ret
 
 __lockreg
 	long	0
+imm_1199570944_
+	long	1199570944
 imm_4294967295_
 	long	-1
 imm_536870912_
