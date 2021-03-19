@@ -460,7 +460,10 @@ struct cmddefs {
 extern SymbolTable spinCommonReservedWords;  // in the lexer
 extern SymbolTable basicReservedWords;
 extern SymbolTable cReservedWords;
-extern Module *globalModule;       // global functions and variables
+extern Module *systemModule;       // global functions and variables created by system
+
+/* determine whether module is system */
+bool IsSystemModule(Module *P);
 
 /* create a new AST describing a table lookup */
 AST *NewLookup(AST *expr, AST *table);

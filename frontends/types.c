@@ -1499,7 +1499,7 @@ AST *CheckTypes(AST *ast)
             }
             if (sym->kind == SYM_FUNCTION) {
                 Function *f = (Function *)sym->val;
-                if (f->module == current || f->module == globalModule) {
+                if (f->module == current || IsSystemModule(f->module)) {
                     AstReportDone(&saveinfo);
                     return ltype;
                 }

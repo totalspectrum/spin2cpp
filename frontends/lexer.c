@@ -1071,7 +1071,7 @@ static void CheckSrcComment( LexStream *L )
     {
         return;
     }
-    if ( (L->flags & LEXSTREAM_FLAG_NOSRC) || (current == globalModule)) {
+    if ( (L->flags & LEXSTREAM_FLAG_NOSRC) || (current == systemModule)) {
         return;
     }
     comment_chain = AddToList(comment_chain, NewAST(AST_SRCCOMMENT, NULL, NULL));

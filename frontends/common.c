@@ -38,7 +38,7 @@
 
 Module *current = NULL;
 Module *allparse = NULL;
-Module *globalModule;
+Module *systemModule;
 SymbolTable *currentTypes;
 
 int gl_p2;
@@ -302,7 +302,7 @@ initSymbols(Module *P, int language)
      * C namespace, so do not add the aliases to the
      * system (global) module
      */
-    if (!globalModule || P == globalModule) {
+    if (!systemModule || P == systemModule) {
         return;
     }
     if (IsBasicLang(language)) {
@@ -364,8 +364,8 @@ NewModule(const char *fullname, int language)
     strcpy(P->classname, P->basename);
 
     /* link the global symbols */
-    if (globalModule) {
-        P->objsyms.next = &globalModule->objsyms;
+    if (systemModule) {
+        P->objsyms.next = &systemModule->objsyms;
     } else if (IsBasicLang(language)) {
         P->objsyms.next = &basicReservedWords;
     } else if (IsCLang(language)) {
@@ -695,7 +695,7 @@ LANGUAGE_WARNING(int language, AST *ast, const char *msg, ...)
     if (!(gl_warn_flags & WARN_LANG_EXTENSIONS)) {
         return;
     }
-    if (!current || current == globalModule) {
+    if (!current || IsSystemModule(current)) {
         return;
     }
     if (language != LANG_ANY && language != current->curLanguage) {
@@ -785,7 +785,7 @@ ERROR_UNKNOWN_SYMBOL(AST *ast)
         AddLocalVariable(curfunc, ast, NULL, SYM_LOCALVAR);
     } else {
         labelref = (Label *)calloc(1, sizeof(*labelref));
-        AddSymbol(&globalModule->objsyms, name, SYM_LABEL, labelref, NULL);
+        AddSymbol(&systemModule->objsyms, name, SYM_LABEL, labelref, NULL);
     }
 }
 
@@ -2009,4 +2009,10 @@ int GetClkFreq(Module *P, unsigned int *clkfreqptr, unsigned int *clkmodeptr)
     *clkfreqptr = EvalConstSym(freqsym);
     *clkmodeptr = EvalConstSym(modesym);
     return 1;
+}
+
+bool
+IsSystemModule(Module *P)
+{
+    return P == systemModule;
 }

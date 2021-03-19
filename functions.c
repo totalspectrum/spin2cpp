@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2020 Total Spectrum Software Inc.
+ * Copyright 2011-2021 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling functions
@@ -118,7 +118,7 @@ EnterVariable(int kind, SymbolTable *stab, AST *astname, AST *type, unsigned sym
     } else {
         sym->flags |= sym_flag;
         sym->module = (void *)current;
-        if (current && current != globalModule) {
+        if (current && current != systemModule) {
             if ( (gl_warn_flags & WARN_HIDE_MEMBERS)
                  || ( (gl_warn_flags & WARN_LANG_EXTENSIONS) && current->curLanguage == LANG_SPIN_SPIN2 ) )
             {
@@ -347,7 +347,7 @@ MarkSystemFuncUsed(const char *name)
 {
     Symbol *sym;
     Function *calledf;
-    sym = FindSymbol(&globalModule->objsyms, name);
+    sym = FindSymbol(&systemModule->objsyms, name);
     if (!sym) {
         ERROR(NULL, "Internal error could not find %s", name);
         return;
@@ -2265,7 +2265,7 @@ InferTypes(Module *P)
 static void
 UseInternal(const char *name)
 {
-    Symbol *sym = FindSymbol(&globalModule->objsyms, name);
+    Symbol *sym = FindSymbol(&systemModule->objsyms, name);
     if (sym && sym->kind == SYM_FUNCTION) {
         Function *func = (Function *)sym->val;
         MarkUsed(func, "internal");

@@ -21,7 +21,7 @@ typedef int Token;
 
 Module *current;
 Module *allparse;
-Module *globalModule;
+Module *systemModule;
 Function *curfunc;
 SymbolTable *currentTypes;
 

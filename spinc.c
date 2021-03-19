@@ -104,8 +104,8 @@ InitGlobalModule(void)
     int oldtmpnum;
     const char *syscode;
     
-    current = globalModule = NewModule("_system_", LANG_SPIN_SPIN1);
-    table = &globalModule->objsyms;
+    current = systemModule = NewModule("_system_", LANG_SPIN_SPIN1);
+    table = &systemModule->objsyms;
 
     sym = AddSymbol(table, "__clkfreq_var", SYM_VARIABLE, ast_type_long, NULL);
     sym->flags |= SYMF_GLOBAL;
@@ -146,18 +146,18 @@ InitGlobalModule(void)
             syscode = (const char *)sys_p1_code_spin;
         }
         gl_normalizeIdents = 0;
-        globalModule->Lptr = (LexStream *)calloc(sizeof(*globalModule->Lptr), 1);
-        globalModule->Lptr->flags |= LEXSTREAM_FLAG_NOSRC;
-        strToLex(globalModule->Lptr, syscode, "_system_", LANG_SPIN_SPIN1);
+        systemModule->Lptr = (LexStream *)calloc(sizeof(*systemModule->Lptr), 1);
+        systemModule->Lptr->flags |= LEXSTREAM_FLAG_NOSRC;
+        strToLex(systemModule->Lptr, syscode, "_system_", LANG_SPIN_SPIN1);
         spinyyparse();
-        strToLex(globalModule->Lptr, (const char *)sys_common_spin, "_common_", LANG_SPIN_SPIN1);
+        strToLex(systemModule->Lptr, (const char *)sys_common_spin, "_common_", LANG_SPIN_SPIN1);
         spinyyparse();
-        strToLex(globalModule->Lptr, (const char *)sys_float_spin, "_float_", LANG_SPIN_SPIN1);
+        strToLex(systemModule->Lptr, (const char *)sys_float_spin, "_float_", LANG_SPIN_SPIN1);
         spinyyparse();
-        strToLex(globalModule->Lptr, (const char *)sys_gcalloc_spin, "_gc_", LANG_SPIN_SPIN1);
+        strToLex(systemModule->Lptr, (const char *)sys_gcalloc_spin, "_gc_", LANG_SPIN_SPIN1);
         spinyyparse();
         
-        ProcessModule(globalModule);
+        ProcessModule(systemModule);
 
         curfunc = NULL;
         /* restore temp variable base */
@@ -827,7 +827,7 @@ RemoveUnusedMethods(int isBinary)
     } else {
         // mark stuff called via public functions
         for (P = allparse; P; P = P->next) {
-            if (P == globalModule) continue;
+            if (P == systemModule) continue;
             for (pf = P->functions; pf; pf = pf->next) {
                 if (pf->callSites == 0) {
                     if (pf->is_public) {
@@ -1029,7 +1029,7 @@ FixupCode(Module *P, int isBinary)
                 Q->next = subQ;
             }
         }
-        LastQ->next = globalModule;
+        LastQ->next = systemModule;
     }
 
     /* perform generic high-level optimizations
@@ -1067,7 +1067,7 @@ FixupCode(Module *P, int isBinary)
     {
         Function *pf;
         bool need_heap = false;
-        for (pf = globalModule->functions; pf; pf = pf->next) {
+        for (pf = systemModule->functions; pf; pf = pf->next) {
             if (!strcasecmp(pf->name, "_gc_ptrs")) {
                 need_heap = true;
                 break;
@@ -1103,7 +1103,7 @@ FixupCode(Module *P, int isBinary)
                 }
                 heapsize = (heapsize+3)/4; // convert to longs
                 heapAst = AstInteger(heapsize);
-                sym = FindSymbol(&globalModule->objsyms, "__real_heapsize__");
+                sym = FindSymbol(&systemModule->objsyms, "__real_heapsize__");
                 if (!sym || sym->kind != SYM_CONSTANT) {
                     ERROR(NULL, "Internal error, could not find __REAL_HEAPSIZE__");
                 } else {
@@ -1147,7 +1147,7 @@ GetMainFunction(Module *P)
     } else if (IsCLang(P->mainLanguage)) {
         if (gl_exit_status) {
             mainName = "_c_startup";
-            P = globalModule;
+            P = systemModule;
         } else {
             mainName = "main";
         }

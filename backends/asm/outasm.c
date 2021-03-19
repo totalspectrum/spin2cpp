@@ -1248,7 +1248,7 @@ GetSystemFunction(const char *name)
 {
     Symbol *sym;
     Function *calledf;
-    sym = FindSymbol(&globalModule->objsyms, name);
+    sym = FindSymbol(&systemModule->objsyms, name);
     if (!sym) {
         ERROR(NULL, "Internal error could not find %s", name);
         return mulfunc;
@@ -5076,20 +5076,12 @@ VisitRecursive(IRList *irl, Module *P, VisitorFunc func, unsigned visitval)
     return change;
 }
 
-static bool
-IsGlobalModule(Module *P)
-{
-    return P == globalModule;
-}
-
 //
 // return true if a function should be removed
 //
 static bool
 ShouldSkipFunction(Function *f)
 {
-    if (0 == (gl_optimize_flags & OPT_REMOVE_UNUSED_FUNCS))
-        return false;
     if (gl_output == OUTPUT_COGSPIN)
         return false;
     if (0 != f->callSites)
@@ -5098,8 +5090,11 @@ ShouldSkipFunction(Function *f)
         return false; // used in another cog
     if (f->used_as_ptr)
         return false; // used as a pointer
-    // do not skip global functions, we handle those separately
-    if (IsGlobalModule(f->module))
+
+    // stuff in the "system" module should be skipped
+    if (IsSystemModule(f->module))
+        return true;
+    if (0 == (gl_optimize_flags & OPT_REMOVE_UNUSED_FUNCS))
         return false;
     return true;
 }
@@ -5965,8 +5960,6 @@ EmitVarSection(IRList *irl, Module *P)
     return 0;
 }
 
-extern Module *globalModule;
-
 /*
  * emit a small main program
  * it looks something like:
@@ -6359,7 +6352,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         }
     }
     InitAsmCode();
-    CompileIntermediate(globalModule);
+    CompileIntermediate(systemModule);
     
     memset(&cogcode, 0, sizeof(cogcode));
     memset(&hubcode, 0, sizeof(hubcode));
@@ -6494,8 +6487,8 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
             EmitJump(&hubcode, COND_TRUE, cogexit);
         }
         // output global functions
-        CompileSystemModule(&cogcode, globalModule, VISITFLAG_COMPILEIR_COG);
-        CompileSystemModule(&hubcode, globalModule, VISITFLAG_COMPILEIR_HUB);
+        CompileSystemModule(&cogcode, systemModule, VISITFLAG_COMPILEIR_COG);
+        CompileSystemModule(&hubcode, systemModule, VISITFLAG_COMPILEIR_HUB);
 
         // now copy the hub code into place
         EmitBuiltins(&cogcode);
@@ -6535,7 +6528,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
 
     // we need to emit all dat sections
     VisitRecursive(&hubdata, P, EmitDatSection, VISITFLAG_EMITDAT);
-    VisitRecursive(&hubdata, globalModule, EmitDatSection, VISITFLAG_EMITDAT);
+    VisitRecursive(&hubdata, systemModule, EmitDatSection, VISITFLAG_EMITDAT);
     
     // emit heap space, if we need it
     if (heaplabel) {
