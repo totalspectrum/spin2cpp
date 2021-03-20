@@ -68,6 +68,32 @@ static int IsLongString(AST *ast)
     return 0;
 }
 
+// convert a pin range like 57..46 to an ADDPINS expression
+static AST *
+ConvertPinRange(AST *exprlist)
+{
+    AST *expr;
+    AST *lhs, *rhs;
+    if (!exprlist || !exprlist->left) {
+        return exprlist;
+    }
+    expr = exprlist->left;
+    if (expr->kind != AST_RANGE) {
+        return exprlist;
+    }
+    lhs = expr->left;
+    rhs = expr->right;
+    if (!rhs) {
+        exprlist->left = rhs;
+        return exprlist;
+    }
+    // convert A..B to B ADDPINS  (B-A)
+    lhs = AstOperator('-', lhs, rhs);
+    expr = AstOperator('|', rhs, AstOperator(K_SHL, lhs, AstInteger(6)));
+    exprlist->left = expr;
+    return exprlist;
+}
+
 // Fix up an expression list
 // convert any long string operator entries by folding the operation
 // into the first/last character of the string
@@ -321,6 +347,11 @@ BuildDebugList(AST *exprlist)
 %token SP_LOOKUPZ    "LOOKUPZ"
 %token SP_COGINIT    "COGINIT"
 %token SP_COGNEW     "COGNEW"
+%token SP_PINR       "PINREAD"
+%token SP_PINT       "PINTOGGLE"
+%token SP_PINW       "PINWRITE"
+%token SP_PINL       "PINLOW"
+%token SP_PINH       "PINHIGH"
 
 %token SP_CASE       "CASE"
 %token SP_CASE_FAST  "CASE_FAST"
@@ -1548,6 +1579,43 @@ funccall:
     {
         $$ = MakeFunccall($1, NULL, $4);
         LANGUAGE_WARNING(LANG_SPIN_SPIN1, NULL, "Using () for functions with no parameters is a flexspin extension");
+    }
+  | SP_PINW '(' rangeexpritem ',' expritem ')'
+    {
+        AST *arg1 = ConvertPinRange($3);
+        AST *arg2 = $5;
+        AST *ident = AstIdentifier("pinw");
+        arg1 = AddToList(arg1, arg2);
+        
+        $$ = MakeFunccall(ident, arg1, NULL);
+    }
+  | SP_PINR '(' rangeexpritem ')'
+    {
+        AST *arg1 = ConvertPinRange($3);
+        AST *ident = AstIdentifier("pinr");
+        
+        $$ = MakeFunccall(ident, arg1, NULL);
+    }
+  | SP_PINL '(' rangeexpritem ')'
+    {
+        AST *arg1 = ConvertPinRange($3);
+        AST *ident = AstIdentifier("pinl");
+        
+        $$ = MakeFunccall(ident, arg1, NULL);
+    }
+  | SP_PINH '(' rangeexpritem ')'
+    {
+        AST *arg1 = ConvertPinRange($3);
+        AST *ident = AstIdentifier("pinh");
+        
+        $$ = MakeFunccall(ident, arg1, NULL);
+    }
+  | SP_PINT '(' rangeexpritem ')'
+    {
+        AST *arg1 = ConvertPinRange($3);
+        AST *ident = AstIdentifier("pintoggle");
+        
+        $$ = MakeFunccall(ident, arg1, NULL);
     }
   | SP_COGINIT '(' exprlist ')'
     {
