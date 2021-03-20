@@ -15,6 +15,7 @@ Version 5.3.0
 - Fixed parsing of large floating point numbers
 - Ignored DEBUG statements completely unless -g is given
 - Really fixed RECV return value
+- Even in -O0, remove unused functions in C subclasses (avoids problems with duplicate symbols in stdio)
 
 Version 5.2.0
 - Added GET as keyword to BASIC
