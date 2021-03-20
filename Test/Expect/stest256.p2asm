@@ -1,0 +1,93 @@
+dat
+	nop
+	cogid	pa
+	coginit	pa,##$400
+	orgh	$10
+	long	0	'reserved
+	long	0 ' clock frequency: will default to 20000000
+	long	0 ' clock mode: will default to $100094b
+	orgh	$400
+	org	0
+entry
+
+_sub1
+LR__0001
+	drvnot	#312
+	mov	arg01, #100
+	call	#__system___waitms
+	jmp	#LR__0001
+_sub1_ret
+	ret
+
+_sub2
+LR__0002
+	drvl	#312
+	mov	arg01, #100
+	call	#__system___waitms
+	jmp	#LR__0002
+_sub2_ret
+	ret
+
+__system___waitms
+	mov	__system___waitms_m, arg01
+	rdlong	__system___waitms_freq, #20
+LR__0003
+	cmps	__system___waitms_m, ##1000 wcz
+ if_a	waitx	__system___waitms_freq
+ if_a	sub	__system___waitms_m, ##1000
+ if_a	jmp	#LR__0003
+	cmps	__system___waitms_m, #0 wcz
+ if_be	jmp	#LR__0004
+	mov	muldiva_, __system___waitms_freq
+	mov	muldivb_, ##1000
+	call	#divide_
+	qmul	__system___waitms_m, muldivb_
+	getqx	arg01
+	waitx	arg01
+LR__0004
+__system___waitms_ret
+	ret
+
+unsdivide_
+       setq    #0
+       qdiv    muldiva_, muldivb_
+       getqx   muldivb_
+ _ret_ getqy   muldiva_
+
+divide_
+       abs     muldiva_,muldiva_     wc       'abs(x)
+       muxc    itmp2_,#%11                    'store sign of x
+       abs     muldivb_,muldivb_     wcz      'abs(y)
+ if_c  xor     itmp2_,#%10                    'store sign of y
+ if_z  ret
+       call    #unsdivide_
+       test    itmp2_,#1        wc       'restore sign, remainder
+       negc    muldiva_,muldiva_ 
+       test    itmp2_,#%10      wc       'restore sign, division result
+ _ret_ negc    muldivb_,muldivb_
+
+__lockreg
+	long	0
+itmp1_
+	long	0
+itmp2_
+	long	0
+ptr___lockreg_
+	long	@__lockreg
+result1
+	long	0
+COG_BSS_START
+	fit	480
+	orgh
+	org	COG_BSS_START
+__system___waitms_freq
+	res	1
+__system___waitms_m
+	res	1
+arg01
+	res	1
+muldiva_
+	res	1
+muldivb_
+	res	1
+	fit	480

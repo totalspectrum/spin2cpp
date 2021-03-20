@@ -1,0 +1,9 @@
+PUB sub1()
+  repeat
+    pint(60..56)
+    waitms(100)
+
+PUB sub2()
+  repeat
+    pinl(56 addpins 4)
+    waitms(100)
