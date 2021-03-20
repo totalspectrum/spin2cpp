@@ -22,7 +22,7 @@
 #include "sys/fmt.h"
 
 #define DEFAULT_PREC 6
-#define DEFAULT_BASIC_FLOAT_FMT ((1<<ALTFMT_BIT)|(1<<UPCASE_BIT)|((4+1)<<PREC_BIT))
+#define DEFAULT_BASIC_FLOAT_FMT ((1<<UPCASE_BIT)|((4+1)<<PREC_BIT))
 #define DEFAULT_FLOAT_FMT ((1<<UPCASE_BIT))
 
 //
@@ -310,7 +310,7 @@ static void disassemble(FTYPE x, UITYPE *aip, int *np, int numdigits, int base)
     }
 
     while (ai < limit) {
-#ifdef DEBUG_PRINTF
+#ifdef _DEBUG_PRINTF
         __builtin_printf("ai=%d n=%d\n", ai, n);
 #endif        
         --n;
@@ -484,7 +484,7 @@ int _fmtfloat(putfunc fn, unsigned fmt, FTYPE x, int spec)
     int i;
     int base = 10;
     int exp;  // exponent
-    int isExpFmt;  // output should be printed in exponential notation
+    int isExpFmt = 0;  // output should be printed in exponential notation
     int totalWidth;
     int sign = 0;
     int expchar;
@@ -493,6 +493,7 @@ int _fmtfloat(putfunc fn, unsigned fmt, FTYPE x, int spec)
     int needPrefix = 0;
     int hexSign = 0;
     int padkind = 0;
+    int no_oflow = 0;
     
     // we print a series of 0's, then the digits, then more 0's if necessary
     // to force e.g. 4 leading 0's, set startdigit to -4
@@ -504,6 +505,7 @@ int _fmtfloat(putfunc fn, unsigned fmt, FTYPE x, int spec)
     int expsign = 0;
     int signclass;
     int minwidth;
+    int maxwidth;
     char dig[64]; // digits for the number
     char expdig[8]; // digits for the exponent
     int prec;
@@ -533,6 +535,7 @@ int _fmtfloat(putfunc fn, unsigned fmt, FTYPE x, int spec)
     justify = (fmt >> JUSTIFY_BIT) & JUSTIFY_MASK;
     needUpper = (fmt >> UPCASE_BIT) & 1;
     minwidth = (fmt >> MINWIDTH_BIT) & WIDTH_MASK;
+    maxwidth = (fmt >> MAXWIDTH_BIT) & WIDTH_MASK;
     isExpFmt = (spec == 'e');
     expchar = needUpper ? 'E' : 'e';
     if (spec == 'a') {
@@ -543,6 +546,15 @@ int _fmtfloat(putfunc fn, unsigned fmt, FTYPE x, int spec)
         hexSign = needUpper ? 'X' : 'x';
     }
 
+    if (spec == '#') {
+        no_oflow = 1;
+        if (hash_format) {
+            spec = 'f';
+            hash_format = 0;
+        } else {
+            hash_format = 1;
+        }
+    }
     signclass = (fmt >> SIGNCHAR_BIT) & SIGNCHAR_MASK;
     
     if ( signbit(x) ) {
@@ -731,6 +743,28 @@ int _fmtfloat(putfunc fn, unsigned fmt, FTYPE x, int spec)
 
 done:
     // now output the string
+    if (maxwidth && no_oflow && strlen(origbuf) > maxwidth) {
+        int j;
+        char *ptr = origbuf;
+        //__builtin_printf("maxwidth=%d, minwidth=%d, prec=%d\n", maxwidth, minwidth, prec);
+        if (isExpFmt) {
+            prec = 0;
+            j = maxwidth;
+        } else {
+            j = (maxwidth-1)-prec;
+        }
+        while (j) {
+            *ptr++ = '*';
+            --j;
+        }
+        if (prec) {
+            *ptr++ = '.';
+            for (j = 0; j<prec; j++) {
+                *ptr++ = '*';
+            }
+        }
+        *ptr++ = 0;
+    }
     return _fmtstr(fn, fmt, origbuf);
 }
 

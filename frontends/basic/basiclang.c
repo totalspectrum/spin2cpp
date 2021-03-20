@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2020 Total Spectrum Software Inc.
+ * Copyright 2011-2021 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for BASIC specific features
@@ -153,8 +153,11 @@ addPrintDec(AST *seq, AST *handle, AST *func, AST *expr, AST *fmtAst)
 //   bit 0-7: maximum width 0-255; 0 means "no particular width"
 //   bit 8-15: minimum width 0-255: 0 means "no particular maximum"
 //   bit 16-21: precision (digits after decimal point)
-//   bit 22: 1=left justify, 2=right justify, 3=center
-//
+//   bit 22-23: 1=left justify, 2=right justify, 3=center
+//   bit 24-25: padding character
+//   bit 26-27: sign character
+//   bit 28:    alternate format bit
+//   bit 29:    uppercase bit
 
 #define MAXWIDTH_BIT (0)
 #define MINWIDTH_BIT (8)
@@ -226,6 +229,7 @@ TransformUsing(const char *usestr, AST *params)
     unsigned fmtparam;
     unsigned signchar = 0;
     unsigned padchar = 0;
+    unsigned altbit = 0;
     ASTReportInfo saveinfo;
     
     AstReportAs(params, &saveinfo);
@@ -298,6 +302,7 @@ TransformUsing(const char *usestr, AST *params)
             if (*usestr == '.') {
                 usestr++;
                 width++;
+                altbit |= (1<<ALT_BIT);
                 if (minwidth > 1) {
                     padchar = PADCHAR_ZERO<<PADDING_BIT;
                 }
@@ -308,7 +313,7 @@ TransformUsing(const char *usestr, AST *params)
                     minwidth++;
                 }
             }
-            fmtparam = FMTPARAM_ALLWIDTH(width) | FMTPARAM_MINDIGITS(minwidth) | signchar | FMTPARAM_RIGHTJUSTIFY | padchar;
+            fmtparam = FMTPARAM_ALLWIDTH(width) | FMTPARAM_MINDIGITS(minwidth) | signchar | FMTPARAM_RIGHTJUSTIFY | padchar | altbit;
             lastFormat = AstInteger(fmtparam);
             using = NewAST(AST_USING, lastFormat, NextParam(&params));
             exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, using, NULL));
@@ -764,7 +769,8 @@ ParsePrintStatement(AST *ast)
             type = ast_type_long;
         }
         if (IsFloatType(type)) {
-            seq = addFloatPrintCall(seq, handle, basic_print_float, expr, fmtAst, '#');
+            int ch = '#';
+            seq = addFloatPrintCall(seq, handle, basic_print_float, expr, fmtAst, ch);
         } else if (IsStringType(type)) {
             seq = addPrintCall(seq, handle, basic_print_string, expr, fmtAst);
         } else if (IsGenericType(type)) {
