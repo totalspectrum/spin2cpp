@@ -400,18 +400,18 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
          || (base == 16 && (c=='.' || c == 'p' || c == 'P') ) )
     {
         /* potential floating point number */
-        float f = (base == 16) ? (float)uval : (float)(double)tenval;
-        float ff = 0.0;
-        static float divby[45] = {
-            1e-1f, 1e-2f, 1e-3f, 1e-4f, 1e-5f,
-            1e-6f, 1e-7f, 1e-8f, 1e-9f, 1e-10f,
-            1e-11f, 1e-12f, 1e-13f, 1e-14f, 1e-15f,
-            1e-16f, 1e-17f, 1e-18f, 1e-19f, 1e-20f,
-            1e-21f, 1e-22f, 1e-23f, 1e-24f, 1e-25f,
-            1e-26f, 1e-27f, 1e-28f, 1e-29f, 1e-30f,
-            1e-31f, 1e-32f, 1e-33f, 1e-34f, 1e-35f,
-            1e-36f, 1e-37f, 1e-38f, 1e-39f, 1e-40f,
-            1e-41f, 1e-42f, 1e-43f, 1e-44f, 1e-45f,
+        double f = (base == 16) ? (double)uval : (double)tenval;
+        double ff = 0.0;
+        static double divby[45] = {
+            1e-1, 1e-2, 1e-3, 1e-4, 1e-5,
+            1e-6, 1e-7, 1e-8, 1e-9, 1e-10,
+            1e-11, 1e-12, 1e-13, 1e-14, 1e-15,
+            1e-16, 1e-17, 1e-18, 1e-19, 1e-20,
+            1e-21, 1e-22, 1e-23, 1e-24, 1e-25,
+            1e-26, 1e-27, 1e-28, 1e-29, 1e-30,
+            1e-31, 1e-32, 1e-33, 1e-34, 1e-35,
+            1e-36, 1e-37, 1e-38, 1e-39, 1e-40,
+            1e-41, 1e-42, 1e-43, 1e-44, 1e-45,
         };
         int counter = 0;
         int exponent = ignored_digits;
@@ -425,7 +425,7 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
             }
         }
         if (base == 16) {
-            float hexplace = 1.0f/16.0f;
+            double hexplace = 1.0/16.0;
             for(;;) {
                 if (c == '_') {
                     /* just skip */
@@ -451,7 +451,7 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
         } else {
             while ( (c >= '0' && c <= '9') || (c == '_')) {
                 if (c != '_') {
-                    ff = ff + divby[counter]*(float)(c-'0');
+                    ff = ff + divby[counter]*(double)(c-'0');
                     counter++;
                 }
                 sawdigit = 1;
@@ -481,15 +481,16 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
             f *= divby[-(exponent+1)];
         } else if (exponent != 0) {
             if (base == 16) {
-                f *= powf(2.0f, (float)exponent);
+                f *= pow(2.0, (float)exponent);
             } else {
-                f *= powf(10.0f, (float)exponent);
+                f *= pow(10.0, (float)exponent);
             }
         }
         if (gl_fixedreal) {
             uval = ((1<<G_FIXPOINT) * f) + 0.5;
         } else {
-            uval = floatAsInt(f);
+            float smallf = (float)f;
+            uval = floatAsInt(smallf);
         }
         kind = SP_FLOATNUM;
     }
