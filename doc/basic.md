@@ -319,10 +319,12 @@ rtrim$
 sendrecvdevice
 _setbaud
 sin
+space$
 str$
 strerror$
 strint$
 tan
+trim$
 true
 ucase$
 val
@@ -2717,6 +2719,13 @@ Predefined function. `sin(x)` returns the sine of `x`, which is a floating point
 
 Single precision floating point data type. By default this is an IEEE 32 bit single precision float, but compiler options may change this (for example to a 16.16 fixed point number).
 
+### SPACE$
+
+```
+y$ = space$(n)
+```
+Returns a string consisting of `n` space characters.
+
 ### SQR
 
 An alias for `sqrt`, for compatibility with older BASICs.
@@ -2832,6 +2841,13 @@ Example:
 ### TO
 
 A syntactical element typically used for giving ranges of items.
+
+### TRIM$
+
+```
+y$ = trim$(x$)
+```
+Returns a new string which is like the original string but with both leading and trailing spaces removed.
 
 ### TRUE
 
