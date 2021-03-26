@@ -1130,14 +1130,14 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func, AST *ast)
               if (off == -1) {
                   // this is a special internal COG variable
                   if (!sendreg) {
-                      sendreg = GetOneGlobal(REG_REG, "__sendreg", 0);
+                      sendreg = GetOneGlobal(REG_REG, "__sendreg", P2_HUB_BASE);
                   }
                   return sendreg;
               }
               if (off == -2) {
                   // this is a special internal COG variable
                   if (!recvreg) {
-                      recvreg = GetOneGlobal(REG_REG, "__recvreg", 0);
+                      recvreg = GetOneGlobal(REG_REG, "__recvreg", P2_HUB_BASE);
                   }
                   return recvreg;
               }

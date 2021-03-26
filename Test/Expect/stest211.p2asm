@@ -4,12 +4,13 @@ con
 dat
 	nop
 	cogid	pa
-	coginit	pa,##$400
+	coginit	pa,##$404
 	orgh	$10
 	long	0	'reserved
 	long	0 ' clock frequency: will default to 200000000
 	long	0 ' clock mode: will default to $10009fb
 	orgh	$400
+ _ret_	mov	result1, #0
 	org	0
 entry
 
