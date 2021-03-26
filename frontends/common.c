@@ -113,6 +113,11 @@ Aliases spinalias[] = {
 
     { "reboot", "_reboot" },
 
+    /* ugh, don't know if we should continue to support these */
+    { "_pinw", "_pinwrite" },
+    { "_pinl", "_drvl" },
+    { "_pinh", "_drvh" },
+    
     /* obsolete aliases */
     { "dirl_", "_dirl" },
     { "dirh_", "_dirh" },
