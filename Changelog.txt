@@ -1,4 +1,5 @@
 Version 5.3.1
+- Added aliases for _pinw, _pinl, and _pinh in Spin (to match the documentation).
 - Better error messages for some bad C function declarations.
 - Cleaned up operator precedence to match Spin2
 - Fixed typos in SmartSerial.spin that made it stop working

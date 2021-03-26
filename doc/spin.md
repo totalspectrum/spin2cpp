@@ -503,11 +503,11 @@ Note that labels normally have two values, their COG memory address (specified b
 
 ## New intrinsics for both P1 and P2
 
-Flexspin supports some new builtin functions. These typically start with an underscore to avoid confusion with existing variable names. Note that in Spin2 mode many of these are available without the leading underscore.
+Flexspin supports some new builtin functions. These typically start with an underscore to avoid confusion with existing variable names. Note that in Spin2 mode many of these are available without the leading underscore, and in fact it's better to use the non-underscore versions since those are also supported in the official Parallax compiler.
 
 ### _PINW
 
-`_pinw(p, c)` forces `p` to be an output and sets it to 0 if `c` is 0 or 1 if `c` is 1. If c is any other value the result is undefined. Supported for both P1 and P2
+`_pinw(p, c)` forces `p` to be an output and sets it to 0 if `c` is 0 or 1 if `c` is 1. If c is any other value the result is undefined. Supported for both P1 and P2.
 
 ### _PINL
 
