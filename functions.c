@@ -935,7 +935,12 @@ doDeclareFunction(AST *funcblock)
         } else if (fdef->overalltype->left->kind == AST_TUPLE_TYPE) {
             fdef->numresults = AstListLen(fdef->overalltype->left);
         } else {
-            int siz = TypeSize(fdef->overalltype->left);
+            int siz;
+            if (fdef->overalltype->left->kind == AST_INTEGER) {
+                ERROR(funcdef, "Bad function declaration for %s", fdef->name);
+                fdef->overalltype->left = ast_type_generic;
+            }
+            siz = TypeSize(fdef->overalltype->left);
             if (TypeGoesOnStack(fdef->overalltype->left)) {
                 fdef->numresults = 1; // will return a pointer
             } else {
