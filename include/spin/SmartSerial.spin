@@ -67,14 +67,14 @@ pub startx(rxpin, txpin, mode, baudrate) | bitperiod, bit_mode
   bit_mode := 7 + (bitperiod << 16)
 
   ' set up the transmit pin
-  if txpin >= 0
+  if txpin => 0
     pinf(txpin)
     wrpin(txpin, _txmode)
     wxpin(txpin, bit_mode)
     pinl(txpin)	' turn smartpin on by making the pin an output
 
   ' set up the receive pin
-  if rxpin >= 0
+  if rxpin => 0
     pinf(rxpin)
     wrpin(rxpin, _rxmode)
     wxpin(rxpin, bit_mode)
@@ -82,7 +82,7 @@ pub startx(rxpin, txpin, mode, baudrate) | bitperiod, bit_mode
 
 ' transmit the 8 bit value "val"
 pub tx(val)
-  if tx_pin >= 0
+  if tx_pin => 0
     wypin(tx_pin, val)
     txflush()
 
@@ -97,7 +97,7 @@ pub txflush() | z
 pub rxcheck() : rxbyte | rxpin, z
   rxbyte := -1
   rxpin := rx_pin
-  if rxpin >= 0
+  if rxpin => 0
     z := pinr(rxpin)
     if z
       rxbyte := rdpin(rxpin)>>24

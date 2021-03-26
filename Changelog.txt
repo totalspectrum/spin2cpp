@@ -1,6 +1,7 @@
 Version 5.3.1
-- Improved accuracy of parsing floating point constants.
 - Better error messages for some bad C function declarations.
+- Fixed typos in SmartSerial.spin that made it stop working
+- Improved accuracy of parsing floating point constants.
 
 Version 5.3.0
 - Added SimpleSerial object for P1/P2 compatibility
