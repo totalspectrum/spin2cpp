@@ -1,5 +1,6 @@
 Version 5.3.1
 - Better error messages for some bad C function declarations.
+- Cleaned up operator precedence to match Spin2
 - Fixed typos in SmartSerial.spin that made it stop working
 - Improved accuracy of parsing floating point constants.
 - Improved accuracy of parsing floating point constants.

@@ -445,19 +445,22 @@ BuildDebugList(AST *exprlist)
 %left '\\'
 %right SP_THEN
 %right SP_ELSE
-%left SP_CONDITIONAL
-%left SP_OR SP_XOR SP_ORELSE
-%left SP_AND SP_ANDTHEN
-%left SP_NOT
-%left '<' '>' SP_GE SP_LE SP_NE SP_EQ SP_SGNCOMP SP_GEU SP_LEU SP_GTU SP_LTU
-%left SP_LIMITMIN SP_LIMITMAX
-%left '-' '+'
-%left '*' '/' SP_REMAINDER SP_HIGHMULT SP_UNSHIGHMULT SP_SCAS SP_UNSDIV SP_UNSMOD SP_FRAC
-%left '|' '^'
-%left '&'
-%left SP_ROTL SP_ROTR SP_SHL SP_SHR SP_SAR SP_REV SP_REV2 SP_SIGNX SP_ZEROX
-%left SP_NEGATE SP_BIT_NOT SP_ABS SP_SQRT SP_DECODE SP_ENCODE SP_ENCODE2 SP_ALLOCA SP_ADDPINS SP_ADDBITS SP_ONES SP_BMASK SP_QLOG SP_QEXP
-%left '@' '~' '?' SP_RANDOM SP_DOUBLETILDE SP_INCREMENT SP_DECREMENT SP_DOUBLEAT SP_TRIPLEAT
+%left SP_CONDITIONAL    /* priority 16 */
+%left SP_OR SP_ORELSE   /* priority 15 */
+%left SP_XOR            /* priority 14 */
+%left SP_AND SP_ANDTHEN /* priority 13 */
+%left SP_NOT /* priority 12 */
+%left '<' '>' SP_GE SP_LE SP_NE SP_EQ SP_SGNCOMP SP_GEU SP_LEU SP_GTU SP_LTU /*priority 11 */
+%left SP_ADDBITS SP_ADDPINS   /* priority 10 */
+%left SP_LIMITMIN SP_LIMITMAX /* priority 9 */
+%left '-' '+' /* priority 8 */
+%left '*' '/' SP_REMAINDER SP_HIGHMULT SP_UNSHIGHMULT SP_SCAS SP_UNSDIV SP_UNSMOD SP_FRAC /* priority 7 */
+%left '|' /* priority 6 */
+%left '^' /* priority 5 */
+%left '&' /* priority 4 */
+%left SP_ROTL SP_ROTR SP_SHL SP_SHR SP_SAR SP_REV SP_REV2 SP_SIGNX SP_ZEROX /* priority 3 */
+%left SP_NEGATE SP_BIT_NOT SP_ABS SP_SQRT SP_DECODE SP_ENCODE SP_ENCODE2 SP_ALLOCA SP_ONES SP_BMASK SP_QLOG SP_QEXP /* priority 2 in Spin2 */
+%left '@' '~' '?' SP_RANDOM SP_DOUBLETILDE SP_INCREMENT SP_DECREMENT SP_DOUBLEAT SP_TRIPLEAT  /* priority 1 in Spin2 */
 %left SP_CONSTANT SP_FLOAT SP_TRUNC SP_ROUND
 
 %%
@@ -1344,7 +1347,7 @@ expr:
     { $$ = NewAST(AST_CONDRESULT, $2, NewAST(AST_THENELSE, $5, $7)); }
   | expr  '?' expr ':' expr %prec SP_ELSE
     { $$ = NewAST(AST_CONDRESULT, $1, NewAST(AST_THENELSE, $3, $5)); }
-  | expr  SP_CONDITIONAL expr ':' expr %prec SP_ELSE
+  | expr  SP_CONDITIONAL expr ':' expr %prec SP_CONDITIONAL
     { $$ = NewAST(AST_CONDRESULT, $1, NewAST(AST_THENELSE, $3, $5)); }
   | '(' expr ')'
     { $$ = $2; }
