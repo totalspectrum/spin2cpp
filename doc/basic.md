@@ -1315,7 +1315,7 @@ Note that handles 0 and 1 are reserved by the system; closing them may produce u
 
 ### CONST
 
-At the beginning of a line, `const` declares a constant value. For example:
+At the beginning of a statement, `const` declares a constant value. For example:
 ```
   const x = 1, msg = "hello", y = 2.0
 ```
