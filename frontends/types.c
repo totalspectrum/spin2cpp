@@ -462,6 +462,25 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
         case K_UNS_DIV:
             *ast = *MakeOperatorCall(int64_divu, ast->left, ast->right, NULL);
             break;
+        case '&':
+            *ast = *MakeOperatorCall(int64_and, ast->left, ast->right, NULL);
+            break;
+        case '|':
+            *ast = *MakeOperatorCall(int64_or, ast->left, ast->right, NULL);
+            break;
+        case '^':
+            *ast = *MakeOperatorCall(int64_xor, ast->left, ast->right, NULL);
+            break;
+        case K_SAR:
+            *ast = *MakeOperatorCall(int64_sar, ast->left, ast->right, NULL);
+            break;
+        case K_SHR:
+            *ast = *MakeOperatorCall(int64_shr, ast->left, ast->right, NULL);
+            break;
+        case K_SHL:
+            *ast = *MakeOperatorCall(int64_shl, ast->left, ast->right, NULL);
+            break;
+            
         default:
             ERROR(ast, "Compiler is incomplete: unable to handle this 64 bit expression");
             break;
@@ -735,19 +754,16 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
     case '^':
         if (lefttype && IsFloatType(lefttype)) {
             ast->left = dofloatToInt(ast->left);
-            lefttype = ast_type_long;
+            lefttype = ExprType(ast->left);
         }
         if (righttype && IsFloatType(righttype)) {
             ast->right = dofloatToInt(ast->right);
-            righttype = ast_type_long;
-        }
-        if (!MakeBothIntegers(ast, lefttype, righttype, "bit operation")) {
-            return NULL;
+            righttype = ExprType(ast->right);
         }
         if (ast->d.ival == K_SAR && lefttype && IsUnsignedType(lefttype)) {
             ast->d.ival = K_SHR;
         }
-        return MatchIntegerTypes(ast, lefttype, righttype, 0);
+        return HandleTwoNumerics(ast->d.ival, ast, lefttype, righttype);
     case '+':
         if (IsStringType(lefttype) && IsStringType(righttype)) {
             *ast = *MakeOperatorCall(string_concat, ast->left, ast->right, NULL);

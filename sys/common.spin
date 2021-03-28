@@ -484,7 +484,7 @@ pri _int64_xor(alo, ahi, blo, bhi) : rlo, rhi
     xor  rhi, bhi
   endasm
 
-pri _int64_shl(alo, ahi, count) : rlo, rhi | tmp
+pri _int64_shl(alo, ahi, count, counthi) : rlo, rhi | tmp
   rlo := alo
   rhi := ahi
   count &= 63
@@ -497,7 +497,7 @@ pri _int64_shl(alo, ahi, count) : rlo, rhi | tmp
   rhi |= tmp
   rlo := rlo << count
 
-pri _int64_shr(alo, ahi, count) : rlo, rhi | tmp
+pri _int64_shr(alo, ahi, count, counthi) : rlo, rhi | tmp
   rlo := alo
   rhi := ahi
   count &= 63
@@ -510,7 +510,7 @@ pri _int64_shr(alo, ahi, count) : rlo, rhi | tmp
   rlo |= tmp
   rhi := rhi >> count
 
-pri _int64_sar(alo, ahi, count) : rlo, rhi | tmp
+pri _int64_sar(alo, ahi, count, counthi) : rlo, rhi | tmp
   rlo := alo
   rhi := ahi
   count &= 63
