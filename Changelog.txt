@@ -4,7 +4,6 @@ Version 5.3.1
 - Cleaned up operator precedence to match Spin2
 - Fixed typos in SmartSerial.spin that made it stop working
 - Improved accuracy of parsing floating point constants.
-- Improved accuracy of parsing floating point constants.
 - Provided default dummy functions for send() and recv()
 
 Version 5.3.0
