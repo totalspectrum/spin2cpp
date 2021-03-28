@@ -4149,6 +4149,19 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   {
       return CompileExpression(irl, expr->left, dest);
   }
+  case AST_GETHIGH:
+  case AST_GETLOW:
+  {
+      Operand *base;
+      int off = expr->kind == AST_GETLOW ? 0 : 4;
+      base = CompileIdentifier(irl, expr->left);
+      r = OffsetMemory(irl, base, NewImmediate(off), ast_type_long);
+      if (dest) {
+          EmitMove(irl, dest, r);
+          r = dest;
+      }
+      return r;
+  }
   default:
     ERROR(expr, "Cannot handle expression yet");
     return NewOperand(REG_REG, "???", 0);
