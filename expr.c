@@ -2162,6 +2162,21 @@ IsUnsignedType(AST *type)
 }
 
 int
+IsInt64Type(AST *type)
+{
+    int size;
+    type = RemoveTypeModifiers(type);
+    if (!type) return 0;
+    if (! (type->kind == AST_INTTYPE || type->kind == AST_UNSIGNEDTYPE) )
+        return 0;
+    size = EvalConstExpr(type->left);
+    if (size == LONG64_SIZE) {
+        return 1;
+    }
+    return 0;
+}
+
+int
 IsBoolCompatibleType(AST *type)
 {
     type = RemoveTypeModifiers(type);

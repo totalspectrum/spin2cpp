@@ -433,3 +433,29 @@ pri file "libc/string/strerror.c" _strerror(e=long): r=string
 
 pri file "libsys/c_startup.c" _c_startup()
 
+pri _int64_signx(x = long) : rlo, rhi
+  rlo := x
+  rhi := x
+  asm
+    sar rhi, #31
+  endasm
+
+pri _int64_zerox(x = long) : rlo, rhi
+  rlo := x
+  rhi := 0
+
+pri _int64_add(alo, ahi, blo, bhi) : rlo, rhi
+  rlo := alo
+  rhi := ahi
+  asm
+    add  rlo, blo wc
+    addx rhi, bhi
+  endasm
+
+pri _int64_sub(alo, ahi, blo, bhi) : rlo, rhi
+  rlo := alo
+  rhi := ahi
+  asm
+    sub  rlo, blo wc
+    subx rhi, bhi
+  endasm

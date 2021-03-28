@@ -60,6 +60,16 @@ static AST *float_neg;
 static AST *float_pow_n;
 static AST *float_powf;
 
+static AST *int64_add;
+static AST *int64_sub;
+static AST *int64_mul;
+static AST *int64_div;
+static AST *int64_neg;
+static AST *int64_cmp;
+static AST *int64_shl, *int64_shr, *int64_sar;
+static AST *int64_and, *int64_or, *int64_xor;
+static AST *int64_signx, *int64_zerox;
+
 static AST *struct_copy;
 static AST *string_cmp;
 static AST *string_concat;
@@ -125,17 +135,14 @@ static AST *dopromote(AST *expr, int srcbytes, int destbytes, int operator)
     if (destbytes == 8) {
         // at this point "promote" will contain a 4 byte value
         // now we need to convert it to an 8 byte value
-        AST *highword;
+        AST *convfunc;
+        
         if (operator == K_ZEROEXTEND) {
-            highword = AstInteger(0);
+            convfunc = int64_zerox;
         } else {
-            highword = AstOperator(K_SAR, promote, AstInteger(31));
+            convfunc = int64_signx;
         }
-        promote = NewAST(AST_EXPRLIST,
-                         promote,
-                         NewAST(AST_EXPRLIST,
-                                highword,
-                                NULL));
+        promote = MakeOperatorCall(convfunc, promote, NULL, NULL);
     }
     return promote;
 }
@@ -206,37 +213,42 @@ AST *MatchIntegerTypes(AST *ast, AST *lefttype, AST *righttype, int force) {
     int leftunsigned = IsUnsignedType(lefttype);
     int rightunsigned = IsUnsignedType(righttype);
     int finalsize;
+    AST *ulong_type, *long_type;
     
     force = force || (lsize != rsize);
     if (lsize > LONG_SIZE || rsize > LONG_SIZE) {
         finalsize = LONG64_SIZE;
+        ulong_type = ast_type_unsigned_long64;
+        long_type = ast_type_long64;
     } else {
         finalsize = LONG_SIZE;
+        ulong_type = ast_type_unsigned_long;
+        long_type = ast_type_long;
     }
     if (lsize < finalsize && force) {
         if (leftunsigned) {
             ast->left = dopromote(ast->left, lsize, finalsize, K_ZEROEXTEND);
-            lefttype = ast_type_unsigned_long;
+            lefttype = ulong_type;
         } else {
             ast->left = dopromote(ast->left, lsize, finalsize, K_SIGNEXTEND);
-            lefttype = ast_type_long;
+            lefttype = long_type;
         }
         rettype = righttype;
     }
     if (rsize < finalsize && force) {
         if (rightunsigned) {
             ast->right = dopromote(ast->right, rsize, finalsize, K_ZEROEXTEND);
-            righttype = ast_type_unsigned_long;
+            righttype = ulong_type;
         } else {
             ast->right = dopromote(ast->right, rsize, finalsize, K_SIGNEXTEND);
-            righttype = ast_type_long;
+            righttype = long_type;
         }
         rettype = lefttype;
     }
     if (leftunsigned || rightunsigned) {
         return rettype;
     } else {
-        return ast_type_long;
+        return long_type;
     }
 }
 
@@ -427,11 +439,24 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
     lefttype = MatchIntegerTypes(ast, lefttype, righttype, 0);
     if (IsUnsignedType(lefttype)) {
         if (op == K_MODULUS) {
-            ast->d.ival = K_UNS_MOD;
+            ast->d.ival = op = K_UNS_MOD;
         } else if (op == '/') {
-            ast->d.ival = K_UNS_DIV;
+            ast->d.ival = op = K_UNS_DIV;
         }
     }
+    if (IsInt64Type(lefttype)) {
+        switch(op) {
+        case '+':
+            *ast = *MakeOperatorCall(int64_add, ast->left, ast->right, NULL);
+            break;
+        case '-':
+            *ast = *MakeOperatorCall(int64_sub, ast->left, ast->right, NULL);
+            break;
+        default:
+            ERROR(ast, "Compiler is incomplete: unable to handle this 64 bit expression");
+            break;
+        }
+    }             
     return lefttype;
 }
 
@@ -1605,6 +1630,21 @@ InitGlobalFuncs(void)
             float_sqrt = getBasicPrimitive("_float_sqrt");
             float_neg = getBasicPrimitive("_float_negate");
         }
+        int64_add = getBasicPrimitive("_int64_add");
+        int64_sub = getBasicPrimitive("_int64_sub");
+        int64_mul = getBasicPrimitive("_int64_mul");
+        int64_div = getBasicPrimitive("_int64_div");
+        int64_neg = getBasicPrimitive("_int64_neg");
+        int64_cmp = getBasicPrimitive("_int64_cmp");
+        int64_shl = getBasicPrimitive("_int64_shl");
+        int64_shr = getBasicPrimitive("_int64_shr");
+        int64_sar = getBasicPrimitive("_int64_sar");
+        int64_and = getBasicPrimitive("_int64_and");
+        int64_or = getBasicPrimitive("_int64_or");
+        int64_xor = getBasicPrimitive("_int64_xor");
+        int64_signx = getBasicPrimitive("_int64_signx");
+        int64_zerox = getBasicPrimitive("_int64_zerox");
+        
         basic_get_integer = getBasicPrimitive("_basic_get_integer");
         basic_get_string = getBasicPrimitive("_basic_get_string");
         basic_read_line = getBasicPrimitive("_basic_read_line");
