@@ -1,3 +1,6 @@
+Version 5.3.2
+- Avoid FCACHE in FCACHE (e.g. for loops with empty org/end)
+
 Version 5.3.1
 - Added aliases for _pinw, _pinl, and _pinh in Spin (to match the documentation).
 - Better error messages for some bad C function declarations.

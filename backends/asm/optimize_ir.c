@@ -3537,6 +3537,9 @@ LoopCanBeFcached(IRList *irl, IR *root, int size_left)
                 return 0;
             }
         }
+        if (ir->opc == OPC_FCACHE) {
+            return 0;
+        }
         if (IsJump(ir)) {
             if (!JumpIsAfterOrEqual(root, ir))
                 return 0;
@@ -3571,7 +3574,9 @@ LoopCanBeFcached(IRList *irl, IR *root, int size_left)
                 } else {
                     break;
                 }
-            } else if (ir->opc == OPC_CALL && MaybeHubDest(ir->dst)) {
+            } else if (ir->opc == OPC_CALL && MaybeHubDest(ir->dst) ) {
+                break;
+            } else if (ir->opc == OPC_FCACHE) {
                 break;
             } else if (!IsDummy(ir)) {
                 --n;
