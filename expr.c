@@ -3005,6 +3005,12 @@ BuildExprlistFromObject(AST *origexpr, AST *typ)
         return origexpr;
     }
     exprlist = NULL;
+    if (IsInt64Type(typ)) {
+        exprlist = NewAST(AST_EXPRLIST, NewAST(AST_GETLOW, expr, NULL), NULL);
+        temp = NewAST(AST_EXPRLIST, NewAST(AST_GETHIGH, expr, NULL), NULL);
+        exprlist = AddToList(exprlist, temp);
+        return exprlist;
+    }
     if (!IsClassType(typ)) {
         return expr;
     }

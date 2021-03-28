@@ -62,8 +62,9 @@ static AST *float_powf;
 
 static AST *int64_add;
 static AST *int64_sub;
-static AST *int64_mul;
-static AST *int64_div;
+static AST *int64_muls;
+static AST *int64_mulu;
+static AST *int64_divs, *int64_divu;
 static AST *int64_neg;
 static AST *int64_cmp;
 static AST *int64_shl, *int64_shr, *int64_sar;
@@ -451,6 +452,15 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
             break;
         case '-':
             *ast = *MakeOperatorCall(int64_sub, ast->left, ast->right, NULL);
+            break;
+        case '*':
+            *ast = *MakeOperatorCall(int64_muls, ast->left, ast->right, NULL);
+            break;
+        case '/':
+            *ast = *MakeOperatorCall(int64_divs, ast->left, ast->right, NULL);
+            break;
+        case K_UNS_DIV:
+            *ast = *MakeOperatorCall(int64_divu, ast->left, ast->right, NULL);
             break;
         default:
             ERROR(ast, "Compiler is incomplete: unable to handle this 64 bit expression");
@@ -1632,8 +1642,10 @@ InitGlobalFuncs(void)
         }
         int64_add = getBasicPrimitive("_int64_add");
         int64_sub = getBasicPrimitive("_int64_sub");
-        int64_mul = getBasicPrimitive("_int64_mul");
-        int64_div = getBasicPrimitive("_int64_div");
+        int64_muls = getBasicPrimitive("_int64_muls");
+        int64_mulu = getBasicPrimitive("_int64_mulu");
+        int64_divs = getBasicPrimitive("_int64_divs");
+        int64_divu = getBasicPrimitive("_int64_divu");
         int64_neg = getBasicPrimitive("_int64_neg");
         int64_cmp = getBasicPrimitive("_int64_cmp");
         int64_shl = getBasicPrimitive("_int64_shl");

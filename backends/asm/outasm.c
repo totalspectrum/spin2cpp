@@ -4154,7 +4154,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   {
       Operand *base;
       int off = expr->kind == AST_GETLOW ? 0 : 4;
-      base = CompileIdentifier(irl, expr->left);
+      base = CompileExpression(irl, expr->left, NULL);
       r = OffsetMemory(irl, base, NewImmediate(off), ast_type_long);
       if (dest) {
           EmitMove(irl, dest, r);
