@@ -1822,7 +1822,7 @@ CheckFunctionCalls(AST *ast)
                             temp = NewAST(AST_EXPRLIST, temp, NULL);
                             exprlist = AddToList(exprlist, temp);
                         }
-                    } else if (typ && IsInt64Type(typ)) {
+                    } else if (typ && IsScalar64Type(typ)) {
                         exprlist = NewAST(AST_GETLOW, a->left, NULL);
                         exprlist = NewAST(AST_EXPRLIST, exprlist, NULL);
                         temp = NewAST(AST_GETHIGH, a->left, NULL);

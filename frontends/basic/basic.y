@@ -2076,7 +2076,7 @@ basetypename:
   | BAS_SINGLE
     { $$ = ast_type_float; }
   | BAS_DOUBLE
-    { $$ = ast_type_float; }
+    { $$ = ast_type_float64; }
   | BAS_FIXED '(' BAS_INTEGER ')'
     {
         AST *sizeexpr = $3;

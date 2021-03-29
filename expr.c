@@ -2087,6 +2087,21 @@ IsFloatType(AST *type)
 }
 
 int
+IsFloat64Type(AST *type)
+{
+    int size;
+    type = RemoveTypeModifiers(type);
+    if (!type) return 0;
+    if (type->kind != AST_FLOATTYPE)
+        return 0;
+    size = EvalConstExpr(type->left);
+    if (size == LONG64_SIZE) {
+        return 1;
+    }
+    return 0;
+}
+
+int
 IsClassType(AST *type)
 {
     type = RemoveTypeModifiers(type);
@@ -3005,7 +3020,7 @@ BuildExprlistFromObject(AST *origexpr, AST *typ)
         return origexpr;
     }
     exprlist = NULL;
-    if (IsInt64Type(typ)) {
+    if (IsScalar64Type(typ)) {
         exprlist = NewAST(AST_EXPRLIST, NewAST(AST_GETLOW, expr, NULL), NULL);
         temp = NewAST(AST_EXPRLIST, NewAST(AST_GETHIGH, expr, NULL), NULL);
         exprlist = AddToList(exprlist, temp);
