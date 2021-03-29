@@ -54,11 +54,25 @@ static AST *float_cmp;
 static AST *float_fromuns;
 static AST *float_fromint;
 static AST *float_toint;
+static AST *float_todouble;
 static AST *float_abs;
 static AST *float_sqrt;
 static AST *float_neg;
 static AST *float_pow_n;
 static AST *float_powf;
+
+static AST *double_add;
+static AST *double_sub;
+static AST *double_mul;
+static AST *double_div;
+static AST *double_cmp;
+static AST *double_fromuns;
+static AST *double_fromint;
+static AST *double_toint;
+static AST *double_abs;
+static AST *double_sqrt;
+static AST *double_neg;
+static AST *double_powf;
 
 static AST *int64_add;
 static AST *int64_sub;
@@ -254,6 +268,25 @@ AST *MatchIntegerTypes(AST *ast, AST *lefttype, AST *righttype, int force) {
 }
 
 static AST *
+domakedouble(AST *typ, AST *ast)
+{
+    AST *ret;
+    if (!ast) return ast;
+    if (IsGenericType(typ)) return ast;
+    if (gl_fixedreal) {
+        ret = AstOperator(K_SHL, ast, AstInteger(G_FIXPOINT));
+        return FoldIfConst(ret);
+    }
+    ast = forcepromote(typ, ast);
+    if (IsUnsignedType(typ)) {
+        ret = MakeOperatorCall(double_fromuns, ast, NULL, NULL);
+    } else {
+        ret = MakeOperatorCall(double_fromint, ast, NULL, NULL);
+    }
+    return ret;
+}
+
+static AST *
 domakefloat(AST *typ, AST *ast)
 {
     AST *ret;
@@ -280,7 +313,7 @@ domakefloat(AST *typ, AST *ast)
 }
 
 static AST *
-dofloatToInt(AST *ast)
+dofloatToInt(AST *ast, AST *typ)
 {
     AST *ret;
 
@@ -288,6 +321,10 @@ dofloatToInt(AST *ast)
         // FIXME: should we round here??
         ret = AstOperator(K_SAR, ast, AstInteger(G_FIXPOINT));
         return ret;
+    }
+    if (IsFloat64Type(typ)) {
+        ast = MakeOperatorCall(double_toint, ast, NULL, NULL);
+        return ast;
     }
     if (IsConstExpr(ast)) {
         union f_or_i {
@@ -302,14 +339,31 @@ dofloatToInt(AST *ast)
     return ast;
 }
 
+static AST *
+dofloatToDouble(AST *ast, AST *typ)
+{
+    AST *ret;
+
+    if (gl_fixedreal) {
+        // FIXME: should we round here??
+        ret = AstOperator(K_SAR, ast, AstInteger(G_FIXPOINT));
+        return ret;
+    }
+    if (IsFloat64Type(typ)) {
+        return ast;
+    }
+    ast = MakeOperatorCall(float_todouble, ast, NULL, NULL);
+    return ast;
+}
+
 bool MakeBothIntegers(AST *ast, AST *ltyp, AST *rtyp, const char *opname)
 {
     if (IsFloatType(ltyp)) {
-        ast->left = dofloatToInt(ast->left);
+        ast->left = dofloatToInt(ast->left, ltyp);
         ltyp = ast_type_long;
     }
     if (IsFloatType(rtyp)) {
-        ast->right = dofloatToInt(ast->right);
+        ast->right = dofloatToInt(ast->right, rtyp);
         rtyp = ast_type_long;
     }
     return VerifyIntegerType(ast, ltyp, opname) && VerifyIntegerType(ast, rtyp, opname);
@@ -321,22 +375,24 @@ static AST *
 HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
 {
     int isfloat = 0;
+    int isfloat64 = 0;
     int isalreadyfixed = 0;
     AST *scale = NULL;
 
     if (op == K_MODULUS) {
         // MOD operator convers float operands to integer
         if (IsFloatType(lefttype)) {
-            ast->left = dofloatToInt(ast->left);
+            ast->left = dofloatToInt(ast->left, lefttype);
             lefttype = ast_type_long;
         }
         if (IsFloatType(righttype)) {
-            ast->right = dofloatToInt(ast->right);
+            ast->right = dofloatToInt(ast->right, righttype);
             righttype = ast_type_long;
         }
     }
     if (IsFloatType(lefttype)) {
         isfloat = 1;
+        isfloat64 = IsFloat64Type(lefttype);
         if (!IsFloatType(righttype)) {
             if (gl_fixedreal && (op == '*' || op == '/')) {
                 // no need for fixed point mul, just do regular mul
@@ -345,10 +401,20 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
                     // fixed / int requires no scale
                     scale = AstInteger(0);
                 }
+                righttype = DEFAULT_FLOAT_TYPE;
             } else {
-                ast->right = domakefloat(righttype, ast->right);
+                if (isfloat64) {
+                    ast->right = domakedouble(righttype, ast->right);
+                } else {
+                    ast->right = domakefloat(righttype, ast->right);
+                }                    
+                righttype = ExprType(ast->right);
             }
-            righttype = DEFAULT_FLOAT_TYPE;
+        } else if (isfloat64) {
+            // promote left to float64
+            ast->left = dofloatToDouble(ast->left, lefttype);
+            lefttype = ast_type_float64;
+            isfloat64 = 1;
         }
     } else if (IsFloatType(righttype)) {
         isfloat = 1;
@@ -359,17 +425,24 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
                 // int / fixed requires additional scaling
                 scale = AstInteger(2*G_FIXPOINT);
             }
+            lefttype = DEFAULT_FLOAT_TYPE;
         } else {
-            ast->left = domakefloat(lefttype, ast->left);
+            if (IsFloat64Type(righttype)) {
+                isfloat64 = 1;
+                ast->left = domakedouble(lefttype, ast->left);
+            } else {
+                ast->left = domakefloat(lefttype, ast->left);
+            }
+            lefttype = ExprType(ast->left);
         }
-        lefttype = DEFAULT_FLOAT_TYPE;
     } else {
         // for exponentiation both sides need to be floats
         if (op == K_POWER) {
             isfloat = 1;
             ast->left = domakefloat(lefttype, ast->left);
             ast->right = domakefloat(righttype, ast->right);
-            lefttype = righttype = DEFAULT_FLOAT_TYPE;
+            lefttype = ExprType(ast->left);
+            righttype = ExprType(ast->right);
         }
         // in C we need to promote both sides to  long
         else if (curfunc && IsCLang(curfunc->language)) {
@@ -405,17 +478,17 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
         switch (op) {
         case '+':
             if (!gl_fixedreal) {
-                *ast = *MakeOperatorCall(float_add, ast->left, ast->right, NULL);
+                *ast = *MakeOperatorCall( isfloat64 ? double_add : float_add, ast->left, ast->right, NULL);
             }
             break;
         case '-':
             if (!gl_fixedreal) {
-                *ast = *MakeOperatorCall(float_sub, ast->left, ast->right, NULL);
+                *ast = *MakeOperatorCall( isfloat64 ? double_sub : float_sub, ast->left, ast->right, NULL);
             }
             break;
         case '*':
             if (!isalreadyfixed) {
-                *ast = *MakeOperatorCall(float_mul, ast->left, ast->right, NULL);
+                *ast = *MakeOperatorCall( isfloat64 ? double_mul : float_mul, ast->left, ast->right, NULL);
             }
             break;
         case '/':
@@ -424,10 +497,10 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
                     scale = AstInteger(G_FIXPOINT);
                 }
             }
-            *ast = *MakeOperatorCall(float_div, ast->left, ast->right, scale);
+            *ast = *MakeOperatorCall( isfloat64 ? double_div : float_div, ast->left, ast->right, scale);
             break;
         case K_POWER:
-            *ast = *MakeOperatorCall(float_powf, ast->left, ast->right, NULL);
+            *ast = *MakeOperatorCall( isfloat64 ? double_powf : float_powf, ast->left, ast->right, NULL);
             break;
         default:
             ERROR(ast, "internal error unhandled operator");
@@ -721,7 +794,8 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
 {
     AST *rettype = lefttype;
     int op;
-
+    int isfloat64 = 0;
+    
     // hmmm, should we automatically convert arrays to pointers here?
     // for current languages yes, eventually maybe not if we want
     // to support array arithmetic
@@ -753,11 +827,11 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
     case '|':
     case '^':
         if (lefttype && IsFloatType(lefttype)) {
-            ast->left = dofloatToInt(ast->left);
+            ast->left = dofloatToInt(ast->left, lefttype);
             lefttype = ExprType(ast->left);
         }
         if (righttype && IsFloatType(righttype)) {
-            ast->right = dofloatToInt(ast->right);
+            ast->right = dofloatToInt(ast->right, righttype);
             righttype = ExprType(ast->right);
         }
         if (ast->d.ival == K_SAR && lefttype && IsUnsignedType(lefttype)) {
@@ -823,18 +897,19 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
     case K_ABS:
     case K_SQRT:
         if (IsFloatType(rettype)) {
+            isfloat64 = IsFloat64Type(rettype);
             if (!gl_fixedreal) {
                 if (op == K_ABS) {
-                    *ast = *MakeOperatorCall(float_abs, ast->right, NULL, NULL);
+                    *ast = *MakeOperatorCall(isfloat64 ? double_abs : float_abs, ast->right, NULL, NULL);
                 } else if (op == K_SQRT) {
-                    *ast = *MakeOperatorCall(float_sqrt, ast->right, NULL, NULL);
+                    *ast = *MakeOperatorCall(isfloat64 ? double_sqrt : float_sqrt, ast->right, NULL, NULL);
                 } else {
-                    if (IsConstExpr(ast->right)) {
+                    if (IsConstExpr(ast->right) && !isfloat64) {
                         int x = EvalConstExpr(ast->right);
                         *ast = *NewAST(AST_FLOAT, NULL, NULL);
                         ast->d.ival = x ^ 0x80000000U;
                     } else {
-                        *ast = *MakeOperatorCall(float_neg, ast->right, NULL, NULL);
+                        *ast = *MakeOperatorCall(isfloat64 ? double_neg : float_neg, ast->right, NULL, NULL);
                     }
                 }
                 return rettype;
@@ -892,11 +967,13 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
     case K_BOOL_AND:
     case K_BOOL_OR:
         if (IsFloatType(lefttype)) {
-            ast->left = MakeOperatorCall(float_cmp, ast->left, AstInteger(0), AstInteger(1));
+            isfloat64 = IsFloat64Type(lefttype);
+            ast->left = MakeOperatorCall(isfloat64 ? double_cmp : float_cmp, ast->left, AstInteger(0), AstInteger(1));
             lefttype = ast_type_long;
         }
         if (IsFloatType(righttype)) {
-            ast->right = MakeOperatorCall(float_cmp, ast->right, AstInteger(0), AstInteger(1));
+            isfloat64 = IsFloat64Type(righttype);
+            ast->right = MakeOperatorCall(isfloat64 ? double_cmp : float_cmp, ast->right, AstInteger(0), AstInteger(1));
             righttype = ast_type_long;
         }
         if (lefttype && !IsBoolCompatibleType(lefttype)) {
@@ -983,7 +1060,7 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
         if (!astptr) {
             ERROR(line, "Unable to convert float function result to integer");
         } else {
-            expr = dofloatToInt(expr);
+            expr = dofloatToInt(expr, srctype);
             *astptr = expr;
         }
         AstReportDone(&saveinfo);
@@ -1108,7 +1185,7 @@ doCast(AST *desttype, AST *srctype, AST *src)
     }
     if (IsPointerType(desttype) || IsGenericType(desttype)) {
         if (IsFloatType(srctype)) {
-            src = dofloatToInt(src);
+            src = dofloatToInt(src, srctype);
             srctype = ast_type_long;
         }
         if (IsArrayType(srctype)) {
@@ -1156,7 +1233,7 @@ doCast(AST *desttype, AST *srctype, AST *src)
     }
     if (IsIntType(desttype)) {
         if (IsFloatType(srctype)) {
-            src = dofloatToInt(src);
+            src = dofloatToInt(src, srctype);
             srctype = ast_type_long;
         }
         if (IsPointerType(srctype)) {
@@ -1652,6 +1729,7 @@ InitGlobalFuncs(void)
             float_fromuns = getBasicPrimitive("_float_fromuns");
             float_fromint = getBasicPrimitive("_float_fromint");
             float_toint = getBasicPrimitive("_float_trunc");
+            float_todouble = getBasicPrimitive("_double_fromfloat");
             float_abs = getBasicPrimitive("_float_abs");
             float_sqrt = getBasicPrimitive("_float_sqrt");
             float_neg = getBasicPrimitive("_float_negate");
@@ -1673,6 +1751,15 @@ InitGlobalFuncs(void)
         int64_signx = getBasicPrimitive("_int64_signx");
         int64_zerox = getBasicPrimitive("_int64_zerox");
         
+        double_add = getBasicPrimitive("_double_add");
+        double_sub = getBasicPrimitive("_double_sub");
+        double_mul = getBasicPrimitive("_double_mul");
+        double_div = getBasicPrimitive("_double_div");
+        double_neg = getBasicPrimitive("_double_neg");
+        double_sqrt = getBasicPrimitive("_double_sqrt");
+        double_powf = getBasicPrimitive("_double_pow");
+        double_cmp = getBasicPrimitive("_double_cmp");
+
         basic_get_integer = getBasicPrimitive("_basic_get_integer");
         basic_get_string = getBasicPrimitive("_basic_get_string");
         basic_read_line = getBasicPrimitive("_basic_read_line");
