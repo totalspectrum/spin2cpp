@@ -749,6 +749,20 @@ PrintOperator(Flexbuf *f, int op, AST *left, AST *right, int flags)
         PrintExpr(f, right, flags);
         flexbuf_printf(f, ") >> 30 )");
         break;
+    case K_UNS_DIV:
+        flexbuf_printf(f, "(int32_t)( ((uint32_t)");
+        PrintExpr(f, left, flags);
+        flexbuf_printf(f, ") / ((uint32_t)");
+        PrintExpr(f, right, flags);
+        flexbuf_printf(f, ") )");
+        break;
+    case K_UNS_MOD:
+        flexbuf_printf(f, "(int32_t)( ((uint32_t)");
+        PrintExpr(f, left, flags);
+        flexbuf_printf(f, ") %% ((uint32_t)");
+        PrintExpr(f, right, flags);
+        flexbuf_printf(f, ") )");
+        break;
     default:
         ERROR(NULL, "unsupported operator 0x%x", op);
         break;
