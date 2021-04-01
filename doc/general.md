@@ -113,20 +113,6 @@ int add(int x, int y) __attribute__((cog))
 ```
 Similarly use `__attribute__((lut))` to place the function into LUT memory.
 
-## Memory Map
-
-### HUB
-
-Code starts at 0 in HUB (by default, there are command line options to change this). Data starts after the code. The heap is part of the data area. The stack starts after this and grows upwards.
-
-### COG
-
-Most of COG RAM is used by the compiler, except that $0-$1f and $1e0-$1ef are left free for application use.
-
-### LUT
-
-The first part of LUT memory (from $200 to $300) is used for any functions explicitly placed into LUT. The LUT memory from $300 to $400 (the second half of LUT) is used for fcache. To keep this area free, pass --fcache=0 to the compiler.
-
 ## Register Usage
 
 ### P1
@@ -140,6 +126,20 @@ Most of COG RAM is used by the compiler, except that $0-$1f and $1e0-$1ef are le
 `ptra` is used for the stack pointer. Applications should avoid using it.
 
 `pa` is used internally for fcache loading. Applications may use it as a temporary variable, but be aware that any code execution which may trigger an fcache load (e.g. any loop or subroutine call) may trash its value.
+
+## Memory Map
+
+### HUB
+
+Code starts at 0 in HUB (by default, there are command line options to change this). Data starts after the code. The heap is part of the data area. The stack starts after this and grows upwards.
+
+### COG
+
+Most of COG RAM is used by the compiler, except that $0-$1f and $1e0-$1ef are left free for application use.
+
+### LUT
+
+The first part of LUT memory (from $200 to $300) is used for any functions explicitly placed into LUT. The LUT memory from $300 to $400 (the second half of LUT) is used for fcache. To keep this area free, pass --fcache=0 to the compiler.
 
 ## Optimizations
 
