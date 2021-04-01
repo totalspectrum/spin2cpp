@@ -1,0 +1,36 @@
+con
+	_clkfreq = 100000000
+dat
+	nop
+	cogid	pa
+	coginit	pa,##$404
+	orgh	$10
+	long	0	'reserved
+	long	0 ' clock frequency: will default to 100000000
+	long	0 ' clock mode: will default to $100090b
+	orgh	$400
+ _ret_	mov	result1, #0
+	org	0
+entry
+
+_main
+	call	#_demo
+_main_ret
+	ret
+
+_demo
+	rep	@LR__0001, #0
+	drvnot	#0
+LR__0001
+_demo_ret
+	ret
+
+__lockreg
+	long	0
+ptr___lockreg_
+	long	@__lockreg
+COG_BSS_START
+	fit	480
+	orgh
+	org	COG_BSS_START
+	fit	480

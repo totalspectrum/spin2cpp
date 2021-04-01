@@ -1,0 +1,13 @@
+CON
+  _clkfreq = 100_000_000
+
+PUB main()
+  demo()
+  
+PUB {++cog} demo()
+  org
+    rep @done, #0
+    drvnot #0
+done
+  end
+  
