@@ -910,6 +910,12 @@ doDeclareFunction(AST *funcblock)
     fdef->decl = funcdef;
     fdef->language = language;
     fdef->code_placement = is_cog;
+    if (is_cog != CODE_PLACE_DEFAULT) {
+        // if the code placement is explicit and differs from where we
+        // would normally put code, make sure we do not inline the
+        // function
+        fdef->no_inline = 1;
+    }
     if (comment) {
         if (comment->kind != AST_COMMENT && comment->kind != AST_SRCCOMMENT) {
             ERROR(comment, "Internal error: expected comment");
