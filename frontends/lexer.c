@@ -367,7 +367,7 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
     
     for(;;) {
         c = lexgetc(L);
-        if (c == '_' || c == '\'')
+        if (c == '_' || (IsCLang(lang) && c == '\'') )
             continue;
         else if (c >= 'A' && c <= 'Z')
             digit = 10 + c - 'A';
@@ -427,7 +427,7 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
         if (base == 16) {
             double hexplace = 1.0/16.0;
             for(;;) {
-                if (c == '_' || c == '\'') {
+                if (c == '_' || (IsCLang(lang) && c == '\'') ) {
                     /* just skip */
                 } else if (c >= '0' && c <= '9') {
                     c = c - '0';
@@ -449,8 +449,8 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
                 c = 'E';
             }
         } else {
-            while ( (c >= '0' && c <= '9') || (c == '_')) {
-                if (c != '_' && c != '\'') {
+            while ( (c >= '0' && c <= '9') || (c == '_') || (IsCLang(lang) && c == '\'') ) {
+                if (c >= '0' && c <= '9') {
                     ff = ff + divby[counter]*(double)(c-'0');
                     counter++;
                 }
