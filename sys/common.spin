@@ -433,3 +433,99 @@ pri file "libc/string/strerror.c" _strerror(e=long): r=string
 
 pri file "libsys/c_startup.c" _c_startup()
 
+pri _int64_signx(x = long) : rlo, rhi
+  rlo := x
+  rhi := x
+  asm
+    sar rhi, #31
+  endasm
+
+pri _int64_zerox(x = long) : rlo, rhi
+  rlo := x
+  rhi := 0
+
+pri _int64_add(alo, ahi, blo, bhi) : rlo, rhi
+  rlo := alo
+  rhi := ahi
+  asm
+    add  rlo, blo wc
+    addx rhi, bhi
+  endasm
+
+pri _int64_sub(alo, ahi, blo, bhi) : rlo, rhi
+  rlo := alo
+  rhi := ahi
+  asm
+    sub  rlo, blo wc
+    subx rhi, bhi
+  endasm
+
+pri _int64_and(alo, ahi, blo, bhi) : rlo, rhi
+  rlo := alo
+  rhi := ahi
+  asm
+    and  rlo, blo
+    and rhi, bhi
+  endasm
+
+pri _int64_or(alo, ahi, blo, bhi) : rlo, rhi
+  rlo := alo
+  rhi := ahi
+  asm
+    or  rlo, blo
+    or  rhi, bhi
+  endasm
+
+pri _int64_xor(alo, ahi, blo, bhi) : rlo, rhi
+  rlo := alo
+  rhi := ahi
+  asm
+    xor  rlo, blo
+    xor  rhi, bhi
+  endasm
+
+pri _int64_shl(alo, ahi, count, counthi) : rlo, rhi | tmp
+  rlo := alo
+  rhi := ahi
+  count &= 63
+  if count > 32
+    rhi := rlo
+    rlo := 0
+    count -= 32
+  rhi := rhi << count
+  tmp := rlo >> (32-count)
+  rhi |= tmp
+  rlo := rlo << count
+
+pri _int64_shr(alo, ahi, count, counthi) : rlo, rhi | tmp
+  rlo := alo
+  rhi := ahi
+  count &= 63
+  if count > 32
+    rlo := rhi
+    rhi := 0
+    count -= 32
+  rlo := rlo >> count
+  tmp := rhi << (32-count)
+  rlo |= tmp
+  rhi := rhi >> count
+
+pri _int64_sar(alo, ahi, count, counthi) : rlo, rhi | tmp
+  rlo := alo
+  rhi := ahi
+  count &= 63
+  if count > 32
+    rlo := rhi
+    rhi := 0
+    count -= 32
+  rlo := rlo ~> count
+  tmp := rhi << (32-count)
+  rlo |= tmp
+  rhi := rhi ~> count
+
+pri _int64_muls(alo, ahi, blo, bhi) : rlo, rhi
+  rlo := alo * blo
+  rhi := alo ** blo
+  rhi += ahi * blo
+  rhi += bhi * alo
+

@@ -2087,6 +2087,21 @@ IsFloatType(AST *type)
 }
 
 int
+IsFloat64Type(AST *type)
+{
+    int size;
+    type = RemoveTypeModifiers(type);
+    if (!type) return 0;
+    if (type->kind != AST_FLOATTYPE)
+        return 0;
+    size = EvalConstExpr(type->left);
+    if (size == LONG64_SIZE) {
+        return 1;
+    }
+    return 0;
+}
+
+int
 IsClassType(AST *type)
 {
     type = RemoveTypeModifiers(type);
@@ -2162,6 +2177,21 @@ IsUnsignedType(AST *type)
 }
 
 int
+IsInt64Type(AST *type)
+{
+    int size;
+    type = RemoveTypeModifiers(type);
+    if (!type) return 0;
+    if (! (type->kind == AST_INTTYPE || type->kind == AST_UNSIGNEDTYPE) )
+        return 0;
+    size = EvalConstExpr(type->left);
+    if (size == LONG64_SIZE) {
+        return 1;
+    }
+    return 0;
+}
+
+int
 IsBoolCompatibleType(AST *type)
 {
     type = RemoveTypeModifiers(type);
@@ -2230,11 +2260,14 @@ WidestType(AST *left, AST *right)
     right = RemoveTypeModifiers(right);
     if (!left) return right;
     if (!right) return left;
-    if (left->kind != right->kind) {
-        return ast_type_long;
-    }
     lsize = TypeSize(left);
     rsize = TypeSize(right);
+    if (left->kind != right->kind) {
+        if (lsize > 4 || rsize > 4) {
+            return ast_type_long64;
+        }
+        return ast_type_long;
+    }
     if (lsize < rsize) return right;
     return left;
 }
@@ -2566,8 +2599,19 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
             }
             return WidestType(ltype, rtype);
         case K_ZEROEXTEND:
+            if (TypeSize(ExprType(expr->left)) > LONG_SIZE) {
+                return ast_type_unsigned_long64;
+            }
             return ast_type_unsigned_long;
         default:
+            ltype = ExprTypeRelative(table, expr->left, P);
+            rtype = ExprTypeRelative(table, expr->right, P);
+            if ( TypeSize(ltype) > LONG_SIZE ) {
+                return ast_type_long64;
+            }
+            if ( TypeSize(rtype) > LONG_SIZE ) {
+                return ast_type_long64;
+            }
             return ast_type_long;
         }
     }
@@ -2976,6 +3020,12 @@ BuildExprlistFromObject(AST *origexpr, AST *typ)
         return origexpr;
     }
     exprlist = NULL;
+    if (IsScalar64Type(typ)) {
+        exprlist = NewAST(AST_EXPRLIST, NewAST(AST_GETLOW, expr, NULL), NULL);
+        temp = NewAST(AST_EXPRLIST, NewAST(AST_GETHIGH, expr, NULL), NULL);
+        exprlist = AddToList(exprlist, temp);
+        return exprlist;
+    }
     if (!IsClassType(typ)) {
         return expr;
     }

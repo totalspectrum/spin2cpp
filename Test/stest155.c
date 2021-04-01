@@ -1,3 +1,5 @@
+long long a;
+
 long long ident(long long x)
 {
     return x;
@@ -5,6 +7,5 @@ long long ident(long long x)
 
 void test()
 {
-    long long a;
     a = ident(0);
 }

@@ -82,6 +82,7 @@ AST *ast_type_const_generic;
 AST *ast_type_void;
 AST *ast_type_bitfield;
 AST *ast_type_long64, *ast_type_unsigned_long64;
+AST *ast_type_float64;
 AST *ast_type_generic_funcptr;
 AST *ast_type_sendptr;
 AST *ast_type_recvptr;
@@ -829,6 +830,8 @@ Init()
     ast_type_signed_byte = NewAST(AST_INTTYPE, AstInteger(1), NULL);
 
     ast_type_float = NewAST(AST_FLOATTYPE, AstInteger(4), NULL);
+    ast_type_float64 = NewAST(AST_FLOATTYPE, AstInteger(8), NULL);
+
     ast_type_generic = NewAST(AST_GENERICTYPE, AstInteger(4), NULL);
     ast_type_const_generic = NewAST(AST_MODIFIER_CONST, ast_type_generic, NULL);
     ast_type_void = NewAST(AST_VOIDTYPE, AstInteger(0), NULL);

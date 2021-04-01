@@ -215,6 +215,8 @@ enum astkind {
 
     AST_INITMODIFIER = 152,
     AST_DECLARE_BITFIELD = 153,
+    AST_GETLOW = 154,
+    AST_GETHIGH = 155,
 };
 
 /* forward reference */

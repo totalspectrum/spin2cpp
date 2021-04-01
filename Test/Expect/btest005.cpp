@@ -11,8 +11,8 @@ void btest005::pausems(uint32_t ms)
 
 void btest005::program(void)
 {
-  _DIRA |= (1 << lopin);
-  _OUTA |= (1 << lopin);
+  _DIRA |= 0x10000;
+  _OUTA |= 0x10000;
   do {
     pausems(500);
     _OUTA ^= 0x10000;

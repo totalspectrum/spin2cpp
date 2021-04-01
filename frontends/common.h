@@ -106,7 +106,8 @@ struct lexstream {
 
 #define NUM_COGS 8
 
-#define LONG_SIZE 4
+#define LONG_SIZE   4
+#define LONG64_SIZE 8
 
 /* some globals */
 
@@ -210,6 +211,7 @@ extern AST *ast_type_unsigned_long;
 extern AST *ast_type_signed_word;
 extern AST *ast_type_signed_byte;
 extern AST *ast_type_float;
+extern AST *ast_type_float64;
 extern AST *ast_type_string;
 extern AST *ast_type_generic;
 extern AST *ast_type_const_generic;

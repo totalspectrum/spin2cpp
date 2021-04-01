@@ -1724,6 +1724,7 @@ CheckFunctionCalls(AST *ast)
         AST *a;
         AST **lastaptr;
         int doExpandArgs = 0;
+        AST *typ;
         sym = FindCalledFuncSymbol(ast, NULL, 0);
         expectArgs = 0;
         if (sym) {
@@ -1808,10 +1809,11 @@ CheckFunctionCalls(AST *ast)
                 newparams = DupAST(lhsseq);
                 // create an initialization for the temps
                 exprlist = a->left;
+                typ = ExprType(a->left);
+                
                 if (IsIdentifier(exprlist)) {
                     AST *temp;
                     AST *id = exprlist;
-                    AST *typ = ExprType(id);
                     Module *P = NULL;
                     if (typ && IsClassType(typ) && 0 != (P=GetClassPtr(typ))) {
                         Symbol *sym;
@@ -1826,6 +1828,12 @@ CheckFunctionCalls(AST *ast)
                             temp = NewAST(AST_EXPRLIST, temp, NULL);
                             exprlist = AddToList(exprlist, temp);
                         }
+                    } else if (typ && IsScalar64Type(typ)) {
+                        exprlist = NewAST(AST_GETLOW, a->left, NULL);
+                        exprlist = NewAST(AST_EXPRLIST, exprlist, NULL);
+                        temp = NewAST(AST_GETHIGH, a->left, NULL);
+                        temp = NewAST(AST_EXPRLIST, temp, NULL);
+                        exprlist = AddToList(exprlist, temp);
                     } else {
                         ERROR(exprlist, "Internal error: Unable to handle this type of parameter");
                         return;

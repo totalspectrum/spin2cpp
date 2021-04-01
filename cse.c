@@ -320,7 +320,10 @@ AddToCSESet(AST *name, CSESet *cse, AST *expr, unsigned exprHash, AST **replacep
     {
         return NULL;
     }
-    
+    // do not CSE 64 bit quantities
+    if (TypeSize(ExprType(expr)) > LONG_SIZE) {
+        return NULL;
+    }
     AstReportAs(expr, &saveinfo); // set line number for error/debug purposes
 
     entry->expr = expr;
