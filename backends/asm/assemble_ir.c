@@ -109,7 +109,11 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
     const char *regname;
     int usehubaddr;
     int useabsaddr;
+    int opoffset;
 
+    opoffset = ((int)effect) >> OPEFFECT_OFFSET_SHIFT;
+    effect &= ~(OPEFFECT_OFFSET_MASK);
+    
     usehubaddr = effect & OPEFFECT_FORCEHUB;
     effect &= ~(OPEFFECT_FORCEHUB);
     if (gl_p2) {
@@ -235,6 +239,12 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
             flexbuf_printf(fb, "++");
         } else if (effect == OPEFFECT_POSTDEC) {
             flexbuf_printf(fb, "--");
+        } else if (opoffset) {
+            if (opoffset > 31 || opoffset < -32) {
+                flexbuf_printf(fb, "[##%d]", opoffset);
+            } else {
+                flexbuf_printf(fb, "[%d]", opoffset);
+            }
         }
         break;
     }

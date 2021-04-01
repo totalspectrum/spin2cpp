@@ -307,10 +307,14 @@ enum OperandEffect {
     OPEFFECT_POSTDEC = 2,
     OPEFFECT_PREINC = 3,
     OPEFFECT_POSTINC = 4,
-
+    
     OPEFFECT_FORCEABS = 0x100,
     OPEFFECT_FORCEHUB = 0x200,
+
+    OPEFFECT_OFFSET_MASK = 0xfffff000,
 };
+
+#define OPEFFECT_OFFSET_SHIFT 12
 
 struct Operand {
     enum Operandkind kind;

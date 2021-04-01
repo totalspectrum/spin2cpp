@@ -229,6 +229,25 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
     } else if (IsConstExpr(expr)) {
         int32_t val = EvalConstExpr(expr);
         return ImmediateRef(immflag, val);
+    } else if (expr->kind == AST_RANGEREF && expr->left && expr->left->kind == AST_HWREG) {
+        // something like ptrb[4]
+        AST *rhs = expr->right;
+        HwReg *hw = expr->left->d.ptr;
+        int32_t offset;
+        if (!rhs || rhs->kind != AST_RANGE || rhs->right) {
+            ERROR(rhs, "bad ptra/ptrb expression");
+            offset = 0;
+        } else {
+            if (!IsConstExpr(rhs->left)) {
+                ERROR(rhs, "ptra/ptrb offset must be constant");
+                offset = 0;
+            } else {
+                offset = EvalConstExpr(rhs->left);
+            }
+        }
+        r = GetOneGlobal(REG_HW, hw->name, 0);        
+        *effects |= (offset << OPEFFECT_OFFSET_SHIFT);
+        return r;
     } else if (expr->kind == AST_OPERATOR) {
         // have to handle things like ptra++
         if (expr->d.ival == K_INCREMENT || expr->d.ival == K_DECREMENT) {
