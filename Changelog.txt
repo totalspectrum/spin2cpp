@@ -2,6 +2,7 @@ Version 5.3.2
 - Accept ' as a digit separator as well as '_' (C++14 uses single quote)
 - Avoid FCACHE in FCACHE (e.g. for loops with empty org/end)
 - Disable inlining for functions explicitly placed in COG or LUT memory
+- Some internal changes for 64 bit support (still a work in progress)
 
 Version 5.3.1
 - Added aliases for _pinw, _pinl, and _pinh in Spin (to match the documentation).
