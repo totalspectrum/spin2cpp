@@ -4646,8 +4646,11 @@ static void CompileStatement(IRList *irl, AST *ast)
         EmitDebugComment(irl, ast);
         retval = ast->left;
         if (!retval) {
+            retval = GetResultExpr(curfunc->resultexpr);
+        }
+        if (!retval || retval->kind == AST_EXPRLIST) {
+            // cannot abort back multiple values!
             retval = AstInteger(0);
-            //retval = GetResultExpr(curfunc->resultexpr);
         }
         ValidateAbortFuncs();
         op = CompileExpression(irl, retval, NULL);

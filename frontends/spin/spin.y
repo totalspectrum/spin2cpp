@@ -617,7 +617,15 @@ basicstmt:
   |  SP_RETURN exprlist SP_EOLN
     { $$ = AstReturn($2, $1); }
   | SP_ABORT SP_EOLN
-    { $$ = AstAbort(NULL, $1); }
+    {
+        if (current && current->curLanguage == LANG_SPIN_SPIN2) {
+            // in Spin2 plain "abort" is the same as "abort 0"
+            $$ = AstAbort(AstInteger(0), $1);
+        } else {
+            // in Spin1 plain "abort" should return the result variable
+            $$ = AstAbort(NULL, $1);
+        }
+    }
   |  SP_ABORT expr SP_EOLN
     { $$ = AstAbort($2, $1); }
   | multiassign
