@@ -713,7 +713,12 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                     do {
                         c = lexgetc(L);
                     } while ( (c > 0) && (c != 10) && (c != 13) );
-                    return SP_EOLN;
+                    if (c) {
+                        lexungetc(L, c);
+                    }
+                    lexungetc(L, ')');
+                    lexungetc(L, '(');
+                    return SP_DEBUG;
                 }
                 break;
             default:

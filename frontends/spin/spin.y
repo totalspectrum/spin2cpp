@@ -627,6 +627,15 @@ basicstmt:
     { $$ = NewCommentedAST(AST_QUITLOOP, NULL, NULL, $1); }
   | SP_NEXT SP_EOLN
     { $$ = NewCommentedAST(AST_CONTINUE, NULL, NULL, $1); }
+  | SP_DEBUG '(' ')' SP_EOLN
+    {
+        AST *ast = NULL;
+        AST *comment = $1;
+        if (comment) {
+            ast = NewAST(AST_COMMENTEDNODE, ast, comment);
+        }
+        $$ = ast;
+    }
   | SP_DEBUG '(' debug_exprlist ')' SP_EOLN
     {
         AST *ast = BuildDebugList($3);
@@ -976,6 +985,11 @@ basedatline:
     { $$ = NewCommentedAST(AST_FIT, AstInteger(0x1f0), NULL, $1); }
   | SP_FILE string SP_EOLN
     { $$ = NewCommentedAST(AST_FILE, GetFullFileName($2), NULL, $1); }
+  | SP_DEBUG '(' ')' SP_EOLN
+    {
+        // for now just ignore DEBUG in PASM
+        $$ = NULL;
+    }
   | SP_DEBUG '(' debug_exprlist ')' SP_EOLN
     {
         // for now just ignore DEBUG in PASM

@@ -1,0 +1,16 @@
+'
+' test for removing debug()
+'
+DAT
+  org
+  nop
+  debug("some stuff")
+  nop
+  
+PUB demo()
+  if outa & 1
+    debug("outa")
+  elseif outb & 1
+    debug("outb")
+  else
+    repeat
