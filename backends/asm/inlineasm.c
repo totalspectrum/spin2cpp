@@ -167,7 +167,7 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
                 break;
             case SYM_LOCALLABEL:
                 if (!immflag) {
-                    ERROR(expr, "must use an immediate with labels in inline asm");
+                    ERROR(expr, "inline assembly is not in COG memory, register use not supported");
                 }
                 r = GetLabelFromSymbol(expr, sym->our_name);
                 immflag = 0;
