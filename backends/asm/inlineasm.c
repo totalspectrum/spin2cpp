@@ -614,6 +614,9 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
             if (!firstir) firstir = ir;
         } else if (ast->kind == AST_LINEBREAK || ast->kind == AST_COMMENT || ast->kind == AST_SRCCOMMENT) {
             // do nothing
+        } else if (ast->kind == AST_LONGLIST || ast->kind == AST_WORDLIST || ast->kind == AST_BYTELIST || ast->kind == AST_RES) {
+            ERROR(ast, "declaring variables inside inline assembly is not supported; use local variables instead");
+            break;
         } else {
             ERROR(ast, "inline assembly of this item not supported yet");
             break;
