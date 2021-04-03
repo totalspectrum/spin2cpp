@@ -777,9 +777,17 @@ ParsePrintStatement(AST *ast)
             // create a hex call
             seq = addPrintHex(seq, handle, basic_print_unsigned, expr, fmtAst);
         } else if (IsUnsignedType(type)) {
-            seq = addPrintDec(seq, handle, basic_print_unsigned, expr, fmtAst);
+            if (IsInt64Type(type)) {
+                seq = addPrintDec(seq, handle, basic_print_longunsigned, expr, fmtAst);
+            } else {
+                seq = addPrintDec(seq, handle, basic_print_unsigned, expr, fmtAst);
+            }
         } else if (IsIntType(type)) {
-            seq = addPrintDec(seq, handle, basic_print_integer, expr, fmtAst);
+            if (IsInt64Type(type)) {
+                seq = addPrintDec(seq, handle, basic_print_longinteger, expr, fmtAst);
+            } else {
+                seq = addPrintDec(seq, handle, basic_print_integer, expr, fmtAst);
+            }
         } else {
             ERROR(ast, "Unable to print expression of this type");
         }

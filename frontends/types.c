@@ -42,6 +42,8 @@ AST *basic_print_float;
 AST *basic_print_string;
 AST *basic_print_integer;
 AST *basic_print_unsigned;
+AST *basic_print_longinteger;
+AST *basic_print_longunsigned;
 AST *basic_print_char;
 AST *basic_print_nl;
 AST *basic_put;
@@ -1798,6 +1800,8 @@ InitGlobalFuncs(void)
         
         basic_print_integer = getBasicPrimitive("_basic_print_integer");
         basic_print_unsigned = getBasicPrimitive("_basic_print_unsigned");
+        basic_print_longinteger = getBasicPrimitive("_basic_print_longinteger");
+        basic_print_longunsigned = getBasicPrimitive("_basic_print_longunsigned");
         basic_print_string = getBasicPrimitive("_basic_print_string");
         basic_print_char = getBasicPrimitive("_basic_print_char");
         basic_print_nl = getBasicPrimitive("_basic_print_nl");

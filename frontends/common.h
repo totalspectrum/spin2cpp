@@ -860,5 +860,7 @@ extern AST *basic_print_unsigned;
 extern AST *basic_print_char;
 extern AST *basic_print_nl;
 extern AST *basic_put;
+extern AST *basic_print_longinteger;
+extern AST *basic_print_longunsigned;
 
 #endif
