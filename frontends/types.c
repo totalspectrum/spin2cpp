@@ -81,8 +81,9 @@ static AST *int64_sub;
 static AST *int64_muls;
 static AST *int64_mulu;
 static AST *int64_divs, *int64_divu;
+static AST *int64_mods, *int64_modu;
 static AST *int64_neg;
-static AST *int64_cmp;
+static AST *int64_cmpu, *int64_cmps;
 static AST *int64_shl, *int64_shr, *int64_sar;
 static AST *int64_and, *int64_or, *int64_xor;
 static AST *int64_signx, *int64_zerox;
@@ -537,6 +538,12 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
         case K_UNS_DIV:
             *ast = *MakeOperatorCall(int64_divu, ast->left, ast->right, NULL);
             break;
+        case K_MODULUS:
+            *ast = *MakeOperatorCall(int64_mods, ast->left, ast->right, NULL);
+            break;
+        case K_UNS_MOD:
+            *ast = *MakeOperatorCall(int64_modu, ast->left, ast->right, NULL);
+            break;            
         case '&':
             *ast = *MakeOperatorCall(int64_and, ast->left, ast->right, NULL);
             break;
@@ -620,6 +627,7 @@ void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
     int isfloat = 0;
     int leftUnsigned = 0;
     int rightUnsigned = 0;
+    int isint64 = 0;
     
     if (IsFloatType(lefttype)) {
         if (!IsFloatType(righttype)) {
@@ -667,13 +675,22 @@ void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
         ast->right = forcepromote(righttype, ast->right);
         leftUnsigned = IsUnsignedType(lefttype);
         rightUnsigned = IsUnsignedType(righttype);
+        isint64 = IsInt64Type(lefttype) || IsInt64Type(righttype);
     }
     
      //
     // handle unsigned/signed comparisons here
     //
     
-    if (leftUnsigned || rightUnsigned) {
+    if (isint64) {
+        if (leftUnsigned || rightUnsigned) {
+            ast->left = MakeOperatorCall(int64_cmpu, ast->left, ast->right, NULL);
+        } else {
+            ast->left = MakeOperatorCall(int64_cmps, ast->left, ast->right, NULL);
+        }
+        ast->right = AstInteger(0);
+    }
+    else if (leftUnsigned || rightUnsigned) {
         if ( (leftUnsigned && (rightUnsigned || IsUnsignedConst(ast->right)))
              || (rightUnsigned && IsUnsignedConst(ast->left)) )
         {
@@ -1774,8 +1791,11 @@ InitGlobalFuncs(void)
         int64_mulu = getBasicPrimitive("_int64_mulu");
         int64_divs = getBasicPrimitive("_int64_divs");
         int64_divu = getBasicPrimitive("_int64_divu");
+        int64_mods = getBasicPrimitive("_int64_mods");
+        int64_modu = getBasicPrimitive("_int64_modu");
         int64_neg = getBasicPrimitive("_int64_neg");
-        int64_cmp = getBasicPrimitive("_int64_cmp");
+        int64_cmps = getBasicPrimitive("_int64_cmps");
+        int64_cmpu = getBasicPrimitive("_int64_cmpu");
         int64_shl = getBasicPrimitive("_int64_shl");
         int64_shr = getBasicPrimitive("_int64_shr");
         int64_sar = getBasicPrimitive("_int64_sar");

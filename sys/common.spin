@@ -435,6 +435,15 @@ pri file "libc/string/strerror.c" _strerror(e=long): r=string
 
 pri file "libsys/c_startup.c" _c_startup()
 
+' compare unsigned alo, ahi, return -1, 0, or +1
+pri _int64_cmpu(alo, ahi, blo, bhi) : r
+  asm
+      cmp  alo, blo wcz
+      cmpx ahi, bhi wcz
+ if_a mov  r, #1
+ if_b neg  r, #1
+  endasm
+  
 pri _int64_signx(x = long) : rlo, rhi
   rlo := x
   rhi := x
@@ -531,3 +540,27 @@ pri _int64_muls(alo, ahi, blo, bhi) : rlo, rhi
   rhi += ahi * blo
   rhi += bhi * alo
 
+pri _int64_divmodu(nlo, nhi, dlo, dhi) : qlo, qhi, rlo, rhi |ilo, ihi
+  rlo := nlo
+  rhi := nhi
+  ilo := dlo
+  ihi := dhi
+  qlo := 0
+  qhi := 0
+  if (dlo == 0 and dhi == 0)
+    qlo := qhi := $ffff_ffff
+    return
+  repeat while (_int64_cmpu(nlo, nhi, ilo, ihi) > 0) and (ihi>>31) == 0
+    ilo, ihi := _int64_add(ilo, ihi, ilo, ihi)
+  repeat while (_int64_cmpu(ilo, ihi, dlo, dhi) > 0)
+    qlo, qhi := _int64_add(qlo, qhi, qlo, qhi)
+    if _int64_cmpu(rlo, rhi, ilo, ihi) >= 0
+      rlo, rhi := _int64_sub(rlo, rhi, ilo, ihi)
+      qlo |= 1
+      ilo, ihi := _int64_shr(ilo, ihi, 1, 0)
+
+pri _int64_divu(nlo, nhi, dlo, dhi) : qlo, qhi
+  qlo, qhi, _, _ := _int64_divmodu(nlo, nhi, dlo, dhi)
+
+pri _int64_modu(nlo, nhi, dlo, dhi) : rlo, rhi
+  _, _, rlo, rhi := _int64_divmodu(nlo, nhi, dlo, dhi)
