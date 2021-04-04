@@ -438,8 +438,8 @@ pri file "libsys/c_startup.c" _c_startup()
 ' compare unsigned alo, ahi, return -1, 0, or +1
 pri _int64_cmpu(alo, ahi, blo, bhi) : r
   asm
-      cmp  alo, blo wcz
-      cmpx ahi, bhi wcz
+      cmp  alo, blo wc,wz
+      cmpx ahi, bhi wc,wz
  if_a mov  r, #1
  if_b neg  r, #1
   endasm
