@@ -521,7 +521,7 @@ AddInitializers(AST *seq, AST *ident, AST *expr, AST *basetype)
     }
     if (IsConstType(basetype)) {
         // cast to avoid warnings
-        ident = NewAST(AST_CAST, BaseType(basetype), ident);
+        ident = NewAST(AST_CAST, RemoveTypeModifiers(basetype), ident);
     }
     assign = AstAssign(ident, expr);
     seq = AddToList(seq, NewAST(AST_SEQUENCE, assign, NULL));

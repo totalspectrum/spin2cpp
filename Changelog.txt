@@ -1,3 +1,6 @@
+Version 5.3.3
+- Fix incorrect types in some const initializations.
+
 Version 5.3.2
 - Accept ' as a digit separator as well as '_' (C++14 uses single quote)
 - Avoid FCACHE in FCACHE (e.g. for loops with empty org/end)
