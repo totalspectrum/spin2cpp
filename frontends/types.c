@@ -984,6 +984,21 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
         return ast_type_long;
     case K_INCREMENT:
     case K_DECREMENT:
+        if ( (lefttype && IsConstType(lefttype) )
+             || (righttype && IsConstType(righttype)) )
+        {
+            const char *name = NULL;
+            if (ast->left && IsIdentifier(ast->left)) {
+                name = GetUserIdentifierName(ast->left);
+            } else if (ast->right && IsIdentifier(ast->right)) {
+                name = GetUserIdentifierName(ast->right);
+            }
+            if (name) {
+                WARNING(ast, "increment/decrement of const variable `%s'", name);
+            } else {
+                WARNING(ast, "increment/decrement of const item");
+            }
+        }
         if (lefttype && (IsPointerType(lefttype) || IsIntOrGenericType(lefttype))) {
             return lefttype;
         }
@@ -1116,7 +1131,7 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
     if (IsConstType(desttype) && kind == AST_ASSIGN) {
         // see if we can find an exact name
         if (line && line->kind == AST_ASSIGN && IsIdentifier(line->left)) {
-            WARNING(line, "assignment to const item `%s'", GetUserIdentifierName(line->left));
+            WARNING(line, "assignment to const variable `%s'", GetUserIdentifierName(line->left));
         } else {
             WARNING(line, "assignment to const item");
         }
