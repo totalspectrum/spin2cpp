@@ -94,6 +94,8 @@ LabelName(AST *x)
     return AstIdentifier(new_name);
 }
 
+static AST *CombineTypes(AST *first, AST *second, AST **identifier);
+
 static AST *
 C_ModifySignedUnsigned(AST *modifier, AST *type)
 {
@@ -101,11 +103,12 @@ C_ModifySignedUnsigned(AST *modifier, AST *type)
         type = MakeSigned(type, 1);
     } else if (modifier == ast_type_unsigned_long) {
         type = MakeSigned(type, 0);
-    }
+    } else if (modifier == ast_type_c_long) {
     // we need to be able to distinguish between
     // "long long" and "long int"
-    if (modifier == ast_type_c_long) {
         type = LengthenType(type);
+    } else {
+        type = CombineTypes(modifier, type, NULL);
     }
     return type;
 }
@@ -206,6 +209,9 @@ CombineTypes(AST *first, AST *second, AST **identifier)
     default:
         if (!first) {
             return MergePrefix(prefix, second);
+        }
+        if (second && second == ast_type_long) {
+            return first;
         }
         ERROR(first, "Internal error: don't know how to combine types");
         return first;
