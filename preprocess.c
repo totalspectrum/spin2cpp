@@ -421,13 +421,15 @@ typedef struct parse_state {
     char *str;  /* pointer to start of string */
     char *save; /* pointer to where last parse ended */
     int   c;    /* saved character */
+    struct preprocess *preproc;
 } ParseState;
 
-static void parse_init(ParseState *P, char *s)
+static void parse_init(ParseState *P, char *s, struct preprocess *pp)
 {
     P->str = s;
     P->save = NULL;
     P->c = 0;
+    P->preproc = pp;
 }
 
 #define PARSE_ISSPACE 1
@@ -468,7 +470,8 @@ static char *parse_getword(ParseState *P)
 {
     char *word, *ptr;
     int state;
-
+    struct preprocess *pp = P->preproc;
+    
     if (P->save) {
         *P->save = (char)P->c;
         ptr = P->save;
@@ -480,11 +483,15 @@ static char *parse_getword(ParseState *P)
 
     if (*ptr == '\"') {
         ptr = skip_quoted_string(ptr+1, '\"');
-      if (*ptr == '\"') ptr++;
+        if (*ptr == '\"') ptr++;
+    } else if (*ptr == pp->startcomment[0] && !strncmp(ptr, pp->startcomment, strlen(pp->startcomment))) {
+        ptr += strlen(pp->startcomment);
+    } else if (*ptr == pp->endcomment[0] && !strncmp(ptr, pp->endcomment, strlen(pp->endcomment))) {
+        ptr += strlen(pp->endcomment);
     } else {
       state = classify_char((unsigned char)*ptr);
       ptr++;
-      while (*ptr && classify_char((unsigned char)*ptr) == state)
+      while (*ptr && (classify_char((unsigned char)*ptr) == state))
         ptr++;
     }
     P->save = ptr;
@@ -581,7 +588,7 @@ expand_macros(struct preprocess *pp, struct flexbuf *dst, char *src)
     if (!pp_active(pp))
         return 0;
 
-    parse_init(&P, src);
+    parse_init(&P, src, pp);
     for(;;) {
         word = parse_getword(&P);
         if (!*word)
@@ -916,7 +923,7 @@ do_line(struct preprocess *pp)
         r = expand_macros(pp, &pp->line, data);
     } else {
         ParseState P;
-        parse_init(&P, data+1);
+        parse_init(&P, data+1, pp);
         parse_skipspaces(&P);
         func = parse_getword(&P);
         if (!strcasecmp(func, "ifdef")) {
