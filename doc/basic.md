@@ -252,6 +252,8 @@ xor
 A number of functions and variables are predefined. These names may be redefined (for example as local variable names inside a function), but changing them at the global level is probably unwise; at the very least it will cause confusion for readers of your code.
 ```
 bin$
+bytefill
+bytemove
 chain
 _clkfreq
 clkfreq
@@ -288,6 +290,8 @@ lcase$
 left$
 len
 log
+longfill
+longmove
 lpad$
 ltrim$
 mid$
@@ -333,6 +337,8 @@ waitcnt
 waitpeq
 waitpne
 waitx
+wordfill
+wordmove
 wrpin
 wxpin
 wypin
@@ -1117,6 +1123,20 @@ Note that if a parameter is specified as `byref` then literal constants like `1`
 ### BYTE
 
 A signed 8 bit integer, occupying one byte of computer memory. The unsigned version of this is `ubyte`. The difference arises with the treatment of the upper bit. Both `byte` and `ubyte` treat 0-127 the same, but for `byte` 128 to 255 are considered equivalent to -128 to -1 respectively (that is, when a `byte` is copied to a larger sized integer the upper bit is repeated into all the other bits; for `ubyte` the new bytes are filled with 0 instead).
+
+### BYTEFILL
+
+```
+bytefill(p as ubyte pointer, val as ubyte, count as long)
+```
+Fills a block of memory with the `count` copies of the byte `val`.
+
+### BYTEMOVE
+
+```
+bytemove(dst as ubyte pointer, src as ubyte pointer, count as long)
+```
+Copies `count` bytes from `src` to `dst`. Will work correctly even if `src` and `dst` overlap.
 
 ### BYVAL
 
@@ -2141,6 +2161,20 @@ A signed 32 bit integer. An alias for `integer`. The unsigned version of this is
 
 A signed 64 bit integer. The unsigned version of this is `ulongint`. This type is not yet fully implemented.
 
+### LONGFILL
+
+```
+longfill(p as long pointer, val as long, count as long)
+```
+Fills a block of memory with the `count` copies of the 32 bit value `val`. Note that a total of 4*`count` bytes will be written.
+
+### LONGMOVE
+
+```
+longmove(dst as long pointer, src as long pointer, count as long)
+```
+Copies `count` 32 bit values from `src` to `dst`.
+
 ### LOOP
 
 Marks the end of a loop introduced by `do`. See DO for details.
@@ -2985,6 +3019,20 @@ or
 ### WORD
 
 Reserved for use in inline assembler.
+
+### WORDFILL
+
+```
+wordfill(p as ushort pointer, val as ushort, count as long)
+```
+Fills a block of memory with the `count` copies of the 16 bit value `val`. Note that a total of 2*`count` bytes will be written.
+
+### WORDMOVE
+
+```
+wordmove(dst as ushort pointer, src as ushort pointer, count as long)
+```
+Copies `count` 16 bit values from `src` to `dst`.
 
 ### WRPIN (only available on P2)
 
