@@ -631,7 +631,7 @@ doParseFile(const char *name, Module *P, int *is_dup)
             pp_push_file(&gl_pp, fname);
             defineState = pp_get_define_state(&gl_pp);
             if (language == LANG_SPIN_SPIN2) {
-                static const char asmclk_def[] = "hubset\t##clkmode_ & !%11\n\twaitx\t##20_000_000/100\n\thubset\t##clkmode_\n";
+                static const char asmclk_def[] = "hubset\t##clkmode_ & !%11\013\twaitx\t##20_000_000/100\013\thubset\t##clkmode_";
                 /* add predefined ASMCLK macro */
                 pp_define(&gl_pp, "asmclk", asmclk_def);
                 pp_define(&gl_pp, "Asmclk", asmclk_def);

@@ -21,6 +21,8 @@
 #include <unistd.h>
 #endif
 
+#define VT '\013'
+
 int allow_type_names = 1;
 
 #ifndef EOF
@@ -259,6 +261,9 @@ lexgetc(LexStream *L)
     c = (L->getcf(L));
     if (c == '\n') {
         L->pendingLine = 1;
+    } else if (c == VT) {
+        L->pendingLine = 1;
+        --L->lineCounter;  // don't actually increment line counter later
     } else if (c == '\t') {
         L->colCounter += TAB_STOP;
         /* now go back to the previous stop */
@@ -1419,7 +1424,7 @@ again:
     }
 
     if (L->eoln && IsSpinLang(language) && (L->block_type == BLOCK_PUB || L->block_type == BLOCK_PRI)) {
-        if (c == '\n') {
+        if (c == '\n' || c == VT) {
             c = lexgetc(L);
             goto again;
         }
@@ -1466,6 +1471,13 @@ again:
         if (eoln_token == ' ') goto refetch;
         return eoln_token;
     }
+    if (c == 0xb) {
+        // accept VT as also marking end of line
+        // but handle it slightly differently (it's only seen inside macro expansions)
+        L->eoln = 1;
+        if (eoln_token == ' ') goto refetch;
+        return eoln_token;
+    }
     if (current && !current->sawToken) {
         current->sawToken = 1;
         current->topcomment = GetComments();
@@ -1475,10 +1487,10 @@ again:
         if (c == '_') {
             int d;
             d = lexgetc(L);
-            if (d == ' ' || d == '\t' || d == '\n') {
+            if (d == ' ' || d == '\t' || d == '\n' || d == VT) {
                 do {
                     c = lexgetc(L);
-                } while (c == ' ' || c == '\t' || c == '\n');
+                } while (c == ' ' || c == '\t' || c == '\n' || d == VT);
                 goto again;
             }
             lexungetc(L, d);
