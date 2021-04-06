@@ -29,7 +29,7 @@ done
 for i in error*.spin2
 do
   j=`basename $i .spin2`
-  $PROG --p2 -Wall --noheader -DCOUNT=4 $i >$j.err 2>&1
+  $PROG --p2 --asm -Wall --noheader -DCOUNT=4 $i >$j.err 2>&1
   if  diff -ub Expect/$j.err $j.err
   then
       rm -f $j.err
@@ -59,7 +59,7 @@ done
 #
 if [ "x$endmsg" = "x$ok" ]
 then
-  rm -f err*.h err*.cpp
+  rm -f err*.h err*.cpp err*.p2asm
 else
   echo $endmsg
   exit 1

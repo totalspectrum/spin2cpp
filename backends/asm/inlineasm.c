@@ -160,9 +160,10 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
                 break;
             case SYM_CONSTANT:
                 v = EvalPasmExpr(expr);
-                if (!immflag) {
+                
+                /*  if (!immflag) {
                     WARNING(expr, "symbol %s used without #", sym->user_name);
-                }
+                    } */
                 r = ImmediateRef(immflag, v);
                 break;
             case SYM_LOCALLABEL:

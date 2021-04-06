@@ -55,7 +55,7 @@ int gl_debug;
 int gl_expand_constants;
 int gl_optimize_flags;
 int gl_dat_offset;
-int gl_warn_flags = 0;
+int gl_warn_flags = WARN_ASM_USAGE;
 int gl_exit_status = 0;
 int gl_printprogress = 0;
 int gl_infer_ctypes = 0;

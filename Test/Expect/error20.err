@@ -1,0 +1,2 @@
+error20.spin2:10: warning: First operand to dirh is a constant used without #; is this correct? If so, you may suppress this warning by putting -0 after the operand
+error20.spin2:15: warning: First operand to drvnot is a constant used without #; is this correct? If so, you may suppress this warning by putting -0 after the operand

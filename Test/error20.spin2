@@ -1,0 +1,17 @@
+con
+  txpin = 1
+  
+pub main()
+  dotest1()
+  dotest2()
+  
+pub dotest1()
+  org
+    dirh txpin
+  end
+
+pub dotest2()
+  org
+    drvnot txpin
+    waitx ##20000000
+  end

@@ -258,6 +258,7 @@ int ProcessCommandLine(CmdLineOptions *cmd)
                 }
                 gl_output = OUTPUT_DAT;
                 gl_caseSensitive = !compile_original;
+                gl_warn_flags &= ~WARN_ASM_USAGE; // already issued warnings
                 Q = ParseTopFiles(&asmname, 1, 1);
                 if (gl_errors == 0) {
                     if (listFile) {

@@ -961,6 +961,9 @@ IsConstInteger(AST *op)
 static unsigned
 InstructionWarnAboutConsts(Instruction *instr)
 {
+    if (!(gl_warn_flags & WARN_ASM_USAGE)) {
+        return 0;
+    }
     switch(instr->ops) {
     case TWO_OPERANDS:
     case TWO_OPERANDS_DEFZ:
