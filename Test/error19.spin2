@@ -1,0 +1,8 @@
+con
+  txpin = 1
+  
+dat
+    dirh 1
+    asmclk
+    fltl 3
+    drvnot 4

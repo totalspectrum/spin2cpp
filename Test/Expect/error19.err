@@ -1,0 +1,3 @@
+error19.spin2:5: warning: First operand to dirh is a constant used without #; is this correct? If so, you may suppress this warning by putting -0 after the operand
+error19.spin2:7: warning: First operand to fltl is a constant used without #; is this correct? If so, you may suppress this warning by putting -0 after the operand
+error19.spin2:8: warning: First operand to drvnot is a constant used without #; is this correct? If so, you may suppress this warning by putting -0 after the operand

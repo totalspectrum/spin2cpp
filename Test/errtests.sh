@@ -29,7 +29,7 @@ done
 for i in error*.spin2
 do
   j=`basename $i .spin2`
-  $PROG -Wall --noheader -DCOUNT=4 $i >$j.err 2>&1
+  $PROG --p2 -Wall --noheader -DCOUNT=4 $i >$j.err 2>&1
   if  diff -ub Expect/$j.err $j.err
   then
       rm -f $j.err
