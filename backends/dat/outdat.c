@@ -576,9 +576,8 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
                     subtype = ExprTypeRelative(&P->objsyms, ident, P);
                     subinit = subinit->right;
                 } else {
-                    // why was this here?
-                    WARNING(subinit, "Internal error, expected cast for union");
-                    subtype = ExprType(varlist->left);
+                    // just assume the type matches the first element of the union
+                    subtype = ExprTypeRelative(&P->objsyms, varlist->left, P);
                 }
             } else {
                 subtype = ExprType(varlist->left);
