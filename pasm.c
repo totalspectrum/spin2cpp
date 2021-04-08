@@ -361,7 +361,9 @@ PullFromList(int n, AST *list, AST **leftover)
         AstReportAs(list, &saveinfo);
         first = NewAST(AST_EXPRLIST, list->left, NULL);
         AstReportDone(&saveinfo);
-        first->right = list->right;
+        if (n > 1) {
+            first->right = list->right;
+        }
         --n;
     } else {
         first = NULL;
