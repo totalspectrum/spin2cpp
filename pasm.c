@@ -386,6 +386,8 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
     AST *elem;
     AST *initval = initializer;
     AST *thiselem = 0;
+    int expectedItems = 0;
+    int foundItems = 0;
     
     type = RemoveTypeModifiers(type);
     if (!type) {
@@ -484,12 +486,25 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
             }
             return;
         }
+        // calculate how many items to expected
+        if (Q->isUnion) {
+            expectedItems = 1;
+        } else {
+            for (elem = varlist; elem; elem = elem->right) {
+                expectedItems++;
+            }
+        }
         for (elem = initializer; elem; elem = elem->right) {
             int n;
             if (!varlist) {
-                ERROR(initializer, "too many initializers for struct or union");
+                while (elem) {
+                    foundItems++;
+                    elem = elem->right;
+                }
+                ERROR(initializer, "too many initializers for struct or union: expected %d found %d", expectedItems, foundItems);
                 return;
             }
+            foundItems++;
             thiselem = 0;
             while (varlist && varlist->left && varlist->left->kind == AST_DECLARE_BITFIELD) {
                 AST *baseval;

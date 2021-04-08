@@ -566,12 +566,19 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
                 continue;
             }
             if (is_union) {
-                if (subinit->kind != AST_CAST) {
-                    ERROR(subinit, "Internal error, expected cast for union");
-                    subtype = ExprType(varlist->left);
-                } else {
+                if (subinit->kind == AST_CAST) {
+                    /* the user explicitly cast to tell us what kind there is  */
                     subtype = subinit->left;
                     subinit = subinit->right;
+                } else if (subinit->kind == AST_INITMODIFIER && subinit->left && subinit->left->kind == AST_METHODREF) {
+                    // .f = nn
+                    AST *ident = subinit->left->right;
+                    subtype = ExprTypeRelative(&P->objsyms, ident, P);
+                    subinit = subinit->right;
+                } else {
+                    // why was this here?
+                    WARNING(subinit, "Internal error, expected cast for union");
+                    subtype = ExprType(varlist->left);
                 }
             } else {
                 subtype = ExprType(varlist->left);
