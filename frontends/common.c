@@ -1500,11 +1500,13 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
     const char *name = NULL;
     const char *user_name = "variable";
     int is_typedef = 0;
+    AST *rawtype;
     
     if (!type) {
         type = InferTypeFromName(ident);
     }
-
+    rawtype = RemoveTypeModifiers(type);
+    
     // this may be a typedef
     if (type->kind == AST_TYPEDEF) {
         type = type->left;
@@ -1551,19 +1553,19 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
     }
     // if this is an array type with no size, there must be an
     // initializer
-    if (type->kind == AST_ARRAYTYPE && !type->right) {
+    if (rawtype->kind == AST_ARRAYTYPE && !rawtype->right) {
         if (!initializer) {
             ERROR(ident, "global array %s declared with no size and no initializer", user_name);
-            type->right = AstInteger(1);
+            rawtype->right = AstInteger(1);
         } else {
             if (initializer->kind == AST_EXPRLIST) {
-                initializer = FixupInitList(type, initializer);
+                initializer = FixupInitList(rawtype, initializer);
                 *initptr = initializer;
-                type->right = AstInteger(AstListLen(initializer));
+                rawtype->right = AstInteger(AstListLen(initializer));
             } else if (initializer->kind == AST_STRINGPTR) {
-                type->right = AstInteger(GetExprlistLen(initializer->left) + 1);
+                rawtype->right = AstInteger(GetExprlistLen(initializer->left) + 1);
             } else {
-                type->right = AstInteger(1);
+                rawtype->right = AstInteger(1);
             }
         }
     }
