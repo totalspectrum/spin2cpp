@@ -781,7 +781,7 @@ DeclareLabels(Module *P)
                 }
                 typalign = TypeAlign(type);
                 typsize = TypeSize(type);
-                if (typsize == 0) {
+                if (typsize == 0 && IsClassType(type)) {
                     // empty object; this is OK if it has methods
                     Module *Q = GetClassPtr(type);
                     if (Q && !Q->functions) {
