@@ -1599,6 +1599,23 @@ AST *CheckTypes(AST *ast)
         if (IsGenericType(ltype)) {
             ltype = rtype;
         }
+        if ( IsFloatType(ltype) && IsIntType(rtype) ) {
+            // promote right side to float
+            if (IsFloat64Type(ltype)) {
+                outputs->right = domakedouble(rtype, outputs->right);
+            } else {
+                outputs->right = domakefloat(rtype, outputs->right);
+            }
+            rtype = ltype;
+        } else if ( IsFloatType(rtype) && IsIntType(ltype) ) {
+            // promote left side to float
+            if (IsFloat64Type(rtype)) {
+                outputs->left = domakedouble(ltype, outputs->left);
+            } else {
+                outputs->left = domakefloat(ltype, outputs->left);
+            }
+            ltype = rtype;
+        }            
         if (!CompatibleTypes(ltype, rtype)) {
             WARNING(ast, "different types in arms of ?");
         }
