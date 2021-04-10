@@ -218,6 +218,25 @@ static AST *forcepromote(AST *type, AST *expr)
     return expr;
 }
 
+// force a promotion from a small integer type to a full 64 bits
+static AST *forcepromote64(AST *type, AST *expr)
+{
+    int tsize;
+    int op;
+    if (!type) {
+        return expr;
+    }
+    if (!IsIntType(type) && !IsGenericType(type)) {
+        ERROR(expr, "internal error in forcepromote");
+    }
+    tsize = TypeSize(type);
+    op = IsUnsignedType(type) ? K_ZEROEXTEND : K_SIGNEXTEND;
+    if (tsize < LONG64_SIZE) {
+        return dopromote(expr, tsize, LONG64_SIZE, op);
+    }
+    return expr;
+}
+
 //
 // insert promotion code under AST for either the left or right type
 // if "force" is nonzero then we will always promote small integers,
@@ -671,11 +690,16 @@ void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
             return;
         }
         // need to widen the types
-        ast->left = forcepromote(lefttype, ast->left);
-        ast->right = forcepromote(righttype, ast->right);
+        isint64 = IsInt64Type(lefttype) || IsInt64Type(righttype);
+        if (isint64) {
+            ast->left = forcepromote64(lefttype, ast->left);
+            ast->right = forcepromote64(righttype, ast->right);
+        } else {
+            ast->left = forcepromote(lefttype, ast->left);
+            ast->right = forcepromote(righttype, ast->right);
+        }
         leftUnsigned = IsUnsignedType(lefttype);
         rightUnsigned = IsUnsignedType(righttype);
-        isint64 = IsInt64Type(lefttype) || IsInt64Type(righttype);
     }
     
      //

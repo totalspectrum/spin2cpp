@@ -444,6 +444,15 @@ pri _int64_cmpu(alo, ahi, blo, bhi) : r
  if_b neg  r, #1
   endasm
   
+' compare signed alo, ahi, return -1, 0, or +1
+pri _int64_cmps(alo, ahi, blo, bhi) : r
+  asm
+      cmp  alo, blo wc,wz
+      cmpsx ahi, bhi wc,wz
+ if_a mov  r, #1
+ if_b neg  r, #1
+  endasm
+
 pri _int64_signx(x = long) : rlo, rhi
   rlo := x
   rhi := x
@@ -559,8 +568,8 @@ pri _int64_divmodu(nlo, nhi, dlo, dhi) : qlo, qhi, rlo, rhi |ilo, ihi
       qlo |= 1
       ilo, ihi := _int64_shr(ilo, ihi, 1, 0)
 
-pri _int64_divu(nlo, nhi, dlo, dhi) : qlo, qhi
-  qlo, qhi, _, _ := _int64_divmodu(nlo, nhi, dlo, dhi)
+pri _int64_divu(nlo, nhi, dlo, dhi) : qlo, qhi | x0, x1
+  qlo, qhi, x0, x1 := _int64_divmodu(nlo, nhi, dlo, dhi)
 
-pri _int64_modu(nlo, nhi, dlo, dhi) : rlo, rhi
-  _, _, rlo, rhi := _int64_divmodu(nlo, nhi, dlo, dhi)
+pri _int64_modu(nlo, nhi, dlo, dhi) : rlo, rhi | x0, x1
+  x0, x1, rlo, rhi := _int64_divmodu(nlo, nhi, dlo, dhi)
