@@ -1697,6 +1697,23 @@ ExpandArguments(AST *sendptr, AST *args)
 }
 
 /*
+ * count number of (actual) parameters passed to a function
+ * (e.g. 64 bit parameters count as two parameters)
+ */
+int
+CountParameters(AST *list)
+{
+    AST *param;
+    int n = 0;
+    while (list) {
+        param = list->left;
+        list = list->right;
+        n += NumExprItemsOnStack(param);
+    }
+    return n;
+}
+
+/*
  * check function calls for correct number of arguments
  * also does expansion for multiple returns used as parameters
  * and does default parameter substitution
@@ -1751,7 +1768,7 @@ CheckFunctionCalls(AST *ast)
                     }
                 }
                 if (ftype) {
-                    expectArgs = AstListLen(ftype->right);
+                    expectArgs = CountParameters(ftype->right);
                 } else {
                     expectArgs = 0;
                     is_varargs = 1;
