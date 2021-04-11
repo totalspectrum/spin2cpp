@@ -30,4 +30,6 @@ void InitializeSystem(CmdLineOptions *opts, const char **argv);
 int ProcessCommandLine(CmdLineOptions *opts);
 int ParseWFlags(const char *flags);
 
+void check_special_define(const char *name, const char *val);
+
 #endif

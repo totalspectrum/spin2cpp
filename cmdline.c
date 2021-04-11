@@ -509,3 +509,15 @@ static int TrivialSpinFunction(Module *P)
 
     return 1;
 }
+
+//
+// check for special defines like -D_BAUD=nnn
+//
+void check_special_define(const char *name, const char *def)
+{
+    int val;
+    if (!strcmp(name, "_BAUD")) {
+        val = strtoul(def, NULL, 0);
+        gl_default_baud = val;
+    }
+}

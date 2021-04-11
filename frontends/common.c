@@ -66,6 +66,8 @@ int gl_no_coginit = 0;
 int gl_lmm_kind = LMM_KIND_ORIG;
 int gl_relocatable = 0;
 
+int gl_default_baud = 0;
+
 // bytes and words are unsigned by default, but longs are signed by default
 // this is confusing, and someday we should make all of these explicit
 // but it's a legacy from Spin
@@ -2046,7 +2048,10 @@ void DeclareBaud(Module *P)
         }
     }
     if (baud == 0) {
-        baud = (gl_p2) ? 230400 : 115200;
+        baud = gl_default_baud;
+        if (baud == 0) {
+            baud = (gl_p2) ? 230400 : 115200;
+        }
     }
     AddSymbol(&P->objsyms, "__default_baud__", SYM_CONSTANT, AstInteger(baud), NULL);
     AddSymbol(&systemModule->objsyms, "__default_baud__", SYM_CONSTANT, AstInteger(baud), NULL);

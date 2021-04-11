@@ -370,6 +370,7 @@ main(int argc, const char **argv)
                 name = "1";
             }
             pp_define(&gl_pp, opt, name);
+            check_special_define(opt, name);
         } else if (!strncmp(argv[0], "-L", 2) || !strncmp(argv[0], "-I", 2)) {
             const char *opt = argv[0];
             const char *incpath;

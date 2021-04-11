@@ -204,6 +204,9 @@ extern int gl_lmm_kind;
 extern int gl_features_used;
 #define FEATURE_LONGJMP_USED 0x01
 
+/* default value for baud rate (set on command line with -D_BAUD=) */
+extern int gl_default_baud;
+
 /* types */
 extern AST *ast_type_long;
 extern AST *ast_type_word;
