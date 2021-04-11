@@ -6,6 +6,7 @@ Version 5.3.3
 - Fixed a bug in initializing arrays with modifiers like const
 - Fixed some union initializer bugs
 - Handle mixed float/int in ?: by promoting one side as necessary
+- Support debug_baud macro to some degree
 
 Version 5.3.2
 - Accept ' as a digit separator as well as '_' (C++14 uses single quote)

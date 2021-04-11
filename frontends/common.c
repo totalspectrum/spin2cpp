@@ -286,6 +286,16 @@ Aliases calias[] = {
 // forward declarations
 static int CalcClkFreqP1(Module *P);
 static int CalcClkFreqP2(Module *P);
+static void DeclareBaud(Module *P);
+
+//
+// check for system module
+//
+bool
+IsSystemModule(Module *P)
+{
+    return P == systemModule;
+}
 
 //
 // create aliases appropriate to the language
@@ -585,6 +595,7 @@ DeclareConstants(Module *P, AST **conlist_ptr)
         } else {
             CalcClkFreqP1(P);
         }
+        DeclareBaud(P);
     }
 }
 
@@ -2021,8 +2032,22 @@ int GetClkFreq(Module *P, unsigned int *clkfreqptr, unsigned int *clkmodeptr)
     return 1;
 }
 
-bool
-IsSystemModule(Module *P)
+//
+// Declare a __default_baud__ symbol for the baud rate
+//
+void DeclareBaud(Module *P)
 {
-    return P == systemModule;
+    int baud = 0;  // undefined
+    Symbol *sym;
+    if (gl_debug && IsSpinLang(P->mainLanguage)) {
+        sym = FindSymbol(&P->objsyms, "debug_baud");
+        if (sym && sym->kind == SYM_CONSTANT) {
+            baud = EvalConstSym(sym);
+        }
+    }
+    if (baud == 0) {
+        baud = (gl_p2) ? 230400 : 115200;
+    }
+    AddSymbol(&P->objsyms, "__default_baud__", SYM_CONSTANT, AstInteger(baud), NULL);
+    AddSymbol(&systemModule->objsyms, "__default_baud__", SYM_CONSTANT, AstInteger(baud), NULL);
 }

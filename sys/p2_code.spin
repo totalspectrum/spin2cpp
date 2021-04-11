@@ -166,7 +166,7 @@ pri _setbaud(baudrate) | bitperiod, bit_mode
   
 pri _txraw(c) | z
   if _bitcycles == 0
-    _setbaud(230_400)
+    _setbaud(__default_baud__)  ' set up in common.c
   _wypin(_txpin, c)
   _waitx(1)
   repeat
@@ -177,7 +177,7 @@ pri _txraw(c) | z
 ' timeout is approximately in milliseconds (actually in 1024ths of a second)
 pri _rxraw(timeout = 0) : rxbyte = long | z, endtime, temp2, rxpin
   if _bitcycles == 0
-    _setbaud(230_400)
+    _setbaud(__default_baud__)
   if timeout
     endtime := _getcnt() + timeout * (__clkfreq_var >> 10)
   rxbyte := -1

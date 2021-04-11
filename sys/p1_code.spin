@@ -123,10 +123,13 @@ con
  _txpin = 30
 
 dat
-_bitcycles long 80_000_000 / 115_200
+_bitcycles long 0
 
 pri _txraw(c) | val, nextcnt, bitcycles
   bitcycles := _bitcycles
+  if (bitcycles == 0)
+    bitcycles := _setbaud(__default_baud__)
+
   outa[_txpin] := 1
   dira[_txpin] := 1
   val := (c | 256) << 1
@@ -140,6 +143,8 @@ pri _txraw(c) | val, nextcnt, bitcycles
 ' timeout is in 1024ths of a second (roughly milliseconds)
 pri _rxraw(timeout = 0) | val, waitcycles, i, bitcycles
   bitcycles := _bitcycles
+  if (bitcycles == 0)
+    bitcycles := _setbaud(__default_baud__)
   dira[_rxpin] := 0
 
   if timeout
@@ -160,9 +165,9 @@ pri _rxraw(timeout = 0) | val, waitcycles, i, bitcycles
   waitcnt(waitcycles + bitcycles)
   return val
 
-pri _setbaud(rate)
-  _bitcycles := __clkfreq_var / rate
-
+pri _setbaud(rate) : r
+  _bitcycles := r := __clkfreq_var / rate
+  
 pri _call_method(o, f, x=0) | r
   asm
     wrlong objptr, sp
