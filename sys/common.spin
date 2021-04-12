@@ -549,27 +549,42 @@ pri _int64_muls(alo, ahi, blo, bhi) : rlo, rhi
   rhi += ahi * blo
   rhi += bhi * alo
 
-pri _int64_divmodu(nlo, nhi, dlo, dhi) : qlo, qhi, rlo, rhi |ilo, ihi
-  rlo := nlo
-  rhi := nhi
-  ilo := dlo
-  ihi := dhi
+pri _int64_divmodu(nlo, nhi, dlo, dhi) : qlo, qhi, rlo, rhi | i, mask
+  rlo := 0
+  rhi := 0
   qlo := 0
   qhi := 0
   if (dlo == 0 and dhi == 0)
     qlo := qhi := $ffff_ffff
-    return
-  repeat while (_int64_cmpu(nlo, nhi, ilo, ihi) > 0) and (ihi>>31) == 0
-    ilo, ihi := _int64_add(ilo, ihi, ilo, ihi)
-  repeat while (_int64_cmpu(ilo, ihi, dlo, dhi) > 0)
-    qlo, qhi := _int64_add(qlo, qhi, qlo, qhi)
-    if _int64_cmpu(rlo, rhi, ilo, ihi) >= 0
-      rlo, rhi := _int64_sub(rlo, rhi, ilo, ihi)
-      qlo |= 1
-      ilo, ihi := _int64_shr(ilo, ihi, 1, 0)
+    rlo := nlo
+    rhi := nhi    
+    return qlo, qhi, rlo, rhi
 
+  mask := $8000_0000
+  repeat i from 63 to 32
+    rlo,rhi := _int64_add(rlo, rhi, rlo, rhi)
+    if nhi & mask
+      rlo |= 1
+    if _int64_cmpu(rlo, rhi, dlo, dhi) => 0
+      rlo, rhi := _int64_sub(rlo, rhi, dlo, dhi)
+      qhi |= mask
+    mask := mask>>1
+  mask := $8000_0000
+  repeat i from 31 to 0
+    rlo,rhi := _int64_add(rlo, rhi, rlo, rhi)
+    if nlo & mask
+      rlo |= 1
+    if _int64_cmpu(rlo, rhi, dlo, dhi) => 0
+      rlo, rhi := _int64_sub(rlo, rhi, dlo, dhi)
+      qlo |= mask
+    mask := mask>>1
+  return qlo, qhi, rlo, rhi
+  
 pri _int64_divu(nlo, nhi, dlo, dhi) : qlo, qhi | x0, x1
   qlo, qhi, x0, x1 := _int64_divmodu(nlo, nhi, dlo, dhi)
-
+  return qlo, qhi
+  
 pri _int64_modu(nlo, nhi, dlo, dhi) : rlo, rhi | x0, x1
   x0, x1, rlo, rhi := _int64_divmodu(nlo, nhi, dlo, dhi)
+  return rlo, rhi
+  
