@@ -545,7 +545,7 @@ pri _int64_sar(alo, ahi, count, counthi) : rlo, rhi | tmp
 
 pri _int64_muls(alo, ahi, blo, bhi) : rlo, rhi
   rlo := alo * blo
-  rhi := alo ** blo
+  rhi := alo +** blo
   rhi += ahi * blo
   rhi += bhi * alo
 
