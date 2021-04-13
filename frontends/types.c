@@ -42,6 +42,8 @@ AST *basic_print_float;
 AST *basic_print_string;
 AST *basic_print_integer;
 AST *basic_print_unsigned;
+AST *basic_print_longinteger;
+AST *basic_print_longunsigned;
 AST *basic_print_char;
 AST *basic_print_nl;
 AST *basic_put;
@@ -79,8 +81,9 @@ static AST *int64_sub;
 static AST *int64_muls;
 static AST *int64_mulu;
 static AST *int64_divs, *int64_divu;
+static AST *int64_mods, *int64_modu;
 static AST *int64_neg;
-static AST *int64_cmp;
+static AST *int64_cmpu, *int64_cmps;
 static AST *int64_shl, *int64_shr, *int64_sar;
 static AST *int64_and, *int64_or, *int64_xor;
 static AST *int64_signx, *int64_zerox;
@@ -211,6 +214,25 @@ static AST *forcepromote(AST *type, AST *expr)
     op = IsUnsignedType(type) ? K_ZEROEXTEND : K_SIGNEXTEND;
     if (tsize < LONG_SIZE) {
         return dopromote(expr, tsize, LONG_SIZE, op);
+    }
+    return expr;
+}
+
+// force a promotion from a small integer type to a full 64 bits
+static AST *forcepromote64(AST *type, AST *expr)
+{
+    int tsize;
+    int op;
+    if (!type) {
+        return expr;
+    }
+    if (!IsIntType(type) && !IsGenericType(type)) {
+        ERROR(expr, "internal error in forcepromote");
+    }
+    tsize = TypeSize(type);
+    op = IsUnsignedType(type) ? K_ZEROEXTEND : K_SIGNEXTEND;
+    if (tsize < LONG64_SIZE) {
+        return dopromote(expr, tsize, LONG64_SIZE, op);
     }
     return expr;
 }
@@ -535,6 +557,12 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
         case K_UNS_DIV:
             *ast = *MakeOperatorCall(int64_divu, ast->left, ast->right, NULL);
             break;
+        case K_MODULUS:
+            *ast = *MakeOperatorCall(int64_mods, ast->left, ast->right, NULL);
+            break;
+        case K_UNS_MOD:
+            *ast = *MakeOperatorCall(int64_modu, ast->left, ast->right, NULL);
+            break;            
         case '&':
             *ast = *MakeOperatorCall(int64_and, ast->left, ast->right, NULL);
             break;
@@ -618,6 +646,7 @@ void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
     int isfloat = 0;
     int leftUnsigned = 0;
     int rightUnsigned = 0;
+    int isint64 = 0;
     
     if (IsFloatType(lefttype)) {
         if (!IsFloatType(righttype)) {
@@ -661,8 +690,14 @@ void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
             return;
         }
         // need to widen the types
-        ast->left = forcepromote(lefttype, ast->left);
-        ast->right = forcepromote(righttype, ast->right);
+        isint64 = IsInt64Type(lefttype) || IsInt64Type(righttype);
+        if (isint64) {
+            ast->left = forcepromote64(lefttype, ast->left);
+            ast->right = forcepromote64(righttype, ast->right);
+        } else {
+            ast->left = forcepromote(lefttype, ast->left);
+            ast->right = forcepromote(righttype, ast->right);
+        }
         leftUnsigned = IsUnsignedType(lefttype);
         rightUnsigned = IsUnsignedType(righttype);
     }
@@ -671,7 +706,15 @@ void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
     // handle unsigned/signed comparisons here
     //
     
-    if (leftUnsigned || rightUnsigned) {
+    if (isint64) {
+        if (leftUnsigned || rightUnsigned) {
+            ast->left = MakeOperatorCall(int64_cmpu, ast->left, ast->right, NULL);
+        } else {
+            ast->left = MakeOperatorCall(int64_cmps, ast->left, ast->right, NULL);
+        }
+        ast->right = AstInteger(0);
+    }
+    else if (leftUnsigned || rightUnsigned) {
         if ( (leftUnsigned && (rightUnsigned || IsUnsignedConst(ast->right)))
              || (rightUnsigned && IsUnsignedConst(ast->left)) )
         {
@@ -1772,8 +1815,11 @@ InitGlobalFuncs(void)
         int64_mulu = getBasicPrimitive("_int64_mulu");
         int64_divs = getBasicPrimitive("_int64_divs");
         int64_divu = getBasicPrimitive("_int64_divu");
+        int64_mods = getBasicPrimitive("_int64_mods");
+        int64_modu = getBasicPrimitive("_int64_modu");
         int64_neg = getBasicPrimitive("_int64_neg");
-        int64_cmp = getBasicPrimitive("_int64_cmp");
+        int64_cmps = getBasicPrimitive("_int64_cmps");
+        int64_cmpu = getBasicPrimitive("_int64_cmpu");
         int64_shl = getBasicPrimitive("_int64_shl");
         int64_shr = getBasicPrimitive("_int64_shr");
         int64_sar = getBasicPrimitive("_int64_sar");
@@ -1798,6 +1844,8 @@ InitGlobalFuncs(void)
         
         basic_print_integer = getBasicPrimitive("_basic_print_integer");
         basic_print_unsigned = getBasicPrimitive("_basic_print_unsigned");
+        basic_print_longinteger = getBasicPrimitive("_basic_print_longinteger");
+        basic_print_longunsigned = getBasicPrimitive("_basic_print_longunsigned");
         basic_print_string = getBasicPrimitive("_basic_print_string");
         basic_print_char = getBasicPrimitive("_basic_print_char");
         basic_print_nl = getBasicPrimitive("_basic_print_nl");

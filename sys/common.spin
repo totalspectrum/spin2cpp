@@ -385,6 +385,8 @@ pri file "libsys/fmt.c" _basic_print_char(h, c, fmt = 0)
 pri file "libsys/fmt.c" _basic_print_string(h, ptr, fmt = 0)
 pri file "libsys/fmt.c" _basic_print_integer(h, x, fmt = 0, base=10)
 pri file "libsys/fmt.c" _basic_print_unsigned(h, x, fmt = 0, base=10)
+pri file "libsys/fmt.c" _basic_print_longinteger(h, x= >long, fmt = 0, base=10)
+pri file "libsys/fmt.c" _basic_print_longunsigned(h, x= >+long, fmt = 0, base=10)
 pri file "libsys/fmt.c" _basic_get_char(h)
 pri file "libsys/fmt.c" _basic_put(h=long, pos=+long, ptr, elemnts=+long, size=+long)
 pri file "libsys/fmt.c" _basic_get(h=long, pos=+long, ptr, elements=+long, size=+long)
@@ -432,6 +434,24 @@ pri file "libc/stdlib/errno.c" _geterrnoptr(): r=@long
 pri file "libc/string/strerror.c" _strerror(e=long): r=string
 
 pri file "libsys/c_startup.c" _c_startup()
+
+' compare unsigned alo, ahi, return -1, 0, or +1
+pri _int64_cmpu(alo, ahi, blo, bhi) : r
+  asm
+      cmp  alo, blo wc,wz
+      cmpx ahi, bhi wc,wz
+ if_a mov  r, #1
+ if_b neg  r, #1
+  endasm
+  
+' compare signed alo, ahi, return -1, 0, or +1
+pri _int64_cmps(alo, ahi, blo, bhi) : r
+  asm
+      cmp  alo, blo wc,wz
+      cmpsx ahi, bhi wc,wz
+ if_a mov  r, #1
+ if_b neg  r, #1
+  endasm
 
 pri _int64_signx(x = long) : rlo, rhi
   rlo := x
@@ -525,7 +545,46 @@ pri _int64_sar(alo, ahi, count, counthi) : rlo, rhi | tmp
 
 pri _int64_muls(alo, ahi, blo, bhi) : rlo, rhi
   rlo := alo * blo
-  rhi := alo ** blo
+  rhi := alo +** blo
   rhi += ahi * blo
   rhi += bhi * alo
 
+pri _int64_divmodu(nlo, nhi, dlo, dhi) : qlo, qhi, rlo, rhi | i, mask
+  rlo := 0
+  rhi := 0
+  qlo := 0
+  qhi := 0
+  if (dlo == 0 and dhi == 0)
+    qlo := qhi := $ffff_ffff
+    rlo := nlo
+    rhi := nhi    
+    return qlo, qhi, rlo, rhi
+
+  mask := $8000_0000
+  repeat i from 63 to 32
+    rlo,rhi := _int64_add(rlo, rhi, rlo, rhi)
+    if nhi & mask
+      rlo |= 1
+    if _int64_cmpu(rlo, rhi, dlo, dhi) => 0
+      rlo, rhi := _int64_sub(rlo, rhi, dlo, dhi)
+      qhi |= mask
+    mask := mask>>1
+  mask := $8000_0000
+  repeat i from 31 to 0
+    rlo,rhi := _int64_add(rlo, rhi, rlo, rhi)
+    if nlo & mask
+      rlo |= 1
+    if _int64_cmpu(rlo, rhi, dlo, dhi) => 0
+      rlo, rhi := _int64_sub(rlo, rhi, dlo, dhi)
+      qlo |= mask
+    mask := mask>>1
+  return qlo, qhi, rlo, rhi
+  
+pri _int64_divu(nlo, nhi, dlo, dhi) : qlo, qhi | x0, x1
+  qlo, qhi, x0, x1 := _int64_divmodu(nlo, nhi, dlo, dhi)
+  return qlo, qhi
+  
+pri _int64_modu(nlo, nhi, dlo, dhi) : rlo, rhi | x0, x1
+  x0, x1, rlo, rhi := _int64_divmodu(nlo, nhi, dlo, dhi)
+  return rlo, rhi
+  

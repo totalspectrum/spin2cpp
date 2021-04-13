@@ -112,6 +112,36 @@ int _fmtchar(putfunc fn, unsigned fmt, int c)
     return _fmtstr(fn, fmt, buf);
 }
 
+#ifdef SMALL_INT
+int _uitoall(char *orig_str, unsigned long long num, unsigned base, unsigned mindigits, int uppercase)
+{
+    char *str = orig_str;
+    unsigned digit;
+    unsigned width = 0;
+    int letterdigit;
+
+    if (uppercase) {
+        letterdigit = 'A' - 10;
+    } else {
+        letterdigit = 'a' - 10;
+    }
+    do {
+        digit = num % base;
+        if (digit < 10) {
+            digit += '0';
+        } else {
+            digit += letterdigit;
+        }
+        *str++ = digit;
+        num = num / base;
+        width++;
+    } while (num > 0 || width < mindigits);
+    *str++ = 0;
+    _strrev(orig_str);
+    return width;
+}
+#endif
+
 int _uitoa(char *orig_str, UITYPE num, unsigned base, unsigned mindigits, int uppercase)
 {
     char *str = orig_str;
@@ -186,6 +216,59 @@ int _fmtnum(putfunc fn, unsigned fmt, int x, int base)
         }
     }
     width += _uitoa(ptr, x, base, mindigits, 0 != (fmt & (1<<UPCASE_BIT)));
+    if (width > maxdigits) {
+        while (maxdigits-- > 0) {
+            *ptr++ = '#';
+        }
+        *ptr++ = 0;
+    }
+    return _fmtstr(fn, fmt, buf);
+}
+
+int _fmtnumlong(putfunc fn, unsigned fmt, long long x, int base)
+{
+    char buf[MAX_NUM_DIGITS+1];
+    char *ptr = buf;
+    int width = 0;
+    int mindigits = (fmt >> PREC_BIT) & PREC_MASK;
+    int maxdigits = (fmt >> MAXWIDTH_BIT) & 0xff;
+    int signchar = (fmt >> SIGNCHAR_BIT) & 0x3;
+
+    if (mindigits > 0) {
+        // prec gets offset by one to allow 0 to be "default"
+        mindigits = mindigits - 1;
+    }
+    if (maxdigits > MAX_NUM_DIGITS || maxdigits == 0) {
+        maxdigits = MAX_NUM_DIGITS;
+    }
+    if (signchar == SIGNCHAR_UNSIGNED) {
+        signchar = SIGNCHAR_NONE;
+    } else if (x < 0) {
+        signchar = SIGNCHAR_MINUS;
+        x = -x;
+    }
+    if (signchar != SIGNCHAR_NONE) {
+        width++;
+        if (mindigits == maxdigits) {
+            mindigits--;
+            if (!mindigits) {
+                return _fmtchar(fn, fmt, '#');
+            }
+        }
+        switch (signchar) {
+        case SIGNCHAR_SPACE:
+            *ptr++ = ' ';
+            break;
+        default:
+        case SIGNCHAR_PLUS:
+            *ptr++ = '+';
+            break;
+        case SIGNCHAR_MINUS:
+            *ptr++ = '-';
+            break;
+        }
+    }
+    width += _uitoall(ptr, x, base, mindigits, 0 != (fmt & (1<<UPCASE_BIT)));
     if (width > maxdigits) {
         while (maxdigits-- > 0) {
             *ptr++ = '#';
@@ -889,6 +972,22 @@ int _basic_print_integer(unsigned h, int x, unsigned fmt, int base)
     tf = _gettxfunc(h);
     if (!tf) return 0;
     return _fmtnum(tf, fmt, x, base);
+}
+
+int _basic_print_longunsigned(unsigned h, unsigned long long x, unsigned fmt, int base)
+{
+    TxFunc tf = _gettxfunc(h);
+    if (!tf) return 0;
+    fmt |= 3<<SIGNCHAR_BIT;
+    return _fmtnumlong(tf, fmt, x, base);
+}
+
+int _basic_print_longinteger(unsigned h, long long int x, unsigned fmt, int base)
+{
+    TxFunc tf;
+    tf = _gettxfunc(h);
+    if (!tf) return 0;
+    return _fmtnumlong(tf, fmt, x, base);
 }
 
 int _basic_get_char(unsigned h)

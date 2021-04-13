@@ -1124,6 +1124,16 @@ paramidentdecl:
       LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a flexspin extension");
       $$ = NewAST(AST_DECLARE_VAR, ast_type_unsigned_long, $1);
   }
+  | identifier '=' '>' SP_LONG
+  {
+      LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a flexspin extension");
+      $$ = NewAST(AST_DECLARE_VAR, ast_type_long64, $1);
+  }
+  | identifier '=' '>' '+' SP_LONG
+  {
+      LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a flexspin extension");
+      $$ = NewAST(AST_DECLARE_VAR, ast_type_unsigned_long64, $1);
+  }
   | identifier '=' SP_FLOAT
   {
       LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a flexspin extension");
