@@ -1,6 +1,6 @@
 /*
  * C compiler parser
- * Copyright (c) 2011-2020 Total Spectrum Software Inc.
+ * Copyright (c) 2011-2021 Total Spectrum Software Inc.
  * See the file COPYING for terms of use.
  */
 
@@ -78,7 +78,8 @@ LengthenType(AST *type)
         return NewAST(AST_FLOATTYPE, AstInteger(8), NULL);
     }
     // otherwise make sure it is 4 bytes long
-    return NewAST(type->kind, AstInteger(4), NULL);
+    // and that further lengthening it will make it 8 bytes
+    return ast_type_c_long;
 }
 
 static AST *

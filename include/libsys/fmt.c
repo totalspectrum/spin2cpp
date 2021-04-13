@@ -979,7 +979,7 @@ int _basic_print_integer(unsigned h, int x, unsigned fmt, int base)
     return _fmtnum(tf, fmt, x, base);
 }
 
-int _basic_print_longunsigned(unsigned h, unsigned long long int x, unsigned fmt, int base)
+int _basic_print_longunsigned(unsigned h, unsigned long long x, unsigned fmt, int base)
 {
     {
         unsigned xhi = x>>32;
