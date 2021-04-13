@@ -437,9 +437,9 @@ BuildDebugList(AST *exprlist)
 %token SP_QLOG       "QLOG"
 %token SP_QEXP       "QEXP"
 %token SP_DEBUG      "DEBUG"
-%token SP_LOOK_SEP   ":"
+%token SP_LOOK_SEP   ": after lookup/down"
 %token SP_CONDITIONAL  "?"
-%token SP_CONDITIONAL_SEP ":"
+%token SP_CONDITIONAL_SEP ": after ?"
 
 /* operator precedence */
 %right SP_ASSIGN
