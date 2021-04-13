@@ -127,6 +127,11 @@ int _uitoall(char *orig_str, unsigned long long num, unsigned base, unsigned min
     }
     do {
         digit = num % base;
+        {
+            unsigned hi = num >> 32;
+            unsigned lo = num;
+            __builtin_printf("num: %x %x base %x digit: %x\n", hi, lo, base, digit);
+        }
         if (digit < 10) {
             digit += '0';
         } else {
@@ -974,18 +979,23 @@ int _basic_print_integer(unsigned h, int x, unsigned fmt, int base)
     return _fmtnum(tf, fmt, x, base);
 }
 
-int _basic_print_longunsigned(unsigned h, int x, unsigned fmt, int base)
+int _basic_print_longunsigned(unsigned h, unsigned long long int x, unsigned fmt, int base)
 {
+    {
+        unsigned xhi = x>>32;
+        unsigned xlo = x;        
+        __builtin_printf("_basic_print_longinteger: h=%x x=%x:%x fmt=%x base=%x\n", h, xhi, xlo, fmt, base);
+        _waitms(1000);
+    }
     TxFunc tf = _gettxfunc(h);
     if (!tf) return 0;
     fmt |= 3<<SIGNCHAR_BIT;
     return _fmtnumlong(tf, fmt, x, base);
 }
 
-int _basic_print_longinteger(unsigned h, int x, unsigned fmt, int base)
+int _basic_print_longinteger(unsigned h, long long int x, unsigned fmt, int base)
 {
     TxFunc tf;
-
     tf = _gettxfunc(h);
     if (!tf) return 0;
     return _fmtnumlong(tf, fmt, x, base);
