@@ -1,11 +1,12 @@
-Version 5.3.3
+Version 5.4.0
 - Fix incorrect types in some const initializations.
 - Fixed a problem with comments in the preprocessor
 - Fixed incorrect line numbers after ASMCLK
 - Fixed a bug in counting parameters when some are structs
 - Fixed a bug in initializing arrays with modifiers like const
+- Fixed parsing of ?: in Spin2
 - Fixed some union initializer bugs
-- Handle mixed float/int in ?: by promoting one side as necessary
+- Handle mixed float/int in C ?: operator by promoting one side as necessary
 - Support debug_baud macro to some degree
 - Set default baud rate for C and BASIC based on -D_BAUD=n macro
 

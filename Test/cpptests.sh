@@ -45,6 +45,21 @@ do
   fi
 done
 
+# some Spin2 examples
+for i in test*.spin2
+do
+  j=`basename $i .spin2`
+  $PROG --ctypes -n --noheader -DCOUNT=4 $i
+  if  diff -ub Expect/$j.h $j.h && diff -ub Expect/$j.cpp $j.cpp
+  then
+      rm -f $j.h $j.cpp
+      echo $j passed
+  else
+      echo $j failed
+      endmsg="TEST FAILURES"
+  fi
+done
+
 # C++ output for Basic code
 for i in btest*.bas
 do

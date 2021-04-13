@@ -224,6 +224,38 @@ void fileToLex(LexStream *L, FILE *f, const char *name, int language)
 
 }
 
+//
+// handling for expression state
+//
+static void PushExprState(LexStream *L, SpinExprState newState)
+{
+    L->exprSp++;
+    if (L->exprSp < MAX_EXPR_STACK) {
+        L->exprStateStack[L->exprSp] = newState;
+    }
+}
+
+static SpinExprState GetExprState(LexStream *L)
+{
+    if (L->exprSp < MAX_EXPR_STACK) {
+        return L->exprStateStack[L->exprSp];
+    }
+    return L->exprStateStack[MAX_EXPR_STACK-1];
+}
+
+static void PopExprState(LexStream *L)
+{
+    if (L->exprSp > 0) {
+        --L->exprSp;
+    }
+}
+
+static void ResetExprState(LexStream *L)
+{
+    L->exprSp = 0;
+    L->exprStateStack[0] = ExprState_Default;
+}
+
 /*
  * utility function: start a new line
  */
@@ -236,6 +268,7 @@ static void startNewLine(LexStream *L)
     lineInfo.fileName = L->fileName;
     lineInfo.lineno = L->lineCounter;
     flexbuf_addmem(&L->lineInfo, (char *)&lineInfo, sizeof(lineInfo));
+    ResetExprState(L);
 }
 
 #define TAB_STOP 8
@@ -707,7 +740,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             case SP_LOOKDOWN:
             case SP_LOOKUPZ:
             case SP_LOOKDOWNZ:
-                L->look_counter++;
+                PushExprState(L, ExprState_LookUpPending);
                 gatherComments = 0;
                 break;
             case SP_DEBUG:
@@ -1596,10 +1629,14 @@ getSpinToken(LexStream *L, AST **ast_ptr)
             }
             c = parseSpinIdentifier(L, &ast, L->lastGlobal ? L->lastGlobal : "");
         } else {
+            SpinExprState curState = GetExprState(L);
             lexungetc(L, peekc);
-            if (L->look_counter) {
+            if (curState == ExprState_LookUpDown) {
                 c = SP_LOOK_SEP;
-                --L->look_counter;
+                PopExprState(L);
+            } else if (curState == ExprState_Conditional) {
+                c = SP_CONDITIONAL_SEP;
+                PopExprState(L);
             }
         }
     } else if (gl_p2 && c == '.' && isIdentifierStart(lexpeekc(L)) && InDatBlock(L)) {
@@ -1655,6 +1692,17 @@ getSpinToken(LexStream *L, AST **ast_ptr)
     }
     if (c == '?' && L->language == LANG_SPIN_SPIN2) {
         c = SP_CONDITIONAL;
+        PushExprState(L, ExprState_Conditional);
+    }
+    if (c == '(') {
+        SpinExprState curState = GetExprState(L);
+        if (curState == ExprState_LookUpPending) {
+            PushExprState(L, ExprState_LookUpDown);
+        } else {
+            PushExprState(L, ExprState_Default);
+        }
+    } else if (c == ')') {
+        PopExprState(L);
     }
     *ast_ptr = last_ast = ast;
         

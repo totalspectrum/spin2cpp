@@ -1,5 +1,5 @@
 pub test1(x, y) : r
-  r := x ? y():1 : 2
+  r := x ? (y():1) : 2
 
 pub test2(x, y) : r
   r := x ? (test1(x,y)) : 3

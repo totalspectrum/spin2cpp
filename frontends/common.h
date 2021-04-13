@@ -18,6 +18,16 @@ typedef struct modulestate Module;
 #include "util/flexbuf.h"
 
 /*
+ * enum for expression state (used to determine context for ':')
+ */
+typedef enum SpinExprState {
+    ExprState_Default,
+    ExprState_LookUpPending,
+    ExprState_LookUpDown,
+    ExprState_Conditional,
+} SpinExprState;
+
+/*
  * input stream; could be either a string or a file
  */
 
@@ -73,17 +83,16 @@ struct lexstream {
     unsigned flags;
 #define LEXSTREAM_FLAG_NOSRC 0x01
 
-    /* Spin2 hack for handling ':' in LOOKUP/LOOKDOWN
-       (there's a context dependence parsing method calls like 'foo():1'
-       versus 'lookup(foo() : 1, 2, 3)'
-    */
-    int look_counter;
-
     /* flag for Spin2 if we saw an instruction on the line */
     char sawInstruction;
 
     /* another Spin2 flag for backtick */
     char backtick_escape;
+
+    /* current expression state stack */
+#define MAX_EXPR_STACK 64
+    int exprSp;
+    SpinExprState exprStateStack[MAX_EXPR_STACK];
 };
 
 #define getLineInfoIndex(L) (flexbuf_curlen(&(L)->lineInfo) / sizeof(LineInfo))

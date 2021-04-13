@@ -1,0 +1,10 @@
+VAR
+  LONG width
+  
+PUB check(source, addr) : val
+  val := (source == "F" or source == "R") ? foo(addr) : byte[addr][source]
+
+
+PUB foo(addr)
+  return outa + addr
+  
