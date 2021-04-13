@@ -1,4 +1,5 @@
 Version 5.4.0
+- Added some preliminary support for 64 bit integers (not complete yet)
 - Fix incorrect types in some const initializations.
 - Fixed a problem with comments in the preprocessor
 - Fixed incorrect line numbers after ASMCLK
