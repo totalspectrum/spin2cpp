@@ -1099,7 +1099,10 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
     if ((*val & mask) == 0) {
         sawFlagUsed = true; // do not warn here
     }
-    if ((instr->flags & FLAG_WARN_NOTUSED) && !sawFlagUsed) {
+    if (instr->flags == FLAG_P2_CZTEST && !sawFlagUsed) {
+        ERROR(line, "instruction %s requires flags to be tested", instr->name);
+    }
+    else if ((instr->flags & FLAG_WARN_NOTUSED) && !sawFlagUsed) {
         WARNING(line, "instruction %s used without flags being set", instr->name);
     }
     /* parse operands and put them in place */

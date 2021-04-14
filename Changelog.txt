@@ -1,5 +1,6 @@
 Version 5.4.0
 - Added some preliminary support for 64 bit integers (not complete yet)
+- Added error for testp or testb used without flags
 - Fix incorrect types in some const initializations.
 - Fixed a problem with comments in the preprocessor
 - Fixed incorrect line numbers after ASMCLK
