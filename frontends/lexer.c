@@ -2542,7 +2542,57 @@ struct constants p2_constants[] = {
     { "x_rfbyte_rgb8", SYM_CONSTANT, 0xb004 << 16 },
     { "x_rfword_rgb16", SYM_CONSTANT, 0xb005 << 16 },
     { "x_rflong_rgb24", SYM_CONSTANT, 0xb006 << 16 },
-    
+
+    { "x_1p_1dac1_wfbyte", SYM_CONSTANT, 0xc000 << 16 },
+    { "x_2p_2dac1_wfbyte", SYM_CONSTANT, 0xd000 << 16 },
+    { "x_2p_1dac2_wfbyte", SYM_CONSTANT, 0xd002 << 16 },
+
+    { "x_4p_4dac1_wfbyte", SYM_CONSTANT, 0xe000 << 16 },
+    { "x_4p_2dac2_wfbyte", SYM_CONSTANT, 0xe002 << 16 },
+    { "x_4p_1dac4_wfbyte", SYM_CONSTANT, 0xe004 << 16 },
+
+    { "x_8p_4dac2_wfbyte", SYM_CONSTANT, 0xe006 << 16 },
+    { "x_8p_2dac4_wfbyte", SYM_CONSTANT, 0xe007 << 16 },
+    { "x_8p_1dac8_wfbyte", SYM_CONSTANT, 0xe00e << 16 },
+
+    { "x_16p_4dac4_wfword", SYM_CONSTANT, 0xe00f << 16 },
+    { "x_16p_2dac8_wfword", SYM_CONSTANT, 0xf000 << 16 },
+    { "x_32p_4dac8_wflong", SYM_CONSTANT, 0xf001 << 16 },
+
+    { "x_1adc8_0p_1dac8_wfbyte", SYM_CONSTANT, 0xf002 << 16 },
+    { "x_1adc8_8p_2dac8_wfword", SYM_CONSTANT, 0xf003 << 16 },
+    { "x_2adc8_0p_2dac8_wfword", SYM_CONSTANT, 0xf004 << 16 },
+    { "x_2adc8_16p_4dac8_wflong", SYM_CONSTANT, 0xf005 << 16 },
+    { "x_4adc8_0p_4dac8_wflong", SYM_CONSTANT, 0xf006 << 16 },
+
+    { "x_dds_goertzel_sinc1", SYM_CONSTANT, 0xf007 << 16 },
+    { "x_dds_goertzel_sinc2", SYM_CONSTANT, 0xf087 << 16 },
+
+    { "x_dacs_off",  SYM_CONSTANT, 0x0000 << 16 },
+    { "x_dacs_0_0_0_0",  SYM_CONSTANT, 0x0100 << 16 },
+    { "x_dacs_x_x_0_0",  SYM_CONSTANT, 0x0200 << 16 },
+    { "x_dacs_0_0_x_x",  SYM_CONSTANT, 0x0300 << 16 },
+    { "x_dacs_x_x_x_0",  SYM_CONSTANT, 0x0400 << 16 },
+    { "x_dacs_x_x_0_x",  SYM_CONSTANT, 0x0500 << 16 },
+    { "x_dacs_x_0_x_x",  SYM_CONSTANT, 0x0600 << 16 },
+    { "x_dacs_0_x_x_x",  SYM_CONSTANT, 0x0700 << 16 },
+
+    { "x_dacs_0n0_0n0",  SYM_CONSTANT, 0x0800 << 16 },
+    { "x_dacs_x_x_0n0",  SYM_CONSTANT, 0x0900 << 16 },
+    { "x_dacs_0n0_x_x",  SYM_CONSTANT, 0x0a00 << 16 },
+    { "x_dacs_1_0_1_0",  SYM_CONSTANT, 0x0b00 << 16 },
+    { "x_dacs_x_x_1_0",  SYM_CONSTANT, 0x0c00 << 16 },
+    { "x_dacs_1_0_x_x",  SYM_CONSTANT, 0x0d00 << 16 },
+    { "x_dacs_1n1_0n0",  SYM_CONSTANT, 0x0e00 << 16 },
+    { "x_dacs_3_2_1_0",  SYM_CONSTANT, 0x0f00 << 16 },
+
+    { "x_pins_off",      SYM_CONSTANT, 0x0000 << 16 },
+    { "x_pins_on",       SYM_CONSTANT, 0x0080 << 16 },
+    { "x_write_off",     SYM_CONSTANT, 0x0000 << 16 },
+    { "x_write_on",      SYM_CONSTANT, 0x0080 << 16 },
+    { "x_alt_off",      SYM_CONSTANT, 0x0000 << 16 },
+    { "x_alt_on",       SYM_CONSTANT, 0x0001 << 16 },
+
     { "cogexec", SYM_CONSTANT, 0 },
     { "cogexec_new", SYM_CONSTANT, 0x10 },
     { "hubexec", SYM_CONSTANT, 0x20 },
