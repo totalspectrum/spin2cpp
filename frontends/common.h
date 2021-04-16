@@ -216,6 +216,9 @@ extern int gl_features_used;
 /* default value for baud rate (set on command line with -D_BAUD=) */
 extern int gl_default_baud;
 
+/* tab stop setting (in lexer.c) */
+extern int gl_tab_stops;
+
 /* types */
 extern AST *ast_type_long;
 extern AST *ast_type_word;

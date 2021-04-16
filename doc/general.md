@@ -394,7 +394,11 @@ There are various command line options for the compiler which may modify the com
   [ -E ]             omit any coginit header
   [ --code=cog  ]    compile to run in COG memory instead of HUB
   [ --fcache=N  ]    set size of FCACHE space in longs (0 to disable)
-  [ --fixed ]        use 16.16 fixed point instead of IEEE floating point
+  [ --fixedreal ]    use 16.16 fixed point instead of IEEE floating point
+  [ --lmm=xxx ]      use alternate LMM implementation for P1
+           xxx = orig uses original flexspin LMM
+           xxx = slow uses traditional (slow) LMM
+  [ --tabs=N ]       specifify number of spaces between tab stops (default 8)
 ```
 
 `flexspin.exe` checks the name it was invoked by. If the name starts with the string "bstc" (case matters) then its output messages mimic that of the bstc compiler; otherwise it tries to match openspin's messages. This is for compatibility with Propeller IDE. For example, you can use flexspin with the PropellerIDE by renaming `bstc.exe` to `bstc.orig.exe` and then copying `flexspin.exe` to `bstc.exe`.

@@ -271,7 +271,9 @@ static void startNewLine(LexStream *L)
     ResetExprState(L);
 }
 
-#define TAB_STOP 8
+int gl_tab_stops = 8;
+#define TAB_STOP gl_tab_stops
+
 /*
  *
  */

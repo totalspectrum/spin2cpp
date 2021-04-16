@@ -99,6 +99,7 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "  [ --lmm=xxx ]      use alternate LMM implementation for P1\n");
     fprintf(f, "           xxx = orig uses original flexspin LMM\n");
     fprintf(f, "           xxx = slow uses traditional (slow) LMM\n");
+    fprintf(f, "  [ --tabs=N ]       assume tabs are set every N spaces for indentation purposes\n");
     fprintf(f, "  [ --version ]      just show compiler version\n");
     
     fflush(stderr);
@@ -260,6 +261,16 @@ main(int argc, const char **argv)
         } else if (!strcmp(argv[0], "--relocatable")) {
             gl_relocatable = 1;
             fprintf(stderr, "WARNING: --relocatable not implemented yet\n");
+            argv++; --argc;
+        } else if (!strncmp(argv[0], "--tabs=", 6)) {
+            const char *tabsetting = argv[0]+7;
+            int stops = strtoul(tabsetting, NULL, 0);
+            if (stops) {
+                gl_tab_stops = stops;
+            } else {
+                fprintf(stderr, "Expecting integer for --tabs=%s\n", tabsetting);
+                Usage(stderr, cmd->bstcMode);
+            }
             argv++; --argc;
         } else if (!strcmp(argv[0], "-w")) {
             gl_outputflags |= OUTFLAG_COG_CODE;
