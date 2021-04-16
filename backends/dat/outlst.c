@@ -342,6 +342,16 @@ OutputLstFile(const char *fname, Module *P)
     initOutput(P);
     
     PrintDataBlock(&fb, P, &lstOutputFuncs, NULL);
+
+    // finish up any pending source code??
+    if (current_lex) {
+        LexStream *L = current_lex;
+        int maxline = flexbuf_curlen(&L->lineInfo) / sizeof(LineInfo);
+        catchUpToLine(&fb, L, maxline, true);
+    }
+    
+    // make sure it ends with a newline
+    flexbuf_addchar(&fb, '\n');
     flexbuf_addchar(&fb, 0);
     
     listing = flexbuf_get(&fb);
