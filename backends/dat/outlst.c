@@ -322,6 +322,29 @@ CompressListing(char *listing)
     return strlen(listing);
 }
 
+static int
+putConstant(Symbol *sym, void *arg)
+{
+    Flexbuf *f = (Flexbuf *)arg;
+    if (sym->kind == SYM_CONSTANT || sym->kind == SYM_FLOAT_CONSTANT) {
+        uint32_t val = EvalConstExpr(sym->val);
+        // skip some internal symbols
+        if (!strncmp(sym->user_name, "..org", 5)) {
+            return 1;
+        }
+        flexbuf_printf(f, "%20s = $%08x (%d)\n", sym->user_name, val, val);
+    }
+   
+    return 1;
+}
+
+static void
+DumpConstants(Flexbuf *f, Module *P)
+{
+    flexbuf_printf(f, "\nConstants:\n\n");
+    IterateOverSymbols(&P->objsyms, putConstant, (void *)f);
+}
+
 void
 OutputLstFile(const char *fname, Module *P)
 {
@@ -343,7 +366,7 @@ OutputLstFile(const char *fname, Module *P)
     
     PrintDataBlock(&fb, P, &lstOutputFuncs, NULL);
 
-    // finish up any pending source code??
+    // finish up any pending source code
     if (current_lex) {
         LexStream *L = current_lex;
         int maxline = flexbuf_curlen(&L->lineInfo) / sizeof(LineInfo);
@@ -352,6 +375,10 @@ OutputLstFile(const char *fname, Module *P)
     
     // make sure it ends with a newline
     flexbuf_addchar(&fb, '\n');
+
+    // add in constants
+    DumpConstants(&fb, P);
+    
     flexbuf_addchar(&fb, 0);
     
     listing = flexbuf_get(&fb);
