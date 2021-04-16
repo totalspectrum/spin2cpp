@@ -52,8 +52,9 @@ typedef struct symbol {
 } Symbol;
 
 /* symbol flags */
-#define SYMF_GLOBAL 0x01  /* used for some special system globals */
-#define SYMF_PRIVATE 0x02 /* symbol should not be used from other modules */
+#define SYMF_GLOBAL   0x01  /* used for some special system globals */
+#define SYMF_PRIVATE  0x02  /* symbol should not be used from other modules */
+#define SYMF_INTERNAL 0x04  /* symbol is created by flexspin itself, should not be shown in listings */
 
 #define INTVAL(sym) ((intptr_t)((sym)->val))
 
@@ -83,6 +84,9 @@ Symbol *AddSymbol(SymbolTable *table, const char *name, int type, void *val, con
 Symbol *FindSymbol(SymbolTable *table, const char *name);
 Symbol *FindSymbolByOffsetAndKind(SymbolTable *table, int offset, int kind);
 Symbol *LookupSymbolInTable(SymbolTable *table, const char *name);
+
+/* like AddSymbol, but sets the SYMF_INTERNAL flag */
+Symbol *AddInternalSymbol(SymbolTable *table, const char *name, int type, void *val, const char *user_name);
 
 /* create a new temporary variable */
 /* counter is an optional pointer to the counter to increment */

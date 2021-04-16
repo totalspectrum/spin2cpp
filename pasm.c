@@ -686,7 +686,7 @@ DeclareLabels(Module *P)
                 cogpc = 0;
             }
             tmpName = NewOrgName();
-            lastOrg = AddSymbol(&current->objsyms, tmpName, SYM_CONSTANT, AstInteger(cogpc), NULL);
+            lastOrg = AddInternalSymbol(&current->objsyms, tmpName, SYM_CONSTANT, AstInteger(cogpc), NULL);
             lasttype = ast_type_long;
             ast->d.ptr = (void *)lastOrg;
             inHub = 0;

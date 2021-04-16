@@ -1894,8 +1894,8 @@ CalcClkFreqP1(Module *P)
     }
 
     // define built in constants for these
-    AddSymbol(&P->objsyms, "__clkfreq_con", SYM_CONSTANT, AstInteger(clkfreq), NULL);
-    AddSymbol(&P->objsyms, "__clkmode_con", SYM_CONSTANT, AstInteger(clkreg), NULL);
+    AddInternalSymbol(&P->objsyms, "__clkfreq_con", SYM_CONSTANT, AstInteger(clkfreq), NULL);
+    AddInternalSymbol(&P->objsyms, "__clkmode_con", SYM_CONSTANT, AstInteger(clkreg), NULL);
     return 1;
 }
 
@@ -2004,8 +2004,8 @@ CalcClkFreqP2(Module *P)
     finalfreq = (uint32_t)round(result_Fout);
 set_symbols:
     // define built in constants for these
-    AddSymbol(&P->objsyms, "__clkfreq_con", SYM_CONSTANT, AstInteger(finalfreq), NULL);
-    AddSymbol(&P->objsyms, "__clkmode_con", SYM_CONSTANT, AstInteger(clkmode), NULL);
+    AddInternalSymbol(&P->objsyms, "__clkfreq_con", SYM_CONSTANT, AstInteger(finalfreq), NULL);
+    AddInternalSymbol(&P->objsyms, "__clkmode_con", SYM_CONSTANT, AstInteger(clkmode), NULL);
     
     return 1;
 }
@@ -2053,6 +2053,6 @@ void DeclareBaud(Module *P)
             baud = (gl_p2) ? 230400 : 115200;
         }
     }
-    AddSymbol(&P->objsyms, "__default_baud__", SYM_CONSTANT, AstInteger(baud), NULL);
-    AddSymbol(&systemModule->objsyms, "__default_baud__", SYM_CONSTANT, AstInteger(baud), NULL);
+    AddInternalSymbol(&P->objsyms, "__default_baud__", SYM_CONSTANT, AstInteger(baud), NULL);
+    AddInternalSymbol(&systemModule->objsyms, "__default_baud__", SYM_CONSTANT, AstInteger(baud), NULL);
 }

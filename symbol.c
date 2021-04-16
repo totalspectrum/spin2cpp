@@ -215,6 +215,17 @@ AddSymbol(SymbolTable *table, const char *name, int type, void *val, const char 
     return sym;
 }
 
+Symbol *
+AddInternalSymbol(SymbolTable *table, const char *name, int type, void *val, const char *user_name)
+{
+    Symbol *sym;
+    sym = AddSymbol(table, name, type, val, user_name);
+    if (sym) {
+        sym->flags |= SYMF_INTERNAL;
+    }
+    return sym;
+}
+
 static int tmpvarnum = 1;
 static int tmpvarmax = 99999;
 

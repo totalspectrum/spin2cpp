@@ -329,7 +329,7 @@ putConstant(Symbol *sym, void *arg)
     if (sym->kind == SYM_CONSTANT || sym->kind == SYM_FLOAT_CONSTANT) {
         uint32_t val = EvalConstExpr(sym->val);
         // skip some internal symbols
-        if (!strncmp(sym->user_name, "..org", 5)) {
+        if (sym->flags & SYMF_INTERNAL) {
             return 1;
         }
         flexbuf_printf(f, "%20s = $%08x (%d)\n", sym->user_name, val, val);
