@@ -393,6 +393,7 @@ genPrintf(AST *ast)
     int minwidth;
     int zeropad;
     int justify;
+    int longflag;
     ASTReportInfo saveinfo;
     
     if (gl_output == OUTPUT_CPP || gl_output == OUTPUT_C) {
@@ -454,6 +455,7 @@ genPrintf(AST *ast)
                 justify = FMTPARAM_RIGHTJUSTIFY;
                 thisarg = args->left;
                 args = args->right;
+                longflag = 0;
                 if (c == '-') {
                     justify = FMTPARAM_LEFTJUSTIFY;
                     c = *fmtstring++;
@@ -470,6 +472,7 @@ genPrintf(AST *ast)
                }
                 if (c == 'l' && *fmtstring) {
                     c = *fmtstring++;
+                    longflag++;
                 }
                 if (minwidth) {
                     if (zeropad) {
@@ -480,13 +483,21 @@ genPrintf(AST *ast)
                 }
                 switch (c) {
                 case 'd':
-                    seq = addPrintDec(seq, Handle, basic_print_integer, thisarg, AstInteger(fmt));
+                    if (longflag > 1) {
+                        seq = addPrintDec(seq, Handle, basic_print_longinteger, thisarg, AstInteger(fmt));
+                    } else {
+                        seq = addPrintDec(seq, Handle, basic_print_integer, thisarg, AstInteger(fmt));
+                    }
                     break;
                 case 'u':
                     seq = addPrintDec(seq, Handle, basic_print_unsigned, thisarg, AstInteger(fmt));
                     break;
                 case 'x':
-                    seq = addPrintHex(seq, Handle, basic_print_unsigned, thisarg, AstInteger(fmt));
+                    if (longflag > 1) {
+                        seq = addPrintHex(seq, Handle, basic_print_longunsigned, thisarg, AstInteger(fmt));
+                    } else {
+                        seq = addPrintHex(seq, Handle, basic_print_unsigned, thisarg, AstInteger(fmt));
+                    }
                     break;
                 case 's':
                     seq = addPrintCall(seq, Handle, basic_print_string, thisarg, AstInteger(fmt));
