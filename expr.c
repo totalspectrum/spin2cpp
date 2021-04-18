@@ -2661,6 +2661,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
     case AST_ARRAYTYPE:
     case AST_INTTYPE:
     case AST_UNSIGNEDTYPE:
+    case AST_FLOATTYPE:
     case AST_MODIFIER_CONST:
     case AST_MODIFIER_VOLATILE:
     case AST_OBJECT:
