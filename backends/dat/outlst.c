@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+int gl_list_options = 0;
+
 static uint32_t cogPc;
 static uint32_t hubPc;
 static int inCog;
@@ -33,7 +35,10 @@ static void initOutput(Module *P)
 
 static void startNewLine(Flexbuf *f) {
     bytesOnLine = 0;
-    flexbuf_printf(f, "\n%05x ", hubPc);
+    if (f->len) {
+        flexbuf_addchar(f, '\n');
+    }
+    flexbuf_printf(f, "%05x ", hubPc);
     if (inCog) {
         flexbuf_printf(f, "%03x ", cogPc / 4);
         cogPc += cogPcUpdate;
@@ -376,8 +381,10 @@ OutputLstFile(const char *fname, Module *P)
     // make sure it ends with a newline
     flexbuf_addchar(&fb, '\n');
 
-    // add in constants
-    DumpConstants(&fb, P);
+    if (gl_list_options & LIST_INCLUDE_CONSTANTS) {
+        // add in constants
+        DumpConstants(&fb, P);
+    }
     
     flexbuf_addchar(&fb, 0);
     

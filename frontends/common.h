@@ -167,6 +167,9 @@ extern int gl_warn_flags;     /* flags for warnings */
 #define WARN_ASM_USAGE          0x04
 #define WARN_ALL                0xFFFF
 
+extern int gl_list_options;   /* options for listing files */
+#define LIST_INCLUDE_CONSTANTS  0x0001
+
 extern int gl_printprogress;  /* print files as we process them */
 extern int gl_fcache_size;   /* size of fcache for LMM mode */
 extern const char *gl_cc; /* C compiler to use; NULL means default (PropGCC) */
