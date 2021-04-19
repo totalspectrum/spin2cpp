@@ -295,16 +295,17 @@ pri _cogchk(id) | flag, n
   return n <> id
 
 ''
-'' bytefill/bytemove are here (in processor specific code)
+'' memmove/memset are here (in processor specific code)
 '' because on P2 we can optimize them (long operations do
 '' not have to be aligned)
 ''
-pri bytefill(ptr, val, count)
+pri __builtin_memset(ptr, val, count) : r
+  r := ptr
   repeat count
     byte[ptr] := val
     ptr += 1
     
-pri bytemove(dst, src, count) : origdst
+pri __builtin_memmove(dst, src, count) : origdst
   origdst := dst
   if (dst < src)
     repeat count

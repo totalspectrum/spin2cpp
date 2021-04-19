@@ -18,6 +18,9 @@ pri wordfill(ptr, val, count)
   repeat count
     word[ptr] := val
     ptr += 2
+pri bytefill(ptr, val, count)
+  __builtin_memset(ptr, val, count)
+  
 pri longmove(dst, src, count) : origdst
   origdst := dst
   if dst < src
@@ -47,6 +50,12 @@ pri wordmove(dst, src, count) : origdst
       dst -= 2
       src -= 2
       word[dst] := word[src]
+
+pri bytemove(dst, src, count)
+  return __builtin_memmove(dst, src, count)
+
+pri __builtin_memcpy(dst, src, count)
+  return __builtin_memmove(dst, src, count)
   
 pri __builtin_strlen(str) : r=long
   r := 0

@@ -8,6 +8,8 @@
  */
 #include <string.h>
 
+#undef memmove
+
 /*
  * this function has to handle overlapping regions correctly
  */

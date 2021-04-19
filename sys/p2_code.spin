@@ -522,11 +522,12 @@ pri _getus() : freq = +long | lo, hi
   return freq
 
 ''
-'' bytefill/bytemove are here (in processor specific code)
+'' memset/memmove are here (in processor specific code)
 '' because on P2 we can optimize them (long operations do
 '' not have to be aligned)
 ''
-pri bytefill(ptr, val, count) | lval
+pri __builtin_memset(ptr, val, count) : r | lval
+  r := ptr
   lval := (val << 8) | val
   lval := (lval << 16) | lval
   repeat while (count > 3)
@@ -537,7 +538,7 @@ pri bytefill(ptr, val, count) | lval
     byte[ptr] := val
     ptr += 1
     
-pri bytemove(dst, src, count) : origdst
+pri __builtin_memmove(dst, src, count) : origdst
   origdst := dst
   if (dst < src)
     repeat while (count > 3)
@@ -556,4 +557,3 @@ pri bytemove(dst, src, count) : origdst
       dst -= 1
       src -= 1
       byte[dst] := byte[src]
-      

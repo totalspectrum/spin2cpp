@@ -17,7 +17,7 @@ _fetchv
 	mov	arg01, result1
 	mov	arg02, _fetchv__cse__0000
 	mov	arg03, #20
-	call	#__system__bytemove
+	call	#__system____builtin_memmove
 	add	result1, #12
 	rdlong	result1, result1
 _fetchv_ret
@@ -57,7 +57,7 @@ __system___setbaud
 __system___setbaud_ret
 	ret
 
-__system__bytemove
+__system____builtin_memmove
 	mov	_var01, arg01
 	cmps	arg01, arg02 wc,wz
  if_ae	jmp	#LR__0004
@@ -84,7 +84,7 @@ LR__0005
 LR__0006
 LR__0007
 	mov	result1, _var01
-__system__bytemove_ret
+__system____builtin_memmove_ret
 	ret
 
 __system___tx

@@ -60,6 +60,9 @@ extern "C" {
 #ifdef __FLEXC__
 #define strcpy(a, b) __builtin_strcpy(a, b)
 #define strlen(a)    __builtin_strlen(a)
+#define memset(a, v, n) __builtin_memset(a, v, n)
+#define memcpy(a, b, n) __builtin_memcpy(a, b, n)
+#define memmove(a, b, n) __builtin_memmove(a, b, n)
 #endif
 
 #endif
