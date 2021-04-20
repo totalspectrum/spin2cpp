@@ -5554,17 +5554,14 @@ const char *builtin_fcache_p2 =
     "    push\tfcache_tmpb_\n"
     "    sub\tfcache_tmpb_, pa\n"
     "    shr\tpa, #2\n" // convert to words
-    "    mov\tfcache_tmpa_, pa\n"
-    "    add\tfcache_tmpa_, #$100\n"
-    "    wrlut ret_instr_, fcache_tmpa_\n" 
-    "    sub\tpa, #1\n" // normally we would want to subtract 1, but in fact we want to grab the ret instruction after the loop
-    "    setq2\tpa\n"
-    "    rdlong\t$100-0, fcache_tmpb_\n"
-    "    jmp\t#\\$300 ' jmp to cache\n"
+    "    altd\tpa\n"
+    "    mov\t 0-0, ret_instr_\n" 
+    "    sub\tpa, #1\n"
+    "    setq\tpa\n"
+    "    rdlong\t$0, fcache_tmpb_\n"
+    "    jmp\t#\\$0 ' jmp to cache\n"
     "ret_instr_\n"
     "    ret\n"
-    "fcache_tmpa_\n"
-    "    long 0\n"
     "fcache_tmpb_\n"
     "    long 0\n"
     ;
