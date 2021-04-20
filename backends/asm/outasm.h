@@ -169,8 +169,8 @@ Operand *GetOneHub(Operandkind kind, const char *name, intptr_t value);
 
 void InitAsmCode();
 
-Operand *GetLabelOperand(const char *name);
-Operand *GetLabelFromSymbol(AST *where, const char *name);
+Operand *GetLabelOperand(const char *name, bool inFcache);
+Operand *GetLabelFromSymbol(AST *where, const char *name, bool inFcache);
 
 // find the variable name in a variable or AST_DECLARE_VAR tree
 const char *VarName(AST *ast);

@@ -4666,14 +4666,14 @@ static void CompileStatement(IRList *irl, AST *ast)
         break;
     case AST_LABEL:
         EmitDebugComment(irl, ast);
-        op = GetLabelFromSymbol(ast, GetUserIdentifierName(ast->left));
+        op = GetLabelFromSymbol(ast, GetUserIdentifierName(ast->left), false);
         if (op) {
             EmitLabel(irl, op);
         }
         break;
     case AST_GOTO:
         EmitDebugComment(irl, ast);
-        op = GetLabelFromSymbol(ast, GetUserIdentifierName(ast->left));
+        op = GetLabelFromSymbol(ast, GetUserIdentifierName(ast->left), false);
         if (op) {
             EmitJump(irl, COND_TRUE, op);
         }
@@ -4681,7 +4681,7 @@ static void CompileStatement(IRList *irl, AST *ast)
     case AST_GOSUB:
         EmitDebugComment(irl, ast);
         ValidateGosub();
-        op = GetLabelFromSymbol(ast, ast->left->d.string);
+        op = GetLabelFromSymbol(ast, ast->left->d.string, false);
         if (op) {
             EmitMove(irl, GetArgReg(0), op);
             EmitOp1(irl, OPC_CALL, gosub_);
@@ -4834,7 +4834,7 @@ static void CompileStatement(IRList *irl, AST *ast)
         ir->flags |= FLAG_KEEP_INSTR;
         ast = ast->right;
         while (ast->kind == AST_LISTHOLDER) {
-            op = GetLabelFromSymbol(ast, ast->left->d.string);
+            op = GetLabelFromSymbol(ast, ast->left->d.string, false);
             if (op) {
                 ir = EmitJump(irl, COND_TRUE, op);
                 ir->flags |= (FLAG_KEEP_INSTR | FLAG_JMPTABLE_INSTR);

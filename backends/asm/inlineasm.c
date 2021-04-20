@@ -2,17 +2,14 @@
 #include "outasm.h"
 
 Operand *
-GetLabelOperand(const char *name)
+GetLabelOperand(const char *name, bool inFcache)
 {
     Operand *op;
-#if 1
+
     name = NewTempLabelName();
-#else    
-    if (curfunc) {
-        name = IdentifierLocalName(curfunc, name);
-    }
-#endif    
-    if (curfunc && curfunc->code_placement == CODE_PLACE_HUB) {
+    if (inFcache) {
+        op = NewOperand(REG_REG, name, 0);        
+    } else if (curfunc && curfunc->code_placement == CODE_PLACE_HUB) {
         op = NewOperand(IMM_HUB_LABEL, name, 0);
     } else {
         op = NewOperand(IMM_COG_LABEL, name, 0);
@@ -21,7 +18,7 @@ GetLabelOperand(const char *name)
 }
 
 Operand *
-GetLabelFromSymbol(AST *where, const char *name)
+GetLabelFromSymbol(AST *where, const char *name, bool inFcache)
 {
     Symbol *sym;
     sym = FindSymbol(&curfunc->localsyms, name);
@@ -30,7 +27,7 @@ GetLabelFromSymbol(AST *where, const char *name)
         return NULL;
     }
     if (!sym->val) {
-        sym->val = (void *)GetLabelOperand(name);
+        sym->val = (void *)GetLabelOperand(name, inFcache);
     }
     return (Operand *)sym->val;
 }
@@ -167,7 +164,7 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
                 r = ImmediateRef(immflag, v);
                 break;
             case SYM_LOCALLABEL:
-                r = GetLabelFromSymbol(expr, sym->our_name);
+                r = GetLabelFromSymbol(expr, sym->our_name, false);
                 immflag = 0;
                 break;
             case SYM_LABEL:
@@ -471,7 +468,7 @@ FixupHereLabel(IRList *irl, IR *firstir, int addr, Operand *dst)
     
     for (jir = firstir; jir; jir = jir->next) {
         if (jir->addr == addr) {
-            Operand *newlabel = GetLabelOperand(NULL);
+            Operand *newlabel = GetLabelOperand(NULL, false);
             IR *labelir = NewIR(OPC_LABEL);
             labelir->dst = newlabel;
             InsertAfterIR(irl, jir->prev, labelir);
@@ -500,8 +497,11 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
     IR *startlabel = NULL;
     IR *endlabel = NULL;
     IR *ir;
+    static IR *org0 = NULL;
+    static IR *orgh = NULL;
     Operand *enddst, *startdst;
     bool isConst = asmFlags & INLINE_ASM_FLAG_CONST;
+    bool isInFcache = false;
     
     if (!curfunc) {
         ERROR(origtop, "Internal error, no context for inline assembly");
@@ -518,6 +518,7 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
         if (gl_fcache_size <= 0) {
             WARNING(origtop, "FCACHE is disabled, asm will be in HUB");
         } else {
+            isInFcache = true;
             startdst = NewHubLabel();
             fcache = NewIR(OPC_FCACHE);
             fcache->src = startdst;
@@ -528,6 +529,13 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
             endlabel = NewIR(OPC_LABEL);
             endlabel->dst = enddst;
             endlabel->flags |= FLAG_LABEL_NOJUMP;
+            if (!org0) {
+                org0 = NewIR(OPC_ORG);
+                org0->dst = NewImmediate(0);
+            }
+            if (!orgh) {
+                orgh = NewIR(OPC_HUBMODE);
+            }
         }
     }
     // first run through and define all the labels
@@ -538,7 +546,7 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
             ast = ast->left;
         }
         if (ast->kind == AST_IDENTIFIER) {
-            void *labelop = (void *)GetLabelOperand(ast->d.string);
+            void *labelop = (void *)GetLabelOperand(ast->d.string, isInFcache);
             AddSymbol(&curfunc->localsyms, ast->d.string, SYM_LOCALLABEL, labelop, NULL);
         }
     }
@@ -549,6 +557,9 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
     if (fcache) {
         AppendIR(irl, fcache);
         AppendIR(irl, startlabel);
+        if (gl_p2) {
+            AppendIR(irl, org0);
+        }
     }        
     firstir = NULL;
     while(top) {
@@ -604,7 +615,7 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
                 break;
             }
             if (!sym->val) {
-                sym->val = GetLabelOperand(sym->our_name);
+                sym->val = GetLabelOperand(sym->our_name, isInFcache);
             }
             op = (Operand *)sym->val;
             ir = EmitLabel(irl, op);
@@ -647,6 +658,9 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
             ERROR(origtop, "Inline assembly too large to fit in fcache");
         }
         AppendIR(irl, endlabel);
+        if (fcache && gl_p2) {
+            AppendIR(irl, orgh);
+        }
     }
     // now fixup any relative addresses
     for (ir = firstir; ir; ir = ir->next) {
