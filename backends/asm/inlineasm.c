@@ -497,8 +497,8 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
     IR *startlabel = NULL;
     IR *endlabel = NULL;
     IR *ir;
-    static IR *org0 = NULL;
-    static IR *orgh = NULL;
+    IR *org0 = NULL;
+    IR *orgh = NULL;
     Operand *enddst, *startdst;
     bool isConst = asmFlags & INLINE_ASM_FLAG_CONST;
     bool isInFcache = false;
