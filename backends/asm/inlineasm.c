@@ -167,9 +167,6 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
                 r = ImmediateRef(immflag, v);
                 break;
             case SYM_LOCALLABEL:
-                if (!immflag) {
-                    ERROR(expr, "inline assembly is not in COG memory, register use not supported");
-                }
                 r = GetLabelFromSymbol(expr, sym->our_name);
                 immflag = 0;
                 break;
@@ -615,7 +612,29 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
             if (!firstir) firstir = ir;
         } else if (ast->kind == AST_LINEBREAK || ast->kind == AST_COMMENT || ast->kind == AST_SRCCOMMENT) {
             // do nothing
-        } else if (ast->kind == AST_LONGLIST || ast->kind == AST_WORDLIST || ast->kind == AST_BYTELIST || ast->kind == AST_RES) {
+        } else if (ast->kind == AST_LONGLIST) {
+            AST *list = ast->left;
+            AST *item;
+            Operand *op;
+            int32_t val;
+            while (list) {
+                if (list->kind != AST_EXPRLIST) {
+                    ERROR(list, "Expected list of items");
+                    break;
+                }
+                item = list->left;
+                list = list->right;
+                if (!IsConstExpr(item)) {
+                    ERROR(item, "data item is not constant");
+                    val = 0;
+                } else {
+                    val = EvalPasmExpr(item);
+                }
+                op = NewOperand(IMM_INT, "", val);
+                EmitOp1(irl, OPC_LONG, op);
+            }
+            break;
+        } else if (ast->kind == AST_WORDLIST || ast->kind == AST_BYTELIST || ast->kind == AST_RES) {
             ERROR(ast, "declaring variables inside inline assembly is not supported; use local variables instead");
             break;
         } else {
