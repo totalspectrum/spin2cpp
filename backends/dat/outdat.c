@@ -1180,7 +1180,7 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
 
         if (!strncmp(instr->name, "set", 3)) {
             operand[1] = operand[0];
-            opimm[1] = opimm[0];
+            opimm[1] = opimm[0]>>1;  // convert dst imm to src imm
             operand[0] = AstInteger(0);
             opimm[0] = 0;
         } else {

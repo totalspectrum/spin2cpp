@@ -9,6 +9,7 @@ Version 5.4.0
 - Fixed a bug in initializing arrays with modifiers like const
 - Fixed parsing of ?: in Spin2
 - Fixed some union initializer bugs
+- Fixed setnib/setbyte/setword encoding for abbreviated forms
 - Handle mixed float/int in C ?: operator by promoting one side as necessary
 - Made some low level C functions builtins
 - Support debug_baud macro to some degree
