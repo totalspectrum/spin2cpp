@@ -30,7 +30,7 @@ BASIC and C also allow inline declarations of classes, using `class`. See the re
 
 ## Fast Cache (Fcache)
 
-Fcache is a special feature of the compiler whereby small loops are copied from HUB memory into local (COG or LUT) memory before execution. This speeds up repated loops quite a bit. Fcache is available only if optimization is enabled.
+Fcache is a special feature of the compiler whereby small loops are copied from HUB memory into local (COG) memory before execution. This speeds up repated loops quite a bit. Fcache is available only if optimization is enabled.
 
 Some inline assembly blocks may also be marked to be copied to fcache before execution; see the section on inline assembly for a description of this.
 
@@ -121,7 +121,9 @@ Pretty much all of COG RAM is used by the compiler. No specific hardware registe
 
 ### P2
 
-Most of COG RAM is used by the compiler, except that $0-$1f and $1e0-$1ef are left free for application use. The second half of LUT is used for FCACHE; the first half is used by any functions placed into LUT.
+Most of COG RAM is used by the compiler, except that $1e0-$1ef are left free for application use. COG RAM from $00 to $ff is used for FCACHE, and so when you are sure no FCACHE is in use you may use this for scratch. 
+
+The second half of LUT memory (from $300 to $3ff) may be used by compiler internal functions.
 
 `ptra` is used for the stack pointer. Applications should avoid using it.
 
@@ -135,11 +137,11 @@ Code starts at 0 in HUB (by default, there are command line options to change th
 
 ### COG
 
-Most of COG RAM is used by the compiler, except that $0-$1f and $1e0-$1ef are left free for application use.
+Most of COG RAM is used by the compiler, except that $1e0-$1ef is left free for application use.
 
 ### LUT
 
-The first part of LUT memory (from $200 to $300) is used for any functions explicitly placed into LUT. The LUT memory from $300 to $400 (the second half of LUT) is used for fcache. To keep this area free, pass --fcache=0 to the compiler.
+The first part of LUT memory (from $200 to $300) is used for any functions explicitly placed into LUT. The LUT memory from $300 to $400 (the second half of LUT) is used for internal purposes.
 
 ## Optimizations
 
@@ -204,7 +206,7 @@ In some circumstances the optimizer can re-arrange counting loops so that the `d
 
 ### Fcache (-O1, -Ofcache)
 
-Small loops are copied to internal memory (COG on P1, LUT on P2) to be executed there. These loops cannot have any non-inlined calls in them.
+Small loops are copied to internal memory (COG) to be executed there. These loops cannot have any non-inlined calls in them.
 
 ### Single Use Method inlining (-O2, -Oinline-single)
 
