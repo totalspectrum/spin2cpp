@@ -310,7 +310,8 @@ enum OperandEffect {
     
     OPEFFECT_FORCEABS = 0x100,
     OPEFFECT_FORCEHUB = 0x200,
-
+    OPEFFECT_NOIMM    = 0x400,
+    
     OPEFFECT_OFFSET_MASK = 0xfffff000,
 };
 

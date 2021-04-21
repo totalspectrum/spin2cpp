@@ -110,9 +110,13 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
     int usehubaddr;
     int useabsaddr;
     int opoffset;
-
+    int skipimm;
+    
     opoffset = ((int)effect) >> OPEFFECT_OFFSET_SHIFT;
     effect &= ~(OPEFFECT_OFFSET_MASK);
+
+    skipimm = ((int)effect) & OPEFFECT_NOIMM;
+    effect &= ~(OPEFFECT_NOIMM);
     
     usehubaddr = effect & OPEFFECT_FORCEHUB;
     effect &= ~(OPEFFECT_FORCEHUB);
@@ -212,7 +216,7 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
         }
         /* fall through */
    case IMM_COG_LABEL:
-        if (useimm) {
+        if (useimm && !skipimm) {
             flexbuf_addstr(fb, "#");
             if (useabsaddr) {
                 flexbuf_addstr(fb, "\\");

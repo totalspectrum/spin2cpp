@@ -8,7 +8,7 @@ GetLabelOperand(const char *name, bool inFcache)
 
     name = NewTempLabelName();
     if (inFcache) {
-        op = NewOperand(REG_REG, name, 0);        
+        op = NewOperand(IMM_COG_LABEL, name, 0);        
     } else if (curfunc && curfunc->code_placement == CODE_PLACE_HUB) {
         op = NewOperand(IMM_HUB_LABEL, name, 0);
     } else {
@@ -416,6 +416,22 @@ CompileInlineInstr_only(IRList *irl, AST *ast)
         } else {
             op = CompileInlineOperand(irl, operands[i], &effects[i], opimm[i]);
         }
+        switch (op->kind) {
+        case REG_REG:
+        case REG_LOCAL:
+            if (opimm[i]) {
+                op = GetLea(irl, op);
+            }
+            break;
+        case IMM_COG_LABEL:
+            if (opimm[i] == 0) {
+                effects[i] |= OPEFFECT_NOIMM;
+            }
+            break;
+        default:
+            break;
+        }
+
         switch(i) {
         case 0:
             ir->dst = op;
