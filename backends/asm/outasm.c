@@ -3362,14 +3362,25 @@ static Operand *
 CompileMaskMove(IRList *irl, AST *expr)
 {
     AST *destast = expr->left;
-    AST *maskast = expr->right->left;
-    AST *valast = expr->right->right;
+    AST *maskast;
+    AST *valast;
     Operand *tmp = NewFunctionTempRegister();
     Operand *dest;
-    Operand *val = CompileExpression(irl, valast, NULL);
-    Operand *mask = CompileExpression(irl, maskast, NULL);
+    Operand *val;
+    Operand *mask;
     unsigned keepflag = 0;
     IR *ir;
+
+    if (expr->right->kind == AST_SEQUENCE) {
+        maskast = expr->right->left;
+        valast = expr->right->right;
+    } else {
+        ERROR(expr, "Internal format error");
+        return tmp;
+    }
+    
+    val = CompileExpression(irl, valast, NULL);
+    mask = CompileExpression(irl, maskast, NULL);
 
     switch(destast->kind) {
     case AST_IDENTIFIER:

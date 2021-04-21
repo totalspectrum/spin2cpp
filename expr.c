@@ -818,7 +818,10 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         orexpr = AstOperator(K_SHL, orexpr, loexpr);
         orexpr = FoldIfConst(orexpr);
         
-        orexpr = NewAST(AST_MASKMOVE, dst->left, AstOperator('|', andexpr, orexpr));
+        //orexpr = NewAST(AST_MASKMOVE, dst->left,
+        //                AstOperator('|', andexpr, orexpr));
+        orexpr = NewAST(AST_MASKMOVE, dst->left,
+                        NewAST(AST_SEQUENCE, andexpr, orexpr));
         result = AstAssign(dst->left, orexpr);
         AstReportDone(&saveinfo);
         return FixupInits(result, inits);
