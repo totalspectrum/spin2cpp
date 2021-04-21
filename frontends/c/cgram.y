@@ -214,7 +214,7 @@ CombineTypes(AST *first, AST *second, AST **identifier)
         if (second && second == ast_type_long) {
             return first;
         }
-        ERROR(first, "Internal error: don't know how to combine types");
+        ERROR(first ? first : second, "Unable to combine types");
         return first;
     }
 }
