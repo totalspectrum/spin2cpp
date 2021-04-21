@@ -39,6 +39,7 @@ _func2
 	rep	#2, #8
 	testp	#15 wc
 	rcl	_var01, #1
+LR__0003
 	mov	result1, _var01
 _func2_ret
 	ret

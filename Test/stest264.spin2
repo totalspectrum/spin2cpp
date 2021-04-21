@@ -1,0 +1,12 @@
+pub foo(x) : r
+  org
+    mov temp, tmp2
+again
+    add x, temp
+    djnz x, #again
+    ret
+temp
+	long 0
+tmp2 long 1
+  end
+  r := x

@@ -636,6 +636,7 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
             op = (Operand *)sym->val;
             ir = EmitLabel(irl, op);
             ir->addr = relpc;
+            ir->flags |= FLAG_KEEP_INSTR;
             if (!firstir) firstir = ir;
         } else if (ast->kind == AST_LINEBREAK || ast->kind == AST_COMMENT || ast->kind == AST_SRCCOMMENT) {
             // do nothing
@@ -644,6 +645,7 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
             AST *item;
             Operand *op;
             int32_t val;
+            IR *ir;
             while (list) {
                 if (list->kind != AST_EXPRLIST) {
                     ERROR(list, "Expected list of items");
@@ -658,9 +660,11 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
                     val = EvalPasmExpr(item);
                 }
                 op = NewOperand(IMM_INT, "", val);
-                EmitOp1(irl, OPC_LONG, op);
+                ir = EmitOp1(irl, OPC_LONG, op);
+                if (isConst) {
+                    ir->flags |= FLAG_KEEP_INSTR;
+                }
             }
-            break;
         } else if (ast->kind == AST_WORDLIST || ast->kind == AST_BYTELIST || ast->kind == AST_RES) {
             ERROR(ast, "declaring variables inside inline assembly is not supported; use local variables instead");
             break;
