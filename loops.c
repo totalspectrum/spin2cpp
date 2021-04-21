@@ -1119,6 +1119,23 @@ doLoopOptimizeList(LoopValueSet *lvs, AST *list)
                 updateparent->left = update;
             }
             pull = doLoopHelper(lvs, initial, condtest, update, body);
+            // add the pulled stuff to initialization, if necessary
+            if (pull && stmt->left) {
+                AST *init = stmt->left;
+                AST *initvar;
+                bool pullDependsOnInit = true;
+                if (init->kind == AST_ASSIGN) {
+                    initvar = init->left;
+                    if (IsIdentifier(initvar) && !AstUses(pull, initvar)) {
+                        pullDependsOnInit = false;
+                    }
+                }
+                if (pullDependsOnInit) {
+                    init = NewAST(AST_SEQUENCE, init, pull);
+                    stmt->left = init;
+                    pull = NULL;
+                }
+            }
             // now that we (may have) hoisted some things out of the loop,
             // see if we can rewrite the loop initial and conditions
             // to use djnz
@@ -1136,7 +1153,7 @@ doLoopOptimizeList(LoopValueSet *lvs, AST *list)
         list = list->right;
         if (pull) {
             // we pulled some statements out of the loop body and
-            // need to put them before the loop
+            // need to put them before the loop 
             stmt = NewAST(AST_STMTLIST, stmt, NULL);
             pull = AddToList(pull, stmt);
             stmtptr->left = pull;
