@@ -6167,7 +6167,11 @@ EmitMain_P2(IRList *irl, Module *P, Operand *lutstart)
     EmitOp2(irl, OPC_WRLONG, NewImmediate(clkfreq), clkfreq_addr);
     EmitJump(irl, COND_TRUE, skip_clock_label);
     // make sure $0-$ff are free for inline assembly
-    EmitOp1(irl, OPC_ORGF, NewImmediate(256));
+    if (gl_fcache_size) {
+        EmitOp1(irl, OPC_ORGF, NewImmediate(gl_fcache_size));
+    } else {
+        EmitOp1(irl, OPC_ORGF, NewImmediate(32));
+    }
     
     EmitLabel(irl, skip_clock_label);
 
@@ -6330,11 +6334,11 @@ GuessFcacheSize(IRList *irl)
     /* for now, just go by p2/p1 */
     if (gl_p2) {
         if (gl_optimize_flags & OPT_AUTO_FCACHE) {
-             return 220; // really 256, but leave slop for bad calcs of ##
+             return 128;
         }
         return 0; // disable fcache if no optimization
     } else {
-        return 96; // default size of P1
+        return 96; // default size for P1
     }
 }
 

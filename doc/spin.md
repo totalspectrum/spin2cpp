@@ -669,7 +669,7 @@ If you really need a relative offset, declare a label like `entry` at the start 
 
 No address may be given in an ORG/END pair. If no FCACHE is available (e.g. -O0 is given) then the code is run as hubexec, in which case no self-modifying code or local data is permitted.
 
-The space available for use in ORG/END pairs is smaller in flexspin (`$100`) than in PNut / Proptool (`$130`).
+The space available for use in ORG/END inline assembly is smaller by default in flexspin (128 longs) than in PNut / Proptool (304 longs). You can change the flexspin value with the `--fcache=` flag, e.g. `--fcache=304`, but beware that this may cause the COG memory to overflow if the program uses a lot of local variables or pointers.
 
 ### Memory map
 
