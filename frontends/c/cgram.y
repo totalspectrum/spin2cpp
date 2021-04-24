@@ -881,6 +881,8 @@ ConstructDefaultValue(AST *decl, AST *val)
 %token C_WORD "word"
 %token C_EOLN "end of line"
 
+%token C_FUNC "__func__ or __FUNCTION__"
+
 // builtin functions
 %token C_BUILTIN_ABS    "__builtin_abs"
 %token C_BUILTIN_CLZ    "__builtin_clz"
@@ -918,6 +920,8 @@ primary_expression
             { $$ = AstBitValue(0); }
 	| C_STRING_LITERAL
             { $$ = NewAST(AST_STRINGPTR, $1, NULL); }
+	| C_FUNC
+            { $$ = NewAST(AST_FUNC_NAME, NULL, NULL); }
         | C_BUILTIN_PRINTF
             { $$ = NewAST(AST_PRINT, NULL, NULL); }
 	| '(' expression ')'

@@ -724,6 +724,10 @@ static const char *astnames[] = {
 
     "initializer_modifier",
     "declare_bitfield",
+    "getlow",
+    "gethigh",
+
+    "func_name",
 };
 
 //
@@ -886,6 +890,10 @@ static void doASTDump(AST *ast, int indent)
         }
         astname = "operator";
         break;
+    case AST_FUNC_NAME:
+        sprintf(buf, "<func_name/>");
+        leaf = 1;
+        break;        
     default:
         idx = (unsigned int)ast->kind;
         if (idx < sizeof(astnames) / sizeof(astnames[0])) {

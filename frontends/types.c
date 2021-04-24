@@ -1541,6 +1541,9 @@ AST *CheckTypes(AST *ast)
         return ast_type_generic;
     case AST_SETJMP:
         return ast_type_long;
+    case AST_FUNC_NAME:
+        *ast = *AstStringPtr(curfunc->name);
+        /* fall through */
     case AST_STRING:
     case AST_STRINGPTR:
         if (curfunc && IsBasicLang(curfunc->language)) {

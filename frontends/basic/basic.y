@@ -423,6 +423,7 @@ AdjustParamForByVal(AST *param)
 %token BAS_FIXED      "fixed"
 %token BAS_FOR        "for"
 %token BAS_FUNCTION   "function"
+%token BAS_FUNC_NAME  "__FUNCTION__"
 %token BAS_GET        "get"
 %token BAS_GOTO       "goto"
 %token BAS_GOSUB      "gosub"
@@ -1478,6 +1479,8 @@ np_primary_expr:
     { $$ = AstBitValue(0); }
   | BAS_SELF
     { $$ = NewAST(AST_SELF, NULL, NULL); }
+  | BAS_FUNC_NAME
+    { $$ = NewAST(AST_FUNC_NAME, NULL, NULL); }
   | BAS_STRING
     { $$ = NewAST(AST_STRINGPTR,
                   NewAST(AST_EXPRLIST, $1, NULL), NULL); }

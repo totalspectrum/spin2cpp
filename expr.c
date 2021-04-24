@@ -2341,7 +2341,8 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
     case AST_SELF:
         return NewAST(AST_PTRTYPE, ClassType(P), NULL);
     case AST_SUPER:
-        return NewAST(AST_PTRTYPE, ClassType(P->superclass), NULL);        
+        return NewAST(AST_PTRTYPE, ClassType(P->superclass), NULL);
+    case AST_FUNC_NAME:
     case AST_STRING:
         // in Spin, a string is always dereferenced
         // so "abc" is the same as "a" is the same as 0x65

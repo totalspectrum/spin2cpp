@@ -186,6 +186,7 @@ exit
 fixed
 for
 function
+__function__
 get
 gosub
 goto
@@ -1848,6 +1849,13 @@ function for "cog" toupper(c as ubyte) as ubyte
   end if
   return c
 end function
+```
+
+### __FUNCTION__
+
+`__FUNCTION__` is a special symbol that is replaced with the name of the currently enclosing function or subroutine. It is similar to a preprocessor macro, but not actually implemented that way (because the preprocessor doesn't know about functions or subroutines). Mainly used for reporting errors, e.g.:
+```
+  print "Error found in subroutine "; __FUNCTION__
 ```
 
 ### GET
