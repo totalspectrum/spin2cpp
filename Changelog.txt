@@ -1,3 +1,6 @@
+Version 5.4.1
+- Check for gosub commands inside FCACHEd code
+
 Version 5.4.0
 - Added some preliminary support for 64 bit integers (not complete yet)
 - Added error for testp or testb used without flags

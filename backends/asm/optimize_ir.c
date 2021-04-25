@@ -347,6 +347,8 @@ bool MaybeHubDest(Operand *dst)
 {
     switch (dst->kind) {
     case IMM_COG_LABEL:
+        if (!strcmp(dst->name, "gosub_"))
+            return true;
         return false;
     default:
         return true;
