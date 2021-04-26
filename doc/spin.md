@@ -95,6 +95,9 @@ Symbol           | When Defined
 `__SPIN2PASM__`  | if --asm is given (PASM output) (always defined by flexspin)
 `__SPIN2CPP__`   | if C++ or C is being output (never in flexspin)
 `__cplusplus`    | if C++ is being output (never in flexspin)
+`__DATE__`       | a string containing the date when compilation was begun
+`__TIME__`       | a string containing the time when compilation was begun
+`__VERSION__`    | a string containing the full version of flexspin in use
 
 
 ## Memory Management

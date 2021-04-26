@@ -98,9 +98,20 @@ int ProcessCommandLine(CmdLineOptions *cmd)
     pp_define(&gl_pp, "__FLEXC__", str_(VERSION_MAJOR));
     pp_define(&gl_pp, "__SPINCVT__", str_(VERSION_MAJOR));
     {
-        static char quoted_version[256];
-        sprintf(quoted_version, "\"%s\"", version_string);
-        pp_define(&gl_pp, "__VERSION__", quoted_version);
+        // pp_define does not do a strdup() on the data, so we need
+        // to do that
+        char quote_data[256];
+        time_t now = time(NULL);
+        struct tm *tm = localtime(&now);
+        
+        sprintf(quote_data, "\"%s\"", version_string);
+        pp_define(&gl_pp, "__VERSION__", strdup(quote_data));
+
+        strftime(quote_data, sizeof(quote_data), "\"%b %d %Y\"",  tm);
+        pp_define(&gl_pp, "__DATE__", strdup(quote_data));
+
+        strftime(quote_data, sizeof(quote_data), "\"%H:%M:%S\"",  tm);
+        pp_define(&gl_pp, "__TIME__", strdup(quote_data));
     }
     if (gl_exit_status) {
         pp_define(&gl_pp, "__EXIT_STATUS__", "1");
