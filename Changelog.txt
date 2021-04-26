@@ -1,5 +1,6 @@
 Version 5.4.1
 - Check for gosub commands inside FCACHEd code
+- Fixed incorrect common sub-expression elimination after labels
 
 Version 5.4.0
 - Added some preliminary support for 64 bit integers (not complete yet)

@@ -393,7 +393,7 @@ ReplaceCSE(AST **astptr, CSEEntry *entry)
 static unsigned doPerformCSE(AST *stmtptr, AST **ast, CSESet *cse, unsigned flags, AST *name);
 
 //
-// perform CSE on a block which may be conditinally executed
+// perform CSE on a block which may be conditionally executed
 // we can re-use any existing CSE definitions from the main set
 // but new ones can be created only in a local set that doesn't
 // get saved
@@ -695,6 +695,10 @@ doPerformCSE(AST *stmtptr, AST **astptr, CSESet *cse, unsigned flags, AST *name)
         newflags |= doPerformCSE(stmtptr, &ast->left, cse, flags | CSE_NO_ADD, NULL);
         newflags |= doPerformCSE(stmtptr, &ast->right, cse, flags | CSE_NO_ADD, NULL);
         return newflags;
+    case AST_LABEL:
+        // abandon all hope... we have no idea what CSE entries are valid
+        ClearCSESet(cse);
+        return CSE_NO_REPLACE;
     default:
         doPerformCSE(stmtptr, &ast->left, cse, flags | CSE_NO_REPLACE, NULL);
         doPerformCSE(stmtptr, &ast->right, cse, flags | CSE_NO_REPLACE, NULL);
