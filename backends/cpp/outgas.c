@@ -414,9 +414,10 @@ outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm, CppInlineState *state)
         if (state && operand[i]) {
             if (IsConstExpr(operand[i])) {
                 /* constants are OK */
-            } else if (operand[i]->kind != AST_IDENTIFIER) {
+            } else if (!IsIdentifier(operand[i])) {
                 ERROR(operand[i], "illegal operand for inline assembly");
             } else {
+                const char *opString = GetUserIdentifierName(operand[i]);
                 printFlags |= PRINTEXPR_INLINESYM;
                 // add it to the inputs or outputs
                 if (AstUses(state->outputs, operand[i])) {
@@ -430,8 +431,9 @@ outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm, CppInlineState *state)
                     ast = *astptr;
                     while (ast) {
                         AST *sub = ast->left;
-                        if (sub && sub->kind == AST_IDENTIFIER) {
-                            if (!strcmp(operand[i]->d.string, sub->d.string)) {
+                        if (sub && IsIdentifier(sub)) {
+                            const char *subString = GetUserIdentifierName(sub);
+                            if (!strcmp(opString, subString)) {
                                 *astptr = ast->right;
                                 break;
                             }

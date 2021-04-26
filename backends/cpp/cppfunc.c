@@ -528,7 +528,7 @@ PrintInlineAsm(Flexbuf *f, AST *top, int indent)
     /* print outputs */
     flexbuf_printf(f, "%*c:", indent, ' ');
     for (ast = state->outputs; ast; ast = ast->right) {
-        const char *name = ast->left->d.string;
+        const char *name = GetUserIdentifierName(ast->left);
         flexbuf_printf(f, " [%s] \"+r\"(%s)", name, name);
         if (ast->right) {
             flexbuf_printf(f, ",");
@@ -540,7 +540,7 @@ PrintInlineAsm(Flexbuf *f, AST *top, int indent)
     /* print inputs */
     flexbuf_printf(f, "%*c:", indent, ' ');
     for (ast = state->inputs; ast; ast = ast->right) {
-        const char *name = ast->left->d.string;
+        const char *name = GetUserIdentifierName(ast->left);
         flexbuf_printf(f, " [%s] \"r\"(%s)", name, name);
         if (ast->right) {
             flexbuf_printf(f, ",");
