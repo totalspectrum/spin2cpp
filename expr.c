@@ -2670,6 +2670,21 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
     case AST_MODIFIER_VOLATILE:
     case AST_OBJECT:
         return expr;
+    case AST_CONDRESULT:
+    {
+        AST *sub = expr->right;
+        AST *left, *right;
+        if (!sub || sub->kind != AST_THENELSE) {
+            ERROR(expr, "Internal error in ?: parsing");
+            return NULL;
+        }
+        left = ExprTypeRelative(table, sub->left, P);
+        right = ExprTypeRelative(table, sub->right, P);
+        if (CompatibleTypes(left, right)) {
+            return left;
+        }
+        return NULL;
+    }
     default:
         return NULL;
     }
