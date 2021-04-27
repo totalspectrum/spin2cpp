@@ -1,5 +1,5 @@
 Version 5.4.1
-- Added __DATE__ and __TIME__ macros
+- Added __DATE__, __TIME__, __FILE__, and __LINE__ macros
 - Added documentation for __VERSION__ macro
 - Check for gosub commands inside FCACHEd code
 - Fixed incorrect common sub-expression elimination after labels

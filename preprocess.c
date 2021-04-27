@@ -413,6 +413,17 @@ pp_getdef(struct preprocess *pp, const char *name)
         }
         X = X->next;
     }
+    if (!def) {
+        static char newdef[1024];
+        // check for certain predefined words
+        if (!strcmp("__FILE__", name)) {
+            snprintf(newdef, sizeof(newdef), "\"%s\"", pp->fil->name);
+            def = newdef;
+        } else if (!strcmp("__LINE__", name)) {
+            snprintf(newdef, sizeof(newdef), "%d", pp->fil->lineno - 1);
+            def = newdef;
+        }
+    }
     return def;
 }
 
