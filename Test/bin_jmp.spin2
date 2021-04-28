@@ -1,7 +1,8 @@
 dat
+	org
 	jmp	pa wc
-	jmp	pb wz
 	jmp	#Loop
+	jmp	pb wz
 Loop
 	jmp    pa wcz
 

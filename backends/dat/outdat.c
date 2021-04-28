@@ -1344,6 +1344,7 @@ AssembleInstruction(Flexbuf *f, AST *ast, Flexbuf *relocs)
     int dstRelocOff = -1;
     bool needIndirect = false;
     bool compress = false;
+    uint32_t effects = 0;
     
     extern Instruction instr_p2[];
     curpc = ast->d.ival & 0x00ffffff;
@@ -1372,7 +1373,7 @@ decode_instr:
     }
     opidx = 0;
 
-    numoperands = DecodeAsmOperands(instr, ast, operand, opimm, &val, NULL);
+    numoperands = DecodeAsmOperands(instr, ast, operand, opimm, &val, &effects);
     if (numoperands < 0) return;
 
     immmask = 0;
@@ -1566,12 +1567,16 @@ decode_instr:
                 k++;
             }
             if (!instr_p2[k].name) {
-                ERROR(line, "Internal error, could not find %s\n", tempName);
+                ERROR(line, "Internal error, could not find %s", tempName);
                 return;
             }
             instr = &instr_p2[k];
             ast = origast;
             goto decode_instr;
+        }
+        // validate that no wc or wz was used (these are only valid on indirect jumps)
+        if ( (effects&FLAG_JMPSET) != 0 ) {
+            ERROR(line, "wc and wz not valid with this form of %s", instr->name);
         }
         dst = 0;
         immmask = 0; // handle immediates specially for jumps

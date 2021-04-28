@@ -4134,7 +4134,11 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
           }
       }
       finaltype = ExprType(expr);
-      r = OffsetMemory(irl, base, NewImmediate(off), finaltype);
+      if (off == 0 && IsCogMem(base)) {
+          r = base;
+      } else {
+          r = OffsetMemory(irl, base, NewImmediate(off), finaltype);
+      }
       return r;
   }
   case AST_CAST:

@@ -3100,7 +3100,7 @@ instr_p2[] = {
     { "popa",  0x0b00015f, TWO_OPERANDS_DEFZ, OPC_GENERIC, FLAG_P2_STD },
     { "popb",  0x0b0001df, TWO_OPERANDS_DEFZ, OPC_GENERIC, FLAG_P2_STD },
     
-    { "calld",  0x0b200000, P2_TJZ_OPERANDS, OPC_GENERIC_BRCOND, FLAG_P2_STD },
+    { "calld",  0x0b200000, P2_TJZ_OPERANDS, OPC_GENERIC_BRCOND, FLAG_P2_JMP },
     { "reti0",  0x0b3bffff, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
     { "reti1",  0x0b3bfff5, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
     { "reti2",  0x0b3bfff3, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
@@ -3384,10 +3384,10 @@ instr_p2[] = {
     { "getscp", 0x0d600071, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
     
   // long jumps
-    { "jmp" ,   0x0d800000, P2_JUMP, OPC_JUMP, 0 },
-    { "call",   0x0da00000, P2_JUMP, OPC_CALL, 0 },
-    { "calla",  0x0dc00000, P2_JUMP, OPC_GENERIC_BRANCH, 0 },
-    { "callb",  0x0de00000, P2_JUMP, OPC_GENERIC_BRANCH, 0 },
+    { "jmp" ,   0x0d800000, P2_JUMP, OPC_JUMP, FLAG_P2_JMP },
+    { "call",   0x0da00000, P2_JUMP, OPC_CALL, FLAG_P2_JMP },
+    { "calla",  0x0dc00000, P2_JUMP, OPC_GENERIC_BRANCH, FLAG_P2_JMP },
+    { "callb",  0x0de00000, P2_JUMP, OPC_GENERIC_BRANCH, FLAG_P2_JMP },
 
     { "calld.loc",  0x0e000000, P2_CALLD, OPC_GENERIC_BRANCH, 0 },
     { "loc",    0x0e800000, P2_LOC, OPC_GENERIC, 0 },
