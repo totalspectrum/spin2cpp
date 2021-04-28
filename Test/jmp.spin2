@@ -1,0 +1,8 @@
+dat
+	jmp	pa wc
+	jmp	pb wz
+	jmp	#Loop
+Loop
+	jmp    pa wcz
+
+	
