@@ -2444,7 +2444,8 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
             if (typexpr->kind == AST_FUNCTYPE) {
                 return typexpr->left;
             } else {
-                ERROR(expr, "function call on non-function type");
+                // don't error here, let the high level handle it
+                //ERROR(expr, "function call on non-function type");
                 return NULL;
             }
         }
