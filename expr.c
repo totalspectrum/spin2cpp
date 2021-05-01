@@ -1211,6 +1211,8 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
         return (1L << rval);
     case K_ENCODE:
         return 32 - __builtin_clz(rval);
+    case K_ENCODE2:
+        return (rval == 0) ? 0 : 31-__builtin_clz(rval);
     case K_LIMITMIN:
         return (lval < rval) ? rval : lval;
     case K_LIMITMAX:

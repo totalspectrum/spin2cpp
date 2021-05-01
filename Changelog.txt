@@ -1,3 +1,6 @@
+Version 5.4.2
+- Fixed constant evalucation of ENCOD operator in Spin2
+
 Version 5.4.1
 - Added __DATE__, __TIME__, __FILE__, and __LINE__ macros
 - Added documentation for __VERSION__ macro
