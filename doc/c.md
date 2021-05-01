@@ -559,7 +559,7 @@ Returns the number of leading zeros in `val`, e.g. 4 for 0x0fffffff, or 32 if `v
 ```
 int _encod(uint32_t val);
 ```
-Finds the floor of log base 2 of `val`. Similar to the Spin2 `ENCOD` operator.
+Finds 1 + the floor of log base 2 of `val`. Similar to the Spin2 `ENCOD` operator.
 
 #### _isqrt
 

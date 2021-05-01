@@ -4,6 +4,7 @@ Version 5.4.1
 - Allowed wc and wz on indirect jumps on P2
 - Check for gosub commands inside FCACHEd code
 - Fixed incorrect common sub-expression elimination after labels
+- Implemented some of the missing math functions from propeller2.h
 
 Version 5.4.0
 - Added some preliminary support for 64 bit integers (not complete yet)

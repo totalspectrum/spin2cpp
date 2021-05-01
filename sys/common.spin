@@ -368,6 +368,18 @@ pri _pollct(x) : flag
 pri _pinf(p)
   _fltl(p)
   
+'' some math functions for C propeller2.h
+pri _encod(x)
+  if x == 0
+    return 0
+  return (>|x)-1
+
+pri _clz(x) : r
+  if x==0
+    r := 32
+  else
+    r := 31 - _encod(x)
+
 '' get some random bits 0-$FFFFFF
 pri file "libsys/random.c" _randbits : r=long
 
@@ -596,4 +608,4 @@ pri _int64_divu(nlo, nhi, dlo, dhi) : qlo, qhi | x0, x1
 pri _int64_modu(nlo, nhi, dlo, dhi) : rlo, rhi | x0, x1
   x0, x1, rlo, rhi := _int64_divmodu(nlo, nhi, dlo, dhi)
   return rlo, rhi
-  
+

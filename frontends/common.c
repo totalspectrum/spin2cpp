@@ -271,6 +271,7 @@ Aliases calias[] = {
     { "_cnthl",  "_getcnthl" },
     { "_clockfreq", "__builtin_clkfreq" },
     { "_clockmode", "__builtin_clkmode" },
+    { "_isqrt", "_sqrt" },
     { "_lockrel", "_lockclr" },
     { "_pinl", "_drvl" },
     { "_pinh", "_drvh" },
