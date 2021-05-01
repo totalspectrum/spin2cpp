@@ -351,35 +351,35 @@ Propeller 1 specific functions are contained in the header file `propeller.h`. M
 
 The propeller.h header file is not standardized. FlexC's library mostly follows the PropGCC propeller.h.
 
-### cogstart
+#### cogstart
 
 ```
 int cogstart(void (*func)(void *), void *arg, void *stack, size_tstacksize);
 ```
 Starts the C function `func` with argument `arg` in another COG, using `stack` as its stack. Returns the COG started, or -1 on failure.
 
-### getcnt
+#### getcnt
 
 ```
 unsigned getcnt();
 ```
 Fetches the current value of the CNT register. Using this instead of directly using CNT will make your code portable to P2.
 
-### getpin
+#### getpin
 
 ```
 int getpin(int pin);
 ```
 Returns the current state of input pin `pin`, either 0 or 1.
 
-### setpin
+#### setpin
 
 ```
 int setpin(int pin, int val);
 ```
 Sets the output pin `pin` to 0 if `val` is 0, or 1 otherwise.
 
-### togglepin
+#### togglepin
 
 ```
 void togglepin(int pin, int val);
@@ -544,6 +544,64 @@ Attempts to lock the lock with id `lockid`. Returns 0 on failure, non-zero on su
 int _lockrel(int lockid);
 ```
 Releases a lock held due to a successful call to `_locktry`.
+
+### Math Functions
+
+#### _clz
+
+```
+int _clz(uint32_t val);
+```
+Returns the number of leading zeros in `val`, e.g. 4 for 0x0fffffff, or 32 if `val` is 0.
+
+#### _encod
+
+```
+int _encod(uint32_t val);
+```
+Finds the floor of log base 2 of `val`. Similar to the Spin2 `ENCOD` operator.
+
+#### _isqrt
+
+```
+uint32_t _isqrt(uint32_t val);
+```
+Finds the integer square root of a 32 bit unsigned number.
+
+#### _rev
+
+```
+uint32_t _rev(uint32_t val);
+```
+Returns `val` with all of its bits reversed.
+
+#### _rnd
+
+```
+uint32_t _rnd(void);
+```
+Returns a 32 bit unsigned random number. On P2 this uses the built in hardware random number instruction; on P1 it uses a pseudo-random number generator.
+
+#### _rotxy
+
+```
+cartesian_t _rotxy(cartesian_t coord, uint32_t angle);
+```
+`cartesian_t` is a structure containing the `x` and `y` coordinates of a point. `_rotxy` rotates this point by the given `angle`, which is specified as a 0.32 bit fraction of a full circle (so 90 degrees corresponds to 0x40000000).
+
+#### _polxy
+
+```
+cartesian_t _polxy(polar_t coord);
+```
+Converts polar coordinates into Cartesian (xy) coordinates. `coord` is a structure with 2 unsigned integers: `r` (which gives the radius of the point) and `t` (which gives the angle as a 0.32 fraction of a whole circle.
+
+#### _xypol
+
+```
+polar_t     _xypol(cartesian_t coord);
+```
+Converts Cartesian (xy) coordinates into polar coordinates. `coord` has two signed 32 bit integer fields, `x` and `y`. The result is a structure with 2 unsigned integers: `r` (which gives the radius of the point) and `t` (which gives the angle as a 0.32 fraction of a whole circle.
 
 ### Regular Pin I/O
 
