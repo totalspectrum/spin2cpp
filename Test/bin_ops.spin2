@@ -1,0 +1,15 @@
+dat
+	org
+foo
+	long $12345678 scas $1000000
+	long !!4, !!0
+	long !$100
+	long abs -4
+	long encod 2
+	long decod 4
+	long bmask 3
+	long ones $aa
+	long sqrt 100
+	long qlog $10000000
+	long qexp $12345678
+	

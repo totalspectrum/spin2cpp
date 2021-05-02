@@ -1248,6 +1248,21 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
             return CountOnes(rval);
         }
         break;
+    case K_QLOG:
+        {
+            double e = log2((double)(uint32_t)rval);
+            uint32_t i = (int)e;
+            return (i << 27) | (uint32_t)round((e - (double)i)*(1<<27));
+        }
+        break;
+    case K_QEXP:
+        {
+            double e = ((uint32_t)rval) >> 27;
+            double f = ((double)(rval & ((1<<27)-1))) / (1<<27);
+            e = pow(2.0, e+f);
+            return (uint32_t)round(e);
+        }
+        break;
     default:
         if (valid)
             *valid = 0;
