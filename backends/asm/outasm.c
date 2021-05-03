@@ -3396,6 +3396,7 @@ CompileMaskMove(IRList *irl, AST *expr)
         break;
     case AST_ARRAYREF:
     case AST_METHODREF:
+    case AST_MEMREF:
         dest = CompileExpression(irl, destast, NULL);
         break;
     default:
