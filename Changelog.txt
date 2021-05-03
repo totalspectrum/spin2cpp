@@ -1,5 +1,6 @@
 Version 5.4.2
 - Fixed constant evalucation of some Spin2 operators
+- Fixed bitfield access to memory references
 
 Version 5.4.1
 - Added __DATE__, __TIME__, __FILE__, and __LINE__ macros
