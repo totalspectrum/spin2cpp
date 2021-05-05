@@ -190,6 +190,13 @@ struct {
 ```
 Note that allowing function definitions inside a struct is an extension to C (it is feature of C++).
 
+If you plan on using a Spin object in many places, it is helpful to create a typedef for it, e.g.:
+```
+typedef struct __using("FullDuplexSerial.spin") FDS;
+
+FDS ser1, *serptr;
+```
+
 #### Name resolution in Spin and BASIC classes
 
 Because Spin and BASIC are case insensitive languages, their identifiers may be accessed in a case insensitive way (e.g. `x.Vga`, `x.VGA`, and `x.vga` are all equivalent if `x` is a Spin or BASIC class. It is strongly recommended to be consistent though, because this will avoid confusion for readers who are used to C being a case sensitive language.
