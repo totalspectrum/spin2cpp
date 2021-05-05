@@ -287,16 +287,25 @@ ssize_t _vfsread(vfs_file_t *f, void *vbuf, size_t count)
     int break_on_nl = 0;
     
     if (! (f->state & _VFS_STATE_RDOK) ) {
+#ifdef _DEBUG
+        __builtin_printf("not OK to read\n");
+#endif        
         return _seterror(EACCES);
     }
     if (f->read) {
         r = (*f->read)(f, vbuf, count);
+#ifdef _DEBUG
+        __builtin_printf("f->read(%d) returned %d\n", count, r);
+#endif        
         if (r < 0) {
             f->state |= _VFS_STATE_ERR;
             return _seterror(r);
         }
         return r;
     }
+#ifdef _DEBUG
+    __builtin_printf("f->read(%d) slow path\n", count);
+#endif        
     rx = f->getcf;
     if (!rx) {
         return _seterror(EACCES);

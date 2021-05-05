@@ -57,6 +57,8 @@ struct _default_buffer {
     int cnt;
     unsigned char *ptr;
     unsigned flags;
+#define _BUF_FLAGS_READING (0x01)
+#define _BUF_FLAGS_WRITING (0x02)    
     unsigned char buf[_DEFAULT_BUFSIZ];
 };
 

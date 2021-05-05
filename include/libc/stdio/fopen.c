@@ -86,6 +86,9 @@ fopen(const char *pathname, const char *mode)
 #ifdef DEBUG
     __builtin_printf("fopen returning %x state=%x\n", ftab, ftab->state);
 #endif        
+    if (isatty(fd)) {
+        ftab->state |= _VFS_STATE_ISATTY;
+    }
     return ftab;
 }
 

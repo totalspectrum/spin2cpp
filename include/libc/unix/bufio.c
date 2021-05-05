@@ -11,24 +11,35 @@ int __default_flush(vfs_file_t *f)
     int r;
 
 #ifdef _DEBUG
-    __builtin_printf("default_flush: cnt=%d\n", cnt);
+    __builtin_printf("default_flush: cnt=%d state=0x%x\n", cnt, f->state);
 #endif    
-    if (cnt > 0) {
-        if (f->state & _VFS_STATE_APPEND) {
-            if (f->state & _VFS_STATE_NEEDSEEK) {
-                r = (*f->lseek)(f, 0L, SEEK_END);
-                f->state &= ~_VFS_STATE_NEEDSEEK;
+    if ( (b->flags & _BUF_FLAGS_WRITING) ) {
+        if (cnt > 0) {
+            if (f->state & _VFS_STATE_APPEND) {
+                if (f->state & _VFS_STATE_NEEDSEEK) {
+                    r = (*f->lseek)(f, 0L, SEEK_END);
+                    f->state &= ~_VFS_STATE_NEEDSEEK;
+                }
             }
+            r = (*f->write)(f, b->buf, cnt);
+        } else {
+            r = 0;
         }
-        r = (*f->write)(f, b->buf, cnt);
-    } else {
-        r = 0;
+    } else if ( (b->flags & _BUF_FLAGS_READING) && cnt ) {
+        // have to seek backwards to skip over the read but not
+        // consumed bytes
+#ifdef _DEBUG
+        __builtin_printf("default_flush: reading: cnt=%d buf=%x ptr=%x\n", cnt, b->buf, b->ptr);
+#endif    
+        r = (*f->lseek)(f, -cnt, SEEK_CUR);
+#ifdef _DEBUG
+        __builtin_printf("default_flush: seek returned: cnt=%d\n", r);
+#endif    
+        if (r >= 0) r = cnt;  // flushed OK
     }
     b->cnt = 0;
     b->ptr = 0;
-    if (r < cnt) {
-        return -1; // failed to flush
-    }
+    b->flags = 0;
     return 0;
 }
 
@@ -43,16 +54,21 @@ int __default_filbuf(vfs_file_t *f)
     }
     b->cnt = r;
     b->ptr = &b->buf[0];
+    b->flags |= _BUF_FLAGS_READING;
     return r;
 }
 
 int __default_putc(int c,  vfs_file_t *f)
 {
     struct _default_buffer *b = (struct _default_buffer *)f->vfsdata;
+    if (b->flags & _BUF_FLAGS_READING) {
+        __default_flush(f);
+    }
+    b->flags |= _BUF_FLAGS_WRITING;
     int i = b->cnt;
 #ifdef _DEBUG_EXTRA
     __builtin_printf("putc: %d f=%x b=%x cnt=%d\n", c, (unsigned)f, (unsigned)b, i);
-#endif    
+#endif
     b->buf[i++] = c;
     c &= 0xff;
     b->cnt = i;
@@ -67,6 +83,10 @@ int __default_putc(int c,  vfs_file_t *f)
 int __default_putc_terminal(int c,  vfs_file_t *f)
 {
     struct _default_buffer *b = (struct _default_buffer *)f->vfsdata;
+    if (b->flags & _BUF_FLAGS_READING) {
+        __default_flush(f);
+    }
+    b->flags |= _BUF_FLAGS_WRITING;
     int i = b->cnt;
 #ifdef _DEBUG_EXTRA
     __builtin_printf("putc: %d f=%x b=%x cnt=%d\n", c, (unsigned)f, (unsigned)b, i);
@@ -84,6 +104,10 @@ int __default_putc_terminal(int c,  vfs_file_t *f)
 
 int __default_getc(vfs_file_t *f) {
     struct _default_buffer *b = (struct _default_buffer *)f->vfsdata;
+    if (b->flags & _BUF_FLAGS_WRITING) {
+        __default_flush(f);
+    }
+    b->flags |= _BUF_FLAGS_READING;
     int i = b->cnt;
     unsigned char *ptr;
 
