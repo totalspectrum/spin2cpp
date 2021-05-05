@@ -1860,6 +1860,12 @@ labeled_statement
                 $$ = NewAST(AST_STMTLIST, label,
                               NewAST(AST_STMTLIST, $3, NULL));
             }
+	| C_CASE constant_expression C_ELLIPSIS constant_expression ':' statement
+            {
+                AST *stmt = $6;
+                AST *range = NewAST(AST_RANGE, $2, $4);
+                $$ = NewAST(AST_CASEITEM, range, stmt);
+            }
 	| C_CASE constant_expression ':' statement
             {
                 $$ = NewAST(AST_CASEITEM, $2, $4);
