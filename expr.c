@@ -2515,6 +2515,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         Symbol *sym = NULL;
         const char *methodname;
         Function *func;
+        Module *subclass;
         
         if (expr->right->kind != AST_IDENTIFIER && expr->right->kind != AST_LOCAL_IDENTIFIER) {
             ERROR(expr, "Expecting identifier after '.'");
@@ -2536,6 +2537,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
             ERROR(expr, "attempt to access private member symbol %s", sym->user_name);
             sym->flags &= ~SYMF_PRIVATE; // prevent future errors
         }
+        subclass = GetClassPtr(objtype);
         switch (sym->kind) {
         case SYM_FUNCTION:
             func = (Function *)sym->val;
@@ -2544,7 +2546,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
             return (AST *)sym->val;
         case SYM_CONSTANT:
         case SYM_FLOAT_CONSTANT:
-            return ExprTypeRelative(table, (AST *)sym->val, P);
+            return ExprTypeRelative(&subclass->objsyms, (AST *)sym->val, P);
         case SYM_ALIAS:
             typexpr = (AST *)sym->val;
             if (typexpr->kind == AST_CAST) {
@@ -2554,7 +2556,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
                 AST *typ = NewAST(AST_USING, (AST *)sym->val, NULL);
                 return typ;
             }
-            return ExprTypeRelative(table, (AST *)sym->val, P);
+            return ExprTypeRelative(&subclass->objsyms, (AST *)sym->val, P);
 #if 0            
         case SYM_LABEL:
         {

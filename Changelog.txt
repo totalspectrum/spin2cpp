@@ -4,6 +4,7 @@ Version 5.4.2
 - Fixed bitfield access to memory references
 - Fixed mixing reads and writes in C stdio
 - Fixed mixing fgetc and fread in C stdio
+- Fixed a bug in determining types of Spin2 constants in other objects
 
 Version 5.4.1
 - Added __DATE__, __TIME__, __FILE__, and __LINE__ macros
