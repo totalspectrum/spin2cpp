@@ -110,7 +110,7 @@ _openraw(void *fil_ptr, const char *orig_name, int flags, mode_t mode)
     if (r != 0 && (flags & O_CREAT)) {
 #ifdef _DEBUG
         __builtin_printf("_openraw: calling v->creat\n");
-#endif        
+#endif
         r = (*v->creat)(fil, name, mode);
     }
 #ifdef _DEBUG
@@ -180,6 +180,7 @@ _openraw(void *fil_ptr, const char *orig_name, int flags, mode_t mode)
 #ifdef _DEBUG
     __builtin_printf("openraw: fil=%x vfsdata=%x\n", (unsigned)fil, (unsigned)fil->vfsdata);
 #endif    
+    if (r == 0) _seterror(EOK);
     return r;
 }
 
