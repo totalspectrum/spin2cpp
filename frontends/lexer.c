@@ -2729,6 +2729,10 @@ void InitPreprocessor(const char **argv)
         strcpy(gl_prognamebuf, argv[0]);
     }
     progname = strrchr(gl_prognamebuf, '/');
+#ifdef WIN32
+    if (!progname)
+        progname = strrchr(gl_prognamebuf, '\\');
+#endif
     if (progname) {
         progname++;
     } else {

@@ -1,6 +1,9 @@
+Version 5.4.3
+- Fixed path lookup on Windows under cmd.exe
+
 Version 5.4.2
 - Added support for range cases (a ... b) to C
-- Fixed constant evalucation of some Spin2 operators
+- Fixed constant evaluation of some Spin2 operators
 - Fixed bitfield access to memory references
 - Fixed mixing reads and writes in C stdio
 - Fixed mixing fgetc and fread in C stdio
