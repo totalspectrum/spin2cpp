@@ -1122,6 +1122,87 @@ DeclareFunctions(Module *P)
 }
 
 /*
+ * convert lookup/lookdown into a case statement
+ * lookdown(i : a, b, c..d, e) -> 
+ *      case i
+ *        a: r := 1
+ *        b: r := 2
+ *        c..d: r:= 3+(i-c)
+ *        e: r := 4+(d-c)
+ * lookup(i : a, b, c..d, e) -> 
+ *      case i
+ *        1: r := a
+ *        2: r := b
+ *        3..3+(d-c): r:= c+(i-3)
+ *        4+(d-c): r := e
+ */
+/* helper function to generate a case item */
+static AST *GenCase(int isLookup, AST *itembase, AST *itemlimit, AST *lookupvar, AST *index, AST *retval)
+{
+    AST *caseitem;
+    AST *casestmt;
+    AST *expr;
+    AST *breakstmt = NewAST(AST_ENDCASE, NULL, NULL);
+    if (isLookup) {
+        if (itemlimit) {
+            caseitem = AstOperator('+', index, AstOperator('-', itemlimit, itembase));
+            caseitem = NewAST(AST_RANGE, index, SimpleOptimizeExpr(caseitem));
+            expr = SimpleOptimizeExpr(AstOperator('+', itembase, AstOperator('-', lookupvar, index)));
+            casestmt = AstAssign(retval, expr);
+        } else {
+            caseitem = index;
+            casestmt = AstAssign(retval, itembase);
+        }
+    } else {
+        if (itemlimit) {
+            caseitem = NewAST(AST_RANGE, itembase, itemlimit);
+            expr = AstOperator('+', index, AstOperator('-', lookupvar, itembase));
+            casestmt = AstAssign(retval, SimpleOptimizeExpr(expr));
+        } else {
+            caseitem = itembase;
+            casestmt = AstAssign(retval, index);
+        }
+    }
+    casestmt = NewAST(AST_STMTLIST, casestmt,
+                      NewAST(AST_STMTLIST, breakstmt, NULL));
+    caseitem = NewAST(AST_CASEITEM, caseitem, casestmt);
+    return NewAST(AST_STMTLIST, caseitem, NULL);
+}
+
+/* main function */
+static AST *
+LookupAsCase(AST *top)
+{
+    AST *lookexpr = top->left;
+    AST *list = top->right;
+    AST *retval = AstTempIdentifier("_lookret_");
+    AST *index = lookexpr->left;
+    AST *lookvar = lookexpr->right;
+    AST *expr;
+    AST *caselist = NULL;
+    AST *one = AstInteger(1);
+    AST *stmt;
+    int isLookup = top->kind == AST_LOOKUP;
+
+    while (list) {
+        expr = list->left;
+        list = list->right;
+        if (expr->kind == AST_RANGE) {
+            caselist = AddToList(caselist, GenCase(isLookup, expr->left, expr->right, lookvar, index, retval));
+            index = AstOperator('+', index, AstOperator('+', one, AstOperator('-', expr->right, expr->left)));
+        } else if (expr->kind == AST_STRING) {
+            ERROR(expr, "Not equipped to handle this yet");
+        } else {
+            caselist = AddToList(caselist, GenCase(isLookup, expr, NULL, lookvar, index, retval));
+            index = AstOperator('+', index, one);
+        }
+        index = SimpleOptimizeExpr(index);
+    }
+    stmt = NewAST(AST_CASE, lookvar, caselist);
+    return NewAST(AST_STMTLIST, stmt, NewAST(AST_STMTLIST, retval, NULL));
+}
+
+/*
  * try to optimize lookup on constant arrays
  * if we can, modifies ast and returns any
  * declarations needed
@@ -1161,14 +1242,20 @@ ModifyLookup(AST *top)
         } else if (expr->kind == AST_STRING) {
             len += strlen(expr->d.string);
         } else {
-            if (IsConstExpr(expr))
+            if (IsConstExpr(expr)) {
                 len++;
-            else
+            } else {
+                *top = *LookupAsCase(top);
                 return NULL;
+            }
         }
     }
 
     /* if we get here, the array is constant of length "len" */
+    if (len > 256) {
+        *top = *LookupAsCase(top);
+        return NULL;
+    }
     /* create a temporary identifier for it */
     id = AstTempVariable("look_");
     /* replace the table in the top expression */
