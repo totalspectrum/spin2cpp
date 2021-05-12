@@ -1142,31 +1142,34 @@ static AST *GenCase(int isLookup, AST *itembase, AST *itemlimit, AST *lookupvar,
     AST *caseitem;
     AST *casestmt;
     AST *expr;
-    AST *breakstmt = NewAST(AST_ENDCASE, NULL, NULL);
     if (isLookup) {
         if (itemlimit) {
             caseitem = AstOperator('+', index, AstOperator('-', itemlimit, itembase));
             caseitem = NewAST(AST_RANGE, index, SimpleOptimizeExpr(caseitem));
+            caseitem = NewAST(AST_ISBETWEEN, lookupvar, caseitem);
             expr = SimpleOptimizeExpr(AstOperator('+', itembase, AstOperator('-', lookupvar, index)));
             casestmt = AstAssign(retval, expr);
         } else {
-            caseitem = index;
+            caseitem = AstOperator(K_EQ, lookupvar, index);
             casestmt = AstAssign(retval, itembase);
         }
     } else {
         if (itemlimit) {
             caseitem = NewAST(AST_RANGE, itembase, itemlimit);
+            caseitem = NewAST(AST_ISBETWEEN, lookupvar, caseitem);
             expr = AstOperator('+', index, AstOperator('-', lookupvar, itembase));
             casestmt = AstAssign(retval, SimpleOptimizeExpr(expr));
         } else {
-            caseitem = itembase;
+            caseitem = AstOperator(K_EQ, lookupvar, itembase);
             casestmt = AstAssign(retval, index);
         }
     }
-    casestmt = NewAST(AST_STMTLIST, casestmt,
-                      NewAST(AST_STMTLIST, breakstmt, NULL));
-    caseitem = NewAST(AST_CASEITEM, caseitem, casestmt);
-    return NewAST(AST_STMTLIST, caseitem, NULL);
+
+    // now generate: if (caseitem) casestmt
+    casestmt = NewAST(AST_STMTLIST, casestmt, NULL);
+    casestmt = NewAST(AST_THENELSE, casestmt, NULL);
+    casestmt = NewAST(AST_IF, caseitem, casestmt);
+    return NewAST(AST_STMTLIST, casestmt, NULL);
 }
 
 /* main function */
@@ -1175,13 +1178,12 @@ LookupAsCase(AST *top)
 {
     AST *lookexpr = top->left;
     AST *list = top->right;
-    AST *retval = AstTempIdentifier("_lookret_");
+    AST *retval = AstTempVariable("_lookret_");
     AST *index = lookexpr->left;
     AST *lookvar = lookexpr->right;
     AST *expr;
     AST *caselist = NULL;
     AST *one = AstInteger(1);
-    AST *stmt;
     int isLookup = top->kind == AST_LOOKUP;
 
     while (list) {
@@ -1198,8 +1200,7 @@ LookupAsCase(AST *top)
         }
         index = SimpleOptimizeExpr(index);
     }
-    stmt = NewAST(AST_CASE, lookvar, caselist);
-    return NewAST(AST_STMTLIST, stmt, NewAST(AST_STMTLIST, retval, NULL));
+    return NewAST(AST_STMTLIST, caselist, NewAST(AST_STMTLIST, retval, NULL));
 }
 
 /*
