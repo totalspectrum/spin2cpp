@@ -1137,7 +1137,7 @@ DeclareFunctions(Module *P)
  *        4+(d-c): r := e
  */
 /* helper function to generate a case item */
-static AST *GenCase(int isLookup, AST *itembase, AST *itemlimit, AST *lookupvar, AST *index, AST *retval)
+static AST *GenCase(int isLookup, AST *itembase, AST *itemlimit, AST *lookupvar, AST *index)
 {
     AST *caseitem;
     AST *casestmt;
@@ -1148,28 +1148,40 @@ static AST *GenCase(int isLookup, AST *itembase, AST *itemlimit, AST *lookupvar,
             caseitem = NewAST(AST_RANGE, index, SimpleOptimizeExpr(caseitem));
             caseitem = NewAST(AST_ISBETWEEN, lookupvar, caseitem);
             expr = SimpleOptimizeExpr(AstOperator('+', itembase, AstOperator('-', lookupvar, index)));
-            casestmt = AstAssign(retval, expr);
+            casestmt = expr;
         } else {
             caseitem = AstOperator(K_EQ, lookupvar, index);
-            casestmt = AstAssign(retval, itembase);
+            casestmt = itembase;
         }
     } else {
         if (itemlimit) {
             caseitem = NewAST(AST_RANGE, itembase, itemlimit);
             caseitem = NewAST(AST_ISBETWEEN, lookupvar, caseitem);
             expr = AstOperator('+', index, AstOperator('-', lookupvar, itembase));
-            casestmt = AstAssign(retval, SimpleOptimizeExpr(expr));
+            casestmt = SimpleOptimizeExpr(expr);
         } else {
             caseitem = AstOperator(K_EQ, lookupvar, itembase);
-            casestmt = AstAssign(retval, index);
+            casestmt = index;
         }
     }
 
-    // now generate: if (caseitem) casestmt
-    casestmt = NewAST(AST_STMTLIST, casestmt, NULL);
+    // now generate: (caseitem) ? casestmt : NULL
     casestmt = NewAST(AST_THENELSE, casestmt, NULL);
-    casestmt = NewAST(AST_IF, caseitem, casestmt);
-    return NewAST(AST_STMTLIST, casestmt, NULL);
+    casestmt = NewAST(AST_CONDRESULT, caseitem, casestmt);
+    return casestmt;
+}
+
+/* add elseclause to an existing x ? y : z clause */
+static AST *
+AddToIf(AST *ast, AST *newclause)
+{
+    AST *x = newclause->right;
+    if (x->kind != AST_THENELSE || x->right != NULL) {
+        WARNING(newclause, "Internal error, bad else clause");
+    } else {
+        x->right = ast;
+    }
+    return newclause;
 }
 
 /* main function */
@@ -1178,29 +1190,39 @@ LookupAsCase(AST *top)
 {
     AST *lookexpr = top->left;
     AST *list = top->right;
-    AST *retval = AstTempVariable("_lookret_");
     AST *index = lookexpr->left;
     AST *lookvar = lookexpr->right;
     AST *expr;
-    AST *caselist = NULL;
+    AST *thisif;
+    AST *stmtlist = AstInteger(0);
     AST *one = AstInteger(1);
     int isLookup = top->kind == AST_LOOKUP;
-
+    AST *newvar = NULL;
+    
+    if (!IsIdentifier(lookvar)) {
+        newvar = AstTempVariable("_look_");
+        AddLocalVariable(curfunc, newvar, NULL, SYM_LOCALVAR);
+        lookvar = newvar;
+    }
     while (list) {
         expr = list->left;
         list = list->right;
         if (expr->kind == AST_RANGE) {
-            caselist = AddToList(caselist, GenCase(isLookup, expr->left, expr->right, lookvar, index, retval));
+            thisif = GenCase(isLookup, expr->left, expr->right, lookvar, index);
+            stmtlist = AddToIf(stmtlist, thisif);
             index = AstOperator('+', index, AstOperator('+', one, AstOperator('-', expr->right, expr->left)));
         } else if (expr->kind == AST_STRING) {
             ERROR(expr, "Not equipped to handle this yet");
         } else {
-            caselist = AddToList(caselist, GenCase(isLookup, expr, NULL, lookvar, index, retval));
+            stmtlist = AddToIf(stmtlist, GenCase(isLookup, expr, NULL, lookvar, index));
             index = AstOperator('+', index, one);
         }
         index = SimpleOptimizeExpr(index);
     }
-    return NewAST(AST_STMTLIST, caselist, NewAST(AST_STMTLIST, retval, NULL));
+    if (lookvar == newvar) {
+        stmtlist = NewAST(AST_SEQUENCE, AstAssign(lookvar, lookexpr->right), stmtlist);
+    }
+    return stmtlist;
 }
 
 /*
@@ -2026,6 +2048,7 @@ ProcessOneFunc(Function *pf)
     int sawreturn = 0;
     Module *savecurrent;
     Function *savefunc;
+    AST *decls;
     int last_errors = gl_errors;
     
     if (pf->lang_processed)
@@ -2050,7 +2073,8 @@ ProcessOneFunc(Function *pf)
     if (last_errors != gl_errors && gl_errors >= gl_max_errors) return;
     
     CheckRecursive(pf);  /* check for recursive functions */
-    pf->extradecl = NormalizeFunc(pf->body, pf);
+    decls = NormalizeFunc(pf->body, pf);
+    pf->extradecl = AddToList(pf->extradecl, decls);
 
     /* check for void functions */
     if (pf->result_declared && pf->language == LANG_SPIN_SPIN2) {
