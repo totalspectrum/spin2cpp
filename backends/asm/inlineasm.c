@@ -502,6 +502,15 @@ FixupHereLabel(IRList *irl, IR *firstir, int addr, Operand *dst)
     return NewImmediate(0);;
 }
 
+static bool
+IsPtra(Operand *reg)
+{
+    if (reg && reg->kind == REG_HW && !strcmp(reg->name, "ptra")) {
+        return true;
+    }
+    return false;
+}
+
 void
 CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
 {
@@ -518,6 +527,7 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
     Operand *enddst, *startdst;
     bool isConst = asmFlags & INLINE_ASM_FLAG_CONST;
     bool isInFcache = false;
+    bool ptraSaved = false;
     
     if (!curfunc) {
         ERROR(origtop, "Internal error, no context for inline assembly");
@@ -602,6 +612,14 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
             ir->addr = relpc;
             if (!firstir) firstir = ir;
             relpc++;
+            if (ir->opc == OPC_MOV || ir->opc == OPC_WRLONG) {
+                if (IsPtra(ir->src)) {
+                    ptraSaved = true;
+                }
+            }
+            if (!ptraSaved && IsPtra(ir->dst) && InstrModifies(ir, ir->dst)) {
+                WARNING(ast, "Inline assembly modifies %s", "ptra");
+            }
             if (ir->opc == OPC_RET) {
                 //WARNING(ast, "ret instruction in inline asm converted to jump to end of asm");
                 ReplaceOpcode(ir, OPC_JUMP);

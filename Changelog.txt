@@ -1,3 +1,6 @@
+Version 5.4.4
+- Added warning for modifying ptra in inline assembly
+
 Version 5.4.3
 - Clear all errors on successful open
 - Fixed path lookup on Windows under cmd.exe

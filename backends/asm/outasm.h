@@ -188,6 +188,9 @@ IR *EmitOp2(IRList *irl, IROpcode code, Operand *op, Operand *op2);
 
 void EmitNamedCogLabel(IRList *irl, const char *name);
 
+// functions for optimization
+bool InstrModifies(IR *ir, Operand *op);
+
 // utility for debug
 void PrintOperandAsValue(struct flexbuf *fb, Operand *op);
 void DoAssembleIR(struct flexbuf *, IR *, Module *);
