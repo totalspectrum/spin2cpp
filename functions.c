@@ -1240,7 +1240,8 @@ ModifyLookup(AST *top)
     AST *table;
     AST *id;
     AST *decl;
-
+    int badlen = 0;
+    
     ev = top->left;
     table = top->right;
     if (table->kind == AST_TEMPARRAYUSE) {
@@ -1268,8 +1269,8 @@ ModifyLookup(AST *top)
             if (IsConstExpr(expr)) {
                 len++;
             } else {
-                *top = *LookupAsCase(top);
-                return NULL;
+                badlen = 1;
+                len++;
             }
         }
     }
@@ -1277,6 +1278,9 @@ ModifyLookup(AST *top)
     /* if we get here, the array is constant of length "len" */
     if (len > 256) {
         *top = *LookupAsCase(top);
+        return NULL;
+    }
+    if (badlen) {
         return NULL;
     }
     /* create a temporary identifier for it */
