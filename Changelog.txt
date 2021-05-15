@@ -1,6 +1,7 @@
 Version 5.4.4
 - Added warning for modifying ptra in inline assembly
 - Fixed a problem with large ranges in lookup/lookdown
+- Fixed a preprocessor bug which sometimes caused failure to recognize comments
 
 Version 5.4.3
 - Clear all errors on successful open

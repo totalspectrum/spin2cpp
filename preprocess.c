@@ -447,9 +447,10 @@ static void parse_init(ParseState *P, char *s, struct preprocess *pp)
 #define PARSE_IDCHAR  2
 #define PARSE_OTHER   3
 #define PARSE_QUOTE   4
+#define PARSE_COMMENT 5
 
 static int
-classify_char(int c)
+classify_char(struct preprocess *pp, int c)
 {
     if (isspace(c))
         return PARSE_ISSPACE;
@@ -457,6 +458,9 @@ classify_char(int c)
         return PARSE_IDCHAR;
     if (c == '"')
         return PARSE_QUOTE;
+    if (strchr(pp->startcomment, c) || strchr(pp->endcomment, c)) {
+        return PARSE_COMMENT;
+    }
     return PARSE_OTHER;
 }
 
@@ -500,10 +504,10 @@ static char *parse_getword(ParseState *P)
     } else if (*ptr == pp->endcomment[0] && !strncmp(ptr, pp->endcomment, strlen(pp->endcomment))) {
         ptr += strlen(pp->endcomment);
     } else {
-      state = classify_char((unsigned char)*ptr);
-      ptr++;
-      while (*ptr && (classify_char((unsigned char)*ptr) == state))
+        state = classify_char(pp, (unsigned char)*ptr);
         ptr++;
+        while (*ptr && (classify_char(pp, (unsigned char)*ptr) == state))
+            ptr++;
     }
     P->save = ptr;
     P->c = *ptr;
@@ -762,7 +766,7 @@ handle_define(struct preprocess *pp, ParseState *P, int isDef)
         return;
     }
     name = parse_getwordafterspaces(P);
-    if (classify_char(name[0]) != PARSE_IDCHAR) {
+    if (classify_char(pp, name[0]) != PARSE_IDCHAR) {
         doerror(pp, "%s is not a valid identifier for define", name);
         return;
     }

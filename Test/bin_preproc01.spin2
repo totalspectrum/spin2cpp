@@ -1,0 +1,14 @@
+dat
+    org
+start
+    nop
+#define FOO 1
+
+{{
+   some comments
+===}}
+
+#define BAR 2
+
+  long FOO, BAR
+  
