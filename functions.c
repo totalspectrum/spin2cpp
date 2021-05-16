@@ -1303,29 +1303,38 @@ ModifyLookup(AST *top)
  * there are a number of simple optimizations we can perform on a function
  * (1) Convert lookup/lookdown into constant array references
  * (2) Eliminate unused result variables
+ * (3) Check for using a variable before initializing it
  *
  * Called recursively; the top level call has ast = func->body
  * Returns an AST that should be printed before the function body, e.g.
  * to declare temporary arrays.
  */
 static AST *
-NormalizeFunc(AST *ast, Function *func)
+NormalizeFunc(AST *ast, Function *func, int setflag)
 {
     AST *ldecl;
     AST *rdecl;
-
+    Symbol *sym;
+    const char *name;
+    
     if (!ast)
         return NULL;
 
     switch (ast->kind) {
     case AST_RETURN:
         if (ast->left) {
-            return NormalizeFunc(ast->left, func);
+            return NormalizeFunc(ast->left, func, 0);
         }
         return NULL;
+    case AST_ADDROF:
+    case AST_ABSADDROF:
+        return NormalizeFunc(ast->left, func, 1);
     case AST_RESULT:
         func->result_used = 1;
         return NULL;
+    case AST_METHODREF:
+        return NormalizeFunc(ast->left, func, setflag);
+    case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER:
         rdecl = func->resultexpr;
         if (rdecl && rdecl->kind == AST_DECLARE_VAR) {
@@ -1333,6 +1342,16 @@ NormalizeFunc(AST *ast, Function *func)
         }
         if (rdecl && AstUses(rdecl, ast))
             func->result_used = 1;
+        sym = LookupSymbol(GetIdentifierName(ast));
+        if (sym && sym->kind == SYM_LOCALVAR) {
+            if (setflag) {
+                sym->flags |= SYMF_INITED;
+            } else if (!(sym->flags & SYMF_INITED)) {
+                if (gl_warn_flags & WARN_UNINIT_VARS) {
+                    WARNING(ast, "%s used before initialization", sym->user_name);
+                }
+            }
+        }
         return NULL;
     case AST_INTEGER:
     case AST_FLOAT:
@@ -1344,20 +1363,35 @@ NormalizeFunc(AST *ast, Function *func)
         return NULL;
     case AST_LOOKUP:
     case AST_LOOKDOWN:
-        ldecl = NormalizeFunc(ast->left, func);
-        rdecl = NormalizeFunc(ast->right, func);
+        ldecl = NormalizeFunc(ast->left, func, 0);
+        rdecl = NormalizeFunc(ast->right, func, 0);
         return ModifyLookup(ast);
+    case AST_VA_START:
+    case AST_ASSIGN:
+        rdecl = NormalizeFunc(ast->right, func, 0);
+        if (0 != (name = GetIdentifierName(ast->left))) {
+            sym = LookupSymbol(name);
+            if (sym) {
+                sym->flags |= SYMF_INITED;
+            }
+        }
+        ldecl = NormalizeFunc(ast->left, func, 1);
+        return AddToList(ldecl, rdecl);
+    case AST_DOWHILE:
+        rdecl = NormalizeFunc(ast->right, func, setflag);
+        ldecl = NormalizeFunc(ast->left, func, setflag);
+        return AddToList(ldecl, rdecl);
     case AST_INLINEASM:
         /* assume declared result variables are used in
            inline assembly */
         if (func->result_declared) {
             func->result_used = 1;
-            return NULL;
         }
+        setflag = 1;  /* assume stuff gets set before use in inline assembly */
         /* otherwise, fall through */
     default:
-        ldecl = NormalizeFunc(ast->left, func);
-        rdecl = NormalizeFunc(ast->right, func);
+        ldecl = NormalizeFunc(ast->left, func, setflag);
+        rdecl = NormalizeFunc(ast->right, func, setflag);
         return AddToList(ldecl, rdecl);
     }
 }
@@ -2077,7 +2111,7 @@ ProcessOneFunc(Function *pf)
     if (last_errors != gl_errors && gl_errors >= gl_max_errors) return;
     
     CheckRecursive(pf);  /* check for recursive functions */
-    decls = NormalizeFunc(pf->body, pf);
+    decls = NormalizeFunc(pf->body, pf, 0);
     pf->extradecl = AddToList(pf->extradecl, decls);
 
     /* check for void functions */
