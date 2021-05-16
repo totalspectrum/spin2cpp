@@ -1348,7 +1348,7 @@ NormalizeFunc(AST *ast, Function *func, int setflag)
                 sym->flags |= SYMF_INITED;
             } else if (!(sym->flags & SYMF_INITED)) {
                 if (gl_warn_flags & WARN_UNINIT_VARS) {
-                    WARNING(ast, "%s used before initialization", sym->user_name);
+                    WARNING(ast, "%s is possibly used before initialization", sym->user_name);
                 }
             }
         }
