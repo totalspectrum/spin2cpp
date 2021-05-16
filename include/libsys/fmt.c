@@ -10,7 +10,7 @@
 #define SMALL_INT
 #define strlen __builtin_strlen
 #define strcpy __builtin_strcpy
-#define THROW_RETURN(x) __throwifcaught(x)
+#define THROW_RETURN(x) do { __throwifcaught(x); return -1; } while (0)
 #include <compiler.h>
 #else
 #define THROW_RETURN(x) return -1
