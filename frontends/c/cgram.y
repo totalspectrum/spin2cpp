@@ -867,6 +867,7 @@ ConstructDefaultValue(AST *decl, AST *val)
 %token C_TEMPLATE "template"
 %token C_THIS "this"
 %token C_THROW "throw"
+%token C_THROWIF "__throwifcaught"
 
 // asm only tokens
 %token C_ALIGNL "alignl"
@@ -2210,7 +2211,19 @@ jump_statement
             { $$ = NewCommentedAST(AST_RETURN, $2, NULL, $1); }
 	| C_THROW expression ';'
             { $$ = NewCommentedAST(AST_THROW, $2, NULL, $1); }
-	;
+	| C_THROWIF expression ';'
+          {
+              AST *top = NewCommentedAST(AST_THROW, $2, NULL, $1);
+              AST *throwit;
+              if (top && top->kind != AST_THROW) {
+                  throwit = top->left;
+              } else {
+                  throwit = top;
+              }
+              throwit->d.ival = 1;
+              $$ = top;
+          }
+        ;
 
 translation_unit
 	: external_declaration

@@ -784,7 +784,7 @@ static void doASTDump(AST *ast, int indent)
     case AST_HWREG:
         sprintf(buf, "<hwreg/>");
         leaf = 1;
-        break;        
+        break;
     case AST_COMMENT:
         sprintf(buf, "<comment/>"); // could print ast->d.string);
         leaf = 1;
@@ -893,6 +893,9 @@ static void doASTDump(AST *ast, int indent)
     case AST_FUNC_NAME:
         sprintf(buf, "<func_name/>");
         leaf = 1;
+        break;        
+    case AST_THROW:
+        sprintf(buf, "<throw %d>", ast->d.ival);
         break;        
     default:
         idx = (unsigned int)ast->kind;

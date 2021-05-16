@@ -4678,6 +4678,7 @@ static void CompileStatement(IRList *irl, AST *ast)
         }
         EmitMove(irl, GetArgReg(0), buf);
         EmitMove(irl, GetArgReg(1), op);
+        EmitMove(irl, GetArgReg(2), NewImmediate(ast->d.ival));
         EmitOp1(irl, OPC_CALL, longjmpfunc);
         break;
     case AST_LABEL:
@@ -5722,7 +5723,7 @@ static const char *builtin_abortcode_p1 =
     // __longjmp(buf, n) should jump to buf and return n
     "__longjmp\n"
     "    cmp    arg01, #0 wz\n"
-    " if_z jmp #cogexit\n"
+    " if_z jmp #nocatch\n"
     "    mov result1, arg02\n"
     "    mov result2, #1\n"
     "    rdlong arg02, arg01\n"  // new target for fp
@@ -5738,6 +5739,10 @@ static const char *builtin_abortcode_p1 =
     "    call #__unwind_stack\n"
     "__longjmp_ret\n"
     "    ret\n"
+    "nocatch\n"
+    "    cmp arg03, #0 wz\n"
+    " if_z jmp #cogexit\n"
+    "    jmp #__longjmp_ret\n"
     ;
 
 static const char *builtin_abortcode_p2 =
@@ -5776,7 +5781,7 @@ static const char *builtin_abortcode_p2 =
     "__longjmp\n"
     "    pop __pc\n"
     "    cmp    arg01, #0 wz\n"
-    " if_z jmp #cogexit\n"
+    " if_z jmp #nocatch\n"
     "    mov result1, arg02\n"
     "    mov result2, #1\n"
     "    rdlong arg02, arg01\n"  // new target for fp
@@ -5790,6 +5795,10 @@ static const char *builtin_abortcode_p2 =
     "    call #__unwind_stack\n"
     "__longjmp_ret\n"
     "    jmp  __pc\n"
+    "nocatch\n"
+    "    cmp arg03, #0 wz\n"
+    " if_z jmp #cogexit\n"
+    "    jmp #__longjmp_ret\n"
     ;
 
 const char *builtin_wrcog =

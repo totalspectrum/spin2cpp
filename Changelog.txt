@@ -1,5 +1,6 @@
-Version 5.4.4
+Version 5.5.0
 - Added warning for modifying ptra in inline assembly
+- Added throwifcaught command for BASIC
 - Fixed a problem with large ranges in lookup/lookdown
 - Fixed a preprocessor bug which sometimes caused failure to recognize comments
 - If -Wall is given, warn about uninitialized local variables

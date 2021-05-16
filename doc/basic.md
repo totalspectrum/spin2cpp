@@ -235,6 +235,7 @@ step
 sub
 then
 throw
+throwifcaught
 to
 try
 type
@@ -2344,7 +2345,7 @@ This second form of `open` is only useful after a `mount` call is used to establ
 
 #### Error Handling
 
-The `open` command will throw an integer error corresponding to one of the error numbers in the C `errno.h` header file. This may be caught using the usual `try` / `catch` paradigm.
+The `open` command will throw an integer error corresponding to one of the error numbers in the C `errno.h` header file. This may be caught using the usual `try` / `catch` paradigm. Alternatively, if no `try` / `catch` block is in effect, the error may be checked with `_geterr()`.
 
 ### OPTION
 
@@ -2874,9 +2875,9 @@ Introduces a multi-line series of statements for an `if` statement. See IF for d
 
 ### THROW
 
-Throws an error which may be caught by a caller's `try`/`catch` block. If none of our callers has established a `try` / `catch` block, the program is ended.
+Throws an error which may be caught by a caller's `try`/`catch` block. If none of our callers has established a `try` / `catch` block, the program is ended. To avoid ending the program, use `throwifcaught` instead.
 
-The argument to `throw` may be of any type. Programmers should beware of mixing different types, as the `try` / `catch` block may need to know what type of value it should expect to receive.
+The argument to `throw` may be of any type. Programmers should beware of mixing different types, as the `try` / `catch` block generally needs to know what type of value it should expect to receive.
 
 Example:
 ```
@@ -2884,6 +2885,10 @@ Example:
     throw "illegal negative value"
   endif
 ```
+
+### THROWIFCAUGHT
+
+Like `throw`, throws an exception which may be caught by `try` / `catch`. Unlike regular `throw`, if there is no `try` / `catch` handler, `throwifcaught` continues execution instead of terminating the program.
 
 ### TO
 

@@ -468,6 +468,7 @@ AdjustParamForByVal(AST *param)
 %token BAS_SUB        "sub"
 %token BAS_THEN       "then"
 %token BAS_THROW      "throw"
+%token BAS_THROWIFCAUGHT      "throwifcaught"
 %token BAS_TO         "to"
 %token BAS_TRY        "try"
 %token BAS_TYPE       "type"
@@ -793,7 +794,19 @@ branchstmt:
     { $$ = NewAST(AST_GOSUB, IntegerLabel($2), NULL); }
   | BAS_THROW expr
     {
-      $$ = NewCommentedAST(AST_THROW, $2, NULL, $1);
+        $$ = NewCommentedAST(AST_THROW, $2, NULL, $1);
+    }
+  | BAS_THROWIFCAUGHT expr
+    {
+        AST *top = NewCommentedAST(AST_THROW, $2, NULL, $1);
+        AST *throwit;
+        if (top && top->kind != AST_THROW) {
+            throwit = top->left;
+        } else {
+            throwit = top;
+        }
+        throwit->d.ival = 1;
+        $$ = top;
     }
 ;
 
