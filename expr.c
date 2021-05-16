@@ -2958,6 +2958,16 @@ FuncNumResults(AST *functype)
         // we will get this with short anonymous functions
         return 1;
     }
+    if (functype && functype->kind == AST_TUPLE_TYPE) {
+        AST *subtype;
+        int n = 0;
+        while (functype && functype->kind == AST_TUPLE_TYPE) {
+            subtype = functype->left;
+            functype = functype->right;
+            n += (TypeSize(subtype)+3)/4;
+        }
+        return n;
+    }
     return (TypeSize(functype) + 3) / 4;
 }
 
