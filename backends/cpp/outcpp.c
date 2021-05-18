@@ -748,6 +748,17 @@ PrintCppRelocs(Flexbuf *f, Module *P, Flexbuf *relocs)
     if (numrelocs == 0) {
         return;
     }
+    relocarray = (Reloc *)flexbuf_peek(relocs);
+    // skip over any leading debug relocs
+    for (i = 0; i < numrelocs; i++) {
+        nextreloc = &relocarray[i];
+        if (nextreloc->kind != RELOC_KIND_DEBUG) {
+            break;
+        }
+    }
+    if (i == numrelocs) {
+        return;
+    }
     WARNING(NULL, "PASM code must be relocated at run time; you may need to manually tweak the C/C++ output if __attribute__((constructor)) is not supported");
     
     flexbuf_printf(f, "#define RELOC_KIND_I32 %d\n", RELOC_KIND_I32);
@@ -758,8 +769,7 @@ PrintCppRelocs(Flexbuf *f, Module *P, Flexbuf *relocs)
     flexbuf_printf(f, "  int where;\n");
     flexbuf_printf(f, "  int value;\n");
     flexbuf_printf(f, "} _reloc_dat[] = {\n");
-    relocarray = (Reloc *)flexbuf_peek(relocs);
-    for (i = 0; i < numrelocs; i++) {
+    for (; i < numrelocs; i++) {
         int32_t value = 0;
         char *kindstr = "RELOC_INVALID";
         nextreloc = &relocarray[i];

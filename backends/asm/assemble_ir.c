@@ -579,6 +579,16 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op, Module *P)
         }
         flexbuf_printf(fb,"\n");
     }
+    while (relocs > 0 && nextreloc) {
+        if (nextreloc->kind == RELOC_KIND_DEBUG) {
+            LineInfo *info = (LineInfo *)nextreloc->sym;
+            if (info && info->linedata) {
+                flexbuf_printf(fb, "'-' %s", info->linedata);
+            }
+        }
+        nextreloc++;
+        --relocs;
+    }
 }
 
 /* find string for opcode */

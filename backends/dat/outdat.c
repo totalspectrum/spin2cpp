@@ -1781,25 +1781,34 @@ padBytes(Flexbuf *f, AST *ast, int bytes)
 }
 
 /*
+ * put a single commented source line in relocs
+ */
+static void
+SendOneComment(Flexbuf *relocs, AST *ast, uint32_t addr)
+{
+    Reloc r;
+    if (relocs && ast) {
+        r.kind = RELOC_KIND_DEBUG;
+        r.addr = addr;
+        r.sym = (Symbol *)GetLineInfo(ast);
+        r.symoff = 0;
+        flexbuf_addmem(relocs, (const char *)&r, sizeof(r));
+    }
+}
+        
+/*
  * send out all comments pending, and return the next non-comment node
  */
 AST *
 SendComments(Flexbuf *f, AST *ast, Flexbuf *relocs)
 {
-    Reloc r;
     while (ast) {
         switch (ast->kind) {
         case AST_COMMENT:
             /* ignore, for now */
             break;
         case AST_SRCCOMMENT:
-            if (relocs) {
-                r.kind = RELOC_KIND_DEBUG;
-                r.addr = flexbuf_curlen(f);
-                r.sym = (Symbol *)GetLineInfo(ast);
-                r.symoff = 0;
-                flexbuf_addmem(relocs, (const char *)&r, sizeof(r));
-            }
+            SendOneComment(relocs, ast, flexbuf_curlen(f));
             break;
         default:
             return ast;
@@ -1835,7 +1844,6 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs)
 {
     AST *ast;
     AST *top;
-    Reloc r;
     int inHub = 0;
     
     void (*startAst)(Flexbuf *f, AST *ast) = NULL;
@@ -1926,19 +1934,16 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs)
             break;
         case AST_RES:
         case AST_FIT:
+            // emit a debug entry
+            SendOneComment(relocs, ast, flexbuf_curlen(f));
+            break;
         case AST_LINEBREAK:
             break;
         case AST_COMMENT:
             break;
         case AST_SRCCOMMENT:
-            if (relocs) {
-                // emit a debug entry
-                r.kind = RELOC_KIND_DEBUG;
-                r.addr = flexbuf_curlen(f);
-                r.sym = (Symbol *)GetLineInfo(ast);
-                r.symoff = 0;
-                flexbuf_addmem(relocs, (const char *)&r, sizeof(r));
-            }
+            // emit a debug entry
+            SendOneComment(relocs, ast, flexbuf_curlen(f));
             break;
         default:
             ERROR(ast, "unknown element in data block");
