@@ -416,6 +416,9 @@ CompileInlineInstr_only(IRList *irl, AST *ast)
         } else {
             op = CompileInlineOperand(irl, operands[i], &effects[i], opimm[i]);
         }
+        if (!op) {
+            return NULL;
+        }
         switch (op->kind) {
         case REG_REG:
         case REG_LOCAL:
@@ -599,13 +602,14 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
         }
         if (ast->kind == AST_INSTRHOLDER) {
             IR *ir = CompileInlineInstr_only(irl, ast->left);
+            if (!ir) break;
+
             IR *extrair = ir->next;
 
             if (extrair) {
                 ir->next = NULL;
             }
             AppendIR(irl, ir);
-            if (!ir) break;
             if (isConst) {
                 ir->flags |= FLAG_KEEP_INSTR;
             }

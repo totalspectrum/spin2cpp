@@ -925,6 +925,8 @@ primary_expression
             { $$ = NewAST(AST_FUNC_NAME, NULL, NULL); }
         | C_BUILTIN_PRINTF
             { $$ = NewAST(AST_PRINT, NULL, NULL); }
+	| '$'
+            { $$ = NewAST(AST_HERE, NULL, NULL); }
 	| '(' expression ')'
             { $$ = $2; }
 	| '(' '{' block_item_list '}' ')'
@@ -2441,6 +2443,8 @@ pasmatom
             { $$ = $1; }
       | C_CONSTANT
             { $$ = $1; }
+      | '$'
+            { $$ = NewAST(AST_HERE, NULL, NULL); }
       | C_HWREG optpasmrange
             {
                 AST *reg = $1;

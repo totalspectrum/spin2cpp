@@ -73,6 +73,10 @@ static inline int
 safe_isdigit(unsigned int x) {
     return (x < 255) ? isdigit(x) : 0;
 }
+static inline int
+safe_isxdigit(unsigned int x) {
+    return (x < 255) ? isxdigit(x) : 0;
+}
 
 SymbolTable spinCommonReservedWords;
 SymbolTable spin1ReservedWords;
@@ -4427,9 +4431,12 @@ parse_number:
             lexungetc(L, c2);
         }
     } else if (c == '$') {
-        ast = NewAST(AST_INTEGER, NULL, NULL);
-        c = parseNumber(L, 16, &ast->d.ival);
-        c = C_CONSTANT;
+        int c2 = lexpeekc(L);
+        if (safe_isxdigit(c2)) {
+            ast = NewAST(AST_INTEGER, NULL, NULL);
+            c = parseNumber(L, 16, &ast->d.ival);
+            c = C_CONSTANT;
+        }
     } else if (c == '%') {
         c2 = lexgetc(L);
         if (InPasmBlock(L)) {
