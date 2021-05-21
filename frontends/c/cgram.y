@@ -448,7 +448,7 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
     int bitfield_size = 0;
     int max_bitfield_size = 0;
     AST *bitfield_ident = 0;
-    int is_private = 0;
+    int is_private = -P->defaultPrivate;
     AST *last_pos = 0;
     
     if (!astlist) return;
@@ -462,11 +462,23 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
     while (astlist) {
         ast = astlist->left;
         astlist = astlist->right;
+        if (ast->kind == AST_PUBFUNC) {
+            is_private = 0;
+            continue;
+        }
+        if (ast->kind == AST_PRIFUNC) {
+            is_private = 1;
+            continue;
+        }
+        if (is_private == -1) {
+            WARNING(ast, "declarations in class with no explicit public or private; assuming private");
+            is_private = 1;
+        }
         if (ast->kind == AST_FUNCDECL) {
             AST *type;
             AST *ident;
             AST *body;
-            int is_public = 1;
+            int is_public = !is_private;
             AST *list = ast->left;
             if (list->kind != AST_LISTHOLDER) {
                 ERROR(list, "malformed func decl");
@@ -476,14 +488,6 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
             ident = list->left; list = list->right;
             body = list->left;
             DeclareTypedFunction(P, type, ident, is_public, body, NULL, NULL);
-            continue;
-        }
-        if (ast->kind == AST_PUBFUNC) {
-            is_private = 0;
-            continue;
-        }
-        if (ast->kind == AST_PRIFUNC) {
-            is_private = 1;
             continue;
         }
         if (ast->kind != AST_DECLARE_VAR) {

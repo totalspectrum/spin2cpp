@@ -1658,6 +1658,12 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
             curtype = ast->left;
             idlist = ast->right;
             curtypesize = CheckedTypeSize(curtype); // make sure module variables are declared
+            if (ast->d.ival) {
+                // variable should be private
+                sym_flags = SYMF_PRIVATE;
+            } else {
+                sym_flags = 0;
+            }
             if (curtype->kind == AST_ASSIGN) {
                 if (basetypesize == 4 || basetypesize == 0) {
                     ERROR(ast, "Member variables cannot have initial values");
@@ -1714,6 +1720,7 @@ DeclareOneMemberVar(Module *P, AST *ident, AST *type, int is_private)
     if (1) {
         AST *iddecl = NewAST(AST_LISTHOLDER, ident, NULL);
         AST *newdecl = NewAST(AST_DECLARE_VAR, type, iddecl);
+        newdecl->d.ival = is_private;
         r = NewAST(AST_LISTHOLDER, newdecl, NULL);
         P->pendingvarblock = AddToList(P->pendingvarblock, r);
     }
@@ -1747,6 +1754,7 @@ MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ, int is_private, unsi
     if (!AstUses(P->pendingvarblock, identifier)) {
         AST *iddecl = NewAST(AST_LISTHOLDER, identifier, NULL);
         AST *newdecl = NewAST(AST_DECLARE_VAR, typ, iddecl);
+        newdecl->d.ival = is_private;
         ret = NewAST(AST_LISTHOLDER, newdecl, NULL);
         P->pendingvarblock = AddToList(P->pendingvarblock, ret);
     }

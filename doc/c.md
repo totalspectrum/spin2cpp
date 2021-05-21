@@ -162,9 +162,10 @@ x.setval(0);
 x.incval();
 ```
 
-In C++ mode (that is, if the file being compiled has an extension like `.cpp` or `.cc`) then the keyword `class` may be used instead of `struct`. At the moment `class` and `struct` are treated identically, although eventually they will have different defaults for whether members are public or private.
+In C++ mode (that is, if the file being compiled has an extension like `.cpp` or `.cc`) then the keyword `class` may be used instead of `struct`. The two are the same, except that the default for `class` is for variables and methods to be private rather than public.
 
-The keywords `public` and `private` are recognized by the parser, but currently do nothing (all members are public).
+Note that FlexC does not automatically create typedefs for classes, unlike real C++.
+
 
 ### External Classes (e.g. Spin Objects)
 

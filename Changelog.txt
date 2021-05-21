@@ -6,6 +6,7 @@ Version 5.5.0
 - Fixed a preprocessor bug which sometimes caused failure to recognize comments
 - Fixed a bug in handling multiple return values that are less than long sized
 - If -Wall is given, warn about uninitialized local variables
+- Implemented "public" and "private" in C++ classes
 - Improved listing file output by adding RES and FIT entries
 
 Version 5.4.3
