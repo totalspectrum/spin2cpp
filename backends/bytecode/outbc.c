@@ -373,10 +373,6 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
 static void
 BCCompileObject(ByteOutputBuffer *bob, Module *P) {
 
-    int pub_cnt = 0, pri_cnt = 0, obj_cnt = 0;
-    Function *pubs[BC_MAX_POINTERS],*pris[BC_MAX_POINTERS];
-    AST *objs[BC_MAX_POINTERS];
-
     printf("Compiling bytecode for object %s\n",P->fullname);
 
     BOB_Align(bob,4); // Long-align
@@ -396,42 +392,55 @@ BCCompileObject(ByteOutputBuffer *bob, Module *P) {
     }
 
     // Count and gather private/public methods
-    for (Function *f = P->functions; f; f = f->next) {
-        if (ShouldSkipFunction(f)) continue;
+    {
+        int pub_cnt = 0, pri_cnt = 0;
+        for (Function *f = P->functions; f; f = f->next) {
+            if (ShouldSkipFunction(f)) continue;
 
-        if (f->is_public) pubs[pub_cnt++] = f;
-        else              pris[pri_cnt++] = f;
+            if (f->is_public) ModData(P)->pubs[pub_cnt++] = f;
+            else              ModData(P)->pris[pri_cnt++] = f;
 
-        printf("Got function %s\n",f->user_name);
+            printf("Got function %s\n",f->user_name);
 
-        if (pub_cnt+pri_cnt >= BC_MAX_POINTERS) {
-            ERROR(NULL,"Too many functions in Module %s",P->fullname);
-            return;
+            if (pub_cnt+pri_cnt >= BC_MAX_POINTERS) {
+                ERROR(NULL,"Too many functions in Module %s",P->fullname);
+                return;
+            }
         }
+        ModData(P)->pub_cnt = pub_cnt;
+        ModData(P)->pri_cnt = pri_cnt;
     }
+    // Count can't be modified anymore, so mirror it into const locals for convenience
+    const int pub_cnt = ModData(P)->pub_cnt;
+    const int pri_cnt = ModData(P)->pri_cnt;
 
     // Count and gather object members - (TODO does this actually work?)
-    for (AST *upper = P->finalvarblock; upper; upper = upper->right) {
-        if (upper->kind != AST_LISTHOLDER) {
-            ERROR(upper, "internal error: expected listholder");
-            return;
+    {
+        int obj_cnt = 0;
+        for (AST *upper = P->finalvarblock; upper; upper = upper->right) {
+            if (upper->kind != AST_LISTHOLDER) {
+                ERROR(upper, "internal error: expected listholder");
+                return;
+            }
+            AST *var = upper->left;
+            if (!(var->kind = AST_DECLARE_VAR && IsClassType(var->left))) continue;
+
+            // Debug gunk
+            ASSERT_AST_KIND(var->left,AST_OBJECT,);
+            ASSERT_AST_KIND(var->right,AST_LISTHOLDER,);
+            ASSERT_AST_KIND(var->right->left,AST_IDENTIFIER,);
+            printf("Got obj of type %s named %s\n",((Module*)var->left->d.ptr)->classname,var->right->left->d.string);
+
+            ModData(P)->objs[obj_cnt++] = var;
+
+            if (pub_cnt+pri_cnt+obj_cnt >= BC_MAX_POINTERS) {
+                ERROR(NULL,"Too many objects in Module %s",P->fullname);
+                return;
+            }
         }
-        AST *var = upper->left;
-        if (!(var->kind = AST_DECLARE_VAR && IsClassType(var->left))) continue;
-
-        // Debug gunk
-        ASSERT_AST_KIND(var->left,AST_OBJECT,);
-        ASSERT_AST_KIND(var->right,AST_LISTHOLDER,);
-        ASSERT_AST_KIND(var->right->left,AST_IDENTIFIER,);
-        printf("Got obj of type %s named %s\n",((Module*)var->left->d.ptr)->classname,var->right->left->d.string);
-
-        objs[obj_cnt++] = var;
-
-        if (pub_cnt+pri_cnt+obj_cnt >= BC_MAX_POINTERS) {
-            ERROR(NULL,"Too many objects in Module %s",P->fullname);
-            return;
-        }
+        ModData(P)->obj_cnt = obj_cnt;
     }
+    const int obj_cnt = ModData(P)->obj_cnt;
 
     printf("Debug: this object (%s) has %d PUBs, %d PRIs and %d OBJs\n",P->classname,pub_cnt,pri_cnt,obj_cnt);
 
@@ -443,7 +452,7 @@ BCCompileObject(ByteOutputBuffer *bob, Module *P) {
         BOB_PushByte(bob,obj_cnt, "OBJ count");
 
         for (int i=0;i<(pri_cnt+pub_cnt);i++) {
-            Function *fun = i>=pub_cnt ? pris[i-pub_cnt] : pubs[i];
+            Function *fun = i>=pub_cnt ? ModData(P)->pris[i-pub_cnt] : ModData(P)->pubs[i];
 
             if (fun->bedata == NULL) {
                 fun->bedata = calloc(sizeof(BCFunData),1);
@@ -464,15 +473,24 @@ BCCompileObject(ByteOutputBuffer *bob, Module *P) {
         return;
     }
 
-    // TODO emit DATs
+    if (P->datblock) {
+        // Got DAT block
+        // TODO pass through listing data
+        Flexbuf datBuf;
+        flexbuf_init(&datBuf,2048);
+        PrintDataBlock(&datBuf,P,NULL,NULL);
+        BOB_Comment(bob,"--- DAT Block");
+        BOB_Push(bob,(uint8_t*)flexbuf_peek(&datBuf),flexbuf_curlen(&datBuf),NULL);
+        flexbuf_delete(&datBuf);
+    }
 
     // Compile functions
-    for(int i=0;i<pub_cnt;i++) BCCompileFunction(bob,pubs[i]);
-    for(int i=0;i<pri_cnt;i++) BCCompileFunction(bob,pris[i]);
+    for(int i=0;i<pub_cnt;i++) BCCompileFunction(bob,ModData(P)->pubs[i]);
+    for(int i=0;i<pri_cnt;i++) BCCompileFunction(bob,ModData(P)->pris[i]);
 
     // emit subobjects
     for (int i=0;i<obj_cnt;i++) {
-        Module *mod = objs[i]->left->d.ptr;
+        Module *mod = ModData(P)->objs[i]->left->d.ptr;
         if (mod->bedata == NULL || ((BCModData*)mod->bedata)->compiledAddress < 0) {
             BCCompileObject(bob,mod);
 
@@ -498,9 +516,10 @@ void OutputByteCode(const char *fname, Module *P) {
     }
 
     // Emit header / interp ASM
+    struct bcheaderspans headerspans = {0};
     switch(gl_interp_kind) {
     case INTERP_KIND_P1ROM:
-        OutputSpinBCHeader(&bob,P);
+        headerspans = OutputSpinBCHeader(&bob,P);
         break;
     default:
         ERROR(NULL,"Unknown interpreter kind");
@@ -508,6 +527,16 @@ void OutputByteCode(const char *fname, Module *P) {
     }
 
     BCCompileObject(&bob,P);
+
+    // Fixup header
+    switch(gl_interp_kind) {
+    case INTERP_KIND_P1ROM:
+        BOB_ReplaceWord(headerspans.pcurr,FunData(ModData(P)->pubs[0])->compiledAddress,NULL);
+        break;
+    default:
+        ERROR(NULL,"Unknown interpreter kind");
+        return;
+    }
 
     bin_file = fopen(fname,"wb");
     if (gl_listing) lst_file = fopen(ReplaceExtension(fname,".lst"),"w"); // FIXME: Get list file name from cmdline

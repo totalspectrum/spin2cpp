@@ -10,6 +10,9 @@
 
 typedef struct {
     int compiledAddress; // -1 if not yet compiled
+    int pub_cnt, pri_cnt, obj_cnt;
+    Function *pubs[BC_MAX_POINTERS],*pris[BC_MAX_POINTERS];
+    AST *objs[BC_MAX_POINTERS];
 } BCModData;
 
 typedef struct {
