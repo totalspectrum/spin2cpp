@@ -1,0 +1,491 @@
+
+
+#include "outbc.h"
+#include "bcbuffers.h"
+#include "bcir.h"
+#include <stdlib.h>
+
+
+struct bcheaderspans {
+    OutputSpan *pbase,*vbase,*dbase,*pcurr,*dcurr;
+};
+
+static struct bcheaderspans
+OutputSpinBCHeader(ByteOutputBuffer *bob, Module *P)
+{
+    unsigned int clkfreq;
+    unsigned int clkmodeval;
+
+    struct bcheaderspans spans = {0};
+
+    if (!GetClkFreq(P, &clkfreq, &clkmodeval)) {
+        // use defaults
+        clkfreq = 80000000;
+        clkmodeval = 0x6f;
+    }
+    
+    BOB_PushLong(bob, clkfreq, "CLKFREQ");     // offset 0
+    
+    BOB_PushByte(bob, clkmodeval, "CLKMODE");  // offset 4
+    BOB_PushByte(bob, 0,"Placeholder for checksum");      // checksum
+    spans.pbase = BOB_PushWord(bob, 0x0010,"PBASE"); // PBASE
+    
+    spans.vbase = BOB_PushWord(bob, 0x7fe8,"VBASE"); // VBASE offset 8
+    spans.dbase = BOB_PushWord(bob, 0x7ff0,"DBASE"); // DBASE
+    
+    spans.pcurr = BOB_PushWord(bob, 0x0018,"PCURR"); // PCURR  offset 12
+    spans.dcurr = BOB_PushWord(bob, 0x7ff8,"DCURR"); // DCURR
+
+    return spans;
+}
+
+// TODO: Integrate this with how it's supposed to work
+static int
+HWReg2Index(HwReg *reg) {
+    switch(gl_interp_kind) {
+    case INTERP_KIND_P1ROM: {
+        int indexBase = 0x1E0;
+             if (!strcmp(reg->name,"par")) return 0x1F0 - indexBase;
+        else if (!strcmp(reg->name,"cnt")) return 0x1F1 - indexBase;
+        else if (!strcmp(reg->name,"ina")) return 0x1F2 - indexBase;
+        else if (!strcmp(reg->name,"inb")) return 0x1F3 - indexBase;
+        else if (!strcmp(reg->name,"outa")) return 0x1F4 - indexBase;
+        else if (!strcmp(reg->name,"outb")) return 0x1F5 - indexBase;
+        else if (!strcmp(reg->name,"dira")) return 0x1F6 - indexBase;
+        else if (!strcmp(reg->name,"dirb")) return 0x1F7 - indexBase;
+        else if (!strcmp(reg->name,"ctra")) return 0x1F8 - indexBase;
+        else if (!strcmp(reg->name,"ctrb")) return 0x1F9 - indexBase;
+        else if (!strcmp(reg->name,"frqa")) return 0x1FA - indexBase;
+        else if (!strcmp(reg->name,"frqb")) return 0x1FB - indexBase;
+        else if (!strcmp(reg->name,"phsa")) return 0x1FC - indexBase;
+        else if (!strcmp(reg->name,"phsb")) return 0x1FD - indexBase;
+        else if (!strcmp(reg->name,"vcfg")) return 0x1FE - indexBase;
+        else if (!strcmp(reg->name,"vscl")) return 0x1FF - indexBase;
+        else {
+            ERROR(NULL,"Unknown register %s",reg->name);
+            return 0;
+        }
+    } break;
+    default:
+        ERROR(NULL,"Unknown interpreter kind");
+        return 0;
+    }
+}
+
+static void BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context); // forward decl;
+
+static void
+BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpression) {
+    AST *left = node->left, *right = node->right;
+    printf("Got an assign! left kind: %d, right kind %d\n",left->kind,right->kind);
+
+    if (asExpression) ERROR(node,"Assignment expression NYI");
+
+    HwReg *hw = NULL;
+
+    ByteOpIR opc = {0};
+
+    switch(left->kind) {
+    case AST_HWREG: {
+        hw = (HwReg *)left->d.ptr;
+        printf("Got HWREG assign, uhh %s = %d\n",hw->name,HWReg2Index(hw));
+    } break;
+    default:
+        ERROR(left,"Unhandled assign left kind %d",left->kind);
+        break;
+    }
+
+    BCCompileExpression(irbuf,right,context);
+
+    if (hw) {
+        opc.kind = BOK_REG_WRITE;
+        opc.data.int32 = HWReg2Index(hw);
+    } else {
+        ERROR(node,"Non-register assignment is NYI");
+    }
+
+    BIRB_PushCopy(irbuf,&opc);
+}
+
+static ByteOpIR*
+BCNewOrphanLabel() {
+    ByteOpIR *lbl = calloc(sizeof(ByteOpIR),1);
+    lbl->kind = BOK_LABEL;
+    return lbl;
+}
+
+static ByteOpIR*
+BCPushLabel(BCIRBuffer *irbuf) {
+    ByteOpIR lbl = {0};
+    lbl.kind = BOK_LABEL;
+    return BIRB_PushCopy(irbuf,&lbl);
+}
+
+static void
+BCCompileInteger(BCIRBuffer *irbuf,int32_t ival) {
+    ByteOpIR opc = {0};
+    opc.kind = BOK_CONSTANT;
+    opc.data.int32 = ival;
+    BIRB_PushCopy(irbuf,&opc);
+}
+
+static void
+BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context) {
+    switch(node->kind) {
+        case AST_INTEGER: {
+            printf("Got integer %d\n",node->d.ival);
+            BCCompileInteger(irbuf,node->d.ival);
+        } break;
+        case AST_ASSIGN: {
+            printf("Got assignment in expression \n");
+            BCCompileAssignment(irbuf,node,context,true);
+        } break;
+        case AST_OPERATOR: {
+            printf("Got operator in expression: %d\n",node->d.ival);
+            enum MathOpKind mok;
+            bool unary = false;
+            switch(node->d.ival) {
+            case '^': mok = MOK_BITXOR; break;
+            case '|': mok = MOK_BITOR; break;
+            case '&': mok = MOK_BITAND; break;
+            case '+': mok = MOK_ADD; break;
+            case '-': mok = MOK_SUB; break;
+            case K_SHR: mok = MOK_SHR; break;
+            case K_SHL: mok = MOK_SHL; break;
+            default:
+                ERROR(node,"Unhandled operator %03X",node->d.ival);
+                mok = MOK_UHHH;
+                break;
+            }
+
+            printf("Operator resolved to %d = %s\n",mok,mathOpKindNames[mok]);
+
+            if (unary) ERROR(node,"Unary operators NYI");
+            BCCompileExpression(irbuf,node->left,context);
+            BCCompileExpression(irbuf,node->right,context);
+
+            ByteOpIR mathOp = {0};
+            mathOp.kind = BOK_MATHOP;
+            mathOp.mathKind = mok;
+            BIRB_PushCopy(irbuf,&mathOp);
+        } break;
+        case AST_HWREG: {
+            HwReg *hw = node->d.ptr;
+            printf("Got hwreg in expression: %s\n",hw->name);
+            ByteOpIR hwread = {0};
+            hwread.kind = BOK_REG_READ;
+            hwread.data.int32 = HWReg2Index(hw);
+            BIRB_PushCopy(irbuf,&hwread);
+        } break;
+        default:
+            ERROR(node,"Unhandled node kind %d in expression",node->kind);
+            return;
+    }
+}
+
+static void 
+BCCCompileStmtlist(BCIRBuffer *irbuf,AST *list, BCContext context) {
+    printf("Compiling a statement list...\n");
+
+    for (AST *ast=list;ast&&ast->kind==AST_STMTLIST;ast=ast->right) {
+        AST *node = ast->left;
+        if (!node) {
+            ERROR(ast,"empty node?!?");
+            continue;
+        }
+        while (node->kind == AST_COMMENTEDNODE) {
+            //printf("Node is allegedly commented:\n");
+            // FIXME: this doesn't actually get any comments?
+            for(AST *comment = node->right;comment&&comment->kind==AST_COMMENT;comment=comment->right) {
+                printf("---  %s\n",comment->d.string);
+            }
+            node = node->left;
+        }
+
+        switch(node->kind) {
+        case AST_ASSIGN:
+            BCCompileAssignment(irbuf,node,context,false);
+            break;
+        case AST_WHILE: {
+            printf("Got While loop..");
+            if (node->left) printf(" left %d  ",node->left->kind);
+            else printf(" left empty ");
+            if (node->right) printf(" right %d\n",node->right->kind);
+            else printf(" right empty\n");
+
+            ByteOpIR *toplbl = BCPushLabel(irbuf);
+            ByteOpIR *bottomlbl = BCNewOrphanLabel();
+
+            // Compile condition
+            BCCompileExpression(irbuf,node->left,context);
+            ByteOpIR condjmp = {0};
+            condjmp.kind = BOK_JUMP_IF_Z;
+            condjmp.data.jumpTo = bottomlbl;
+            BIRB_PushCopy(irbuf,&condjmp);
+
+            if (!node->right) {
+                ERROR(node,"Internal Error: Loop has no body");
+                break;
+            } else if (node->right->kind != AST_STMTLIST) {
+                ERROR(node->right,"Internal Error: Expected AST_STMTLIST, got id %d",node->right->kind);
+                break;
+            }
+            BCContext newcontext = context;
+            BCCCompileStmtlist(irbuf,node->right,newcontext);
+
+            ByteOpIR returnjmp = {0};
+            returnjmp.kind = BOK_JUMP;
+            returnjmp.data.jumpTo = toplbl;
+            BIRB_PushCopy(irbuf,&returnjmp);
+            BIRB_Push(irbuf,bottomlbl);
+
+            
+        } break;
+        default:
+            ERROR(node,"Unhandled node kind %d",node->kind);
+            break;
+        }
+    }
+
+}
+
+static void 
+BCCCompileFunction(ByteOutputBuffer *bob,Function *F) {
+
+    printf("Compiling bytecode for function %s\n",F->name);
+
+    // first up, we now know the function's address, so let's fix it up in the header
+    int func_ptr = bob->total_size;
+    int func_offset = 0;
+    int func_localsize = F->local_var_counter*4; // SUPER DUPER FIXME
+    Module *M = F->module;
+    if (M->bedata == NULL || ModData(M)->compiledAddress < 0) {
+        ERROR(NULL,"Compiling function on Module whose address is not yet determined???");
+    } else func_offset = func_ptr - ModData(M)->compiledAddress;
+
+    if(F->bedata == NULL || !FunData(F)->headerEntry) {
+        ERROR(NULL,"Compiling function that does not have a header entry");
+        return;
+    }
+    
+    FunData(F)->compiledAddress = func_ptr;
+
+    switch(gl_interp_kind) {
+    case INTERP_KIND_P1ROM:
+        BOB_ReplaceLong(FunData(F)->headerEntry,
+            (func_offset&0xFFFF) + 
+            ((func_localsize)<<16),
+            auto_printf(128,"Function %s @%04X (local size %d)",F->name,func_ptr,func_localsize)
+        );
+        break;
+    default:
+        ERROR(NULL,"Unknown interpreter kind");
+        return;
+    }
+
+    BOB_Comment(bob,auto_printf(128,"--- Function %s",F->name));
+    // Compile function
+    BCIRBuffer irbuf = {0};
+
+    if (!F->body) {
+        ERROR(F->body,"Internal Error: Function has no body (TODO: generate return)");
+        return;
+    } else if (F->body->kind != AST_STMTLIST) {
+        ERROR(F->body,"Internal Error: Expected AST_STMTLIST, got id %d",F->body->kind);
+        return;
+    } else {
+        BCContext context = {0};
+        BCCCompileStmtlist(&irbuf,F->body,context);
+    }
+    // Always append a return (TODO: only when neccessary)
+    ByteOpIR retop = {0,.kind = BOK_RETURN_PLAIN};
+    BIRB_PushCopy(&irbuf,&retop);
+
+    BCIR_to_BOB(&irbuf,bob);
+}
+
+static void
+BCCompileObject(ByteOutputBuffer *bob, Module *P) {
+
+    int pub_cnt = 0, pri_cnt = 0, obj_cnt = 0;
+    Function *pubs[BC_MAX_POINTERS],*pris[BC_MAX_POINTERS];
+    AST *objs[BC_MAX_POINTERS];
+
+    printf("Compiling bytecode for object %s\n",P->fullname);
+
+    BOB_Align(bob,4); // Long-align
+
+    BOB_Comment(bob,auto_printf(128,"--- Object Header for %s",P->classname));
+
+    // Init bedata
+    if (!P->bedata) {
+        P->bedata = calloc(sizeof(BCModData), 1);
+        ModData(P)->compiledAddress = -1;
+    }
+    if (ModData(P)->compiledAddress < 0) {
+        ModData(P)->compiledAddress = bob->total_size;
+    } else {
+        ERROR(NULL,"Already compiled module %s",P->fullname);
+        return;
+    }
+
+    // Count and gather private/public methods
+    for (Function *f = P->functions; f; f = f->next) {
+        if (ShouldSkipFunction(f)) continue;
+
+        if (f->is_public) pubs[pub_cnt++] = f;
+        else              pris[pri_cnt++] = f;
+
+        printf("Got function %s\n",f->user_name);
+
+        if (pub_cnt+pri_cnt >= BC_MAX_POINTERS) {
+            ERROR(NULL,"Too many functions in Module %s",P->fullname);
+            return;
+        }
+    }
+
+    // Count and gather object members - (TODO does this actually work?)
+    for (AST *upper = P->finalvarblock; upper; upper = upper->right) {
+        if (upper->kind != AST_LISTHOLDER) {
+            ERROR(upper, "internal error: expected listholder");
+            return;
+        }
+        AST *var = upper->left;
+        if (!(var->kind = AST_DECLARE_VAR && IsClassType(var->left))) continue;
+
+        // Debug gunk
+        if (var->left->kind != AST_OBJECT) ERROR(var,"Expected AST_OBJECT, got whatever %d is",var->left->kind);
+        if (var->right->kind != AST_LISTHOLDER) ERROR(var,"Expected AST_LISTHOLDER, got whatever %d is",var->right->kind);
+        if (var->right->left->kind != AST_IDENTIFIER) ERROR(var->right,"Expected AST_IDENTIFIER, got whatever %d is",var->right->left->kind);
+        printf("Got obj of type %s named %s\n",((Module*)var->left->d.ptr)->classname,var->right->left->d.string);
+
+        objs[obj_cnt++] = var;
+
+        if (pub_cnt+pri_cnt+obj_cnt >= BC_MAX_POINTERS) {
+            ERROR(NULL,"Too many objects in Module %s",P->fullname);
+            return;
+        }
+    }
+
+    printf("Debug: this object (%s) has %d PUBs, %d PRIs and %d OBJs\n",P->classname,pub_cnt,pri_cnt,obj_cnt);
+
+    // Emit object header
+    switch(gl_interp_kind) {
+    case INTERP_KIND_P1ROM:
+        BOB_PushWord(bob,0,"Object size(?)"); // (TODO)
+        BOB_PushByte(bob,pri_cnt+pub_cnt+1,"Method count + 1");
+        BOB_PushByte(bob,obj_cnt, "OBJ count");
+
+        for (int i=0;i<(pri_cnt+pub_cnt);i++) {
+            Function *fun = i>=pub_cnt ? pris[i-pub_cnt] : pubs[i];
+
+            if (fun->bedata == NULL) {
+                fun->bedata = calloc(sizeof(BCFunData),1);
+            }
+            if (FunData(fun)->headerEntry != NULL) ERROR(NULL,"function %s already has a header entry????",fun->name);
+            OutputSpan *span = BOB_PushLong(bob,0,"!!!Uninitialized function!!!");
+            FunData(fun)->headerEntry = span;
+        }
+
+        for (int i=0;i<obj_cnt;i++) {
+            BOB_PushWord(bob,0,"Header offset?"); // Header Offset?
+            BOB_PushWord(bob,0,"VAR offset?"); // VAR Offset (from current object's VAR base)
+        }
+
+        break;
+    default:
+        ERROR(NULL,"Unknown interpreter kind");
+        return;
+    }
+
+    // TODO emit DATs
+
+    // Compile functions
+    for(int i=0;i<pub_cnt;i++) BCCCompileFunction(bob,pubs[i]);
+    for(int i=0;i<pri_cnt;i++) BCCCompileFunction(bob,pris[i]);
+
+    // emit subobjects
+    for (int i=0;i<obj_cnt;i++) {
+        Module *mod = objs[i]->left->d.ptr;
+        if (mod->bedata == NULL || ((BCModData*)mod->bedata)->compiledAddress < 0) {
+            BCCompileObject(bob,mod);
+
+        }
+    }
+
+    return; 
+}
+
+void OutputByteCode(const char *fname, Module *P) {
+    FILE *bin_file = NULL,*lst_file = NULL;
+    Module *save;
+    ByteOutputBuffer bob = {0};
+
+    save = current;
+    current = P;
+
+    printf("Debug: In OutputByteCode\n");
+    BCIR_Init();
+
+    if (!P->functions) {
+        ERROR(NULL,"Can't compile code without functions");
+    }
+
+    // Emit header / interp ASM
+    switch(gl_interp_kind) {
+    case INTERP_KIND_P1ROM:
+        OutputSpinBCHeader(&bob,P);
+        break;
+    default:
+        ERROR(NULL,"Unknown interpreter kind");
+        return;
+    }
+
+    BCCompileObject(&bob,P);
+
+    bin_file = fopen(fname,"wb");
+    if (gl_listing) lst_file = fopen(ReplaceExtension(fname,".lst"),"w"); // FIXME: Get list file name from cmdline
+
+    // Walk through buffer and emit the stuff
+    int outPosition = 0;
+    const int maxBytesPerLine = 8;
+    const int listPadColumn = (gl_p2?5:4)+maxBytesPerLine*3+2;
+    for(OutputSpan *span=bob.head;span;span = span->next) {
+        if (span->size > 0) fwrite(span->data,span->size,1,bin_file);
+
+        // Handle listing output
+        if (gl_listing) {
+            if (span->size == 0) {
+                if (span->comment) fprintf(lst_file,"'%s\n",span->comment);
+            } else {
+                int listPosition = 0;
+                while (listPosition < span->size) {
+                    int listPosition_curline = listPosition; // Position at beginning of line
+                    int list_linelen = fprintf(lst_file,gl_p2 ? "%05X: " : "%04X: ",outPosition+listPosition_curline);
+                    // Print up to 8 bytes per line
+                    for (;(listPosition-listPosition_curline) < maxBytesPerLine && listPosition<span->size;listPosition++) {
+                        list_linelen += fprintf(lst_file,"%02X ",span->data[listPosition]);
+                    }
+                    // Print comment, indented
+                    if (span->comment) {
+                        for(;list_linelen<listPadColumn;list_linelen++) fputc(' ',lst_file);
+                        if (listPosition_curline == 0) { // First line? (of potential multi-line span)
+                            fprintf(lst_file,"' %s",span->comment);
+                        } else {
+                            fprintf(lst_file,"' ...");
+                        }
+                    }
+                    fputc('\n',lst_file);
+                }
+                
+            }
+        }
+
+        outPosition += span->size;
+    }
+
+    fclose(bin_file);
+    if (lst_file) fclose(lst_file);
+
+    current = save;
+}

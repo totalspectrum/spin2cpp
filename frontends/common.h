@@ -199,6 +199,13 @@ extern int gl_lmm_kind;
 #define LMM_KIND_CACHE 3
 #define LMM_KIND_COMPRESS 4
 
+/* Bytecode kind selected */
+extern int gl_interp_kind;
+#define INTERP_KIND_P1ROM 0
+// No other values yet
+
+
+
 /* types of output */
 #define OUTPUT_CPP  0
 #define OUTPUT_C    1
@@ -206,6 +213,7 @@ extern int gl_lmm_kind;
 #define OUTPUT_ASM  3
 #define OUTPUT_COGSPIN 4  /* like ASM, but with a Spin wrapper */
 #define OUTPUT_OBJ  5     /* outputs an object file */
+#define OUTPUT_BYTECODE 6
 
 /* flags for output */
 #define OUTFLAG_COG_CODE 0x01
@@ -598,6 +606,9 @@ void ProcessOneFunc(Function *pf);
 /* mark a function (and all functions it references) as used */
 void MarkUsed(Function *f, const char *callerName);
 
+/* return true if a function should be removed */
+bool ShouldSkipFunction(Function *f);
+
 /* check to see if a function is recursive */
 void CheckRecursive(Function *f);
 
@@ -633,6 +644,7 @@ void OutputGasFile(const char *name, Module *P);
 void OutputLstFile(const char *name, Module *P);
 void OutputAsmCode(const char *name, Module *P, int printMain);
 void OutputObjFile(const char *name, Module *P);
+void OutputByteCode(const char *name, Module *P);
 
 /* detect coginit/cognew calls that are for spin methods, return pointer to method involved */
 bool IsSpinCoginit(AST *body, Function **thefunc);

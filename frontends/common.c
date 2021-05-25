@@ -64,6 +64,7 @@ int gl_fixedreal = 0;
 unsigned int gl_hub_base = 0x400;
 int gl_no_coginit = 0;
 int gl_lmm_kind = LMM_KIND_ORIG;
+int gl_interp_kind = INTERP_KIND_P1ROM;
 int gl_relocatable = 0;
 
 int gl_default_baud = 0;
@@ -1025,7 +1026,7 @@ DoPropellerChecksum(const char *fname, size_t eepromSize)
         return 0;
     }
 #ifdef NEVER
-    // this part is obsolete now, the OutputSpinFooter function
+    // this part is obsolete now, the OutputSpinDummyFooter function
     // does it
     // update header fields
     fseek(f, 8L, SEEK_SET); // seek to 16 bit vbase field

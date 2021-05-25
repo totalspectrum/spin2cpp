@@ -1,0 +1,29 @@
+
+#ifndef OUTBC_H
+#define OUTBC_H
+
+#include "spinc.h"
+#include "bcbuffers.h"
+
+#define BC_MAX_POINTERS 256
+
+
+typedef struct {
+    int compiledAddress; // -1 if not yet compiled
+} BCModData;
+
+typedef struct {
+    OutputSpan *headerEntry;
+    int compiledAddress; // -1 if not yet compiled
+} BCFunData;
+
+#define ModData(P) ((BCModData *)(P)->bedata)
+#define FunData(P) ((BCFunData *)(P)->bedata)
+
+typedef struct {
+    int inCountedRepeat:1; // Have to pop counter on QUIT?
+} BCContext;
+
+void OutputByteCode(const char *fname, Module *P);
+
+#endif

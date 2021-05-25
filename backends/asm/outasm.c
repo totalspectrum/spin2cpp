@@ -5108,29 +5108,6 @@ VisitRecursive(IRList *irl, Module *P, VisitorFunc func, unsigned visitval)
 }
 
 //
-// return true if a function should be removed
-//
-static bool
-ShouldSkipFunction(Function *f)
-{
-    if (gl_output == OUTPUT_COGSPIN)
-        return false;
-    if (0 != f->callSites)
-        return false;
-    if (f->cog_task)
-        return false; // used in another cog
-    if (f->used_as_ptr)
-        return false; // used as a pointer
-
-    // stuff in the "system" module should be skipped
-    if (IsSystemModule(f->module))
-        return true;
-    if (0 == (gl_optimize_flags & OPT_REMOVE_UNUSED_FUNCS))
-        return false;
-    return true;
-}
-
-//
 // return true if a function will be removed if inlined
 //
 bool

@@ -94,6 +94,7 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "  [ -x ]             capture program exit code (for testing)\n");
     //fprintf(f, "  [ -z ]             compress code\n");
     fprintf(f, "  [ --code=cog ]     compile for COG mode instead of LMM\n");
+    fprintf(f, "  [ --interp=rom ]   compile bytecodes for P1 ROM interpreter (alpha feature!)\n");
     fprintf(f, "  [ --fcache=N ]     set FCACHE size to N (0 to disable)\n");
     fprintf(f, "  [ --fixedreal ]    use 16.16 fixed point in place of floats\n");
     fprintf(f, "  [ --lmm=xxx ]      use alternate LMM implementation for P1\n");
@@ -120,6 +121,7 @@ main(int argc, const char **argv)
     static CmdLineOptions cmd_base;
     CmdLineOptions *cmd = &cmd_base;
     int result;
+    bool optimizeDefault = true;
     
     int retval = 0;
     struct flexbuf argbuf;
@@ -194,7 +196,6 @@ main(int argc, const char **argv)
     cmd->outputMain = 1;
     cmd->outputBin = 1;
     cmd->outputAsm = 1;
-    gl_optimize_flags = DEFAULT_ASM_OPTS;
     
     // put everything in HUB by default
     gl_outputflags &= ~OUTFLAG_COG_DATA;
@@ -212,6 +213,15 @@ main(int argc, const char **argv)
         }
         if (!strcmp(argv[0], "-y")) {
             spinyydebug = 1;
+            argv++; --argc;
+        } else if (!strncmp(argv[0],"--interp=",9)) {
+            if (!strcmp(argv[0]+9,"rom")) gl_interp_kind = INTERP_KIND_P1ROM;
+            else {
+                fprintf(stderr, "Unknown --interp= choice: %s\n", argv[0]);
+                Usage(stderr, cmd->bstcMode);
+            }
+            cmd->outputBytecode = 1;
+            cmd->outputAsm = 0;
             argv++; --argc;
         } else if (!strncmp(argv[0], "--data=", 7)) {
             if (!strcmp(argv[0]+7, "cog")) {
@@ -409,6 +419,7 @@ main(int argc, const char **argv)
             // -O2 means extra optimization
             const char *flagstr = &argv[0][2];
             ParseOptimizeString(NULL, flagstr, &gl_optimize_flags);
+            optimizeDefault = false;
             argv++; --argc;
         } else if (!strncmp(argv[0], "-z", 2)) {
             // -z0 means no compression (default)
@@ -455,6 +466,14 @@ main(int argc, const char **argv)
         } else {
             fprintf(stderr, "Unrecognized option: %s\n", argv[0]);
             Usage(stderr, cmd->bstcMode);
+        }
+    }
+
+    if (optimizeDefault) {
+        if (cmd->outputBytecode) {
+            gl_optimize_flags = 0; // Defaults to O0
+        } else {
+            gl_optimize_flags = DEFAULT_ASM_OPTS;
         }
     }
     

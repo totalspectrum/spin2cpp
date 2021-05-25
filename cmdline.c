@@ -285,6 +285,18 @@ int ProcessCommandLine(CmdLineOptions *cmd)
                     }
                 }
             }
+        } else if (cmd->outputBytecode) {
+            if (!cmd->outname) {
+                if (cmd->useEeprom) {
+                    cmd->outname = ReplaceExtension(P->fullname, ".eeprom");
+                } else {
+                    cmd->outname = ReplaceExtension(P->fullname, ".binary");
+                }
+            }
+
+            OutputByteCode(cmd->outname,P);
+            DoPropellerChecksum(cmd->outname,cmd->useEeprom ? cmd->eepromSize : 0);
+
         } else {
             fprintf(stderr, "This front end cannot convert to C\n");
         }

@@ -38,7 +38,7 @@ static void putlong(Flexbuf *f, unsigned int x)
 }
 
 static void
-OutputSpinHeader(Flexbuf *f, Module *P)
+OutputSpinDummyHeader(Flexbuf *f, Module *P)
 {
     unsigned int clkfreq;
     unsigned int clkmodeval;
@@ -89,7 +89,7 @@ placeword(uint8_t *where, uint32_t value)
  * the assembly we just inserted
  */
 static void
-OutputSpinFooter(Flexbuf *f)
+OutputSpinDummyFooter(Flexbuf *f)
 {
     size_t curlen;
     size_t pad;
@@ -148,12 +148,12 @@ OutputDatFile(const char *fname, Module *P, int prefixBin)
     flexbuf_init(&fb, BUFSIZ);
     if (prefixBin && !gl_p2) {
         /* output a binary header */
-        OutputSpinHeader(&fb, P);
+        OutputSpinDummyHeader(&fb, P);
     }
     PrintDataBlock(&fb, P, NULL, NULL);
     if (prefixBin && !gl_p2) {
         // output the actual Spin program
-        OutputSpinFooter(&fb);
+        OutputSpinDummyFooter(&fb);
     }
     curlen = flexbuf_curlen(&fb);
     fwrite(flexbuf_peek(&fb), curlen, 1, f);

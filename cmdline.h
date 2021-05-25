@@ -15,6 +15,7 @@ typedef struct CmdLineOptions {
     int outputFiles;
     int outputBin;
     int outputAsm;
+    int outputBytecode;
     int compile;
     int useEeprom;
     int eepromSize;
