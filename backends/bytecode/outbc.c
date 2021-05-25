@@ -196,6 +196,12 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context) {
             printf("Got integer %d\n",node->d.ival);
             BCCompileInteger(irbuf,node->d.ival);
         } break;
+        case AST_CONSTANT: {
+            printf("Got constant, ");
+            int32_t evald = EvalConstExpr(node);
+            printf("eval'd to %d\n",evald);
+            BCCompileInteger(irbuf,evald);
+        } break;
         case AST_ASSIGN: {
             printf("Got assignment in expression \n");
             BCCompileAssignment(irbuf,node,context,true);
