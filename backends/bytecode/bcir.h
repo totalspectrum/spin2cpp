@@ -43,6 +43,13 @@
     X(REGBITS_READ) \
     X(REGBITS_WRITE) \
     X(REGBITS_MODIFY) \
+    \
+    /* Memory builtins */ \
+    X(BUILTIN_STRSIZE) \
+    X(BUILTIN_STRCOMP) \
+    X(BUILTIN_BULKMEM) /* BYTEFILL, LONGMOVE and friends */ \
+    \
+    X(WAIT)
 
 enum ByteOpKind {
     #define X(en) BOK_ ## en,
@@ -94,6 +101,13 @@ static inline bool isModOperator(enum MathOpKind opk) {
     return opk <= MOK_MOD_POSTSET && opk != MOK_UHHH;
 }
 
+enum BCWaitType {
+    BCW_UHHH,
+    BCW_WAITPEQ, BCW_WAITPNE,
+    BCW_WAITCNT,
+    BCW_WAITVID,
+};
+
 typedef struct bcirstruct {
     struct bcirstruct *next,*prev;
     enum ByteOpKind kind;
@@ -115,6 +129,16 @@ typedef struct bcirstruct {
             int memSize:2;
             int modSize:2; // In Spin1, the size of modify ops is independent, oddly enough.
         } memop;
+        struct {
+            #define BULKMEM_SIZE_BYTE 1
+            #define BULKMEM_SIZE_WORD 2
+            #define BULKMEM_SIZE_LONG 3
+            int memSize:2;
+            int isMove:1; // Fill otherwise
+        } bulkmem;
+        struct {
+            enum BCWaitType type;
+        } wait;
     } attr;
 
     union {

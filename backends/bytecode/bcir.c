@@ -13,8 +13,6 @@ const char *mathOpKindNames[] = {
     #undef X
 };
 
-#define BC_MAX_OPSIZE 16
-
 static const char *(*CompileIROP_Func)(uint8_t *,int,ByteOpIR *);
 static void (*GetSizeBound_Func)(ByteOpIR *,int *,int *,int);
 
@@ -172,6 +170,7 @@ static void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsL
     case BOK_RETURN_POP:
     case BOK_ABORT_PLAIN:
     case BOK_ABORT_POP:
+    case BOK_WAIT:
         *min = *max = 1; break;
     // Two byte ops
     case BOK_REG_READ:
@@ -301,6 +300,15 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
     case BOK_RETURN_PLAIN: {
         buf[pos++] = 0b00110010;
     } break;
+    case BOK_WAIT: {
+        switch(ir->attr.wait.type) {
+        case BCW_WAITPEQ: buf[pos++] = 0b00011011; comment = "WAITPEQ"; break;
+        case BCW_WAITPNE: buf[pos++] = 0b00011111; comment = "WAITPNE"; break;
+        case BCW_WAITCNT: buf[pos++] = 0b00100011; comment = "WAITCNT"; break;
+        case BCW_WAITVID: buf[pos++] = 0b00100111; comment = "WAITVID"; break;
+        default: ERROR(NULL,"Unhandled wait type %d",ir->attr.wait.type); break;
+        }
+    } break;
     case BOK_LABEL: break;;
     default: 
         ERROR(NULL,"Unhandled ByteOpIR kind %d = %s",ir->kind,byteOpKindNames[ir->kind]);
@@ -361,7 +369,12 @@ void BCIR_to_BOB(BCIRBuffer *irbuf,ByteOutputBuffer *bob) {
     BCIR_Compact(irbuf,2);
     printf("Compacted!\n");
     for(ByteOpIR *ir=irbuf->head;ir;ir=ir->next) {
-        uint8_t code[BC_MAX_OPSIZE];
+        if (ir->fixedSize<0) {
+            ERROR(NULL,"Internal Errror: IR with negative size");
+            continue;
+        }
+        uint8_t code[ir->fixedSize];
+        memset(code,0,ir->fixedSize);
         const char *comment = CompileIROP_Func(code,ir->fixedSize,ir);
         if (!comment) comment = "(MISSING COMMENT)";
         BOB_Push(bob,code,ir->fixedSize,comment);

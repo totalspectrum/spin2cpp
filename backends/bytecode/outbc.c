@@ -72,6 +72,21 @@ HWReg2Index(HwReg *reg) {
     }
 }
 
+static void
+printASTInfo(AST *node) {
+    if (node) {
+        printf("node is %d, ",node->kind);
+        if (node->left) printf("left is %d, ",node->left->kind);
+        else printf("left empty, ");
+        if (node->right) printf("right is %d\n",node->right->kind);
+        else printf("right empty\n");
+    } else printf("null node");
+}
+
+#define ASSERT_AST_KIND(node,expectedkind,whatdo) {\
+if (!node) { ERROR(NULL,"Internal Error: Expected " #expectedkind " got NULL\n"); whatdo ; } \
+else if (node->kind != expectedkind) { ERROR(node,"Internal Error: Expected " #expectedkind " got %d\n",node->kind); whatdo ; }}
+
 static void BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context); // forward decl;
 
 static void
@@ -129,6 +144,51 @@ BCCompileInteger(BCIRBuffer *irbuf,int32_t ival) {
     BIRB_PushCopy(irbuf,&opc);
 }
 
+// Very TODO
+static void
+BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpression) {
+    printf("Compiling fun call, ");
+    printASTInfo(node);
+
+    Symbol *sym = NULL;
+    if (node->left && node->left->kind == AST_METHODREF) {
+        ERROR(node,"Method calls NYI");
+        return;
+    } else {
+        sym = LookupAstSymbol(node->left, NULL);
+    }
+
+    ByteOpIR callOp = {0};
+    if (!sym) {
+        ERROR(node,"Function call has no symbol");
+        return;
+    } else if (/*sym->kind == SYM_BUILTIN*/ 1/* AST doesn't give me SYM_BUILTIN???? */) {
+        if (!strcmp(sym->our_name,"waitcnt")) {
+            callOp.kind = BOK_WAIT;
+            callOp.attr.wait.type = BCW_WAITCNT;
+        } else {
+            ERROR(node,"Unhandled builtin %s",sym->our_name);
+            return;
+        }
+    } else {
+        ERROR(node,"Non-builtin functions NYI (name is %s and sym kind is %d)",sym->our_name,sym->kind);
+        return;
+    }
+
+    ASSERT_AST_KIND(node->right,AST_EXPRLIST,return;);
+    for (AST *list=node->right;list;list=list->right) {
+        printf("Compiling function call argument...");
+        ASSERT_AST_KIND(list,AST_EXPRLIST,return;);
+        BCCompileExpression(irbuf,list->left,context);
+    }
+
+
+    BIRB_PushCopy(irbuf,&callOp);
+
+    // TODO pop unwanted results????
+
+}
+
 static void
 BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context) {
     switch(node->kind) {
@@ -179,7 +239,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context) {
         } break;
         default:
             ERROR(node,"Unhandled node kind %d in expression",node->kind);
-            return;
+            break;
     }
 }
 
@@ -207,11 +267,8 @@ BCCCompileStmtlist(BCIRBuffer *irbuf,AST *list, BCContext context) {
             BCCompileAssignment(irbuf,node,context,false);
             break;
         case AST_WHILE: {
-            printf("Got While loop..");
-            if (node->left) printf(" left %d  ",node->left->kind);
-            else printf(" left empty ");
-            if (node->right) printf(" right %d\n",node->right->kind);
-            else printf(" right empty\n");
+            printf("Got While loop.. ");
+            printASTInfo(node);
 
             ByteOpIR *toplbl = BCPushLabel(irbuf);
             ByteOpIR *bottomlbl = BCNewOrphanLabel();
@@ -223,13 +280,8 @@ BCCCompileStmtlist(BCIRBuffer *irbuf,AST *list, BCContext context) {
             condjmp.data.jumpTo = bottomlbl;
             BIRB_PushCopy(irbuf,&condjmp);
 
-            if (!node->right) {
-                ERROR(node,"Internal Error: Loop has no body");
-                break;
-            } else if (node->right->kind != AST_STMTLIST) {
-                ERROR(node->right,"Internal Error: Expected AST_STMTLIST, got id %d",node->right->kind);
-                break;
-            }
+            ASSERT_AST_KIND(node->right,AST_STMTLIST,break;)
+
             BCContext newcontext = context;
             BCCCompileStmtlist(irbuf,node->right,newcontext);
 
@@ -241,6 +293,9 @@ BCCCompileStmtlist(BCIRBuffer *irbuf,AST *list, BCContext context) {
 
             
         } break;
+        case AST_FUNCCALL: {
+            BCCompileFunCall(irbuf,node,context,false);
+        } break;
         default:
             ERROR(node,"Unhandled node kind %d",node->kind);
             break;
@@ -250,9 +305,10 @@ BCCCompileStmtlist(BCIRBuffer *irbuf,AST *list, BCContext context) {
 }
 
 static void 
-BCCCompileFunction(ByteOutputBuffer *bob,Function *F) {
+BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
 
     printf("Compiling bytecode for function %s\n",F->name);
+    curfunc = F; // Set this global, I guess;
 
     // first up, we now know the function's address, so let's fix it up in the header
     int func_ptr = bob->total_size;
@@ -287,6 +343,8 @@ BCCCompileFunction(ByteOutputBuffer *bob,Function *F) {
     // Compile function
     BCIRBuffer irbuf = {0};
 
+
+    // I think there's other body types so let's leave this instead of using ASSERT_AST_KIND
     if (!F->body) {
         ERROR(F->body,"Internal Error: Function has no body (TODO: generate return)");
         return;
@@ -302,6 +360,8 @@ BCCCompileFunction(ByteOutputBuffer *bob,Function *F) {
     BIRB_PushCopy(&irbuf,&retop);
 
     BCIR_to_BOB(&irbuf,bob);
+    
+    curfunc = NULL;
 }
 
 static void
@@ -354,9 +414,9 @@ BCCompileObject(ByteOutputBuffer *bob, Module *P) {
         if (!(var->kind = AST_DECLARE_VAR && IsClassType(var->left))) continue;
 
         // Debug gunk
-        if (var->left->kind != AST_OBJECT) ERROR(var,"Expected AST_OBJECT, got whatever %d is",var->left->kind);
-        if (var->right->kind != AST_LISTHOLDER) ERROR(var,"Expected AST_LISTHOLDER, got whatever %d is",var->right->kind);
-        if (var->right->left->kind != AST_IDENTIFIER) ERROR(var->right,"Expected AST_IDENTIFIER, got whatever %d is",var->right->left->kind);
+        ASSERT_AST_KIND(var->left,AST_OBJECT,);
+        ASSERT_AST_KIND(var->right,AST_LISTHOLDER,);
+        ASSERT_AST_KIND(var->right->left,AST_IDENTIFIER,);
         printf("Got obj of type %s named %s\n",((Module*)var->left->d.ptr)->classname,var->right->left->d.string);
 
         objs[obj_cnt++] = var;
@@ -401,8 +461,8 @@ BCCompileObject(ByteOutputBuffer *bob, Module *P) {
     // TODO emit DATs
 
     // Compile functions
-    for(int i=0;i<pub_cnt;i++) BCCCompileFunction(bob,pubs[i]);
-    for(int i=0;i<pri_cnt;i++) BCCCompileFunction(bob,pris[i]);
+    for(int i=0;i<pub_cnt;i++) BCCompileFunction(bob,pubs[i]);
+    for(int i=0;i<pri_cnt;i++) BCCompileFunction(bob,pris[i]);
 
     // emit subobjects
     for (int i=0;i<obj_cnt;i++) {
