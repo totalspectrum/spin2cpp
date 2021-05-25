@@ -114,27 +114,27 @@ typedef struct bcirstruct {
     enum MathOpKind mathKind;
     union {
         struct {
-            int useIndex:1; //  pop index?
-            int pushModifyResult:1; // For BOK_MEM_MODIFY: push result onto stack
-            int modifyReverseMath:1; // For BOK_MEM_MODIFY: Swap math operands?
+            unsigned popIndex:1; //  pop index?
+            unsigned pushModifyResult:1; // For BOK_MEM_MODIFY: push result onto stack
+            unsigned modifyReverseMath:1; // For BOK_MEM_MODIFY: Swap math operands?
             #define MEMOP_BASE_POP   0
             #define MEMOP_BASE_PBASE 1 // DAT?
             #define MEMOP_BASE_VBASE 2 // VAR
             #define MEMOP_BASE_DBASE 3 // Stack
-            int base:2;
+            unsigned base:2;
             #define MEMOP_SIZE_BIT  0
             #define MEMOP_SIZE_BYTE 1
             #define MEMOP_SIZE_WORD 2
             #define MEMOP_SIZE_LONG 3
-            int memSize:2;
-            int modSize:2; // In Spin1, the size of modify ops is independent, oddly enough.
+            unsigned memSize:2;
+            unsigned modSize:2; // In Spin1, the size of modify ops is independent, oddly enough.
         } memop;
         struct {
             #define BULKMEM_SIZE_BYTE 1
             #define BULKMEM_SIZE_WORD 2
             #define BULKMEM_SIZE_LONG 3
-            int memSize:2;
-            int isMove:1; // Fill otherwise
+            unsigned memSize:2;
+            unsigned isMove:1; // Fill otherwise
         } bulkmem;
         struct {
             enum BCWaitType type;

@@ -162,6 +162,20 @@ static void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsL
             *max = 3;
         }
         break;
+    // Memory ops
+    case BOK_MEM_READ:
+    case BOK_MEM_WRITE:
+    case BOK_MEM_ADDRESS:
+    case BOK_MEM_MODIFY:
+        if (ir->attr.memop.base == MEMOP_BASE_POP) *min = *max = 1; // Pop base is always 1 byte
+        else if (ir->data.int32 < 8&& ir->attr.memop.memSize == MEMOP_SIZE_LONG && ir->attr.memop.base != MEMOP_BASE_PBASE) *min = *max = 1; // Short access for first 8 VAR/locals
+        else if (ir->data.int32 < 0x80)  *min = *max = 2; // with 1 base byte
+        else                             *min = *max = 3; // with 2 base bytes
+        if (ir->kind == BOK_MEM_MODIFY) {
+            *min += 1; *max += 1; // Extra byte
+            if (ir->mathKind == MOK_MOD_REPEATN) ERROR(NULL,"MOK_MOD_REPEATN is NYI");
+        }
+        break;
     // Virtual ops
     case BOK_LABEL: *min = *max = 0; break;
     // Single byte ops
@@ -272,6 +286,55 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
         buf[pos++] = 0b00111111; // register op prefix
         buf[pos++] = 0x80+reg; // I think the top bit has to be set?
         comment = auto_printf(20,"REG_READ %03X",reg+0x1E0);
+    } break;
+    case BOK_MEM_READ:
+    case BOK_MEM_WRITE:
+    case BOK_MEM_ADDRESS:
+    case BOK_MEM_MODIFY: {
+        uint32_t offset = ir->data.int32;
+        if (ir->attr.memop.memSize == 0) ERROR(NULL,"memSize is zero");
+        if (offset < 8 && ir->attr.memop.memSize == MEMOP_SIZE_LONG
+        && (ir->attr.memop.base == MEMOP_BASE_VBASE || ir->attr.memop.base == MEMOP_BASE_DBASE)) {
+            // Compile short form
+            ERROR(NULL,"compile short form eventually");
+        } else {
+            uint8_t opcode = 0x80 + ((ir->attr.memop.memSize-1)<<5) + ((ir->attr.memop.popIndex)<<4) + ((ir->attr.memop.base)<<2);
+            if (ir->kind == BOK_MEM_READ) opcode += 0;
+            if (ir->kind == BOK_MEM_WRITE) opcode += 1;
+            if (ir->kind == BOK_MEM_MODIFY) opcode += 2;
+            if (ir->kind == BOK_MEM_ADDRESS) opcode += 3;
+            buf[pos++] = opcode;
+            if (ir->attr.memop.base != MEMOP_BASE_POP) {
+                if (offset < 0x80) {
+                    buf[pos++] = offset;
+                } else if (offset < 0X8000) {
+                    buf[pos++] = ((offset>>8)&0x7F)|0x80;
+                    buf[pos++] = offset&0xFF;
+                } else ERROR(NULL,"Mem op offset exceeds 0x8000");
+            }
+            if (ir->kind == BOK_MEM_MODIFY) ERROR(NULL,"MODIFY is NYI");
+            else {
+                if (gl_listing) { // This is complex, so only run when we actually want a listing
+                    const char* basetext = "oh no";
+                    switch(ir->attr.memop.base) {
+                    case MEMOP_BASE_POP: basetext = "(POP base)"; break;
+                    case MEMOP_BASE_PBASE: basetext = auto_printf(14,"PBASE+$%04X",offset); break;
+                    case MEMOP_BASE_VBASE: basetext = auto_printf(14,"VBASE+$%04X",offset); break;
+                    case MEMOP_BASE_DBASE: basetext = auto_printf(14,"DBASE+$%04X",offset); break;
+                    }
+                    const char* sizetext = "oh no"; 
+                    switch (ir->attr.memop.memSize) {
+                    case MEMOP_SIZE_BIT: sizetext = "(invalid)"; break;
+                    case MEMOP_SIZE_BYTE: sizetext = "BYTE"; break;
+                    case MEMOP_SIZE_WORD: sizetext = "WORD"; break;
+                    case MEMOP_SIZE_LONG: sizetext = "LONG"; break;
+                    }
+                    comment = auto_printf(128,"%s %s %s%s ",
+                        byteOpKindNames[ir->kind],sizetext,basetext,ir->attr.memop.popIndex ? "+(POP index)":"");
+                    // TODO handle all the modify stuff
+                };
+            }
+        }
     } break;
     case BOK_JUMP: {
         buf[pos++] = 0b00000100;

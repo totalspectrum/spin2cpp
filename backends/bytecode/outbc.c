@@ -89,37 +89,85 @@ else if (node->kind != expectedkind) { ERROR(node,"Internal Error: Expected " #e
 
 static void BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context); // forward decl;
 
+
+static void
+BCCompileMemOp(BCIRBuffer *irbuf,AST *node,BCContext context, enum ByteOpKind kind) {
+    ByteOpIR memOp = {0};
+    memOp.kind = kind;
+
+    AST *typeSource = NULL;
+
+    ASSERT_AST_KIND(node,AST_ARRAYREF,return;);
+    printASTInfo(node);
+    if (IsIdentifier(node->left)) {
+        AST *ident = node->left;
+        typeSource = ident;
+        Symbol *sym = LookupAstSymbol(ident,NULL);
+        if (!sym) ERROR(ident,"Can't get symbol");
+        else printf("got symbol with name %s and kind %d\n",sym->our_name,sym->kind);
+        switch (sym->kind) {
+        case SYM_LABEL:
+            printf("Got SYM_LABEL (DAT symbol)... ");
+            memOp.attr.memop.base = MEMOP_BASE_PBASE;
+
+            Label *lab = sym->val;
+            uint32_t labelval = lab->hubval;
+            printf("Value inside is %d... ",labelval);
+            // Add header offset
+            labelval += 4*(ModData(current)->pub_cnt+ModData(current)->pri_cnt+ModData(current)->obj_cnt+1);
+            printf("After header offset: %d\n",labelval);
+            memOp.data.int32 = labelval;
+            break;
+        default:
+            ERROR(ident,"Unhandled Symbol type: %d",sym->kind);
+            return;
+        }
+    } else {
+        ERROR(node,"Left is not identifier");
+        return;
+    }
+    
+    if (typeSource) {
+        AST *type = ExprType(typeSource);
+        if (type->kind == AST_ARRAYTYPE) type = type->left; // We don't care if this is an array, we just want the size
+             if (type == ast_type_byte) memOp.attr.memop.memSize = MEMOP_SIZE_BYTE;
+        else if (type == ast_type_word) memOp.attr.memop.memSize = MEMOP_SIZE_WORD; 
+        else if (type == ast_type_long) memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
+        else ERROR(node,"Can't figure out mem op type");
+    } else {
+        ERROR(node,"No type sauce!");
+        memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
+    }
+    BIRB_PushCopy(irbuf,&memOp);
+}
+
 static void
 BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpression) {
     AST *left = node->left, *right = node->right;
     printf("Got an assign! left kind: %d, right kind %d\n",left->kind,right->kind);
 
-    if (asExpression) ERROR(node,"Assignment expression NYI");
+    if (asExpression) ERROR(node,"Assignment expression NYI");  
 
-    HwReg *hw = NULL;
-
-    ByteOpIR opc = {0};
+    BCCompileExpression(irbuf,right,context);
 
     switch(left->kind) {
     case AST_HWREG: {
-        hw = (HwReg *)left->d.ptr;
-        printf("Got HWREG assign, uhh %s = %d\n",hw->name,HWReg2Index(hw));
+        HwReg *hw = (HwReg *)left->d.ptr;
+        printf("Got HWREG assign, %s = %d\n",hw->name,HWReg2Index(hw));
+        ByteOpIR hwAssignOp = {0};
+        hwAssignOp.kind = BOK_REG_WRITE;
+        hwAssignOp.data.int32 = HWReg2Index(hw);
+        BIRB_PushCopy(irbuf,&hwAssignOp);
     } break;
+    case AST_ARRAYREF: {
+        printf("Got ARRAYREF assign\n");
+        BCCompileMemOp(irbuf,node->left,context,BOK_MEM_WRITE);
+    }
     default:
         ERROR(left,"Unhandled assign left kind %d",left->kind);
         break;
     }
 
-    BCCompileExpression(irbuf,right,context);
-
-    if (hw) {
-        opc.kind = BOK_REG_WRITE;
-        opc.data.int32 = HWReg2Index(hw);
-    } else {
-        ERROR(node,"Non-register assignment is NYI");
-    }
-
-    BIRB_PushCopy(irbuf,&opc);
 }
 
 static ByteOpIR*
@@ -243,6 +291,16 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context) {
             hwread.data.int32 = HWReg2Index(hw);
             BIRB_PushCopy(irbuf,&hwread);
         } break;
+        case AST_ADDROF: {
+            printf("Got addr-of! ");
+            printASTInfo(node); // Right always empty, left always ARRAYREF?
+            BCCompileMemOp(irbuf,node->left,context,BOK_MEM_ADDRESS);
+        } break;
+        case AST_ARRAYREF: {
+            printf("Got mem read! ");
+            printASTInfo(node);
+            BCCompileMemOp(irbuf,node,context,BOK_MEM_READ);
+        } break;
         default:
             ERROR(node,"Unhandled node kind %d in expression",node->kind);
             break;
@@ -250,7 +308,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context) {
 }
 
 static void 
-BCCCompileStmtlist(BCIRBuffer *irbuf,AST *list, BCContext context) {
+BCCompileStmtlist(BCIRBuffer *irbuf,AST *list, BCContext context) {
     printf("Compiling a statement list...\n");
 
     for (AST *ast=list;ast&&ast->kind==AST_STMTLIST;ast=ast->right) {
@@ -289,7 +347,7 @@ BCCCompileStmtlist(BCIRBuffer *irbuf,AST *list, BCContext context) {
             ASSERT_AST_KIND(node->right,AST_STMTLIST,break;)
 
             BCContext newcontext = context;
-            BCCCompileStmtlist(irbuf,node->right,newcontext);
+            BCCompileStmtlist(irbuf,node->right,newcontext);
 
             ByteOpIR returnjmp = {0};
             returnjmp.kind = BOK_JUMP;
@@ -359,7 +417,7 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
         return;
     } else {
         BCContext context = {0};
-        BCCCompileStmtlist(&irbuf,F->body,context);
+        BCCompileStmtlist(&irbuf,F->body,context);
     }
     // Always append a return (TODO: only when neccessary)
     ByteOpIR retop = {0,.kind = BOK_RETURN_PLAIN};
@@ -531,6 +589,7 @@ void OutputByteCode(const char *fname, Module *P) {
     // Fixup header
     switch(gl_interp_kind) {
     case INTERP_KIND_P1ROM:
+        // TODO fixup everything
         BOB_ReplaceWord(headerspans.pcurr,FunData(ModData(P)->pubs[0])->compiledAddress,NULL);
         break;
     default:
