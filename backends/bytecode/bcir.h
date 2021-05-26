@@ -24,6 +24,8 @@
     X(MEM_MODIFY)  /* What Chip calls "assign" */\
     X(MEM_ADDRESS)  /* Push effective address */\
     \
+    X(ANCHOR) /* Set up stack frame for call */\
+    \
     X(CALL_SELF)  /* Call method in current object */\
     X(CALL_OTHER)  /* Call method in other object */\
     X(CALL_OTHER_IDX)  /* Call method in other object from obj array (pop index) */\
@@ -136,6 +138,13 @@ typedef struct bcirstruct {
             unsigned memSize:2;
             unsigned isMove:1; // Fill otherwise
         } bulkmem;
+        struct {
+            unsigned rescue:1;
+            unsigned withResult:1;
+        } anchor;
+        struct {
+            int16_t funID,objID;
+        } call;
         struct {
             enum BCWaitType type;
         } wait;

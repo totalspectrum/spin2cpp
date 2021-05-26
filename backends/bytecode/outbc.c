@@ -294,6 +294,20 @@ BCCompileInteger(BCIRBuffer *irbuf,int32_t ival) {
     BIRB_PushCopy(irbuf,&opc);
 }
 
+static int getFuncID(Module *M,const char *name) {
+    if (!M->bedata) {
+        ERROR(NULL,"Internal Error: bedata empty");
+        return -1;
+    }
+    for (int i=0;i<ModData(M)->pub_cnt;i++) {
+        if (!strcmp(ModData(M)->pubs[i]->name,name)) return i + 1;
+    }
+    for (int i=0;i<ModData(M)->pri_cnt;i++) {
+        if (!strcmp(ModData(M)->pris[i]->name,name)) return ModData(M)->pub_cnt + i + 1;
+    }
+    return -1;
+}
+
 // Very TODO
 static void
 BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpression) {
@@ -309,10 +323,14 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
     }
 
     ByteOpIR callOp = {0};
+    ByteOpIR anchorOp = {0};
+    anchorOp.kind = BOK_ANCHOR;
+    anchorOp.attr.anchor.withResult = asExpression;
     if (!sym) {
         ERROR(node,"Function call has no symbol");
         return;
     } else if (sym->kind == SYM_BUILTIN) {
+        anchorOp.kind = 0; // Where we're going, we don't need Stack Frames
         if (!strcmp(sym->our_name,"waitcnt")) {
             callOp.kind = BOK_WAIT;
             callOp.attr.wait.type = BCW_WAITCNT;
@@ -320,10 +338,22 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
             ERROR(node,"Unhandled builtin %s",sym->our_name);
             return;
         }
+    } else if (sym->kind == SYM_FUNCTION) {
+        // Function call
+        int funid = getFuncID(current,sym->our_name);
+        if (funid < 0) {
+            ERROR(node,"Can't get function id for %s",sym->our_name);
+            return;
+        }
+        callOp.kind = BOK_CALL_SELF;
+        callOp.attr.call.funID = funid;
+
     } else {
-        ERROR(node,"Non-builtin functions NYI (name is %s and sym kind is %d)",sym->our_name,sym->kind);
+        ERROR(node,"Unhandled FUNCALL symbol (name is %s and sym kind is %d)",sym->our_name,sym->kind);
         return;
     }
+
+    if (anchorOp.kind) BIRB_PushCopy(irbuf,&anchorOp);
 
     ASSERT_AST_KIND(node->right,AST_EXPRLIST,return;);
     for (AST *list=node->right;list;list=list->right) {

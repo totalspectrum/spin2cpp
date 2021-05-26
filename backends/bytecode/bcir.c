@@ -194,11 +194,17 @@ static void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsL
     case BOK_ABORT_PLAIN:
     case BOK_ABORT_POP:
     case BOK_WAIT:
+    case BOK_ANCHOR:
         *min = *max = 1; break;
     // Two byte ops
     case BOK_REG_READ:
     case BOK_REG_WRITE:
+    case BOK_CALL_SELF:
         *min = *max = 2; break;
+    // Three byte ops
+    case BOK_CALL_OTHER:
+    case BOK_CALL_OTHER_IDX:
+        *min = *max = 3; break;
     default: 
         ERROR(NULL,"Unhandled ByteOpIR kind %d = %s in GetSizeBound_Spin1",ir->kind,byteOpKindNames[ir->kind]);
         return;
@@ -353,7 +359,7 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
                 case MEMOP_BASE_VBASE: basetext = auto_printf(14,"VBASE+$%04X",offset); break;
                 case MEMOP_BASE_DBASE: basetext = auto_printf(14,"DBASE+$%04X",offset); break;
                 }
-                const char* sizetext = "oh no", *multext=""; 
+                const char* sizetext = "oh no"; 
                 switch (ir->attr.memop.memSize) {
                 case MEMOP_SIZE_BIT:  sizetext = "(invalid)"; break;
                 case MEMOP_SIZE_BYTE: sizetext = "BYTE"; break;
@@ -365,6 +371,24 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
                 // TODO handle all the modify stuff
             }
         }
+    } break;
+    case BOK_ANCHOR: {
+        buf[pos++] = 0b00000000 + ((!ir->attr.anchor.withResult)&1) + (ir->attr.anchor.rescue<<1);
+        comment = auto_printf(32,"ANCHOR %s %s",ir->attr.anchor.rescue?"(RESCUE)":"",ir->attr.anchor.withResult?"":"(DISCARD)");
+    } break;
+    case BOK_CALL_SELF: {
+        buf[pos++] = 0b00000101;
+        buf[pos++] = ir->attr.call.funID;
+    } break;
+    case BOK_CALL_OTHER: {
+        buf[pos++] = 0b00000110;
+        buf[pos++] = ir->attr.call.objID;
+        buf[pos++] = ir->attr.call.funID;
+    } break;
+    case BOK_CALL_OTHER_IDX: {
+        buf[pos++] = 0b00000111;
+        buf[pos++] = ir->attr.call.objID;
+        buf[pos++] = ir->attr.call.funID;
     } break;
     case BOK_JUMP: {
         buf[pos++] = 0b00000100;
