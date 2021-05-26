@@ -220,6 +220,7 @@ main(int argc, const char **argv)
                 fprintf(stderr, "Unknown --interp= choice: %s\n", argv[0]);
                 Usage(stderr, cmd->bstcMode);
             }
+            gl_output = OUTPUT_BYTECODE;
             cmd->outputBytecode = 1;
             cmd->outputAsm = 0;
             argv++; --argc;

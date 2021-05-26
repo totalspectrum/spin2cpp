@@ -210,7 +210,7 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
     if (!sym) {
         ERROR(node,"Function call has no symbol");
         return;
-    } else if (/*sym->kind == SYM_BUILTIN*/ 1/* AST doesn't give me SYM_BUILTIN???? */) {
+    } else if (sym->kind == SYM_BUILTIN) {
         if (!strcmp(sym->our_name,"waitcnt")) {
             callOp.kind = BOK_WAIT;
             callOp.attr.wait.type = BCW_WAITCNT;
