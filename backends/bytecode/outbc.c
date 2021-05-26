@@ -6,6 +6,42 @@
 #include <stdlib.h>
 
 
+static bool interp_can_multireturn() {
+    switch(gl_interp_kind) {
+    case INTERP_KIND_P1ROM: return false;
+    default:
+        ERROR(NULL,"Unknown interpreter kind");
+        return false;
+    }
+}
+
+static int BCResultsBase() {
+    switch(gl_interp_kind) {
+    case INTERP_KIND_P1ROM: return 0;
+    default:
+        ERROR(NULL,"Unknown interpreter kind");
+        return 0;
+    }
+}
+
+static int BCParameterBase() {
+    switch(gl_interp_kind) {
+    case INTERP_KIND_P1ROM: return 4; // RESULT is always there
+    default:
+        ERROR(NULL,"Unknown interpreter kind");
+        return 0;
+    }
+}
+
+static int BCLocalBase() {
+    switch(gl_interp_kind) {
+    case INTERP_KIND_P1ROM: return 4+curfunc->numparams*4; // FIXME small variables
+    default:
+        ERROR(NULL,"Unknown interpreter kind");
+        return 0;
+    }
+}
+
 struct bcheaderspans {
     OutputSpan *pbase,*vbase,*dbase,*pcurr,*dcurr;
 };
@@ -96,13 +132,18 @@ BCCompileMemOp(BCIRBuffer *irbuf,AST *node,BCContext context, enum ByteOpKind ki
     memOp.kind = kind;
 
     AST *type = NULL;
+    Symbol *sym = NULL;
 
     printASTInfo(node);
     AST *ident = (node->kind == AST_ARRAYREF) ? node->left : node;
-    if (IsIdentifier(ident)) {
-        Symbol *sym = LookupAstSymbol(ident,NULL);
-        if (!sym) ERROR(ident,"Can't get symbol");
-        else printf("got symbol with name %s and kind %d\n",sym->our_name,sym->kind);
+    if (IsIdentifier(ident)) sym = LookupAstSymbol(ident,NULL);
+    else if (node->kind == AST_RESULT) sym = LookupSymbol("result");
+
+    if (!sym) {
+        ERROR(ident,"Can't get symbol");
+        return;
+    } else {
+    printf("got symbol with name %s and kind %d\n",sym->our_name,sym->kind);
         type = ExprType(ident);
         switch (sym->kind) {
         case SYM_LABEL: {
@@ -125,13 +166,39 @@ BCCompileMemOp(BCIRBuffer *irbuf,AST *node,BCContext context, enum ByteOpKind ki
             memOp.data.int32 = sym->offset;
 
         } break;
+        case SYM_LOCALVAR: {
+            if (!type) type = ast_type_long; // FIXME this seems wrong, but is NULL otherwise
+            printf("Got SYM_LOCALVAR... ");
+            memOp.attr.memop.base = MEMOP_BASE_DBASE;
+            printf("sym->offset is %d\n",sym->offset);
+            memOp.data.int32 = sym->offset + BCLocalBase();
+        } break;
+        case SYM_PARAMETER: {
+            if (!type) type = ast_type_long; // FIXME this seems wrong, but is NULL otherwise
+            printf("Got SYM_PARAMETER... ");
+            memOp.attr.memop.base = MEMOP_BASE_DBASE;
+            printf("sym->offset is %d\n",sym->offset);
+            memOp.data.int32 = sym->offset + BCParameterBase();
+        } break;
+        case SYM_RESERVED: {
+            if (!strcmp(sym->our_name,"result")) {
+                goto do_result;
+            } else {
+                ERROR(node,"Unhandled reserved word %s in assignment",sym->our_name);
+            }
+        }
+        do_result:
+        case SYM_RESULT: {
+            if (!type) type = ast_type_long; // FIXME this seems wrong, but is NULL otherwise
+            printf("Got SYM_RESULT... ");
+            memOp.attr.memop.base = MEMOP_BASE_DBASE;
+            printf("sym->offset is %d\n",sym->offset);
+            memOp.data.int32 = sym->offset + BCResultsBase();
+        } break;
         default:
             ERROR(ident,"Unhandled Symbol type: %d",sym->kind);
             return;
         }
-    } else {
-        ERROR(node,"Identifier is not identifier (yeah)");
-        return;
     }
     
     printf("Got type ");printASTInfo(type);
@@ -165,7 +232,11 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
     } break;
     case AST_ARRAYREF: {
         printf("Got ARRAYREF assign\n");
-        BCCompileMemOp(irbuf,node->left,context,BOK_MEM_WRITE);
+        BCCompileMemOp(irbuf,left,context,BOK_MEM_WRITE);
+    } break;
+    case AST_RESULT: {
+        printf("Got RESULT assign\n");
+        BCCompileMemOp(irbuf,left,context,BOK_MEM_WRITE);
     } break;
     case AST_IDENTIFIER: {
         printf("Got IDENTIFIER assign\n");
@@ -176,7 +247,18 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
         }
         switch (sym->kind) {
         case SYM_VARIABLE:
+        case SYM_LOCALVAR:
+        case SYM_PARAMETER:
+        case SYM_RESULT:
             BCCompileMemOp(irbuf,left,context,BOK_MEM_WRITE);
+            break;
+        case SYM_RESERVED:
+            if (!strcmp(sym->our_name,"result")) {
+                // FIXME the parser should give AST_RESULT here, I think
+                BCCompileMemOp(irbuf,NewAST(AST_RESULT,left->left,left->right),context,BOK_MEM_WRITE);
+            } else {
+                ERROR(node,"Unhandled reserved word %s in assignment",sym->our_name);
+            }
             break;
         default:
             ERROR(left,"Unhandled Identifier symbol kind %d",sym->kind);
@@ -325,13 +407,28 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context) {
             }
             switch (sym->kind) {
             case SYM_VARIABLE:
+            case SYM_LOCALVAR:
+            case SYM_PARAMETER:
+            case SYM_RESULT:
                 BCCompileMemOp(irbuf,node,context,BOK_MEM_READ);
+                break;
+            case SYM_RESERVED:
+                if (!strcmp(sym->our_name,"result")) {
+                    // FIXME the parser should give AST_RESULT here, I think
+                    BCCompileMemOp(irbuf,NewAST(AST_RESULT,node->left,node->right),context,BOK_MEM_READ);
+                } else {
+                    ERROR(node,"Unhandled reserved word %s in expression",sym->our_name);
+                }
                 break;
             default:
                 ERROR(node,"Unhandled Identifier symbol kind %d",sym->kind);
                 return;
             }
 
+        } break;
+        case AST_RESULT: {
+            printf("Got RESULT!\n");
+            BCCompileMemOp(irbuf,node,context,BOK_MEM_READ);
         } break;
         case AST_ARRAYREF: {
             printf("Got array read! ");
@@ -414,7 +511,11 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
     // first up, we now know the function's address, so let's fix it up in the header
     int func_ptr = bob->total_size;
     int func_offset = 0;
-    int func_localsize = F->local_var_counter*4; // SUPER DUPER FIXME
+    int func_localsize = F->numparams*4 + F->numlocals*4; // SUPER DUPER FIXME smaller locals
+    if (interp_can_multireturn() && F->numresults > 1) {
+        ERROR(F->body,"Multi-return is not supported by the used interpreter");
+        return;
+    }
     Module *M = F->module;
     if (M->bedata == NULL || ModData(M)->compiledAddress < 0) {
         ERROR(NULL,"Compiling function on Module whose address is not yet determined???");
@@ -625,6 +726,10 @@ void OutputByteCode(const char *fname, Module *P) {
 
     BOB_Align(&bob,4);
     const int programSize = bob.total_size;
+    const int variableSize = P->varsize; // Already rounded up!
+    const int stackBase = programSize + variableSize;
+
+    printf("Program size:  %6d bytes\nVariable size: %6d bytes\nStack/Free:    %6d TODO\n",programSize,variableSize,0);
 
 
     // Fixup header
@@ -633,6 +738,8 @@ void OutputByteCode(const char *fname, Module *P) {
         // TODO fixup everything
         BOB_ReplaceWord(headerspans.pcurr,FunData(ModData(P)->pubs[0])->compiledAddress,NULL);
         BOB_ReplaceWord(headerspans.vbase,programSize,NULL);
+        BOB_ReplaceWord(headerspans.dbase,stackBase,NULL);
+        BOB_ReplaceWord(headerspans.dcurr,stackBase+8,NULL); // TODO? Do we need to insert something here? I think only for EEPROM out?
         break;
     default:
         ERROR(NULL,"Unknown interpreter kind");
