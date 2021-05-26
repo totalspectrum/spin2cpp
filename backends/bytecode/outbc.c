@@ -95,18 +95,17 @@ BCCompileMemOp(BCIRBuffer *irbuf,AST *node,BCContext context, enum ByteOpKind ki
     ByteOpIR memOp = {0};
     memOp.kind = kind;
 
-    AST *typeSource = NULL;
+    AST *type = NULL;
 
-    ASSERT_AST_KIND(node,AST_ARRAYREF,return;);
     printASTInfo(node);
-    if (IsIdentifier(node->left)) {
-        AST *ident = node->left;
-        typeSource = ident;
+    AST *ident = (node->kind == AST_ARRAYREF) ? node->left : node;
+    if (IsIdentifier(ident)) {
         Symbol *sym = LookupAstSymbol(ident,NULL);
         if (!sym) ERROR(ident,"Can't get symbol");
         else printf("got symbol with name %s and kind %d\n",sym->our_name,sym->kind);
+        type = ExprType(ident);
         switch (sym->kind) {
-        case SYM_LABEL:
+        case SYM_LABEL: {
             printf("Got SYM_LABEL (DAT symbol)... ");
             memOp.attr.memop.base = MEMOP_BASE_PBASE;
 
@@ -117,27 +116,32 @@ BCCompileMemOp(BCIRBuffer *irbuf,AST *node,BCContext context, enum ByteOpKind ki
             labelval += 4*(ModData(current)->pub_cnt+ModData(current)->pri_cnt+ModData(current)->obj_cnt+1);
             printf("After header offset: %d\n",labelval);
             memOp.data.int32 = labelval;
-            break;
+        } break;
+        case SYM_VARIABLE: {
+            if (!type) type = ast_type_long; // FIXME this seems wrong, but is NULL otherwise
+            printf("Got SYM_VARIABLE (VAR symbol)... ");
+            memOp.attr.memop.base = MEMOP_BASE_VBASE;
+            printf("sym->offset is %d\n",sym->offset);
+            memOp.data.int32 = sym->offset;
+
+        } break;
         default:
             ERROR(ident,"Unhandled Symbol type: %d",sym->kind);
             return;
         }
     } else {
-        ERROR(node,"Left is not identifier");
+        ERROR(node,"Identifier is not identifier (yeah)");
         return;
     }
     
-    if (typeSource) {
-        AST *type = ExprType(typeSource);
-        if (type->kind == AST_ARRAYTYPE) type = type->left; // We don't care if this is an array, we just want the size
-             if (type == ast_type_byte) memOp.attr.memop.memSize = MEMOP_SIZE_BYTE;
-        else if (type == ast_type_word) memOp.attr.memop.memSize = MEMOP_SIZE_WORD; 
-        else if (type == ast_type_long) memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
-        else ERROR(node,"Can't figure out mem op type");
-    } else {
-        ERROR(node,"No type sauce!");
-        memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
-    }
+    printf("Got type ");printASTInfo(type);
+    if (type && type->kind == AST_ARRAYTYPE) type = type->left; // We don't care if this is an array, we just want the size
+
+         if (type == ast_type_byte) memOp.attr.memop.memSize = MEMOP_SIZE_BYTE;
+    else if (type == ast_type_word) memOp.attr.memop.memSize = MEMOP_SIZE_WORD; 
+    else if (type == ast_type_long) memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
+    else ERROR(node,"Can't figure out mem op type (%s)",type?"is unhandled":"is NULL");
+
     BIRB_PushCopy(irbuf,&memOp);
 }
 
@@ -162,7 +166,23 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
     case AST_ARRAYREF: {
         printf("Got ARRAYREF assign\n");
         BCCompileMemOp(irbuf,node->left,context,BOK_MEM_WRITE);
-    }
+    } break;
+    case AST_IDENTIFIER: {
+        printf("Got IDENTIFIER assign\n");
+        Symbol *sym = LookupAstSymbol(left,NULL);
+        if (!sym) {
+            ERROR(node,"Internal Error: no symbol");
+            return;
+        }
+        switch (sym->kind) {
+        case SYM_VARIABLE:
+            BCCompileMemOp(irbuf,left,context,BOK_MEM_WRITE);
+            break;
+        default:
+            ERROR(left,"Unhandled Identifier symbol kind %d",sym->kind);
+            return;
+        }
+    } break;
     default:
         ERROR(left,"Unhandled assign left kind %d",left->kind);
         break;
@@ -296,8 +316,25 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context) {
             printASTInfo(node); // Right always empty, left always ARRAYREF?
             BCCompileMemOp(irbuf,node->left,context,BOK_MEM_ADDRESS);
         } break;
+        case AST_IDENTIFIER: {
+            printf("Got identifier! ");
+            Symbol *sym = LookupAstSymbol(node,NULL);
+            if (!sym) {
+                ERROR(node,"Internal Error: no symbol");
+                return;
+            }
+            switch (sym->kind) {
+            case SYM_VARIABLE:
+                BCCompileMemOp(irbuf,node,context,BOK_MEM_READ);
+                break;
+            default:
+                ERROR(node,"Unhandled Identifier symbol kind %d",sym->kind);
+                return;
+            }
+
+        } break;
         case AST_ARRAYREF: {
-            printf("Got mem read! ");
+            printf("Got array read! ");
             printASTInfo(node);
             BCCompileMemOp(irbuf,node,context,BOK_MEM_READ);
         } break;
@@ -586,11 +623,16 @@ void OutputByteCode(const char *fname, Module *P) {
 
     BCCompileObject(&bob,P);
 
+    BOB_Align(&bob,4);
+    const int programSize = bob.total_size;
+
+
     // Fixup header
     switch(gl_interp_kind) {
     case INTERP_KIND_P1ROM:
         // TODO fixup everything
         BOB_ReplaceWord(headerspans.pcurr,FunData(ModData(P)->pubs[0])->compiledAddress,NULL);
+        BOB_ReplaceWord(headerspans.vbase,programSize,NULL);
         break;
     default:
         ERROR(NULL,"Unknown interpreter kind");

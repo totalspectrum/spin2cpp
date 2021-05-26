@@ -2,6 +2,8 @@
 #include "bcir.h"
 #include <stdlib.h>
 
+#pragma GCC diagnostic ignored "-Wmisleading-indentation" // GCC is very smart
+
 const char *byteOpKindNames[] = {
     #define X(en) #en,
     BYTE_OP_KINDS_XMACRO
@@ -127,6 +129,12 @@ static enum Spin1ConstEncoding GetSpin1ConstEncoding(int32_t imm) {
     else return S1ConEn_4B;
 }
 
+static bool IsShortFormMemOp(ByteOpIR *ir) {
+    if (!(ir->kind == BOK_MEM_READ || ir->kind == BOK_MEM_WRITE || ir->kind == BOK_MEM_MODIFY || ir->kind == BOK_MEM_ADDRESS)) return false;
+    if (!(ir->attr.memop.base == MEMOP_BASE_VBASE || ir->attr.memop.base == MEMOP_BASE_DBASE)) return false;
+    return ir->data.int32 < 8*4 && !(ir->data.int32 & 3)  && ir->attr.memop.memSize == MEMOP_SIZE_LONG && !ir->attr.memop.popIndex;
+}
+
 static void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsLeft) {
     if (ir->fixedSize) {
         *min = *max = ir->fixedSize;
@@ -167,10 +175,11 @@ static void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsL
     case BOK_MEM_WRITE:
     case BOK_MEM_ADDRESS:
     case BOK_MEM_MODIFY:
-        if (ir->attr.memop.base == MEMOP_BASE_POP) *min = *max = 1; // Pop base is always 1 byte
-        else if (ir->data.int32 < 8&& ir->attr.memop.memSize == MEMOP_SIZE_LONG && ir->attr.memop.base != MEMOP_BASE_PBASE) *min = *max = 1; // Short access for first 8 VAR/locals
+             if (ir->attr.memop.base == MEMOP_BASE_POP) *min = *max = 1; // Pop base is always 1 byte
+        else if (IsShortFormMemOp(ir))   *min = *max = 1; // Short access for first 8 VAR/locals
         else if (ir->data.int32 < 0x80)  *min = *max = 2; // with 1 base byte
         else                             *min = *max = 3; // with 2 base bytes
+
         if (ir->kind == BOK_MEM_MODIFY) {
             *min += 1; *max += 1; // Extra byte
             if (ir->mathKind == MOK_MOD_REPEATN) ERROR(NULL,"MOK_MOD_REPEATN is NYI");
@@ -231,7 +240,7 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
             buf[pos++] = (immu>>0)&255;
             break;
         }
-        comment = auto_printf(32,"PUSH_IMM %d",imm);
+        comment = auto_printf(32,"CONSTANT %d",imm);
     } break;
     case BOK_MATHOP: {
         int mathID;
@@ -292,18 +301,38 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
     case BOK_MEM_ADDRESS:
     case BOK_MEM_MODIFY: {
         uint32_t offset = ir->data.int32;
-        if (ir->attr.memop.memSize == 0) ERROR(NULL,"memSize is zero");
-        if (offset < 8 && ir->attr.memop.memSize == MEMOP_SIZE_LONG
-        && (ir->attr.memop.base == MEMOP_BASE_VBASE || ir->attr.memop.base == MEMOP_BASE_DBASE)) {
+
+        bool shortForm = IsShortFormMemOp(ir);
+        if (shortForm) {
             // Compile short form
-            ERROR(NULL,"compile short form eventually");
-        } else {
-            uint8_t opcode = 0x80 + ((ir->attr.memop.memSize-1)<<5) + ((ir->attr.memop.popIndex)<<4) + ((ir->attr.memop.base)<<2);
-            if (ir->kind == BOK_MEM_READ) opcode += 0;
-            if (ir->kind == BOK_MEM_WRITE) opcode += 1;
-            if (ir->kind == BOK_MEM_MODIFY) opcode += 2;
-            if (ir->kind == BOK_MEM_ADDRESS) opcode += 3;
+            uint8_t opcode = 0x40 + (offset&0x1C);
+                 if (ir->kind == BOK_MEM_READ) opcode += 0;
+            else if (ir->kind == BOK_MEM_WRITE) opcode += 1;
+            else if (ir->kind == BOK_MEM_MODIFY) opcode += 2;
+            else if (ir->kind == BOK_MEM_ADDRESS) opcode += 3;
+                 if (ir->attr.memop.base == MEMOP_BASE_VBASE) opcode += 0<<5;
+            else if (ir->attr.memop.base == MEMOP_BASE_DBASE) opcode += 1<<5;
+
             buf[pos++] = opcode;
+        } else {
+            uint8_t opcode = 0x80 + ((ir->attr.memop.popIndex)<<4);
+                 if (ir->attr.memop.memSize == MEMOP_SIZE_BYTE) opcode += 0<<5;
+            else if (ir->attr.memop.memSize == MEMOP_SIZE_WORD) opcode += 1<<5;
+            else if (ir->attr.memop.memSize == MEMOP_SIZE_LONG) opcode += 2<<5;
+            else ERROR(NULL,"Internal Error: Invalid memSize");
+                 if (ir->attr.memop.base == MEMOP_BASE_POP)   opcode += 0<<2;
+            else if (ir->attr.memop.base == MEMOP_BASE_PBASE) opcode += 1<<2;
+            else if (ir->attr.memop.base == MEMOP_BASE_VBASE) opcode += 2<<2;
+            else if (ir->attr.memop.base == MEMOP_BASE_DBASE) opcode += 3<<2;
+            else ERROR(NULL,"Internal Error: Invalid base");
+                 if (ir->kind == BOK_MEM_READ) opcode += 0;
+            else if (ir->kind == BOK_MEM_WRITE) opcode += 1;
+            else if (ir->kind == BOK_MEM_MODIFY) opcode += 2;
+            else if (ir->kind == BOK_MEM_ADDRESS) opcode += 3;
+            else ERROR(NULL,"Internal Error: Invalid kind");
+
+            buf[pos++] = opcode;
+
             if (ir->attr.memop.base != MEMOP_BASE_POP) {
                 if (offset < 0x80) {
                     buf[pos++] = offset;
@@ -312,27 +341,28 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
                     buf[pos++] = offset&0xFF;
                 } else ERROR(NULL,"Mem op offset exceeds 0x8000");
             }
-            if (ir->kind == BOK_MEM_MODIFY) ERROR(NULL,"MODIFY is NYI");
-            else {
-                if (gl_listing) { // This is complex, so only run when we actually want a listing
-                    const char* basetext = "oh no";
-                    switch(ir->attr.memop.base) {
-                    case MEMOP_BASE_POP: basetext = "(POP base)"; break;
-                    case MEMOP_BASE_PBASE: basetext = auto_printf(14,"PBASE+$%04X",offset); break;
-                    case MEMOP_BASE_VBASE: basetext = auto_printf(14,"VBASE+$%04X",offset); break;
-                    case MEMOP_BASE_DBASE: basetext = auto_printf(14,"DBASE+$%04X",offset); break;
-                    }
-                    const char* sizetext = "oh no"; 
-                    switch (ir->attr.memop.memSize) {
-                    case MEMOP_SIZE_BIT: sizetext = "(invalid)"; break;
-                    case MEMOP_SIZE_BYTE: sizetext = "BYTE"; break;
-                    case MEMOP_SIZE_WORD: sizetext = "WORD"; break;
-                    case MEMOP_SIZE_LONG: sizetext = "LONG"; break;
-                    }
-                    comment = auto_printf(128,"%s %s %s%s ",
-                        byteOpKindNames[ir->kind],sizetext,basetext,ir->attr.memop.popIndex ? "+(POP index)":"");
-                    // TODO handle all the modify stuff
-                };
+        }
+        
+        if (ir->kind == BOK_MEM_MODIFY) ERROR(NULL,"MODIFY is NYI");
+        else {
+            if (gl_listing) { // This is complex, so only run when we actually want a listing
+                const char* basetext = "oh no";
+                switch(ir->attr.memop.base) {
+                case MEMOP_BASE_POP: basetext = "(POP base)"; break;
+                case MEMOP_BASE_PBASE: basetext = auto_printf(14,"PBASE+$%04X",offset); break;
+                case MEMOP_BASE_VBASE: basetext = auto_printf(14,"VBASE+$%04X",offset); break;
+                case MEMOP_BASE_DBASE: basetext = auto_printf(14,"DBASE+$%04X",offset); break;
+                }
+                const char* sizetext = "oh no", *multext=""; 
+                switch (ir->attr.memop.memSize) {
+                case MEMOP_SIZE_BIT:  sizetext = "(invalid)"; break;
+                case MEMOP_SIZE_BYTE: sizetext = "BYTE"; break;
+                case MEMOP_SIZE_WORD: sizetext = "WORD"; break;
+                case MEMOP_SIZE_LONG: sizetext = "LONG"; break;
+                }
+                comment = auto_printf(128,"%s %s %s%s %s ",
+                    byteOpKindNames[ir->kind],sizetext,basetext,ir->attr.memop.popIndex ? "+(POP index)":"",shortForm?"(short)":"");
+                // TODO handle all the modify stuff
             }
         }
     } break;
