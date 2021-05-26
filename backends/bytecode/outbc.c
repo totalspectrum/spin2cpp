@@ -355,11 +355,13 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
 
     if (anchorOp.kind) BIRB_PushCopy(irbuf,&anchorOp);
 
-    ASSERT_AST_KIND(node->right,AST_EXPRLIST,return;);
-    for (AST *list=node->right;list;list=list->right) {
-        printf("Compiling function call argument...");
-        ASSERT_AST_KIND(list,AST_EXPRLIST,return;);
-        BCCompileExpression(irbuf,list->left,context);
+    if (node->right) {
+        ASSERT_AST_KIND(node->right,AST_EXPRLIST,return;);
+        for (AST *list=node->right;list;list=list->right) {
+            printf("Compiling function call argument...");
+            ASSERT_AST_KIND(list,AST_EXPRLIST,return;);
+            BCCompileExpression(irbuf,list->left,context);
+        }
     }
 
 
