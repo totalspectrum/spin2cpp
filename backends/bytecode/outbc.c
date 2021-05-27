@@ -42,19 +42,38 @@ static int BCLocalBase() {
     }
 }
 
+static int BCGetOBJSize(Module *P,AST *ast) {
+    if (ast->kind == AST_LISTHOLDER) ast = ast->right;
+    if (ast->kind == AST_DECLARE_VAR) {
+        Module *mod = GetClassPtr(ast->left);
+        if (!mod) {
+            ERROR(ast,"Can't get Module in BCGetOBJSize");
+            return 0;
+        }
+        return mod->varsize;
+    } else printf("Unhandled AST Kind %d in BCGetOBJSize\n",ast->kind);
+    return 0;
+}
+
 static int BCGetOBJOffset(Module *P,AST *ast) {
     Symbol *sym = NULL;
     if (ast->kind == AST_LISTHOLDER) ast = ast->right;
     if (ast->kind == AST_DECLARE_VAR) {
         // FIXME this seems kindof wrong?
         printf("AST_DECLARE_VAR\n");
-        const char *name = ast->right->left->d.string;
+        AST *ident = ast->right->left;
+        if (ident->kind == AST_ARRAYDECL) ident = ident->left;
+        if (ident->kind != AST_IDENTIFIER) {
+            ERROR(ident,"Not an identifier");
+            return 0;
+        }
+        const char *name = ident->d.string;
         printf("Looking up %s in a module\n",name);
-        sym = LookupSymbolInTable(&P->objsyms,name);
+        if(name) sym = LookupSymbolInTable(&P->objsyms,name);
     } else if (ast->kind == AST_IDENTIFIER) {
         printf("AST_IDENTIFIER\n");
         sym = LookupAstSymbol(ast,NULL);
-    } else printf("Unhandled AST Kind %d\n",ast->kind);
+    } else printf("Unhandled AST Kind %d in BCGetOBJOffset\n",ast->kind);
     if (!sym) {
         ERROR(ast,"Can't find symbol for an OBJ");
         return -1;
@@ -141,10 +160,13 @@ printASTInfo(AST *node) {
     } else printf("null node");
 }
 
-#define ASSERT_AST_KIND(node,expectedkind,whatdo) {\
-if (!node) { ERROR(NULL,"Internal Error: Expected " #expectedkind " got NULL\n"); whatdo ; } \
-else if (node->kind != expectedkind) { ERROR(node,"Internal Error: Expected " #expectedkind " got %d\n",node->kind); whatdo ; }}
 
+#define ASSERT_AST_KIND_LOC2(f,l) f ":" #l
+#define ASSERT_AST_KIND_LOC(f,l) ASSERT_AST_KIND_LOC2(f,l)
+#define ASSERT_AST_KIND(node,expectedkind,whatdo) {\
+if (!node) { ERROR(NULL,"Internal Error: Expected " #expectedkind " got NULL @" ASSERT_AST_KIND_LOC(__FILE__,__LINE__) "\n"); whatdo ; } \
+else if (node->kind != expectedkind) { ERROR(node,"Internal Error: Expected " #expectedkind " got %d @" ASSERT_AST_KIND_LOC(__FILE__,__LINE__) "\n",node->kind); whatdo ; }}
+ 
 static void BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context); // forward decl;
 
 
@@ -330,6 +352,28 @@ static int getFuncID(Module *M,const char *name) {
     return -1;
 }
 
+// FIXME this seems very convoluted
+static int getObjID(Module *M,const char *name, AST** gettype) {
+    if (!M->bedata) {
+        ERROR(NULL,"Internal Error: bedata empty");
+        return -1;
+    }
+    for(int i=0;i<ModData(M)->obj_cnt;i++) {
+        AST *obj = ModData(M)->objs[i];
+        ASSERT_AST_KIND(obj,AST_DECLARE_VAR,return 0;);
+        ASSERT_AST_KIND(obj->left,AST_OBJECT,return 0;);
+        ASSERT_AST_KIND(obj->right,AST_LISTHOLDER,return 0;);
+        AST *ident = obj->right->left;
+        if (ident && ident->kind == AST_ARRAYDECL) ident = ident->left;
+        ASSERT_AST_KIND(ident,AST_IDENTIFIER,return 0;);
+        if(strcmp(GetIdentifierName(ident),name)) continue; 
+        if (gettype) *gettype = obj->left;
+        return i+1+ModData(M)->pub_cnt+ModData(M)->pri_cnt;
+    }
+    ERROR(NULL,"can't find OBJ id for %s",name);
+    return 0;
+}
+
 // Very TODO
 static void
 BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpression) {
@@ -339,20 +383,22 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
     Symbol *sym = NULL;
     int callobjid = -1;
     AST *objtype = NULL;
+    AST *index_expr = NULL;
     if (node->left && node->left->kind == AST_METHODREF) {
-        ASSERT_AST_KIND(node->left->left,AST_IDENTIFIER,return;);
-        Symbol *objsym = LookupAstSymbol(node->left->left,NULL);
+        AST *ident = node->left->left;
+        if (ident->kind == AST_ARRAYREF) {
+            index_expr = ident->right;
+            ident = ident->left;
+        }
+        ASSERT_AST_KIND(ident,AST_IDENTIFIER,return;);
+        Symbol *objsym = LookupAstSymbol(ident,NULL);
         if(!objsym || objsym->kind != SYM_VARIABLE) {
             ERROR(node->left,"Internal error: Invalid call receiver");
             return;
         }
         printf("Got object with name %s\n",objsym->our_name);
 
-        for(int i=0;i<ModData(current)->obj_cnt;i++) {
-            if(strcmp(ModData(current)->objs[i]->right->left->d.string,objsym->our_name)) continue; // FIXME this seems like the wrong way
-            callobjid = i+1+ModData(current)->pub_cnt+ModData(current)->pri_cnt;
-            objtype = ModData(current)->objs[i]->left;
-        }
+        callobjid = getObjID(current,objsym->our_name,&objtype);
         if (callobjid<0) {
             ERROR(node->left,"Not an OBJ of this object");
             return;
@@ -384,6 +430,15 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
         if (!strcmp(sym->our_name,"waitcnt")) {
             callOp.kind = BOK_WAIT;
             callOp.attr.wait.type = BCW_WAITCNT;
+        } else if (!strcmp(sym->our_name,"waitpeq")) {
+            callOp.kind = BOK_WAIT;
+            callOp.attr.wait.type = BCW_WAITPEQ;
+        } else if (!strcmp(sym->our_name,"waitpne")) {
+            callOp.kind = BOK_WAIT;
+            callOp.attr.wait.type = BCW_WAITPNE;
+        } else if (!strcmp(sym->our_name,"waitvid")) {
+            callOp.kind = BOK_WAIT;
+            callOp.attr.wait.type = BCW_WAITVID;
         } else {
             ERROR(node,"Unhandled builtin %s",sym->our_name);
             return;
@@ -398,7 +453,7 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
         if (callobjid<0) {
             callOp.kind = BOK_CALL_SELF;
         } else {
-            callOp.kind = BOK_CALL_OTHER;
+            callOp.kind = index_expr ? BOK_CALL_OTHER_IDX : BOK_CALL_OTHER;
             callOp.attr.call.objID = callobjid;
         }
         callOp.attr.call.funID = funid;
@@ -419,7 +474,7 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
         }
     }
 
-
+    if (index_expr) BCCompileExpression(irbuf,index_expr,context);
     BIRB_PushCopy(irbuf,&callOp);
 
     // TODO pop unwanted results????
@@ -696,15 +751,34 @@ BCPrepareObject(Module *P) {
             AST *var = upper->left;
             if (!(var->kind == AST_DECLARE_VAR && IsClassType(var->left))) continue;
 
-            // Debug gunk
+            // Wrangle info from the AST
             ASSERT_AST_KIND(var->left,AST_OBJECT,return;);
             ASSERT_AST_KIND(var->right,AST_LISTHOLDER,return;);
-            ASSERT_AST_KIND(var->right->left,AST_IDENTIFIER,return;);
-            printf("Got obj of type %s named %s\n",((Module*)var->left->d.ptr)->classname,var->right->left->d.string);
+
+            int arrsize = 0;
+            if (!var->right->left) {
+                ERROR(var->right,"LISTHOLDER is empty");
+            } else if (var->right->left->kind == AST_IDENTIFIER) {
+                printf("Got obj of type %s named %s\n",((Module*)var->left->d.ptr)->classname,var->right->left->d.string);
+                arrsize = 1;
+            } else if (var->right->left->kind == AST_ARRAYDECL) {
+                ASSERT_AST_KIND(var->right->left->right,AST_INTEGER,return;);
+                printf("Got obj array of type %s, size %d named %s\n",((Module*)var->left->d.ptr)->classname,var->right->left->right->d.ival,var->right->left->left->d.string);
+                arrsize = var->right->left->right->d.ival;
+            } else {
+                ERROR(var->right,"Unhandled OBJ AST kind %d",var->right->left->kind);
+            }
+            //printASTInfo(var->right->left);
+            //ASSERT_AST_KIND(var->right->left,AST_IDENTIFIER,return;);
 
             BCPrepareObject(GetClassPtr(var->left));
 
-            ModData(P)->objs[obj_cnt++] = var;
+            for(int i=0;i<arrsize;i++) {
+                ModData(P)->objs[obj_cnt] = var; // Just insert the same var and differentiate by objs_arr_index
+                ModData(P)->objs_arr_index[obj_cnt] = i;
+                obj_cnt++;
+            }
+            
 
             if (pub_cnt+pri_cnt+obj_cnt >= BC_MAX_POINTERS) {
                 ERROR(NULL,"Too many objects in Module %s",P->fullname);
@@ -761,8 +835,9 @@ BCCompileObject(ByteOutputBuffer *bob, Module *P) {
         }
 
         for (int i=0;i<obj_cnt;i++) {
-            objOffsetSpans[i] = BOB_PushWord(bob,0,"Header offset?"); // Header Offset?
-            int varOffset = BCGetOBJOffset(P,ModData(P)->objs[i]);
+            objOffsetSpans[i] = BOB_PushWord(bob,0,"Header offset");
+            AST *obj = ModData(P)->objs[i];
+            int varOffset = BCGetOBJOffset(P,obj) + ModData(P)->objs_arr_index[i] * BCGetOBJSize(P,obj);
             BOB_PushWord(bob,varOffset,"VAR offset"); // VAR Offset (from current object's VAR base)
         }
 
@@ -777,6 +852,7 @@ BCCompileObject(ByteOutputBuffer *bob, Module *P) {
         // TODO pass through listing data
         Flexbuf datBuf;
         flexbuf_init(&datBuf,2048);
+        // FIXME for some reason, this sometimes(??) prints empty DAT blocks for subobjects ???
         PrintDataBlock(&datBuf,P,NULL,NULL);
         BOB_Comment(bob,"--- DAT Block");
         BOB_Push(bob,(uint8_t*)flexbuf_peek(&datBuf),flexbuf_curlen(&datBuf),NULL);
