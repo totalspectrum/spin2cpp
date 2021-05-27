@@ -213,13 +213,38 @@ BCCompileMemOpEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum ByteOpKind 
     memOp.attr.memop.pushModifyResult = pushModifyResult;
 
     AST *type = NULL;
+    AST *typeoverride = NULL;
     Symbol *sym = NULL;
     AST *baseExpr = NULL;
+    AST *indexExpr = NULL;
 
     printASTInfo(node);
-    AST *ident = (node->kind == AST_ARRAYREF) ? node->left : node;
+    AST *ident;
+    if (node->kind == AST_ARRAYREF) {
+        ident = node->left;
+        indexExpr = node->right;
+    } else ident = node;
+
+    try_ident_again:
     if (IsIdentifier(ident)) sym = LookupAstSymbol(ident,NULL);
-    else if (node->kind == AST_RESULT) sym = LookupSymbol("result");
+    else if (ident->kind == AST_RESULT) sym = LookupSymbol("result");
+    else if (ident->kind == AST_MEMREF) {
+        if (!typeoverride && 
+        ident->right && ident->right->kind == AST_ADDROF && 
+        ident->right->left && ident->right->left->kind == AST_ARRAYREF) {
+            // Handle weird AST representation of "var.byte[x]""
+            NOTE(node,"handling size override...");
+            typeoverride = ident->left;
+            ident = ident->right->left->left;
+            goto try_ident_again;
+        } else {
+            // normal raw memory access
+            memOp.attr.memop.base = MEMOP_BASE_POP;
+            type = ident->left;
+            baseExpr = ident->right;
+            goto nosymbol_memref;
+        }
+    }
 
     if (!sym) {
         ERROR(ident,"Can't get symbol");
@@ -286,20 +311,44 @@ BCCompileMemOpEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum ByteOpKind 
             return;
         }
     }
+    nosymbol_memref:
     
+    if (typeoverride) type = typeoverride;
     printf("Got type ");printASTInfo(type);
-    if (type && type->kind == AST_ARRAYTYPE) type = type->right; // We don't care if this is an array, we just want the size
+    if (type && type->kind == AST_ARRAYTYPE) type = type->left; // We don't care if this is an array, we just want the size
 
          if (type == ast_type_byte) memOp.attr.memop.memSize = MEMOP_SIZE_BYTE;
     else if (type == ast_type_word) memOp.attr.memop.memSize = MEMOP_SIZE_WORD; 
     else if (type == ast_type_long) memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
     else if (type == NULL) memOp.attr.memop.memSize = MEMOP_SIZE_LONG; // Assume long type... This is apparently neccessary
-    else ERROR(node,"Can't figure out mem op type, is unhandled");
+    else {
+        ERROR(type,"Can't figure out mem op type, is unhandled");
+        printASTInfo(type);
+    }
 
     memOp.attr.memop.modSize = memOp.attr.memop.memSize; // Let's just assume these are the same
 
     if (!!baseExpr != !!(memOp.attr.memop.base == MEMOP_BASE_POP)) ERROR(node,"Internal Error: baseExpr condition mismatch");
     if (baseExpr) BCCompileExpression(irbuf,baseExpr,context,false);
+
+    if (indexExpr) {
+        bool indexConst = IsConstExpr(indexExpr);
+        int constIndexVal;
+        if (indexConst) constIndexVal = EvalConstExpr(indexExpr);
+
+        if (baseExpr && indexConst && constIndexVal == 0) {
+            // In this case, do nothing
+        } else if (!baseExpr && indexConst) {
+            // Just add index onto base
+            if (memOp.attr.memop.memSize == MEMOP_SIZE_BYTE) memOp.data.int32 += constIndexVal;
+            else if (memOp.attr.memop.memSize == MEMOP_SIZE_WORD) memOp.data.int32 += constIndexVal << 1;
+            else if (memOp.attr.memop.memSize == MEMOP_SIZE_LONG) memOp.data.int32 += constIndexVal << 2;
+        } else {
+            // dynamic index
+            memOp.attr.memop.popIndex = true;
+            BCCompileExpression(irbuf,indexExpr,context,false);
+        }
+    }
 
     BIRB_PushCopy(irbuf,&memOp);
 }
@@ -785,7 +834,7 @@ BCCompileConditionalJump(BCIRBuffer *irbuf,AST *condition, bool ifNotZero, ByteO
     if (!condition) {
         ERROR(NULL,"Null condition!");
         return;
-    } else if (condition->kind == AST_INTEGER || condition->kind == AST_CONSTANT) {
+    } else if (IsConstExpr(condition)) {
         int ival = EvalConstExpr(condition);
         if (!!ival == !!ifNotZero) {  
             condjmp.kind = BOK_JUMP; // Unconditional jump
@@ -1098,7 +1147,7 @@ BCPrepareObject(Module *P) {
                 ModData(P)->objs_arr_index[obj_cnt] = i;
                 obj_cnt++;
             }
-            
+
 
             if (pub_cnt+pri_cnt+obj_cnt >= BC_MAX_POINTERS) {
                 ERROR(NULL,"Too many objects in Module %s",P->fullname);
