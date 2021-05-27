@@ -241,6 +241,7 @@ static void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsL
     case BOK_BUILTIN_STRSIZE:
     case BOK_BUILTIN_STRCOMP:
     case BOK_ANCHOR:
+    case BOK_POP:
         *min = *max = 1; break;
     // Two byte ops
     case BOK_REG_READ:
@@ -481,6 +482,7 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
         default: ERROR(NULL,"Unhandled wait type %d",ir->attr.wait.type); break;
         }
     } break;
+    case BOK_POP: buf[pos++] = 0b00010100; break;
     case BOK_BUILTIN_STRSIZE: buf[pos++] = 0b00010110; break;
     case BOK_BUILTIN_STRCOMP: buf[pos++] = 0b00010111; break;
     case BOK_LABEL: break;

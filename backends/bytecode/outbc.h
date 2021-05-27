@@ -4,6 +4,7 @@
 
 #include "spinc.h"
 #include "bcbuffers.h"
+#include "bcir.h"
 
 #define BC_MAX_POINTERS 256
 
@@ -27,6 +28,7 @@ typedef struct {
 
 typedef struct {
     int inCountedRepeat:1; // Have to pop counter on QUIT?
+    ByteOpIR *quitLabel,*nextLabel;
 } BCContext;
 
 void OutputByteCode(const char *fname, Module *P);

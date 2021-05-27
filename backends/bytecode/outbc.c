@@ -542,7 +542,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
         ERROR(NULL,"Internal Error: Null expression!!");
         return;
     }
-    bool popResult = asStatement;
+    unsigned popResults = asStatement ? 1 : 0;
     switch(node->kind) {
         case AST_INTEGER: {
             printf("Got integer %d\n",node->d.ival);
@@ -606,7 +606,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
             AST *var = isPostfix?node->left:node->right;
             bool isDecrement = node->d.ival == K_DECREMENT;
 
-            if (asStatement) popResult = false;
+            if (asStatement) popResults = 0;
 
             if (0) {
                 // Native inc/dec
@@ -700,7 +700,8 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
             ERROR(node,"Unhandled node kind %d in expression",node->kind);
             return;
     }
-    if (popResult) {
+    if (popResults) {
+        BCCompileInteger(irbuf,popResults);
         ByteOpIR popOp = {0};
         popOp.kind = BOK_POP;
         BIRB_PushCopy(irbuf,&popOp);
@@ -720,6 +721,14 @@ BCCompileStmtlist(BCIRBuffer *irbuf,AST *list, BCContext context) {
         BCCompileStatement(irbuf,node,context);
     }
 
+}
+
+static void
+BCCompileJump(BCIRBuffer *irbuf, ByteOpIR *label) {
+    ByteOpIR condjmp = {0};
+    condjmp.kind = BOK_JUMP;
+    condjmp.data.jumpTo = label;
+    BIRB_PushCopy(irbuf,&condjmp);
 }
 
 static void
@@ -774,12 +783,11 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         ASSERT_AST_KIND(node->right,AST_STMTLIST,break;)
 
         BCContext newcontext = context;
+        newcontext.nextLabel = toplbl;
+        newcontext.quitLabel = bottomlbl;
         BCCompileStmtlist(irbuf,node->right,newcontext);
 
-        ByteOpIR returnjmp = {0};
-        returnjmp.kind = BOK_JUMP;
-        returnjmp.data.jumpTo = toplbl;
-        BIRB_PushCopy(irbuf,&returnjmp);
+        BCCompileJump(irbuf,toplbl);
         BIRB_Push(irbuf,bottomlbl);
     } break;
     case AST_FOR:
@@ -807,19 +815,19 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
 
         BCCompileStatement(irbuf,initStmnt,context);
         BIRB_Push(irbuf,topLabel);
-        if(!atleastonce) {
-            BIRB_Push(irbuf,nextLabel);
-            BCCompileConditionalJump(irbuf,condExpression,false,quitLabel,context);
-        }
+        if(!atleastonce) BCCompileConditionalJump(irbuf,condExpression,false,quitLabel,context);
 
         BCContext newcontext = context;
+        newcontext.quitLabel = quitLabel;
+        newcontext.nextLabel = nextLabel;
         BCCompileStmtlist(irbuf,body,newcontext);
 
+        BIRB_Push(irbuf,nextLabel);
         BCCompileExpression(irbuf,nextExpression,context,true); // Compile as statement!
-        if(atleastonce) {
-            BIRB_Push(irbuf,nextLabel);
-            BCCompileConditionalJump(irbuf,condExpression,true,topLabel,context);
-        }
+
+        if(atleastonce) BCCompileConditionalJump(irbuf,condExpression,true,topLabel,context);
+        else BCCompileJump(irbuf,topLabel);
+
         BIRB_Push(irbuf,quitLabel);
 
     } break;
@@ -857,6 +865,28 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
     } break;
     case AST_FUNCCALL: {
         BCCompileFunCall(irbuf,node,context,false);
+    } break;
+    case AST_CONTINUE: {
+        if (!context.nextLabel) {
+            ERROR(node,"NEXT outside loop");
+        } else {
+            ByteOpIR jumpOp = {0};
+            jumpOp.kind = BOK_JUMP;
+            jumpOp.data.jumpTo = context.nextLabel;
+            BIRB_PushCopy(irbuf,&jumpOp);
+        }
+    } break;
+    case AST_QUITLOOP: {
+        if (!context.nextLabel) {
+            ERROR(node,"QUIT outside loop");
+        } else if (context.inCountedRepeat) {
+            ERROR(node,"QUIT in counted repeat NYI");
+        } else {
+            ByteOpIR jumpOp = {0};
+            jumpOp.kind = BOK_JUMP;
+            jumpOp.data.jumpTo = context.quitLabel;
+            BIRB_PushCopy(irbuf,&jumpOp);
+        }
     } break;
     default:
         ERROR(node,"Unhandled node kind %d",node->kind);

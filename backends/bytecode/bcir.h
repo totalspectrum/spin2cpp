@@ -12,7 +12,7 @@
     X(LABEL) /* Virtual jump target opcode */\
     \
     X(CONSTANT)  /* Push immediate */\
-    X(POP)  /* Pop value */\
+    X(POP)  /* Pop N values */\
     \
     X(RETURN_PLAIN)  /* Plain return (keep set results)*/\
     X(RETURN_POP)  /* Pop return */\
