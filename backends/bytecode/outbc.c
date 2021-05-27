@@ -214,6 +214,7 @@ BCCompileMemOpEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum ByteOpKind 
 
     AST *type = NULL;
     Symbol *sym = NULL;
+    AST *baseExpr = NULL;
 
     printASTInfo(node);
     AST *ident = (node->kind == AST_ARRAYREF) ? node->left : node;
@@ -240,22 +241,27 @@ BCCompileMemOpEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum ByteOpKind 
             memOp.data.int32 = labelval;
         } break;
         case SYM_VARIABLE: {
-            if (!type) type = ast_type_long; // FIXME this seems wrong, but is NULL otherwise
             printf("Got SYM_VARIABLE (VAR symbol)... ");
-            memOp.attr.memop.base = MEMOP_BASE_VBASE;
-            printf("sym->offset is %d\n",sym->offset);
-            memOp.data.int32 = sym->offset;
+            if (!strcmp(sym->our_name,"__clkfreq_var") || !strcmp(sym->our_name,"__clkmode_var")) {
+                // FIXME figure out how to properly differentiate these
+                printf("Got special symbol %s with offset %d\n",sym->our_name,sym->offset);
+                memOp.attr.memop.base = MEMOP_BASE_POP;
+                if (baseExpr) ERROR(node,"baseExpr already set?!?!");
+                else baseExpr = AstInteger(sym->offset);
+            } else {
+                memOp.attr.memop.base = MEMOP_BASE_VBASE;
+                printf("sym->offset is %d\n",sym->offset);
+                memOp.data.int32 = sym->offset;
+            }
 
         } break;
         case SYM_LOCALVAR: {
-            if (!type) type = ast_type_long; // FIXME this seems wrong, but is NULL otherwise
             printf("Got SYM_LOCALVAR... ");
             memOp.attr.memop.base = MEMOP_BASE_DBASE;
             printf("sym->offset is %d\n",sym->offset);
             memOp.data.int32 = sym->offset + BCLocalBase();
         } break;
         case SYM_PARAMETER: {
-            if (!type) type = ast_type_long; // FIXME this seems wrong, but is NULL otherwise
             printf("Got SYM_PARAMETER... ");
             memOp.attr.memop.base = MEMOP_BASE_DBASE;
             printf("sym->offset is %d\n",sym->offset);
@@ -270,7 +276,6 @@ BCCompileMemOpEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum ByteOpKind 
         }
         do_result:
         case SYM_RESULT: {
-            if (!type) type = ast_type_long; // FIXME this seems wrong, but is NULL otherwise
             printf("Got SYM_RESULT... ");
             memOp.attr.memop.base = MEMOP_BASE_DBASE;
             printf("sym->offset is %d\n",sym->offset);
@@ -283,14 +288,18 @@ BCCompileMemOpEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum ByteOpKind 
     }
     
     printf("Got type ");printASTInfo(type);
-    if (type && type->kind == AST_ARRAYTYPE) type = type->left; // We don't care if this is an array, we just want the size
+    if (type && type->kind == AST_ARRAYTYPE) type = type->right; // We don't care if this is an array, we just want the size
 
          if (type == ast_type_byte) memOp.attr.memop.memSize = MEMOP_SIZE_BYTE;
     else if (type == ast_type_word) memOp.attr.memop.memSize = MEMOP_SIZE_WORD; 
     else if (type == ast_type_long) memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
-    else ERROR(node,"Can't figure out mem op type (%s)",type?"is unhandled":"is NULL");
+    else if (type == NULL) memOp.attr.memop.memSize = MEMOP_SIZE_LONG; // Assume long type... This is apparently neccessary
+    else ERROR(node,"Can't figure out mem op type, is unhandled");
 
     memOp.attr.memop.modSize = memOp.attr.memop.memSize; // Let's just assume these are the same
+
+    if (!!baseExpr != !!(memOp.attr.memop.base == MEMOP_BASE_POP)) ERROR(node,"Internal Error: baseExpr condition mismatch");
+    if (baseExpr) BCCompileExpression(irbuf,baseExpr,context,false);
 
     BIRB_PushCopy(irbuf,&memOp);
 }
@@ -493,6 +502,43 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
             } else if (!strcmp(sym->our_name,"waitvid")) {
                 callOp.kind = BOK_WAIT;
                 callOp.attr.wait.type = BCW_WAITVID;
+            } else if (!strcmp(sym->our_name,"bytefill")) {
+                callOp.kind = BOK_BUILTIN_BULKMEM;
+                callOp.attr.bulkmem.isMove = false;
+                callOp.attr.bulkmem.memSize = BULKMEM_SIZE_BYTE;
+            } else if (!strcmp(sym->our_name,"wordfill")) {
+                callOp.kind = BOK_BUILTIN_BULKMEM;
+                callOp.attr.bulkmem.isMove = false;
+                callOp.attr.bulkmem.memSize = BULKMEM_SIZE_WORD;
+            } else if (!strcmp(sym->our_name,"longfill")) {
+                callOp.kind = BOK_BUILTIN_BULKMEM;
+                callOp.attr.bulkmem.isMove = false;
+                callOp.attr.bulkmem.memSize = BULKMEM_SIZE_LONG;
+            } else if (!strcmp(sym->our_name,"bytemove")) {
+                callOp.kind = BOK_BUILTIN_BULKMEM;
+                callOp.attr.bulkmem.isMove = true;
+                callOp.attr.bulkmem.memSize = BULKMEM_SIZE_BYTE;
+            } else if (!strcmp(sym->our_name,"wordmove")) {
+                callOp.kind = BOK_BUILTIN_BULKMEM;
+                callOp.attr.bulkmem.isMove = true;
+                callOp.attr.bulkmem.memSize = BULKMEM_SIZE_WORD;
+            } else if (!strcmp(sym->our_name,"longmove")) {
+                callOp.kind = BOK_BUILTIN_BULKMEM;
+                callOp.attr.bulkmem.isMove = true;
+                callOp.attr.bulkmem.memSize = BULKMEM_SIZE_LONG;
+            } else if (!strcmp(sym->our_name,"_clkset") && !gl_p2) {
+                callOp.kind = BOK_CLKSET;
+            } else if (!strcmp(sym->our_name,"_reboot")) {
+                if (gl_p2) ERROR(node,"P2 REBOOT is NYI");
+                else {
+                    printf("Got reboot!\n");
+                    callOp.kind = BOK_CLKSET;
+                    // Slight Hack: compile the parameters up here
+                    BCCompileInteger(irbuf,128);
+                    BCCompileInteger(irbuf,0);
+                }
+            } else if (!strcmp(sym->our_name,"_cogstop")) {
+                callOp.kind = BOK_COGSTOP;
             } else {
                 ERROR(node,"Unhandled statement builtin %s",sym->our_name);
                 return;
@@ -505,6 +551,7 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
             ERROR(node,"Can't get function id for %s",sym->our_name);
             return;
         }
+        printf("Got call to %s\n",sym->our_name);
         if (callobjid<0) {
             callOp.kind = BOK_CALL_SELF;
         } else {
@@ -888,8 +935,25 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
             BIRB_PushCopy(irbuf,&jumpOp);
         }
     } break;
+    case AST_IDENTIFIER: {
+        printf("Got identifier in Statement??\n");
+        Symbol *sym = LookupAstSymbol(node,NULL);
+        if (!sym) ERROR(node,"Internal Error: Can't get symbol");
+        switch (sym->kind) {
+        case SYM_BUILTIN:
+        case SYM_FUNCTION: {
+            // This nonsense fixes REBOOT
+            printf("Note: identifier converted to function call for sym with kind %d and name %s\n",sym->kind,sym->our_name);
+            AST *fakecall = NewAST(AST_FUNCCALL,node,NULL);
+            BCCompileFunCall(irbuf,fakecall,context,false);
+        } break;
+        default: {
+            ERROR(node,"Unhandled identifier symbol kind %d in statement",sym->kind);
+        } break;
+        }
+    } break;
     default:
-        ERROR(node,"Unhandled node kind %d",node->kind);
+        ERROR(node,"Unhandled node kind %d in statement",node->kind);
         break;
     }
 }

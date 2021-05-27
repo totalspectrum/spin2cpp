@@ -54,7 +54,9 @@
     X(BUILTIN_STRCOMP) \
     X(BUILTIN_BULKMEM) /* BYTEFILL, LONGMOVE and friends */ \
     \
-    X(WAIT)
+    X(WAIT) \
+    X(COGSTOP) \
+    X(CLKSET) /* only relevant on P1 */
 
 enum ByteOpKind {
     #define X(en) BOK_ ## en,

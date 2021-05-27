@@ -240,6 +240,9 @@ static void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsL
     case BOK_WAIT:
     case BOK_BUILTIN_STRSIZE:
     case BOK_BUILTIN_STRCOMP:
+    case BOK_BUILTIN_BULKMEM:
+    case BOK_COGSTOP:
+    case BOK_CLKSET:
     case BOK_ANCHOR:
     case BOK_POP:
         *min = *max = 1; break;
@@ -428,6 +431,18 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
         memcpy((char*)buf,ir->data.stringPtr,size);
         pos+=size;
     } break;
+    case BOK_BUILTIN_BULKMEM: {
+        uint8_t opcode = 0b00011000;
+        const char *sizetext = "oh no";
+        switch (ir->attr.bulkmem.memSize) {
+        case BULKMEM_SIZE_BYTE: opcode += 0; sizetext = "BYTE"; break;
+        case BULKMEM_SIZE_WORD: opcode += 1; sizetext = "WORD"; break;
+        case BULKMEM_SIZE_LONG: opcode += 2; sizetext = "LONG"; break;
+        }
+        if (ir->attr.bulkmem.isMove) opcode += 4;
+        buf[pos++] = opcode;
+        comment = auto_printf(10,"%s%s",sizetext,ir->attr.bulkmem.isMove ?"MOVE":"FILL");
+    } break;
     case BOK_ANCHOR: {
         buf[pos++] = 0b00000000 + ((!ir->attr.anchor.withResult)&1) + (ir->attr.anchor.rescue<<1);
         comment = auto_printf(32,"ANCHOR %s %s",ir->attr.anchor.rescue?"(RESCUE)":"",ir->attr.anchor.withResult?"":"(DISCARD)");
@@ -485,6 +500,8 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
     case BOK_POP: buf[pos++] = 0b00010100; break;
     case BOK_BUILTIN_STRSIZE: buf[pos++] = 0b00010110; break;
     case BOK_BUILTIN_STRCOMP: buf[pos++] = 0b00010111; break;
+    case BOK_CLKSET:   buf[pos++] = 0b00100000; break;
+    case BOK_COGSTOP:  buf[pos++] = 0b00100001; break;
     case BOK_LABEL: break;
     default: 
         ERROR(NULL,"Unhandled ByteOpIR kind %d = %s",ir->kind,byteOpKindNames[ir->kind]);
