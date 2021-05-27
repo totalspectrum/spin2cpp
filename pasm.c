@@ -60,10 +60,10 @@ BytesForFvar(AST *item, int isSigned)
         if (val >= -(1<<13) && val < (1<<13)) return 2;
         if (val >= -(1<<20) && val < (1<<20)) return 3;
         if (val >= -(1<<28) && val < (1<<28)) return 4;
-        ERROR(item, "FVARS value ($%lx) out of range", val);
+        ERROR(item, "FVARS value ($%lx) out of range", (unsigned long)val);
     } else {
         if (val < 0) {
-            ERROR(item, "FVARS value ($%lx) out of range", val);
+            ERROR(item, "FVARS value ($%lx) out of range", (unsigned long)val);
         }
         if (val < (1<<7)) return 1;
         if (val < (1<<14)) return 2;

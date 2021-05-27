@@ -466,7 +466,7 @@ CompileInlineInstr_only(IRList *irl, AST *ast)
                 }
             }
             if (!ok) {
-                ERROR(ast, "immediate operand %d out of range", op->val);
+                ERROR(ast, "immediate operand %ld out of range", (long)op->val);
             }
         }
     }
@@ -480,8 +480,8 @@ FixupHereLabel(IRList *irl, IR *firstir, int addr, Operand *dst)
 
     addr += dst->val;
     if (addr < 0) {
-        ERROR(NULL, "pc relative address $ - %u in inline assembly is out of range",
-              -dst->val);
+        ERROR(NULL, "pc relative address $ - %lu in inline assembly is out of range",
+              (unsigned long)-dst->val);
         return NewImmediate(0);
     }
     
@@ -495,11 +495,11 @@ FixupHereLabel(IRList *irl, IR *firstir, int addr, Operand *dst)
         }
     }
     if (dst->val < 0) {
-        ERROR(NULL, "pc relative address $ - %u in inline assembly is out of range",
-              -dst->val);
+        ERROR(NULL, "pc relative address $ - %lu in inline assembly is out of range",
+              (unsigned long)-dst->val);
     } else {
-        ERROR(NULL, "pc relative address $ + %u in inline assembly is out of range",
-              dst->val);
+        ERROR(NULL, "pc relative address $ + %lu in inline assembly is out of range",
+              (unsigned long)dst->val);
     }
         
     return NewImmediate(0);;
