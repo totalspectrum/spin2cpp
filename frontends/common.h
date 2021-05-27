@@ -605,17 +605,17 @@ void CheckRecursive(Function *f);
 extern int gl_errors;
 extern int gl_warnings_are_errors;
 extern int gl_max_errors;
-void ERROR(AST *, const char *msg, ...);
-void WARNING(AST *, const char *msg, ...);
+void ERROR(AST *, const char *msg, ...) __attribute__((format(printf,2,3)));
+void WARNING(AST *, const char *msg, ...) __attribute__((format(printf,2,3)));
 void ERROR_UNKNOWN_SYMBOL(AST *);
-void NOTE(AST *, const char *msg, ...);
+void NOTE(AST *, const char *msg, ...) __attribute__((format(printf,2,3)));
 int DifferentLineNumbers(AST *, AST *);
 
 /* this one is used by the lexer */
-void SYNTAX_ERROR(const char *msg, ...);
+void SYNTAX_ERROR(const char *msg, ...) __attribute__((format(printf,1,2)));
 
 /* also used by lexer and some other places */
-void LANGUAGE_WARNING(int lang, AST *ast, const char *msg, ...);
+void LANGUAGE_WARNING(int lang, AST *ast, const char *msg, ...) __attribute__((format(printf,3,4)));
 
 /* just prints the start of the error message, formatted appropriately
    with file name and line number */
