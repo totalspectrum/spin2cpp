@@ -42,6 +42,28 @@ static int BCLocalBase() {
     }
 }
 
+static int BCGetOBJOffset(Module *P,AST *ast) {
+    Symbol *sym = NULL;
+    if (ast->kind == AST_LISTHOLDER) ast = ast->right;
+    if (ast->kind == AST_DECLARE_VAR) {
+        // FIXME this seems kindof wrong?
+        printf("AST_DECLARE_VAR\n");
+        const char *name = ast->right->left->d.string;
+        printf("Looking up %s in a module\n",name);
+        sym = LookupSymbolInTable(&P->objsyms,name);
+    } else if (ast->kind == AST_IDENTIFIER) {
+        printf("AST_IDENTIFIER\n");
+        sym = LookupAstSymbol(ast,NULL);
+    } else printf("Unhandled AST Kind %d\n",ast->kind);
+    if (!sym) {
+        ERROR(ast,"Can't find symbol for an OBJ");
+        return -1;
+    }
+    printf("In BCGetOBJOffset: ");
+    printf("got symbol with name %s, kind %d, offset %d\n",sym->our_name,sym->kind,sym->offset);
+    return sym->offset;
+}
+
 struct bcheaderspans {
     OutputSpan *pbase,*vbase,*dbase,*pcurr,*dcurr;
 };
@@ -315,9 +337,37 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
     printASTInfo(node);
 
     Symbol *sym = NULL;
+    int callobjid = -1;
+    AST *objtype = NULL;
     if (node->left && node->left->kind == AST_METHODREF) {
-        ERROR(node,"Method calls NYI");
-        return;
+        ASSERT_AST_KIND(node->left->left,AST_IDENTIFIER,return;);
+        Symbol *objsym = LookupAstSymbol(node->left->left,NULL);
+        if(!objsym || objsym->kind != SYM_VARIABLE) {
+            ERROR(node->left,"Internal error: Invalid call receiver");
+            return;
+        }
+        printf("Got object with name %s\n",objsym->our_name);
+
+        for(int i=0;i<ModData(current)->obj_cnt;i++) {
+            if(strcmp(ModData(current)->objs[i]->right->left->d.string,objsym->our_name)) continue; // FIXME this seems like the wrong way
+            callobjid = i+1+ModData(current)->pub_cnt+ModData(current)->pri_cnt;
+            objtype = ModData(current)->objs[i]->left;
+        }
+        if (callobjid<0) {
+            ERROR(node->left,"Not an OBJ of this object");
+            return;
+        }
+
+        const char *thename = GetIdentifierName(node->left->right);
+        if (!thename) {
+            return;
+        }
+        
+        sym = LookupMemberSymbol(node, objtype, thename, NULL);
+        if (!sym) {
+            ERROR(node->left, "%s is not a member", thename);
+            return;
+        }
     } else {
         sym = LookupAstSymbol(node->left, NULL);
     }
@@ -340,12 +390,17 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
         }
     } else if (sym->kind == SYM_FUNCTION) {
         // Function call
-        int funid = getFuncID(current,sym->our_name);
+        int funid = getFuncID(objtype ? GetClassPtr(objtype) : current, sym->our_name);
         if (funid < 0) {
             ERROR(node,"Can't get function id for %s",sym->our_name);
             return;
         }
-        callOp.kind = BOK_CALL_SELF;
+        if (callobjid<0) {
+            callOp.kind = BOK_CALL_SELF;
+        } else {
+            callOp.kind = BOK_CALL_OTHER;
+            callOp.attr.call.objID = callobjid;
+        }
         callOp.attr.call.funID = funid;
 
     } else {
@@ -580,8 +635,7 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
 
     // I think there's other body types so let's leave this instead of using ASSERT_AST_KIND
     if (!F->body) {
-        ERROR(F->body,"Internal Error: Function has no body (TODO: generate return)");
-        return;
+        printf("Note: compiling function with no body...\n");
     } else if (F->body->kind != AST_STMTLIST) {
         ERROR(F->body,"Internal Error: Expected AST_STMTLIST, got id %d",F->body->kind);
         return;
@@ -599,25 +653,14 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
 }
 
 static void
-BCCompileObject(ByteOutputBuffer *bob, Module *P) {
-
-    printf("Compiling bytecode for object %s\n",P->fullname);
-
-    BOB_Align(bob,4); // Long-align
-
-    BOB_Comment(bob,auto_printf(128,"--- Object Header for %s",P->classname));
-
+BCPrepareObject(Module *P) {
     // Init bedata
-    if (!P->bedata) {
-        P->bedata = calloc(sizeof(BCModData), 1);
-        ModData(P)->compiledAddress = -1;
-    }
-    if (ModData(P)->compiledAddress < 0) {
-        ModData(P)->compiledAddress = bob->total_size;
-    } else {
-        ERROR(NULL,"Already compiled module %s",P->fullname);
-        return;
-    }
+    if (P->bedata) return;
+
+    printf("Preparing object %s\n",P->fullname);
+
+    P->bedata = calloc(sizeof(BCModData), 1);
+    ModData(P)->compiledAddress = -1;
 
     // Count and gather private/public methods
     {
@@ -642,7 +685,7 @@ BCCompileObject(ByteOutputBuffer *bob, Module *P) {
     const int pub_cnt = ModData(P)->pub_cnt;
     const int pri_cnt = ModData(P)->pri_cnt;
 
-    // Count and gather object members - (TODO does this actually work?)
+    // Count and gather object members - (TODO does this actually work properly?)
     {
         int obj_cnt = 0;
         for (AST *upper = P->finalvarblock; upper; upper = upper->right) {
@@ -651,13 +694,15 @@ BCCompileObject(ByteOutputBuffer *bob, Module *P) {
                 return;
             }
             AST *var = upper->left;
-            if (!(var->kind = AST_DECLARE_VAR && IsClassType(var->left))) continue;
+            if (!(var->kind == AST_DECLARE_VAR && IsClassType(var->left))) continue;
 
             // Debug gunk
-            ASSERT_AST_KIND(var->left,AST_OBJECT,);
-            ASSERT_AST_KIND(var->right,AST_LISTHOLDER,);
-            ASSERT_AST_KIND(var->right->left,AST_IDENTIFIER,);
+            ASSERT_AST_KIND(var->left,AST_OBJECT,return;);
+            ASSERT_AST_KIND(var->right,AST_LISTHOLDER,return;);
+            ASSERT_AST_KIND(var->right->left,AST_IDENTIFIER,return;);
             printf("Got obj of type %s named %s\n",((Module*)var->left->d.ptr)->classname,var->right->left->d.string);
+
+            BCPrepareObject(GetClassPtr(var->left));
 
             ModData(P)->objs[obj_cnt++] = var;
 
@@ -668,10 +713,35 @@ BCCompileObject(ByteOutputBuffer *bob, Module *P) {
         }
         ModData(P)->obj_cnt = obj_cnt;
     }
+    
+}
+
+static void
+BCCompileObject(ByteOutputBuffer *bob, Module *P) {
+
+    printf("Compiling bytecode for object %s\n",P->fullname);
+
+    BOB_Align(bob,4); // Long-align
+
+    BOB_Comment(bob,auto_printf(128,"--- Object Header for %s",P->classname));
+
+    BCPrepareObject(P);
+
+    if (ModData(P)->compiledAddress < 0) {
+        ModData(P)->compiledAddress = bob->total_size;
+    } else {
+        ERROR(NULL,"Already compiled module %s",P->fullname);
+        return;
+    }
+
+    
+    const int pub_cnt = ModData(P)->pub_cnt;
+    const int pri_cnt = ModData(P)->pri_cnt;    
     const int obj_cnt = ModData(P)->obj_cnt;
 
     printf("Debug: this object (%s) has %d PUBs, %d PRIs and %d OBJs\n",P->classname,pub_cnt,pri_cnt,obj_cnt);
 
+    OutputSpan *objOffsetSpans[obj_cnt];
     // Emit object header
     switch(gl_interp_kind) {
     case INTERP_KIND_P1ROM:
@@ -691,8 +761,9 @@ BCCompileObject(ByteOutputBuffer *bob, Module *P) {
         }
 
         for (int i=0;i<obj_cnt;i++) {
-            BOB_PushWord(bob,0,"Header offset?"); // Header Offset?
-            BOB_PushWord(bob,0,"VAR offset?"); // VAR Offset (from current object's VAR base)
+            objOffsetSpans[i] = BOB_PushWord(bob,0,"Header offset?"); // Header Offset?
+            int varOffset = BCGetOBJOffset(P,ModData(P)->objs[i]);
+            BOB_PushWord(bob,varOffset,"VAR offset"); // VAR Offset (from current object's VAR base)
         }
 
         break;
@@ -719,9 +790,16 @@ BCCompileObject(ByteOutputBuffer *bob, Module *P) {
     // emit subobjects
     for (int i=0;i<obj_cnt;i++) {
         Module *mod = ModData(P)->objs[i]->left->d.ptr;
-        if (mod->bedata == NULL || ((BCModData*)mod->bedata)->compiledAddress < 0) {
+        if (mod->bedata == NULL || ModData(mod)->compiledAddress < 0) {
             BCCompileObject(bob,mod);
-
+        }
+        switch(gl_interp_kind) {
+        case INTERP_KIND_P1ROM:
+            BOB_ReplaceWord(objOffsetSpans[i],ModData(mod)->compiledAddress - ModData(P)->compiledAddress,NULL);
+            break;
+        default:
+            ERROR(NULL,"Unknown interpreter kind");
+            return;
         }
     }
 
