@@ -1240,7 +1240,7 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
         if (valid) {
             *valid = 0;
         } else {
-            ERROR(NULL, "unexpected operator ++ in constant expression", (op == K_INCREMENT) ? "++" : "--");
+            ERROR(NULL, "unexpected operator %s in constant expression", (op == K_INCREMENT) ? "++" : "--");
         }
         return 0;
     case K_ONES_COUNT:
