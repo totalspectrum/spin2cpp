@@ -961,10 +961,10 @@ DoPropellerChecksum(const char *fname, size_t eepromSize)
     FILE *f = fopen(fname, "r+b");
     unsigned char checksum = 0;
     int c, r;
-    size_t len;
-    size_t padbytes;
-    size_t maxlen;
-    size_t reserveSize = 0;
+    uint32_t len;
+    uint32_t padbytes;
+    uint32_t maxlen;
+    uint32_t reserveSize = 0;
     Symbol *sym;
     int save_casesensitive;
     
@@ -1016,7 +1016,7 @@ DoPropellerChecksum(const char *fname, size_t eepromSize)
         if (reserveSize) {
             WARNING(NULL, "final output size of %d bytes + %d reserved bytes exceeds maximum of %d by %d bytes", len, reserveSize, maxlen,(len + reserveSize) - maxlen);
         } else {
-            WARNING(NULL, "final output size of %d bytes exceeds maximum of %d by %d bytes", len, maxlen,len - maxlen);
+            WARNING(NULL, "final output size of %d bytes exceeds maximum of %d by %d bytes", len, maxlen, len - maxlen);
         }
     }
     // if P2, no checksum needed
