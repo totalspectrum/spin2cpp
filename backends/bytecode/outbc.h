@@ -19,6 +19,7 @@ typedef struct {
 typedef struct {
     OutputSpan *headerEntry;
     int compiledAddress; // -1 if not yet compiled
+    int localSize;
 } BCFunData;
 
 #define ModData(P) ((BCModData *)(P)->bedata)

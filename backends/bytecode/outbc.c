@@ -200,13 +200,17 @@ printASTInfo(AST *node) {
 if (!node) { ERROR(NULL,"Internal Error: Expected " #expectedkind " got NULL @" ASSERT_AST_KIND_LOC(__FILE__,__LINE__) "\n"); whatdo ; } \
 else if (node->kind != expectedkind) { ERROR(node,"Internal Error: Expected " #expectedkind " got %d @" ASSERT_AST_KIND_LOC(__FILE__,__LINE__) "\n",node->kind); whatdo ; }}
  
-static void BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context); // forward decl;
+static void BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStatement); // forward decl;
+static void BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context); // forward decl;
 
 
 static void
-BCCompileMemOp(BCIRBuffer *irbuf,AST *node,BCContext context, enum ByteOpKind kind) {
+BCCompileMemOpEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum ByteOpKind kind, enum MathOpKind modifyMathKind, bool modifyReverseMath, bool pushModifyResult) {
     ByteOpIR memOp = {0};
     memOp.kind = kind;
+    memOp.mathKind = modifyMathKind;
+    memOp.attr.memop.modifyReverseMath = modifyReverseMath;
+    memOp.attr.memop.pushModifyResult = pushModifyResult;
 
     AST *type = NULL;
     Symbol *sym = NULL;
@@ -286,7 +290,14 @@ BCCompileMemOp(BCIRBuffer *irbuf,AST *node,BCContext context, enum ByteOpKind ki
     else if (type == ast_type_long) memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
     else ERROR(node,"Can't figure out mem op type (%s)",type?"is unhandled":"is NULL");
 
+    memOp.attr.memop.modSize = memOp.attr.memop.memSize; // Let's just assume these are the same
+
     BIRB_PushCopy(irbuf,&memOp);
+}
+
+static inline void
+BCCompileMemOp(BCIRBuffer *irbuf,AST *node,BCContext context, enum ByteOpKind kind) {
+    BCCompileMemOpEx(irbuf,node,context,kind,0,false,false);
 }
 
 static void
@@ -296,7 +307,7 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
 
     if (asExpression) ERROR(node,"Assignment expression NYI");  
 
-    BCCompileExpression(irbuf,right,context);
+    BCCompileExpression(irbuf,right,context,false);
 
     switch(left->kind) {
     case AST_HWREG: {
@@ -514,11 +525,11 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
         for (AST *list=node->right;list;list=list->right) {
             printf("Compiling function call argument...");
             ASSERT_AST_KIND(list,AST_EXPRLIST,return;);
-            BCCompileExpression(irbuf,list->left,context);
+            BCCompileExpression(irbuf,list->left,context,false);
         }
     }
 
-    if (index_expr) BCCompileExpression(irbuf,index_expr,context);
+    if (index_expr) BCCompileExpression(irbuf,index_expr,context,false);
     BIRB_PushCopy(irbuf,&callOp);
 
     // TODO pop unwanted results????
@@ -526,7 +537,12 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
 }
 
 static void
-BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context) {
+BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStatement) {
+    if(!node) {
+        ERROR(NULL,"Internal Error: Null expression!!");
+        return;
+    }
+    bool popResult = asStatement;
     switch(node->kind) {
         case AST_INTEGER: {
             printf("Got integer %d\n",node->d.ival);
@@ -547,33 +563,73 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context) {
             BCCompileAssignment(irbuf,node,context,true);
         } break;
         case AST_OPERATOR: {
-            printf("Got operator in expression: %d\n",node->d.ival);
+            printf("Got operator in expression: 0x%03X\n",node->d.ival);
+            printASTInfo(node);
             enum MathOpKind mok;
             bool unary = false;
+            AST *left = node->left,*right = node->right;
             switch(node->d.ival) {
             case '^': mok = MOK_BITXOR; break;
             case '|': mok = MOK_BITOR; break;
             case '&': mok = MOK_BITAND; break;
             case '+': mok = MOK_ADD; break;
             case '-': mok = MOK_SUB; break;
+
             case K_SHR: mok = MOK_SHR; break;
             case K_SHL: mok = MOK_SHL; break;
+
+            case '<': mok = MOK_CMP_B; break;
+            case '>': mok = MOK_CMP_A; break;
+
+            case K_BOOL_NOT: mok = MOK_BOOLNOT; unary=true; break;
+
+            case K_INCREMENT: 
+            case K_DECREMENT:
+                goto incdec;
             default:
-                ERROR(node,"Unhandled operator %03X",node->d.ival);
-                mok = MOK_UHHH;
-                break;
+                ERROR(node,"Unhandled operator 0x%03X",node->d.ival);
+                return;
             }
 
             printf("Operator resolved to %d = %s\n",mok,mathOpKindNames[mok]);
 
-            if (unary) ERROR(node,"Unary operators NYI");
-            BCCompileExpression(irbuf,node->left,context);
-            BCCompileExpression(irbuf,node->right,context);
+            if (!unary) BCCompileExpression(irbuf,left,context,false);
+            BCCompileExpression(irbuf,right,context,false);
 
             ByteOpIR mathOp = {0};
             mathOp.kind = BOK_MATHOP;
             mathOp.mathKind = mok;
             BIRB_PushCopy(irbuf,&mathOp);
+        } break;
+        incdec: { // Special handling for inc/dec
+            bool isPostfix = node->left;
+            AST *var = isPostfix?node->left:node->right;
+            bool isDecrement = node->d.ival == K_DECREMENT;
+
+            if (asStatement) popResult = false;
+
+            if (0) {
+                // Native inc/dec
+                enum MathOpKind mok = isDecrement ? (isPostfix ? MOK_MOD_POSTDEC : MOK_MOD_PREDEC) : (isPostfix ? MOK_MOD_POSTINC : MOK_MOD_PREINC);
+                BCCompileMemOpEx(irbuf,var,context,BOK_MEM_MODIFY,mok,false,!asStatement);
+            } else {
+                // Discrete inc/dec
+
+                // If postfix, push old value
+                if (isPostfix && !asStatement) BCCompileMemOp(irbuf,var,context,BOK_MEM_READ);
+
+                BCCompileMemOp(irbuf,var,context,BOK_MEM_READ);
+                BCCompileInteger(irbuf,1);
+                ByteOpIR incdecop = {0};
+                incdecop.kind = BOK_MATHOP;
+                incdecop.mathKind = isDecrement ? MOK_SUB : MOK_ADD;
+                BIRB_PushCopy(irbuf,&incdecop);
+                BCCompileMemOp(irbuf,var,context,BOK_MEM_WRITE);
+
+                // If prefix, push new value
+                if (!isPostfix && !asStatement) BCCompileMemOp(irbuf,var,context,BOK_MEM_READ);
+            }
+
         } break;
         case AST_HWREG: {
             HwReg *hw = node->d.ptr;
@@ -642,7 +698,12 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context) {
         } break;
         default:
             ERROR(node,"Unhandled node kind %d in expression",node->kind);
-            break;
+            return;
+    }
+    if (popResult) {
+        ByteOpIR popOp = {0};
+        popOp.kind = BOK_POP;
+        BIRB_PushCopy(irbuf,&popOp);
     }
 }
 
@@ -656,89 +717,153 @@ BCCompileStmtlist(BCIRBuffer *irbuf,AST *list, BCContext context) {
             ERROR(ast,"empty node?!?");
             continue;
         }
-        while (node->kind == AST_COMMENTEDNODE) {
-            //printf("Node is allegedly commented:\n");
-            // FIXME: this doesn't actually get any comments?
-            for(AST *comment = node->right;comment&&comment->kind==AST_COMMENT;comment=comment->right) {
-                printf("---  %s\n",comment->d.string);
-            }
-            node = node->left;
-        }
-
-        switch(node->kind) {
-        case AST_ASSIGN:
-            BCCompileAssignment(irbuf,node,context,false);
-            break;
-        case AST_WHILE: {
-            printf("Got While loop.. ");
-            printASTInfo(node);
-
-            ByteOpIR *toplbl = BCPushLabel(irbuf);
-            ByteOpIR *bottomlbl = BCNewOrphanLabel();
-
-            // Compile condition
-            BCCompileExpression(irbuf,node->left,context);
-            ByteOpIR condjmp = {0};
-            condjmp.kind = BOK_JUMP_IF_Z;
-            condjmp.data.jumpTo = bottomlbl;
-            BIRB_PushCopy(irbuf,&condjmp);
-
-            ASSERT_AST_KIND(node->right,AST_STMTLIST,break;)
-
-            BCContext newcontext = context;
-            BCCompileStmtlist(irbuf,node->right,newcontext);
-
-            ByteOpIR returnjmp = {0};
-            returnjmp.kind = BOK_JUMP;
-            returnjmp.data.jumpTo = toplbl;
-            BIRB_PushCopy(irbuf,&returnjmp);
-            BIRB_Push(irbuf,bottomlbl);
-        } break;
-        case AST_IF: {
-            printf("Got If... ");
-            printASTInfo(node);
-
-            ByteOpIR *bottomlbl = BCNewOrphanLabel();
-            ByteOpIR *elselbl = BCNewOrphanLabel();
-
-            // Compile condition
-            BCCompileExpression(irbuf,node->left,context);
-            ByteOpIR condjmp = {0};
-            condjmp.kind = BOK_JUMP_IF_Z;
-            condjmp.data.jumpTo = elselbl;
-            ByteOpIR elsejmp = {0};
-            elsejmp.kind = BOK_JUMP;
-            elsejmp.data.jumpTo = bottomlbl;
-
-            AST *thenelse = node->right;
-            if (thenelse && thenelse->kind == AST_COMMENTEDNODE) thenelse = thenelse->left;
-            ASSERT_AST_KIND(thenelse,AST_THENELSE,break;);
-
-            BIRB_PushCopy(irbuf,&condjmp);
-            if(thenelse->left) { // Then
-                ASSERT_AST_KIND(thenelse->left,AST_STMTLIST,break;);
-                BCContext newcontext = context;
-                BCCompileStmtlist(irbuf,thenelse->left,newcontext);
-            }
-            if(thenelse->right) BIRB_PushCopy(irbuf,&elsejmp);
-            BIRB_Push(irbuf,elselbl);
-            if(thenelse->right) { // Else
-                ASSERT_AST_KIND(thenelse->right,AST_STMTLIST,break;);
-                BCContext newcontext = context;
-                BCCompileStmtlist(irbuf,thenelse->right,newcontext);
-            }
-            if(thenelse->right) BIRB_Push(irbuf,bottomlbl);
-        } break;
-        case AST_FUNCCALL: {
-            BCCompileFunCall(irbuf,node,context,false);
-        } break;
-        default:
-            ERROR(node,"Unhandled node kind %d",node->kind);
-            break;
-        }
+        BCCompileStatement(irbuf,node,context);
     }
 
 }
+
+static void
+BCCompileConditionalJump(BCIRBuffer *irbuf,AST *condition, bool ifNotZero, ByteOpIR *label, BCContext context) {
+    ByteOpIR condjmp = {0};
+    condjmp.data.jumpTo = label;
+    if (!condition) {
+        ERROR(NULL,"Null condition!");
+        return;
+    } else if (condition->kind == AST_INTEGER || condition->kind == AST_CONSTANT) {
+        int ival = EvalConstExpr(condition);
+        if (!!ival == !!ifNotZero) {  
+            condjmp.kind = BOK_JUMP; // Unconditional jump
+        } else return; // Impossible jump
+    } else if (condition->kind == AST_OPERATOR && condition->d.ival == K_BOOL_NOT) {
+        // Inverted jump
+        BCCompileExpression(irbuf,condition->right,context,false);
+        condjmp.kind = ifNotZero ? BOK_JUMP_IF_Z : BOK_JUMP_IF_NZ;
+    } else {
+        // Just normal
+        BCCompileExpression(irbuf,condition,context,false);
+        condjmp.kind = ifNotZero ? BOK_JUMP_IF_NZ : BOK_JUMP_IF_Z;
+    }
+    BIRB_PushCopy(irbuf,&condjmp);
+}
+
+static void
+BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
+    while (node->kind == AST_COMMENTEDNODE) {
+        //printf("Node is allegedly commented:\n");
+        // FIXME: this doesn't actually get any comments?
+        for(AST *comment = node->right;comment&&comment->kind==AST_COMMENT;comment=comment->right) {
+            printf("---  %s\n",comment->d.string);
+        }
+        node = node->left;
+    }
+
+    switch(node->kind) {
+    case AST_ASSIGN:
+        BCCompileAssignment(irbuf,node,context,false);
+        break;
+    case AST_WHILE: {
+        printf("Got While loop.. ");
+        printASTInfo(node);
+
+        ByteOpIR *toplbl = BCPushLabel(irbuf);
+        ByteOpIR *bottomlbl = BCNewOrphanLabel();
+
+        // Compile condition
+        BCCompileConditionalJump(irbuf,node->left,false,bottomlbl,context);
+
+        ASSERT_AST_KIND(node->right,AST_STMTLIST,break;)
+
+        BCContext newcontext = context;
+        BCCompileStmtlist(irbuf,node->right,newcontext);
+
+        ByteOpIR returnjmp = {0};
+        returnjmp.kind = BOK_JUMP;
+        returnjmp.data.jumpTo = toplbl;
+        BIRB_PushCopy(irbuf,&returnjmp);
+        BIRB_Push(irbuf,bottomlbl);
+    } break;
+    case AST_FOR:
+    case AST_FORATLEASTONCE: {
+        printf("Got For... ");
+        printASTInfo(node);
+
+        bool atleastonce = node->kind == AST_FORATLEASTONCE;
+
+        ByteOpIR *topLabel = BCNewOrphanLabel();
+        ByteOpIR *nextLabel = BCNewOrphanLabel();
+        ByteOpIR *quitLabel = BCNewOrphanLabel();
+
+        AST *initStmnt = node->left;
+        AST *to = node->right;
+        ASSERT_AST_KIND(to,AST_TO,return;);
+        printf("to: ");printASTInfo(to);
+        AST *condExpression = to->left;
+        AST *step = to->right;
+        ASSERT_AST_KIND(step,AST_STEP,return;);
+        printf("step: ");printASTInfo(step);
+        AST *nextExpression = step->left;
+        AST *body = step->right;
+        ASSERT_AST_KIND(body,AST_STMTLIST,return;);
+
+        BCCompileStatement(irbuf,initStmnt,context);
+        BIRB_Push(irbuf,topLabel);
+        if(!atleastonce) {
+            BIRB_Push(irbuf,nextLabel);
+            BCCompileConditionalJump(irbuf,condExpression,false,quitLabel,context);
+        }
+
+        BCContext newcontext = context;
+        BCCompileStmtlist(irbuf,body,newcontext);
+
+        BCCompileExpression(irbuf,nextExpression,context,true); // Compile as statement!
+        if(atleastonce) {
+            BIRB_Push(irbuf,nextLabel);
+            BCCompileConditionalJump(irbuf,condExpression,true,topLabel,context);
+        }
+        BIRB_Push(irbuf,quitLabel);
+
+    } break;
+    case AST_IF: {
+        printf("Got If... ");
+        printASTInfo(node);
+
+        ByteOpIR *bottomlbl = BCNewOrphanLabel();
+        ByteOpIR *elselbl = BCNewOrphanLabel();
+
+        AST *thenelse = node->right;
+        if (thenelse && thenelse->kind == AST_COMMENTEDNODE) thenelse = thenelse->left;
+        ASSERT_AST_KIND(thenelse,AST_THENELSE,break;);
+
+        // Compile condition
+        BCCompileConditionalJump(irbuf,node->left,false,elselbl,context);
+
+        ByteOpIR elsejmp = {0};
+        elsejmp.kind = BOK_JUMP;
+        elsejmp.data.jumpTo = bottomlbl;
+
+        if(thenelse->left) { // Then
+            ASSERT_AST_KIND(thenelse->left,AST_STMTLIST,break;);
+            BCContext newcontext = context;
+            BCCompileStmtlist(irbuf,thenelse->left,newcontext);
+        }
+        if(thenelse->right) BIRB_PushCopy(irbuf,&elsejmp);
+        BIRB_Push(irbuf,elselbl);
+        if(thenelse->right) { // Else
+            ASSERT_AST_KIND(thenelse->right,AST_STMTLIST,break;);
+            BCContext newcontext = context;
+            BCCompileStmtlist(irbuf,thenelse->right,newcontext);
+        }
+        if(thenelse->right) BIRB_Push(irbuf,bottomlbl);
+    } break;
+    case AST_FUNCCALL: {
+        BCCompileFunCall(irbuf,node,context,false);
+    } break;
+    default:
+        ERROR(node,"Unhandled node kind %d",node->kind);
+        break;
+    }
+}
+
 
 static void 
 BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
@@ -765,6 +890,7 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
     }
     
     FunData(F)->compiledAddress = func_ptr;
+    FunData(F)->localSize = func_localsize;
 
     switch(gl_interp_kind) {
     case INTERP_KIND_P1ROM:
@@ -1013,7 +1139,7 @@ void OutputByteCode(const char *fname, Module *P) {
     BOB_Align(&bob,4);
     const int programSize = bob.total_size;
     const int variableSize = P->varsize; // Already rounded up!
-    const int stackBase = programSize + variableSize;
+    const int stackBase = programSize + variableSize + 8; // space for that stack init thing
 
     printf("Program size:  %6d bytes\nVariable size: %6d bytes\nStack/Free:    %6d TODO\n",programSize,variableSize,0);
 
@@ -1025,7 +1151,7 @@ void OutputByteCode(const char *fname, Module *P) {
         BOB_ReplaceWord(headerspans.pcurr,FunData(ModData(P)->pubs[0])->compiledAddress,NULL);
         BOB_ReplaceWord(headerspans.vbase,programSize,NULL);
         BOB_ReplaceWord(headerspans.dbase,stackBase,NULL);
-        BOB_ReplaceWord(headerspans.dcurr,stackBase+8,NULL); // TODO? Do we need to insert something here? I think only for EEPROM out?
+        BOB_ReplaceWord(headerspans.dcurr,stackBase+FunData(ModData(P)->pubs[0])->localSize,NULL);
         break;
     default:
         ERROR(NULL,"Unknown interpreter kind");
