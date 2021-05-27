@@ -460,21 +460,32 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
         return;
     } else if (sym->kind == SYM_BUILTIN) {
         anchorOp.kind = 0; // Where we're going, we don't need Stack Frames
-        if (!strcmp(sym->our_name,"waitcnt")) {
-            callOp.kind = BOK_WAIT;
-            callOp.attr.wait.type = BCW_WAITCNT;
-        } else if (!strcmp(sym->our_name,"waitpeq")) {
-            callOp.kind = BOK_WAIT;
-            callOp.attr.wait.type = BCW_WAITPEQ;
-        } else if (!strcmp(sym->our_name,"waitpne")) {
-            callOp.kind = BOK_WAIT;
-            callOp.attr.wait.type = BCW_WAITPNE;
-        } else if (!strcmp(sym->our_name,"waitvid")) {
-            callOp.kind = BOK_WAIT;
-            callOp.attr.wait.type = BCW_WAITVID;
+        if (asExpression) {
+            if (!strcmp(sym->our_name,"__builtin_strlen")) {
+                callOp.kind = BOK_BUILTIN_STRSIZE;
+            } else if (!strcmp(sym->our_name,"strcomp")) {
+                callOp.kind = BOK_BUILTIN_STRCOMP;
+            } else {
+                ERROR(node,"Unhandled expression builtin %s",sym->our_name);
+                return;
+            }
         } else {
-            ERROR(node,"Unhandled builtin %s",sym->our_name);
-            return;
+            if (!strcmp(sym->our_name,"waitcnt")) {
+                callOp.kind = BOK_WAIT;
+                callOp.attr.wait.type = BCW_WAITCNT;
+            } else if (!strcmp(sym->our_name,"waitpeq")) {
+                callOp.kind = BOK_WAIT;
+                callOp.attr.wait.type = BCW_WAITPEQ;
+            } else if (!strcmp(sym->our_name,"waitpne")) {
+                callOp.kind = BOK_WAIT;
+                callOp.attr.wait.type = BCW_WAITPNE;
+            } else if (!strcmp(sym->our_name,"waitvid")) {
+                callOp.kind = BOK_WAIT;
+                callOp.attr.wait.type = BCW_WAITVID;
+            } else {
+                ERROR(node,"Unhandled statement builtin %s",sym->our_name);
+                return;
+            }
         }
     } else if (sym->kind == SYM_FUNCTION) {
         // Function call
@@ -526,6 +537,10 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context) {
             int32_t evald = EvalConstExpr(node);
             printf("eval'd to %d\n",evald);
             BCCompileInteger(irbuf,evald);
+        } break;
+        case AST_FUNCCALL: {
+            printf("Got call in expression \n");
+            BCCompileFunCall(irbuf,node,context,true);
         } break;
         case AST_ASSIGN: {
             printf("Got assignment in expression \n");
@@ -678,8 +693,41 @@ BCCompileStmtlist(BCIRBuffer *irbuf,AST *list, BCContext context) {
             returnjmp.data.jumpTo = toplbl;
             BIRB_PushCopy(irbuf,&returnjmp);
             BIRB_Push(irbuf,bottomlbl);
+        } break;
+        case AST_IF: {
+            printf("Got If... ");
+            printASTInfo(node);
 
-            
+            ByteOpIR *bottomlbl = BCNewOrphanLabel();
+            ByteOpIR *elselbl = BCNewOrphanLabel();
+
+            // Compile condition
+            BCCompileExpression(irbuf,node->left,context);
+            ByteOpIR condjmp = {0};
+            condjmp.kind = BOK_JUMP_IF_Z;
+            condjmp.data.jumpTo = elselbl;
+            ByteOpIR elsejmp = {0};
+            elsejmp.kind = BOK_JUMP;
+            elsejmp.data.jumpTo = bottomlbl;
+
+            AST *thenelse = node->right;
+            if (thenelse && thenelse->kind == AST_COMMENTEDNODE) thenelse = thenelse->left;
+            ASSERT_AST_KIND(thenelse,AST_THENELSE,break;);
+
+            BIRB_PushCopy(irbuf,&condjmp);
+            if(thenelse->left) { // Then
+                ASSERT_AST_KIND(thenelse->left,AST_STMTLIST,break;);
+                BCContext newcontext = context;
+                BCCompileStmtlist(irbuf,thenelse->left,newcontext);
+            }
+            if(thenelse->right) BIRB_PushCopy(irbuf,&elsejmp);
+            BIRB_Push(irbuf,elselbl);
+            if(thenelse->right) { // Else
+                ASSERT_AST_KIND(thenelse->right,AST_STMTLIST,break;);
+                BCContext newcontext = context;
+                BCCompileStmtlist(irbuf,thenelse->right,newcontext);
+            }
+            if(thenelse->right) BIRB_Push(irbuf,bottomlbl);
         } break;
         case AST_FUNCCALL: {
             BCCompileFunCall(irbuf,node,context,false);
