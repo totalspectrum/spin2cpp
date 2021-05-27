@@ -24,6 +24,9 @@
     X(MEM_MODIFY)  /* What Chip calls "assign" */\
     X(MEM_ADDRESS)  /* Push effective address */\
     \
+    X(FUNDATA_PUSHADDRESS) /* Absolute address of function-relative labeled data (such as STRING) */ \
+    X(FUNDATA_STRING) \
+    \
     X(ANCHOR) /* Set up stack frame for call */\
     \
     X(CALL_SELF)  /* Call method in current object */\
@@ -148,26 +151,30 @@ typedef struct bcirstruct {
         struct {
             enum BCWaitType type;
         } wait;
+        int stringLength;
     } attr;
 
     union {
         struct bcirstruct *jumpTo;
         int32_t int32;
+        const char *stringPtr;
     } data;
 
     int fixedSize; // If set, the size of this op is known. For BOK_LABEL and other zero-size ops, this is irrelevant
 
 } ByteOpIR;
 
-typedef struct {
+typedef struct BCIRBuffer {
     ByteOpIR *head,*tail;
+    struct BCIRBuffer *pending;
     int opCount;
 } BCIRBuffer;
 
 void BIRB_Push(BCIRBuffer *buf,ByteOpIR *ir);
 ByteOpIR *BIRB_PushCopy(BCIRBuffer *buf,ByteOpIR *ir);
+void BIRB_AppendPending(BCIRBuffer *buf);
 
-void BCIR_to_BOB(BCIRBuffer *irbuf,ByteOutputBuffer *bob);
+void BCIR_to_BOB(BCIRBuffer *irbuf,ByteOutputBuffer *bob,int pbase_funoffset);
 
 void BCIR_Init();
 

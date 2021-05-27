@@ -149,6 +149,39 @@ HWReg2Index(HwReg *reg) {
     }
 }
 
+static const void StringAppend(Flexbuf *fb,AST *expr) {
+    if(!expr) return;
+    switch (expr->kind) {
+    case AST_INTEGER: {
+        int i = expr->d.ival;
+        if (i < 0 || i>255) ERROR(expr,"Character out of range!");
+        flexbuf_putc(i,fb);
+    } break;
+    case AST_STRING: {
+        flexbuf_addstr(fb,expr->d.string);
+    } break;
+    case AST_EXPRLIST: {
+        if (expr->left) StringAppend(fb,expr->left);
+        if (expr->right) StringAppend(fb,expr->right);
+    } break;
+    default: {
+        ERROR(expr,"Unhandled AST kind %d in string expression",expr->kind);
+    } break;
+    }
+}
+
+ByteOpIR BCBuildString(AST *expr) {
+    ByteOpIR ir = {0};
+    ir.kind = BOK_FUNDATA_STRING;
+    Flexbuf fb;
+    flexbuf_init(&fb,20);
+    StringAppend(&fb,expr);
+    flexbuf_putc(0,&fb);
+    ir.data.stringPtr = flexbuf_peek(&fb);
+    ir.attr.stringLength = flexbuf_curlen(&fb);
+    return ir;
+}
+
 static void
 printASTInfo(AST *node) {
     if (node) {
@@ -577,6 +610,21 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context) {
             printASTInfo(node);
             BCCompileMemOp(irbuf,node,context,BOK_MEM_READ);
         } break;
+        case AST_STRINGPTR: {
+            printf("Got STRINGPTR! ");
+            printASTInfo(node);
+            ByteOpIR *stringLabel = BCNewOrphanLabel();
+            ByteOpIR pushOp = {0};
+            pushOp.kind = BOK_FUNDATA_PUSHADDRESS;
+            pushOp.data.jumpTo = stringLabel;
+
+            ByteOpIR stringData = BCBuildString(node->left);
+
+            BIRB_PushCopy(irbuf,&pushOp);
+            BIRB_Push(irbuf->pending,stringLabel);
+            BIRB_PushCopy(irbuf->pending,&stringData);
+
+        } break;
         default:
             ERROR(node,"Unhandled node kind %d in expression",node->kind);
             break;
@@ -686,6 +734,8 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
     BOB_Comment(bob,auto_printf(128,"--- Function %s",F->name));
     // Compile function
     BCIRBuffer irbuf = {0};
+    BCIRBuffer irbuf_pending = {0};
+    irbuf.pending = &irbuf_pending;
 
 
     // I think there's other body types so let's leave this instead of using ASSERT_AST_KIND
@@ -702,7 +752,9 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
     ByteOpIR retop = {0,.kind = BOK_RETURN_PLAIN};
     BIRB_PushCopy(&irbuf,&retop);
 
-    BCIR_to_BOB(&irbuf,bob);
+    BIRB_AppendPending(&irbuf);
+
+    BCIR_to_BOB(&irbuf,bob,func_ptr-ModData(current)->compiledAddress);
     
     curfunc = NULL;
 }

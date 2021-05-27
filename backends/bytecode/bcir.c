@@ -18,6 +18,9 @@ const char *mathOpKindNames[] = {
 static const char *(*CompileIROP_Func)(uint8_t *,int,ByteOpIR *);
 static void (*GetSizeBound_Func)(ByteOpIR *,int *,int *,int);
 
+static int pbase_offset; // distance of function from PBASE (obj header)
+static BCIRBuffer *current_birb;
+
 
 ByteOpIR *BIRB_PushCopy(BCIRBuffer *buf,ByteOpIR *ir) {
     ByteOpIR *newIR = malloc(sizeof(ByteOpIR));
@@ -39,6 +42,18 @@ void BIRB_Push(BCIRBuffer *buf,ByteOpIR *ir) {
     buf->opCount++;
 }
 
+void BIRB_AppendPending(BCIRBuffer *buf) {
+    printf("in BIRB_AppendPending with %d pending\n",buf->pending->opCount);
+    if (!buf->pending || buf->pending->opCount == 0) return;
+    buf->tail->next = buf->pending->head;
+    buf->pending->head->prev = buf->tail;
+    buf->tail = buf->pending->tail;
+
+    buf->pending->head = NULL;
+    buf->pending->tail = NULL;
+    buf->pending->opCount = 0;
+}
+
 static bool isPowerOf2(uint32_t x)
 {
     return (x & (x-1)) == 0;
@@ -48,13 +63,13 @@ static bool BCIR_SizeDetermined(ByteOpIR *ir) {
     return ir->fixedSize || ir->kind == BOK_LABEL;
 }
 
-static void GetJumpOffsetBounds(ByteOpIR *jump,int *minDist, int *maxDist,int recursionsLeft) {
+static void GetJumpOffsetBounds(ByteOpIR *jump,bool func_relative,int *minDist, int *maxDist,int recursionsLeft) {
     ByteOpIR *searchingFor = jump->data.jumpTo;
     *minDist = *maxDist = 0;
     bool found = false;
     if (recursionsLeft) --recursionsLeft;
     // Try searching forward (don't include jump itself)
-    for (ByteOpIR *ir=jump->next;ir;ir=ir->next) {
+    for (ByteOpIR *ir=func_relative?current_birb->head:jump->next;ir;ir=ir->next) {
         if (ir==searchingFor) {
             found = true;
             break;
@@ -65,7 +80,7 @@ static void GetJumpOffsetBounds(ByteOpIR *jump,int *minDist, int *maxDist,int re
         *maxDist += max;
     }
     // .. or backward (include jump itself)
-    if (!found) {
+    if (!found && !func_relative) {
         *minDist = *maxDist = 0;
         for (ByteOpIR *ir=jump;ir;ir=ir->prev) {
             if (ir==searchingFor) {
@@ -84,22 +99,23 @@ static void GetJumpOffsetBounds(ByteOpIR *jump,int *minDist, int *maxDist,int re
     }
 }
 
-static int GetJumpOffset(ByteOpIR *jump) {
+static int GetJumpOffset(ByteOpIR *jump,bool func_relative) {
     int min,max;
-    GetJumpOffsetBounds(jump,&min,&max,0);
+    GetJumpOffsetBounds(jump,func_relative,&min,&max,0);
     if (min!=max) ERROR(NULL,"Internal error: GetJumpOffset called, got indeterminate offset (%d..%d)",min,max);
     return max;
 }
 
-static int CompileJumpOffset_Spin1(uint8_t *buf,int *pos,ByteOpIR *ir,int baseSize) {
-    int offset = GetJumpOffset(ir);
+static int CompileJumpOffset_Spin1(uint8_t *buf,int *pos,ByteOpIR *ir,int baseSize,bool func_relative,int offset_offset) {
+    int offset = GetJumpOffset(ir,func_relative) + offset_offset;
+    if (func_relative && offset < 0) ERROR(NULL,"CompileJumpOffset_Spin1 with doUnsigned but negative offset");
     switch (ir->fixedSize-baseSize) {
     case 1:
-        if (offset > 0x3F || offset < -0x40) ERROR(NULL,"Jump offset %d too big for 1 byte",offset);
+        if (func_relative ? (offset > 0x7F) : (offset > 0x3F || offset < -0x40)) ERROR(NULL,"Jump offset %d too big for 1 byte",offset);
         buf[(*pos)++] = offset&0x7F;
         break;
     case 2:
-        if (offset > 0x3FFF || offset < -0x4000) ERROR(NULL,"Jump offset %d too big for 2 bytes",offset);
+        if (func_relative ? (offset > 0x7FFF) : (offset > 0x3FFF || offset < -0x4000)) ERROR(NULL,"Jump offset %d too big for 2 bytes",offset);
         buf[(*pos)++] = ((offset>>8)&0x7F)|0x80;
         buf[(*pos)++] = offset&0xFF;
         break;
@@ -159,11 +175,36 @@ static void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsL
     case BOK_JUMP_IF_NZ:
         if (recursionsLeft) {
             int minDist,maxDist;
-            GetJumpOffsetBounds(ir,&minDist,&maxDist,recursionsLeft);
+            GetJumpOffsetBounds(ir,false,&minDist,&maxDist,recursionsLeft);
             if (maxDist <= 0x3F && maxDist >= -0x40) { // 1-byte either way
                 *min = *max = 2;
             } else if (minDist > 0x3F || minDist < -40) { // 2-byte either way
                 *min = *max = 3;
+            } else { // Uncertain
+                *min = 2;
+                *max = 3;
+            }
+        } else {
+            *min = 2;
+            *max = 3;
+        }
+        break;
+    // Get function data
+    case BOK_FUNDATA_PUSHADDRESS: 
+        if (recursionsLeft) {
+            int minDist,maxDist;
+            GetJumpOffsetBounds(ir,true,&minDist,&maxDist,recursionsLeft);
+            minDist += pbase_offset; maxDist += pbase_offset;
+            if (maxDist < 0 || minDist < 0) {
+                ERROR(NULL,"FUNDATA_PUSHADDRESS can only index forwards");
+                *min = *max = 3;
+            } else if (maxDist <= 0x7F) { // 1-byte either way
+                *min = *max = 2;
+            } else if (minDist > 0x7F) { // 2-byte either way
+                *min = *max = 3;
+            } else { // Uncertain
+                *min = 2;
+                *max = 3;
             }
         } else {
             *min = 2;
@@ -184,6 +225,9 @@ static void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsL
             *min += 1; *max += 1; // Extra byte
             if (ir->mathKind == MOK_MOD_REPEATN) ERROR(NULL,"MOK_MOD_REPEATN is NYI");
         }
+        break;
+    case BOK_FUNDATA_STRING: 
+        *min = *max = ir->attr.stringLength;
         break;
     // Virtual ops
     case BOK_LABEL: *min = *max = 0; break;
@@ -372,6 +416,15 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
             }
         }
     } break;
+    case BOK_FUNDATA_PUSHADDRESS: {
+        // Really just a special case of MEM_ADDRESS with PBASE
+        buf[pos++] = 0x87;
+        CompileJumpOffset_Spin1(buf,&pos,ir,1,true,pbase_offset);
+    } break;
+    case BOK_FUNDATA_STRING : {
+        memcpy((char*)buf,ir->data.stringPtr,size);
+        pos+=size;
+    } break;
     case BOK_ANCHOR: {
         buf[pos++] = 0b00000000 + ((!ir->attr.anchor.withResult)&1) + (ir->attr.anchor.rescue<<1);
         comment = auto_printf(32,"ANCHOR %s %s",ir->attr.anchor.rescue?"(RESCUE)":"",ir->attr.anchor.withResult?"":"(DISCARD)");
@@ -411,7 +464,7 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
         goto jump_common;
     }
     jump_common: {
-        int offset = CompileJumpOffset_Spin1(buf,&pos,ir,1);
+        int offset = CompileJumpOffset_Spin1(buf,&pos,ir,1,false,0);
         comment = auto_printf(40,"%s %d",byteOpKindNames[ir->kind],offset);
     } break;
     case BOK_RETURN_PLAIN: {
@@ -480,7 +533,9 @@ BCIR_Compact(BCIRBuffer *irbuf,int maxRecursion) {
     }
 }
 
-void BCIR_to_BOB(BCIRBuffer *irbuf,ByteOutputBuffer *bob) {
+void BCIR_to_BOB(BCIRBuffer *irbuf,ByteOutputBuffer *bob,int pbase_funoffset) {
+    pbase_offset = pbase_funoffset;
+    current_birb = irbuf;
     if (!irbuf->opCount) return;
     printf("Before BCIR_Compact\n");
     BCIR_Compact(irbuf,2);
