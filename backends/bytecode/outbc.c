@@ -408,6 +408,8 @@ BCCompileMemOpEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum ByteOpKind 
          if (type == ast_type_byte) memOp.attr.memop.memSize = MEMOP_SIZE_BYTE;
     else if (type == ast_type_word) memOp.attr.memop.memSize = MEMOP_SIZE_WORD; 
     else if (type == ast_type_long) memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
+    // \/ hack \/
+    else if (type == ast_type_unsigned_long && (kind != BOK_MEM_MODIFY || modifyMathKind == MOK_MOD_WRITE)) memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
     else if (type == NULL) memOp.attr.memop.memSize = MEMOP_SIZE_LONG; // Assume long type... This is apparently neccessary
     else {
         ERROR(type,"Can't figure out mem op type, is unhandled");
@@ -895,6 +897,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 case K_SQRT: mok = MOK_SQRT; unary = true; break;
                 case K_DECODE: mok = MOK_DECODE; unary = true; break;
                 case K_ENCODE: mok = MOK_ENCODE; unary = true; break;
+                case K_BIT_NOT: mok = MOK_BITNOT; unary = true; break;
 
                 case K_LOGIC_AND: mok = MOK_LOGICAND; break;
                 case K_LOGIC_OR: mok = MOK_LOGICOR; break;
@@ -1231,6 +1234,16 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         }
         if(thenelse->right) BIRB_Push(irbuf,bottomlbl);
     } break;
+    case AST_CASE: {
+        printf("Got Case... "); printASTInfo(node);
+        ERROR(node,"CASE is NYI");
+
+        // Compile switch expression
+        //BCCompileExpression(irbuf,node->left,context,false);
+
+        ASSERT_AST_KIND(node->right,AST_STMTLIST,return;)
+
+    } break;
     case AST_FUNCCALL: {
         BCCompileFunCall(irbuf,node,context,false);
     } break;
@@ -1299,6 +1312,10 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
     } break;
     case AST_YIELD: {
         // do nothing  
+    } break;
+    case AST_STMTLIST: {
+        NOTE(node,"Nested AST_STMTLIST?????");
+        BCCompileStmtlist(irbuf,node,context);
     } break;
     default:
         ERROR(node,"Unhandled node kind %d in statement",node->kind);
