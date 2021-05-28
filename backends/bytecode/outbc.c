@@ -514,6 +514,20 @@ static int getFuncID(Module *M,const char *name) {
     return -1;
 }
 
+static int getFuncIDForKnownFunc(Module *M,Function *F) {
+    if (!M->bedata) {
+        ERROR(NULL,"Internal Error: bedata empty");
+        return -1;
+    }
+    for (int i=0;i<ModData(M)->pub_cnt;i++) {
+        if (ModData(M)->pubs[i] == F) return i + 1;
+    }
+    for (int i=0;i<ModData(M)->pri_cnt;i++) {
+        if (ModData(M)->pris[i] == F) return ModData(M)->pub_cnt + i + 1;
+    }
+    return -1;
+}
+
 // FIXME this seems very convoluted
 static int getObjID(Module *M,const char *name, AST** gettype) {
     if (!M->bedata) {
@@ -694,12 +708,62 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
 
 static void
 BCCompileCoginit(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpression) {
-    Function *callmethod;
-    if (IsSpinCoginit(node,&callmethod)) {
-        printf("Got Spin coginit\n");
-        ERROR(node,"Spin coginit NYI");
+    Function *calledmethod;
+    if (IsSpinCoginit(node,&calledmethod)) {
+        // Spin coginit
+        printf("Got Spin coginit with function %s\n",calledmethod->name);
+        if(gl_interp_kind != INTERP_KIND_P1ROM) {
+            ERROR(node,"Spin coginit NYI for this interpreter");
+            return;
+        }
+
+        ASSERT_AST_KIND(node->left,AST_EXPRLIST,return;);
+        AST *cogidExpr = node->left->left;
+
+        if (node->left->right->left && node->left->right->left->kind == AST_FUNCCALL) {
+            // Arguments
+            AST *funcall = node->left->right->left;
+            for (AST *list=funcall->right;list;list=list->right) {
+                printf("Compiling coginit call argument...");
+                ASSERT_AST_KIND(list,AST_EXPRLIST,return;);
+                BCCompileExpression(irbuf,list->left,context,false);
+            }
+
+        }
+
+        // Target function info
+        if (calledmethod->module != current) {
+            ERROR(node,"Interpreter can't coginit with method from another object");
+            return;
+        }
+        BCCompileInteger(irbuf, (calledmethod->numparams << 8) + getFuncIDForKnownFunc(current,calledmethod));
+
+        ASSERT_AST_KIND(node->left->right->right,AST_EXPRLIST,return;); 
+        BCCompileExpression(irbuf,node->left->right->right->left,context,false); // New Stack pointer
+
+        ByteOpIR prepareOP = {.kind = BOK_COGINIT_PREPARE};
+        BIRB_PushCopy(irbuf,&prepareOP);
+
+        if (IsConstExpr(cogidExpr)) {
+            uint32_t val = EvalConstExpr(cogidExpr);
+            // Parser gives 0x1E for COGNEW, but -1 is smaller, thus this
+            if (!gl_p2 && (val & 8)) BCCompileInteger(irbuf,-1);
+            else BCCompileInteger(irbuf,val);
+        } else {
+            BCCompileExpression(irbuf,cogidExpr,context,false);
+        }
+        ByteOpIR dcurrOp = {.kind = BOK_REG_READ,.data.int32=15}; // This reads DCURR (OUR stack pointer!)
+        BIRB_PushCopy(irbuf,&dcurrOp);
+        BCCompileInteger(irbuf,-4); // Magic number
+        ByteOpIR magicWriteOp = {.kind = BOK_MEM_WRITE,.attr.memop = {.base = MEMOP_BASE_POP, .memSize = MEMOP_SIZE_LONG, .popIndex = true}};
+        BIRB_PushCopy(irbuf,&magicWriteOp);  // Write cogid????
+
+
+
     } else {
+        // PASM coginit
         printf("Got PASM coginit\n");
+
         ASSERT_AST_KIND(node->left,AST_EXPRLIST,return;);
         AST *cogidExpr = node->left->left;
         if (IsConstExpr(cogidExpr)) {
@@ -710,14 +774,17 @@ BCCompileCoginit(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpression
         } else {
             BCCompileExpression(irbuf,cogidExpr,context,false);
         }
+
         ASSERT_AST_KIND(node->left->right,AST_EXPRLIST,return;);
         BCCompileExpression(irbuf,node->left->right->left,context,false); // entry point
+
         ASSERT_AST_KIND(node->left->right->right,AST_EXPRLIST,return;);
         BCCompileExpression(irbuf,node->left->right->right->left,context,false); // PAR value
-
-        ByteOpIR initOp = {.kind = BOK_COGINIT};
-        BIRB_PushCopy(irbuf,&initOp);
     }
+
+    ByteOpIR initOp = {.kind = BOK_COGINIT};
+    initOp.attr.coginit.pushCogID = asExpression;
+    BIRB_PushCopy(irbuf,&initOp);
 }
 
 static void

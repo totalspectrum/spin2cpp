@@ -55,6 +55,7 @@
     X(BUILTIN_BULKMEM) /* BYTEFILL, LONGMOVE and friends */ \
     \
     X(COGINIT) \
+    X(COGINIT_PREPARE) /* Chip calls this "run" */\
     X(COGSTOP) \
     \
     X(WAIT) \
