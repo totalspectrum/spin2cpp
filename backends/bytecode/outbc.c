@@ -828,6 +828,10 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 BCCompileFunCall(irbuf,node,context,!asStatement);
                 popResults = 0;
             } break;
+            case AST_COGINIT: {
+                printf("got coginit expression!\n");
+                BCCompileCoginit(irbuf,node,context,true);
+            } break;
             case AST_ASSIGN: {
                 printf("Got assignment in expression \n");
                 BCCompileAssignment(irbuf,node,context,!asStatement);
@@ -1235,6 +1239,22 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
     case AST_SEQUENCE: {
         printf("got sequence in statement!\n");
         BCCompileExpression(irbuf,node,context,true);
+    } break;
+    case AST_OPERATOR: {
+        printf("got operator %03X in statement!\n",node->d.ival);
+        BCCompileExpression(irbuf,node,context,true);
+    } break;
+    case AST_THROW:
+    case AST_RETURN: {
+        // FIXME: Spin2 multi-return
+        // TODO: This generates explicit returns of the result var. Fix in peephole step?
+        bool isAbort = node->kind == AST_THROW;
+        printf("got return statement! "); printASTInfo(node);
+        AST *retval = node->left;
+        ByteOpIR returnOp = {0};
+        returnOp.kind = isAbort ? (retval ? BOK_ABORT_POP : BOK_ABORT_PLAIN) : (retval ? BOK_RETURN_POP : BOK_RETURN_PLAIN);
+        if (retval) BCCompileExpression(irbuf,retval,context,false);
+        BIRB_PushCopy(irbuf,&returnOp);
     } break;
     default:
         ERROR(node,"Unhandled node kind %d in statement",node->kind);

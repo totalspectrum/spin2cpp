@@ -558,9 +558,6 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
         int offset = CompileJumpOffset_Spin1(buf,&pos,ir,1,false,0);
         comment = auto_printf(40,"%s %d",byteOpKindNames[ir->kind],offset);
     } break;
-    case BOK_RETURN_PLAIN: {
-        buf[pos++] = 0b00110010;
-    } break;
     case BOK_WAIT: {
         switch(ir->attr.wait.type) {
         case BCW_WAITPEQ: buf[pos++] = 0b00011011; comment = "WAITPEQ"; break;
@@ -579,6 +576,10 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
     case BOK_BUILTIN_STRCOMP: buf[pos++] = 0b00010111; break;
     case BOK_CLKSET:   buf[pos++] = 0b00100000; break;
     case BOK_COGSTOP:  buf[pos++] = 0b00100001; break;
+    case BOK_ABORT_PLAIN:  buf[pos++] = 0b00110000; break;
+    case BOK_ABORT_POP:    buf[pos++] = 0b00110001; break;
+    case BOK_RETURN_PLAIN: buf[pos++] = 0b00110010; break;
+    case BOK_RETURN_POP:   buf[pos++] = 0b00110011; break;
     case BOK_LABEL: break;
     default: 
         ERROR(NULL,"Unhandled ByteOpIR kind %d = %s",ir->kind,byteOpKindNames[ir->kind]);
