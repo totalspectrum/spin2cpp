@@ -698,194 +698,190 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
         ERROR(NULL,"Internal Error: Null expression!!");
         return;
     }
-    unsigned popResults = asStatement ? 1 : 0;
-    switch(node->kind) {
-        case AST_INTEGER: {
-            printf("Got integer %d\n",node->d.ival);
-            BCCompileInteger(irbuf,node->d.ival);
-        } break;
-        case AST_CONSTANT: {
-            printf("Got constant, ");
-            int32_t evald = EvalConstExpr(node);
-            printf("eval'd to %d\n",evald);
-            BCCompileInteger(irbuf,evald);
-        } break;
-        case AST_FUNCCALL: {
-            printf("Got call in expression \n");
-            BCCompileFunCall(irbuf,node,context,true);
-        } break;
-        case AST_ASSIGN: {
-            printf("Got assignment in expression \n");
-            BCCompileAssignment(irbuf,node,context,true);
-        } break;
-        case AST_OPERATOR: {
-            printf("Got operator in expression: 0x%03X\n",node->d.ival);
-            printASTInfo(node);
-            enum MathOpKind mok;
-            bool unary = false;
-            AST *left = node->left,*right = node->right;
-            switch(node->d.ival) {
-            case '^': mok = MOK_BITXOR; break;
-            case '|': mok = MOK_BITOR; break;
-            case '&': mok = MOK_BITAND; break;
-            case '+': mok = MOK_ADD; break;
-            case '-': mok = MOK_SUB; break;
+    if (IsConstExpr(node)) {
+        int32_t val = EvalConstExpr(node);
+        printf("Got const expression with value %d\n",val);
+        BCCompileInteger(irbuf,val);
+    } else {
+        unsigned popResults = asStatement ? 1 : 0;
+        switch(node->kind) {
+            case AST_FUNCCALL: {
+                printf("Got call in expression \n");
+                BCCompileFunCall(irbuf,node,context,true);
+            } break;
+            case AST_ASSIGN: {
+                printf("Got assignment in expression \n");
+                BCCompileAssignment(irbuf,node,context,true);
+            } break;
+            case AST_OPERATOR: {
+                printf("Got operator in expression: 0x%03X\n",node->d.ival);
+                printASTInfo(node);
+                enum MathOpKind mok;
+                bool unary = false;
+                AST *left = node->left,*right = node->right;
+                switch(node->d.ival) {
+                case '^': mok = MOK_BITXOR; break;
+                case '|': mok = MOK_BITOR; break;
+                case '&': mok = MOK_BITAND; break;
+                case '+': mok = MOK_ADD; break;
+                case '-': mok = MOK_SUB; break;
 
-            case K_SHR: mok = MOK_SHR; break;
-            case K_SHL: mok = MOK_SHL; break;
+                case K_SHR: mok = MOK_SHR; break;
+                case K_SHL: mok = MOK_SHL; break;
 
-            case '<': mok = MOK_CMP_B; break;
-            case '>': mok = MOK_CMP_A; break;
+                case '<': mok = MOK_CMP_B; break;
+                case '>': mok = MOK_CMP_A; break;
 
-            case K_BOOL_NOT: mok = MOK_BOOLNOT; unary=true; break;
-            
-            case K_LOGIC_AND: mok = MOK_LOGICAND; break;
-            case K_LOGIC_OR: mok = MOK_LOGICOR; break;
+                case K_BOOL_NOT: mok = MOK_BOOLNOT; unary=true; break;
+                
+                case K_LOGIC_AND: mok = MOK_LOGICAND; break;
+                case K_LOGIC_OR: mok = MOK_LOGICOR; break;
 
-            case K_BOOL_AND:
-            case K_BOOL_OR: {
-                bool is_and = node->d.ival == K_BOOL_AND;
-                if (!ExprHasSideEffects(right)) {
-                    // Use logic instead
-                    mok = is_and ? MOK_LOGICAND : MOK_LOGICOR;
-                    break;
+                case K_BOOL_AND:
+                case K_BOOL_OR: {
+                    bool is_and = node->d.ival == K_BOOL_AND;
+                    if (!ExprHasSideEffects(right)) {
+                        // Use logic instead
+                        mok = is_and ? MOK_LOGICAND : MOK_LOGICOR;
+                        break;
+                    } else {
+                        ByteOpIR notOp = {.kind = BOK_MATHOP,.mathKind = MOK_BOOLNOT};
+                        // build rickety short circuit op
+                        ByteOpIR *lbl = BCNewOrphanLabel();
+                        BCCompileInteger(irbuf,is_and ? 0 : -1);
+                        BCCompileConditionalJump(irbuf,left,!is_and,lbl,context);
+                        BCCompileConditionalJump(irbuf,right,!is_and,lbl,context);
+                        BIRB_PushCopy(irbuf,&notOp);
+                        BIRB_Push(irbuf,lbl);
+                        return;
+                    }
+
+                } break;
+
+                case K_INCREMENT: 
+                case K_DECREMENT:
+                    goto incdec;
+                default:
+                    ERROR(node,"Unhandled operator 0x%03X",node->d.ival);
+                    return;
+                }
+
+                printf("Operator resolved to %d = %s\n",mok,mathOpKindNames[mok]);
+
+                if (!unary) BCCompileExpression(irbuf,left,context,false);
+                BCCompileExpression(irbuf,right,context,false);
+
+                ByteOpIR mathOp = {0};
+                mathOp.kind = BOK_MATHOP;
+                mathOp.mathKind = mok;
+                BIRB_PushCopy(irbuf,&mathOp);
+
+            } break;
+            incdec: { // Special handling for inc/dec
+                bool isPostfix = node->left;
+                AST *var = isPostfix?node->left:node->right;
+                bool isDecrement = node->d.ival == K_DECREMENT;
+
+                if (asStatement) popResults = 0;
+
+                if (0) {
+                    // Native inc/dec
+                    enum MathOpKind mok = isDecrement ? (isPostfix ? MOK_MOD_POSTDEC : MOK_MOD_PREDEC) : (isPostfix ? MOK_MOD_POSTINC : MOK_MOD_PREINC);
+                    BCCompileMemOpEx(irbuf,var,context,BOK_MEM_MODIFY,mok,false,!asStatement);
                 } else {
-                    ByteOpIR notOp = {.kind = BOK_MATHOP,.mathKind = MOK_BOOLNOT};
-                    // build rickety short circuit op
-                    ByteOpIR *lbl = BCNewOrphanLabel();
-                    BCCompileInteger(irbuf,is_and ? 0 : -1);
-                    BCCompileConditionalJump(irbuf,left,!is_and,lbl,context);
-                    BCCompileConditionalJump(irbuf,right,!is_and,lbl,context);
-                    BIRB_PushCopy(irbuf,&notOp);
-                    BIRB_Push(irbuf,lbl);
+                    // Discrete inc/dec
+
+                    // If postfix, push old value
+                    if (isPostfix && !asStatement) BCCompileMemOp(irbuf,var,context,BOK_MEM_READ);
+
+                    BCCompileMemOp(irbuf,var,context,BOK_MEM_READ);
+                    BCCompileInteger(irbuf,1);
+                    ByteOpIR incdecop = {0};
+                    incdecop.kind = BOK_MATHOP;
+                    incdecop.mathKind = isDecrement ? MOK_SUB : MOK_ADD;
+                    BIRB_PushCopy(irbuf,&incdecop);
+                    BCCompileMemOp(irbuf,var,context,BOK_MEM_WRITE);
+
+                    // If prefix, push new value
+                    if (!isPostfix && !asStatement) BCCompileMemOp(irbuf,var,context,BOK_MEM_READ);
+                }
+
+            } break;
+            case AST_HWREG: {
+                HwReg *hw = node->d.ptr;
+                printf("Got hwreg in expression: %s\n",hw->name);
+                ByteOpIR hwread = {0};
+                hwread.kind = BOK_REG_READ;
+                hwread.data.int32 = HWReg2Index(hw);
+                BIRB_PushCopy(irbuf,&hwread);
+            } break;
+            case AST_ADDROF: {
+                printf("Got addr-of! ");
+                printASTInfo(node); // Right always empty, left always ARRAYREF?
+                BCCompileMemOp(irbuf,node->left,context,BOK_MEM_ADDRESS);
+            } break;
+            case AST_IDENTIFIER: {
+                printf("Got identifier! ");
+                Symbol *sym = LookupAstSymbol(node,NULL);
+                if (!sym) {
+                    ERROR(node,"Internal Error: no symbol");
+                    return;
+                }
+                switch (sym->kind) {
+                case SYM_VARIABLE:
+                case SYM_LOCALVAR:
+                case SYM_PARAMETER:
+                case SYM_RESULT:
+                    BCCompileMemOp(irbuf,node,context,BOK_MEM_READ);
+                    break;
+                case SYM_RESERVED:
+                    if (!strcmp(sym->our_name,"result")) {
+                        // FIXME the parser should give AST_RESULT here, I think
+                        BCCompileMemOp(irbuf,NewAST(AST_RESULT,node->left,node->right),context,BOK_MEM_READ);
+                    } else {
+                        ERROR(node,"Unhandled reserved word %s in expression",sym->our_name);
+                    }
+                    break;
+                default:
+                    ERROR(node,"Unhandled Identifier symbol kind %d",sym->kind);
                     return;
                 }
 
             } break;
-
-            case K_INCREMENT: 
-            case K_DECREMENT:
-                goto incdec;
-            default:
-                ERROR(node,"Unhandled operator 0x%03X",node->d.ival);
-                return;
-            }
-
-            printf("Operator resolved to %d = %s\n",mok,mathOpKindNames[mok]);
-
-            if (!unary) BCCompileExpression(irbuf,left,context,false);
-            BCCompileExpression(irbuf,right,context,false);
-
-            ByteOpIR mathOp = {0};
-            mathOp.kind = BOK_MATHOP;
-            mathOp.mathKind = mok;
-            BIRB_PushCopy(irbuf,&mathOp);
-
-        } break;
-        incdec: { // Special handling for inc/dec
-            bool isPostfix = node->left;
-            AST *var = isPostfix?node->left:node->right;
-            bool isDecrement = node->d.ival == K_DECREMENT;
-
-            if (asStatement) popResults = 0;
-
-            if (0) {
-                // Native inc/dec
-                enum MathOpKind mok = isDecrement ? (isPostfix ? MOK_MOD_POSTDEC : MOK_MOD_PREDEC) : (isPostfix ? MOK_MOD_POSTINC : MOK_MOD_PREINC);
-                BCCompileMemOpEx(irbuf,var,context,BOK_MEM_MODIFY,mok,false,!asStatement);
-            } else {
-                // Discrete inc/dec
-
-                // If postfix, push old value
-                if (isPostfix && !asStatement) BCCompileMemOp(irbuf,var,context,BOK_MEM_READ);
-
-                BCCompileMemOp(irbuf,var,context,BOK_MEM_READ);
-                BCCompileInteger(irbuf,1);
-                ByteOpIR incdecop = {0};
-                incdecop.kind = BOK_MATHOP;
-                incdecop.mathKind = isDecrement ? MOK_SUB : MOK_ADD;
-                BIRB_PushCopy(irbuf,&incdecop);
-                BCCompileMemOp(irbuf,var,context,BOK_MEM_WRITE);
-
-                // If prefix, push new value
-                if (!isPostfix && !asStatement) BCCompileMemOp(irbuf,var,context,BOK_MEM_READ);
-            }
-
-        } break;
-        case AST_HWREG: {
-            HwReg *hw = node->d.ptr;
-            printf("Got hwreg in expression: %s\n",hw->name);
-            ByteOpIR hwread = {0};
-            hwread.kind = BOK_REG_READ;
-            hwread.data.int32 = HWReg2Index(hw);
-            BIRB_PushCopy(irbuf,&hwread);
-        } break;
-        case AST_ADDROF: {
-            printf("Got addr-of! ");
-            printASTInfo(node); // Right always empty, left always ARRAYREF?
-            BCCompileMemOp(irbuf,node->left,context,BOK_MEM_ADDRESS);
-        } break;
-        case AST_IDENTIFIER: {
-            printf("Got identifier! ");
-            Symbol *sym = LookupAstSymbol(node,NULL);
-            if (!sym) {
-                ERROR(node,"Internal Error: no symbol");
-                return;
-            }
-            switch (sym->kind) {
-            case SYM_VARIABLE:
-            case SYM_LOCALVAR:
-            case SYM_PARAMETER:
-            case SYM_RESULT:
+            case AST_RESULT: {
+                printf("Got RESULT!\n");
                 BCCompileMemOp(irbuf,node,context,BOK_MEM_READ);
-                break;
-            case SYM_RESERVED:
-                if (!strcmp(sym->our_name,"result")) {
-                    // FIXME the parser should give AST_RESULT here, I think
-                    BCCompileMemOp(irbuf,NewAST(AST_RESULT,node->left,node->right),context,BOK_MEM_READ);
-                } else {
-                    ERROR(node,"Unhandled reserved word %s in expression",sym->our_name);
-                }
-                break;
+            } break;
+            case AST_ARRAYREF: {
+                printf("Got array read! ");
+                printASTInfo(node);
+                BCCompileMemOp(irbuf,node,context,BOK_MEM_READ);
+            } break;
+            case AST_STRINGPTR: {
+                printf("Got STRINGPTR! ");
+                printASTInfo(node);
+                ByteOpIR *stringLabel = BCNewOrphanLabel();
+                ByteOpIR pushOp = {0};
+                pushOp.kind = BOK_FUNDATA_PUSHADDRESS;
+                pushOp.data.jumpTo = stringLabel;
+
+                ByteOpIR stringData = BCBuildString(node->left);
+
+                BIRB_PushCopy(irbuf,&pushOp);
+                BIRB_Push(irbuf->pending,stringLabel);
+                BIRB_PushCopy(irbuf->pending,&stringData);
+
+            } break;
             default:
-                ERROR(node,"Unhandled Identifier symbol kind %d",sym->kind);
+                ERROR(node,"Unhandled node kind %d in expression",node->kind);
                 return;
-            }
-
-        } break;
-        case AST_RESULT: {
-            printf("Got RESULT!\n");
-            BCCompileMemOp(irbuf,node,context,BOK_MEM_READ);
-        } break;
-        case AST_ARRAYREF: {
-            printf("Got array read! ");
-            printASTInfo(node);
-            BCCompileMemOp(irbuf,node,context,BOK_MEM_READ);
-        } break;
-        case AST_STRINGPTR: {
-            printf("Got STRINGPTR! ");
-            printASTInfo(node);
-            ByteOpIR *stringLabel = BCNewOrphanLabel();
-            ByteOpIR pushOp = {0};
-            pushOp.kind = BOK_FUNDATA_PUSHADDRESS;
-            pushOp.data.jumpTo = stringLabel;
-
-            ByteOpIR stringData = BCBuildString(node->left);
-
-            BIRB_PushCopy(irbuf,&pushOp);
-            BIRB_Push(irbuf->pending,stringLabel);
-            BIRB_PushCopy(irbuf->pending,&stringData);
-
-        } break;
-        default:
-            ERROR(node,"Unhandled node kind %d in expression",node->kind);
-            return;
-    }
-    if (popResults) {
-        BCCompileInteger(irbuf,popResults);
-        ByteOpIR popOp = {0};
-        popOp.kind = BOK_POP;
-        BIRB_PushCopy(irbuf,&popOp);
+        }
+        if (popResults) {
+            BCCompileInteger(irbuf,popResults);
+            ByteOpIR popOp = {0};
+            popOp.kind = BOK_POP;
+            BIRB_PushCopy(irbuf,&popOp);
+        }
     }
 }
 
