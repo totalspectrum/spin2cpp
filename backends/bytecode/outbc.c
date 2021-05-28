@@ -1380,10 +1380,14 @@ BCPrepareObject(Module *P) {
     // Init bedata
     if (P->bedata) return;
 
+    Module *save = current;
+    current = P;
+
     printf("Preparing object %s\n",P->fullname);
 
     P->bedata = calloc(sizeof(BCModData), 1);
     ModData(P)->compiledAddress = -1;
+
 
     // Count and gather private/public methods
     {
@@ -1455,11 +1459,16 @@ BCPrepareObject(Module *P) {
         }
         ModData(P)->obj_cnt = obj_cnt;
     }
+
+    current = save;
     
 }
 
 static void
 BCCompileObject(ByteOutputBuffer *bob, Module *P) {
+
+    Module *save = current;
+    current = P;
 
     printf("Compiling bytecode for object %s\n",P->fullname);
 
@@ -1547,15 +1556,14 @@ BCCompileObject(ByteOutputBuffer *bob, Module *P) {
         }
     }
 
-    return; 
+    current = save;
 }
 
 void OutputByteCode(const char *fname, Module *P) {
     FILE *bin_file = NULL,*lst_file = NULL;
-    Module *save;
     ByteOutputBuffer bob = {0};
 
-    save = current;
+    Module *save = current;
     current = P;
 
     printf("Debug: In OutputByteCode\n");
