@@ -1232,6 +1232,10 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         printf("got coginit statement! "); printASTInfo(node);
         BCCompileCoginit(irbuf,node,context,false);
     } break;
+    case AST_SEQUENCE: {
+        printf("got sequence in statement!\n");
+        BCCompileExpression(irbuf,node,context,true);
+    } break;
     default:
         ERROR(node,"Unhandled node kind %d in statement",node->kind);
         break;
