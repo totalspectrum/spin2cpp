@@ -1,4 +1,4 @@
 error17.spin2:5: warning: definition of x hides a member variable
-error17.spin2:2: warning: previous definition of x is here
+error17.spin2:2: note: previous definition of x is here
 error17.spin2:5: warning: definition of y hides a member variable
-error17.spin2:3: warning: previous definition of y is here
+error17.spin2:3: note: previous definition of y is here
