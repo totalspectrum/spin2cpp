@@ -1051,12 +1051,14 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                     // Compile the items
                     for (AST *list=node->right;list;list=list->right) {
                         ASSERT_AST_KIND(list,AST_EXPRLIST,return;);
-                        ByteOpIR lookOp = {.kind = isLookdown ? BOK_LOOKDOWN : BOK_LOOKUP};
+                        ByteOpIR lookOp = {0};
                         if (list->left->kind == AST_RANGE) {
                             BCCompileExpression(irbuf,list->left->left,context,false);
                             BCCompileExpression(irbuf,list->left->right,context,false);
+                            lookOp.kind = isLookdown ? BOK_LOOKDOWN_RANGE : BOK_LOOKUP_RANGE;
                         } else {
                             BCCompileExpression(irbuf,list->left,context,false);
+                            lookOp.kind = isLookdown ? BOK_LOOKDOWN : BOK_LOOKUP;
                         }
                         BIRB_PushCopy(irbuf,&lookOp);
                     }
