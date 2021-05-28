@@ -939,6 +939,26 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         BCCompileJump(irbuf,toplbl);
         BIRB_Push(irbuf,bottomlbl);
     } break;
+    case AST_DOWHILE: {
+        printf("Got DoWhile loop.. ");
+        printASTInfo(node);
+
+        ByteOpIR *toplbl = BCPushLabel(irbuf);
+        ByteOpIR *nextlbl = BCNewOrphanLabel();
+        ByteOpIR *bottomlbl = BCNewOrphanLabel();
+
+        BCContext newcontext = context;
+        newcontext.nextLabel = nextlbl;
+        newcontext.quitLabel = bottomlbl;
+        ASSERT_AST_KIND(node->right,AST_STMTLIST,break;)
+        BCCompileStmtlist(irbuf,node->right,newcontext);
+
+        BIRB_Push(irbuf,nextlbl);
+        // Compile condition
+        BCCompileConditionalJump(irbuf,node->left,true,toplbl,context);
+
+        BIRB_Push(irbuf,bottomlbl);
+    } break;
     case AST_FOR:
     case AST_FORATLEASTONCE: {
         printf("Got For... ");

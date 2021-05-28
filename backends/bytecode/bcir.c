@@ -129,16 +129,22 @@ static int CompileJumpOffset_Spin1(uint8_t *buf,int *pos,ByteOpIR *ir,int baseSi
 enum Spin1ConstEncoding {
     S1ConEn_TINY, // -1..1
     S1ConEn_DECOD, // powers of 2
+    S1ConEn_DECODNOT, // powers of 2, inverted
+    S1ConEn_BMASKLOW, // low bitmasks
+    S1ConEn_BMASKHIGH, // high bitmasks
     S1ConEn_1B,
     S1ConEn_2B,
     S1ConEn_3B,
     S1ConEn_4B,
-    // TODO: There's more
 };
 
 static enum Spin1ConstEncoding GetSpin1ConstEncoding(int32_t imm) {
     uint32_t immu = imm;
     if(abs(imm)<=1) return S1ConEn_TINY;
+    else if(isPowerOf2(immu+1)) return S1ConEn_BMASKLOW;
+    else if(isPowerOf2((~immu)+1)) return S1ConEn_BMASKHIGH;
+    else if(isPowerOf2(immu)) return S1ConEn_DECOD;
+    else if(isPowerOf2(~immu)) return S1ConEn_DECODNOT;
     else if (immu<=0x100) return S1ConEn_1B;
     else if (immu<=0x10000) return S1ConEn_2B;
     else if (immu<=0x1000000) return S1ConEn_3B;
@@ -160,7 +166,11 @@ static void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsL
     case BOK_CONSTANT:
         switch(GetSpin1ConstEncoding(ir->data.int32)) {
         case S1ConEn_TINY: *min = *max = 1; break;
-        case S1ConEn_DECOD: *min = *max = 2; break;
+        case S1ConEn_DECOD:
+        case S1ConEn_DECODNOT:
+        case S1ConEn_BMASKLOW:
+        case S1ConEn_BMASKHIGH:
+            *min = *max = 2; break;
         case S1ConEn_1B: *min = *max = 2; break;
         case S1ConEn_2B: *min = *max = 3; break;
         case S1ConEn_3B: *min = *max = 4; break;
@@ -272,6 +282,22 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
         switch(GetSpin1ConstEncoding(imm)) {
         case S1ConEn_TINY: // constant -1..1
             buf[pos++] = 0b00110101 + imm;
+            break;
+        case S1ConEn_DECOD: // power of 2
+            buf[pos++] = 0b00110111;
+            buf[pos++] = 0b00000000 + ((30-__builtin_clz(immu))&31);
+            break;
+        case S1ConEn_DECODNOT: // inverted power of 2
+            buf[pos++] = 0b00110111;
+            buf[pos++] = 0b01000000 + ((30-__builtin_clz(~immu))&31);
+            break;
+        case S1ConEn_BMASKLOW:
+            buf[pos++] = 0b00110111;
+            buf[pos++] = 0b00100000 + ((30-__builtin_clz(immu+1))&31);
+            break;
+        case S1ConEn_BMASKHIGH:
+            buf[pos++] = 0b00110111;
+            buf[pos++] = 0b01100000 + ((30-__builtin_clz((~immu)+1))&31);
             break;
         case S1ConEn_1B: // 1 byte
             buf[pos++] = 0b00111000;
