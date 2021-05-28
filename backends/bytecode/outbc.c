@@ -203,6 +203,88 @@ else if (node->kind != expectedkind) { ERROR(node,"Internal Error: Expected " #e
 static void BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStatement); // forward decl;
 static void BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context); // forward decl;
 
+static ByteOpIR*
+BCNewOrphanLabel() {
+    ByteOpIR *lbl = calloc(sizeof(ByteOpIR),1);
+    lbl->kind = BOK_LABEL;
+    return lbl;
+}
+
+static ByteOpIR*
+BCPushLabel(BCIRBuffer *irbuf) {
+    ByteOpIR lbl = {0};
+    lbl.kind = BOK_LABEL;
+    return BIRB_PushCopy(irbuf,&lbl);
+}
+
+static void
+BCCompileInteger(BCIRBuffer *irbuf,int32_t ival) {
+    ByteOpIR opc = {0};
+    opc.kind = BOK_CONSTANT;
+    opc.data.int32 = ival;
+    BIRB_PushCopy(irbuf,&opc);
+}
+
+static void
+BCCompileJumpEx(BCIRBuffer *irbuf, ByteOpIR *label, enum ByteOpKind kind) {
+    ByteOpIR condjmp = {0};
+    condjmp.kind = kind;
+    condjmp.data.jumpTo = label;
+    BIRB_PushCopy(irbuf,&condjmp);
+}
+
+static void
+BCCompileJump(BCIRBuffer *irbuf, ByteOpIR *label) {
+    BCCompileJumpEx(irbuf,label,BOK_JUMP);
+}
+
+static void
+BCCompileConditionalJump(BCIRBuffer *irbuf,AST *condition, bool ifNotZero, ByteOpIR *label, BCContext context) {
+    ByteOpIR condjmp = {0};
+    condjmp.data.jumpTo = label;
+    if (!condition) {
+        ERROR(NULL,"Null condition!");
+        return;
+    } else if (IsConstExpr(condition)) {
+        int ival = EvalConstExpr(condition);
+        if (!!ival == !!ifNotZero) {  
+            condjmp.kind = BOK_JUMP; // Unconditional jump
+        } else return; // Impossible jump
+    } else if (condition->kind == AST_OPERATOR && condition->d.ival == K_BOOL_NOT) {
+        // Inverted jump
+        BCCompileConditionalJump(irbuf,condition->right,!ifNotZero,label,context);
+        return;
+    } else if (condition->kind == AST_OPERATOR && condition->d.ival == K_BOOL_AND && !ifNotZero) {
+        // like in "IF L AND R"
+        BCCompileConditionalJump(irbuf,condition->left,false,label,context);
+        BCCompileConditionalJump(irbuf,condition->right,false,label,context);
+        return;
+    } else if (condition->kind == AST_OPERATOR && condition->d.ival == K_BOOL_AND && ifNotZero) {
+        // like in "IFNOT L AND R"
+        ByteOpIR *skipLabel = BCNewOrphanLabel();
+        BCCompileConditionalJump(irbuf,condition->left,false,skipLabel,context);
+        BCCompileConditionalJump(irbuf,condition->right,true,label,context);
+        BIRB_Push(irbuf,skipLabel);
+        return;
+    } else if (condition->kind == AST_OPERATOR && condition->d.ival == K_BOOL_OR && !ifNotZero) {
+        // like in "IF L OR R"
+        ByteOpIR *skipLabel = BCNewOrphanLabel();
+        BCCompileConditionalJump(irbuf,condition->left,true,skipLabel,context);
+        BCCompileConditionalJump(irbuf,condition->right,false,label,context);
+        BIRB_Push(irbuf,skipLabel);
+        return;
+    } else if (condition->kind == AST_OPERATOR && condition->d.ival == K_BOOL_OR && ifNotZero) {
+        // like in "IFNOT L OR R"
+        BCCompileConditionalJump(irbuf,condition->left,true,label,context);
+        BCCompileConditionalJump(irbuf,condition->right,true,label,context);
+        return;
+    } else {
+        // Just normal
+        BCCompileExpression(irbuf,condition,context,false);
+        condjmp.kind = ifNotZero ? BOK_JUMP_IF_NZ : BOK_JUMP_IF_Z;
+    }
+    BIRB_PushCopy(irbuf,&condjmp);
+}
 
 static void
 BCCompileMemOpEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum ByteOpKind kind, enum MathOpKind modifyMathKind, bool modifyReverseMath, bool pushModifyResult) {
@@ -416,28 +498,6 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
         break;
     }
 
-}
-
-static ByteOpIR*
-BCNewOrphanLabel() {
-    ByteOpIR *lbl = calloc(sizeof(ByteOpIR),1);
-    lbl->kind = BOK_LABEL;
-    return lbl;
-}
-
-static ByteOpIR*
-BCPushLabel(BCIRBuffer *irbuf) {
-    ByteOpIR lbl = {0};
-    lbl.kind = BOK_LABEL;
-    return BIRB_PushCopy(irbuf,&lbl);
-}
-
-static void
-BCCompileInteger(BCIRBuffer *irbuf,int32_t ival) {
-    ByteOpIR opc = {0};
-    opc.kind = BOK_CONSTANT;
-    opc.data.int32 = ival;
-    BIRB_PushCopy(irbuf,&opc);
 }
 
 static int getFuncID(Module *M,const char *name) {
@@ -678,6 +738,30 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
             case '>': mok = MOK_CMP_A; break;
 
             case K_BOOL_NOT: mok = MOK_BOOLNOT; unary=true; break;
+            
+            case K_LOGIC_AND: mok = MOK_LOGICAND; break;
+            case K_LOGIC_OR: mok = MOK_LOGICOR; break;
+
+            case K_BOOL_AND:
+            case K_BOOL_OR: {
+                bool is_and = node->d.ival == K_BOOL_AND;
+                if (!ExprHasSideEffects(right)) {
+                    // Use logic instead
+                    mok = is_and ? MOK_LOGICAND : MOK_LOGICOR;
+                    break;
+                } else {
+                    ByteOpIR notOp = {.kind = BOK_MATHOP,.mathKind = MOK_BOOLNOT};
+                    // build rickety short circuit op
+                    ByteOpIR *lbl = BCNewOrphanLabel();
+                    BCCompileInteger(irbuf,is_and ? 0 : -1);
+                    BCCompileConditionalJump(irbuf,left,!is_and,lbl,context);
+                    BCCompileConditionalJump(irbuf,right,!is_and,lbl,context);
+                    BIRB_PushCopy(irbuf,&notOp);
+                    BIRB_Push(irbuf,lbl);
+                    return;
+                }
+
+            } break;
 
             case K_INCREMENT: 
             case K_DECREMENT:
@@ -696,6 +780,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
             mathOp.kind = BOK_MATHOP;
             mathOp.mathKind = mok;
             BIRB_PushCopy(irbuf,&mathOp);
+
         } break;
         incdec: { // Special handling for inc/dec
             bool isPostfix = node->left;
@@ -817,38 +902,6 @@ BCCompileStmtlist(BCIRBuffer *irbuf,AST *list, BCContext context) {
         BCCompileStatement(irbuf,node,context);
     }
 
-}
-
-static void
-BCCompileJump(BCIRBuffer *irbuf, ByteOpIR *label) {
-    ByteOpIR condjmp = {0};
-    condjmp.kind = BOK_JUMP;
-    condjmp.data.jumpTo = label;
-    BIRB_PushCopy(irbuf,&condjmp);
-}
-
-static void
-BCCompileConditionalJump(BCIRBuffer *irbuf,AST *condition, bool ifNotZero, ByteOpIR *label, BCContext context) {
-    ByteOpIR condjmp = {0};
-    condjmp.data.jumpTo = label;
-    if (!condition) {
-        ERROR(NULL,"Null condition!");
-        return;
-    } else if (IsConstExpr(condition)) {
-        int ival = EvalConstExpr(condition);
-        if (!!ival == !!ifNotZero) {  
-            condjmp.kind = BOK_JUMP; // Unconditional jump
-        } else return; // Impossible jump
-    } else if (condition->kind == AST_OPERATOR && condition->d.ival == K_BOOL_NOT) {
-        // Inverted jump
-        BCCompileExpression(irbuf,condition->right,context,false);
-        condjmp.kind = ifNotZero ? BOK_JUMP_IF_Z : BOK_JUMP_IF_NZ;
-    } else {
-        // Just normal
-        BCCompileExpression(irbuf,condition,context,false);
-        condjmp.kind = ifNotZero ? BOK_JUMP_IF_NZ : BOK_JUMP_IF_Z;
-    }
-    BIRB_PushCopy(irbuf,&condjmp);
 }
 
 static void
@@ -992,7 +1045,7 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         case SYM_BUILTIN:
         case SYM_FUNCTION: {
             // This nonsense fixes REBOOT
-            printf("Note: identifier converted to function call for sym with kind %d and name %s\n",sym->kind,sym->our_name);
+            NOTE(node,"identifier converted to function call for sym with kind %d and name %s",sym->kind,sym->our_name);
             AST *fakecall = NewAST(AST_FUNCCALL,node,NULL);
             BCCompileFunCall(irbuf,fakecall,context,false);
         } break;
@@ -1057,7 +1110,7 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
 
     // I think there's other body types so let's leave this instead of using ASSERT_AST_KIND
     if (!F->body) {
-        printf("Note: compiling function with no body...\n");
+        NOTE(NULL,"compiling function with no body...");
     } else if (F->body->kind != AST_STMTLIST) {
         ERROR(F->body,"Internal Error: Expected AST_STMTLIST, got id %d",F->body->kind);
         return;
