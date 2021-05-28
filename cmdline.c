@@ -31,6 +31,7 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include <time.h>
+#include <unistd.h>
 #include "spinc.h"
 #include "preprocess.h"
 #include "version.h"
@@ -50,6 +51,8 @@ void InitializeSystem(CmdLineOptions *cmd, const char **argv)
     cmd->eepromSize = 32768;
     InitPreprocessor(argv);
     gl_max_errors = 1;
+    gl_colorize_output = isatty(fileno(stderr));
+    current_print_color = PRINT_NORMAL;
 }
 
 void

@@ -272,6 +272,12 @@ main(int argc, const char **argv)
                 Usage(stderr, cmd->bstcMode);
             }
             argv++; --argc;
+        } else if (!strcmp(argv[0], "--color")) {
+            gl_colorize_output = true;
+            argv++; --argc;
+        } else if (!strcmp(argv[0], "--nocolor")) {
+            gl_colorize_output = false;
+            argv++; --argc;
         } else if (!strcmp(argv[0], "-w")) {
             gl_outputflags |= OUTFLAG_COG_CODE;
             gl_output = OUTPUT_COGSPIN;
