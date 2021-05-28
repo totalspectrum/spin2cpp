@@ -1252,6 +1252,10 @@ ModifyLookup(AST *top)
         ERROR(ev, "Internal error in lookup");
         return NULL;
     }
+
+    // Bytecode has native lookup/lookdown
+    if (gl_output == OUTPUT_BYTECODE) return NULL;
+
     /* see if the table is constant, and count the number of elements */
     ast = table;
     while (ast) {

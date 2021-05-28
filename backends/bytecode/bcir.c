@@ -288,6 +288,11 @@ static void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsL
     case BOK_ABORT_PLAIN:
     case BOK_ABORT_POP:
     case BOK_WAIT:
+    case BOK_LOOKDOWN:
+    case BOK_LOOKUP:
+    case BOK_LOOKDOWN_RANGE:
+    case BOK_LOOKUP_RANGE:
+    case BOK_LOOKEND:
     case BOK_BUILTIN_STRSIZE:
     case BOK_BUILTIN_STRCOMP:
     case BOK_BUILTIN_BULKMEM:
@@ -570,6 +575,11 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
     case BOK_COGINIT: {
         buf[pos++] = ir->attr.coginit.pushCogID ? 0b00101000 : 0b00101100;
     } break;
+    case BOK_LOOKEND:        buf[pos++] = 0b00001111; break;
+    case BOK_LOOKUP:         buf[pos++] = 0b00010000; break;
+    case BOK_LOOKDOWN:       buf[pos++] = 0b00010001; break;
+    case BOK_LOOKUP_RANGE:   buf[pos++] = 0b00010010; break;
+    case BOK_LOOKDOWN_RANGE: buf[pos++] = 0b00010011; break;
     case BOK_POP: buf[pos++] = 0b00010100; break;
     case BOK_COGINIT_PREPARE: buf[pos++] = 0b00010101; break;
     case BOK_BUILTIN_STRSIZE: buf[pos++] = 0b00010110; break;

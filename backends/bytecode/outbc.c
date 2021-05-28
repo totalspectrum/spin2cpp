@@ -1023,15 +1023,54 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 printf("Got STRINGPTR! ");
                 printASTInfo(node);
                 ByteOpIR *stringLabel = BCNewOrphanLabel();
-                ByteOpIR pushOp = {0};
-                pushOp.kind = BOK_FUNDATA_PUSHADDRESS;
-                pushOp.data.jumpTo = stringLabel;
-
+                ByteOpIR pushOp = {.kind = BOK_FUNDATA_PUSHADDRESS,.data.jumpTo = stringLabel};
                 ByteOpIR stringData = BCBuildString(node->left);
 
                 BIRB_PushCopy(irbuf,&pushOp);
                 BIRB_Push(irbuf->pending,stringLabel);
                 BIRB_PushCopy(irbuf->pending,&stringData);
+
+            } break;
+            case AST_LOOKUP:
+            case AST_LOOKDOWN: {
+                printf("Got LOOKUP/DOWN! "); printASTInfo(node);
+                bool isLookdown = node->kind == AST_LOOKDOWN;
+                ASSERT_AST_KIND(node->left,AST_LOOKEXPR,return;);
+                if (node->right->kind == AST_EXPRLIST) {
+                    // Native lookup/down
+
+                    // Compile base
+                    BCCompileExpression(irbuf,node->left->left,context,false);
+                    // Compile "done" jump pointer
+                    ByteOpIR *afterLabel = BCNewOrphanLabel();
+                    ByteOpIR pushOp = {.kind = BOK_FUNDATA_PUSHADDRESS,.data.jumpTo = afterLabel};
+                    BIRB_PushCopy(irbuf,&pushOp);
+                    // Compile the expression
+                    BCCompileExpression(irbuf,node->left->right,context,false);
+
+                    // Compile the items
+                    for (AST *list=node->right;list;list=list->right) {
+                        ASSERT_AST_KIND(list,AST_EXPRLIST,return;);
+                        ByteOpIR lookOp = {.kind = isLookdown ? BOK_LOOKDOWN : BOK_LOOKUP};
+                        if (list->left->kind == AST_RANGE) {
+                            BCCompileExpression(irbuf,list->left->left,context,false);
+                            BCCompileExpression(irbuf,list->left->right,context,false);
+                        } else {
+                            BCCompileExpression(irbuf,list->left,context,false);
+                        }
+                        BIRB_PushCopy(irbuf,&lookOp);
+                    }
+
+                    ByteOpIR lookEnd = {.kind = BOK_LOOKEND};
+                    BIRB_PushCopy(irbuf,&lookEnd);
+
+                    BIRB_Push(irbuf,afterLabel);
+
+                } else {
+                    ERROR(node,"Unhandled LOOK* right AST kind %d",node->right->kind);
+                }
+
+
 
             } break;
             default:
@@ -1255,6 +1294,9 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         returnOp.kind = isAbort ? (retval ? BOK_ABORT_POP : BOK_ABORT_PLAIN) : (retval ? BOK_RETURN_POP : BOK_RETURN_PLAIN);
         if (retval) BCCompileExpression(irbuf,retval,context,false);
         BIRB_PushCopy(irbuf,&returnOp);
+    } break;
+    case AST_YIELD: {
+        // do nothing  
     } break;
     default:
         ERROR(node,"Unhandled node kind %d in statement",node->kind);

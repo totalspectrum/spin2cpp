@@ -49,6 +49,12 @@
     X(REGBITS_WRITE) \
     X(REGBITS_MODIFY) \
     \
+    X(LOOKUP) \
+    X(LOOKDOWN) \
+    X(LOOKUP_RANGE) \
+    X(LOOKDOWN_RANGE) \
+    X(LOOKEND) \
+    \
     /* Memory builtins */ \
     X(BUILTIN_STRSIZE) \
     X(BUILTIN_STRCOMP) \
