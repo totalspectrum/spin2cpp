@@ -693,6 +693,34 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
 }
 
 static void
+BCCompileCoginit(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpression) {
+    Function *callmethod;
+    if (IsSpinCoginit(node,&callmethod)) {
+        printf("Got Spin coginit\n");
+        ERROR(node,"Spin coginit NYI");
+    } else {
+        printf("Got PASM coginit\n");
+        ASSERT_AST_KIND(node->left,AST_EXPRLIST,return;);
+        AST *cogidExpr = node->left->left;
+        if (IsConstExpr(cogidExpr)) {
+            uint32_t val = EvalConstExpr(cogidExpr);
+            // Parser gives 0x1E for COGNEW, but -1 is smaller, thus this
+            if (!gl_p2 && (val & 8)) BCCompileInteger(irbuf,-1);
+            else BCCompileInteger(irbuf,val);
+        } else {
+            BCCompileExpression(irbuf,cogidExpr,context,false);
+        }
+        ASSERT_AST_KIND(node->left->right,AST_EXPRLIST,return;);
+        BCCompileExpression(irbuf,node->left->right->left,context,false); // entry point
+        ASSERT_AST_KIND(node->left->right->right,AST_EXPRLIST,return;);
+        BCCompileExpression(irbuf,node->left->right->right->left,context,false); // PAR value
+
+        ByteOpIR initOp = {.kind = BOK_COGINIT};
+        BIRB_PushCopy(irbuf,&initOp);
+    }
+}
+
+static void
 BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStatement) {
     if(!node) {
         ERROR(NULL,"Internal Error: Null expression!!");
@@ -1099,6 +1127,10 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
             ERROR(node,"Unhandled identifier symbol kind %d in statement",sym->kind);
         } break;
         }
+    } break;
+    case AST_COGINIT: {
+        printf("got coginit statement! "); printASTInfo(node);
+        BCCompileCoginit(irbuf,node,context,false);
     } break;
     default:
         ERROR(node,"Unhandled node kind %d in statement",node->kind);

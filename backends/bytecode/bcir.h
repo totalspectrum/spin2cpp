@@ -54,8 +54,10 @@
     X(BUILTIN_STRCOMP) \
     X(BUILTIN_BULKMEM) /* BYTEFILL, LONGMOVE and friends */ \
     \
-    X(WAIT) \
+    X(COGINIT) \
     X(COGSTOP) \
+    \
+    X(WAIT) \
     X(CLKSET) /* only relevant on P1 */
 
 enum ByteOpKind {
@@ -153,6 +155,10 @@ typedef struct bcirstruct {
         struct {
             enum BCWaitType type;
         } wait;
+        struct {
+            unsigned pushCogID:1;
+        } coginit;
+        
         int stringLength;
     } attr;
 
