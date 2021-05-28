@@ -25,6 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * +--------------------------------------------------------------------
  */
+
+#ifdef WIN32
+#define WIN32_LEAN_AND_MEAN
+#define VC_EXTRALEAN
+#include <windows.h>
+#undef ERROR // thanks, wingdi.h
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdlib.h>
@@ -46,6 +54,7 @@ int gl_have_lut;
 int gl_errors;
 int gl_warnings_are_errors;
 int gl_max_errors;
+int gl_colorize_output;
 int gl_output;
 int gl_outputflags;
 int gl_nospin;
@@ -662,13 +671,46 @@ DifferentLineNumbers(AST *a, AST *b)
     return 0;
 }
 
+#ifdef WIN32
+static const WORD colorWindows[] = {
+    0x07, // PRINT_NORMAL
+    0x0B, // PRINT_NOTE
+    0x0E, // PRINT_WARNING
+    0x0C, // PRINT_ERROR 
+    0x0F, // PRINT_ERROR_LOCATION
+};
+#else 
+static const char *colorANSI[] = {
+    "\033[0m", // PRINT_NORMAL
+    "\033[0;36m", // PRINT_NOTE
+    "\033[0;33m", // PRINT_WARNING
+    "\033[0;31m", // PRINT_ERROR 
+    "\033[0;1m", // PRINT_ERROR_LOCATION
+};
+#endif
+
+enum printColorKind current_print_color;
+
+void SETCOLOR(enum printColorKind color) {
+    if (!gl_colorize_output) return;
+    #ifdef WIN32
+        SetConsoleTextAttribute(GetStdHandle(STD_ERROR_HANDLE),colorWindows[color]);
+    #else
+        fprintf(stderr,colorANSI[color]);
+    #endif
+    current_print_color = color;
+}
+
 void
 ERRORHEADER(const char *fileName, int lineno, const char *msg)
 {
-    if (fileName && lineno)
-        fprintf(stderr, "%s:%d: %s: ", fileName, lineno, msg);
-    else
-        fprintf(stderr, "%s: ", msg);
+    if (fileName && lineno) {
+        enum printColorKind save = current_print_color;
+        SETCOLOR(PRINT_ERROR_LOCATION);
+        fprintf(stderr, "%s:%d: ", fileName, lineno);
+        SETCOLOR(save);
+    } 
+    fprintf(stderr, "%s: ", msg);
 
 }
 
@@ -677,6 +719,8 @@ ERROR(AST *instr, const char *msg, ...)
 {
     va_list args;
     LineInfo *info = GetLineInfo(instr);
+
+    SETCOLOR(PRINT_ERROR);
 
     if (info)
         ERRORHEADER(info->fileName, info->lineno, "error");
@@ -688,12 +732,15 @@ ERROR(AST *instr, const char *msg, ...)
     va_end(args);
     fprintf(stderr, "\n");
     gl_errors++;
+    RESETCOLOR();
 }
 
 void
 SYNTAX_ERROR(const char *msg, ...)
 {
     va_list args;
+
+    SETCOLOR(PRINT_ERROR);
 
     if (current)
         ERRORHEADER(current->Lptr->fileName, current->Lptr->lineCounter, "error");
@@ -705,6 +752,7 @@ SYNTAX_ERROR(const char *msg, ...)
     va_end(args);
     fprintf(stderr, "\n");
     gl_errors++;
+    RESETCOLOR();
 }
 
 void
@@ -724,9 +772,11 @@ LANGUAGE_WARNING(int language, AST *ast, const char *msg, ...)
     }
     if (gl_warnings_are_errors) {
         banner = "ERROR";
+        SETCOLOR(PRINT_ERROR);
         gl_errors++;
     } else {
         banner = "warning";
+        SETCOLOR(PRINT_WARNING);
     }
     if (ast) {
         LineInfo *info = GetLineInfo(ast);
@@ -744,6 +794,7 @@ LANGUAGE_WARNING(int language, AST *ast, const char *msg, ...)
     vfprintf(stderr, msg, args);
     va_end(args);
     fprintf(stderr, "\n");
+    RESETCOLOR();
 }
 
 void
@@ -756,8 +807,10 @@ WARNING(AST *instr, const char *msg, ...)
     if (gl_warnings_are_errors) {
         gl_errors++;
         banner = "ERROR";
+        SETCOLOR(PRINT_ERROR);
     } else {
         banner = "warning";
+        SETCOLOR(PRINT_WARNING);
     }
     if (info)
         ERRORHEADER(info->fileName, info->lineno, banner);
@@ -768,6 +821,7 @@ WARNING(AST *instr, const char *msg, ...)
     vfprintf(stderr, msg, args);
     va_end(args);
     fprintf(stderr, "\n");
+    RESETCOLOR();
 }
 
 void
@@ -775,6 +829,8 @@ NOTE(AST *instr, const char *msg, ...)
 {
     va_list args;
     LineInfo *info = GetLineInfo(instr);
+
+    SETCOLOR(PRINT_NOTE);
 
     if (info)
         ERRORHEADER(info->fileName, info->lineno, "note");
@@ -785,6 +841,7 @@ NOTE(AST *instr, const char *msg, ...)
     vfprintf(stderr, msg, args);
     va_end(args);
     fprintf(stderr, "\n");
+    RESETCOLOR();
 }
 
 void

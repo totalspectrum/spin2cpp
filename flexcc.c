@@ -243,6 +243,12 @@ main(int argc, const char **argv)
         } else if (!strcmp(argv[0], "--listing")) {
             gl_listing = 1;
             argv++; --argc;
+        } else if (!strcmp(argv[0], "--color")) {
+            gl_colorize_output = true;
+            argv++; --argc;
+        } else if (!strcmp(argv[0], "--nocolor")) {
+            gl_colorize_output = false;
+            argv++; --argc;
         } else if (!strcmp(argv[0], "-v")) {
             cmd->quiet = 0;
             argv++; --argc;

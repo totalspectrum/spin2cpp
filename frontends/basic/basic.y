@@ -1230,9 +1230,11 @@ forstmt:
       loop = NewCommentedAST(AST_COUNTREPEAT, $3, from, $1);
       // validate the "next i"
       if (closeident && !AstMatch(ident, closeident)) {
+          SETCOLOR(PRINT_ERROR);
           ERRORHEADER(current->Lptr->fileName, current->Lptr->lineCounter, "error");
           fprintf(stderr, "Wrong variable in next: expected %s, saw %s\n", ident->d.string, closeident->d.string);
           gl_errors++;
+          RESETCOLOR();
       }
       loop = NewAST(AST_STMTLIST, loop, NULL);
       if (declare) {
@@ -2416,6 +2418,7 @@ basicyyerror(const char *msg)
     extern int saved_basicyychar;
     int yychar = saved_basicyychar;
     
+    SETCOLOR(PRINT_ERROR);
     ERRORHEADER(current->Lptr->fileName, current->Lptr->lineCounter, "error");
 
     // massage bison's error messages to make them easier to understand
@@ -2438,4 +2441,5 @@ basicyyerror(const char *msg)
     }
     fprintf(stderr, "\n");     
     gl_errors++;
+    RESETCOLOR();
 }
