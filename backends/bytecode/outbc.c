@@ -725,15 +725,46 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 case '&': mok = MOK_BITAND; break;
                 case '+': mok = MOK_ADD; break;
                 case '-': mok = MOK_SUB; break;
+                case '*': mok = MOK_MULLOW; break;
+                case K_HIGHMULT: mok = MOK_MULHIGH; break;
+                case '/': mok = MOK_DIVIDE; break;
+                case K_MODULUS: mok = MOK_REMAINDER; break;
+                case K_LIMITMAX: mok = MOK_MAX; break;
+                case K_LIMITMIN: mok = MOK_MIN; break;
+
 
                 case K_SHR: mok = MOK_SHR; break;
-                case K_SHL: mok = MOK_SHL; break;
+                case K_SAR: mok = MOK_SAR; break;
+                case K_ROTL: mok = MOK_ROL; break;
+                case K_ROTR: mok = MOK_ROR; break;
+
+                case K_REV: mok = MOK_REV; break;
+
+                case K_SHL: {
+                    if (IsConstExpr(left) && EvalConstExpr(left)==1) {
+                        // convert 1<<X into decode
+                        mok = MOK_DECODE;
+                        unary = true;
+                        left = NULL;
+                    } else {
+                        mok = MOK_SHL; 
+                    }
+                } break;
 
                 case '<': mok = MOK_CMP_B; break;
                 case '>': mok = MOK_CMP_A; break;
+                case K_LE: mok = MOK_CMP_BE; break;
+                case K_GE: mok = MOK_CMP_AE; break;
+                case K_EQ: mok = MOK_CMP_E; break;
+                case K_NE: mok = MOK_CMP_NE; break;
 
                 case K_BOOL_NOT: mok = MOK_BOOLNOT; unary=true; break;
-                
+                case K_NEGATE: mok = MOK_NEG; unary = true; break;
+                case K_ABS: mok = MOK_ABS; unary = true; break;
+                case K_SQRT: mok = MOK_SQRT; unary = true; break;
+                case K_DECODE: mok = MOK_DECODE; unary = true; break;
+                case K_ENCODE: mok = MOK_ENCODE; unary = true; break;
+
                 case K_LOGIC_AND: mok = MOK_LOGICAND; break;
                 case K_LOGIC_OR: mok = MOK_LOGICOR; break;
 
@@ -755,7 +786,6 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                         BIRB_Push(irbuf,lbl);
                         return;
                     }
-
                 } break;
 
                 case K_INCREMENT: 
