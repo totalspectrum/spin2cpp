@@ -75,7 +75,11 @@ extern const char *byteOpKindNames[];
     \
     X(MOD_REPEATN)  /* DJNZ? */ \
     \
-    X(MOD_SIGNX) \
+    X(MOD_RANDFORWARD) \
+    X(MOD_RANDBACKWARD) \
+    \
+    X(MOD_SIGNX_BYTE) \
+    X(MOD_SIGNX_WORD) \
     \
     X(MOD_PREINC) X(MOD_POSTINC) \
     X(MOD_PREDEC) X(MOD_POSTDEC) \

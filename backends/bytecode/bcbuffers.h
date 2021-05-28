@@ -30,6 +30,6 @@ int BOB_Align(ByteOutputBuffer *buf,int alignment);
 static inline void BOB_Comment(ByteOutputBuffer *buf,const char *comment) {BOB_Push(buf,NULL,0,comment);}
 
 
-char *auto_printf(size_t max,const char *format,...);
+char *auto_printf(size_t max,const char *format,...) __attribute__((format(printf,2,3)));
 
 #endif

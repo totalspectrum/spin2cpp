@@ -126,6 +126,46 @@ static int CompileJumpOffset_Spin1(uint8_t *buf,int *pos,ByteOpIR *ir,int baseSi
     return offset;
 }
 
+uint8_t MathOp_to_ID_Spin1(enum MathOpKind mathKind) {
+    switch(mathKind) {
+        case MOK_ROR:       return 0b00000; break;
+        case MOK_ROL:       return 0b00001; break;
+        case MOK_SHR:       return 0b00010; break;
+        case MOK_SHL:       return 0b00011; break;
+        case MOK_MIN:       return 0b00100; break;
+        case MOK_MAX:       return 0b00101; break;
+        case MOK_NEG:       return 0b00110; break;
+        case MOK_BITNOT:    return 0b00111; break;
+        case MOK_BITAND:    return 0b01000; break;
+        case MOK_ABS:       return 0b01001; break;
+        case MOK_BITOR:     return 0b01010; break;
+        case MOK_BITXOR:    return 0b01011; break;
+        case MOK_ADD:       return 0b01100; break;
+        case MOK_SUB:       return 0b01101; break;
+        case MOK_SAR:       return 0b01110; break;
+        case MOK_REV:       return 0b01111; break;
+        case MOK_LOGICAND:  return 0b10000; break;
+        case MOK_ENCODE:    return 0b10001; break;
+        case MOK_LOGICOR:   return 0b10010; break;
+        case MOK_DECODE:    return 0b10011; break;
+        case MOK_MULLOW:    return 0b10100; break;
+        case MOK_MULHIGH:   return 0b10101; break;
+        case MOK_DIVIDE:    return 0b10110; break;
+        case MOK_REMAINDER: return 0b10111; break;
+        case MOK_SQRT:      return 0b11000; break;
+        case MOK_CMP_B:     return 0b11001; break;
+        case MOK_CMP_A:     return 0b11010; break;
+        case MOK_CMP_NE:    return 0b11011; break;
+        case MOK_CMP_E:     return 0b11100; break;
+        case MOK_CMP_BE:    return 0b11101; break;
+        case MOK_CMP_AE:    return 0b11110; break;
+        case MOK_BOOLNOT:   return 0b11111; break;
+        default:
+            ERROR(NULL,"Unhandled math op type %d = %s",mathKind,mathOpKindNames[mathKind]);
+            return 0;
+        }
+}
+
 enum Spin1ConstEncoding {
     S1ConEn_TINY, // -1..1
     S1ConEn_DECOD, // powers of 2
@@ -327,44 +367,7 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
         comment = auto_printf(32,"CONSTANT %d",imm);
     } break;
     case BOK_MATHOP: {
-        int mathID;
-        switch(ir->mathKind) {
-        case MOK_ROR:       mathID = 0b00000; break;
-        case MOK_ROL:       mathID = 0b00001; break;
-        case MOK_SHR:       mathID = 0b00010; break;
-        case MOK_SHL:       mathID = 0b00011; break;
-        case MOK_MIN:       mathID = 0b00100; break;
-        case MOK_MAX:       mathID = 0b00101; break;
-        case MOK_NEG:       mathID = 0b00110; break;
-        case MOK_BITNOT:    mathID = 0b00111; break;
-        case MOK_BITAND:    mathID = 0b01000; break;
-        case MOK_ABS:       mathID = 0b01001; break;
-        case MOK_BITOR:     mathID = 0b01010; break;
-        case MOK_BITXOR:    mathID = 0b01011; break;
-        case MOK_ADD:       mathID = 0b01100; break;
-        case MOK_SUB:       mathID = 0b01101; break;
-        case MOK_SAR:       mathID = 0b01110; break;
-        case MOK_REV:       mathID = 0b01111; break;
-        case MOK_LOGICAND:  mathID = 0b10000; break;
-        case MOK_ENCODE:    mathID = 0b10001; break;
-        case MOK_LOGICOR:   mathID = 0b10010; break;
-        case MOK_DECODE:    mathID = 0b10011; break;
-        case MOK_MULLOW:    mathID = 0b10100; break;
-        case MOK_MULHIGH:   mathID = 0b10101; break;
-        case MOK_DIVIDE:    mathID = 0b10110; break;
-        case MOK_REMAINDER: mathID = 0b10111; break;
-        case MOK_SQRT:      mathID = 0b11000; break;
-        case MOK_CMP_B:     mathID = 0b11001; break;
-        case MOK_CMP_A:     mathID = 0b11010; break;
-        case MOK_CMP_NE:    mathID = 0b11011; break;
-        case MOK_CMP_E:     mathID = 0b11100; break;
-        case MOK_CMP_BE:    mathID = 0b11101; break;
-        case MOK_CMP_AE:    mathID = 0b11110; break;
-        case MOK_BOOLNOT:   mathID = 0b11111; break;
-        default:
-            ERROR(NULL,"Unhandled math op type %d = %s",ir->mathKind,mathOpKindNames[ir->mathKind]);
-            break;
-        }
+        int mathID = MathOp_to_ID_Spin1(ir->mathKind);
         buf[pos++] = 0xE0+mathID;
         comment = auto_printf(28,"MATHOP: %s",mathOpKindNames[ir->mathKind]);
     } break;
@@ -427,26 +430,68 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
             }
         }
         
-        if (ir->kind == BOK_MEM_MODIFY) ERROR(NULL,"MODIFY is NYI");
-        else {
-            if (gl_listing) { // This is complex, so only run when we actually want a listing
-                const char* basetext = "oh no";
-                switch(ir->attr.memop.base) {
-                case MEMOP_BASE_POP: basetext = "(POP base)"; break;
-                case MEMOP_BASE_PBASE: basetext = auto_printf(14,"PBASE+$%04X",offset); break;
-                case MEMOP_BASE_VBASE: basetext = auto_printf(14,"VBASE+$%04X",offset); break;
-                case MEMOP_BASE_DBASE: basetext = auto_printf(14,"DBASE+$%04X",offset); break;
+        bool sizedModifyOp = false;
+        if (ir->kind == BOK_MEM_MODIFY) {
+            uint8_t modifyCode = 0;
+            if (isModOperator(ir->mathKind)) {
+                int modsize = 0;
+                switch(ir->attr.memop.modSize) {
+                case MEMOP_SIZE_BIT:   modsize = 0; break;
+                case MEMOP_SIZE_BYTE:  modsize = 2; break;
+                case MEMOP_SIZE_WORD:  modsize = 4; break;
+                case MEMOP_SIZE_LONG:  modsize = 6; break;
                 }
-                const char* sizetext = "oh no"; 
-                switch (ir->attr.memop.memSize) {
-                case MEMOP_SIZE_BIT:  sizetext = "(invalid)"; break;
-                case MEMOP_SIZE_BYTE: sizetext = "BYTE"; break;
-                case MEMOP_SIZE_WORD: sizetext = "WORD"; break;
-                case MEMOP_SIZE_LONG: sizetext = "LONG"; break;
+                switch(ir->mathKind) {
+                case MOK_MOD_WRITE:        modifyCode = 0b0000000; break;
+                case MOK_MOD_RANDFORWARD:  modifyCode = 0b0001000; break;
+                case MOK_MOD_RANDBACKWARD: modifyCode = 0b0001100; break;
+                case MOK_MOD_SIGNX_BYTE:   modifyCode = 0b0010000; break;
+                case MOK_MOD_SIGNX_WORD:   modifyCode = 0b0010100; break;
+                case MOK_MOD_POSTCLEAR:    modifyCode = 0b0011000; break;
+                case MOK_MOD_POSTSET:      modifyCode = 0b0011100; break;
+                case MOK_MOD_PREINC:       modifyCode = 0b0100000+modsize; sizedModifyOp = true; break;
+                case MOK_MOD_POSTINC:      modifyCode = 0b0101000+modsize; sizedModifyOp = true; break;
+                case MOK_MOD_PREDEC:       modifyCode = 0b0110000+modsize; sizedModifyOp = true; break;
+                case MOK_MOD_POSTDEC:      modifyCode = 0b0111000+modsize; sizedModifyOp = true; break;
+                default: 
+                    ERROR(NULL,"unhandled modify operator %s",mathOpKindNames[ir->mathKind]);
+                    break;
                 }
-                comment = auto_printf(128,"%s %s %s%s %s ",
+            } else {
+                modifyCode = 0b01000000 + MathOp_to_ID_Spin1(ir->mathKind) + (ir->attr.memop.modifyReverseMath << 5);
+            }
+            modifyCode += ir->attr.memop.pushModifyResult << 7;
+            buf[pos++] = modifyCode;
+        }
+        if (gl_listing) { // This is complex, so only run when we actually want a listing
+            const char* basetext = "oh no";
+            switch(ir->attr.memop.base) {
+            case MEMOP_BASE_POP: basetext = "(POP base)"; break;
+            case MEMOP_BASE_PBASE: basetext = auto_printf(14,"PBASE+$%04X",offset); break;
+            case MEMOP_BASE_VBASE: basetext = auto_printf(14,"VBASE+$%04X",offset); break;
+            case MEMOP_BASE_DBASE: basetext = auto_printf(14,"DBASE+$%04X",offset); break;
+            }
+            const char* sizetext = "oh no"; 
+            switch (ir->attr.memop.memSize) {
+            case MEMOP_SIZE_BIT:  sizetext = "(invalid)"; break;
+            case MEMOP_SIZE_BYTE: sizetext = "BYTE"; break;
+            case MEMOP_SIZE_WORD: sizetext = "WORD"; break;
+            case MEMOP_SIZE_LONG: sizetext = "LONG"; break;
+            }
+            const char* modsizetext = "oh no"; 
+            switch (ir->attr.memop.modSize) {
+            case MEMOP_SIZE_BIT:  modsizetext = "(BIT)"; break;
+            case MEMOP_SIZE_BYTE: modsizetext = "(BYTE)"; break;
+            case MEMOP_SIZE_WORD: modsizetext = "(WORD)"; break;
+            case MEMOP_SIZE_LONG: modsizetext = "(LONG)"; break;
+            }
+            if (ir->kind == BOK_MEM_MODIFY) {
+                comment = auto_printf(256,"%s %s %s%s %s %s %s%s%s",
+                    byteOpKindNames[ir->kind],sizetext,basetext,ir->attr.memop.popIndex ? "+(POP index)":"",shortForm?"(short)":"",
+                    mathOpKindNames[ir->mathKind],sizedModifyOp?modsizetext:"",ir->attr.memop.modifyReverseMath?"(REVERSE)":"",ir->attr.memop.pushModifyResult?"(PUSH RESULT)":"");
+            } else {
+                comment = auto_printf(128,"%s %s %s%s %s",
                     byteOpKindNames[ir->kind],sizetext,basetext,ir->attr.memop.popIndex ? "+(POP index)":"",shortForm?"(short)":"");
-                // TODO handle all the modify stuff
             }
         }
     } break;

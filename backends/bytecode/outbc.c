@@ -374,6 +374,12 @@ BCCompileMemOpEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum ByteOpKind 
             printf("sym->offset is %d\n",sym->offset);
             memOp.data.int32 = sym->offset + BCParameterBase();
         } break;
+        case SYM_TEMPVAR: {
+            printf("Got SYM_TEMPVAR??? ");
+            memOp.attr.memop.base = MEMOP_BASE_DBASE;
+            printf("sym->offset is %d\n",sym->offset);
+            memOp.data.int32 = sym->offset + BCLocalBase();
+        } break;
         case SYM_RESERVED: {
             if (!strcmp(sym->our_name,"result")) {
                 goto do_result;
@@ -445,26 +451,27 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
     AST *left = node->left, *right = node->right;
     printf("Got an assign! left kind: %d, right kind %d\n",left->kind,right->kind);
 
-    if (asExpression) ERROR(node,"Assignment expression NYI");  
-
-    BCCompileExpression(irbuf,right,context,false);
+    AST *memopNode = NULL;
 
     switch(left->kind) {
     case AST_HWREG: {
         HwReg *hw = (HwReg *)left->d.ptr;
         printf("Got HWREG assign, %s = %d\n",hw->name,HWReg2Index(hw));
+        BCCompileExpression(irbuf,right,context,false);
         ByteOpIR hwAssignOp = {0};
         hwAssignOp.kind = BOK_REG_WRITE;
         hwAssignOp.data.int32 = HWReg2Index(hw);
         BIRB_PushCopy(irbuf,&hwAssignOp);
+        if (asExpression) ERROR(node,"Assignment with register expression NYI");  
+        return; // not a memory op
     } break;
     case AST_ARRAYREF: {
         printf("Got ARRAYREF assign\n");
-        BCCompileMemOp(irbuf,left,context,BOK_MEM_WRITE);
+        memopNode = left;
     } break;
     case AST_RESULT: {
         printf("Got RESULT assign\n");
-        BCCompileMemOp(irbuf,left,context,BOK_MEM_WRITE);
+        memopNode = left;
     } break;
     case AST_IDENTIFIER: {
         printf("Got IDENTIFIER assign\n");
@@ -474,16 +481,17 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
             return;
         }
         switch (sym->kind) {
+        case SYM_TEMPVAR: NOTE(node,"temp variable %s used",sym->our_name); // fall through
         case SYM_VARIABLE:
         case SYM_LOCALVAR:
         case SYM_PARAMETER:
         case SYM_RESULT:
-            BCCompileMemOp(irbuf,left,context,BOK_MEM_WRITE);
+            memopNode = left;
             break;
         case SYM_RESERVED:
             if (!strcmp(sym->our_name,"result")) {
                 // FIXME the parser should give AST_RESULT here, I think
-                BCCompileMemOp(irbuf,NewAST(AST_RESULT,left->left,left->right),context,BOK_MEM_WRITE);
+                memopNode = NewAST(AST_RESULT,left->left,left->right);
             } else {
                 ERROR(node,"Unhandled reserved word %s in assignment",sym->our_name);
             }
@@ -497,6 +505,21 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
         ERROR(left,"Unhandled assign left kind %d",left->kind);
         break;
     }
+
+    if (!memopNode) {
+        ERROR(node,"Internal error: no memopNode");
+        return;
+    }
+
+    if (asExpression) {
+        BCCompileExpression(irbuf,right,context,false);
+        BCCompileMemOpEx(irbuf,memopNode,context,BOK_MEM_MODIFY,MOK_MOD_WRITE,false,true);
+    } else {
+        BCCompileExpression(irbuf,right,context,false);
+        BCCompileMemOp(irbuf,memopNode,context,BOK_MEM_WRITE);
+    }
+
+    
 
 }
 
@@ -802,11 +825,20 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
         switch(node->kind) {
             case AST_FUNCCALL: {
                 printf("Got call in expression \n");
-                BCCompileFunCall(irbuf,node,context,true);
+                BCCompileFunCall(irbuf,node,context,!asStatement);
+                popResults = 0;
             } break;
             case AST_ASSIGN: {
                 printf("Got assignment in expression \n");
-                BCCompileAssignment(irbuf,node,context,true);
+                BCCompileAssignment(irbuf,node,context,!asStatement);
+                popResults = 0;
+            } break;
+            case AST_SEQUENCE: {
+                printf("Got sequence in expression ");printASTInfo(node);
+                NOTE(node,"got AST_SEQUENCE, might have been pessimized");
+                BCCompileExpression(irbuf,node->left,context,true);
+                if (node->right) BCCompileExpression(irbuf,node->right,context,asStatement);
+                popResults = 0;
             } break;
             case AST_OPERATOR: {
                 printf("Got operator in expression: 0x%03X\n",node->d.ival);
@@ -953,6 +985,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                     return;
                 }
                 switch (sym->kind) {
+                case SYM_TEMPVAR: NOTE(node,"temp variable %s used",sym->our_name); // fall through
                 case SYM_VARIABLE:
                 case SYM_LOCALVAR:
                 case SYM_PARAMETER:
