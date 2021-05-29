@@ -49,6 +49,9 @@
     X(REGBITS_WRITE) \
     X(REGBITS_MODIFY) \
     \
+    X(CASE) \
+    X(CASE_RANGE)\
+    X(CASE_DONE) /* pops hidden case var and then pops jump target */ \
     X(LOOKUP) \
     X(LOOKDOWN) \
     X(LOOKUP_RANGE) \

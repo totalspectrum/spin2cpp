@@ -1229,12 +1229,118 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
     } break;
     case AST_CASE: {
         printf("Got Case... "); printASTInfo(node);
-        ERROR(node,"CASE is NYI");
 
+        ByteOpIR *endlabel = BCNewOrphanLabel();
+        ByteOpIR pushEnd = {.kind=BOK_FUNDATA_PUSHADDRESS,.data.jumpTo=endlabel};
+        BIRB_PushCopy(irbuf,&pushEnd);
         // Compile switch expression
-        //BCCompileExpression(irbuf,node->left,context,false);
+        BCCompileExpression(irbuf,node->left,context,false);
 
         ASSERT_AST_KIND(node->right,AST_STMTLIST,return;)
+
+        BCContext newcontext = context; // TODO
+
+        // Preview what we got
+        int cases = 0;
+        AST *othercase = NULL;
+        printf("Previewing cases\n");
+        for(AST *list=node->right;list;list=list->right) {
+            AST *item = list->left;
+            if (item->kind == AST_ENDCASE) {
+                // Do nothing
+                printf("Got AST_ENDCASE\n");
+            } else if (item->kind == AST_CASEITEM) {
+                printf("Got AST_CASEITEM\n");
+                cases++;
+                if (!list->right || list->right->left->kind != AST_ENDCASE) WARNING(item,"Case without AST_ENDCASE, may not be handled correctly");
+            } else if (item->kind == AST_OTHER) {
+                printf("Got AST_OTHER\n");
+                if (othercase) ERROR(item,"Multiple OTHER cases");
+                othercase = item;
+            } else {
+                ERROR(item,"Unexpected node kind %d in AST_CASE",item->kind);
+            }
+        }
+        printf("Got %d cases%s\n",cases,othercase?" and OTHER":"");
+        ByteOpIR *caselabels[cases];
+        for(int i=0;i<cases;i++) caselabels[i] = BCNewOrphanLabel();
+        
+        // Generate case expressions
+        printf("Generating case expressions\n");
+        int whichcase = 0;
+        for(AST *list=node->right;list;list=list->right) {
+            AST *item = list->left;
+            if (item->kind == AST_ENDCASE) {
+                // Do nothing
+                printf("Got AST_ENDCASE\n");
+            } else if (item->kind == AST_CASEITEM) {
+                printf("Got AST_CASEITEM\n");
+                ASSERT_AST_KIND(item->left,AST_EXPRLIST,;);
+                for (AST *exprlist=item->left;exprlist;exprlist=exprlist->right) {
+                    ASSERT_AST_KIND(exprlist,AST_EXPRLIST,continue;);
+                    ByteOpIR caseOp = {.data.jumpTo=caselabels[whichcase]};
+                    if (exprlist->left->kind == AST_RANGE) {
+                        printf("... with range!\n");
+                        BCCompileExpression(irbuf,exprlist->left->left,newcontext,false);
+                        BCCompileExpression(irbuf,exprlist->left->right,newcontext,false);
+                        caseOp.kind=BOK_CASE_RANGE;
+                    } else {
+                        printf("... with expression?\n");
+                        BCCompileExpression(irbuf,exprlist->left,newcontext,false);
+                        caseOp.kind=BOK_CASE;
+                    }
+                    BIRB_PushCopy(irbuf,&caseOp);
+                }
+                whichcase++;
+            } else if (item->kind == AST_OTHER) {
+                // Do nothing
+                printf("Got AST_OTHER\n");
+            } else {
+                ERROR(item,"Unexpected node kind %d in AST_CASE",item->kind);
+            }
+        }
+
+        if (othercase) {
+            printf("Compiling OTHER case\n");
+            AST *stmt = othercase->left; // statement for AST_OTHER is on the left?
+            if (stmt) {
+                if (stmt->kind == AST_COMMENTEDNODE) stmt = stmt->left;
+                BCCompileStatement(irbuf,stmt,newcontext);
+            } else NOTE(othercase,"Emtpy OTHER?");
+        }
+        ByteOpIR noMatchDone = {.kind = BOK_CASE_DONE};
+        BIRB_PushCopy(irbuf,&noMatchDone);
+
+        // Compile each case
+        printf("Compiling cases..\n");
+        whichcase = 0;
+        for(AST *list=node->right;list;list=list->right) {
+            AST *item = list->left;
+            if (item->kind == AST_ENDCASE) {
+                printf("Got AST_ENDCASE\n");
+                ByteOpIR endOp = {.kind = BOK_CASE_DONE};
+                BIRB_PushCopy(irbuf,&endOp);
+            } else if (item->kind == AST_CASEITEM) {
+                printf("Got AST_CASEITEM\n");
+                BIRB_Push(irbuf,caselabels[whichcase]);
+                AST *stmt = item->right;
+                if (stmt) {
+                    if (stmt->kind == AST_COMMENTEDNODE) stmt = stmt->left;
+                    BCCompileStatement(irbuf,stmt,newcontext);
+                } else NOTE(item,"Empty CASE?");
+                whichcase++;
+            } else if (item->kind == AST_OTHER) {
+                printf("Got AST_OTHER\n");
+                // Do nothing
+                // TODO: We emit an empty CASE_DONE for the associated AST_ENDCASE
+                // Will be caught by the eventual peephole dead code removal, so let's not deal with it here
+            } else {
+                ERROR(item,"Unexpected node kind %d in AST_CASE",item->kind);
+            }
+        }
+
+
+        BIRB_Push(irbuf,endlabel);
 
     } break;
     case AST_FUNCCALL: {

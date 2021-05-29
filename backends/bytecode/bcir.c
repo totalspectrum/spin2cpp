@@ -223,6 +223,8 @@ static void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsL
     case BOK_JUMP_TJZ:
     case BOK_JUMP_IF_Z:
     case BOK_JUMP_IF_NZ:
+    case BOK_CASE:
+    case BOK_CASE_RANGE:
         if (recursionsLeft) {
             int minDist,maxDist;
             GetJumpOffsetBounds(ir,false,&minDist,&maxDist,recursionsLeft);
@@ -288,6 +290,7 @@ static void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsL
     case BOK_ABORT_PLAIN:
     case BOK_ABORT_POP:
     case BOK_WAIT:
+    case BOK_CASE_DONE:
     case BOK_LOOKDOWN:
     case BOK_LOOKUP:
     case BOK_LOOKDOWN_RANGE:
@@ -539,29 +542,16 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
         buf[pos++] = ir->attr.call.objID;
         buf[pos++] = ir->attr.call.funID;
     } break;
-    case BOK_JUMP: {
-        buf[pos++] = 0b00000100;
-        goto jump_common;
-    }
-    case BOK_JUMP_TJZ: {
-        buf[pos++] = 0b00001000;
-        goto jump_common;
-    }
-    case BOK_JUMP_DJNZ: {
-        buf[pos++] = 0b00001001;
-        goto jump_common;
-    }
-    case BOK_JUMP_IF_Z: {
-        buf[pos++] = 0b00001010;
-        goto jump_common;
-    }
-    case BOK_JUMP_IF_NZ: {
-        buf[pos++] = 0b00001011;
-        goto jump_common;
-    }
+    case BOK_JUMP:       buf[pos++] = 0b00000100; goto jump_common;
+    case BOK_JUMP_TJZ:   buf[pos++] = 0b00001000; goto jump_common;
+    case BOK_JUMP_DJNZ:  buf[pos++] = 0b00001001; goto jump_common;
+    case BOK_JUMP_IF_Z:  buf[pos++] = 0b00001010; goto jump_common;
+    case BOK_JUMP_IF_NZ: buf[pos++] = 0b00001011; goto jump_common;
+    case BOK_CASE:       buf[pos++] = 0b00001101; goto jump_common;
+    case BOK_CASE_RANGE: buf[pos++] = 0b00001110; goto jump_common;
     jump_common: {
         int offset = CompileJumpOffset_Spin1(buf,&pos,ir,1,false,0);
-        comment = auto_printf(40,"%s %d",byteOpKindNames[ir->kind],offset);
+        comment = auto_printf(40,"%s %+d",byteOpKindNames[ir->kind],offset);
     } break;
     case BOK_WAIT: {
         switch(ir->attr.wait.type) {
@@ -575,6 +565,7 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
     case BOK_COGINIT: {
         buf[pos++] = ir->attr.coginit.pushCogID ? 0b00101000 : 0b00101100;
     } break;
+    case BOK_CASE_DONE:      buf[pos++] = 0b00001100; break;
     case BOK_LOOKEND:        buf[pos++] = 0b00001111; break;
     case BOK_LOOKUP:         buf[pos++] = 0b00010000; break;
     case BOK_LOOKDOWN:       buf[pos++] = 0b00010001; break;
