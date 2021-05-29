@@ -21,6 +21,6 @@ typedef struct {
     int localSize;
 } BCFunData;
 
-int BCgetDAToffset(Module *P, bool absolute, AST *errloc); // defined in outbc.c
+int BCgetDAToffset(Module *P, bool absolute, AST *errloc, bool printErrors); // defined in outbc.c
 
 #endif

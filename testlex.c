@@ -50,7 +50,7 @@ Module *GetTopLevelModule(void) {
 }
 
 // another dummy
-int BCgetDAToffset(Module *P, bool absolute, AST *errloc) {
+int BCgetDAToffset(Module *P, bool absolute, AST *errloc, bool printErrors) {
     return -1;
 }
 
