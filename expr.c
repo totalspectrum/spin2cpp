@@ -7,6 +7,7 @@
  */
 
 #include "spinc.h"
+#include "backends/bytecode/bc_bedata.h"
 #include <ctype.h>
 #include <string.h>
 #include <math.h>
@@ -1607,14 +1608,21 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             if (offset) {
                 offset *= TypeSize(BaseType(lref->type));
             }
-            if ( (gl_dat_offset == -1 && kind == AST_ABSADDROF) || 0 == (flags & PASM_FLAG) ) {
+            if ( (gl_dat_offset == -1 && kind == AST_ABSADDROF && gl_output != OUTPUT_BYTECODE) || 0 == (flags & PASM_FLAG)) {
                 if (reportError) {
                     ERROR(expr, "offset for address operator is not known");
                 } else {
                     *valid = 0;
                 }
             }
-            if (kind == AST_ABSADDROF) {
+            if (flags& PASM_FLAG) printf("Getting address of label %05X, AST kind %d, gl_dat_offsets %05X\n",lref->hubval,kind,gl_dat_offset);
+            
+            if (gl_output == OUTPUT_BYTECODE) {
+                int datoffset = BCgetDAToffset(current,kind == AST_ABSADDROF,expr);
+                printf("Got datoffset %05X\n",datoffset);
+                if (datoffset < 0) {if (valid) *valid = 0;} // Error
+                else offset += datoffset;
+            } else if (kind == AST_ABSADDROF) {
 	            offset += gl_dat_offset > 0 ? gl_dat_offset : 0;
             }
             return intExpr(lref->hubval + offset);

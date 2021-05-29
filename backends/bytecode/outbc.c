@@ -83,6 +83,33 @@ static int BCGetOBJOffset(Module *P,AST *ast) {
     return sym->offset;
 }
 
+// Get offset from PBASE to DAT start
+int BCgetDAToffset(Module *P, bool absolute, AST *errloc) {
+    if (gl_output != OUTPUT_BYTECODE) {
+        ERROR(errloc,"BCgetDAToffset called, but not in bytecode mode");
+        return -1;
+    }
+    if (!P->bedata) {
+        ERROR(errloc,"BCgetDAToffset: bedata for module %s uninitialized",P->classname);
+        return -1;
+    }
+    int pbase_offset = -1;
+    switch(gl_interp_kind) {
+    case INTERP_KIND_P1ROM: pbase_offset = 4*(ModData(current)->pub_cnt+ModData(current)->pri_cnt+ModData(current)->obj_cnt+1); break;
+    default:
+        ERROR(errloc,"Unknown interpreter kind");
+        return -1;
+    }
+    if (absolute) {
+        int compiledAddress = ModData(P)->compiledAddress;
+        if (compiledAddress < 0) {
+            ERROR(errloc,"Internal error: Taking address of uncompiled module");
+            return -1;
+        }
+        return pbase_offset + compiledAddress;
+    } else return pbase_offset;
+}
+
 struct bcheaderspans {
     OutputSpan *pbase,*vbase,*dbase,*pcurr,*dcurr;
 };
@@ -336,7 +363,7 @@ BCCompileMemOpEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum ByteOpKind 
             uint32_t labelval = lab->hubval;
             printf("Value inside is %d... ",labelval);
             // Add header offset
-            labelval += 4*(ModData(current)->pub_cnt+ModData(current)->pri_cnt+ModData(current)->obj_cnt+1);
+            labelval += BCgetDAToffset(current,false,node);
             printf("After header offset: %d\n",labelval);
             memOp.data.int32 = labelval;
         } break;
@@ -972,6 +999,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 hwread.data.int32 = HWReg2Index(hw);
                 BIRB_PushCopy(irbuf,&hwread);
             } break;
+            case AST_ABSADDROF: // Same thing in Spin code, I guess.
             case AST_ADDROF: {
                 printf("Got addr-of! ");
                 printASTInfo(node); // Right always empty, left always ARRAYREF?
