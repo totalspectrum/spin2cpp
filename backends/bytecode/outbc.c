@@ -949,7 +949,8 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
 
                 case K_INCREMENT: 
                 case K_DECREMENT:
-                    goto incdec;
+                case '?':
+                    goto modifyOp;
                 default:
                     ERROR(node,"Unhandled operator 0x%03X",node->d.ival);
                     return;
@@ -965,36 +966,24 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 mathOp.mathKind = mok;
                 BIRB_PushCopy(irbuf,&mathOp);
 
-            } break;
-            incdec: { // Special handling for inc/dec
-                bool isPostfix = node->left;
-                AST *var = isPostfix?node->left:node->right;
-                bool isDecrement = node->d.ival == K_DECREMENT;
+                break;
 
-                if (asStatement) popResults = 0;
+                modifyOp: {// Handle operators that modfiy a variable
 
-                if (0) {
-                    // Native inc/dec
-                    enum MathOpKind mok = isDecrement ? (isPostfix ? MOK_MOD_POSTDEC : MOK_MOD_PREDEC) : (isPostfix ? MOK_MOD_POSTINC : MOK_MOD_PREINC);
-                    BCCompileMemOpEx(irbuf,var,context,BOK_MEM_MODIFY,mok,false,!asStatement);
-                } else {
-                    // Discrete inc/dec
+                    bool isPostfix = node->left;
+                    AST *modvar = isPostfix?node->left:node->right;
+                    if (asStatement) popResults = 0;
 
-                    // If postfix, push old value
-                    if (isPostfix && !asStatement) BCCompileMemOp(irbuf,var,context,BOK_MEM_READ);
-
-                    BCCompileMemOp(irbuf,var,context,BOK_MEM_READ);
-                    BCCompileInteger(irbuf,1);
-                    ByteOpIR incdecop = {0};
-                    incdecop.kind = BOK_MATHOP;
-                    incdecop.mathKind = isDecrement ? MOK_SUB : MOK_ADD;
-                    BIRB_PushCopy(irbuf,&incdecop);
-                    BCCompileMemOp(irbuf,var,context,BOK_MEM_WRITE);
-
-                    // If prefix, push new value
-                    if (!isPostfix && !asStatement) BCCompileMemOp(irbuf,var,context,BOK_MEM_READ);
-                }
-
+                    mok = 0;
+                    switch(node->d.ival) {
+                    case K_INCREMENT: mok = isPostfix ? MOK_MOD_POSTINC : MOK_MOD_PREINC; break;
+                    case K_DECREMENT: mok = isPostfix ? MOK_MOD_POSTDEC : MOK_MOD_PREDEC; break;
+                    case '?': mok = isPostfix ? MOK_MOD_RANDBACKWARD : MOK_MOD_RANDFORWARD; break;
+                    }
+                    if (!mok) ERROR(node,"Unhandled %sfix modify operator %03X",isPostfix?"post":"pre",node->d.ival);
+                    
+                    BCCompileMemOpEx(irbuf,modvar,context,BOK_MEM_MODIFY,mok,false,!asStatement);
+                } break;
             } break;
             case AST_HWREG: {
                 HwReg *hw = node->d.ptr;
