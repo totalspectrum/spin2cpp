@@ -567,18 +567,23 @@ doSpinTransform(AST **astptr, int level, AST *parent)
         break;
     case AST_CATCH:
         doSpinTransform(&ast->left, level, ast);
-        curfunc->local_address_taken = 1; // if we do a catch we will want data on stack
-        AstReportAs(ast, &saveinfo); // any newly created AST nodes should reflect debug info from this one
-        *astptr = ast = NewAST(AST_TRYENV,
-                               NewAST(AST_CONDRESULT,
-                                      AstOperator(K_EQ,
-                                                  NewAST(AST_SETJMP, NULL, NULL),
-                                                  AstInteger(0)),
-                                      NewAST(AST_THENELSE,
-                                             ast->left,
-                                             NewAST(AST_CATCHRESULT, NULL, NULL))),
-                               NULL);
-        AstReportDone(&saveinfo);
+        // Interpreter's exception system is too simplistic for this,
+        // in that you can only set up a catch on a call
+        // and can't differentiate a normal return from an abort.
+        if (gl_output != OUTPUT_BYTECODE) {
+            curfunc->local_address_taken = 1; // if we do a catch we will want data on stack
+            AstReportAs(ast, &saveinfo); // any newly created AST nodes should reflect debug info from this one
+            *astptr = ast = NewAST(AST_TRYENV,
+                                NewAST(AST_CONDRESULT,
+                                        AstOperator(K_EQ,
+                                                    NewAST(AST_SETJMP, NULL, NULL),
+                                                    AstInteger(0)),
+                                        NewAST(AST_THENELSE,
+                                                ast->left,
+                                                NewAST(AST_CATCHRESULT, NULL, NULL))),
+                                NULL);
+            AstReportDone(&saveinfo);
+        }
         break;
     case AST_IF:
     case AST_WHILE:

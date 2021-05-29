@@ -595,9 +595,8 @@ static int getObjID(Module *M,const char *name, AST** gettype) {
     return 0;
 }
 
-// Very TODO
 static void
-BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpression) {
+BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpression, bool rescueAbort) {
     printf("Compiling fun call, ");
     printASTInfo(node);
 
@@ -643,11 +642,13 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
     ByteOpIR anchorOp = {0};
     anchorOp.kind = BOK_ANCHOR;
     anchorOp.attr.anchor.withResult = asExpression;
+    anchorOp.attr.anchor.rescue = rescueAbort;
     if (!sym) {
         ERROR(node,"Function call has no symbol");
         return;
     } else if (sym->kind == SYM_BUILTIN) {
         anchorOp.kind = 0; // Where we're going, we don't need Stack Frames
+        if (rescueAbort) ERROR(node,"Can't rescue on builtin call!");
         if (asExpression) {
             if (!strcmp(sym->our_name,"__builtin_strlen")) {
                 callOp.kind = BOK_BUILTIN_STRSIZE;
@@ -847,7 +848,11 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
         switch(node->kind) {
             case AST_FUNCCALL: {
                 printf("Got call in expression \n");
-                BCCompileFunCall(irbuf,node,context,!asStatement);
+                BCCompileFunCall(irbuf,node,context,!asStatement,false);
+                popResults = 0;
+            } break;
+            case AST_CATCH: {
+                BCCompileFunCall(irbuf,node->left,context,!asStatement,true);
                 popResults = 0;
             } break;
             case AST_COGINIT: {
@@ -1372,7 +1377,10 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
 
     } break;
     case AST_FUNCCALL: {
-        BCCompileFunCall(irbuf,node,context,false);
+        BCCompileFunCall(irbuf,node,context,false,false);
+    } break;
+    case AST_CATCH: {
+        BCCompileFunCall(irbuf,node->left,context,false,true);
     } break;
     case AST_CONTINUE: {
         if (!context.nextLabel) {
@@ -1406,7 +1414,7 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
             // This nonsense fixes REBOOT
             NOTE(node,"identifier converted to function call for sym with kind %d and name %s",sym->kind,sym->our_name);
             AST *fakecall = NewAST(AST_FUNCCALL,node,NULL);
-            BCCompileFunCall(irbuf,fakecall,context,false);
+            BCCompileFunCall(irbuf,fakecall,context,false,false);
         } break;
         default: {
             ERROR(node,"Unhandled identifier symbol kind %d in statement",sym->kind);
