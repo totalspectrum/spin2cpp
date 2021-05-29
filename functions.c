@@ -1613,8 +1613,8 @@ static int
 CheckRetStatementList(Function *func, AST *ast)
 {
     int sawreturn = 0;
-    if (ast->kind == AST_COMMENTEDNODE) ast = ast->left;
     while (ast) {
+        if (ast->kind == AST_COMMENTEDNODE) ast = ast->left;
         ASSERT_AST_KIND(ast,AST_STMTLIST,return 0;);
         sawreturn |= CheckRetStatement(func, ast->left);
         ast = ast->right;
