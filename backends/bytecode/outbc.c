@@ -192,13 +192,6 @@ printASTInfo(AST *node) {
         else printf("right empty\n");
     } else printf("null node");
 }
-
-
-#define ASSERT_AST_KIND_LOC2(f,l) f ":" #l
-#define ASSERT_AST_KIND_LOC(f,l) ASSERT_AST_KIND_LOC2(f,l)
-#define ASSERT_AST_KIND(node,expectedkind,whatdo) {\
-if (!node) { ERROR(NULL,"Internal Error: Expected " #expectedkind " got NULL @" ASSERT_AST_KIND_LOC(__FILE__,__LINE__) "\n"); whatdo ; } \
-else if (node->kind != expectedkind) { ERROR(node,"Internal Error: Expected " #expectedkind " got %d @" ASSERT_AST_KIND_LOC(__FILE__,__LINE__) "\n",node->kind); whatdo ; }}
  
 static void BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStatement); // forward decl;
 static void BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context); // forward decl;

@@ -617,15 +617,17 @@ doSpinTransform(AST **astptr, int level, AST *parent)
 #endif        
         while (list) {
             AST *caseitem;
-            if (list->kind != AST_STMTLIST) {
-                ERROR(list, "internal error, expected list holder");
-            }
+
+            ASSERT_AST_KIND(list,AST_STMTLIST,);
+
             caseitem = list->left;
             doSpinTransform(&caseitem->left, level, ast);
             doSpinTransform(&caseitem->right, level, ast);
             list = list->right;
         }
-        *ast = *CreateSwitch(ast->left, ast->right, case_name);
+        if (gl_output != OUTPUT_BYTECODE) {
+            *ast = *CreateSwitch(ast->left, ast->right, case_name);
+        }
         AstReportDone(&saveinfo);
         break;
     }

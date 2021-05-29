@@ -1613,12 +1613,9 @@ static int
 CheckRetStatementList(Function *func, AST *ast)
 {
     int sawreturn = 0;
+    if (ast->kind == AST_COMMENTEDNODE) ast = ast->left;
     while (ast) {
-        if (ast->kind != AST_STMTLIST) {
-            ERROR(ast, "Internal error: expected statement list, got %d",
-                  ast->kind);
-            return 0;
-        }
+        ASSERT_AST_KIND(ast,AST_STMTLIST,return 0;);
         sawreturn |= CheckRetStatement(func, ast->left);
         ast = ast->right;
     }
@@ -1648,22 +1645,24 @@ IsResultVar(Function *func, AST *lhs)
 static int
 CheckRetCaseMatchList(Function *func, AST *ast)
 {
+    // W21: I think this may have bitrotted to some extent?
+    return CheckRetStatementList(func,ast->right);
+    /*
     AST *item;
     int sawReturn = 1;
     while (ast) {
-        if (ast->kind != AST_LISTHOLDER) {
-            ERROR(ast, "Internal error, expected list holder");
-            return sawReturn;
-        }
+        ASSERT_AST_KIND(ast,AST_STMTLIST,return sawReturn;);
+
         item = ast->left;
         ast = ast->right;
-        if (item->kind != AST_CASEITEM) {
-            ERROR(item, "Internal error, expected case item");
-            return sawReturn;
+        ASSERT_AST_KIND(item,AST_CASEITEM,return sawReturn;);
+        if (item->right && item->right->kind == AST_STMTLIST) {
+            sawReturn = CheckRetStatementList(func, item->right) && sawReturn;
+        } else {
+            sawReturn = CheckRetStatement(func,item->right) && sawReturn;
         }
-        sawReturn = CheckRetStatementList(func, item->right) && sawReturn;
     }
-    return sawReturn;
+    return sawReturn;*/
 }
 
 static AST *
