@@ -1089,9 +1089,11 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 } else {
                     ERROR(node,"Unhandled LOOK* right AST kind %d",node->right->kind);
                 }
-
-
-
+            } break;
+            case AST_DATADDROF: {
+                BCCompileExpression(irbuf,node->left,context,false);
+                ByteOpIR addPbaseOp = {.kind = BOK_MEM_ADDRESS,.attr.memop = {.base = MEMOP_BASE_PBASE,.memSize = MEMOP_SIZE_BYTE,.popIndex = true}};
+                BIRB_PushCopy(irbuf,&addPbaseOp);
             } break;
             default:
                 ERROR(node,"Unhandled node kind %d in expression",node->kind);
