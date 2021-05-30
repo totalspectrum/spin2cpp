@@ -1499,7 +1499,7 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
     // first up, we now know the function's address, so let's fix it up in the header
     int func_ptr = bob->total_size;
     int func_offset = 0;
-    int func_localsize = F->numparams*4 + F->numlocals*4; // SUPER DUPER FIXME smaller locals
+    int func_localsize = F->numparams*4 + F->numlocals*4 + 4; // SUPER DUPER FIXME smaller locals
     if (interp_can_multireturn() && F->numresults > 1) {
         ERROR(F->body,"Multi-return is not supported by the used interpreter");
         return;
@@ -1521,8 +1521,8 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
     case INTERP_KIND_P1ROM:
         BOB_ReplaceLong(FunData(F)->headerEntry,
             (func_offset&0xFFFF) + 
-            ((func_localsize)<<16),
-            auto_printf(128,"Function %s @%04X (local size %d)",F->name,func_ptr,func_localsize)
+            ((func_localsize - 4)<<16), // RESULT is implicit, so subtract it
+            auto_printf(128,"Function %s @%04X (local size %d)",F->name,func_ptr,func_localsize - 4)
         );
         break;
     default:
