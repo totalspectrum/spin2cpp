@@ -1426,7 +1426,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             return intExpr((int)roundf(intAsFloat(lval.val)));
         }
     case AST_CONSTANT:
-        return EvalExpr(expr->left, flags, valid, depth+1);
+        return EvalExpr(expr->left, flags|PASM_FLAG, valid, depth+1);
     case AST_CONSTREF:
     case AST_METHODREF:
     {
@@ -1514,12 +1514,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
         }
         break;
     case AST_OPERATOR:
-        /* special case hack: '-' allows evaluation of @
-           even if both sides are relative addresses
-        */
-        if (expr->d.ival == '-' && expr->left->kind == AST_ADDROF && expr->right->kind == AST_ADDROF) {
-            flags |= PASM_FLAG;
-        }
+        // There was a special fix for constant(@a-@b) here, but it is no longer neccessary
         lval = EvalExpr(expr->left, flags, valid, depth+1);
         if (expr->d.ival == K_BOOL_OR && lval.val)
             return lval;
