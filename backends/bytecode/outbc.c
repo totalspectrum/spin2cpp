@@ -852,9 +852,11 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
         return;
     }
     if (IsConstExpr(node)) {
-        int32_t val = EvalConstExpr(node);
-        printf("Got const expression with value %d\n",val);
-        BCCompileInteger(irbuf,val);
+        if (!asStatement) {
+            int32_t val = EvalConstExpr(node);
+            printf("Got const expression with value %d\n",val);
+            BCCompileInteger(irbuf,val);
+        }
     } else {
         unsigned popResults = asStatement ? 1 : 0;
         switch(node->kind) {
