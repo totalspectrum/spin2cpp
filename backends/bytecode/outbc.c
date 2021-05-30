@@ -1249,7 +1249,6 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         printf("step: ");printASTInfo(step);
         AST *nextExpression = step->left;
         AST *body = step->right;
-        ASSERT_AST_KIND(body,AST_STMTLIST,return;);
 
         BCCompileStatement(irbuf,initStmnt,context);
         BIRB_Push(irbuf,topLabel);
@@ -1258,7 +1257,10 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         BCContext newcontext = context;
         newcontext.quitLabel = quitLabel;
         newcontext.nextLabel = nextLabel;
-        BCCompileStmtlist(irbuf,body,newcontext);
+        if (body) {
+            ASSERT_AST_KIND(body,AST_STMTLIST,return;);
+            BCCompileStmtlist(irbuf,body,newcontext);
+        } else NOTE(node,"Compiling empty FOR loop?");
 
         BIRB_Push(irbuf,nextLabel);
         BCCompileExpression(irbuf,nextExpression,context,true); // Compile as statement!
