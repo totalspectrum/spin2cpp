@@ -2734,6 +2734,7 @@ ExtractSideEffects(AST *expr, AST **preseq)
 AST *
 CheckSimpleArrayref(AST *ast)
 {
+    if (gl_output == OUTPUT_BYTECODE) return NULL; // This optimization is pointless in bytecode mode
     AST *newexpr = NULL;
     if (ast->left && ast->left->kind == AST_MEMREF && IsConstExpr(ast->right)) {
         AST *left = ast->left;
