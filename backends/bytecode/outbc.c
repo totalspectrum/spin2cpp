@@ -1660,10 +1660,11 @@ BCCompileObject(ByteOutputBuffer *bob, Module *P) {
     printf("Debug: this object (%s) has %d PUBs, %d PRIs and %d OBJs\n",P->classname,pub_cnt,pri_cnt,obj_cnt);
 
     OutputSpan *objOffsetSpans[obj_cnt];
+    OutputSpan *sizeSpan;
     // Emit object header
     switch(gl_interp_kind) {
     case INTERP_KIND_P1ROM:
-        BOB_PushWord(bob,0,"Object size(?)"); // (TODO)
+        sizeSpan = BOB_PushWord(bob,0,"Object size");
         BOB_PushByte(bob,pri_cnt+pub_cnt+1,"Method count + 1");
         BOB_PushByte(bob,obj_cnt, "OBJ count");
 
@@ -1707,6 +1708,17 @@ BCCompileObject(ByteOutputBuffer *bob, Module *P) {
     for(int i=0;i<pub_cnt;i++) BCCompileFunction(bob,ModData(P)->pubs[i]);
     for(int i=0;i<pri_cnt;i++) BCCompileFunction(bob,ModData(P)->pris[i]);
 
+    // fixup header
+    switch(gl_interp_kind) {
+    case INTERP_KIND_P1ROM:
+        BOB_Align(bob,4); // Do we need this?
+        BOB_ReplaceWord(sizeSpan,bob->total_size - ModData(P)->compiledAddress,NULL);
+        break;
+    default:
+        ERROR(NULL,"Unknown interpreter kind");
+        return;
+    }
+
     // emit subobjects
     for (int i=0;i<obj_cnt;i++) {
         Module *mod = ModData(P)->objs[i]->left->d.ptr;
@@ -1722,7 +1734,6 @@ BCCompileObject(ByteOutputBuffer *bob, Module *P) {
             return;
         }
     }
-
     current = save;
 }
 
