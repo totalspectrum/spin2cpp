@@ -985,6 +985,29 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                     BCCompileMemOpEx(irbuf,modvar,context,BOK_MEM_MODIFY,mok,false,!asStatement);
                 } break;
             } break;
+            case AST_POSTSET: {
+                switch(gl_interp_kind) {
+                case INTERP_KIND_P1ROM: {
+                    bool isConst = IsConstExpr(node->right);
+                    int32_t constVal = isConst ? EvalConstExpr(node->right) : 0;
+                    if (!isConst) {
+                        ERROR(node,"Internal Error: AST_POSTSET not constexpr, check DoSpinTransform");
+                        break;
+                    }
+                    enum MathOpKind mok = 0;
+                    if (constVal == 0) mok = MOK_MOD_POSTCLEAR;
+                    else if (constVal == -1) mok = MOK_MOD_POSTSET;
+                    else {
+                        ERROR(node,"Internal Error: AST_POSTSET is %d, check DoSpinTransform",constVal);
+                        break;
+                    }
+                    BCCompileMemOpEx(irbuf,node->left,context,BOK_MEM_MODIFY,mok,false,!asStatement);
+                } break;
+                default:
+                    ERROR(NULL,"Unknown interpreter kind");
+                    break;
+                }
+            } break;
             case AST_HWREG: {
                 HwReg *hw = node->d.ptr;
                 printf("Got hwreg in expression: %s\n",hw->name);
@@ -1270,30 +1293,32 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         printf("Previewing cases\n");
         for(AST *list=node->right;list;list=list->right) {
             AST *item = list->left;
+            if (item->kind == AST_COMMENTEDNODE) item = item->left;
             if (item->kind == AST_ENDCASE) {
                 // Do nothing
                 printf("Got AST_ENDCASE\n");
             } else if (item->kind == AST_CASEITEM) {
                 printf("Got AST_CASEITEM\n");
                 cases++;
-                if (!list->right || list->right->left->kind != AST_ENDCASE) WARNING(item,"Case without AST_ENDCASE, may not be handled correctly");
             } else if (item->kind == AST_OTHER) {
                 printf("Got AST_OTHER\n");
                 if (othercase) ERROR(item,"Multiple OTHER cases");
                 othercase = item;
             } else {
-                ERROR(item,"Unexpected node kind %d in AST_CASE",item->kind);
+                // Do nothing
             }
         }
         printf("Got %d cases%s\n",cases,othercase?" and OTHER":"");
         ByteOpIR *caselabels[cases];
         for(int i=0;i<cases;i++) caselabels[i] = BCNewOrphanLabel();
+        ByteOpIR *otherlabel = othercase ? BCNewOrphanLabel() : NULL; 
         
         // Generate case expressions
         printf("Generating case expressions\n");
         int whichcase = 0;
         for(AST *list=node->right;list;list=list->right) {
             AST *item = list->left;
+            if (item->kind == AST_COMMENTEDNODE) item = item->left;
             if (item->kind == AST_ENDCASE) {
                 // Do nothing
                 printf("Got AST_ENDCASE\n");
@@ -1320,46 +1345,45 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
                 // Do nothing
                 printf("Got AST_OTHER\n");
             } else {
-                ERROR(item,"Unexpected node kind %d in AST_CASE",item->kind);
+                // Do nothing
             }
         }
 
-        if (othercase) {
-            printf("Compiling OTHER case\n");
-            AST *stmt = othercase->left; // statement for AST_OTHER is on the left?
-            if (stmt) {
-                if (stmt->kind == AST_COMMENTEDNODE) stmt = stmt->left;
-                BCCompileStatement(irbuf,stmt,newcontext);
-            } else NOTE(othercase,"Emtpy OTHER?");
-        }
         ByteOpIR noMatchDone = {.kind = BOK_CASE_DONE};
-        BIRB_PushCopy(irbuf,&noMatchDone);
+        if (othercase) {
+            BCCompileJump(irbuf,otherlabel);
+        } else {
+            BIRB_PushCopy(irbuf,&noMatchDone);
+        }
 
         // Compile each case
         printf("Compiling cases..\n");
         whichcase = 0;
         for(AST *list=node->right;list;list=list->right) {
             AST *item = list->left;
+            if (item->kind == AST_COMMENTEDNODE) item = item->left;
             if (item->kind == AST_ENDCASE) {
                 printf("Got AST_ENDCASE\n");
                 ByteOpIR endOp = {.kind = BOK_CASE_DONE};
                 BIRB_PushCopy(irbuf,&endOp);
-            } else if (item->kind == AST_CASEITEM) {
-                printf("Got AST_CASEITEM\n");
-                BIRB_Push(irbuf,caselabels[whichcase]);
-                AST *stmt = item->right;
+            } else if (item->kind == AST_CASEITEM || item->kind == AST_OTHER) {
+                bool isOther = item->kind == AST_OTHER;
+                printf(isOther ? "Got AST_OTHER\n" : "Got AST_CASEITEM\n");
+                BIRB_Push(irbuf,isOther?otherlabel:caselabels[whichcase]);
+                AST *stmt = isOther ? item->left : item->right;
                 if (stmt) {
                     if (stmt->kind == AST_COMMENTEDNODE) stmt = stmt->left;
-                    BCCompileStatement(irbuf,stmt,newcontext);
-                } else NOTE(item,"Empty CASE?");
-                whichcase++;
-            } else if (item->kind == AST_OTHER) {
-                printf("Got AST_OTHER\n");
-                // Do nothing
-                // TODO: We emit an empty CASE_DONE for the associated AST_ENDCASE
-                // Will be caught by the eventual peephole dead code removal, so let's not deal with it here
+                    if (stmt->kind == AST_ENDCASE) {
+                        printf("Got AST_ENDCASE inside AST_CASEITEM\n");
+                        ByteOpIR endOp = {.kind = BOK_CASE_DONE};
+                        BIRB_PushCopy(irbuf,&endOp);
+                    } else {
+                        BCCompileStatement(irbuf,stmt,newcontext);
+                    }
+                } else NOTE(item,"Empty CASEITEM?");
+                if (!isOther) whichcase++;
             } else {
-                ERROR(item,"Unexpected node kind %d in AST_CASE",item->kind);
+                BCCompileStatement(irbuf,item,newcontext);
             }
         }
 

@@ -676,9 +676,27 @@ doSpinTransform(AST **astptr, int level, AST *parent)
         AST *tmp;
         AST *seq1, *seq2;
         target = ast->right;
+        bool canDoNative = false;
+        if (gl_output == OUTPUT_BYTECODE) {
+            bool isConst = IsConstExpr(target);
+            int32_t constVal = isConst ? EvalConstExpr(target) : 0;
+            switch (gl_interp_kind) {
+            case INTERP_KIND_P1ROM: canDoNative = isConst && (constVal == 0 || constVal == -1); break;
+            default:
+                ERROR(NULL,"Unhandled interpreter kind");
+                break;
+            }
+        }
         if (level == 1) {
             // at toplevel we can ignore the old result
+            // Do this even if we could do it natively, 
+            // since normal assignment is generally faster
             *astptr = AstAssign(ast->left, target);
+        } else if (canDoNative) {
+            // Do nothing except transform the children
+            doSpinTransform(&ast->left, 0, ast);
+            doSpinTransform(&ast->right, 0, ast);
+            break; // Prevent infinite recursion
         } else {
             tmp = AstTempLocalVariable("_tmp_", NULL);
 
@@ -688,6 +706,7 @@ doSpinTransform(AST **astptr, int level, AST *parent)
             seq2 = NewAST(AST_SEQUENCE, seq1, tmp);
             *astptr = seq2;
         }
+        // if we did a trandform,
         // we may have a range reference in here, so do the
         // transform on the result
         doSpinTransform(astptr, level, ast);
