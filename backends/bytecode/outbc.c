@@ -871,6 +871,19 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 if (node->right) BCCompileExpression(irbuf,node->right,context,asStatement);
                 popResults = 0;
             } break;
+            case AST_CONDRESULT: {
+                // Ternary operator
+                printf("Got condresult (ternary) in expression ");printASTInfo(node);
+                if (curfunc->language == LANG_SPIN_SPIN1) NOTE(node,"got AST_CONDRESULT in Spin1?");
+                ASSERT_AST_KIND(node->right,AST_THENELSE,break;);
+                ByteOpIR *elselbl = BCNewOrphanLabel(), *endlbl = BCNewOrphanLabel();
+                BCCompileConditionalJump(irbuf,node->left,false,elselbl,context);
+                BCCompileExpression(irbuf,node->right->left,context,false);
+                BCCompileJump(irbuf,endlbl);
+                BIRB_Push(irbuf,elselbl);
+                BCCompileExpression(irbuf,node->right->right,context,false);
+                BIRB_Push(irbuf,endlbl);
+            } break;
             case AST_OPERATOR: {
                 printf("Got operator in expression: 0x%03X\n",node->d.ival);
                 printASTInfo(node);
