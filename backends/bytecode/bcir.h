@@ -174,6 +174,7 @@ typedef struct bcirstruct {
         } coginit;
         
         int stringLength;
+        int labelHiddenVars; // Not used by the actual IR step
     } attr;
 
     union {

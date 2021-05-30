@@ -13,7 +13,7 @@
 #define FunData(P) ((BCFunData *)(P)->bedata)
 
 typedef struct {
-    int inCountedRepeat:1; // Have to pop counter on QUIT?
+    int hiddenVariables; // Count of hidden variables on stack
     ByteOpIR *quitLabel,*nextLabel;
 } BCContext;
 

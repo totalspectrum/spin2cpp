@@ -5,6 +5,7 @@
 #include "bcir.h"
 #include <stdlib.h>
 
+const BCContext nullcontext = {.hiddenVariables = 0};
 
 static bool interp_can_multireturn() {
     switch(gl_interp_kind) {
@@ -224,16 +225,16 @@ static void BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bo
 static void BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context); // forward decl;
 
 static ByteOpIR*
-BCNewOrphanLabel() {
+BCNewOrphanLabel(BCContext context) {
     ByteOpIR *lbl = calloc(sizeof(ByteOpIR),1);
     lbl->kind = BOK_LABEL;
+    lbl->attr.labelHiddenVars = context.hiddenVariables;
     return lbl;
 }
 
 static ByteOpIR*
-BCPushLabel(BCIRBuffer *irbuf) {
-    ByteOpIR lbl = {0};
-    lbl.kind = BOK_LABEL;
+BCPushLabel(BCIRBuffer *irbuf,BCContext context) {
+    ByteOpIR lbl = {.kind = BOK_LABEL,.attr.labelHiddenVars = context.hiddenVariables};
     return BIRB_PushCopy(irbuf,&lbl);
 }
 
@@ -246,7 +247,16 @@ BCCompileInteger(BCIRBuffer *irbuf,int32_t ival) {
 }
 
 static void
-BCCompileJumpEx(BCIRBuffer *irbuf, ByteOpIR *label, enum ByteOpKind kind) {
+BCCompileJumpEx(BCIRBuffer *irbuf, ByteOpIR *label, enum ByteOpKind kind, BCContext context) {
+    int stackdiff = context.hiddenVariables - label->attr.labelHiddenVars;
+    if (stackdiff > 0) {
+        // emit pop to get rid of hidden vars
+        BCCompileInteger(irbuf,stackdiff);
+        ByteOpIR popOp = {.kind = BOK_POP};
+        BIRB_PushCopy(irbuf,&popOp);
+    } else if (stackdiff < 0) {
+        ERROR(NULL,"Internal Error: Compiling jump to label with more hidden vars than current context");
+    }
     ByteOpIR condjmp = {0};
     condjmp.kind = kind;
     condjmp.data.jumpTo = label;
@@ -254,14 +264,16 @@ BCCompileJumpEx(BCIRBuffer *irbuf, ByteOpIR *label, enum ByteOpKind kind) {
 }
 
 static void
-BCCompileJump(BCIRBuffer *irbuf, ByteOpIR *label) {
-    BCCompileJumpEx(irbuf,label,BOK_JUMP);
+BCCompileJump(BCIRBuffer *irbuf, ByteOpIR *label, BCContext context) {
+    BCCompileJumpEx(irbuf,label,BOK_JUMP,context);
 }
 
 static void
 BCCompileConditionalJump(BCIRBuffer *irbuf,AST *condition, bool ifNotZero, ByteOpIR *label, BCContext context) {
     ByteOpIR condjmp = {0};
     condjmp.data.jumpTo = label;
+    int stackdiff = context.hiddenVariables - label->attr.labelHiddenVars;
+    if (stackdiff) ERROR(condition,"Conditional jump to label with unequal hidden var count");
     if (!condition) {
         ERROR(NULL,"Null condition!");
         return;
@@ -281,14 +293,14 @@ BCCompileConditionalJump(BCIRBuffer *irbuf,AST *condition, bool ifNotZero, ByteO
         return;
     } else if (condition->kind == AST_OPERATOR && condition->d.ival == K_BOOL_AND && ifNotZero) {
         // like in "IFNOT L AND R"
-        ByteOpIR *skipLabel = BCNewOrphanLabel();
+        ByteOpIR *skipLabel = BCNewOrphanLabel(context);
         BCCompileConditionalJump(irbuf,condition->left,false,skipLabel,context);
         BCCompileConditionalJump(irbuf,condition->right,true,label,context);
         BIRB_Push(irbuf,skipLabel);
         return;
     } else if (condition->kind == AST_OPERATOR && condition->d.ival == K_BOOL_OR && !ifNotZero) {
         // like in "IF L OR R"
-        ByteOpIR *skipLabel = BCNewOrphanLabel();
+        ByteOpIR *skipLabel = BCNewOrphanLabel(context);
         BCCompileConditionalJump(irbuf,condition->left,true,skipLabel,context);
         BCCompileConditionalJump(irbuf,condition->right,false,label,context);
         BIRB_Push(irbuf,skipLabel);
@@ -876,10 +888,10 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 printf("Got condresult (ternary) in expression ");printASTInfo(node);
                 if (curfunc->language == LANG_SPIN_SPIN1) NOTE(node,"got AST_CONDRESULT in Spin1?");
                 ASSERT_AST_KIND(node->right,AST_THENELSE,break;);
-                ByteOpIR *elselbl = BCNewOrphanLabel(), *endlbl = BCNewOrphanLabel();
+                ByteOpIR *elselbl = BCNewOrphanLabel(context), *endlbl = BCNewOrphanLabel(context);
                 BCCompileConditionalJump(irbuf,node->left,false,elselbl,context);
                 BCCompileExpression(irbuf,node->right->left,context,false);
-                BCCompileJump(irbuf,endlbl);
+                BCCompileJump(irbuf,endlbl,context);
                 BIRB_Push(irbuf,elselbl);
                 BCCompileExpression(irbuf,node->right->right,context,false);
                 BIRB_Push(irbuf,endlbl);
@@ -950,7 +962,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                     } else {
                         ByteOpIR notOp = {.kind = BOK_MATHOP,.mathKind = MOK_BOOLNOT};
                         // build rickety short circuit op
-                        ByteOpIR *lbl = BCNewOrphanLabel();
+                        ByteOpIR *lbl = BCNewOrphanLabel(context);
                         BCCompileInteger(irbuf,is_and ? 0 : -1);
                         BCCompileConditionalJump(irbuf,left,!is_and,lbl,context);
                         BCCompileConditionalJump(irbuf,right,!is_and,lbl,context);
@@ -1076,7 +1088,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
             case AST_STRINGPTR: {
                 printf("Got STRINGPTR! ");
                 printASTInfo(node);
-                ByteOpIR *stringLabel = BCNewOrphanLabel();
+                ByteOpIR *stringLabel = BCNewOrphanLabel(nullcontext);
                 ByteOpIR pushOp = {.kind = BOK_FUNDATA_PUSHADDRESS,.data.jumpTo = stringLabel};
                 ByteOpIR stringData = BCBuildString(node->left);
 
@@ -1096,7 +1108,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                     // Compile base
                     BCCompileExpression(irbuf,node->left->left,context,false);
                     // Compile "done" jump pointer
-                    ByteOpIR *afterLabel = BCNewOrphanLabel();
+                    ByteOpIR *afterLabel = BCNewOrphanLabel(context);
                     ByteOpIR pushOp = {.kind = BOK_FUNDATA_PUSHADDRESS,.data.jumpTo = afterLabel};
                     BIRB_PushCopy(irbuf,&pushOp);
                     // Compile the expression
@@ -1178,8 +1190,8 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         printf("Got While loop.. ");
         printASTInfo(node);
 
-        ByteOpIR *toplbl = BCPushLabel(irbuf);
-        ByteOpIR *bottomlbl = BCNewOrphanLabel();
+        ByteOpIR *toplbl = BCPushLabel(irbuf,context);
+        ByteOpIR *bottomlbl = BCNewOrphanLabel(context);
 
         // Compile condition
         BCCompileConditionalJump(irbuf,node->left,false,bottomlbl,context);
@@ -1191,16 +1203,16 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         newcontext.quitLabel = bottomlbl;
         BCCompileStmtlist(irbuf,node->right,newcontext);
 
-        BCCompileJump(irbuf,toplbl);
+        BCCompileJump(irbuf,toplbl,context);
         BIRB_Push(irbuf,bottomlbl);
     } break;
     case AST_DOWHILE: {
         printf("Got DoWhile loop.. ");
         printASTInfo(node);
 
-        ByteOpIR *toplbl = BCPushLabel(irbuf);
-        ByteOpIR *nextlbl = BCNewOrphanLabel();
-        ByteOpIR *bottomlbl = BCNewOrphanLabel();
+        ByteOpIR *toplbl = BCPushLabel(irbuf,context);
+        ByteOpIR *nextlbl = BCNewOrphanLabel(context);
+        ByteOpIR *bottomlbl = BCNewOrphanLabel(context);
 
         BCContext newcontext = context;
         newcontext.nextLabel = nextlbl;
@@ -1221,9 +1233,9 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
 
         bool atleastonce = node->kind == AST_FORATLEASTONCE;
 
-        ByteOpIR *topLabel = BCNewOrphanLabel();
-        ByteOpIR *nextLabel = BCNewOrphanLabel();
-        ByteOpIR *quitLabel = BCNewOrphanLabel();
+        ByteOpIR *topLabel = BCNewOrphanLabel(context);
+        ByteOpIR *nextLabel = BCNewOrphanLabel(context);
+        ByteOpIR *quitLabel = BCNewOrphanLabel(context);
 
         AST *initStmnt = node->left;
         AST *to = node->right;
@@ -1250,7 +1262,7 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         BCCompileExpression(irbuf,nextExpression,context,true); // Compile as statement!
 
         if(atleastonce) BCCompileConditionalJump(irbuf,condExpression,true,topLabel,context);
-        else BCCompileJump(irbuf,topLabel);
+        else BCCompileJump(irbuf,topLabel,context);
 
         BIRB_Push(irbuf,quitLabel);
 
@@ -1259,8 +1271,8 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         printf("Got If... ");
         printASTInfo(node);
 
-        ByteOpIR *bottomlbl = BCNewOrphanLabel();
-        ByteOpIR *elselbl = BCNewOrphanLabel();
+        ByteOpIR *bottomlbl = BCNewOrphanLabel(context);
+        ByteOpIR *elselbl = BCNewOrphanLabel(context);
 
         AST *thenelse = node->right;
         if (thenelse && thenelse->kind == AST_COMMENTEDNODE) thenelse = thenelse->left;
@@ -1269,16 +1281,12 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         // Compile condition
         BCCompileConditionalJump(irbuf,node->left,false,elselbl,context);
 
-        ByteOpIR elsejmp = {0};
-        elsejmp.kind = BOK_JUMP;
-        elsejmp.data.jumpTo = bottomlbl;
-
         if(thenelse->left) { // Then
             ASSERT_AST_KIND(thenelse->left,AST_STMTLIST,break;);
             BCContext newcontext = context;
             BCCompileStmtlist(irbuf,thenelse->left,newcontext);
         }
-        if(thenelse->right) BIRB_PushCopy(irbuf,&elsejmp);
+        if(thenelse->right) BCCompileJump(irbuf,bottomlbl,context);
         BIRB_Push(irbuf,elselbl);
         if(thenelse->right) { // Else
             ASSERT_AST_KIND(thenelse->right,AST_STMTLIST,break;);
@@ -1290,7 +1298,7 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
     case AST_CASE: {
         printf("Got Case... "); printASTInfo(node);
 
-        ByteOpIR *endlabel = BCNewOrphanLabel();
+        ByteOpIR *endlabel = BCNewOrphanLabel(context);
         ByteOpIR pushEnd = {.kind=BOK_FUNDATA_PUSHADDRESS,.data.jumpTo=endlabel};
         BIRB_PushCopy(irbuf,&pushEnd);
         // Compile switch expression
@@ -1298,7 +1306,8 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
 
         ASSERT_AST_KIND(node->right,AST_STMTLIST,return;)
 
-        BCContext newcontext = context; // TODO
+        BCContext newcontext = context;
+        newcontext.hiddenVariables += 2;
 
         // Preview what we got
         int cases = 0;
@@ -1323,8 +1332,8 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         }
         printf("Got %d cases%s\n",cases,othercase?" and OTHER":"");
         ByteOpIR *caselabels[cases];
-        for(int i=0;i<cases;i++) caselabels[i] = BCNewOrphanLabel();
-        ByteOpIR *otherlabel = othercase ? BCNewOrphanLabel() : NULL; 
+        for(int i=0;i<cases;i++) caselabels[i] = BCNewOrphanLabel(newcontext);
+        ByteOpIR *otherlabel = othercase ? BCNewOrphanLabel(newcontext) : NULL; 
         
         // Generate case expressions
         printf("Generating case expressions\n");
@@ -1364,7 +1373,7 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
 
         ByteOpIR noMatchDone = {.kind = BOK_CASE_DONE};
         if (othercase) {
-            BCCompileJump(irbuf,otherlabel);
+            BCCompileJump(irbuf,otherlabel,newcontext);
         } else {
             BIRB_PushCopy(irbuf,&noMatchDone);
         }
@@ -1414,22 +1423,14 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         if (!context.nextLabel) {
             ERROR(node,"NEXT outside loop");
         } else {
-            ByteOpIR jumpOp = {0};
-            jumpOp.kind = BOK_JUMP;
-            jumpOp.data.jumpTo = context.nextLabel;
-            BIRB_PushCopy(irbuf,&jumpOp);
+            BCCompileJump(irbuf,context.nextLabel,context);
         }
     } break;
     case AST_QUITLOOP: {
         if (!context.nextLabel) {
             ERROR(node,"QUIT outside loop");
-        } else if (context.inCountedRepeat) {
-            ERROR(node,"QUIT in counted repeat NYI");
         } else {
-            ByteOpIR jumpOp = {0};
-            jumpOp.kind = BOK_JUMP;
-            jumpOp.data.jumpTo = context.quitLabel;
-            BIRB_PushCopy(irbuf,&jumpOp);
+            BCCompileJump(irbuf,context.quitLabel,context);
         }
     } break;
     case AST_IDENTIFIER: {
