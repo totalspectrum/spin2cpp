@@ -161,6 +161,45 @@ HWReg2Index(HwReg *reg) {
     }
 }
 
+// Get math op for AST operator token
+// Returns 0 if it is not a simple binary operator
+static enum MathOpKind
+Optoken2MathOpKind(int token) {
+    switch (token) {
+    default: return 0;
+    
+    case '^': return MOK_BITXOR;
+    case '|': return MOK_BITOR;
+    case '&': return MOK_BITAND;
+    case '+': return MOK_ADD;
+    case '-': return MOK_SUB;
+    case '*': return MOK_MULLOW;
+    case K_HIGHMULT: return MOK_MULHIGH;
+    case '/': return MOK_DIVIDE;
+    case K_MODULUS: return MOK_REMAINDER;
+    case K_LIMITMAX: return MOK_MAX;
+    case K_LIMITMIN: return MOK_MIN;
+
+    case '<': return MOK_CMP_B;
+    case '>': return MOK_CMP_A;
+    case K_LE: return MOK_CMP_BE;
+    case K_GE: return MOK_CMP_AE;
+    case K_EQ: return MOK_CMP_E;
+    case K_NE: return MOK_CMP_NE;
+
+    case K_SHL: return MOK_SHL;
+    case K_SHR: return MOK_SHR;
+    case K_SAR: return MOK_SAR;
+    case K_ROTL: return MOK_ROL;
+    case K_ROTR: return MOK_ROR;
+
+    case K_REV: return MOK_REV;
+
+    case K_LOGIC_AND: return MOK_LOGICAND;
+    case K_LOGIC_OR: return MOK_LOGICOR;
+    }
+}
+
 static const void StringAppend(Flexbuf *fb,AST *expr) {
     if(!expr) return;
     switch (expr->kind) {
@@ -524,6 +563,33 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
 
     AST *memopNode = NULL;
 
+    // Try to contract things like "a := a + 1" into a modify op
+    if (modifyMathKind == 0 && right && right->kind == AST_OPERATOR) {
+        bool isUnary = false;
+        enum MathOpKind mok;
+        switch (right->d.ival) {
+        // TODO handle unary ops
+        default: mok = Optoken2MathOpKind(right->d.ival); break;
+        }
+        if (mok == 0) goto nocontract; // Can't handle this operator
+
+        AST *operand;
+        if (AstMatch(left,right->left)) { // "a := a +1"
+            operand = right->right;
+            modifyReverseMath = false;
+        } else if (AstMatch(left,right->right)) { // "a := 1 + a"
+            operand = right->left;
+            modifyReverseMath = true;
+        } else goto nocontract;
+
+        if (ExprHasSideEffects(operand)) goto nocontract;
+
+        // Do contraction
+        modifyMathKind = mok;
+        right = operand;
+    }
+    nocontract:
+
     if (modifyMathKind == 0 && asExpression) modifyMathKind = MOK_MOD_WRITE;
 
     bool isUnaryModify = isUnaryModOperator(modifyMathKind);
@@ -587,12 +653,15 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
         return;
     }
 
+    
+
     if (modifyMathKind == 0) {
+        if (asExpression) ERROR(node,"Internal Error: shouldn't happen");
         BCCompileExpression(irbuf,right,context,false);
         BCCompileMemOp(irbuf,memopNode,context,MEMOP_WRITE);
     } else {
         if (!isUnaryModify) BCCompileExpression(irbuf,right,context,false);
-        BCCompileMemOpEx(irbuf,memopNode,context,MEMOP_MODIFY,modifyMathKind,false,asExpression);
+        BCCompileMemOpEx(irbuf,memopNode,context,MEMOP_MODIFY,modifyMathKind,modifyReverseMath,asExpression);
     }
 }
 
@@ -944,25 +1013,6 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 bool unary = false;
                 AST *left = node->left,*right = node->right;
                 switch(node->d.ival) {
-                case '^': mok = MOK_BITXOR; break;
-                case '|': mok = MOK_BITOR; break;
-                case '&': mok = MOK_BITAND; break;
-                case '+': mok = MOK_ADD; break;
-                case '-': mok = MOK_SUB; break;
-                case '*': mok = MOK_MULLOW; break;
-                case K_HIGHMULT: mok = MOK_MULHIGH; break;
-                case '/': mok = MOK_DIVIDE; break;
-                case K_MODULUS: mok = MOK_REMAINDER; break;
-                case K_LIMITMAX: mok = MOK_MAX; break;
-                case K_LIMITMIN: mok = MOK_MIN; break;
-
-
-                case K_SHR: mok = MOK_SHR; break;
-                case K_SAR: mok = MOK_SAR; break;
-                case K_ROTL: mok = MOK_ROL; break;
-                case K_ROTR: mok = MOK_ROR; break;
-
-                case K_REV: mok = MOK_REV; break;
 
                 case K_SHL: {
                     if (IsConstExpr(left) && EvalConstExpr(left)==1) {
@@ -975,13 +1025,6 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                     }
                 } break;
 
-                case '<': mok = MOK_CMP_B; break;
-                case '>': mok = MOK_CMP_A; break;
-                case K_LE: mok = MOK_CMP_BE; break;
-                case K_GE: mok = MOK_CMP_AE; break;
-                case K_EQ: mok = MOK_CMP_E; break;
-                case K_NE: mok = MOK_CMP_NE; break;
-
                 case K_BOOL_NOT: mok = MOK_BOOLNOT; unary=true; break;
                 case K_NEGATE: mok = MOK_NEG; unary = true; break;
                 case K_ABS: mok = MOK_ABS; unary = true; break;
@@ -989,9 +1032,6 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 case K_DECODE: mok = MOK_DECODE; unary = true; break;
                 case K_ENCODE: mok = MOK_ENCODE; unary = true; break;
                 case K_BIT_NOT: mok = MOK_BITNOT; unary = true; break;
-
-                case K_LOGIC_AND: mok = MOK_LOGICAND; break;
-                case K_LOGIC_OR: mok = MOK_LOGICOR; break;
 
                 case K_BOOL_AND:
                 case K_BOOL_OR: {
@@ -1018,8 +1058,11 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 case '?':
                     goto modifyOp;
                 default:
-                    ERROR(node,"Unhandled operator 0x%03X",node->d.ival);
-                    return;
+                    mok = Optoken2MathOpKind(node->d.ival);    
+                    if (!mok) {
+                        ERROR(node,"Unhandled operator 0x%03X",node->d.ival);
+                        return;
+                    }
                 }
 
                 printf("Operator resolved to %d = %s\n",mok,mathOpKindNames[mok]);
