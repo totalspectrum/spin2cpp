@@ -1182,8 +1182,16 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 }
             } break;
             case AST_DATADDROF: {
-                BCCompileExpression(irbuf,node->left,context,false);
-                ByteOpIR addPbaseOp = {.kind = BOK_MEM_ADDRESS,.attr.memop = {.base = MEMOP_BASE_PBASE,.memSize = MEMOP_SIZE_BYTE,.popIndex = true}};
+                ByteOpIR addPbaseOp = {.kind = BOK_MEM_ADDRESS,.attr.memop = {.base = MEMOP_BASE_PBASE,.memSize = MEMOP_SIZE_BYTE},.data.int32 = 0};
+                if (IsConstExpr(node->left)) {
+                    int32_t constVal = EvalConstExpr(node->left) & 0xFFFF; // TODO: P2 uses different / no mask?
+                    if (constVal > 0x7FFF) goto expr_anyways; // Will cause compile failure for @@-1 and similar expressions otherwise
+                    addPbaseOp.data.int32 = constVal; 
+                } else {
+                    expr_anyways:
+                    BCCompileExpression(irbuf,node->left,context,false);
+                    addPbaseOp.attr.memop.popIndex = true;
+                }
                 BIRB_PushCopy(irbuf,&addPbaseOp);
             } break;
             default:
