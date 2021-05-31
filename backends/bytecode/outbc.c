@@ -1114,6 +1114,21 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                     break;
                 }
             } break;
+            case AST_ISBETWEEN: {
+                // TODO make this not terrible. Could really use a temp var here.
+                NOTE(node,"Compiling AST_ISBETWEEN");
+                if (ExprHasSideEffects(node->left)) WARNING(node->left,"Compiling AST_ISBETWEEN with side-effect-having expression");
+                BCCompileExpression(irbuf,node->left,context,false);
+                BCCompileExpression(irbuf,node->right->left,context,false);
+                ByteOpIR ae_op = {.kind = BOK_MATHOP,.mathKind = MOK_CMP_AE};
+                BIRB_PushCopy(irbuf,&ae_op);
+                BCCompileExpression(irbuf,node->left,context,false);
+                BCCompileExpression(irbuf,node->right->right,context,false);
+                ByteOpIR be_op = {.kind = BOK_MATHOP,.mathKind = MOK_CMP_BE};
+                BIRB_PushCopy(irbuf,&be_op);
+                ByteOpIR and_op = {.kind = BOK_MATHOP,.mathKind = MOK_LOGICAND};
+                BIRB_PushCopy(irbuf,&and_op);
+            } break;
             case AST_HWREG: {
                 HwReg *hw = node->d.ptr;
                 printf("Got hwreg in expression: %s\n",hw->name);
