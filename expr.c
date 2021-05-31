@@ -1426,7 +1426,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             return intExpr((int)roundf(intAsFloat(lval.val)));
         }
     case AST_CONSTANT:
-        return EvalExpr(expr->left, flags, valid, depth+1);
+        return EvalExpr(expr->left, flags|PASM_FLAG, valid, depth+1);
     case AST_CONSTREF:
     case AST_METHODREF:
     {
