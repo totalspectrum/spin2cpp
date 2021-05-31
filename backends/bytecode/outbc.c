@@ -230,14 +230,21 @@ BCCompileInteger(BCIRBuffer *irbuf,int32_t ival) {
     BIRB_PushCopy(irbuf,&opc);
 }
 
+static void BCCompilePopN(BCIRBuffer *irbuf,int popcount) {
+    if (popcount < 0) ERROR(NULL,"Internal Error: negative pop count");
+    else if (popcount > 0) {
+        BCCompileInteger(irbuf,popcount*4);
+        ByteOpIR popOp = {.kind = BOK_POP};
+        BIRB_PushCopy(irbuf,&popOp);
+    }
+}
+
 static void
 BCCompileJumpEx(BCIRBuffer *irbuf, ByteOpIR *label, enum ByteOpKind kind, BCContext context) {
     int stackdiff = context.hiddenVariables - label->attr.labelHiddenVars;
     if (stackdiff > 0) {
         // emit pop to get rid of hidden vars
-        BCCompileInteger(irbuf,stackdiff);
-        ByteOpIR popOp = {.kind = BOK_POP};
-        BIRB_PushCopy(irbuf,&popOp);
+        BCCompilePopN(irbuf,stackdiff);
     } else if (stackdiff < 0) {
         ERROR(NULL,"Internal Error: Compiling jump to label with more hidden vars than current context");
     }
@@ -1198,12 +1205,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 ERROR(node,"Unhandled node kind %d in expression",node->kind);
                 return;
         }
-        if (popResults) {
-            BCCompileInteger(irbuf,popResults);
-            ByteOpIR popOp = {0};
-            popOp.kind = BOK_POP;
-            BIRB_PushCopy(irbuf,&popOp);
-        }
+        BCCompilePopN(irbuf,popResults);
     }
 }
 
