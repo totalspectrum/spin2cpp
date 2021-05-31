@@ -1858,6 +1858,7 @@ spinyyerror(const char *msg)
     extern int saved_spinyychar;
     int yychar = saved_spinyychar;
     
+    SETCOLOR(PRINT_ERROR);
     ERRORHEADER(current->Lptr->fileName, current->Lptr->lineCounter, "error");
 
     // massage bison's error messages to make them easier to understand
@@ -1880,4 +1881,5 @@ spinyyerror(const char *msg)
     }
     fprintf(stderr, "\n");     
     gl_errors++;
+    RESETCOLOR();
 }

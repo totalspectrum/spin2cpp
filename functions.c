@@ -136,7 +136,7 @@ EnterVariable(int kind, SymbolTable *stab, AST *astname, AST *type, unsigned sym
                         default:
                             WARNING(astname, "definition of %s hides a member variable", username);
                             if (sym2->def) {
-                                WARNING(sym2->def, "previous definition of %s is here", username);
+                                NOTE(sym2->def, "previous definition of %s is here", username);
                             }
                             break;
                         }

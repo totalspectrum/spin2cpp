@@ -2562,6 +2562,7 @@ cgramyyerror(const char *msg)
     extern int saved_cgramyychar;
     int yychar = saved_cgramyychar;
     
+    SETCOLOR(PRINT_ERROR);
     ERRORHEADER(current->Lptr->fileName, current->Lptr->lineCounter, "error");
 
     // massage bison's error messages to make them easier to understand
@@ -2588,5 +2589,6 @@ cgramyyerror(const char *msg)
     }
     fprintf(stderr, "\n");
     gl_errors++;
+    RESETCOLOR();
 }
 
