@@ -309,15 +309,6 @@ BCCompileConditionalJump(BCIRBuffer *irbuf,AST *condition, bool ifNotZero, ByteO
     BIRB_PushCopy(irbuf,&condjmp);
 }
 
-/*
-static void
-BCCompileRegisterOp(BCIRBuffer *irbug,HwReg *register, BCContext context, enum ByteOpKind kind, enum MathOpKind modifyMathKind, bool modifyReverseMath, bool pushModifyResult) {
-    
-    ByteOpIR hwOp = {.kind = kind,.data.int32 = HWReg2Index(hw),.attr.memop={.modSize=MEMOP_SIZE_LONG,.modifyReverseMath=modifyReverseMath,.pushModifyResult=pushModifyResult}};
-    BIRB_PushCopy(irbuf,&hwOp);
-}
-*/
-
 enum MemOpTargetKind {
    MOT_UHHH,MOT_MEM,MOT_REG,MOT_REGBIT,MOT_REGBITRANGE
 };
@@ -1083,10 +1074,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
             case AST_HWREG: {
                 HwReg *hw = node->d.ptr;
                 printf("Got hwreg in expression: %s\n",hw->name);
-                ByteOpIR hwread = {0};
-                hwread.kind = BOK_REG_READ;
-                hwread.data.int32 = HWReg2Index(hw);
-                BIRB_PushCopy(irbuf,&hwread);
+                BCCompileMemOp(irbuf,node,context,MEMOP_READ);
             } break;
             case AST_ABSADDROF: // Same thing in Spin code, I guess.
             case AST_ADDROF: {
