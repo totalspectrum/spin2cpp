@@ -1065,18 +1065,15 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 case INTERP_KIND_P1ROM: {
                     bool isConst = IsConstExpr(node->right);
                     int32_t constVal = isConst ? EvalConstExpr(node->right) : 0;
-                    if (!isConst) {
-                        ERROR(node,"Internal Error: AST_POSTSET not constexpr, check DoSpinTransform");
-                        break;
-                    }
-                    enum MathOpKind mok = 0;
-                    if (constVal == 0) mok = MOK_MOD_POSTCLEAR;
-                    else if (constVal == -1) mok = MOK_MOD_POSTSET;
+                    if (isConst && constVal == 0)  BCCompileMemOpEx(irbuf,node->left,context,MEMOP_MODIFY,MOK_MOD_POSTCLEAR,false,!asStatement);
+                    if (isConst && constVal == -1) BCCompileMemOpEx(irbuf,node->left,context,MEMOP_MODIFY,MOK_MOD_POSTSET,false,!asStatement);
                     else {
-                        ERROR(node,"Internal Error: AST_POSTSET is %d, check DoSpinTransform",constVal);
-                        break;
+                        // Read old value, eval new value, write back. Leaves old value on stack.
+                        if (!asStatement) BCCompileMemOp(irbuf,node->left,context,MEMOP_READ);
+                        BCCompileExpression(irbuf,node->right,context,false);
+                        BCCompileMemOp(irbuf,node->left,context,MEMOP_WRITE);
                     }
-                    BCCompileMemOpEx(irbuf,node->left,context,MEMOP_MODIFY,mok,false,!asStatement);
+                    popResults = 0;
                 } break;
                 default:
                     ERROR(NULL,"Unknown interpreter kind");
