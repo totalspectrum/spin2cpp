@@ -344,6 +344,7 @@ static void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsL
     case BOK_CALL_SELF:
         *min = *max = 2; break;
     // Three byte ops
+    case BOK_REG_MODIFY:
     case BOK_CALL_OTHER:
     case BOK_CALL_OTHER_IDX:
         *min = *max = 3; break;
@@ -352,6 +353,41 @@ static void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsL
         return;
     }
 
+}
+
+static uint8_t GetModifyByte_Spin1(ByteOpIR *ir, bool *sizedOpReturn) {
+    uint8_t modifyCode = 0;
+    bool sizedModifyOp = false;
+    if (isModOperator(ir->mathKind)) {
+        int modsize = 0;
+        switch(ir->attr.memop.modSize) {
+        case MEMOP_SIZE_BIT:   modsize = 0; break;
+        case MEMOP_SIZE_BYTE:  modsize = 2; break;
+        case MEMOP_SIZE_WORD:  modsize = 4; break;
+        case MEMOP_SIZE_LONG:  modsize = 6; break;
+        }
+        switch(ir->mathKind) {
+        case MOK_MOD_WRITE:        modifyCode = 0b0000000; break;
+        case MOK_MOD_RANDFORWARD:  modifyCode = 0b0001000; break;
+        case MOK_MOD_RANDBACKWARD: modifyCode = 0b0001100; break;
+        case MOK_MOD_SIGNX_BYTE:   modifyCode = 0b0010000; break;
+        case MOK_MOD_SIGNX_WORD:   modifyCode = 0b0010100; break;
+        case MOK_MOD_POSTCLEAR:    modifyCode = 0b0011000; break;
+        case MOK_MOD_POSTSET:      modifyCode = 0b0011100; break;
+        case MOK_MOD_PREINC:       modifyCode = 0b0100000+modsize; sizedModifyOp = true; break;
+        case MOK_MOD_POSTINC:      modifyCode = 0b0101000+modsize; sizedModifyOp = true; break;
+        case MOK_MOD_PREDEC:       modifyCode = 0b0110000+modsize; sizedModifyOp = true; break;
+        case MOK_MOD_POSTDEC:      modifyCode = 0b0111000+modsize; sizedModifyOp = true; break;
+        default: 
+            ERROR(NULL,"unhandled modify operator %s",mathOpKindNames[ir->mathKind]);
+            break;
+        }
+    } else {
+        modifyCode = 0b01000000 + MathOp_to_ID_Spin1(ir->mathKind) + (ir->attr.memop.modifyReverseMath << 5);
+    }
+    modifyCode += ir->attr.memop.pushModifyResult << 7;
+    if (sizedOpReturn) *sizedOpReturn = sizedModifyOp;
+    return modifyCode;
 }
 
 const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
@@ -411,17 +447,25 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
         buf[pos++] = 0xE0+mathID;
         comment = auto_printf(28,"MATHOP: %s",mathOpKindNames[ir->mathKind]);
     } break;
-    case BOK_REG_WRITE: {
-        int reg = ir->data.int32;
-        buf[pos++] = 0b00111111; // register op prefix
-        buf[pos++] = 0xA0+reg; // I think the top bit has to be set?
-        comment = auto_printf(20,"REG_WRITE %03X",reg+0x1E0);
-    } break;
     case BOK_REG_READ: {
         int reg = ir->data.int32;
         buf[pos++] = 0b00111111; // register op prefix
-        buf[pos++] = 0x80+reg; // I think the top bit has to be set?
+        buf[pos++] = 0x80+reg; // top bit has to be set for internal purposes
         comment = auto_printf(20,"REG_READ %03X",reg+0x1E0);
+    } break;
+    case BOK_REG_WRITE: {
+        int reg = ir->data.int32;
+        buf[pos++] = 0b00111111; // register op prefix
+        buf[pos++] = 0xA0+reg; // top bit has to be set for internal purposes
+        comment = auto_printf(20,"REG_WRITE %03X",reg+0x1E0);
+    } break;
+    case BOK_REG_MODIFY: {
+        int reg = ir->data.int32;
+        buf[pos++] = 0b00111111; // register op prefix
+        buf[pos++] = 0xC0+reg; // top bit has to be set for internal purposes
+        buf[pos++] = GetModifyByte_Spin1(ir,NULL);
+        comment = auto_printf(80,"REG_MODIFY %03X %s %s%s",
+            reg+0x1E0,mathOpKindNames[ir->mathKind],ir->attr.memop.modifyReverseMath?"(REVERSE)":"",ir->attr.memop.pushModifyResult?"(PUSH RESULT)":"");
     } break;
     case BOK_MEM_READ:
     case BOK_MEM_WRITE:
@@ -471,38 +515,8 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
         }
         
         bool sizedModifyOp = false;
-        if (ir->kind == BOK_MEM_MODIFY) {
-            uint8_t modifyCode = 0;
-            if (isModOperator(ir->mathKind)) {
-                int modsize = 0;
-                switch(ir->attr.memop.modSize) {
-                case MEMOP_SIZE_BIT:   modsize = 0; break;
-                case MEMOP_SIZE_BYTE:  modsize = 2; break;
-                case MEMOP_SIZE_WORD:  modsize = 4; break;
-                case MEMOP_SIZE_LONG:  modsize = 6; break;
-                }
-                switch(ir->mathKind) {
-                case MOK_MOD_WRITE:        modifyCode = 0b0000000; break;
-                case MOK_MOD_RANDFORWARD:  modifyCode = 0b0001000; break;
-                case MOK_MOD_RANDBACKWARD: modifyCode = 0b0001100; break;
-                case MOK_MOD_SIGNX_BYTE:   modifyCode = 0b0010000; break;
-                case MOK_MOD_SIGNX_WORD:   modifyCode = 0b0010100; break;
-                case MOK_MOD_POSTCLEAR:    modifyCode = 0b0011000; break;
-                case MOK_MOD_POSTSET:      modifyCode = 0b0011100; break;
-                case MOK_MOD_PREINC:       modifyCode = 0b0100000+modsize; sizedModifyOp = true; break;
-                case MOK_MOD_POSTINC:      modifyCode = 0b0101000+modsize; sizedModifyOp = true; break;
-                case MOK_MOD_PREDEC:       modifyCode = 0b0110000+modsize; sizedModifyOp = true; break;
-                case MOK_MOD_POSTDEC:      modifyCode = 0b0111000+modsize; sizedModifyOp = true; break;
-                default: 
-                    ERROR(NULL,"unhandled modify operator %s",mathOpKindNames[ir->mathKind]);
-                    break;
-                }
-            } else {
-                modifyCode = 0b01000000 + MathOp_to_ID_Spin1(ir->mathKind) + (ir->attr.memop.modifyReverseMath << 5);
-            }
-            modifyCode += ir->attr.memop.pushModifyResult << 7;
-            buf[pos++] = modifyCode;
-        }
+        if (ir->kind == BOK_MEM_MODIFY) buf[pos++] = GetModifyByte_Spin1(ir,&sizedModifyOp);
+
         if (gl_listing) { // This is complex, so only run when we actually want a listing
             const char* basetext = "oh no";
             switch(ir->attr.memop.base) {

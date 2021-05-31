@@ -45,9 +45,12 @@
     X(REG_READ) \
     X(REG_WRITE) \
     X(REG_MODIFY) \
-    X(REGBITS_READ) \
-    X(REGBITS_WRITE) \
-    X(REGBITS_MODIFY) \
+    X(REGBIT_READ) \
+    X(REGBIT_WRITE) \
+    X(REGBIT_MODIFY) \
+    X(REGBITRANGE_READ) \
+    X(REGBITRANGE_WRITE) \
+    X(REGBITRANGE_MODIFY) \
     \
     X(CASE) \
     X(CASE_RANGE)\
@@ -80,10 +83,12 @@ extern const char *byteOpKindNames[];
 #define MATH_OP_KINDS_XMACRO \
     X(UHHH)  /* Error/undefined */ \
     \
+    X(__MOD_FIRST)\
     X(MOD_WRITE)  /* ???? */ \
     \
     X(MOD_REPEATN)  /* DJNZ? */ \
     \
+    X(__MODUNARY_FIRST)\
     X(MOD_RANDFORWARD) \
     X(MOD_RANDBACKWARD) \
     \
@@ -94,6 +99,7 @@ extern const char *byteOpKindNames[];
     X(MOD_PREDEC) X(MOD_POSTDEC) \
     \
     X(MOD_POSTCLEAR) X(MOD_POSTSET) \
+    X(__MODUNARY_LAST) X(__MOD_LAST)\
     \
     /* binary ops */ \
     X(ROR) X(ROL) X(SHR) X(SHL) X(SAR) X(REV) \
@@ -121,7 +127,11 @@ enum MathOpKind {
 extern const char *mathOpKindNames[];
 
 static inline bool isModOperator(enum MathOpKind opk) {
-    return opk <= MOK_MOD_POSTSET && opk != MOK_UHHH;
+    return opk > MOK___MOD_FIRST && opk < MOK___MOD_LAST;
+}
+
+static inline bool isUnaryModOperator(enum MathOpKind opk) {
+    return opk > MOK___MODUNARY_FIRST && opk < MOK___MODUNARY_LAST;
 }
 
 enum BCWaitType {

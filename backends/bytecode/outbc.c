@@ -144,32 +144,16 @@ OutputSpinBCHeader(ByteOutputBuffer *bob, Module *P)
     return spans;
 }
 
-// TODO: Integrate this with how it's supposed to work
 static int
 HWReg2Index(HwReg *reg) {
     switch(gl_interp_kind) {
     case INTERP_KIND_P1ROM: {
-        int indexBase = 0x1E0;
-             if (!strcmp(reg->name,"par")) return 0x1F0 - indexBase;
-        else if (!strcmp(reg->name,"cnt")) return 0x1F1 - indexBase;
-        else if (!strcmp(reg->name,"ina")) return 0x1F2 - indexBase;
-        else if (!strcmp(reg->name,"inb")) return 0x1F3 - indexBase;
-        else if (!strcmp(reg->name,"outa")) return 0x1F4 - indexBase;
-        else if (!strcmp(reg->name,"outb")) return 0x1F5 - indexBase;
-        else if (!strcmp(reg->name,"dira")) return 0x1F6 - indexBase;
-        else if (!strcmp(reg->name,"dirb")) return 0x1F7 - indexBase;
-        else if (!strcmp(reg->name,"ctra")) return 0x1F8 - indexBase;
-        else if (!strcmp(reg->name,"ctrb")) return 0x1F9 - indexBase;
-        else if (!strcmp(reg->name,"frqa")) return 0x1FA - indexBase;
-        else if (!strcmp(reg->name,"frqb")) return 0x1FB - indexBase;
-        else if (!strcmp(reg->name,"phsa")) return 0x1FC - indexBase;
-        else if (!strcmp(reg->name,"phsb")) return 0x1FD - indexBase;
-        else if (!strcmp(reg->name,"vcfg")) return 0x1FE - indexBase;
-        else if (!strcmp(reg->name,"vscl")) return 0x1FF - indexBase;
-        else {
-            ERROR(NULL,"Unknown register %s",reg->name);
+        int index = reg->addr - 0x1E0;
+        if (index < 0 || index >= 32) {
+            ERROR(NULL,"Register index %d for %s out of range",index,reg->name);
             return 0;
         }
+        return index;
     } break;
     default:
         ERROR(NULL,"Unknown interpreter kind");
@@ -318,17 +302,30 @@ BCCompileConditionalJump(BCIRBuffer *irbuf,AST *condition, bool ifNotZero, ByteO
     BIRB_PushCopy(irbuf,&condjmp);
 }
 
+/*
 static void
-BCCompileMemOpEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum ByteOpKind kind, enum MathOpKind modifyMathKind, bool modifyReverseMath, bool pushModifyResult) {
-    ByteOpIR memOp = {0};
-    memOp.kind = kind;
-    memOp.mathKind = modifyMathKind;
-    memOp.attr.memop.modifyReverseMath = modifyReverseMath;
-    memOp.attr.memop.pushModifyResult = pushModifyResult;
+BCCompileRegisterOp(BCIRBuffer *irbug,HwReg *register, BCContext context, enum ByteOpKind kind, enum MathOpKind modifyMathKind, bool modifyReverseMath, bool pushModifyResult) {
+    
+    ByteOpIR hwOp = {.kind = kind,.data.int32 = HWReg2Index(hw),.attr.memop={.modSize=MEMOP_SIZE_LONG,.modifyReverseMath=modifyReverseMath,.pushModifyResult=pushModifyResult}};
+    BIRB_PushCopy(irbuf,&hwOp);
+}
+*/
+
+enum MemOpTargetKind {
+   MOT_UHHH,MOT_MEM,MOT_REG,MOT_REGBIT,MOT_REGBITRANGE
+};
+
+static void
+BCCompileMemOpEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind kind, enum MathOpKind modifyMathKind, bool modifyReverseMath, bool pushModifyResult) {
+    
+    enum MemOpTargetKind targetKind = 0;
+    
+    ByteOpIR memOp = {.mathKind = modifyMathKind,.attr.memop = {.modifyReverseMath = modifyReverseMath,.pushModifyResult = pushModifyResult}};
 
     AST *type = NULL;
     AST *typeoverride = NULL;
     Symbol *sym = NULL;
+    HwReg *hwreg;
     AST *baseExpr = NULL;
     AST *indexExpr = NULL;
 
@@ -354,10 +351,18 @@ BCCompileMemOpEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum ByteOpKind 
         } else {
             // normal raw memory access
             memOp.attr.memop.base = MEMOP_BASE_POP;
+            targetKind = MOT_MEM;
+
             type = ident->left;
             baseExpr = ident->right;
             goto nosymbol_memref;
         }
+    } else if (ident->kind == AST_HWREG) {
+        targetKind = MOT_REG;
+        hwreg = (HwReg *)ident->d.ptr;
+        memOp.data.int32 = HWReg2Index(hwreg);
+        memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
+        goto after_typeinfer;
     }
 
     if (!sym) {
@@ -370,6 +375,7 @@ BCCompileMemOpEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum ByteOpKind 
         case SYM_LABEL: {
             printf("Got SYM_LABEL (DAT symbol)... ");
             memOp.attr.memop.base = MEMOP_BASE_PBASE;
+            targetKind = MOT_MEM;
 
             Label *lab = sym->val;
             uint32_t labelval = lab->hubval;
@@ -385,10 +391,12 @@ BCCompileMemOpEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum ByteOpKind 
                 // FIXME figure out how to properly differentiate these
                 printf("Got special symbol %s with offset %d\n",sym->our_name,sym->offset);
                 memOp.attr.memop.base = MEMOP_BASE_POP;
+                targetKind = MOT_MEM;
                 if (baseExpr) ERROR(node,"baseExpr already set?!?!");
                 else baseExpr = AstInteger(sym->offset);
             } else {
                 memOp.attr.memop.base = MEMOP_BASE_VBASE;
+                targetKind = MOT_MEM;
                 printf("sym->offset is %d\n",sym->offset);
                 memOp.data.int32 = sym->offset;
             }
@@ -397,18 +405,21 @@ BCCompileMemOpEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum ByteOpKind 
         case SYM_LOCALVAR: {
             printf("Got SYM_LOCALVAR... ");
             memOp.attr.memop.base = MEMOP_BASE_DBASE;
+            targetKind = MOT_MEM;
             printf("sym->offset is %d\n",sym->offset);
             memOp.data.int32 = sym->offset + BCLocalBase();
         } break;
         case SYM_PARAMETER: {
             printf("Got SYM_PARAMETER... ");
             memOp.attr.memop.base = MEMOP_BASE_DBASE;
+            targetKind = MOT_MEM;
             printf("sym->offset is %d\n",sym->offset);
             memOp.data.int32 = sym->offset + BCParameterBase();
         } break;
         case SYM_TEMPVAR: {
             printf("Got SYM_TEMPVAR??? ");
             memOp.attr.memop.base = MEMOP_BASE_DBASE;
+            targetKind = MOT_MEM;
             printf("sym->offset is %d\n",sym->offset);
             memOp.data.int32 = sym->offset + BCLocalBase();
         } break;
@@ -423,6 +434,7 @@ BCCompileMemOpEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum ByteOpKind 
         case SYM_RESULT: {
             printf("Got SYM_RESULT... ");
             memOp.attr.memop.base = MEMOP_BASE_DBASE;
+            targetKind = MOT_MEM;
             printf("sym->offset is %d\n",sym->offset);
             memOp.data.int32 = sym->offset + BCResultsBase();
         } break;
@@ -441,63 +453,94 @@ BCCompileMemOpEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum ByteOpKind 
     else if (type == ast_type_word) memOp.attr.memop.memSize = MEMOP_SIZE_WORD; 
     else if (type == ast_type_long) memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
     // \/ hack \/
-    else if (type == ast_type_unsigned_long && (kind != BOK_MEM_MODIFY || modifyMathKind == MOK_MOD_WRITE)) memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
+    else if (type == ast_type_unsigned_long && (kind != MEMOP_MODIFY || modifyMathKind == MOK_MOD_WRITE)) memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
     else if (type == NULL) memOp.attr.memop.memSize = MEMOP_SIZE_LONG; // Assume long type... This is apparently neccessary
     else {
         ERROR(type,"Can't figure out mem op type, is unhandled");
         printASTInfo(type);
     }
 
+    after_typeinfer:
+
     memOp.attr.memop.modSize = memOp.attr.memop.memSize; // Let's just assume these are the same
 
-    if (!!baseExpr != !!(memOp.attr.memop.base == MEMOP_BASE_POP)) ERROR(node,"Internal Error: baseExpr condition mismatch");
-    if (baseExpr) BCCompileExpression(irbuf,baseExpr,context,false);
+    switch(targetKind) {
+    case MOT_MEM: {
+        if (!!baseExpr != !!(memOp.attr.memop.base == MEMOP_BASE_POP)) ERROR(node,"Internal Error: baseExpr condition mismatch");
+        if (baseExpr) BCCompileExpression(irbuf,baseExpr,context,false);
 
-    if (indexExpr) {
-        bool indexConst = IsConstExpr(indexExpr);
-        int constIndexVal;
-        if (indexConst) constIndexVal = EvalConstExpr(indexExpr);
+        if (indexExpr) {
+            bool indexConst = IsConstExpr(indexExpr);
+            int constIndexVal;
+            if (indexConst) constIndexVal = EvalConstExpr(indexExpr);
 
-        if (baseExpr && indexConst && constIndexVal == 0) {
-            // In this case, do nothing
-        } else if (!baseExpr && indexConst) {
-            // Just add index onto base
-            if (memOp.attr.memop.memSize == MEMOP_SIZE_BYTE) memOp.data.int32 += constIndexVal;
-            else if (memOp.attr.memop.memSize == MEMOP_SIZE_WORD) memOp.data.int32 += constIndexVal << 1;
-            else if (memOp.attr.memop.memSize == MEMOP_SIZE_LONG) memOp.data.int32 += constIndexVal << 2;
-        } else {
-            // dynamic index
-            memOp.attr.memop.popIndex = true;
-            BCCompileExpression(irbuf,indexExpr,context,false);
+            if (baseExpr && indexConst && constIndexVal == 0) {
+                // In this case, do nothing
+            } else if (!baseExpr && indexConst) {
+                // Just add index onto base
+                if (memOp.attr.memop.memSize == MEMOP_SIZE_BYTE) memOp.data.int32 += constIndexVal;
+                else if (memOp.attr.memop.memSize == MEMOP_SIZE_WORD) memOp.data.int32 += constIndexVal << 1;
+                else if (memOp.attr.memop.memSize == MEMOP_SIZE_LONG) memOp.data.int32 += constIndexVal << 2;
+            } else {
+                // dynamic index
+                memOp.attr.memop.popIndex = true;
+                BCCompileExpression(irbuf,indexExpr,context,false);
+            }
         }
+        switch (kind) {
+        case MEMOP_READ: memOp.kind = BOK_MEM_READ; break;
+        case MEMOP_WRITE: memOp.kind = BOK_MEM_WRITE; break;
+        case MEMOP_MODIFY: memOp.kind = BOK_MEM_MODIFY; break;
+        case MEMOP_ADDRESS: memOp.kind = BOK_MEM_ADDRESS; break;
+        default: ERROR(node,"Unknown memop kind %d",kind); break;
+        }
+    } break;
+    case MOT_REG: {
+        if (baseExpr) ERROR(node,"Base expression on plain register op!");
+        if (indexExpr) ERROR(node,"Index expression on plain register op!");
+        switch (kind) {
+        case MEMOP_READ: memOp.kind = BOK_REG_READ; break;
+        case MEMOP_WRITE: memOp.kind = BOK_REG_WRITE; break;
+        case MEMOP_MODIFY: memOp.kind = BOK_REG_MODIFY; break;
+        case MEMOP_ADDRESS: ERROR(node,"Trying to get address of register"); break;
+        default: ERROR(node,"Unknown memop kind %d",kind); break;
+        }
+    } break;
+    default: {
+        ERROR(node,"Internal Error: memop targetKind not set/unhandled");
+    } break;
     }
 
     BIRB_PushCopy(irbuf,&memOp);
 }
 
 static inline void
-BCCompileMemOp(BCIRBuffer *irbuf,AST *node,BCContext context, enum ByteOpKind kind) {
+BCCompileMemOp(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind kind) {
     BCCompileMemOpEx(irbuf,node,context,kind,0,false,false);
 }
 
 static void
-BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpression) {
+BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpression,enum MathOpKind modifyMathKind, bool modifyReverseMath) {
     AST *left = node->left, *right = node->right;
     printf("Got an assign! left kind: %d, right kind %d\n",left->kind,right->kind);
 
     AST *memopNode = NULL;
 
+    if (modifyMathKind == 0 && asExpression) modifyMathKind = MOK_MOD_WRITE;
+
+    bool isUnaryModify = isUnaryModOperator(modifyMathKind);
+
+    if (!!isUnaryModify == !!right) {
+        ERROR(node,"Unary modify-assign with right side OR non-unary without right side???");
+        return;
+    }
+    if (isUnaryModify && modifyReverseMath) ERROR(node,"Reversed unary math??");
+
     switch(left->kind) {
     case AST_HWREG: {
         HwReg *hw = (HwReg *)left->d.ptr;
         printf("Got HWREG assign, %s = %d\n",hw->name,HWReg2Index(hw));
-        BCCompileExpression(irbuf,right,context,false);
-        ByteOpIR hwAssignOp = {0};
-        hwAssignOp.kind = BOK_REG_WRITE;
-        hwAssignOp.data.int32 = HWReg2Index(hw);
-        BIRB_PushCopy(irbuf,&hwAssignOp);
-        if (asExpression) ERROR(node,"Assignment with register expression NYI");  
-        return; // not a memory op
+        memopNode = left;
     } break;
     case AST_ARRAYREF: {
         printf("Got ARRAYREF assign\n");
@@ -507,6 +550,7 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
         printf("Got RESULT assign\n");
         memopNode = left;
     } break;
+    case AST_SYMBOL:
     case AST_IDENTIFIER: {
         printf("Got IDENTIFIER assign\n");
         Symbol *sym = LookupAstSymbol(left,NULL);
@@ -545,16 +589,13 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
         return;
     }
 
-    if (asExpression) {
+    if (modifyMathKind == 0) {
         BCCompileExpression(irbuf,right,context,false);
-        BCCompileMemOpEx(irbuf,memopNode,context,BOK_MEM_MODIFY,MOK_MOD_WRITE,false,true);
+        BCCompileMemOp(irbuf,memopNode,context,MEMOP_WRITE);
     } else {
-        BCCompileExpression(irbuf,right,context,false);
-        BCCompileMemOp(irbuf,memopNode,context,BOK_MEM_WRITE);
+        if (!isUnaryModify) BCCompileExpression(irbuf,right,context,false);
+        BCCompileMemOpEx(irbuf,memopNode,context,MEMOP_MODIFY,modifyMathKind,false,asExpression);
     }
-
-    
-
 }
 
 static int getFuncID(Module *M,const char *name) {
@@ -875,7 +916,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
             } break;
             case AST_ASSIGN: {
                 printf("Got assignment in expression \n");
-                BCCompileAssignment(irbuf,node,context,!asStatement);
+                BCCompileAssignment(irbuf,node,context,!asStatement,0,0);
                 popResults = 0;
             } break;
             case AST_SEQUENCE: {
@@ -1009,7 +1050,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                     }
                     if (!mok) ERROR(node,"Unhandled %sfix modify operator %03X",isPostfix?"post":"pre",node->d.ival);
                     
-                    BCCompileMemOpEx(irbuf,modvar,context,BOK_MEM_MODIFY,mok,false,!asStatement);
+                    BCCompileMemOpEx(irbuf,modvar,context,MEMOP_MODIFY,mok,false,!asStatement);
                 } break;
             } break;
             case AST_POSTSET: {
@@ -1028,7 +1069,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                         ERROR(node,"Internal Error: AST_POSTSET is %d, check DoSpinTransform",constVal);
                         break;
                     }
-                    BCCompileMemOpEx(irbuf,node->left,context,BOK_MEM_MODIFY,mok,false,!asStatement);
+                    BCCompileMemOpEx(irbuf,node->left,context,MEMOP_MODIFY,mok,false,!asStatement);
                 } break;
                 default:
                     ERROR(NULL,"Unknown interpreter kind");
@@ -1047,7 +1088,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
             case AST_ADDROF: {
                 printf("Got addr-of! ");
                 printASTInfo(node); // Right always empty, left always ARRAYREF?
-                BCCompileMemOp(irbuf,node->left,context,BOK_MEM_ADDRESS);
+                BCCompileMemOp(irbuf,node->left,context,MEMOP_ADDRESS);
             } break;
             case AST_IDENTIFIER: {
                 printf("Got identifier! ");
@@ -1062,12 +1103,12 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 case SYM_LOCALVAR:
                 case SYM_PARAMETER:
                 case SYM_RESULT:
-                    BCCompileMemOp(irbuf,node,context,BOK_MEM_READ);
+                    BCCompileMemOp(irbuf,node,context,MEMOP_READ);
                     break;
                 case SYM_RESERVED:
                     if (!strcmp(sym->our_name,"result")) {
                         // FIXME the parser should give AST_RESULT here, I think
-                        BCCompileMemOp(irbuf,NewAST(AST_RESULT,node->left,node->right),context,BOK_MEM_READ);
+                        BCCompileMemOp(irbuf,NewAST(AST_RESULT,node->left,node->right),context,MEMOP_READ);
                     } else {
                         ERROR(node,"Unhandled reserved word %s in expression",sym->our_name);
                     }
@@ -1080,12 +1121,12 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
             } break;
             case AST_RESULT: {
                 printf("Got RESULT!\n");
-                BCCompileMemOp(irbuf,node,context,BOK_MEM_READ);
+                BCCompileMemOp(irbuf,node,context,MEMOP_READ);
             } break;
             case AST_ARRAYREF: {
                 printf("Got array read! ");
                 printASTInfo(node);
-                BCCompileMemOp(irbuf,node,context,BOK_MEM_READ);
+                BCCompileMemOp(irbuf,node,context,MEMOP_READ);
             } break;
             case AST_STRINGPTR: {
                 printf("Got STRINGPTR! ");
@@ -1186,7 +1227,7 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
 
     switch(node->kind) {
     case AST_ASSIGN:
-        BCCompileAssignment(irbuf,node,context,false);
+        BCCompileAssignment(irbuf,node,context,false,0,0);
         break;
     case AST_WHILE: {
         printf("Got While loop.. ");

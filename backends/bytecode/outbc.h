@@ -17,6 +17,10 @@ typedef struct {
     ByteOpIR *quitLabel,*nextLabel;
 } BCContext;
 
+enum MemOpKind {
+    MEMOP_READ,MEMOP_WRITE,MEMOP_MODIFY,MEMOP_ADDRESS
+};
+
 void OutputByteCode(const char *fname, Module *P);
 
 #endif
