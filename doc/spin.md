@@ -567,6 +567,10 @@ I2C, SPI and similar functions.
 
 The Spin1 `@@` operator always truncates its result to 16 bits; flexspin does not do this. This won't matter in typical use (on the P1 addresses always fit in 16 bits anyway) but may be noticeable for some exotic uses.
 
+### CHIPVER
+
+The Spin1 CHIPVER command always evaluates as 1, regardless of the actual chip version stored at $FFFF.
+
 ## Symbols
 
 ### Local variables may shadow method names

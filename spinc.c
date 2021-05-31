@@ -1142,6 +1142,7 @@ Function *
 GetMainFunction(Module *P)
 {
     const char *mainName = NULL;
+    Function *pf;
     
     if (IsBasicLang(P->mainLanguage)) {
         mainName = "program";
@@ -1164,5 +1165,12 @@ GetMainFunction(Module *P)
         }
         ERROR(NULL, "could not find function %s", mainName);
     }
-    return P->functions;
+    
+    /* for Spin, return first public function */
+    for (pf = P->functions; pf; pf = pf->next) {
+        if (pf->is_public) {
+            break;
+        }
+    }
+    return pf;
 }
