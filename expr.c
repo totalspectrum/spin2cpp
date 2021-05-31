@@ -1514,7 +1514,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             }
         }
         break;
-    case AST_OPERATOR:        
+    case AST_OPERATOR:
         /* special case hack: '-' allows evaluation of @
            even if both sides are relative addresses
         */
