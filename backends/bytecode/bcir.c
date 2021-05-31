@@ -106,17 +106,30 @@ static int GetJumpOffset(ByteOpIR *jump,bool func_relative) {
     return max;
 }
 
-static int CompileJumpOffset_Spin1(uint8_t *buf,int *pos,ByteOpIR *ir,int baseSize,bool func_relative,int offset_offset) {
+enum Spin1OffsetEncoding {
+    S1OffEn_VARLEN_SIGNED,
+    S1OffEn_VARLEN_UNSIGNED,
+    S1OffEn_FIXLEN,
+};
+
+static int CompileJumpOffset_Spin1(uint8_t *buf,int *pos,ByteOpIR *ir,int baseSize,bool func_relative,int offset_offset,enum Spin1OffsetEncoding encoding) {
     int offset = GetJumpOffset(ir,func_relative) + offset_offset;
-    if (func_relative && offset < 0) ERROR(NULL,"CompileJumpOffset_Spin1 with doUnsigned but negative offset");
+    if (encoding != S1OffEn_VARLEN_SIGNED && offset < 0) ERROR(NULL,"CompileJumpOffset_Spin1 with unsigned encoding but negative offset");
+    int hlimit1=0,llimit1=0,hlimit2=0,llimit2=0;
+    bool isVarlen = encoding != S1OffEn_FIXLEN;
+    switch (encoding) {
+    case S1OffEn_VARLEN_SIGNED: hlimit1 = 0x3F, llimit1 = -0x40, hlimit2 = 0x3FFF, llimit2 = -0x4000; break;
+    case S1OffEn_VARLEN_UNSIGNED: hlimit1 = 0x7F, llimit1 = 0, hlimit2 = 0x7FFF, llimit2 = 0; break;
+    case S1OffEn_FIXLEN: hlimit1 = 0xFF, llimit1 = 0, hlimit2 = 0xFFFF, llimit2 = 0; break;
+    }
     switch (ir->fixedSize-baseSize) {
     case 1:
-        if (func_relative ? (offset > 0x7F) : (offset > 0x3F || offset < -0x40)) ERROR(NULL,"Jump offset %d too big for 1 byte",offset);
-        buf[(*pos)++] = offset&0x7F;
+        if (offset > hlimit1 || offset < llimit1) ERROR(NULL,"Jump offset %d too big for 1 byte with encoding %d",offset,encoding);
+        buf[(*pos)++] = isVarlen ? offset& 0x7F : offset & 0xFF;
         break;
     case 2:
-        if (func_relative ? (offset > 0x7FFF) : (offset > 0x3FFF || offset < -0x4000)) ERROR(NULL,"Jump offset %d too big for 2 bytes",offset);
-        buf[(*pos)++] = ((offset>>8)&0x7F)|0x80;
+        if (offset > hlimit2 || offset < llimit2) ERROR(NULL,"Jump offset %d too big for 2 bytes with encoding %d",offset,encoding);
+        buf[(*pos)++] = isVarlen ? ((offset>>8)&0x7F)|0x80 : (offset>>8)&0xFF;
         buf[(*pos)++] = offset&0xFF;
         break;
     default:
@@ -247,20 +260,39 @@ static void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsL
             int minDist,maxDist;
             GetJumpOffsetBounds(ir,true,&minDist,&maxDist,recursionsLeft);
             minDist += pbase_offset; maxDist += pbase_offset;
-            if (maxDist < 0 || minDist < 0) {
-                ERROR(NULL,"FUNDATA_PUSHADDRESS can only index forwards");
-                *min = *max = 3;
-            } else if (maxDist <= 0x7F) { // 1-byte either way
-                *min = *max = 2;
-            } else if (minDist > 0x7F) { // 2-byte either way
-                *min = *max = 3;
-            } else { // Uncertain
-                *min = 2;
-                *max = 3;
+            if (ir->attr.pushaddress.addPbase) {
+                if (maxDist < 0 || minDist < 0) {
+                    ERROR(NULL,"Internal Error: negative distance in FUNDATA_PUSHADDRESS with PBASE");
+                    *min = *max = 3;
+                } else if (maxDist <= 0x7F) { // 1-byte either way
+                    *min = *max = 2;
+                } else if (minDist > 0x7F) { // 2-byte either way
+                    *min = *max = 3;
+                } else { // Uncertain
+                    *min = 2;
+                    *max = 3;
+                }
+            } else {
+                if (maxDist < 0 || minDist < 0) {
+                    ERROR(NULL,"Internal Error: negative distance in FUNDATA_PUSHADDRESS without PBASE");
+                    *min = *max = 5;
+                } else if (maxDist <= 0xFF) { // 1-byte either way
+                    *min = *max = 2;
+                } else if (minDist > 0xFF) { // 2-byte either way
+                    *min = *max = 3;
+                } else { // Uncertain
+                    *min = 2;
+                    *max = 3;
+                }
             }
         } else {
-            *min = 2;
-            *max = 3;
+            if (ir->attr.pushaddress.addPbase) {
+                *min = 2;
+                *max = 3;
+            } else {
+                *min = 2; // 0/1/-1 are highly unlikely
+                *max = 3; // max useful pbase offset is 0x7FEF, which fits in 3 bytes
+            }
         }
         break;
     // Memory ops
@@ -504,9 +536,11 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
         }
     } break;
     case BOK_FUNDATA_PUSHADDRESS: {
-        // Really just a special case of MEM_ADDRESS with PBASE
-        buf[pos++] = 0x87;
-        CompileJumpOffset_Spin1(buf,&pos,ir,1,true,pbase_offset);
+        // Really just a special case of either MEM_ADDRESS with PBASE or a constant
+        bool addPbase = ir->attr.pushaddress.addPbase;
+        buf[pos++] = addPbase ? 0x87 : (size==2 ? 0x38 : 0x39);
+        int offset = CompileJumpOffset_Spin1(buf,&pos,ir,1,true,pbase_offset, addPbase ? S1OffEn_VARLEN_UNSIGNED : S1OffEn_FIXLEN);
+        comment = auto_printf(64,"FUNDATA_PUSHADDRESS %+d%s",offset,addPbase?" +PBASE":"");
     } break;
     case BOK_FUNDATA_STRING : {
         memcpy((char*)buf,ir->data.stringPtr,size);
@@ -550,7 +584,7 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
     case BOK_CASE:       buf[pos++] = 0b00001101; goto jump_common;
     case BOK_CASE_RANGE: buf[pos++] = 0b00001110; goto jump_common;
     jump_common: {
-        int offset = CompileJumpOffset_Spin1(buf,&pos,ir,1,false,0);
+        int offset = CompileJumpOffset_Spin1(buf,&pos,ir,1,false,0,S1OffEn_VARLEN_SIGNED);
         comment = auto_printf(40,"%s %+d",byteOpKindNames[ir->kind],offset);
     } break;
     case BOK_WAIT: {

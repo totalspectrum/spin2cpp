@@ -1091,7 +1091,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 printf("Got STRINGPTR! ");
                 printASTInfo(node);
                 ByteOpIR *stringLabel = BCNewOrphanLabel(nullcontext);
-                ByteOpIR pushOp = {.kind = BOK_FUNDATA_PUSHADDRESS,.data.jumpTo = stringLabel};
+                ByteOpIR pushOp = {.kind = BOK_FUNDATA_PUSHADDRESS,.data.jumpTo = stringLabel,.attr.pushaddress.addPbase = true};
                 ByteOpIR stringData = BCBuildString(node->left);
 
                 BIRB_PushCopy(irbuf,&pushOp);

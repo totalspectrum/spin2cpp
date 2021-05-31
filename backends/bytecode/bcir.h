@@ -172,7 +172,9 @@ typedef struct bcirstruct {
         struct {
             unsigned pushCogID:1;
         } coginit;
-        
+        struct {
+            unsigned addPbase:1;
+        } pushaddress;
         int stringLength;
         int labelHiddenVars; // Not used by the actual IR step
     } attr;
