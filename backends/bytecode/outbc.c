@@ -511,7 +511,7 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
         printf("Got IDENTIFIER assign\n");
         Symbol *sym = LookupAstSymbol(left,NULL);
         if (!sym) {
-            ERROR(node,"Internal Error: no symbol");
+            ERROR(node,"Internal Error: no symbol in identifier assign");
             return;
         }
         switch (sym->kind) {
@@ -1053,7 +1053,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 printf("Got identifier! ");
                 Symbol *sym = LookupAstSymbol(node,NULL);
                 if (!sym) {
-                    ERROR(node,"Internal Error: no symbol");
+                    ERROR(node,"Internal Error: no symbol in identifier expression");
                     return;
                 }
                 switch (sym->kind) {
@@ -1501,7 +1501,7 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
     // first up, we now know the function's address, so let's fix it up in the header
     int func_ptr = bob->total_size;
     int func_offset = 0;
-    int func_localsize = F->numparams*4 + F->numlocals*4 + 4; // SUPER DUPER FIXME smaller locals
+    int func_localsize = F->numlocals*4; // SUPER DUPER FIXME smaller locals
     if (interp_can_multireturn() && F->numresults > 1) {
         ERROR(F->body,"Multi-return is not supported by the used interpreter");
         return;
@@ -1523,8 +1523,8 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
     case INTERP_KIND_P1ROM:
         BOB_ReplaceLong(FunData(F)->headerEntry,
             (func_offset&0xFFFF) + 
-            ((func_localsize - 4)<<16), // RESULT is implicit, so subtract it
-            auto_printf(128,"Function %s @%04X (local size %d)",F->name,func_ptr,func_localsize - 4)
+            ((func_localsize)<<16),
+            auto_printf(128,"Function %s @%04X (local size %d)",F->name,func_ptr,func_localsize)
         );
         break;
     default:
@@ -1797,7 +1797,8 @@ void OutputByteCode(const char *fname, Module *P) {
         BOB_ReplaceWord(headerspans.pcurr,FunData(ModData(P)->pubs[0])->compiledAddress,NULL);
         BOB_ReplaceWord(headerspans.vbase,programSize,NULL);
         BOB_ReplaceWord(headerspans.dbase,stackBase,NULL);
-        BOB_ReplaceWord(headerspans.dcurr,stackBase+FunData(ModData(P)->pubs[0])->localSize,NULL);
+        Function *mainFunc = ModData(P)->pubs[0];
+        BOB_ReplaceWord(headerspans.dcurr,stackBase+FunData(mainFunc)->localSize+mainFunc->numparams*4+4,NULL);
         break;
     default:
         ERROR(NULL,"Unknown interpreter kind");
