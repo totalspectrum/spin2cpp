@@ -279,8 +279,8 @@ static void BCCompilePopN(BCIRBuffer *irbuf,int popcount) {
 }
 
 static void
-BCCompileJumpEx(BCIRBuffer *irbuf, ByteOpIR *label, enum ByteOpKind kind, BCContext context) {
-    int stackdiff = context.hiddenVariables - label->attr.labelHiddenVars;
+BCCompileJumpEx(BCIRBuffer *irbuf, ByteOpIR *label, enum ByteOpKind kind, BCContext context, int stackoffset) {
+    int stackdiff = context.hiddenVariables - label->attr.labelHiddenVars + stackoffset;
     if (stackdiff > 0) {
         // emit pop to get rid of hidden vars
         BCCompilePopN(irbuf,stackdiff);
@@ -289,19 +289,19 @@ BCCompileJumpEx(BCIRBuffer *irbuf, ByteOpIR *label, enum ByteOpKind kind, BCCont
     }
     ByteOpIR condjmp = {0};
     condjmp.kind = kind;
-    condjmp.data.jumpTo = label;
+    condjmp.jumpTo = label;
     BIRB_PushCopy(irbuf,&condjmp);
 }
 
 static void
 BCCompileJump(BCIRBuffer *irbuf, ByteOpIR *label, BCContext context) {
-    BCCompileJumpEx(irbuf,label,BOK_JUMP,context);
+    BCCompileJumpEx(irbuf,label,BOK_JUMP,context,0);
 }
 
 static void
 BCCompileConditionalJump(BCIRBuffer *irbuf,AST *condition, bool ifNotZero, ByteOpIR *label, BCContext context) {
     ByteOpIR condjmp = {0};
-    condjmp.data.jumpTo = label;
+    condjmp.jumpTo = label;
     int stackdiff = context.hiddenVariables - label->attr.labelHiddenVars;
     if (stackdiff) ERROR(condition,"Conditional jump to label with unequal hidden var count");
     if (!condition) {
@@ -353,11 +353,20 @@ enum MemOpTargetKind {
 };
 
 static void
-BCCompileMemOpEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind kind, enum MathOpKind modifyMathKind, bool modifyReverseMath, bool pushModifyResult) {
+BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind kind, 
+    enum MathOpKind modifyMathKind, bool modifyReverseMath, bool pushModifyResult, ByteOpIR *jumpTo, bool repeatPopStep) {
     
     enum MemOpTargetKind targetKind = 0;
+
+    if (jumpTo != NULL) {
+        if (kind != MEMOP_MODIFY || modifyMathKind != MOK_MOD_REPEATSTEP) ERROR(node,"Trying to compile memop with jumpTo that is not a jumping kind");
+        int stackdiff = context.hiddenVariables - jumpTo->attr.labelHiddenVars;
+        if (stackdiff) ERROR(node,"Modify jump to label with unequal hidden var count");
+    }
     
-    ByteOpIR memOp = {.mathKind = modifyMathKind,.attr.memop = {.modifyReverseMath = modifyReverseMath,.pushModifyResult = pushModifyResult}};
+    ByteOpIR memOp = {.mathKind = modifyMathKind,
+        .attr.memop = {.modifyReverseMath = modifyReverseMath,.pushModifyResult = pushModifyResult,.repeatPopStep=repeatPopStep},
+        .jumpTo=jumpTo};
 
     AST *type = NULL;
     AST *typeoverride = NULL;
@@ -549,6 +558,11 @@ BCCompileMemOpEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind k
     }
 
     BIRB_PushCopy(irbuf,&memOp);
+}
+
+static inline void
+BCCompileMemOpEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind kind, enum MathOpKind modifyMathKind, bool modifyReverseMath, bool pushModifyResult) {
+    BCCompileMemOpExEx(irbuf,node,context,kind,modifyMathKind,modifyReverseMath,pushModifyResult,NULL,false);
 }
 
 static inline void
@@ -1182,7 +1196,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 printf("Got STRINGPTR! ");
                 printASTInfo(node);
                 ByteOpIR *stringLabel = BCNewOrphanLabel(nullcontext);
-                ByteOpIR pushOp = {.kind = BOK_FUNDATA_PUSHADDRESS,.data.jumpTo = stringLabel,.attr.pushaddress.addPbase = true};
+                ByteOpIR pushOp = {.kind = BOK_FUNDATA_PUSHADDRESS,.jumpTo = stringLabel,.attr.pushaddress.addPbase = true};
                 ByteOpIR stringData = BCBuildString(node->left);
 
                 BIRB_PushCopy(irbuf,&pushOp);
@@ -1202,7 +1216,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                     BCCompileExpression(irbuf,node->left->left,context,false);
                     // Compile "done" jump pointer
                     ByteOpIR *afterLabel = BCNewOrphanLabel(context);
-                    ByteOpIR pushOp = {.kind = BOK_FUNDATA_PUSHADDRESS,.data.jumpTo = afterLabel};
+                    ByteOpIR pushOp = {.kind = BOK_FUNDATA_PUSHADDRESS,.jumpTo = afterLabel};
                     BIRB_PushCopy(irbuf,&pushOp);
                     // Compile the expression
                     BCCompileExpression(irbuf,node->left->right,context,false);
@@ -1326,6 +1340,7 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
     case AST_FORATLEASTONCE: {
         printf("Got For... ");
         printASTInfo(node);
+        if (IsSpinLang(curfunc->language)) NOTE(node,"Got a FOR loop in Spin, probably wrong transform conditions");
 
         bool atleastonce = node->kind == AST_FORATLEASTONCE;
 
@@ -1365,6 +1380,92 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         BIRB_Push(irbuf,quitLabel);
 
     } break;
+    case AST_COUNTREPEAT: {
+        printf("Got countrepeat... "); printASTInfo(node);
+
+        AST *loopvar = node->left;
+        
+        AST *from = node->right;
+        ASSERT_AST_KIND(from,AST_FROM,return;);
+        printf("from: ");printASTInfo(from);
+        AST *fromExpression = from->left;
+        AST *to = from->right;
+        ASSERT_AST_KIND(to,AST_TO,return;);
+        printf("to: ");printASTInfo(to);
+        AST *toExpression = to->left;
+        AST *step = to->right;
+        ASSERT_AST_KIND(step,AST_STEP,return;);
+        printf("step: ");printASTInfo(step);
+        AST *stepExpression = step->left;
+        AST *body = step->right;
+
+        if (fromExpression == NULL && IsConstExpr(stepExpression) && abs(EvalConstExpr(stepExpression))==1) {
+            // REPEAT N loop
+            bool isConst = IsConstExpr(toExpression);
+            uint32_t constVal = isConst ? EvalConstExpr(toExpression) : 0;
+            if (isConst && constVal == 0) {
+                NOTE(node,"Skipping loop with zero repeats");
+                break;
+            }
+            // Compile repeat count
+            BCCompileExpression(irbuf,toExpression,context,false);
+
+            BCContext newcontext = context;
+            newcontext.hiddenVariables += 1;
+            ByteOpIR *topLabel = BCNewOrphanLabel(newcontext);
+            ByteOpIR *nextLabel = BCNewOrphanLabel(newcontext);
+            ByteOpIR *quitLabel = BCNewOrphanLabel(context);
+            newcontext.nextLabel = nextLabel;
+            newcontext.quitLabel = quitLabel;
+
+            if (!isConst || constVal == 0) BCCompileJumpEx(irbuf,quitLabel,BOK_JUMP_TJZ,newcontext,-1); 
+            BIRB_Push(irbuf,topLabel);
+
+            if (body) {
+                ASSERT_AST_KIND(body,AST_STMTLIST,return;);
+                BCCompileStmtlist(irbuf,body,newcontext);
+            } else NOTE(node,"Compiling empty REPEAT N loop?");
+
+            BIRB_Push(irbuf,nextLabel);
+            BCCompileJumpEx(irbuf,topLabel,BOK_JUMP_DJNZ,newcontext,0);
+            BIRB_Push(irbuf,quitLabel);
+        } else {
+            // REPEAT FROM TO
+            bool stepConst = IsConstExpr(stepExpression);
+            uint32_t stepConstVal = stepConst ? EvalConstExpr(stepExpression) : 0;
+            bool haveStep = !stepConst || abs(stepConstVal) != 1;
+
+            // Compile init value
+            BCCompileExpression(irbuf,fromExpression,context,false);
+            BCCompileMemOp(irbuf,loopvar,context,MEMOP_WRITE);
+
+            BCContext newcontext = context;
+            newcontext.hiddenVariables += 1;
+            ByteOpIR *topLabel = BCNewOrphanLabel(newcontext);
+            ByteOpIR *nextLabel = BCNewOrphanLabel(newcontext);
+            ByteOpIR *quitLabel = BCNewOrphanLabel(context);
+            newcontext.nextLabel = nextLabel;
+            newcontext.quitLabel = quitLabel;
+
+            BIRB_Push(irbuf,topLabel);
+
+            if (body) {
+                ASSERT_AST_KIND(body,AST_STMTLIST,return;);
+                BCCompileStmtlist(irbuf,body,newcontext);
+            } else NOTE(node,"Compiling empty REPEAT FROM TO loop?");
+
+            BIRB_Push(irbuf,nextLabel);
+            if (haveStep) BCCompileExpression(irbuf,stepExpression,newcontext,false);
+            BCCompileExpression(irbuf,fromExpression,newcontext,false);
+            BCCompileExpression(irbuf,toExpression,newcontext,false);
+            BCCompileMemOpExEx(irbuf,loopvar,newcontext,MEMOP_MODIFY,MOK_MOD_REPEATSTEP,false,false,topLabel,haveStep);
+            BIRB_Push(irbuf,quitLabel);
+            
+        }
+
+
+
+    } break;
     case AST_IF: {
         printf("Got If... ");
         printASTInfo(node);
@@ -1397,7 +1498,7 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         printf("Got Case... "); printASTInfo(node);
 
         ByteOpIR *endlabel = BCNewOrphanLabel(context);
-        ByteOpIR pushEnd = {.kind=BOK_FUNDATA_PUSHADDRESS,.data.jumpTo=endlabel};
+        ByteOpIR pushEnd = {.kind=BOK_FUNDATA_PUSHADDRESS,.jumpTo=endlabel};
         BIRB_PushCopy(irbuf,&pushEnd);
         // Compile switch expression
         BCCompileExpression(irbuf,node->left,context,false);
@@ -1447,7 +1548,7 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
                 ASSERT_AST_KIND(item->left,AST_EXPRLIST,;);
                 for (AST *exprlist=item->left;exprlist;exprlist=exprlist->right) {
                     ASSERT_AST_KIND(exprlist,AST_EXPRLIST,continue;);
-                    ByteOpIR caseOp = {.data.jumpTo=caselabels[whichcase]};
+                    ByteOpIR caseOp = {.jumpTo=caselabels[whichcase]};
                     if (exprlist->left->kind == AST_RANGE) {
                         printf("... with range!\n");
                         BCCompileExpression(irbuf,exprlist->left->left,newcontext,false);

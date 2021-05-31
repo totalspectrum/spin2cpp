@@ -86,7 +86,7 @@ extern const char *byteOpKindNames[];
     X(__MOD_FIRST)\
     X(MOD_WRITE)  /* ???? */ \
     \
-    X(MOD_REPEATN)  /* DJNZ? */ \
+    X(MOD_REPEATSTEP) \
     \
     X(__MODUNARY_FIRST)\
     X(MOD_RANDFORWARD) \
@@ -150,6 +150,7 @@ typedef struct bcirstruct {
             unsigned popIndex:1; //  pop index?
             unsigned pushModifyResult:1; // For BOK_MEM_MODIFY: push result onto stack
             unsigned modifyReverseMath:1; // For BOK_MEM_MODIFY: Swap math operands?
+            unsigned repeatPopStep:1; // FOR MOK_MOD_REPEATSTEP
             #define MEMOP_BASE_POP   0
             #define MEMOP_BASE_PBASE 1 // DAT?
             #define MEMOP_BASE_VBASE 2 // VAR
@@ -190,10 +191,11 @@ typedef struct bcirstruct {
     } attr;
 
     union {
-        struct bcirstruct *jumpTo;
         int32_t int32;
         const char *stringPtr;
     } data;
+
+    struct bcirstruct *jumpTo; // Label that is referenced
 
     int fixedSize; // If set, the size of this op is known. For BOK_LABEL and other zero-size ops, this is irrelevant
 

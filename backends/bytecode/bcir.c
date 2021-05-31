@@ -64,7 +64,7 @@ static bool BCIR_SizeDetermined(ByteOpIR *ir) {
 }
 
 static void GetJumpOffsetBounds(ByteOpIR *jump,bool func_relative,int *minDist, int *maxDist,int recursionsLeft) {
-    ByteOpIR *searchingFor = jump->data.jumpTo;
+    ByteOpIR *searchingFor = jump->jumpTo;
     *minDist = *maxDist = 0;
     bool found = false;
     if (recursionsLeft) --recursionsLeft;
@@ -307,7 +307,25 @@ static void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsL
 
         if (ir->kind == BOK_MEM_MODIFY) {
             *min += 1; *max += 1; // Extra byte
-            if (ir->mathKind == MOK_MOD_REPEATN) ERROR(NULL,"MOK_MOD_REPEATN is NYI");
+            if (ir->mathKind == MOK_MOD_REPEATSTEP) {  // Insanity
+                if (recursionsLeft) {
+                    int minDist,maxDist;
+                    GetJumpOffsetBounds(ir,false,&minDist,&maxDist,recursionsLeft);
+                    if (maxDist <= 0x3F && maxDist >= -0x40) { // 1-byte either way
+                        *min += 1;
+                        *max += 1;
+                    } else if (minDist > 0x3F || minDist < -40) { // 2-byte either way
+                        *min += 2;
+                        *max += 2;
+                    } else { // Uncertain
+                        *min += 1;
+                        *max += 2;
+                    }
+                } else {
+                    *min += 1;
+                    *max += 2;
+                }
+            }
         }
         break;
     case BOK_FUNDATA_STRING: 
@@ -515,7 +533,15 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
         }
         
         bool sizedModifyOp = false;
-        if (ir->kind == BOK_MEM_MODIFY) buf[pos++] = GetModifyByte_Spin1(ir,&sizedModifyOp);
+        int jumpOffset = 0;
+        if (ir->kind == BOK_MEM_MODIFY) {
+            if (ir->mathKind == MOK_MOD_REPEATSTEP) {
+                buf[pos++] = ir->attr.memop.repeatPopStep ? 0b00000110 : 0b00000010;
+                jumpOffset = CompileJumpOffset_Spin1(buf,&pos,ir,pos,false,0,S1OffEn_VARLEN_SIGNED);
+            } else { 
+                buf[pos++] = GetModifyByte_Spin1(ir,&sizedModifyOp);
+            }
+        }
 
         if (gl_listing) { // This is complex, so only run when we actually want a listing
             const char* basetext = "oh no";
@@ -539,7 +565,11 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
             case MEMOP_SIZE_WORD: modsizetext = "(WORD)"; break;
             case MEMOP_SIZE_LONG: modsizetext = "(LONG)"; break;
             }
-            if (ir->kind == BOK_MEM_MODIFY) {
+            if (ir->kind == BOK_MEM_MODIFY && ir->mathKind == MOK_MOD_REPEATSTEP) {
+                comment = auto_printf(256,"%s %s %s%s %s %s %s%+d",
+                    byteOpKindNames[ir->kind],sizetext,basetext,ir->attr.memop.popIndex ? "+(POP index)":"",shortForm?"(short)":"",
+                    mathOpKindNames[ir->mathKind],ir->attr.memop.repeatPopStep?"WITH_STEP ":"",jumpOffset);
+            } else if (ir->kind == BOK_MEM_MODIFY) {
                 comment = auto_printf(256,"%s %s %s%s %s %s %s%s%s",
                     byteOpKindNames[ir->kind],sizetext,basetext,ir->attr.memop.popIndex ? "+(POP index)":"",shortForm?"(short)":"",
                     mathOpKindNames[ir->mathKind],sizedModifyOp?modsizetext:"",ir->attr.memop.modifyReverseMath?"(REVERSE)":"",ir->attr.memop.pushModifyResult?"(PUSH RESULT)":"");
