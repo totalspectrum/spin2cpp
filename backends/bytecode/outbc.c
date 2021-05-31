@@ -1789,15 +1789,25 @@ void OutputByteCode(const char *fname, Module *P) {
 
     printf("Program size:  %6d bytes\nVariable size: %6d bytes\nStack/Free:    %6d TODO\n",programSize,variableSize,0);
 
+    Function *mainFunc = GetMainFunction(P);
+    if (!mainFunc) {
+        ERROR(NULL,"No main function found!");
+        return;
+    } else if (!mainFunc->bedata) {
+        ERROR(NULL,"Main function uninitialized!");
+        return;
+    } else if (FunData(mainFunc)->compiledAddress < 0) {
+        ERROR(NULL,"Main function uncompiled!");
+        return;
+    }
 
     // Fixup header
     switch(gl_interp_kind) {
     case INTERP_KIND_P1ROM:
         // TODO fixup everything
-        BOB_ReplaceWord(headerspans.pcurr,FunData(ModData(P)->pubs[0])->compiledAddress,NULL);
+        BOB_ReplaceWord(headerspans.pcurr,FunData(mainFunc)->compiledAddress,NULL);
         BOB_ReplaceWord(headerspans.vbase,programSize,NULL);
         BOB_ReplaceWord(headerspans.dbase,stackBase,NULL);
-        Function *mainFunc = ModData(P)->pubs[0];
         BOB_ReplaceWord(headerspans.dcurr,stackBase+FunData(mainFunc)->localSize+mainFunc->numparams*4+4,NULL);
         break;
     default:
