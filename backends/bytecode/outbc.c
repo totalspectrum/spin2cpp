@@ -1056,8 +1056,8 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 case INTERP_KIND_P1ROM: {
                     bool isConst = IsConstExpr(node->right);
                     int32_t constVal = isConst ? EvalConstExpr(node->right) : 0;
-                    if (isConst && constVal == 0)  BCCompileMemOpEx(irbuf,node->left,context,MEMOP_MODIFY,MOK_MOD_POSTCLEAR,false,!asStatement);
-                    if (isConst && constVal == -1) BCCompileMemOpEx(irbuf,node->left,context,MEMOP_MODIFY,MOK_MOD_POSTSET,false,!asStatement);
+                    if (isConst && constVal == 0) BCCompileMemOpEx(irbuf,node->left,context,MEMOP_MODIFY,MOK_MOD_POSTCLEAR,false,!asStatement);
+                    else if (isConst && constVal == -1) BCCompileMemOpEx(irbuf,node->left,context,MEMOP_MODIFY,MOK_MOD_POSTSET,false,!asStatement);
                     else {
                         // Read old value, eval new value, write back. Leaves old value on stack.
                         if (!asStatement) BCCompileMemOp(irbuf,node->left,context,MEMOP_READ);
