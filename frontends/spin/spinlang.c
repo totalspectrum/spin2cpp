@@ -834,7 +834,11 @@ doSpinTransform(AST **astptr, int level, AST *parent)
             case K_BOOL_NOT:
             case K_DECODE:
             case K_ENCODE:
-                if (ExprHasSideEffects(ast->right)) {
+                if (gl_output == OUTPUT_BYTECODE) {
+                    lhsast = AstAssign(ast->right, NULL);
+                    lhsast->d.ival = ast->d.ival;
+                    *astptr = ast = lhsast;
+                } else if (ExprHasSideEffects(ast->right)) {
                     AST *preseq = NULL;
                     AST *expr;
                     expr = ExtractSideEffects(ast->right, &preseq);

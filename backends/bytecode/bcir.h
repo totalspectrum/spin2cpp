@@ -118,10 +118,12 @@ extern const char *byteOpKindNames[];
     X(CMP_B) X(CMP_A) X(CMP_NE) X(CMP_E) X(CMP_BE) X(CMP_AE) \
     \
     /* unary ops */ \
+    X(__MATHUNARY_FIRST)\
     X(NEG) X(BITNOT) X(ABS) \
     X(BOOLNOT) \
     X(SQRT) \
-    X(ENCODE) X(DECODE) 
+    X(ENCODE) X(DECODE) \
+    X(__MATHUNARY_LAST)\
 
 // Also contains other operations applicable to BOK_MEM_MODIFY (MOD_*)
 enum MathOpKind {
@@ -135,8 +137,8 @@ static inline bool isModOperator(enum MathOpKind opk) {
     return opk > MOK___MOD_FIRST && opk < MOK___MOD_LAST;
 }
 
-static inline bool isUnaryModOperator(enum MathOpKind opk) {
-    return opk > MOK___MODUNARY_FIRST && opk < MOK___MODUNARY_LAST;
+static inline bool isUnaryOperator(enum MathOpKind opk) {
+    return (opk > MOK___MATHUNARY_FIRST && opk < MOK___MATHUNARY_LAST) || (opk > MOK___MODUNARY_FIRST && opk < MOK___MODUNARY_LAST);
 }
 
 static inline bool ModOperatorPushesTrueResult(enum MathOpKind opk) {

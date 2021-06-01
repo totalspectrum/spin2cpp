@@ -164,40 +164,55 @@ HWReg2Index(HwReg *reg) {
 // Get math op for AST operator token
 // Returns 0 if it is not a simple binary operator
 static enum MathOpKind
-Optoken2MathOpKind(int token) {
+Optoken2MathOpKind(int token,bool *unaryOut) {
+    bool unary = false;
+    enum MathOpKind mok = 0;
     switch (token) {
     default: return 0;
     
-    case '^': return MOK_BITXOR;
-    case '|': return MOK_BITOR;
-    case '&': return MOK_BITAND;
-    case '+': return MOK_ADD;
-    case '-': return MOK_SUB;
-    case '*': return MOK_MULLOW;
-    case K_HIGHMULT: return MOK_MULHIGH;
-    case '/': return MOK_DIVIDE;
-    case K_MODULUS: return MOK_REMAINDER;
-    case K_LIMITMAX: return MOK_MAX;
-    case K_LIMITMIN: return MOK_MIN;
+    case '^': mok = MOK_BITXOR; break;
+    case '|': mok = MOK_BITOR; break;
+    case '&': mok = MOK_BITAND; break;
+    case '+': mok = MOK_ADD; break;
+    case '-': mok = MOK_SUB; break;
+    case '*': mok = MOK_MULLOW; break;
+    case K_HIGHMULT: mok = MOK_MULHIGH; break;
+    case '/': mok = MOK_DIVIDE; break;
+    case K_MODULUS: mok = MOK_REMAINDER; break;
+    case K_LIMITMAX: mok = MOK_MAX; break;
+    case K_LIMITMIN: mok = MOK_MIN; break;
 
-    case '<': return MOK_CMP_B;
-    case '>': return MOK_CMP_A;
-    case K_LE: return MOK_CMP_BE;
-    case K_GE: return MOK_CMP_AE;
-    case K_EQ: return MOK_CMP_E;
-    case K_NE: return MOK_CMP_NE;
+    case '<': mok = MOK_CMP_B; break;
+    case '>': mok = MOK_CMP_A; break;
+    case K_LE: mok = MOK_CMP_BE; break;
+    case K_GE: mok = MOK_CMP_AE; break;
+    case K_EQ: mok = MOK_CMP_E; break;
+    case K_NE: mok = MOK_CMP_NE; break;
 
-    case K_SHL: return MOK_SHL;
-    case K_SHR: return MOK_SHR;
-    case K_SAR: return MOK_SAR;
-    case K_ROTL: return MOK_ROL;
-    case K_ROTR: return MOK_ROR;
+    case K_SHL: mok = MOK_SHL; break;
+    case K_SHR: mok = MOK_SHR; break;
+    case K_SAR: mok = MOK_SAR; break;
+    case K_ROTL: mok = MOK_ROL; break;
+    case K_ROTR: mok = MOK_ROR; break;
 
-    case K_REV: return MOK_REV;
+    case K_REV: mok = MOK_REV; break;
 
-    case K_LOGIC_AND: return MOK_LOGICAND;
-    case K_LOGIC_OR: return MOK_LOGICOR;
+    case K_LOGIC_AND: mok = MOK_LOGICAND; break;
+    case K_LOGIC_OR: mok = MOK_LOGICOR; break;
+
+
+    case K_BOOL_NOT: mok = MOK_BOOLNOT; unary=true; break;
+    case K_NEGATE: mok = MOK_NEG; unary = true; break;
+    case K_ABS: mok = MOK_ABS; unary = true; break;
+    case K_SQRT: mok = MOK_SQRT; unary = true; break;
+    case K_DECODE: mok = MOK_DECODE; unary = true; break;
+    case K_ENCODE: mok = MOK_ENCODE; unary = true; break;
+    case K_BIT_NOT: mok = MOK_BITNOT; unary = true; break;
+
     }
+
+    if (unaryOut) *unaryOut = unary;
+    return mok;
 }
 
 static const void StringAppend(Flexbuf *fb,AST *expr) {
@@ -637,9 +652,10 @@ BCCompileMemOp(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind kin
 }
 
 static void
-BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpression,enum MathOpKind modifyMathKind, bool modifyReverseMath) {
+BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpression,enum MathOpKind modifyMathKind) {
     ASSERT_AST_KIND(node,AST_ASSIGN,;);
     AST *left = node->left, *right = node->right;
+    bool modifyReverseMath = false;
 
     // This only happens with assignments where the lhs has side effects
     if (node->d.ival != K_ASSIGN) {
@@ -647,8 +663,7 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
         bool isUnary = false;
         enum MathOpKind mok = 0;
         switch (node->d.ival) {
-        // TODO handle unary ops
-        default: mok = Optoken2MathOpKind(node->d.ival); break;
+        default: mok = Optoken2MathOpKind(node->d.ival,&isUnary); break;
         }
 
         if (!mok) ERROR(node,"direct operator %03X in AST_ASSIGN is unhandled",node->d.ival);
@@ -661,15 +676,19 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
         enum MathOpKind mok = 0;
         switch (right->d.ival) {
         // TODO handle unary ops
-        default: mok = Optoken2MathOpKind(right->d.ival); break;
+        default: mok = Optoken2MathOpKind(right->d.ival,&isUnary); break;
         }
         if (mok == 0) goto nocontract; // Can't handle this operator
 
         AST *operand;
-        if (AstMatch(left,right->left)) { // "a := a +1"
+        
+        if (isUnary && AstMatch(left,right->right)) {
+            operand = NULL;
+            modifyReverseMath = false;
+        } else if (!isUnary && AstMatch(left,right->left)) { // "a := a +1"
             operand = right->right;
             modifyReverseMath = false;
-        } else if (AstMatch(left,right->right)) { // "a := 1 + a"
+        } else if (!isUnary && AstMatch(left,right->right)) { // "a := 1 + a"
             operand = right->left;
             modifyReverseMath = true;
         } else goto nocontract;
@@ -684,7 +703,7 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
 
     if (modifyMathKind == 0 && asExpression) modifyMathKind = MOK_MOD_WRITE;
 
-    bool isUnaryModify = isUnaryModOperator(modifyMathKind);
+    bool isUnaryModify = isUnaryOperator(modifyMathKind);
 
     if (!!isUnaryModify == !!right) {
         ERROR(node,"Unary modify-assign with right side OR non-unary without right side???");
@@ -1083,7 +1102,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 BCCompileCoginit(irbuf,node,context,true);
             } break;
             case AST_ASSIGN: {
-                BCCompileAssignment(irbuf,node,context,!asStatement,0,0);
+                BCCompileAssignment(irbuf,node,context,!asStatement,0);
                 popResults = 0;
             } break;
             case AST_SEQUENCE: {
@@ -1122,14 +1141,6 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                     }
                 } break;
 
-                case K_BOOL_NOT: mok = MOK_BOOLNOT; unary=true; break;
-                case K_NEGATE: mok = MOK_NEG; unary = true; break;
-                case K_ABS: mok = MOK_ABS; unary = true; break;
-                case K_SQRT: mok = MOK_SQRT; unary = true; break;
-                case K_DECODE: mok = MOK_DECODE; unary = true; break;
-                case K_ENCODE: mok = MOK_ENCODE; unary = true; break;
-                case K_BIT_NOT: mok = MOK_BITNOT; unary = true; break;
-
                 case K_BOOL_AND:
                 case K_BOOL_OR: {
                     bool is_and = node->d.ival == K_BOOL_AND;
@@ -1155,7 +1166,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 case '?':
                     goto modifyOp;
                 default:
-                    mok = Optoken2MathOpKind(node->d.ival);    
+                    mok = Optoken2MathOpKind(node->d.ival,&unary);    
                     if (!mok) {
                         ERROR(node,"Unhandled operator 0x%03X",node->d.ival);
                         return;
@@ -1378,7 +1389,7 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
 
     switch(node->kind) {
     case AST_ASSIGN:
-        BCCompileAssignment(irbuf,node,context,false,0,0);
+        BCCompileAssignment(irbuf,node,context,false,0);
         break;
     case AST_WHILE: {
         printASTInfo(node);
