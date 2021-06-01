@@ -681,9 +681,9 @@ static const WORD colorWindows[] = {
 #else 
 static const char *colorANSI[] = {
     "\033[0m", // PRINT_NORMAL
-    "\033[0;36m", // PRINT_NOTE
-    "\033[0;33m", // PRINT_WARNING
-    "\033[0;31m", // PRINT_ERROR 
+    "\033[0;1;36m", // PRINT_NOTE
+    "\033[0;1;33m", // PRINT_WARNING
+    "\033[0;1;31m", // PRINT_ERROR 
     "\033[0;1m", // PRINT_ERROR_LOCATION
 };
 #endif
