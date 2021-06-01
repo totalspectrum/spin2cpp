@@ -3,6 +3,8 @@ Version 5.5.1
 - Fixed evaluation of @ inside CONSTANT
 - Fixed assembly of PTRA++[0] and PTRA++[16]
 - Fixed some spurious warnings about uninitialized variables
+- Fixed an optimization error for BYTE[] and WORD[]
+- Fixed incorrect unary assignment operator behavior in Spin
 - Improved COG memory usage
 - Merged colorized error message changes from Wuerfel21.
 

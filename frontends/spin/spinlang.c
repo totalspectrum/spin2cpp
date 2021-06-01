@@ -834,8 +834,17 @@ doSpinTransform(AST **astptr, int level, AST *parent)
             case K_BOOL_NOT:
             case K_DECODE:
             case K_ENCODE:
-                lhsast = DupAST(ast->right);
-                *astptr = ast = AstAssign(lhsast, ast);
+                if (ExprHasSideEffects(ast->right)) {
+                    AST *preseq = NULL;
+                    AST *expr;
+                    expr = ExtractSideEffects(ast->right, &preseq);
+                    lhsast = DupAST(expr);
+                    preseq = NewAST(AST_SEQUENCE, preseq, AstAssign(lhsast, expr));
+                    *astptr = ast = preseq;
+                } else {
+                    lhsast = DupAST(ast->right);
+                    *astptr = ast = AstAssign(lhsast, ast);
+                }
                 doSpinTransform(astptr, level, parent);
                 break;
             }
