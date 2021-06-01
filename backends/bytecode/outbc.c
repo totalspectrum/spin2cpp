@@ -374,6 +374,8 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
     HwReg *hwreg;
     AST *baseExpr = NULL;
     AST *indexExpr = NULL;
+    AST *bitExpr1 = NULL;
+    AST *bitExpr2 = NULL;
 
     AST *ident;
     if (node->kind == AST_ARRAYREF) {
@@ -407,6 +409,18 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         hwreg = (HwReg *)ident->d.ptr;
         memOp.data.int32 = HWReg2Index(hwreg);
         memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
+        goto after_typeinfer;
+    } else if (ident->kind == AST_RANGEREF) {
+        ASSERT_AST_KIND(ident->left,AST_HWREG,return;);
+        ASSERT_AST_KIND(ident->right,AST_RANGE,return;);
+        hwreg = (HwReg *)ident->left->d.ptr;
+        memOp.data.int32 = HWReg2Index(hwreg);
+        memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
+
+        bitExpr1 = ident->right->left;
+        bitExpr2 = ident->right->right;
+
+        targetKind = bitExpr2 ? MOT_REGBITRANGE : MOT_REGBIT;
         goto after_typeinfer;
     }
 
@@ -524,6 +538,8 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
     switch(targetKind) {
     case MOT_MEM: {
         if (!!baseExpr != !!(memOp.attr.memop.base == MEMOP_BASE_POP)) ERROR(node,"Internal Error: baseExpr condition mismatch");
+        if (bitExpr1) ERROR(node,"Bit1 expression on memory op!");
+        if (bitExpr2) ERROR(node,"Bit2 expression on memory op!");
         if (baseExpr) BCCompileExpression(irbuf,baseExpr,context,false);
 
         if (indexExpr) {
@@ -555,11 +571,49 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
     case MOT_REG: {
         if (baseExpr) ERROR(node,"Base expression on plain register op!");
         if (indexExpr) ERROR(node,"Index expression on plain register op!");
+        if (bitExpr1) ERROR(node,"Bit1 expression on plain register op!");
+        if (bitExpr2) ERROR(node,"Bit2 expression on plain register op!");
         if (memOp.attr.memop.memSize != MEMOP_SIZE_LONG) ERROR(node,"Non-long size on plain register op!");
         switch (kind) {
         case MEMOP_READ: memOp.kind = BOK_REG_READ; break;
         case MEMOP_WRITE: memOp.kind = BOK_REG_WRITE; break;
         case MEMOP_MODIFY: memOp.kind = BOK_REG_MODIFY; break;
+        case MEMOP_ADDRESS: ERROR(node,"Trying to get address of register"); break;
+        default: ERROR(node,"Unknown memop kind %d",kind); break;
+        }
+    } break;
+    case MOT_REGBIT: {
+        if (baseExpr) ERROR(node,"Base expression on register bit op!");
+        if (indexExpr) ERROR(node,"Index expression on register bit op!");
+        if (bitExpr2) ERROR(node,"Bit2 expression on register bit op!");
+        if (memOp.attr.memop.memSize != MEMOP_SIZE_LONG) ERROR(node,"Non-long size on register bit op!");
+
+        memOp.attr.memop.modSize = MEMOP_SIZE_BIT; // I guess?
+
+        BCCompileExpression(irbuf,bitExpr1,context,false);
+
+        switch (kind) {
+        case MEMOP_READ: memOp.kind = BOK_REGBIT_READ; break;
+        case MEMOP_WRITE: memOp.kind = BOK_REGBIT_WRITE; break;
+        case MEMOP_MODIFY: memOp.kind = BOK_REGBIT_MODIFY; break;
+        case MEMOP_ADDRESS: ERROR(node,"Trying to get address of register"); break;
+        default: ERROR(node,"Unknown memop kind %d",kind); break;
+        }
+    } break;
+    case MOT_REGBITRANGE: {
+        if (baseExpr) ERROR(node,"Base expression on register range op!");
+        if (indexExpr) ERROR(node,"Index expression on register range op!");
+        if (memOp.attr.memop.memSize != MEMOP_SIZE_LONG) ERROR(node,"Non-long size on register range op!");
+        
+        memOp.attr.memop.modSize = MEMOP_SIZE_BIT; // I guess?
+
+        BCCompileExpression(irbuf,bitExpr1,context,false);
+        BCCompileExpression(irbuf,bitExpr2,context,false);
+
+        switch (kind) {
+        case MEMOP_READ: memOp.kind = BOK_REGBITRANGE_READ; break;
+        case MEMOP_WRITE: memOp.kind = BOK_REGBITRANGE_WRITE; break;
+        case MEMOP_MODIFY: memOp.kind = BOK_REGBITRANGE_MODIFY; break;
         case MEMOP_ADDRESS: ERROR(node,"Trying to get address of register"); break;
         default: ERROR(node,"Unknown memop kind %d",kind); break;
         }
@@ -641,6 +695,7 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
     AST *memopNode = NULL;
 
     switch(left->kind) {
+    case AST_RANGEREF:
     case AST_HWREG: {
         memopNode = left;
     } break;
@@ -1169,6 +1224,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 ByteOpIR and_op = {.kind = BOK_MATHOP,.mathKind = MOK_LOGICAND};
                 BIRB_PushCopy(irbuf,&and_op);
             } break;
+            case AST_RANGEREF:
             case AST_HWREG: {
                 BCCompileMemOp(irbuf,node,context,MEMOP_READ);
             } break;

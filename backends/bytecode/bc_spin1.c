@@ -261,10 +261,16 @@ void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsLeft) {
     // Two byte ops
     case BOK_REG_READ:
     case BOK_REG_WRITE:
+    case BOK_REGBIT_READ:
+    case BOK_REGBIT_WRITE:
+    case BOK_REGBITRANGE_READ:
+    case BOK_REGBITRANGE_WRITE:
     case BOK_CALL_SELF:
         *min = *max = 2; break;
     // Three byte ops
     case BOK_REG_MODIFY:
+    case BOK_REGBIT_MODIFY:
+    case BOK_REGBITRANGE_MODIFY:
     case BOK_CALL_OTHER:
     case BOK_CALL_OTHER_IDX:
         *min = *max = 3; break;
@@ -367,25 +373,68 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
         buf[pos++] = 0xE0+mathID;
         comment = auto_printf(28,"MATHOP: %s",mathOpKindNames[ir->mathKind]);
     } break;
-    case BOK_REG_READ: {
-        int reg = ir->data.int32;
-        buf[pos++] = 0b00111111; // register op prefix
-        buf[pos++] = 0x80+reg; // top bit has to be set for internal purposes
-        comment = auto_printf(20,"REG_READ %03X",reg+0x1E0);
-    } break;
-    case BOK_REG_WRITE: {
-        int reg = ir->data.int32;
-        buf[pos++] = 0b00111111; // register op prefix
-        buf[pos++] = 0xA0+reg; // top bit has to be set for internal purposes
-        comment = auto_printf(20,"REG_WRITE %03X",reg+0x1E0);
-    } break;
+    case BOK_REGBIT_READ:
+    case BOK_REGBIT_WRITE:
+    case BOK_REGBIT_MODIFY:
+    case BOK_REGBITRANGE_READ:
+    case BOK_REGBITRANGE_WRITE:
+    case BOK_REGBITRANGE_MODIFY:
+    case BOK_REG_READ:
+    case BOK_REG_WRITE:
     case BOK_REG_MODIFY: {
         int reg = ir->data.int32;
-        buf[pos++] = 0b00111111; // register op prefix
-        buf[pos++] = 0xC0+reg; // top bit has to be set for internal purposes
-        buf[pos++] = GetModifyByte_Spin1(ir,NULL);
-        comment = auto_printf(80,"REG_MODIFY %03X %s %s%s",
-            reg+0x1E0,mathOpKindNames[ir->mathKind],ir->attr.memop.modifyReverseMath?"(REVERSE)":"",ir->attr.memop.pushModifyResult?"(PUSH RESULT)":"");
+        // GCC is very smart
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wswitch"
+        #pragma GCC diagnostic ignored "-Wswitch-enum"
+
+        switch (ir->kind) {
+        case BOK_REGBIT_READ:
+        case BOK_REGBIT_WRITE:
+        case BOK_REGBIT_MODIFY:
+            buf[pos++] = 0b00111101; // register bit op prefix
+            break;
+        case BOK_REGBITRANGE_READ: 
+        case BOK_REGBITRANGE_WRITE:
+        case BOK_REGBITRANGE_MODIFY: 
+            buf[pos++] = 0b00111110; // register range op prefix
+            break;
+        case BOK_REG_READ:
+        case BOK_REG_WRITE:
+        case BOK_REG_MODIFY:
+            buf[pos++] = 0b00111111; // register op prefix
+            break;
+        }
+
+        uint8_t regop = (reg&0x1F)+0x80; // top bit has to be set for internal purposes
+        bool isModify = false;
+        switch (ir->kind) {
+        case BOK_REGBITRANGE_READ: 
+        case BOK_REGBIT_READ:
+        case BOK_REG_READ:
+            regop |= 0x00;
+            break;
+        case BOK_REGBITRANGE_WRITE:
+        case BOK_REGBIT_WRITE:
+        case BOK_REG_WRITE:
+            regop |= 0x20;
+            break;
+        case BOK_REGBITRANGE_MODIFY: 
+        case BOK_REGBIT_MODIFY:
+        case BOK_REG_MODIFY:
+            regop |= 0x40;
+            isModify = true;
+            break;
+        }
+        buf[pos++] = regop;
+        if (isModify) {
+            buf[pos++] = GetModifyByte_Spin1(ir,NULL);
+            comment = auto_printf(128,"%s %03X %s %s%s",byteOpKindNames[ir->kind],reg+0x1E0,
+                mathOpKindNames[ir->mathKind],ir->attr.memop.modifyReverseMath?"(REVERSE)":"",ir->attr.memop.pushModifyResult?"(PUSH RESULT)":"");
+        } else {
+            comment = auto_printf(40,"%s %03X",byteOpKindNames[ir->kind],reg+0x1E0);
+        }
+        #pragma GCC diagnostic pop
     } break;
     case BOK_MEM_READ:
     case BOK_MEM_WRITE:

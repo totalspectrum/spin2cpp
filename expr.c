@@ -665,6 +665,14 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         AstReportDone(&saveinfo);
         return assign;
     }
+
+    // Bytecode can do it natively
+    if (gl_output == OUTPUT_BYTECODE && dst->left->kind == AST_HWREG) {
+        AST *assign_again = AstAssign(dst,src);
+        AstReportDone(&saveinfo);
+        return assign_again;
+    }
+
     /* special case logical operators */
 
     /* doing a NOT on the whole thing */
@@ -888,6 +896,12 @@ TransformRangeUse(AST *src)
                       NewAST(AST_THENELSE, rega, regb));
         AstReportDone(&saveinfo);
         return cond;
+    }
+
+    // Bytecode can do it natively
+    if (gl_output == OUTPUT_BYTECODE && src->left->kind == AST_HWREG) {
+        AstReportDone(&saveinfo);
+        return src;
     }
 
     /* now handle the ordinary case */
