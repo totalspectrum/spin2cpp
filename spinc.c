@@ -1172,5 +1172,10 @@ GetMainFunction(Module *P)
             break;
         }
     }
+    if (!pf && P->functions) {
+        pf = P->functions;
+        WARNING(NULL, "No PUB function found, using first PRI function `%s' instead", pf->name);
+        pf->is_public = true;
+    }
     return pf;
 }
