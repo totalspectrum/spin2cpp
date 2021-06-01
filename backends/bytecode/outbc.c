@@ -79,8 +79,8 @@ static int BCGetOBJOffset(Module *P,AST *ast) {
         ERROR(ast,"Can't find symbol for an OBJ");
         return -1;
     }
-    printf("In BCGetOBJOffset: ");
-    printf("got symbol with name %s, kind %d, offset %d\n",sym->our_name,sym->kind,sym->offset);
+    //printf("In BCGetOBJOffset: ");
+    //printf("got symbol with name %s, kind %d, offset %d\n",sym->our_name,sym->kind,sym->offset);
     return sym->offset;
 }
 
@@ -375,7 +375,6 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
     AST *baseExpr = NULL;
     AST *indexExpr = NULL;
 
-    printASTInfo(node);
     AST *ident;
     if (node->kind == AST_ARRAYREF) {
         ident = node->left;
@@ -415,24 +414,20 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         ERROR(ident,"Can't get symbol");
         return;
     } else {
-    printf("got symbol with name %s and kind %d\n",sym->our_name,sym->kind);
+        //printf("got symbol with name %s and kind %d\n",sym->our_name,sym->kind);
         type = ExprType(ident);
         switch (sym->kind) {
         case SYM_LABEL: {
-            printf("Got SYM_LABEL (DAT symbol)... ");
             memOp.attr.memop.base = MEMOP_BASE_PBASE;
             targetKind = MOT_MEM;
 
             Label *lab = sym->val;
             uint32_t labelval = lab->hubval;
-            printf("Value inside is %d... ",labelval);
             // Add header offset
             labelval += BCgetDAToffset(current,false,node,true);
-            printf("After header offset: %d\n",labelval);
             memOp.data.int32 = labelval;
         } break;
         case SYM_VARIABLE: {
-            printf("Got SYM_VARIABLE (VAR symbol)... ");
             if (!strcmp(sym->our_name,"__clkfreq_var") || !strcmp(sym->our_name,"__clkmode_var")) {
                 // FIXME figure out how to properly differentiate these
                 printf("Got special symbol %s with offset %d\n",sym->our_name,sym->offset);
@@ -443,30 +438,23 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
             } else {
                 memOp.attr.memop.base = MEMOP_BASE_VBASE;
                 targetKind = MOT_MEM;
-                printf("sym->offset is %d\n",sym->offset);
                 memOp.data.int32 = sym->offset;
             }
 
         } break;
         case SYM_LOCALVAR: {
-            printf("Got SYM_LOCALVAR... ");
             memOp.attr.memop.base = MEMOP_BASE_DBASE;
             targetKind = MOT_MEM;
-            printf("sym->offset is %d\n",sym->offset);
             memOp.data.int32 = sym->offset + BCLocalBase();
         } break;
         case SYM_PARAMETER: {
-            printf("Got SYM_PARAMETER... ");
             memOp.attr.memop.base = MEMOP_BASE_DBASE;
             targetKind = MOT_MEM;
-            printf("sym->offset is %d\n",sym->offset);
             memOp.data.int32 = sym->offset + BCParameterBase();
         } break;
         case SYM_TEMPVAR: {
-            printf("Got SYM_TEMPVAR??? ");
             memOp.attr.memop.base = MEMOP_BASE_DBASE;
             targetKind = MOT_MEM;
-            printf("sym->offset is %d\n",sym->offset);
             memOp.data.int32 = sym->offset + BCLocalBase();
         } break;
         case SYM_RESERVED: {
@@ -478,10 +466,8 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         }
         do_result:
         case SYM_RESULT: {
-            printf("Got SYM_RESULT... ");
             memOp.attr.memop.base = MEMOP_BASE_DBASE;
             targetKind = MOT_MEM;
-            printf("sym->offset is %d\n",sym->offset);
             memOp.data.int32 = sym->offset + BCResultsBase();
         } break;
         default:
@@ -492,7 +478,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
     nosymbol_memref:
     
     if (typeoverride) type = typeoverride;
-    printf("Got type ");printASTInfo(type);
+
     if (type && type->kind == AST_ARRAYTYPE) type = type->left; // We don't care if this is an array, we just want the size
 
          if (type == ast_type_byte) memOp.attr.memop.memSize = MEMOP_SIZE_BYTE;
@@ -573,7 +559,6 @@ BCCompileMemOp(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind kin
 static void
 BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpression,enum MathOpKind modifyMathKind, bool modifyReverseMath) {
     AST *left = node->left, *right = node->right;
-    printf("Got an assign! left kind: %d, right kind %d\n",left->kind,right->kind);
 
     AST *memopNode = NULL;
 
@@ -616,21 +601,16 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
 
     switch(left->kind) {
     case AST_HWREG: {
-        HwReg *hw = (HwReg *)left->d.ptr;
-        printf("Got HWREG assign, %s = %d\n",hw->name,HWReg2Index(hw));
         memopNode = left;
     } break;
     case AST_ARRAYREF: {
-        printf("Got ARRAYREF assign\n");
         memopNode = left;
     } break;
     case AST_RESULT: {
-        printf("Got RESULT assign\n");
         memopNode = left;
     } break;
     case AST_SYMBOL:
     case AST_IDENTIFIER: {
-        printf("Got IDENTIFIER assign\n");
         Symbol *sym = LookupAstSymbol(left,NULL);
         if (!sym) {
             ERROR(node,"Internal Error: no symbol in identifier assign");
@@ -750,7 +730,6 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
             ERROR(node->left,"Internal error: Invalid call receiver");
             return;
         }
-        printf("Got object with name %s\n",objsym->our_name);
 
         callobjid = getObjID(current,objsym->our_name,&objtype);
         if (callobjid<0) {
@@ -976,7 +955,6 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
     if (IsConstExpr(node)) {
         if (!asStatement) {
             int32_t val = EvalConstExpr(node);
-            printf("Got const expression with value %d\n",val);
             BCCompileInteger(irbuf,val);
         }
     } else {
@@ -996,12 +974,10 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 BCCompileCoginit(irbuf,node,context,true);
             } break;
             case AST_ASSIGN: {
-                printf("Got assignment in expression \n");
                 BCCompileAssignment(irbuf,node,context,!asStatement,0,0);
                 popResults = 0;
             } break;
             case AST_SEQUENCE: {
-                printf("Got sequence in expression ");printASTInfo(node);
                 NOTE(node,"got AST_SEQUENCE, might have been pessimized");
                 BCCompileExpression(irbuf,node->left,context,true);
                 if (node->right) BCCompileExpression(irbuf,node->right,context,asStatement);
@@ -1021,8 +997,6 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 BIRB_Push(irbuf,endlbl);
             } break;
             case AST_OPERATOR: {
-                printf("Got operator in expression: 0x%03X\n",node->d.ival);
-                printASTInfo(node);
                 enum MathOpKind mok;
                 bool unary = false;
                 AST *left = node->left,*right = node->right;
@@ -1078,8 +1052,6 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                         return;
                     }
                 }
-
-                printf("Operator resolved to %d = %s\n",mok,mathOpKindNames[mok]);
 
                 if (!unary) BCCompileExpression(irbuf,left,context,false);
                 BCCompileExpression(irbuf,right,context,false);
@@ -1144,18 +1116,15 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 BIRB_PushCopy(irbuf,&and_op);
             } break;
             case AST_HWREG: {
-                HwReg *hw = node->d.ptr;
-                printf("Got hwreg in expression: %s\n",hw->name);
                 BCCompileMemOp(irbuf,node,context,MEMOP_READ);
             } break;
             case AST_ABSADDROF: // Same thing in Spin code, I guess.
             case AST_ADDROF: {
-                printf("Got addr-of! ");
-                printASTInfo(node); // Right always empty, left always ARRAYREF?
+                // Right always empty?
+                if (node->right) WARNING(node->right,"right side of AST_ADDROF not empty???");
                 BCCompileMemOp(irbuf,node->left,context,MEMOP_ADDRESS);
             } break;
             case AST_IDENTIFIER: {
-                printf("Got identifier! ");
                 Symbol *sym = LookupAstSymbol(node,NULL);
                 if (!sym) {
                     ERROR(node,"Internal Error: no symbol in identifier expression");
@@ -1184,17 +1153,12 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
 
             } break;
             case AST_RESULT: {
-                printf("Got RESULT!\n");
                 BCCompileMemOp(irbuf,node,context,MEMOP_READ);
             } break;
             case AST_ARRAYREF: {
-                printf("Got array read! ");
-                printASTInfo(node);
                 BCCompileMemOp(irbuf,node,context,MEMOP_READ);
             } break;
             case AST_STRINGPTR: {
-                printf("Got STRINGPTR! ");
-                printASTInfo(node);
                 ByteOpIR *stringLabel = BCNewOrphanLabel(nullcontext);
                 ByteOpIR pushOp = {.kind = BOK_FUNDATA_PUSHADDRESS,.jumpTo = stringLabel,.attr.pushaddress.addPbase = true};
                 ByteOpIR stringData = BCBuildString(node->left);
@@ -1297,7 +1261,6 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         BCCompileAssignment(irbuf,node,context,false,0,0);
         break;
     case AST_WHILE: {
-        printf("Got While loop.. ");
         printASTInfo(node);
 
         ByteOpIR *toplbl = BCPushLabel(irbuf,context);
@@ -1317,7 +1280,6 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         BIRB_Push(irbuf,bottomlbl);
     } break;
     case AST_DOWHILE: {
-        printf("Got DoWhile loop.. ");
         printASTInfo(node);
 
         ByteOpIR *toplbl = BCPushLabel(irbuf,context);
@@ -1633,7 +1595,6 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         }
     } break;
     case AST_IDENTIFIER: {
-        printf("Got identifier in Statement??\n");
         Symbol *sym = LookupAstSymbol(node,NULL);
         if (!sym) ERROR(node,"Internal Error: Can't get symbol");
         switch (sym->kind) {
@@ -1658,7 +1619,6 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         BCCompileExpression(irbuf,node,context,true);
     } break;
     case AST_OPERATOR: {
-        printf("got operator %03X in statement!\n",node->d.ival);
         BCCompileExpression(irbuf,node,context,true);
     } break;
     case AST_THROW:
