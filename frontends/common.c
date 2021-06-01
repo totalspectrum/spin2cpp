@@ -1780,6 +1780,12 @@ DeclareOneMemberVar(Module *P, AST *ident, AST *type, int is_private)
         newdecl->d.ival = is_private;
         r = NewAST(AST_LISTHOLDER, newdecl, NULL);
         P->pendingvarblock = AddToList(P->pendingvarblock, r);
+        if (IsSpinLang(P->mainLanguage) && IsClassType(type)) {
+            // add a symbol for this because constants like x.foo can be accessed
+            // in declarations of other variables
+            const char *name = GetIdentifierName(ident);
+            AddSymbol(&P->objsyms, name, SYM_VARIABLE, (void *)type, NULL);
+        }
     }
     return r;
 }
@@ -1854,6 +1860,15 @@ Symbol *AddSymbolPlaced(SymbolTable *table, const char *name, int type, void *va
     Symbol *sym = AddSymbol(table, name, type, val, user_name);
     if (sym) {
         sym->def = (void *)def;
+    } else if (IsSpinLang(current->mainLanguage) && type == SYM_VARIABLE && IsClassType((AST *)val)) {
+        // objects may have already been defined, don't object if they are
+        sym = LookupSymbolInTable(table, name);
+        if (sym && sym->kind == SYM_VARIABLE && sym->val == val) {
+            //WARNING(def, "duplicate def");
+            sym->def = def;
+        } else {
+            sym = NULL;
+        }
     }
     return sym;
 }
