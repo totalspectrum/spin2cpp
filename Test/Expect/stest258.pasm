@@ -28,10 +28,6 @@ LR__0002
 _allbits_ret
 	ret
 
-__lockreg
-	long	0
-ptr___lockreg_
-	long	@@@__lockreg
 result1
 	long	0
 result2

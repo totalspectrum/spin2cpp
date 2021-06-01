@@ -26,8 +26,6 @@ LR__0001
 _fillInput_ret
 	ret
 
-__lockreg
-	long	0
 imm_1023_
 	long	1023
 imm_1024_
@@ -36,8 +34,6 @@ imm_4096_
 	long	4096
 objptr
 	long	@@@objmem
-ptr___lockreg_
-	long	@@@__lockreg
 COG_BSS_START
 	fit	496
 objmem

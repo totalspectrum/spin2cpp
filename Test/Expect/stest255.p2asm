@@ -24,14 +24,10 @@ _checkit
 _checkit_ret
 	ret
 
-__lockreg
-	long	0
 __recvreg
 	long	1024
 objptr
 	long	@objmem
-ptr___lockreg_
-	long	@__lockreg
 result1
 	long	0
 COG_BSS_START

@@ -1136,13 +1136,18 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func, AST *ast)
                       sendreg = GetOneGlobal(REG_REG, "__sendreg", P2_HUB_BASE);
                   }
                   return sendreg;
-              }
-              if (off == -2) {
+              } else if (off == -2) {
                   // this is a special internal COG variable
                   if (!recvreg) {
                       recvreg = GetOneGlobal(REG_REG, "__recvreg", P2_HUB_BASE);
                   }
                   return recvreg;
+              } else if (off == -3) {
+                  // this is a special internal COG variable
+                  if (!lockreg) {
+                      lockreg = GetOneGlobal(REG_REG, "__lockreg", 0);
+                  }
+                  return lockreg;
               }
               addr = NewImmediate(off);
               ref = NewOperand(HUBMEM_REF, (char *)addr, 0);
@@ -6072,8 +6077,10 @@ EmitMain_P1(IRList *irl, Module *P)
     ir->flags |= FLAG_WZ;
 
     // set up global lock register
-    EmitOp1(irl, OPC_LOCKNEW, lockreg);
-    EmitOp2(irl, OPC_WRLONG, lockreg, lockreg_addr_ptr);
+    if (gl_features_used & FEATURE_LOCKREG_USED) {
+        EmitOp1(irl, OPC_LOCKNEW, lockreg);
+        EmitOp2(irl, OPC_WRLONG, lockreg, lockreg_addr_ptr);
+    }
     
     // set up to run LMM
     if (HUB_CODE) {
@@ -6204,8 +6211,10 @@ EmitMain_P2(IRList *irl, Module *P, Operand *lutstart)
     EmitLabel(irl, skip_clock_label);
 
     // set up global lock register
-    EmitOp1(irl, OPC_LOCKNEW, lockreg);
-    EmitOp2(irl, OPC_WRLONG, lockreg, lockreg_addr_ptr);
+    if (gl_features_used & FEATURE_LOCKREG_USED) {
+        EmitOp1(irl, OPC_LOCKNEW, lockreg);
+        EmitOp2(irl, OPC_WRLONG, lockreg, lockreg_addr_ptr);
+    }
     
     // force LUT code, if any, to be loaded
     if (lutstart) {
@@ -6501,10 +6510,11 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
             EmitOp1(&lutcode, OPC_ORG, NewImmediate(0x200));
             EmitLabel(&lutcode, lutstart);
         }
-        lockreg = GetOneGlobal(REG_REG, "__lockreg", 0);
-        lockreg_addr_ptr = NewOperand(IMM_HUB_LABEL, "__lockreg", 0);
-        lockreg_addr_ptr = NewImmediatePtr(NULL, lockreg_addr_ptr);
-        
+        if (gl_features_used & FEATURE_LOCKREG_USED) {
+            lockreg = GetOneGlobal(REG_REG, "__lockreg", 0);
+            lockreg_addr_ptr = NewOperand(IMM_HUB_LABEL, "__lockreg", 0);
+            lockreg_addr_ptr = NewImmediatePtr(NULL, lockreg_addr_ptr);
+        }
         if (gl_output == OUTPUT_COGSPIN) {
             EmitMain_CogSpin(&cogcode, P, maxargs, maxrets);
         } else if (outputMain) {

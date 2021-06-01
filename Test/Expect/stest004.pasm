@@ -9,12 +9,8 @@ _dummy
 _dummy_ret
 	ret
 
-__lockreg
-	long	0
 imm_1024_
 	long	1024
-ptr___lockreg_
-	long	@@@__lockreg
 result1
 	long	0
 COG_BSS_START
