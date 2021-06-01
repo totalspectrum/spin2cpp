@@ -469,9 +469,34 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
             memOp.attr.memop.base = MEMOP_BASE_DBASE;
             targetKind = MOT_MEM;
             memOp.data.int32 = sym->offset + BCResultsBase();
+        } break;   
+        case SYM_HWREG: {
+            targetKind = MOT_REG;
+            hwreg = (HwReg *)sym->val;
+            memOp.data.int32 = HWReg2Index(hwreg);
+            memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
+            goto after_typeinfer;
+        } break;
+        case SYM_BUILTIN: {
+            if (!strcmp(sym->our_name,"_cogid")) {
+                if (kind != MEMOP_READ) WARNING(node,"Writing COGID register, bad idea");
+                Symbol *cogid_sym = LookupSymbolInTable(&spinCommonReservedWords,"__interp_cogid");
+                if (!cogid_sym || cogid_sym->kind != SYM_HWREG) {
+                    ERROR(node,"Internal Error: Failed to get cogid register");
+                    return;
+                }
+                targetKind = MOT_REG;
+                hwreg = (HwReg *)cogid_sym->val;
+                memOp.data.int32 = HWReg2Index(hwreg);
+                memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
+                goto after_typeinfer;
+            } else {
+                ERROR(node,"Unhandled symbol identifier %s in memop",sym->our_name);
+                return;
+            }
         } break;
         default:
-            ERROR(ident,"Unhandled Symbol type: %d",sym->kind);
+            ERROR(ident,"Unhandled Symbol type %d in memop",sym->kind);
             return;
         }
     }
@@ -530,6 +555,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
     case MOT_REG: {
         if (baseExpr) ERROR(node,"Base expression on plain register op!");
         if (indexExpr) ERROR(node,"Index expression on plain register op!");
+        if (memOp.attr.memop.memSize != MEMOP_SIZE_LONG) ERROR(node,"Non-long size on plain register op!");
         switch (kind) {
         case MEMOP_READ: memOp.kind = BOK_REG_READ; break;
         case MEMOP_WRITE: memOp.kind = BOK_REG_WRITE; break;
@@ -648,7 +674,7 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
             }
             break;
         default:
-            ERROR(left,"Unhandled Identifier symbol kind %d",sym->kind);
+            ERROR(left,"Unhandled Identifier symbol kind %d in assignment",sym->kind);
             return;
         }
     } break;
@@ -1151,6 +1177,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 case SYM_LOCALVAR:
                 case SYM_PARAMETER:
                 case SYM_RESULT:
+                case SYM_HWREG:
                     BCCompileMemOp(irbuf,node,context,MEMOP_READ);
                     break;
                 case SYM_RESERVED:
@@ -1161,8 +1188,16 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                         ERROR(node,"Unhandled reserved word %s in expression",sym->our_name);
                     }
                     break;
+                case SYM_BUILTIN:
+                    if (!strcmp(sym->our_name,"_cogid")) {
+                        BCCompileMemOp(irbuf,node,context,MEMOP_READ);
+                    } else {
+                        ERROR(node,"Unhandled builtin identifier %s in expression",sym->our_name);
+                        return;
+                    }
+                    break;
                 default:
-                    ERROR(node,"Unhandled Identifier symbol kind %d",sym->kind);
+                    ERROR(node,"Unhandled Identifier symbol kind %d in expression",sym->kind);
                     return;
                 }
 

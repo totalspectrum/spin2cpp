@@ -3431,6 +3431,20 @@ HwReg hwreg_p1[] = {
     { NULL, 0, NULL },
 };
 
+// Spin Interpreter pseudo regs
+HwReg interpreg_p1rom[] = {
+    { "__interp_lsb",   0x1e8, "__INTERP_LSB"},
+    { "__interp_cogid", 0x1e9, "__INTERP_COGID"},
+    { "__interp_dcall", 0x1ea, "__INTERP_DCALL"},
+    { "__interp_pbase", 0x1eb, "__INTERP_PBASE"},
+    { "__interp_vbase", 0x1ec, "__INTERP_VBASE"},
+    { "__interp_dbase", 0x1ed, "__INTERP_DBASE"},
+    { "__interp_pcurr", 0x1ee, "__INTERP_PCURR"},
+    { "__interp_dcurr", 0x1ef, "__INTERP_DCURR"},
+    
+    { NULL, 0, NULL },
+};
+
 HwReg hwreg_p2[] = {
     { "ijmp3", 0x1f0, "_IJMP3" },
     { "iret3", 0x1f1, "_IRET3" },
@@ -3611,6 +3625,20 @@ InitPasm(int flags)
         instr = instr_p1;
         hwreg = hwreg_p1;
         modifiers = modifiers_p1;
+    }
+
+    if (gl_output == OUTPUT_BYTECODE) {
+        HwReg *interpreg = NULL;
+        switch (gl_interp_kind) {
+        case INTERP_KIND_P1ROM: interpreg = interpreg_p1rom; break;
+        }
+        /* add interpreter registers */
+        for (i = 0; interpreg && interpreg[i].name != NULL; i++) {
+            AddSymbol(&spinCommonReservedWords, interpreg[i].name, SYM_HWREG, (void *)&interpreg[i], NULL);
+            AddSymbol(&basicReservedWords, interpreg[i].name, SYM_HWREG, (void *)&interpreg[i], NULL);
+            AddSymbol(&cReservedWords, interpreg[i].cname, SYM_HWREG, (void *)&interpreg[i], NULL);
+            AddSymbol(&pasmWords, interpreg[i].name, SYM_HWREG, (void *)&interpreg[i], NULL);
+        }
     }
     
     pasmWords.flags |= SYMTAB_FLAG_NOCASE;
