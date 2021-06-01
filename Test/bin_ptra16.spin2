@@ -1,0 +1,7 @@
+dat
+   org 0
+   wrlut foo, ptra++[1]
+   wrlut foo, ptra++[16]
+
+foo long 0
+

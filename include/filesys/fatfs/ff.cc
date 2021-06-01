@@ -3894,7 +3894,7 @@ FRESULT f_read (
 	DWORD clst;
 	LBA_t sect;
 	FSIZE_t remain;
-	UINT rcnt, cc, csect;
+	UINT rcnt = 0, cc, csect;
 	BYTE *rbuff = (BYTE*)buff;
 
 
@@ -3994,7 +3994,7 @@ FRESULT f_write (
 	FATFS *fs;
 	DWORD clst;
 	LBA_t sect;
-	UINT wcnt, cc, csect;
+	UINT wcnt = 0, cc, csect;
 	const BYTE *wbuff = (const BYTE*)buff;
 
 

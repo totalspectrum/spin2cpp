@@ -1,5 +1,8 @@
 Version 5.5.1
 - Fixed Spin startup function (should be first PUB function, not first function)
+- Fixed evaluation of @ inside CONSTANT
+- Fixed assembly of PTRA++[0] and PTRA++[16]
+- Fixed some spurious warnings about uninitialized variables
 - Merged colorized error message changes from Wuerfel21.
 
 Version 5.5.0

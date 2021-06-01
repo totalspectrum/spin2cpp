@@ -822,7 +822,12 @@ SpecialRdOperand(AST *ast, uint32_t opimm)
     if (ast->kind == AST_OPERATOR && (ast->d.ival == K_INCREMENT
                                       || ast->d.ival == K_DECREMENT))
     {
-        if (!subval) subval = 1;
+        if (!subval) {
+            if (saw_array) {
+                ERROR(ast, "PTRx index of 0 is not valid");
+            }
+            subval = 1;
+        }
         if (ast->d.ival == K_INCREMENT) {
             if (ast->left) {
                 ast = ast->left;
@@ -897,7 +902,11 @@ SpecialRdOperand(AST *ast, uint32_t opimm)
     // and for most of them on rev B (except for plain indexing)
     if (0 != (val & 0x60) || gl_p2 == P2_REV_A) {
         if (subval < -16 || subval > 15) {
-            ERROR(ast, "ptr index out of range -32 to 31");
+            if (gl_p2 >= P2_REV_A && subval == 16) {
+                // this is actually OK, 16 gets encoded as 0
+            } else {
+                ERROR(ast, "ptr index out of range -16 to 31");
+            }
             subval = 0;
         }
         return val | (subval & 0x1f);
