@@ -70,6 +70,11 @@
     X(COGINIT_PREPARE) /* Chip calls this "run" */\
     X(COGSTOP) \
     \
+    X(LOCKNEW) \
+    X(LOCKRET) \
+    X(LOCKSET) \
+    X(LOCKCLR) \
+    \
     X(WAIT) \
     X(CLKSET) /* only relevant on P1 */
 
@@ -191,8 +196,8 @@ typedef struct bcirstruct {
         struct {
             enum BCWaitType type;
         } wait;
-        struct {
-            unsigned pushCogID:1;
+        struct { // Also used for LOCKNEW/LOCKSET/LOCKCLR
+            unsigned pushResult:1;
         } coginit;
         struct {
             unsigned addPbase:1;

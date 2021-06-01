@@ -789,7 +789,8 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
             return;
         }
     } else {
-        sym = LookupAstSymbol(node->left, NULL);
+        if (node->left) sym = LookupAstSymbol(node->left, NULL);
+        else sym = LookupAstSymbol(node, NULL);
     }
 
     ByteOpIR callOp = {0};
@@ -803,7 +804,17 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
     } else if (sym->kind == SYM_BUILTIN) {
         anchorOp.kind = 0; // Where we're going, we don't need Stack Frames
         if (rescueAbort) ERROR(node,"Can't rescue on builtin call!");
-        if (asExpression) {
+
+        if (!strcmp(sym->our_name,"_locknew")) {
+            callOp.kind = BOK_LOCKNEW;
+            callOp.attr.coginit.pushResult = asExpression;
+        } else if (!strcmp(sym->our_name,"_lockset")) {
+            callOp.kind = BOK_LOCKSET;
+            callOp.attr.coginit.pushResult = asExpression;
+        } else if (!strcmp(sym->our_name,"_lockclr")) {
+            callOp.kind = BOK_LOCKCLR;
+            callOp.attr.coginit.pushResult = asExpression;
+        } else if (asExpression) {
             if (!strcmp(sym->our_name,"__builtin_strlen")) {
                 callOp.kind = BOK_BUILTIN_STRSIZE;
             } else if (!strcmp(sym->our_name,"strcomp")) {
@@ -813,7 +824,9 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
                 return;
             }
         } else {
-            if (!strcmp(sym->our_name,"waitcnt")) {
+            if (!strcmp(sym->our_name,"_lockret")) {
+                callOp.kind = BOK_LOCKRET;
+            } else if (!strcmp(sym->our_name,"waitcnt")) {
                 callOp.kind = BOK_WAIT;
                 callOp.attr.wait.type = BCW_WAITCNT;
             } else if (!strcmp(sym->our_name,"waitpeq")) {
@@ -983,7 +996,7 @@ BCCompileCoginit(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpression
     }
 
     ByteOpIR initOp = {.kind = BOK_COGINIT};
-    initOp.attr.coginit.pushCogID = asExpression;
+    initOp.attr.coginit.pushResult = asExpression;
     BIRB_PushCopy(irbuf,&initOp);
 }
 
@@ -1192,8 +1205,9 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                     if (!strcmp(sym->our_name,"_cogid")) {
                         BCCompileMemOp(irbuf,node,context,MEMOP_READ);
                     } else {
-                        ERROR(node,"Unhandled builtin identifier %s in expression",sym->our_name);
-                        return;
+                        // Try function call
+                        BCCompileFunCall(irbuf,node,context,!asStatement,false);
+                        popResults = 0;
                     }
                     break;
                 default:
@@ -1687,7 +1701,6 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         // do nothing  
     } break;
     case AST_STMTLIST: {
-        NOTE(node,"Nested AST_STMTLIST?????");
         BCCompileStmtlist(irbuf,node,context);
     } break;
     default:

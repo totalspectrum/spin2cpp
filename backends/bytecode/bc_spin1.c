@@ -250,6 +250,10 @@ void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsLeft) {
     case BOK_COGINIT:
     case BOK_COGINIT_PREPARE:
     case BOK_COGSTOP:
+    case BOK_LOCKNEW:
+    case BOK_LOCKRET:
+    case BOK_LOCKSET:
+    case BOK_LOCKCLR:
     case BOK_CLKSET:
     case BOK_ANCHOR:
     case BOK_POP:
@@ -540,7 +544,16 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
         }
     } break;
     case BOK_COGINIT: {
-        buf[pos++] = ir->attr.coginit.pushCogID ? 0b00101000 : 0b00101100;
+        buf[pos++] = ir->attr.coginit.pushResult ? 0b00101000 : 0b00101100;
+    } break;
+    case BOK_LOCKNEW: {
+        buf[pos++] = ir->attr.coginit.pushResult ? 0b00101001 : 0b00101101;
+    } break;
+    case BOK_LOCKSET: {
+        buf[pos++] = ir->attr.coginit.pushResult ? 0b00101010 : 0b00101110;
+    } break;
+    case BOK_LOCKCLR: {
+        buf[pos++] = ir->attr.coginit.pushResult ? 0b00101011 : 0b00101111;
     } break;
     case BOK_CASE_DONE:      buf[pos++] = 0b00001100; break;
     case BOK_LOOKEND:        buf[pos++] = 0b00001111; break;
@@ -554,6 +567,7 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
     case BOK_BUILTIN_STRCOMP: buf[pos++] = 0b00010111; break;
     case BOK_CLKSET:   buf[pos++] = 0b00100000; break;
     case BOK_COGSTOP:  buf[pos++] = 0b00100001; break;
+    case BOK_LOCKRET:  buf[pos++] = 0b00100010; break;
     case BOK_ABORT_PLAIN:  buf[pos++] = 0b00110000; break;
     case BOK_ABORT_POP:    buf[pos++] = 0b00110001; break;
     case BOK_RETURN_PLAIN: buf[pos++] = 0b00110010; break;
