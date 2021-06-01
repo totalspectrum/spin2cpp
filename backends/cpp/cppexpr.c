@@ -1033,7 +1033,7 @@ PrintRangeAssign(Flexbuf *f, AST *dst, AST *src, int flags)
     int op;
     
     ERROR(dst, "Internal error: range assignment was left to backend");
-    newast = TransformRangeAssign(dst, src, 0);
+    newast = TransformRangeAssign(dst, src, 0, 0);
     /* try to pretty print if we can */
     lhs = newast->left;
     rhs = newast->right;

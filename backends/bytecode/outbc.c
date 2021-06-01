@@ -167,6 +167,7 @@ static enum MathOpKind
 Optoken2MathOpKind(int token,bool *unaryOut) {
     bool unary = false;
     enum MathOpKind mok = 0;
+    printf("In Optoken2MathOpKind, optoken %03X\n",token);
     switch (token) {
     default: return 0;
     
@@ -705,10 +706,14 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
 
     bool isUnaryModify = isUnaryOperator(modifyMathKind);
 
-    if (!!isUnaryModify == !!right) {
-        ERROR(node,"Unary modify-assign with right side OR non-unary without right side???");
+    if (isUnaryModify && right) {
+        ERROR(node,"Unary modify-assign with right side??? (math kind %s)",mathOpKindNames[modifyMathKind]);
+        return;
+    } else if (!isUnaryModify && !right) {
+        ERROR(node,"Non-unary modify-assign without right side??? (math kind %s)",mathOpKindNames[modifyMathKind]);
         return;
     }
+
     if (isUnaryModify && modifyReverseMath) ERROR(node,"Reversed unary math??");
 
     AST *memopNode = NULL;

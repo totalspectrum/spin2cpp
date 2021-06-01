@@ -823,7 +823,7 @@ doBasicTransform(AST **astptr)
         if (ast->left) {
             AstReportAs(ast, &saveinfo); // any newly created AST nodes should reflect debug info from this one
             if (ast->left->kind == AST_RANGEREF) {
-                *astptr = ast = TransformRangeAssign(ast->left, ast->right, 1);
+                *astptr = ast = TransformRangeAssign(ast->left, ast->right, ast->d.ival, 1);
             } else if (IsIdentifier(ast->left) && !strcmp(GetUserIdentifierName(ast->left), curfunc->name)) {
                 ast->left = NewAST(AST_RESULT, NULL, NULL);
             }

@@ -38,7 +38,7 @@ doCTransform(AST **astptr, unsigned cflags)
         }
 #endif        
         if (ast->left && ast->left->kind == AST_RANGEREF) {
-            *astptr = ast = TransformRangeAssign(ast->left, ast->right, 1);
+            *astptr = ast = TransformRangeAssign(ast->left, ast->right, ast->d.ival, 1);
         }
 
         break;

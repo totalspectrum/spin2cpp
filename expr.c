@@ -601,7 +601,7 @@ FixupInits(AST *result, AST *inits)
  * and make them conditional
  */
 AST *
-TransformRangeAssign(AST *dst, AST *src, int toplevel)
+TransformRangeAssign(AST *dst, AST *src, int optoken, int toplevel)
 {
     AST *nbits;
     AST *loexpr;
@@ -637,8 +637,8 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         hwreg = NewAST(AST_RANGEREF, hwreg, dst->right);
         hwreg2 = NewAST(AST_RANGEREF, hwreg2, dst->right);
         
-        assign = TransformRangeAssign(hwreg, src, toplevel);
-        assign2 = TransformRangeAssign(hwreg2, src, toplevel);
+        assign = TransformRangeAssign(hwreg, src, optoken, toplevel);
+        assign2 = TransformRangeAssign(hwreg2, src, optoken, toplevel);
         if (dst->right->right && IsConstExpr(dst->right->right)) {
             cond = AstOperator(K_LTU, dst->right->right, AstInteger(32));
         } else {
@@ -669,9 +669,12 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
     // Bytecode can do it natively
     if (gl_output == OUTPUT_BYTECODE && dst->left->kind == AST_HWREG) {
         AST *assign_again = AstAssign(dst,src);
+        assign_again->d.ival = optoken;
         AstReportDone(&saveinfo);
         return assign_again;
     }
+
+    if (optoken != K_ASSIGN) ERROR(dst,"Assign operator %03X unhandled in TransformRangeAssign",optoken);
 
     /* special case logical operators */
 

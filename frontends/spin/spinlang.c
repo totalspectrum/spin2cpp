@@ -704,7 +704,7 @@ doSpinTransform(AST **astptr, int level, AST *parent)
     }
     case AST_ASSIGN:
         if (ast->left && ast->left->kind == AST_RANGEREF) {
-            *astptr = ast = TransformRangeAssign(ast->left, ast->right, level == 1);
+            *astptr = ast = TransformRangeAssign(ast->left, ast->right, ast->d.ival, level == 1);
         }
         if (ast->left && IsIdentifier(ast->left)) {
             const char *name = GetUserIdentifierName(ast->left);

@@ -109,7 +109,7 @@ AST *ExprTypeRelative(SymbolTable *table, AST *ast, Module *P);
 // the type underlying an array or pointer
 AST *BaseType(AST *ast);
 
-AST *TransformRangeAssign(AST *dst, AST *src, int toplevel);
+AST *TransformRangeAssign(AST *dst, AST *src, int optoken, int toplevel);
 AST *TransformRangeUse(AST *src);
 AST *TransformCaseExprList(AST *var, AST *list);
 AST *CheckSimpleArrayref(AST *ast);
