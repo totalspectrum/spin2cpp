@@ -1360,6 +1360,7 @@ NormalizeFunc(AST *ast, Function *func, int setflag)
     case AST_CONSTANT:
     case AST_HWREG:
     case AST_CONSTREF:
+    case AST_SIZEOF:
         return NULL;
     case AST_LOOKUP:
     case AST_LOOKDOWN:
@@ -1381,6 +1382,19 @@ NormalizeFunc(AST *ast, Function *func, int setflag)
         rdecl = NormalizeFunc(ast->right, func, setflag);
         ldecl = NormalizeFunc(ast->left, func, setflag);
         return AddToList(ldecl, rdecl);
+    case AST_FOR:
+    case AST_FORATLEASTONCE:
+        // initialization statement
+        ldecl = NormalizeFunc(ast->left, func, setflag);
+        {
+            AST *loopcond = ast->right->left;
+            AST *update = ast->right->right->left;
+            AST *body = ast->right->right->right;
+            ldecl = AddToList(ldecl, NormalizeFunc(loopcond, func, setflag));
+            ldecl = AddToList(ldecl, NormalizeFunc(body, func, setflag));
+            ldecl = AddToList(ldecl, NormalizeFunc(update, func, setflag));
+            return ldecl;
+        }
     case AST_INLINEASM:
         /* assume declared result variables are used in
            inline assembly */
