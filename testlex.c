@@ -35,6 +35,7 @@ AST *ast_type_long64, *ast_type_unsigned_long64, *ast_type_float64;
 int gl_p2 = 0;
 int gl_have_lut = 0;
 int gl_output = 0;
+int gl_interp_kind = 0;
 int gl_gas_dat = 0;
 int gl_normalizeIdents = 1;  /* for compatibility with ident tests */
 int gl_dat_offset = 0;
