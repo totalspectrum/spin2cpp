@@ -1848,7 +1848,11 @@ BCPrepareObject(Module *P) {
             //printASTInfo(var->right->left);
             //ASSERT_AST_KIND(var->right->left,AST_IDENTIFIER,return;);
 
-            BCPrepareObject(GetClassPtr(var->left));
+            Module *objModule = GetClassPtr(var->left);
+            BCPrepareObject(objModule);
+
+            // Ignore empty objects
+            if (ModData(objModule)->pub_cnt == 0 && ModData(objModule)->pri_cnt == 0 && ModData(objModule)->obj_cnt == 0 && objModule->varsize == 0) continue;
 
             for(int i=0;i<arrsize;i++) {
                 ModData(P)->objs[obj_cnt] = var; // Just insert the same var and differentiate by objs_arr_index
