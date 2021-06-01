@@ -488,7 +488,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
     else if (type == ast_type_unsigned_long && (kind != MEMOP_MODIFY || modifyMathKind == MOK_MOD_WRITE)) memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
     else if (type == NULL) memOp.attr.memop.memSize = MEMOP_SIZE_LONG; // Assume long type... This is apparently neccessary
     else {
-        ERROR(type,"Can't figure out mem op type, is unhandled");
+        ERROR(node,"Can't figure out mem op type, is unhandled");
         printASTInfo(type);
     }
 

@@ -211,8 +211,20 @@ void BIRB_Push(BCIRBuffer *buf,ByteOpIR *ir);
 ByteOpIR *BIRB_PushCopy(BCIRBuffer *buf,ByteOpIR *ir);
 void BIRB_AppendPending(BCIRBuffer *buf);
 
+bool BCIR_SizeDetermined(ByteOpIR *ir);
+void BCIR_GetJumpOffsetBounds(ByteOpIR *jump,bool func_relative,int *minDist, int *maxDist,int recursionsLeft);
+int BCIR_GetJumpOffset(ByteOpIR *jump,bool func_relative);
+
+int pbase_offset; // distance of current function from PBASE (obj header)
+BCIRBuffer *current_birb;
+
 void BCIR_to_BOB(BCIRBuffer *irbuf,ByteOutputBuffer *bob,int pbase_funoffset);
 
 void BCIR_Init();
+
+static inline bool isPowerOf2(uint32_t x)
+{
+    return (x & (x-1)) == 0;
+}
 
 #endif
