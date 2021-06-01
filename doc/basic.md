@@ -2098,7 +2098,7 @@ file$ = ""           ' initialize read data
 do
   s$ = input$(80, h) ' read up to 80 characters at a time
   file$ = file$ + s$ ' append to the data
-until s$ = ""        ' stop at end of file
+loop until s$ = ""        ' stop at end of file
 ' now the whole file is in file$
 ```
 
