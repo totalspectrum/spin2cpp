@@ -2821,13 +2821,13 @@ SimplifyAssignments(AST **astptr)
             // into tmp = B, A op= tmp
             // then if A has side effects, further decompose
             // those so eventually we can get A = A' op tmp
-            if (rhs && ExprHasSideEffects(rhs)) {
+            if (rhs && ExprHasSideEffects(rhs) && gl_output != OUTPUT_BYTECODE) {
                 AST *typ = ExprType(rhs);
                 AST *temp = AstTempLocalVariable("_temp_", typ);
                 preseq = AstAssign(temp, rhs);
                 rhs = temp;
             }
-            if (ExprHasSideEffects(lhs) || IsBoolOp(op) ) {
+            if ((ExprHasSideEffects(lhs) || IsBoolOp(op)) && gl_output != OUTPUT_BYTECODE) {
                 if (curfunc && IsSpinLang(curfunc->language)) {
                     // Spin must maintain a strict evaluation order
                     AST *temp = AstTempLocalVariable("_temp_", NULL);
@@ -2848,7 +2848,7 @@ SimplifyAssignments(AST **astptr)
             }
             if (op == K_ASSIGN) {
                 ast = AstAssign(lhs, rhs);
-            } else {
+            } else if (!ExprHasSideEffects(lhs)) {
                 if (rhs) {
                     ast = AstAssign(lhs, AstOperator(op, lhs, rhs));
                 } else {
@@ -2883,18 +2883,22 @@ SimplifyAssignments(AST **astptr)
         case K_LOGIC_OR:
         case K_LOGIC_XOR:
             if (ExprHasSideEffects(ast->right)) {
-                ASTReportInfo saveinfo;
-                AstReportAs(ast, &saveinfo);
-                ast->left = AstOperator(K_NE, ast->left, AstInteger(0));
-                ast->right = AstOperator(K_NE, ast->right, AstInteger(0));
-                if (op == K_LOGIC_XOR) {
-                    ast->d.ival = '^';
-                } else if (op == K_LOGIC_AND) {
-                    ast->d.ival = '&';
-                } else {
-                    ast->d.ival = '|';
+                if (gl_output != OUTPUT_BYTECODE || op == K_LOGIC_XOR) {
+                    // bytecode has native support for logic AND/OR,
+                    // but transform them for other backends
+                    ASTReportInfo saveinfo;
+                    AstReportAs(ast, &saveinfo);
+                    ast->left = AstOperator(K_NE, ast->left, AstInteger(0));
+                    ast->right = AstOperator(K_NE, ast->right, AstInteger(0));
+                    if (op == K_LOGIC_XOR) {
+                        ast->d.ival = '^';
+                    } else if (op == K_LOGIC_AND) {
+                        ast->d.ival = '&';
+                    } else {
+                        ast->d.ival = '|';
+                    }
+                    AstReportDone(&saveinfo);
                 }
-                AstReportDone(&saveinfo);
             } else {
                 if (op == K_LOGIC_XOR) {
                     ast->d.ival = K_BOOL_XOR;

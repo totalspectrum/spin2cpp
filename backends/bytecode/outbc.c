@@ -558,14 +558,27 @@ BCCompileMemOp(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind kin
 
 static void
 BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpression,enum MathOpKind modifyMathKind, bool modifyReverseMath) {
+    ASSERT_AST_KIND(node,AST_ASSIGN,;);
     AST *left = node->left, *right = node->right;
 
-    AST *memopNode = NULL;
+    // This only happens with assignments where the lhs has side effects
+    if (node->d.ival != K_ASSIGN) {
+        if (modifyMathKind) ERROR(node,"direct operator AND given modfiyMathKind in AST_ASSIGN is unhandled");
+        bool isUnary = false;
+        enum MathOpKind mok = 0;
+        switch (node->d.ival) {
+        // TODO handle unary ops
+        default: mok = Optoken2MathOpKind(node->d.ival); break;
+        }
+
+        if (!mok) ERROR(node,"direct operator %03X in AST_ASSIGN is unhandled",node->d.ival);
+        modifyMathKind = mok;
+    }
 
     // Try to contract things like "a := a + 1" into a modify op
     if (modifyMathKind == 0 && right && right->kind == AST_OPERATOR) {
         bool isUnary = false;
-        enum MathOpKind mok;
+        enum MathOpKind mok = 0;
         switch (right->d.ival) {
         // TODO handle unary ops
         default: mok = Optoken2MathOpKind(right->d.ival); break;
@@ -581,7 +594,7 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
             modifyReverseMath = true;
         } else goto nocontract;
 
-        if (ExprHasSideEffects(operand)) goto nocontract;
+        if (ExprHasSideEffects(left)) goto nocontract;
 
         // Do contraction
         modifyMathKind = mok;
@@ -598,6 +611,8 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
         return;
     }
     if (isUnaryModify && modifyReverseMath) ERROR(node,"Reversed unary math??");
+
+    AST *memopNode = NULL;
 
     switch(left->kind) {
     case AST_HWREG: {
