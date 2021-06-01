@@ -134,6 +134,17 @@ static inline bool isUnaryModOperator(enum MathOpKind opk) {
     return opk > MOK___MODUNARY_FIRST && opk < MOK___MODUNARY_LAST;
 }
 
+static inline bool ModOperatorPushesTrueResult(enum MathOpKind opk) {
+    switch(opk) {
+    case MOK_MOD_PREINC:
+    case MOK_MOD_PREDEC:
+    case MOK_MOD_WRITE:
+        return true;
+    default: 
+        return !isModOperator(opk);
+    }
+}
+
 enum BCWaitType {
     BCW_UHHH,
     BCW_WAITPEQ, BCW_WAITPNE,
@@ -146,7 +157,7 @@ typedef struct bcirstruct {
     enum ByteOpKind kind;
     enum MathOpKind mathKind;
     union {
-        struct {
+        struct bcir_memop_attr {
             unsigned popIndex:1; //  pop index?
             unsigned pushModifyResult:1; // For BOK_MEM_MODIFY: push result onto stack
             unsigned modifyReverseMath:1; // For BOK_MEM_MODIFY: Swap math operands?
@@ -218,6 +229,7 @@ int BCIR_GetJumpOffset(ByteOpIR *jump,bool func_relative);
 int pbase_offset; // distance of current function from PBASE (obj header)
 BCIRBuffer *current_birb;
 
+void BCIR_Optimize(BCIRBuffer *irbuf);
 void BCIR_to_BOB(BCIRBuffer *irbuf,ByteOutputBuffer *bob,int pbase_funoffset);
 
 void BCIR_Init();

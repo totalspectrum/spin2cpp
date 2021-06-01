@@ -434,6 +434,7 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
         int jumpOffset = 0;
         if (ir->kind == BOK_MEM_MODIFY) {
             if (ir->mathKind == MOK_MOD_REPEATSTEP) {
+                if (ir->attr.memop.pushModifyResult) ERROR(NULL,"Internal Error: pushModifyResult set on MOK_MOD_REPEATSTEP");
                 buf[pos++] = ir->attr.memop.repeatPopStep ? 0b00000110 : 0b00000010;
                 jumpOffset = CompileJumpOffset_Spin1(buf,&pos,ir,pos,false,0,S1OffEn_VARLEN_SIGNED);
             } else { 

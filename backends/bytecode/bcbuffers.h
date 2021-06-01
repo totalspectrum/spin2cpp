@@ -1,5 +1,5 @@
 
-// Two buffer structures used in the bytecode backend
+// commented byte buffer structure used in the bytecode backend
 
 #ifndef BCBUFFERS_H
 #define BCBUFFERS_H

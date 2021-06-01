@@ -1725,6 +1725,8 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
 
     BIRB_AppendPending(&irbuf);
 
+    BCIR_Optimize(&irbuf);
+
     BCIR_to_BOB(&irbuf,bob,func_ptr-ModData(current)->compiledAddress);
     
     curfunc = NULL;
