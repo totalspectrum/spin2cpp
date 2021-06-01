@@ -2713,7 +2713,7 @@ CheckRecursive(Function *f)
  *   X[I++] := I  --> X[I]:=I, I++
  */
 
-static AST*
+AST*
 ExtractSideEffects(AST *expr, AST **preseq)
 {
     AST *temp;

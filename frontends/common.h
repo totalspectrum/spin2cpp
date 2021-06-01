@@ -717,6 +717,10 @@ void PerformLoopOptimization(Module *P);
 // simplify statments like a^=b to a = a^b
 void SimplifyAssignments(AST **astptr);
 
+// helper for SimplifyAssignments
+AST *ExtractSideEffects(AST *expr, AST **preseq);
+
+// start of HUB memory
 extern unsigned int gl_hub_base;
 #define P2_HUB_BASE gl_hub_base
 #define P2_CONFIG_BASE 0x10   /* clkfreq and such go here */
