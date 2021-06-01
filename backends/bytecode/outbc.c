@@ -7,7 +7,7 @@
 
 const BCContext nullcontext = {.hiddenVariables = 0};
 
-static bool interp_can_multireturn() {
+bool interp_can_multireturn() {
     switch(gl_interp_kind) {
     case INTERP_KIND_P1ROM: return false;
     default:

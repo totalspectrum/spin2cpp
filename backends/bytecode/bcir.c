@@ -1,6 +1,7 @@
 
 #include "bcir.h"
 #include "bc_spin1.h"
+#include "bc_bedata.h"
 #include <stdlib.h>
 
 
@@ -42,14 +43,36 @@ void BIRB_Push(BCIRBuffer *buf,ByteOpIR *ir) {
     buf->opCount++;
 }
 
-void BCIR_Remove(BCIRBuffer *buf,ByteOpIR *ir) {
-    if (ir->prev) ir->prev->next = ir->next;
-    else buf->head = ir->next;
-    if (ir->next) ir->next->prev = ir->prev;
-    else buf->tail = ir->prev;
+void BIRB_RemoveBlock(BCIRBuffer *buf,ByteOpIR *first,ByteOpIR *last) {
+    if (last->next) last->next->prev = first->prev;
+    else buf->tail = first->prev;
 
-    // the passed node alone to make iteration easier
+    if (first->prev) first->prev->next = last->next;
+    else buf->head = last->next;
 }
+
+void BIRB_Remove(BCIRBuffer *buf,ByteOpIR *ir) {
+    BIRB_RemoveBlock(buf,ir,ir);
+}
+
+
+void BIRB_MoveBlock(BCIRBuffer *buf,ByteOpIR *target,ByteOpIR *first,ByteOpIR *last) {
+    
+    BIRB_RemoveBlock(buf,first,last);
+
+    if (target == NULL) { // Insert as head
+        if (buf->head) buf->head->prev = last;
+        buf->head = first;
+        first->prev = NULL;
+    } else {
+        if (target->next) target->next->prev = last;
+        else buf->tail = last;
+        last->next = target->next; // Null if at tail
+        first->prev = target;
+        target->next = first;
+    }
+}
+
 
 void BIRB_AppendPending(BCIRBuffer *buf) {
     printf("in BIRB_AppendPending with %d pending\n",buf->pending->opCount);
@@ -160,6 +183,12 @@ bool BCIR_IsEqualMemOpTarget(ByteOpIR *ir1,ByteOpIR *ir2) {
     return true;
 }
 
+bool BCIR_IsResultMemop(ByteOpIR *ir) {
+    if (interp_can_multireturn()) return false; // There is no one RESULT in Spin2
+
+    return BCIR_IsConstMemOp(ir) && ir->attr.memop.base == MEMOP_BASE_DBASE && ir->data.int32 == 0 && ir->attr.memop.memSize == MEMOP_SIZE_LONG;
+}
+
 unsigned BCIR_GetRefCount(BCIRBuffer *irbuf,ByteOpIR *label) {
     unsigned refs = 0;
     for (ByteOpIR *ir=irbuf->head;ir;ir=ir->next) {
@@ -168,9 +197,9 @@ unsigned BCIR_GetRefCount(BCIRBuffer *irbuf,ByteOpIR *label) {
     return refs;
 }
 
-bool BCIR_AnyRef(BCIRBuffer *irbuf,ByteOpIR *label) {
+ByteOpIR *BCIR_AnyRef(BCIRBuffer *irbuf,ByteOpIR *label) {
     for (ByteOpIR *ir=irbuf->head;ir;ir=ir->next) {
-        if (ir->jumpTo == label && BCIR_UsesLabel(ir)) return true;
+        if (ir->jumpTo == label && BCIR_UsesLabel(ir)) return ir;
     }
     return false;
 }
@@ -181,7 +210,7 @@ static bool BCIR_OptDeadCode() {
     for(ByteOpIR *ir = current_birb->head;ir;ir=ir->next) {
         if(BCIR_IsTerminalOp(ir)) {
             while (ir->next && !BCIR_IsLabel(ir->next)) {
-                BCIR_Remove(current_birb,ir->next);
+                BIRB_Remove(current_birb,ir->next);
                 didWork = true;
             }
         }
@@ -194,7 +223,7 @@ static bool BCIR_OptPointlessJump() {
     bool didWork = false;
     for(ByteOpIR *ir = current_birb->head;ir;ir=ir->next) {
         if(ir->kind == BOK_JUMP && ir->jumpTo == ir->next) {
-            BCIR_Remove(current_birb,ir);
+            BIRB_Remove(current_birb,ir);
             didWork = true;
         }
     }
@@ -202,13 +231,68 @@ static bool BCIR_OptPointlessJump() {
 }
 
 static bool BCIR_OptUnusedLabel() {
-    // An unreferenced label can be removed
+    // An unreferenced label can be removed, consecutive labels can be combined
     // This is an O(x^2) operation, but it's only per-function, so it's ok(tm)
     bool didWork = false;
     for(ByteOpIR *ir = current_birb->head;ir;ir=ir->next) {
-        if(ir->kind == BOK_LABEL && !BCIR_AnyRef(current_birb,ir)) {
-            BCIR_Remove(current_birb,ir);
+        if (ir->kind == BOK_LABEL) {
+            if(!BCIR_AnyRef(current_birb,ir)) {
+                BIRB_Remove(current_birb,ir);
+                didWork = true;
+            } else {
+                while (ir->next && ir->next->kind == BOK_LABEL) {
+                    for (ByteOpIR *pj=current_birb->head;pj;pj=pj->next) {
+                        if (BCIR_UsesLabel(pj) && pj->jumpTo == ir->next) pj->jumpTo = ir;
+                    }
+                    BIRB_Remove(current_birb,ir->next);
+                    didWork = true;
+                }
+            }
+        }
+    }
+    return didWork;
+}
+
+#define MOVE_SINGLE_JUMP_THRESHOLD 18 // This could probably be tuned better
+
+static bool BCIR_OptMoveSingleJumpLabel() {
+    // A block following a terminal op referenced by a single unconditional jump can be moved after it
+    // This i.e. makes OTHER cases move to the top if possible
+    bool didWork = false;
+    for(ByteOpIR *ir = current_birb->head;ir;ir=ir->next) {
+        if (ir->kind == BOK_LABEL && ir->prev && BCIR_IsTerminalOp(ir->prev) && BCIR_GetRefCount(current_birb,ir) == 1) {
+            ByteOpIR *jump = BCIR_AnyRef(current_birb,ir);
+            if (!jump || jump->kind != BOK_JUMP) continue;
+            ByteOpIR *first = ir->next;
+            ByteOpIR *last = first;
+            if (!first) continue;
+            unsigned blockops = 1;
+            // Find the block
+            while (last && !BCIR_IsTerminalOp(last)) {
+                last = last->next;
+                blockops++;
+            }
+            if (!last || last == jump) continue;
+
+            // Simple heuristic to avoid pessimisation:
+            // If there are more than some thereshold of IR ops to move, don't do it
+            if (blockops > MOVE_SINGLE_JUMP_THRESHOLD) continue;
+
+            // Remove the label first
+            BIRB_Remove(current_birb,ir); 
+            // ... and set ir so we can continue iterating after the block
+            ir = last->next;
+            // Now move the block
+            BIRB_MoveBlock(current_birb,jump,first,last);
+            // ... and then the jump
+            BIRB_Remove(current_birb,jump);
+
             didWork = true;
+
+            // Fixup the iteration
+            if (!ir) break;
+            ir = ir->prev;
+            if (!ir) break;
         }
     }
     return didWork;
@@ -222,7 +306,7 @@ static bool BCIR_OptContractWriteRead() {
     for(ByteOpIR *ir = current_birb->head;ir;ir=ir->next) {
         if(ir->kind == BOK_MEM_WRITE && ir->next && ir->next->kind == BOK_MEM_READ &&
         ir->attr.memop.memSize == MEMOP_SIZE_LONG && BCIR_IsEqualMemOpTarget(ir,ir->next)) {
-            BCIR_Remove(current_birb,ir->next);
+            BIRB_Remove(current_birb,ir->next);
             ir->kind = BOK_MEM_MODIFY;
             ir->mathKind = MOK_MOD_WRITE;
             ir->attr.memop.pushModifyResult = true;
@@ -230,8 +314,26 @@ static bool BCIR_OptContractWriteRead() {
         } else if (ir->kind == BOK_MEM_MODIFY && ir->next && ir->next->kind == BOK_MEM_READ &&
         ModOperatorPushesTrueResult(ir->mathKind) && !ir->attr.memop.pushModifyResult &&
         ir->attr.memop.memSize == MEMOP_SIZE_LONG && BCIR_IsEqualMemOpTarget(ir,ir->next))  {
-            BCIR_Remove(current_birb,ir->next);
+            BIRB_Remove(current_birb,ir->next);
             ir->attr.memop.pushModifyResult = true;
+            didWork = true;
+        }
+    }
+    return didWork;
+}
+
+static bool BCIR_OptContractReturn() {
+    // write result + return_plain -> return_pop
+    // read_result + return_pop -> return_plain
+    bool didWork = false;
+    for (ByteOpIR *ir=current_birb->head;ir;ir=ir->next) {
+        if (ir->kind == BOK_RETURN_PLAIN && ir->prev && ir->prev->kind == BOK_MEM_WRITE && BCIR_IsResultMemop(ir->prev)) {
+            BIRB_Remove(current_birb,ir->prev);
+            ir->kind = BOK_RETURN_POP;
+            didWork = true;
+        } else if (ir->kind == BOK_RETURN_POP && ir->prev && ir->prev->kind == BOK_MEM_READ && BCIR_IsResultMemop(ir->prev)) {
+            BIRB_Remove(current_birb,ir->prev);
+            ir->kind = BOK_RETURN_PLAIN;
             didWork = true;
         }
     }
@@ -247,7 +349,9 @@ void BCIR_Optimize(BCIRBuffer *irbuf) {
         if (flags & OPT_DEADCODE) didWork |= BCIR_OptDeadCode();
         if (flags & OPT_DEADCODE) didWork |= BCIR_OptPointlessJump();
         if (flags & OPT_DEADCODE) didWork |= BCIR_OptUnusedLabel();
+        if (flags & OPT_PEEPHOLE) didWork |= BCIR_OptMoveSingleJumpLabel();
         if (flags & OPT_PEEPHOLE) didWork |= BCIR_OptContractWriteRead();
+        if (flags & OPT_PEEPHOLE) didWork |= BCIR_OptContractReturn();
     } while (didWork);
     current_birb = NULL;
 }

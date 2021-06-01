@@ -22,5 +22,6 @@ typedef struct {
 } BCFunData;
 
 int BCgetDAToffset(Module *P, bool absolute, AST *errloc, bool printErrors); // defined in outbc.c
+bool interp_can_multireturn(); // defined in outbc.c
 
 #endif
