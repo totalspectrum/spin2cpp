@@ -59,8 +59,6 @@ LR__0003
 __system___float_tointeger_ret
 	ret
 
-__lockreg
-	long	0
 imm_1199570944_
 	long	1199570944
 imm_4294967295_
@@ -69,8 +67,6 @@ imm_536870912_
 	long	536870912
 imm_8388607_
 	long	8388607
-ptr___lockreg_
-	long	@@@__lockreg
 result1
 	long	0
 result2

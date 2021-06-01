@@ -19,10 +19,6 @@ LR__0002
 _xorbytes_ret
 	ret
 
-__lockreg
-	long	0
-ptr___lockreg_
-	long	@@@__lockreg
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START

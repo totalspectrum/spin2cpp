@@ -221,9 +221,11 @@ extern int gl_interp_kind;
 #define OUTFLAGS_DEFAULT (OUTFLAG_COG_CODE)
 
 /* various global feature flags */
-/* set in MarkUsed() in spinc.c */
+/* set in MarkUsed() in functions.c */
 extern int gl_features_used;
 #define FEATURE_LONGJMP_USED 0x01
+#define FEATURE_GOSUB_USED   0x02
+#define FEATURE_LOCKREG_USED 0x04
 
 /* default value for baud rate (set on command line with -D_BAUD=) */
 extern int gl_default_baud;

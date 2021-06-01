@@ -29,12 +29,8 @@ _PauseABit
 _PauseABit_ret
 	ret
 
-__lockreg
-	long	0
 imm_40000000_
 	long	40000000
-ptr___lockreg_
-	long	@@@__lockreg
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START

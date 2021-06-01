@@ -338,19 +338,18 @@ __system___gc_doalloc
 	shr	__system___gc_doalloc_size, #4
 	add	ptr___system__dat__, #28
 	mov	__system___gc_doalloc__cse__0005, ptr___system__dat__
+	mov	arg01, __system___gc_doalloc__cse__0005
 	sub	ptr___system__dat__, #28
 LR__0018
 LR__0019
-	rdlong	arg01, imm_4294967293_
-	lockset	arg01 wc
+	lockset	__lockreg wc
 	muxc	result1, imm_4294967295_
 	cmp	result1, #0 wz
  if_ne	jmp	#LR__0019
-	rdbyte	__system___lockmem_oldmem, __system___gc_doalloc__cse__0005 wz
+	rdbyte	__system___lockmem_oldmem, arg01 wz
  if_e	mov	_system___lockmem_tmp001_, #1
- if_e	wrbyte	_system___lockmem_tmp001_, __system___gc_doalloc__cse__0005
-	rdlong	arg01, imm_4294967293_
-	lockclr	arg01 wc
+ if_e	wrbyte	_system___lockmem_tmp001_, arg01
+	lockclr	__lockreg wc
 	muxc	result1, imm_4294967295_
 	cmp	__system___lockmem_oldmem, #0 wz
  if_ne	jmp	#LR__0018
@@ -755,8 +754,6 @@ imm_27792_
 	long	27792
 imm_4293918720_
 	long	-1048576
-imm_4294967293_
-	long	-3
 imm_4294967295_
 	long	-1
 imm_65472_

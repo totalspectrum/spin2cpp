@@ -48,10 +48,6 @@ LR__0005
 _main4_ret
 	ret
 
-__lockreg
-	long	0
-ptr___lockreg_
-	long	@@@__lockreg
 result1
 	long	0
 COG_BSS_START

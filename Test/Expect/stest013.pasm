@@ -45,8 +45,6 @@ multiply__ret
 unsmultiply__ret
 	ret
 
-__lockreg
-	long	0
 itmp1_
 	long	0
 itmp2_
@@ -55,8 +53,6 @@ muldiva_
 	long	0
 muldivb_
 	long	0
-ptr___lockreg_
-	long	@@@__lockreg
 result1
 	long	0
 COG_BSS_START

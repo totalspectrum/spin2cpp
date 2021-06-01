@@ -17,12 +17,8 @@ _blah
 _blah_ret
 	ret
 
-__lockreg
-	long	0
 objptr
 	long	@@@objmem
-ptr___lockreg_
-	long	@@@__lockreg
 ptr__dat__
 	long	@@@_dat_
 result1

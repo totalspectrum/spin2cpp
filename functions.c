@@ -355,6 +355,9 @@ MarkSystemFuncUsed(const char *name)
     if (sym->kind == SYM_FUNCTION) {
         calledf = (Function *)sym->val;
         calledf->used_as_ptr = 1;
+        if (!strncmp(name, "_gc_alloc", 9)) {
+            gl_features_used |= FEATURE_LOCKREG_USED;
+        }
     }
 }
 
@@ -2501,6 +2504,8 @@ MarkUsedBody(AST *body, const char *caller)
         if (sym && sym->kind == SYM_FUNCTION) {
             Function *func = (Function *)sym->val;
             MarkUsed(func, sym->our_name);
+        } else if (sym && !strcmp(name, "__lockreg")) {
+            gl_features_used |= FEATURE_LOCKREG_USED;
         }
         return;
     case AST_METHODREF:
@@ -2563,6 +2568,9 @@ MarkUsedBody(AST *body, const char *caller)
     case AST_TRYENV:
     case AST_CATCHRESULT:
         gl_features_used |= FEATURE_LONGJMP_USED;
+        break;
+    case AST_GOSUB:
+        gl_features_used |= FEATURE_GOSUB_USED;
         break;
     default:
         break;
