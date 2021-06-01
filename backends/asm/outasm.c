@@ -360,6 +360,9 @@ ValidatePushregs(void)
 static void
 ValidateGosub(void)
 {
+    if (0 == (gl_features_used & FEATURE_GOSUB_USED)) {
+        ERROR(NULL, "Internal error: using longjmp/setjmp but feature not marked\n");
+    }    
     ValidatePushregs();
     gosub_ = NewOperand(IMM_COG_LABEL, "gosub_", 0);
 }
@@ -5597,15 +5600,6 @@ const char *builtin_pushregs_p1 =
     "    long 0\n"
     "prcnt_\n"
     "    long 0\n"
-    "gosub_\n"
-    "      wrlong pc, sp\n"
-    "      add    sp, #4\n"
-    "      mov    COUNT_, #0\n"
-    "      call   #pushregs_\n"
-    "      mov    pc, arg01\n"
-    "      jmp    #LMM_LOOP\n"
-    "gosub__ret\n"
-    "      ret\n"
     "pushregs_\n"
     "      movd  :write, #local01\n"
     "      mov   prcnt_, COUNT_ wz\n"
@@ -5642,6 +5636,18 @@ const char *builtin_pushregs_p1 =
     "      ret\n"
     ;
 
+const char *builtin_gosub_p1 =
+    "gosub_\n"
+    "      wrlong pc, sp\n"
+    "      add    sp, #4\n"
+    "      mov    COUNT_, #0\n"
+    "      call   #pushregs_\n"
+    "      mov    pc, arg01\n"
+    "      jmp    #LMM_LOOP\n"
+    "gosub__ret\n"
+    "      ret\n"
+    ;
+
 const char *builtin_pushregs_p2 =
     "COUNT_\n"
     "    long 0\n"
@@ -5649,11 +5655,6 @@ const char *builtin_pushregs_p2 =
     "    long 0\n"
     "fp\n"
     "    long 0\n"
-    "gosub_\n"
-    "    mov  COUNT_, #0\n"
-    "    mov  pa, arg01\n"
-    "    pop  RETADDR_\n"
-    "    jmp  #pushregs_done_\n"
     "pushregs_\n"
     "    pop  pa\n"
     "    pop  RETADDR_\n"
@@ -5687,6 +5688,14 @@ const char *builtin_pushregs_p2 =
     "popregs__ret\n"
     "    push   RETADDR_\n"
     "    jmp    pa\n"
+    ;
+
+const char *builtin_gosub_p2 =
+    "gosub_\n"
+    "    mov  COUNT_, #0\n"
+    "    mov  pa, arg01\n"
+    "    pop  RETADDR_\n"
+    "    jmp  #pushregs_done_\n"
     ;
 
 /* WARNING: make sure to increase SETJMP_BUF_SIZE if you add
@@ -5845,6 +5854,11 @@ EmitBuiltins(IRList *irl)
     if (pushregs_) {
         const char *builtin_pushregs = (gl_p2 ? builtin_pushregs_p2 : builtin_pushregs_p1);
         Operand *loop = NewOperand(IMM_STRING, builtin_pushregs, 0);
+        EmitOp1(irl, OPC_LITERAL, loop);
+    }
+    if (gosub_) {
+        const char *builtin_data = (gl_p2 ? builtin_gosub_p2 : builtin_gosub_p1);
+        Operand *loop = NewOperand(IMM_STRING, builtin_data, 0);
         EmitOp1(irl, OPC_LITERAL, loop);
     }
     if (mulfunc) {

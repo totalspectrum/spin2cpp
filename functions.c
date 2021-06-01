@@ -2561,6 +2561,9 @@ MarkUsedBody(AST *body, const char *caller)
     case AST_CATCHRESULT:
         gl_features_used |= FEATURE_LONGJMP_USED;
         break;
+    case AST_GOSUB:
+        gl_features_used |= FEATURE_GOSUB_USED;
+        break;
     default:
         break;
     }
