@@ -2764,8 +2764,13 @@ CheckSimpleArrayref(AST *ast)
         ASTReportInfo saveinfo;
         
         if (typ && id && id->kind == AST_ADDROF) {
+            AST *subtype;
             id = id->left;
-            if (IsIdentifier(id) && IsLocalVariable(id)) {
+            subtype = ExprType(id);
+            if (IsArrayType(subtype)) {
+                return NULL;
+            }
+            if (IsIdentifier(id) && IsLocalVariable(id) && TypeSize(subtype) == 4) {
                 if (typ == ast_type_word && index < 2) {
                     shift = index * 16;
                     bits = 16;
