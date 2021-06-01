@@ -67,6 +67,7 @@ IsAddrRef(AST *body, Symbol *sym)
  * returns true if transform done
  */
 #define LONGMOVE_THRESHOLD 6
+#define LONGMOVE_THRESHOLD_BYTECODE 1
 
 static bool
 TransformLongMove(AST **astptr, AST *ast)
@@ -93,7 +94,7 @@ TransformLongMove(AST **astptr, AST *ast)
     if (ast || !count) return false;
     if (!IsConstExpr(count)) return false;
     n = EvalConstExpr(count);
-    if (n > LONGMOVE_THRESHOLD || n <= 0) return false;
+    if (n > (gl_output == OUTPUT_BYTECODE ? LONGMOVE_THRESHOLD_BYTECODE : LONGMOVE_THRESHOLD) || n <= 0) return false;
 
     // check src and dst
     if (src->kind != AST_ADDROF && src->kind != AST_ABSADDROF) return false;
