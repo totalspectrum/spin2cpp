@@ -765,7 +765,23 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
         int optoken = node->d.ival;
         OptimizeOperator(&optoken,NULL,&right);
         switch (optoken) {
-        default: mok = Optoken2MathOpKind(optoken,&isUnary); break;
+        case K_SIGNEXTEND:
+            if (right && IsConstExpr(right)) {
+                int32_t extendlen = EvalConstExpr(right);
+                if (extendlen == 8 || extendlen == 16) {
+                    mok = (extendlen==16)?MOK_MOD_SIGNX_WORD:MOK_MOD_SIGNX_BYTE;
+                    right = NULL;
+                    isUnary = true;
+                } else {
+                    ERROR(node,"Sign-extend must be 8 or 16 bits");
+                }
+            } else {
+                ERROR(node,"Sign-extend must have constant length");
+            }
+            break;
+        default: 
+            mok = Optoken2MathOpKind(optoken,&isUnary);
+            break;
         }
 
         // Handle no-ops
@@ -787,7 +803,21 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
         AST *opright = right->right;
         OptimizeOperator(&optoken,&opleft,&opright);
         switch (optoken) {
-        // TODO handle unary ops
+        case K_SIGNEXTEND:
+            if (opright && IsConstExpr(opright)) {
+                int32_t extendlen = EvalConstExpr(opright);
+                if (extendlen == 8 || extendlen == 16) {
+                    mok = (extendlen==16)?MOK_MOD_SIGNX_WORD:MOK_MOD_SIGNX_BYTE;
+                    opright = opleft;
+                    opleft = NULL;
+                    isUnary = true;
+                } else {
+                    ERROR(node,"Sign-extend must be 8 or 16 bits");
+                }
+            } else {
+                ERROR(node,"Sign-extend must have constant length");
+            }
+            break;
         default: mok = Optoken2MathOpKind(optoken,&isUnary); break;
         }
         if (mok == 0) goto nocontract; // Can't handle this operator
