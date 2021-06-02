@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2019 Total Spectrum Software Inc.
+ * Copyright 2011-2021 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling expressions
@@ -553,7 +553,8 @@ void
 PrintOperator(Flexbuf *f, int op, AST *left, AST *right, int flags)
 {
     char opstring[4];
-
+    AST *subexpr;
+    
     switch (op) {
     case K_HIGHMULT:
         PrintMacroExpr(f, "Highmult__", left, right, flags);
@@ -681,14 +682,22 @@ PrintOperator(Flexbuf *f, int op, AST *left, AST *right, int flags)
         flexbuf_printf(f, ")");
         break;
     case K_ZEROEXTEND:
-        flexbuf_printf(f, "(uint32_t)(");
+        subexpr = SimpleOptimizeExpr(AstOperator('-', AstInteger(32), right));
+        flexbuf_printf(f, "((uint32_t)");
         PrintExpr(f, left, flags);
-        flexbuf_printf(f, ")");
+        flexbuf_printf(f, " << ");
+        PrintExpr(f, subexpr, flags);
+        flexbuf_printf(f, ") >> ");
+        PrintExpr(f, subexpr, flags);
         break;
     case K_SIGNEXTEND:
-        flexbuf_printf(f, "(int32_t)");
+        subexpr = SimpleOptimizeExpr(AstOperator('-', AstInteger(32), right));
+        flexbuf_printf(f, "((int32_t)");
         PrintExpr(f, left, flags);
-        flexbuf_printf(f, ")");
+        flexbuf_printf(f, " << ");
+        PrintExpr(f, subexpr, flags);
+        flexbuf_printf(f, ") >> ");
+        PrintExpr(f, subexpr, flags);
         break;
     case '?':
         if (left) {
