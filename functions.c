@@ -2851,15 +2851,11 @@ SimplifyAssignments(AST **astptr)
                 rhs = temp;
             }
             if (ExprHasSideEffects(lhs) || IsBoolOp(op) ) {
-                if (curfunc && IsSpinLang(curfunc->language)) {
+                if (curfunc && IsSpinLang(curfunc->language) && rhs && !IsConstExpr(rhs)) {
                     // Spin must maintain a strict evaluation order
                     AST *temp = AstTempLocalVariable("_temp_", NULL);
                     AST *p2;
-                    if (rhs) {
-                        p2 = AstAssign(temp, rhs);
-                    } else {
-                        p2 = AstAssign(temp, lhs);
-                    }
+                    p2 = AstAssign(temp, rhs);
                     if (preseq) {
                         preseq = NewAST(AST_SEQUENCE, preseq, p2);
                     } else {
