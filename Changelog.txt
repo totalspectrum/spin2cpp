@@ -6,6 +6,7 @@ Version 5.5.1
 - Fixed an optimization error for BYTE[] and WORD[]
 - Fixed incorrect unary assignment operator behavior in Spin
 - Improved COG memory usage
+- Made objects come after all variables in Spin
 - Merged colorized error message changes from Wuerfel21.
 
 Version 5.5.0
