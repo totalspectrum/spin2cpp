@@ -1712,7 +1712,7 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
         case AST_DECLARE_VAR_WEAK:
             curtype = ast->left;
             idlist = ast->right;
-            if (P->mainLanguage == LANG_SPIN_SPIN1 && IsClassType(BaseType(curtype))) {
+            if (IsSpinLang(P->mainLanguage) && IsClassType(BaseType(curtype))) {
                 curtypesize = MAGIC_CLASS_SIZE;
             } else {
                 curtypesize = CheckedTypeSize(curtype); // make sure module variables are declared
@@ -1746,7 +1746,12 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
                 P->varsize = curtypesize;
             }
         }
-        if (basetypesize == 0) {
+        if (basetypesize == MAGIC_CLASS_SIZE) {
+            if (curtypesize == basetypesize) {
+                offset = (offset + 3) & ~3; // long align
+                offset = EnterVars(SYM_VARIABLE, &P->objsyms, curtype, idlist, offset, P->isUnion, sym_flags);
+            }
+        } else if (basetypesize == 0 && curtypesize != MAGIC_CLASS_SIZE) {
             // round offset up to necessary alignment
             // If you change this, be sure to change code for aligning
             // initializers, too!
@@ -1760,8 +1765,6 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
             // declare all the variables
             offset = EnterVars(SYM_VARIABLE, &P->objsyms, curtype, idlist, offset, P->isUnion, sym_flags);
         } else if (basetypesize == curtypesize) {
-            offset = EnterVars(SYM_VARIABLE, &P->objsyms, curtype, idlist, offset, P->isUnion, sym_flags);
-        } else if (basetypesize != MAGIC_CLASS_SIZE && (basetypesize > 4 && (curtypesize >= 4 || curtypesize == 0))) {
             offset = EnterVars(SYM_VARIABLE, &P->objsyms, curtype, idlist, offset, P->isUnion, sym_flags);
         }
     }
@@ -1846,7 +1849,13 @@ DeclareMemberVariables(Module *P)
         offset = DeclareMemberVariablesOfSize(P, 1, offset);
         // declare objects
         offset = DeclareMemberVariablesOfSize(P, MAGIC_CLASS_SIZE, offset);
+    } else if (P->mainLanguage == LANG_SPIN_SPIN2) {
+        // declare everything except objects
+        offset = DeclareMemberVariablesOfSize(P, 0, offset);
+        // declare objects
+        offset = DeclareMemberVariablesOfSize(P, MAGIC_CLASS_SIZE, offset);
     } else {
+        // for non-Spin languages, everything declared together
         offset = DeclareMemberVariablesOfSize(P, 0, offset);
     }
     if (!P->isUnion) {
