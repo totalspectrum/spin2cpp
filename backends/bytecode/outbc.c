@@ -256,6 +256,9 @@ static void OptimizeOperator(int *optoken, AST **left,AST **right) {
         canNopOpt = true;
         nopOptVal = 0;
         break;
+    case '+':
+        canCommute = true;
+        break;
     default: return;
     }
 
@@ -265,7 +268,7 @@ static void OptimizeOperator(int *optoken, AST **left,AST **right) {
         *right = swap;
     }
 
-    if (right && IsConstExpr(*right)) {
+    if (right && *right && IsConstExpr(*right)) {
         int32_t rightVal = EvalConstExpr(*right);
 
         if (canZeroOpt && rightVal == zeroOptVal) {
@@ -276,11 +279,19 @@ static void OptimizeOperator(int *optoken, AST **left,AST **right) {
             AstReportDone(&save);
             return;
         } else if (canNopOpt && rightVal == nopOptVal) {
-            AstReportAs(*right,&save);
-            *optoken = '+';
-            *right = AstInteger(0);
-            AstReportDone(&save);
-            return;
+            if (left && *left && (*left)->kind == AST_OPERATOR) {
+                *optoken = (*left)->d.ival;
+                *right = (*left)->right;
+                *left = (*left)->left;
+                OptimizeOperator(optoken,left,right);
+                return;
+            } else {
+                AstReportAs(*right,&save);
+                *optoken = '+';
+                *right = AstInteger(0);
+                AstReportDone(&save);
+                return;
+            }
         } else if (shiftOptOp && isPowerOf2(rightVal)) {
             AstReportAs(*right,&save);
             *optoken = shiftOptOp;
@@ -1906,7 +1917,7 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
 
     // I think there's other body types so let's leave this instead of using ASSERT_AST_KIND
     if (!F->body) {
-        NOTE(NULL,"compiling function with no body...");
+        DEBUG(NULL,"compiling function %s with no body...",F->name);
     } else if (F->body->kind != AST_STMTLIST) {
         ERROR(F->body,"Internal Error: Expected AST_STMTLIST, got id %d",F->body->kind);
         return;
