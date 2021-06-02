@@ -75,7 +75,6 @@ void BIRB_MoveBlock(BCIRBuffer *buf,ByteOpIR *target,ByteOpIR *first,ByteOpIR *l
 
 
 void BIRB_AppendPending(BCIRBuffer *buf) {
-    printf("in BIRB_AppendPending with %d pending\n",buf->pending->opCount);
     if (!buf->pending || buf->pending->opCount == 0) return;
     buf->tail->next = buf->pending->head;
     buf->pending->head->prev = buf->tail;
@@ -358,7 +357,7 @@ void BCIR_Optimize(BCIRBuffer *irbuf) {
 
 static bool
 BCIR_DetermineSizes(BCIRBuffer *irbuf,bool force,int maxRecursion) {
-    printf("In BCIR_DetermineSizes with maxRecursion = %d and force = %c\n",maxRecursion,force?'Y':'N');
+    DEBUG(NULL,"In BCIR_DetermineSizes with maxRecursion = %d and force = %c",maxRecursion,force?'Y':'N');
     bool didSomething = false;
     for (ByteOpIR *ir=irbuf->head;ir;ir=ir->next) {
         if (BCIR_SizeDetermined(ir)) continue;
@@ -380,7 +379,7 @@ static bool
 BCIR_AllDetermined(BCIRBuffer *irbuf) {
     for (ByteOpIR *ir=irbuf->tail;ir;ir=ir->prev) { // Iterate backwards, likely to be a bit faster
         if (BCIR_SizeDetermined(ir)) continue;
-        printf("An IR of kind %s is not determined\n",byteOpKindNames[ir->kind]);
+        DEBUG(NULL,"An IR of kind %s is not determined",byteOpKindNames[ir->kind]);
         return false;
     }
     return true;
@@ -391,7 +390,6 @@ BCIR_Compact(BCIRBuffer *irbuf,int maxRecursion) {
     for(;;) {
         // Fix sizes until we cant anymore
         while (BCIR_DetermineSizes(irbuf,false,maxRecursion));
-        printf("All possible determined!\n");
         if (BCIR_AllDetermined(irbuf)) return; // All good
         else BCIR_DetermineSizes(irbuf,true,maxRecursion); // Do an oversized encoding
     }
@@ -401,9 +399,7 @@ void BCIR_to_BOB(BCIRBuffer *irbuf,ByteOutputBuffer *bob,int pbase_funoffset) {
     pbase_offset = pbase_funoffset;
     current_birb = irbuf;
     if (!irbuf->opCount) return;
-    printf("Before BCIR_Compact\n");
     BCIR_Compact(irbuf,2);
-    printf("Compacted!\n");
     for(ByteOpIR *ir=irbuf->head;ir;ir=ir->next) {
         if (ir->fixedSize<0) {
             ERROR(NULL,"Internal Errror: IR with negative size");

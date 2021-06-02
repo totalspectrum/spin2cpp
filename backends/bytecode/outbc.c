@@ -52,7 +52,7 @@ static int BCGetOBJSize(Module *P,AST *ast) {
             return 0;
         }
         return mod->varsize;
-    } else printf("Unhandled AST Kind %d in BCGetOBJSize\n",ast->kind);
+    } else ERROR(ast,"Unhandled AST Kind %d in BCGetOBJSize\n",ast->kind);
     return 0;
 }
 
@@ -61,7 +61,6 @@ static int BCGetOBJOffset(Module *P,AST *ast) {
     if (ast->kind == AST_LISTHOLDER) ast = ast->right;
     if (ast->kind == AST_DECLARE_VAR) {
         // FIXME this seems kindof wrong?
-        printf("AST_DECLARE_VAR\n");
         AST *ident = ast->right->left;
         if (ident->kind == AST_ARRAYDECL) ident = ident->left;
         if (ident->kind != AST_IDENTIFIER) {
@@ -69,10 +68,8 @@ static int BCGetOBJOffset(Module *P,AST *ast) {
             return 0;
         }
         const char *name = ident->d.string;
-        printf("Looking up %s in a module\n",name);
         if(name) sym = LookupSymbolInTable(&P->objsyms,name);
     } else if (ast->kind == AST_IDENTIFIER) {
-        printf("AST_IDENTIFIER\n");
         sym = LookupAstSymbol(ast,NULL);
     } else printf("Unhandled AST Kind %d in BCGetOBJOffset\n",ast->kind);
     if (!sym) {
@@ -167,7 +164,7 @@ static enum MathOpKind
 Optoken2MathOpKind(int token,bool *unaryOut) {
     bool unary = false;
     enum MathOpKind mok = 0;
-    printf("In Optoken2MathOpKind, optoken %03X\n",token);
+    //printf("In Optoken2MathOpKind, optoken %03X\n",token);
     switch (token) {
     default: return 0;
     
@@ -460,7 +457,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         case SYM_VARIABLE: {
             if (!strcmp(sym->our_name,"__clkfreq_var") || !strcmp(sym->our_name,"__clkmode_var")) {
                 // FIXME figure out how to properly differentiate these
-                printf("Got special symbol %s with offset %d\n",sym->our_name,sym->offset);
+                DEBUG(node,"Got special symbol %s with offset %d",sym->our_name,sym->offset);
                 memOp.attr.memop.base = MEMOP_BASE_POP;
                 targetKind = MOT_MEM;
                 if (baseExpr) ERROR(node,"baseExpr already set?!?!");
@@ -831,8 +828,6 @@ static int getObjID(Module *M,const char *name, AST** gettype) {
 
 static void
 BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpression, bool rescueAbort) {
-    printf("Compiling fun call, ");
-    printASTInfo(node);
 
     Symbol *sym = NULL;
     int callobjid = -1;
@@ -946,7 +941,7 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
             } else if (!strcmp(sym->our_name,"_reboot")) {
                 if (gl_p2) ERROR(node,"P2 REBOOT is NYI");
                 else {
-                    printf("Got reboot!\n");
+                    DEBUG(node,"Got reboot!");
                     callOp.kind = BOK_CLKSET;
                     // Slight Hack: compile the parameters up here
                     BCCompileInteger(irbuf,128);
@@ -966,7 +961,6 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
             ERROR(node,"Can't get function id for %s",sym->our_name);
             return;
         }
-        printf("Got call to %s\n",sym->our_name);
         if (callobjid<0) {
             callOp.kind = BOK_CALL_SELF;
         } else {
@@ -985,7 +979,6 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
     if (node->right) {
         ASSERT_AST_KIND(node->right,AST_EXPRLIST,return;);
         for (AST *list=node->right;list;list=list->right) {
-            printf("Compiling function call argument...");
             ASSERT_AST_KIND(list,AST_EXPRLIST,return;);
             BCCompileExpression(irbuf,list->left,context,false);
         }
@@ -1003,7 +996,7 @@ BCCompileCoginit(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpression
     Function *calledmethod;
     if (IsSpinCoginit(node,&calledmethod)) {
         // Spin coginit
-        printf("Got Spin coginit with function %s\n",calledmethod->name);
+        DEBUG(node,"Got Spin coginit with function %s",calledmethod->name);
         if(gl_interp_kind != INTERP_KIND_P1ROM) {
             ERROR(node,"Spin coginit NYI for this interpreter");
             return;
@@ -1016,7 +1009,7 @@ BCCompileCoginit(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpression
             // Arguments
             AST *funcall = node->left->right->left;
             for (AST *list=funcall->right;list;list=list->right) {
-                printf("Compiling coginit call argument...");
+                DEBUG(node,"Compiling coginit call argument...");
                 ASSERT_AST_KIND(list,AST_EXPRLIST,return;);
                 BCCompileExpression(irbuf,list->left,context,false);
             }
@@ -1054,7 +1047,7 @@ BCCompileCoginit(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpression
 
     } else {
         // PASM coginit
-        printf("Got PASM coginit\n");
+        DEBUG(node,"Got PASM coginit");
 
         ASSERT_AST_KIND(node->left,AST_EXPRLIST,return;);
         AST *cogidExpr = node->left->left;
@@ -1094,7 +1087,6 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
         unsigned popResults = asStatement ? 1 : 0;
         switch(node->kind) {
             case AST_FUNCCALL: {
-                printf("Got call in expression \n");
                 BCCompileFunCall(irbuf,node,context,!asStatement,false);
                 popResults = 0;
             } break;
@@ -1103,7 +1095,6 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 popResults = 0;
             } break;
             case AST_COGINIT: {
-                printf("got coginit expression!\n");
                 BCCompileCoginit(irbuf,node,context,true);
             } break;
             case AST_ASSIGN: {
@@ -1118,7 +1109,6 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
             } break;
             case AST_CONDRESULT: {
                 // Ternary operator
-                printf("Got condresult (ternary) in expression ");printASTInfo(node);
                 if (curfunc->language == LANG_SPIN_SPIN1) DEBUG(node,"got AST_CONDRESULT in Spin1?");
                 ASSERT_AST_KIND(node->right,AST_THENELSE,break;);
                 ByteOpIR *elselbl = BCNewOrphanLabel(context), *endlbl = BCNewOrphanLabel(context);
@@ -1306,7 +1296,6 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
             } break;
             case AST_LOOKUP:
             case AST_LOOKDOWN: {
-                printf("Got LOOKUP/DOWN! "); printASTInfo(node);
                 bool isLookdown = node->kind == AST_LOOKDOWN;
                 ASSERT_AST_KIND(node->left,AST_LOOKEXPR,return;);
                 if (node->right->kind == AST_EXPRLIST) {
@@ -1368,7 +1357,6 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
 
 static void 
 BCCompileStmtlist(BCIRBuffer *irbuf,AST *list, BCContext context) {
-    printf("Compiling a statement list...\n");
 
     for (AST *ast=list;ast&&ast->kind==AST_STMTLIST;ast=ast->right) {
         AST *node = ast->left;
@@ -1386,9 +1374,10 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
     while (node->kind == AST_COMMENTEDNODE) {
         //printf("Node is allegedly commented:\n");
         // FIXME: this doesn't actually get any comments?
+        /*
         for(AST *comment = node->right;comment&&comment->kind==AST_COMMENT;comment=comment->right) {
             printf("---  %s\n",comment->d.string);
-        }
+        }*/
         node = node->left;
     }
 
@@ -1397,7 +1386,6 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         BCCompileAssignment(irbuf,node,context,false,0);
         break;
     case AST_WHILE: {
-        printASTInfo(node);
 
         ByteOpIR *toplbl = BCPushLabel(irbuf,context);
         ByteOpIR *bottomlbl = BCNewOrphanLabel(context);
@@ -1436,8 +1424,6 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
     } break;
     case AST_FOR:
     case AST_FORATLEASTONCE: {
-        printf("Got For... ");
-        printASTInfo(node);
         if (IsSpinLang(curfunc->language)) DEBUG(node,"Got a FOR loop in Spin, probably wrong transform conditions");
 
         bool atleastonce = node->kind == AST_FORATLEASTONCE;
@@ -1449,11 +1435,11 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         AST *initStmnt = node->left;
         AST *to = node->right;
         ASSERT_AST_KIND(to,AST_TO,return;);
-        printf("to: ");printASTInfo(to);
+        //printf("to: ");printASTInfo(to);
         AST *condExpression = to->left;
         AST *step = to->right;
         ASSERT_AST_KIND(step,AST_STEP,return;);
-        printf("step: ");printASTInfo(step);
+        //printf("step: ");printASTInfo(step);
         AST *nextExpression = step->left;
         AST *body = step->right;
 
@@ -1479,21 +1465,20 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
 
     } break;
     case AST_COUNTREPEAT: {
-        printf("Got countrepeat... "); printASTInfo(node);
 
         AST *loopvar = node->left;
         
         AST *from = node->right;
         ASSERT_AST_KIND(from,AST_FROM,return;);
-        printf("from: ");printASTInfo(from);
+        //printf("from: ");printASTInfo(from);
         AST *fromExpression = from->left;
         AST *to = from->right;
         ASSERT_AST_KIND(to,AST_TO,return;);
-        printf("to: ");printASTInfo(to);
+        //printf("to: ");printASTInfo(to);
         AST *toExpression = to->left;
         AST *step = to->right;
         ASSERT_AST_KIND(step,AST_STEP,return;);
-        printf("step: ");printASTInfo(step);
+        //printf("step: ");printASTInfo(step);
         AST *stepExpression = step->left;
         AST *body = step->right;
 
@@ -1565,8 +1550,6 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
 
     } break;
     case AST_IF: {
-        printf("Got If... ");
-        printASTInfo(node);
 
         ByteOpIR *bottomlbl = BCNewOrphanLabel(context);
         ByteOpIR *elselbl = BCNewOrphanLabel(context);
@@ -1593,7 +1576,6 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         if(thenelse->right) BIRB_Push(irbuf,bottomlbl);
     } break;
     case AST_CASE: {
-        printf("Got Case... "); printASTInfo(node);
 
         ByteOpIR *endlabel = BCNewOrphanLabel(context);
         ByteOpIR pushEnd = {.kind=BOK_FUNDATA_PUSHADDRESS,.jumpTo=endlabel};
@@ -1609,51 +1591,51 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         // Preview what we got
         int cases = 0;
         AST *othercase = NULL;
-        printf("Previewing cases\n");
+        //printf("Previewing cases\n");
         for(AST *list=node->right;list;list=list->right) {
             AST *item = list->left;
             if (item->kind == AST_COMMENTEDNODE) item = item->left;
             if (item->kind == AST_ENDCASE) {
                 // Do nothing
-                printf("Got AST_ENDCASE\n");
+                //printf("Got AST_ENDCASE\n");
             } else if (item->kind == AST_CASEITEM) {
-                printf("Got AST_CASEITEM\n");
+                //printf("Got AST_CASEITEM\n");
                 cases++;
             } else if (item->kind == AST_OTHER) {
-                printf("Got AST_OTHER\n");
+                //printf("Got AST_OTHER\n");
                 if (othercase) ERROR(item,"Multiple OTHER cases");
                 othercase = item;
             } else {
                 // Do nothing
             }
         }
-        printf("Got %d cases%s\n",cases,othercase?" and OTHER":"");
+        //printf("Got %d cases%s\n",cases,othercase?" and OTHER":"");
         ByteOpIR *caselabels[cases];
         for(int i=0;i<cases;i++) caselabels[i] = BCNewOrphanLabel(newcontext);
         ByteOpIR *otherlabel = othercase ? BCNewOrphanLabel(newcontext) : NULL; 
         
         // Generate case expressions
-        printf("Generating case expressions\n");
+        //printf("Generating case expressions\n");
         int whichcase = 0;
         for(AST *list=node->right;list;list=list->right) {
             AST *item = list->left;
             if (item->kind == AST_COMMENTEDNODE) item = item->left;
             if (item->kind == AST_ENDCASE) {
                 // Do nothing
-                printf("Got AST_ENDCASE\n");
+                //printf("Got AST_ENDCASE\n");
             } else if (item->kind == AST_CASEITEM) {
-                printf("Got AST_CASEITEM\n");
+                //printf("Got AST_CASEITEM\n");
                 ASSERT_AST_KIND(item->left,AST_EXPRLIST,;);
                 for (AST *exprlist=item->left;exprlist;exprlist=exprlist->right) {
                     ASSERT_AST_KIND(exprlist,AST_EXPRLIST,continue;);
                     ByteOpIR caseOp = {.jumpTo=caselabels[whichcase]};
                     if (exprlist->left->kind == AST_RANGE) {
-                        printf("... with range!\n");
+                        //printf("... with range!\n");
                         BCCompileExpression(irbuf,exprlist->left->left,newcontext,false);
                         BCCompileExpression(irbuf,exprlist->left->right,newcontext,false);
                         caseOp.kind=BOK_CASE_RANGE;
                     } else {
-                        printf("... with expression?\n");
+                        //printf("... with expression?\n");
                         BCCompileExpression(irbuf,exprlist->left,newcontext,false);
                         caseOp.kind=BOK_CASE;
                     }
@@ -1662,7 +1644,7 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
                 whichcase++;
             } else if (item->kind == AST_OTHER) {
                 // Do nothing
-                printf("Got AST_OTHER\n");
+                //printf("Got AST_OTHER\n");
             } else {
                 // Do nothing
             }
@@ -1676,30 +1658,30 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         }
 
         // Compile each case
-        printf("Compiling cases..\n");
+        //printf("Compiling cases..\n");
         whichcase = 0;
         for(AST *list=node->right;list;list=list->right) {
             AST *item = list->left;
             if (item->kind == AST_COMMENTEDNODE) item = item->left;
             if (item->kind == AST_ENDCASE) {
-                printf("Got AST_ENDCASE\n");
+                //printf("Got AST_ENDCASE\n");
                 ByteOpIR endOp = {.kind = BOK_CASE_DONE};
                 BIRB_PushCopy(irbuf,&endOp);
             } else if (item->kind == AST_CASEITEM || item->kind == AST_OTHER) {
                 bool isOther = item->kind == AST_OTHER;
-                printf(isOther ? "Got AST_OTHER\n" : "Got AST_CASEITEM\n");
+                //printf(isOther ? "Got AST_OTHER\n" : "Got AST_CASEITEM\n");
                 BIRB_Push(irbuf,isOther?otherlabel:caselabels[whichcase]);
                 AST *stmt = isOther ? item->left : item->right;
                 if (stmt) {
                     if (stmt->kind == AST_COMMENTEDNODE) stmt = stmt->left;
                     if (stmt->kind == AST_ENDCASE) {
-                        printf("Got AST_ENDCASE inside AST_CASEITEM\n");
+                        //printf("Got AST_ENDCASE inside AST_CASEITEM\n");
                         ByteOpIR endOp = {.kind = BOK_CASE_DONE};
                         BIRB_PushCopy(irbuf,&endOp);
                     } else {
                         BCCompileStatement(irbuf,stmt,newcontext);
                     }
-                } else NOTE(item,"Empty CASEITEM?");
+                } else DEBUG(item,"Empty CASEITEM?");
                 if (!isOther) whichcase++;
             } else {
                 BCCompileStatement(irbuf,item,newcontext);
@@ -1747,11 +1729,9 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         }
     } break;
     case AST_COGINIT: {
-        printf("got coginit statement! "); printASTInfo(node);
         BCCompileCoginit(irbuf,node,context,false);
     } break;
     case AST_SEQUENCE: {
-        printf("got sequence in statement!\n");
         BCCompileExpression(irbuf,node,context,true);
     } break;
     case AST_OPERATOR: {
@@ -1762,7 +1742,6 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         // FIXME: Spin2 multi-return
         // TODO: This generates explicit returns of the result var. Fix in peephole step?
         bool isAbort = node->kind == AST_THROW;
-        printf("got return statement! "); printASTInfo(node);
         AST *retval = node->left;
         ByteOpIR returnOp = {0};
         returnOp.kind = isAbort ? (retval ? BOK_ABORT_POP : BOK_ABORT_PLAIN) : (retval ? BOK_RETURN_POP : BOK_RETURN_PLAIN);
@@ -1785,7 +1764,7 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
 static void 
 BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
 
-    printf("Compiling bytecode for function %s\n",F->name);
+    DEBUG(NULL,"Compiling bytecode for function %s",F->name);
     curfunc = F; // Set this global, I guess;
 
     // first up, we now know the function's address, so let's fix it up in the header
@@ -1860,7 +1839,7 @@ BCPrepareObject(Module *P) {
     Module *save = current;
     current = P;
 
-    printf("Preparing object %s\n",P->fullname);
+    DEBUG(NULL,"Preparing object %s",P->fullname);
 
     P->bedata = calloc(sizeof(BCModData), 1);
     ModData(P)->compiledAddress = -1;
@@ -1875,7 +1854,7 @@ BCPrepareObject(Module *P) {
             if (f->is_public) ModData(P)->pubs[pub_cnt++] = f;
             else              ModData(P)->pris[pri_cnt++] = f;
 
-            printf("Got function %s\n",f->user_name);
+            //printf("Got function %s\n",f->user_name);
 
             if (pub_cnt+pri_cnt >= BC_MAX_POINTERS) {
                 ERROR(NULL,"Too many functions in Module %s",P->fullname);
@@ -1908,11 +1887,11 @@ BCPrepareObject(Module *P) {
             if (!var->right->left) {
                 ERROR(var->right,"LISTHOLDER is empty");
             } else if (var->right->left->kind == AST_IDENTIFIER) {
-                printf("Got obj of type %s named %s\n",((Module*)var->left->d.ptr)->classname,var->right->left->d.string);
+                //printf("Got obj of type %s named %s\n",((Module*)var->left->d.ptr)->classname,var->right->left->d.string);
                 arrsize = 1;
             } else if (var->right->left->kind == AST_ARRAYDECL) {
                 ASSERT_AST_KIND(var->right->left->right,AST_INTEGER,return;);
-                printf("Got obj array of type %s, size %d named %s\n",((Module*)var->left->d.ptr)->classname,var->right->left->right->d.ival,var->right->left->left->d.string);
+                DEBUG(NULL,"Got obj array of type %s, size %d named %s",((Module*)var->left->d.ptr)->classname,var->right->left->right->d.ival,var->right->left->left->d.string);
                 arrsize = var->right->left->right->d.ival;
             } else {
                 ERROR(var->right,"Unhandled OBJ AST kind %d",var->right->left->kind);
@@ -1951,7 +1930,7 @@ BCCompileObject(ByteOutputBuffer *bob, Module *P) {
     Module *save = current;
     current = P;
 
-    printf("Compiling bytecode for object %s\n",P->fullname);
+    DEBUG(NULL,"Compiling bytecode for object %s",P->fullname);
 
     BOB_Align(bob,4); // Long-align
 
@@ -1971,7 +1950,7 @@ BCCompileObject(ByteOutputBuffer *bob, Module *P) {
     const int pri_cnt = ModData(P)->pri_cnt;    
     const int obj_cnt = ModData(P)->obj_cnt;
 
-    printf("Debug: this object (%s) has %d PUBs, %d PRIs and %d OBJs\n",P->classname,pub_cnt,pri_cnt,obj_cnt);
+    DEBUG(NULL,"Debug: this object (%s) has %d PUBs, %d PRIs and %d OBJs",P->classname,pub_cnt,pri_cnt,obj_cnt);
 
     OutputSpan *objOffsetSpans[obj_cnt];
     OutputSpan *sizeSpan;
@@ -2058,7 +2037,6 @@ void OutputByteCode(const char *fname, Module *P) {
     Module *save = current;
     current = P;
 
-    printf("Debug: In OutputByteCode\n");
     BCIR_Init();
 
     if (!P->functions) {
