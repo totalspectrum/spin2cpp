@@ -267,10 +267,12 @@ static void OptimizeOperator(int *optoken, AST **left,AST **right) {
     default: return;
     }
 
+    bool didSwap = false;
     if (canCommute && left && right && IsConstExpr(*left)) {
         AST *swap = *left;
         *left = *right;
         *right = swap;
+        didSwap = true;
     }
 
     if (right && *right && IsConstExpr(*right)) {
@@ -304,6 +306,12 @@ static void OptimizeOperator(int *optoken, AST **left,AST **right) {
             AstReportDone(&save);
             return;
         }
+    }
+    if (didSwap) {
+        // Undo swap if we couldn't do anything (fixes "waitcnt(381+cnt)"")
+        AST *swap = *left;
+        *left = *right;
+        *right = swap;
     }
 }
 
