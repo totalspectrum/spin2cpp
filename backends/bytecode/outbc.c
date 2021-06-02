@@ -2172,12 +2172,12 @@ void OutputByteCode(const char *fname, Module *P) {
     BOB_Align(&bob,4);
     const int programSize = bob.total_size - headerSize;
     const int variableSize = P->varsize; // Already rounded up!
-    const int stackBase = programSize + variableSize + 8; // space for that stack init thing
+    const int stackBase = headerSize + programSize + variableSize + 8; // space for that stack init thing
 
     
     printf("Program size:  %6d bytes\n",programSize);
     printf("Variable size: %6d bytes\n",variableSize);
-    if (!gl_p2) printf("Stack/Free:    %6d bytes\n",0x8000-(programSize+variableSize));
+    if (!gl_p2) printf("Stack/Free:    %6d bytes\n",0x8000-(headerSize+programSize+variableSize));
     else printf("Stack/Free:    %6d TODO\n",0);
 
     Function *mainFunc = GetMainFunction(P);
@@ -2197,7 +2197,7 @@ void OutputByteCode(const char *fname, Module *P) {
     case INTERP_KIND_P1ROM:
         // TODO fixup everything
         BOB_ReplaceWord(headerspans.pcurr,FunData(mainFunc)->compiledAddress,NULL);
-        BOB_ReplaceWord(headerspans.vbase,programSize,NULL);
+        BOB_ReplaceWord(headerspans.vbase,headerSize+programSize,NULL);
         BOB_ReplaceWord(headerspans.dbase,stackBase,NULL);
         BOB_ReplaceWord(headerspans.dcurr,stackBase+FunData(mainFunc)->localSize+mainFunc->numparams*4+4,NULL);
         break;
