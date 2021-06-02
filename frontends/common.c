@@ -53,6 +53,7 @@ int gl_p2;
 int gl_have_lut;
 int gl_errors;
 int gl_warnings_are_errors;
+int gl_verbosity;
 int gl_max_errors;
 int gl_colorize_output;
 int gl_output;
@@ -676,7 +677,8 @@ static const WORD colorWindows[] = {
     0x07, // PRINT_NORMAL
     0x0B, // PRINT_NOTE
     0x0E, // PRINT_WARNING
-    0x0C, // PRINT_ERROR 
+    0x0C, // PRINT_ERROR
+    0x05, // PRINT_DEBUG
     0x0F, // PRINT_ERROR_LOCATION
 };
 #else 
@@ -684,7 +686,8 @@ static const char *colorANSI[] = {
     "\033[0m", // PRINT_NORMAL
     "\033[0;1;36m", // PRINT_NOTE
     "\033[0;1;33m", // PRINT_WARNING
-    "\033[0;1;31m", // PRINT_ERROR 
+    "\033[0;1;31m", // PRINT_ERROR
+    "\033[0;35m", // PRINT_DEBUG
     "\033[0;1m", // PRINT_ERROR_LOCATION
 };
 #endif
@@ -836,6 +839,26 @@ NOTE(AST *instr, const char *msg, ...)
         ERRORHEADER(info->fileName, info->lineno, "note");
     else
         ERRORHEADER(NULL, 0, "note: ");
+
+    va_start(args, msg);
+    vfprintf(stderr, msg, args);
+    va_end(args);
+    fprintf(stderr, "\n");
+    RESETCOLOR();
+}
+
+void
+DEBUG(AST *instr, const char *msg, ...)
+{
+    va_list args;
+    if (gl_verbosity <= 0) return;
+    LineInfo *info = GetLineInfo(instr);
+
+    SETCOLOR(PRINT_DEBUG);
+    if (info)
+        ERRORHEADER(info->fileName, info->lineno, "info");
+    else
+        ERRORHEADER(NULL, 0, "info");
 
     va_start(args, msg);
     vfprintf(stderr, msg, args);

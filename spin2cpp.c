@@ -80,6 +80,7 @@ Usage(void)
     fprintf(stderr, "  -o file:    place final output in file\n");
     fprintf(stderr, "  -Wall:      enable all warnings\n");
     fprintf(stderr, "  -y:         debug parser\n");
+    fprintf(stderr, "  --verbose:  print additional diagnostic messages\n");
     fprintf(stderr, "  --version:  print version and exit\n");
     exit(2);
 }
@@ -249,6 +250,15 @@ main(int argc, const char **argv)
                 fprintf(stderr, "Unknown --code= choice: %s\n", argv[0]);
                 Usage();
             }
+            argv++; --argc;
+        } else if (!strcmp(argv[0], "--color")) {
+            gl_colorize_output = true;
+            argv++; --argc;
+        } else if (!strcmp(argv[0], "--nocolor")) {
+            gl_colorize_output = false;
+            argv++; --argc;
+        } else if (!strcmp(argv[0], "--verbose")) {
+            gl_verbosity = 1;
             argv++; --argc;
         } else if (!strcmp(argv[0], "--dat") || (!compile && !strcmp(argv[0], "-c"))) {
             gl_output = OUTPUT_DAT;

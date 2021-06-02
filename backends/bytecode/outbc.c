@@ -407,7 +407,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         ident->right && ident->right->kind == AST_ADDROF && 
         ident->right->left && ident->right->left->kind == AST_ARRAYREF) {
             // Handle weird AST representation of "var.byte[x]""
-            NOTE(node,"handling size override...");
+            DEBUG(node,"handling size override...");
             typeoverride = ident->left;
             ident = ident->right->left->left;
             goto try_ident_again;
@@ -737,7 +737,7 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
             return;
         }
         switch (sym->kind) {
-        case SYM_TEMPVAR: NOTE(node,"temp variable %s used",sym->our_name); // fall through
+        case SYM_TEMPVAR: DEBUG(node,"temp variable %s used",sym->our_name); // fall through
         case SYM_VARIABLE:
         case SYM_LOCALVAR:
         case SYM_PARAMETER:
@@ -1111,7 +1111,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 popResults = 0;
             } break;
             case AST_SEQUENCE: {
-                NOTE(node,"got AST_SEQUENCE, might have been pessimized");
+                DEBUG(node,"got AST_SEQUENCE, might have been pessimized");
                 BCCompileExpression(irbuf,node->left,context,true);
                 if (node->right) BCCompileExpression(irbuf,node->right,context,asStatement);
                 popResults = 0;
@@ -1119,7 +1119,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
             case AST_CONDRESULT: {
                 // Ternary operator
                 printf("Got condresult (ternary) in expression ");printASTInfo(node);
-                if (curfunc->language == LANG_SPIN_SPIN1) NOTE(node,"got AST_CONDRESULT in Spin1?");
+                if (curfunc->language == LANG_SPIN_SPIN1) DEBUG(node,"got AST_CONDRESULT in Spin1?");
                 ASSERT_AST_KIND(node->right,AST_THENELSE,break;);
                 ByteOpIR *elselbl = BCNewOrphanLabel(context), *endlbl = BCNewOrphanLabel(context);
                 BCCompileConditionalJump(irbuf,node->left,false,elselbl,context);
@@ -1227,7 +1227,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
             } break;
             case AST_ISBETWEEN: {
                 // TODO make this not terrible. Could really use a temp var here.
-                NOTE(node,"Compiling AST_ISBETWEEN");
+                DEBUG(node,"Compiling AST_ISBETWEEN");
                 if (ExprHasSideEffects(node->left)) WARNING(node->left,"Compiling AST_ISBETWEEN with side-effect-having expression");
                 BCCompileExpression(irbuf,node->left,context,false);
                 BCCompileExpression(irbuf,node->right->left,context,false);
@@ -1257,7 +1257,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                     return;
                 }
                 switch (sym->kind) {
-                case SYM_TEMPVAR: NOTE(node,"temp variable %s used",sym->our_name); // fall through
+                case SYM_TEMPVAR: DEBUG(node,"temp variable %s used",sym->our_name); // fall through
                 case SYM_VARIABLE:
                 case SYM_LOCALVAR:
                 case SYM_PARAMETER:
@@ -1438,7 +1438,7 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
     case AST_FORATLEASTONCE: {
         printf("Got For... ");
         printASTInfo(node);
-        if (IsSpinLang(curfunc->language)) NOTE(node,"Got a FOR loop in Spin, probably wrong transform conditions");
+        if (IsSpinLang(curfunc->language)) DEBUG(node,"Got a FOR loop in Spin, probably wrong transform conditions");
 
         bool atleastonce = node->kind == AST_FORATLEASTONCE;
 
@@ -1467,7 +1467,7 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         if (body) {
             ASSERT_AST_KIND(body,AST_STMTLIST,return;);
             BCCompileStmtlist(irbuf,body,newcontext);
-        } else NOTE(node,"Compiling empty FOR loop?");
+        } else DEBUG(node,"Compiling empty FOR loop?");
 
         BIRB_Push(irbuf,nextLabel);
         BCCompileExpression(irbuf,nextExpression,context,true); // Compile as statement!
@@ -1502,7 +1502,7 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
             bool isConst = IsConstExpr(toExpression);
             uint32_t constVal = isConst ? EvalConstExpr(toExpression) : 0;
             if (isConst && constVal == 0) {
-                NOTE(node,"Skipping loop with zero repeats");
+                DEBUG(node,"Skipping loop with zero repeats");
                 break;
             }
             // Compile repeat count
@@ -1522,7 +1522,7 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
             if (body) {
                 ASSERT_AST_KIND(body,AST_STMTLIST,return;);
                 BCCompileStmtlist(irbuf,body,newcontext);
-            } else NOTE(node,"Compiling empty REPEAT N loop?");
+            } else DEBUG(node,"Compiling empty REPEAT N loop?");
 
             BIRB_Push(irbuf,nextLabel);
             BCCompileJumpEx(irbuf,topLabel,BOK_JUMP_DJNZ,newcontext,0);
@@ -1550,7 +1550,7 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
             if (body) {
                 ASSERT_AST_KIND(body,AST_STMTLIST,return;);
                 BCCompileStmtlist(irbuf,body,newcontext);
-            } else NOTE(node,"Compiling empty REPEAT FROM TO loop?");
+            } else DEBUG(node,"Compiling empty REPEAT FROM TO loop?");
 
             BIRB_Push(irbuf,nextLabel);
             if (haveStep) BCCompileExpression(irbuf,stepExpression,newcontext,false);
@@ -1737,7 +1737,7 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         case SYM_BUILTIN:
         case SYM_FUNCTION: {
             // This nonsense fixes REBOOT
-            NOTE(node,"identifier converted to function call for sym with kind %d and name %s",sym->kind,sym->our_name);
+            DEBUG(node,"identifier converted to function call for sym with kind %d and name %s",sym->kind,sym->our_name);
             AST *fakecall = NewAST(AST_FUNCCALL,node,NULL);
             BCCompileFunCall(irbuf,fakecall,context,false,false);
         } break;

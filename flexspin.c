@@ -101,6 +101,7 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "           xxx = orig uses original flexspin LMM\n");
     fprintf(f, "           xxx = slow uses traditional (slow) LMM\n");
     fprintf(f, "  [ --tabs=N ]       assume tabs are set every N spaces for indentation purposes\n");
+    fprintf(f, "  [ --verbose ]      print additional diagnostic messages\n");
     fprintf(f, "  [ --version ]      just show compiler version\n");
     
     fflush(stderr);
@@ -288,6 +289,9 @@ main(int argc, const char **argv)
             argv++; --argc;
         } else if (!strcmp(argv[0], "--nocolor")) {
             gl_colorize_output = false;
+            argv++; --argc;
+        } else if (!strcmp(argv[0], "--verbose")) {
+            gl_verbosity = 1;
             argv++; --argc;
         } else if (!strcmp(argv[0], "-w")) {
             gl_outputflags |= OUTFLAG_COG_CODE;
