@@ -9,7 +9,7 @@ _setptr2
 	call	#_nextidx
 	mov	setptr2_tmp003_, result1
 	shl	setptr2_tmp003_, #2
-	mov	setptr2_tmp001_, #40
+	mov	setptr2_tmp001_, #44
 	add	setptr2_tmp001_, setptr2_tmp003_
 	mov	arg01, _setptr2_c
 	add	objptr, setptr2_tmp001_
@@ -19,12 +19,12 @@ _setptr2_ret
 	ret
 
 _nextidx
-	add	objptr, #80
+	add	objptr, #40
 	rdlong	result1, objptr
 	mov	_var01, result1
 	add	_var01, #1
 	wrlong	_var01, objptr
-	sub	objptr, #80
+	sub	objptr, #40
 _nextidx_ret
 	ret
 

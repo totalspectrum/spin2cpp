@@ -1666,6 +1666,8 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
     return;
 }
 
+#define MAGIC_CLASS_SIZE 9999999
+
 static int
 DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
 {
@@ -1682,10 +1684,6 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
         sym_flags = SYMF_PRIVATE;
     }
     varblocklist = P->pendingvarblock;
-    if (basetypesize == 0) {
-        P->finalvarblock = AddToList(P->finalvarblock, varblocklist);
-        P->pendingvarblock = NULL;
-    }
     for (upper = varblocklist; upper; upper = upper->right) {
         AST *idlist;
         if (upper->kind != AST_LISTHOLDER) {
@@ -1714,7 +1712,11 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
         case AST_DECLARE_VAR_WEAK:
             curtype = ast->left;
             idlist = ast->right;
-            curtypesize = CheckedTypeSize(curtype); // make sure module variables are declared
+            if (P->mainLanguage == LANG_SPIN_SPIN1 && IsClassType(BaseType(curtype))) {
+                curtypesize = MAGIC_CLASS_SIZE;
+            } else {
+                curtypesize = CheckedTypeSize(curtype); // make sure module variables are declared
+            }
             if (ast->d.ival) {
                 // variable should be private
                 sym_flags = SYMF_PRIVATE;
@@ -1757,7 +1759,9 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
             }
             // declare all the variables
             offset = EnterVars(SYM_VARIABLE, &P->objsyms, curtype, idlist, offset, P->isUnion, sym_flags);
-        } else if (basetypesize == curtypesize || (basetypesize == 4 && (curtypesize >= 4 || curtypesize == 0))) {
+        } else if (basetypesize == curtypesize) {
+            offset = EnterVars(SYM_VARIABLE, &P->objsyms, curtype, idlist, offset, P->isUnion, sym_flags);
+        } else if (basetypesize != MAGIC_CLASS_SIZE && (basetypesize > 4 && (curtypesize >= 4 || curtypesize == 0))) {
             offset = EnterVars(SYM_VARIABLE, &P->objsyms, curtype, idlist, offset, P->isUnion, sym_flags);
         }
     }
@@ -1840,6 +1844,8 @@ DeclareMemberVariables(Module *P)
         offset = DeclareMemberVariablesOfSize(P, 4, offset); // also declares >= 4
         offset = DeclareMemberVariablesOfSize(P, 2, offset);
         offset = DeclareMemberVariablesOfSize(P, 1, offset);
+        // declare objects
+        offset = DeclareMemberVariablesOfSize(P, MAGIC_CLASS_SIZE, offset);
     } else {
         offset = DeclareMemberVariablesOfSize(P, 0, offset);
     }
