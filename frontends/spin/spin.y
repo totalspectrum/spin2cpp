@@ -1324,9 +1324,9 @@ expr:
   | expr SP_LIMITMAX '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign(K_LIMITMAX, $1, $4); }
   | expr SP_ZEROX '=' expr %prec SP_ASSIGN
-    { $$ = AstOpAssign(K_ZEROEXTEND, $1, $4); }
+    { $$ = AstOpAssign(K_ZEROEXTEND, $1, AstOperator('+', $4, AstInteger(1))); }
   | expr SP_SIGNX '=' expr %prec SP_ASSIGN
-    { $$ = AstOpAssign(K_SIGNEXTEND, $1, $4); }
+    { $$ = AstOpAssign(K_SIGNEXTEND, $1, AstOperator('+', $4, AstInteger(1))); }
   | expr SP_REV '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign(K_REV, $1, $4); }
   | expr SP_REV2 '=' expr %prec SP_ASSIGN
