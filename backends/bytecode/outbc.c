@@ -2165,15 +2165,20 @@ void OutputByteCode(const char *fname, Module *P) {
         ERROR(NULL,"Unknown interpreter kind");
         return;
     }
+    const int headerSize = bob.total_size;
 
     BCCompileObject(&bob,P);
 
     BOB_Align(&bob,4);
-    const int programSize = bob.total_size;
+    const int programSize = bob.total_size - headerSize;
     const int variableSize = P->varsize; // Already rounded up!
     const int stackBase = programSize + variableSize + 8; // space for that stack init thing
 
-    printf("Program size:  %6d bytes\nVariable size: %6d bytes\nStack/Free:    %6d TODO\n",programSize,variableSize,0);
+    
+    printf("Program size:  %6d bytes\n",programSize);
+    printf("Variable size: %6d bytes\n",variableSize);
+    if (!gl_p2) printf("Stack/Free:    %6d bytes\n",0x8000-(programSize+variableSize));
+    else printf("Stack/Free:    %6d TODO\n",0);
 
     Function *mainFunc = GetMainFunction(P);
     if (!mainFunc) {
