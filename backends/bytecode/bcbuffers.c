@@ -40,13 +40,13 @@ OutputSpan *BOB_PushByte(ByteOutputBuffer *buf,uint8_t data,const char *comment)
 }
 OutputSpan *BOB_PushWord(ByteOutputBuffer *buf,uint16_t data,const char *comment) {
     #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-        data = __builtin_bswap16(data); // GCC-ism, but this will never be compiled because WTF uses big endian anymore?
+        data = __builtin_bswap16(data);
     #endif
     return BOB_Push(buf,(uint8_t*)&data,2,comment);
 }
 OutputSpan *BOB_PushLong(ByteOutputBuffer *buf,uint32_t data,const char *comment) {
     #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-        data = __builtin_bswap32(data); // GCC-ism, but this will never be compiled because WTF uses big endian anymore?
+        data = __builtin_bswap32(data);
     #endif
     return BOB_Push(buf,(uint8_t*)&data,4,comment);
 }
@@ -56,13 +56,13 @@ void BOB_ReplaceByte(OutputSpan *span,uint8_t data,const char *comment) {
 }
 void BOB_ReplaceWord(OutputSpan *span,uint16_t data,const char *comment) {
     #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-        data = __builtin_bswap16(data); // GCC-ism, but this will never be compiled because WTF uses big endian anymore?
+        data = __builtin_bswap16(data);
     #endif
     return BOB_Replace(span,(uint8_t*)&data,2,comment);
 }
 void BOB_ReplaceLong(OutputSpan *span,uint32_t data,const char *comment) {
     #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-        data = __builtin_bswap32(data); // GCC-ism, but this will never be compiled because WTF uses big endian anymore?
+        data = __builtin_bswap32(data);
     #endif
     return BOB_Replace(span,(uint8_t*)&data,4,comment);
 }

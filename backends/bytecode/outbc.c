@@ -71,7 +71,7 @@ static int BCGetOBJOffset(Module *P,AST *ast) {
         if(name) sym = LookupSymbolInTable(&P->objsyms,name);
     } else if (ast->kind == AST_IDENTIFIER) {
         sym = LookupAstSymbol(ast,NULL);
-    } else printf("Unhandled AST Kind %d in BCGetOBJOffset\n",ast->kind);
+    } else ERROR(ast,"Unhandled AST Kind %d in BCGetOBJOffset\n",ast->kind);
     if (!sym) {
         ERROR(ast,"Can't find symbol for an OBJ");
         return -1;
@@ -211,6 +211,84 @@ Optoken2MathOpKind(int token,bool *unaryOut) {
 
     if (unaryOut) *unaryOut = unary;
     return mok;
+}
+
+static void OptimizeOperator(int *optoken, AST **left,AST **right) {
+    ASTReportInfo save;
+
+    // Try special cases first
+    if (*optoken == K_SHL && left && IsConstExpr(*left) && EvalConstExpr(*left) == 1) {
+        *left = NULL;
+        *optoken = K_DECODE;
+        return;
+    }
+
+    int shiftOptOp = 0;
+    bool canNopOpt = false;
+    int32_t nopOptVal;
+    bool canZeroOpt = false;
+    int32_t zeroOptVal;
+    bool canCommute = false;
+
+    switch (*optoken) {
+    case '*':
+        canCommute = true;
+        shiftOptOp = K_SHL;
+        canNopOpt = true;
+        nopOptVal = 1;
+        canZeroOpt = true;
+        zeroOptVal = 0;
+        break;
+    case '/':
+        shiftOptOp = K_SAR;
+        canNopOpt = true;
+        nopOptVal = 1;
+        break;
+    case K_SHL:
+    case K_SHR:
+    case K_SAR:
+    case K_ROTL:
+    case K_ROTR:
+        canNopOpt = true;
+        nopOptVal = 0;
+        break;
+    case '-':
+        canNopOpt = true;
+        nopOptVal = 0;
+        break;
+    default: return;
+    }
+
+    if (canCommute && left && right && IsConstExpr(*left)) {
+        AST *swap = *left;
+        *left = *right;
+        *right = swap;
+    }
+
+    if (right && IsConstExpr(*right)) {
+        int32_t rightVal = EvalConstExpr(*right);
+
+        if (canZeroOpt && rightVal == zeroOptVal) {
+            AstReportAs(*right,&save);
+            *optoken = '+';
+            *left = AstInteger(0);
+            *right = AstInteger(0);
+            AstReportDone(&save);
+            return;
+        } else if (canNopOpt && rightVal == nopOptVal) {
+            AstReportAs(*right,&save);
+            *optoken = '+';
+            *right = AstInteger(0);
+            AstReportDone(&save);
+            return;
+        } else if (shiftOptOp && isPowerOf2(rightVal)) {
+            AstReportAs(*right,&save);
+            *optoken = shiftOptOp;
+            *right = AstInteger(31-__builtin_clz(rightVal));
+            AstReportDone(&save);
+            return;
+        }
+    }
 }
 
 static const void StringAppend(Flexbuf *fb,AST *expr) {
@@ -660,11 +738,19 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
         if (modifyMathKind) ERROR(node,"direct operator AND given modfiyMathKind in AST_ASSIGN is unhandled");
         bool isUnary = false;
         enum MathOpKind mok = 0;
-        switch (node->d.ival) {
-        default: mok = Optoken2MathOpKind(node->d.ival,&isUnary); break;
+        int optoken = node->d.ival;
+        OptimizeOperator(&optoken,NULL,&right);
+        switch (optoken) {
+        default: mok = Optoken2MathOpKind(optoken,&isUnary); break;
         }
 
-        if (!mok) ERROR(node,"direct operator %03X in AST_ASSIGN is unhandled",node->d.ival);
+        // Handle no-ops
+        if (mok == MOK_ADD && IsConstExpr(right) && EvalConstExpr(right) == 0) {
+            if (asExpression || ExprHasSideEffects(left)) BCCompileExpression(irbuf,left,context,!asExpression);
+            return;
+        }
+
+        if (!mok) ERROR(node,"direct operator %03X in AST_ASSIGN is unhandled",optoken);
         modifyMathKind = mok;
     }
 
@@ -672,22 +758,31 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
     if (modifyMathKind == 0 && right && right->kind == AST_OPERATOR) {
         bool isUnary = false;
         enum MathOpKind mok = 0;
-        switch (right->d.ival) {
+        int optoken = right->d.ival;
+        AST *opleft = right->left;
+        AST *opright = right->right;
+        OptimizeOperator(&optoken,&opleft,&opright);
+        switch (optoken) {
         // TODO handle unary ops
-        default: mok = Optoken2MathOpKind(right->d.ival,&isUnary); break;
+        default: mok = Optoken2MathOpKind(optoken,&isUnary); break;
         }
         if (mok == 0) goto nocontract; // Can't handle this operator
 
         AST *operand;
         
-        if (isUnary && AstMatch(left,right->right)) {
+        if (isUnary && AstMatch(left,opright)) {
             operand = NULL;
             modifyReverseMath = false;
-        } else if (!isUnary && AstMatch(left,right->left)) { // "a := a +1"
-            operand = right->right;
+        } else if (!isUnary && AstMatch(left,opleft)) { // "a := a +1"
+            operand = opright;
             modifyReverseMath = false;
-        } else if (!isUnary && AstMatch(left,right->right)) { // "a := 1 + a"
-            operand = right->left;
+            // Handle no-ops
+            if (mok == MOK_ADD && IsConstExpr(opright) && EvalConstExpr(opright) == 0) {
+                if (asExpression || ExprHasSideEffects(opleft)) BCCompileExpression(irbuf,opleft,context,!asExpression);
+                return;
+            }
+        } else if (!isUnary && AstMatch(left,opright)) { // "a := 1 + a"
+            operand = opleft;
             modifyReverseMath = true;
         } else goto nocontract;
 
@@ -1123,22 +1218,13 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 enum MathOpKind mok;
                 bool unary = false;
                 AST *left = node->left,*right = node->right;
-                switch(node->d.ival) {
-
-                case K_SHL: {
-                    if (IsConstExpr(left) && EvalConstExpr(left)==1) {
-                        // convert 1<<X into decode
-                        mok = MOK_DECODE;
-                        unary = true;
-                        left = NULL;
-                    } else {
-                        mok = MOK_SHL; 
-                    }
-                } break;
+                int optoken = node->d.ival;
+                OptimizeOperator(&optoken,&left,&right);
+                switch(optoken) {
 
                 case K_BOOL_AND:
                 case K_BOOL_OR: {
-                    bool is_and = node->d.ival == K_BOOL_AND;
+                    bool is_and = optoken == K_BOOL_AND;
                     if (!ExprHasSideEffects(right)) {
                         // Use logic instead
                         mok = is_and ? MOK_LOGICAND : MOK_LOGICOR;
@@ -1156,14 +1242,20 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                     }
                 } break;
 
+                case '+': 
+                    // OptimizeOpertor turns no-ops into val + 0, so handle that here
+                    if (IsConstExpr(right) && EvalConstExpr(right) == 0) goto noOp;
+                    mok = MOK_ADD;
+                    break;
+
                 case K_INCREMENT: 
                 case K_DECREMENT:
                 case '?':
                     goto modifyOp;
                 default:
-                    mok = Optoken2MathOpKind(node->d.ival,&unary);    
+                    mok = Optoken2MathOpKind(optoken,&unary);    
                     if (!mok) {
-                        ERROR(node,"Unhandled operator 0x%03X",node->d.ival);
+                        ERROR(node,"Unhandled operator 0x%03X",optoken);
                         return;
                     }
                 }
@@ -1178,6 +1270,11 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
 
                 break;
 
+                noOp: {
+                    if (asStatement) popResults = 0;
+                    BCCompileExpression(irbuf,left,context,asStatement);
+                } break;
+
                 modifyOp: {// Handle operators that modfiy a variable
 
                     bool isPostfix = node->left;
@@ -1185,12 +1282,12 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                     if (asStatement) popResults = 0;
 
                     mok = 0;
-                    switch(node->d.ival) {
+                    switch(optoken) {
                     case K_INCREMENT: mok = isPostfix ? MOK_MOD_POSTINC : MOK_MOD_PREINC; break;
                     case K_DECREMENT: mok = isPostfix ? MOK_MOD_POSTDEC : MOK_MOD_PREDEC; break;
                     case '?': mok = isPostfix ? MOK_MOD_RANDBACKWARD : MOK_MOD_RANDFORWARD; break;
                     }
-                    if (!mok) ERROR(node,"Unhandled %sfix modify operator %03X",isPostfix?"post":"pre",node->d.ival);
+                    if (!mok) ERROR(node,"Unhandled %sfix modify operator %03X",isPostfix?"post":"pre",optoken);
                     
                     BCCompileMemOpEx(irbuf,modvar,context,MEMOP_MODIFY,mok,false,!asStatement);
                 } break;
