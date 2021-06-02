@@ -1501,7 +1501,6 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         BIRB_Push(irbuf,bottomlbl);
     } break;
     case AST_DOWHILE: {
-        printASTInfo(node);
 
         ByteOpIR *toplbl = BCPushLabel(irbuf,context);
         ByteOpIR *nextlbl = BCNewOrphanLabel(context);
