@@ -25,3 +25,7 @@ If you name your executable "bstc.exe", it will try to act like the BSTC compile
 
 If you name your executable something that ends in "spin2" (like "fastspin2.exe") it will compile for P2 by default.
 
+## Credits
+
+Most of spin2cpp was written by Eric R. Smith. The bytecode back end was contributed by Ada Gottensträter. The C preprocessor was written by Kiyoshi Matsui. Many people have contributed bug fixes, suggestions, and library files; see the COPYING and COPYING.LIB files for the full list of contributors.
+

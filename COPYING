@@ -1,6 +1,7 @@
 Spin to C++ / PASM translator
 
 Copyright 2011-2021 Total Spectrum Software Inc.
+Bytecode back end Copyright 2021 Ada Gottensträter
 
 +--------------------------------------------------------------------
 ¦  TERMS OF USE: MIT License
