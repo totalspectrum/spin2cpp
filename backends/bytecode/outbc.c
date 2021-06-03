@@ -315,6 +315,10 @@ static void OptimizeOperator(int *optoken, AST **left,AST **right) {
     }
 }
 
+static bool IsConstZero(AST *ast) {
+    return IsConstExpr(ast) && EvalConstExpr(ast) == 0;
+}
+
 static void StringAppend(Flexbuf *fb,AST *expr) {
     if(!expr) return;
     switch (expr->kind) {
@@ -430,6 +434,12 @@ BCCompileConditionalJump(BCIRBuffer *irbuf,AST *condition, bool ifNotZero, ByteO
     } else if (condition->kind == AST_OPERATOR && condition->d.ival == K_BOOL_NOT) {
         // Inverted jump
         BCCompileConditionalJump(irbuf,condition->right,!ifNotZero,label,context);
+        return;
+    } else if (condition->kind == AST_OPERATOR && (condition->d.ival == K_EQ || condition->d.ival == K_NE) 
+    && ( IsConstZero(condition->left) || IsConstZero(condition->right))) {
+        // Slightly complex condition, I know
+        // optimize conditions like x == 0 and x<>0
+        BCCompileConditionalJump(irbuf,IsConstZero(condition->left) ? condition->right : condition->left,!!ifNotZero != !!(condition->d.ival == K_EQ),label,context);
         return;
     } else if (condition->kind == AST_OPERATOR && condition->d.ival == K_BOOL_AND && !ifNotZero) {
         // like in "IF L AND R"
@@ -1674,7 +1684,6 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
             BCCompileMemOp(irbuf,loopvar,context,MEMOP_WRITE);
 
             BCContext newcontext = context;
-            newcontext.hiddenVariables += 1;
             ByteOpIR *topLabel = BCNewOrphanLabel(newcontext);
             ByteOpIR *nextLabel = BCNewOrphanLabel(newcontext);
             ByteOpIR *quitLabel = BCNewOrphanLabel(context);

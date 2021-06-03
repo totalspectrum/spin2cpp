@@ -258,6 +258,20 @@ static bool BCIR_OptUnusedLabel() {
     return didWork;
 }
 
+static bool BCIR_OptJumpOverJump() {
+    // A conditional jump that jumps over a single unconditional jump can be combined with it
+    bool didWork = false;
+    for(ByteOpIR *ir = current_birb->head;ir;ir=ir->next) {
+        if ((ir->kind == BOK_JUMP_IF_Z || ir->kind == BOK_JUMP_IF_NZ) && ir->next && ir->next->kind == BOK_JUMP && ir->next->next == ir->jumpTo) {
+            ir->jumpTo = ir->next->jumpTo;
+            ir->kind = ir->kind == BOK_JUMP_IF_Z ? BOK_JUMP_IF_NZ : BOK_JUMP_IF_Z;
+            BIRB_Remove(current_birb,ir->next);
+            didWork = true;
+        }
+    }
+    return didWork;
+}
+
 #define MOVE_SINGLE_JUMP_THRESHOLD 18 // This could probably be tuned better
 
 static bool BCIR_OptMoveSingleJumpLabel() {
@@ -357,6 +371,7 @@ void BCIR_Optimize(BCIRBuffer *irbuf) {
         if (flags & OPT_PEEPHOLE) didWork |= BCIR_OptMoveSingleJumpLabel();
         if (flags & OPT_PEEPHOLE) didWork |= BCIR_OptContractWriteRead();
         if (flags & OPT_PEEPHOLE) didWork |= BCIR_OptContractReturn();
+        if (flags & OPT_PEEPHOLE) didWork |= BCIR_OptJumpOverJump();
     } while (didWork);
     current_birb = NULL;
 }
