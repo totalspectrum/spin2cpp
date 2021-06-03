@@ -10,6 +10,7 @@ Version 5.5.1
 - Improved COG memory usage
 - Made objects come after all variables in Spin
 - Merged colorized error message changes from Wuerfel21.
+- ALPHA: new bytecode backend from Wuerfel21, accessed by --interp=rom. This is not finished yet but can compile many Spin1 programs.
 
 Version 5.5.0
 - Added warning for modifying ptra in inline assembly
