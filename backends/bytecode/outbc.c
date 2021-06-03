@@ -315,7 +315,7 @@ static void OptimizeOperator(int *optoken, AST **left,AST **right) {
     }
 }
 
-static const void StringAppend(Flexbuf *fb,AST *expr) {
+static void StringAppend(Flexbuf *fb,AST *expr) {
     if(!expr) return;
     switch (expr->kind) {
     case AST_INTEGER: {
@@ -632,9 +632,10 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
     nosymbol_memref:
     
     if (typeoverride) type = typeoverride;
-
-    if (type && type->kind == AST_ARRAYTYPE) type = type->left; // We don't care if this is an array, we just want the size
-
+    type = RemoveTypeModifiers(BaseType(type));
+    
+    // FIXME: should we actually use TYPESIZE here rather than relying on
+    // particular types?
          if (type == ast_type_byte) memOp.attr.memop.memSize = MEMOP_SIZE_BYTE;
     else if (type == ast_type_word) memOp.attr.memop.memSize = MEMOP_SIZE_WORD; 
     else if (type == ast_type_long) memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
