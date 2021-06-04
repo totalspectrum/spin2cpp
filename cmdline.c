@@ -48,6 +48,7 @@ const char *gl_outname = NULL;
 void InitializeSystem(CmdLineOptions *cmd, const char **argv)
 {
     memset(cmd, 0, sizeof(*cmd));
+    gl_isutf8 = 1;
     cmd->eepromSize = 32768;
     InitPreprocessor(argv);
     gl_max_errors = 1;

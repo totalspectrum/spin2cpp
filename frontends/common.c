@@ -50,6 +50,7 @@ Module *systemModule;
 SymbolTable *currentTypes;
 
 int gl_p2;
+int gl_isutf8 = 1;
 int gl_have_lut;
 int gl_errors;
 int gl_warnings_are_errors;

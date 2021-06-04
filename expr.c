@@ -1400,7 +1400,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
         int val = s[0] & 0xff;
         int ok = 1;
         size_t n = strlen(s);
-        if (n > 1) {
+        if (n > 1 && gl_isutf8) {
             /* is this a UTF-8 sequence denoting a single code point? */
             /* if so, return that code point */
             wchar_t w;

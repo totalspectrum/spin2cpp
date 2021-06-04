@@ -126,6 +126,7 @@ extern int gl_p2;      /* set for P2 output */
 # define P2_REV_B 2
 #define DEFAULT_P2_VERSION P2_REV_B
 
+extern int gl_isutf8;     /* using UTF-8 encoding */
 extern int gl_have_lut; /* are there any functions placed in LUT? */
 extern int gl_output;  /* type of output to produce */
 extern int gl_outputflags; /* modifiers (e.g. LMM or COG code */

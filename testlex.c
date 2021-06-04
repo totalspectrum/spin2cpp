@@ -38,6 +38,7 @@ int gl_output = 0;
 int gl_interp_kind = 0;
 int gl_gas_dat = 0;
 int gl_normalizeIdents = 1;  /* for compatibility with ident tests */
+int gl_isutf8 = 1;
 int gl_dat_offset = 0;
 int gl_infer_ctypes = 0;
 int gl_fixedreal = 0;

@@ -182,6 +182,7 @@ main(int argc, const char **argv)
     int wantcse = -1;
 
     gl_max_errors = 1;
+    gl_isutf8 = 1;
     
     /* Initialize the global preprocessor; we need to do this here
        so that the -D command line option can define preprocessor

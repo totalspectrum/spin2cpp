@@ -164,7 +164,7 @@ again:
     c1 = fgetc(f);
     if (c1 < 0) return EOF;
     c2 = fgetc(f);
-    if (c2 != 0 || c1 >= 0x80) {
+    if (c2 != 0 || (c1 >= 0x80 && gl_isutf8)) {
         wchar_t w;
         size_t n;
         char buf[8];
