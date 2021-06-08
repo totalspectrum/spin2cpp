@@ -1544,6 +1544,9 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
     }
 
     switch(node->kind) {
+    case AST_COMMENT:
+        // for now, do nothing
+        break;
     case AST_ASSIGN:
         BCCompileAssignment(irbuf,node,context,false,0);
         break;
