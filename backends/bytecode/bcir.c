@@ -156,6 +156,23 @@ bool BCIR_UsesLabel(ByteOpIR *ir) {
     }
 }
 
+bool BCIR_isJump(ByteOpIR *ir) {
+    switch(ir->kind) {
+    case BOK_JUMP:
+    case BOK_JUMP_TJZ:
+    case BOK_JUMP_DJNZ:
+    case BOK_JUMP_IF_Z:
+    case BOK_JUMP_IF_NZ:
+    case BOK_CASE:
+    case BOK_CASE_RANGE:
+        return true;
+    case BOK_MEM_MODIFY:
+    case BOK_REG_MODIFY:
+        return ir->mathKind == MOK_MOD_REPEATSTEP;
+    default: return false;
+    }
+}
+
 bool BCIR_IsLabel(ByteOpIR *ir) {
     return ir->kind == BOK_LABEL;
 }
@@ -272,6 +289,18 @@ static bool BCIR_OptJumpOverJump() {
     return didWork;
 }
 
+static bool BCIR_OptJumpToJump() {
+    // Any kind of jump that jumps to an unconditional jump can jump to its target instead
+    bool didWork = false;
+    for(ByteOpIR *ir = current_birb->head;ir;ir=ir->next) {
+        if (BCIR_isJump(ir) && ir->jumpTo->next && ir->jumpTo->next != ir && ir->jumpTo->next->kind == BOK_JUMP) {
+            ir->jumpTo = ir->jumpTo->next->jumpTo;
+            didWork = true;
+        }
+    }
+    return didWork;
+}
+
 #define MOVE_SINGLE_JUMP_THRESHOLD 18 // This could probably be tuned better
 
 static bool BCIR_OptMoveSingleJumpLabel() {
@@ -359,10 +388,13 @@ static bool BCIR_OptContractReturn() {
     return didWork;
 }
 
+#define BCOPT_MAX_ITERATIONS 50
+
 void BCIR_Optimize(BCIRBuffer *irbuf) {
     current_birb = irbuf;
     int flags = curfunc->optimize_flags;
     bool didWork;
+    int iterations = 0;
     do {
         didWork = false;
         if (flags & OPT_DEADCODE) didWork |= BCIR_OptDeadCode();
@@ -372,7 +404,10 @@ void BCIR_Optimize(BCIRBuffer *irbuf) {
         if (flags & OPT_PEEPHOLE) didWork |= BCIR_OptContractWriteRead();
         if (flags & OPT_PEEPHOLE) didWork |= BCIR_OptContractReturn();
         if (flags & OPT_PEEPHOLE) didWork |= BCIR_OptJumpOverJump();
-    } while (didWork);
+        if (flags & OPT_PEEPHOLE) didWork |= BCIR_OptJumpToJump();
+    } while (didWork && ++iterations < BCOPT_MAX_ITERATIONS);
+    if (iterations >= BCOPT_MAX_ITERATIONS) WARNING(curfunc->body,"Optimization pass limit (%d) exceeded on function %s",BCOPT_MAX_ITERATIONS,curfunc->name);
+    DEBUG(NULL,"took %d passes to optimize function %s",iterations,curfunc->name);
     current_birb = NULL;
 }
 
