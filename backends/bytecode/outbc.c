@@ -1025,6 +1025,17 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
     } else {
         if (node->left) sym = LookupAstSymbol(node->left, NULL);
         else sym = LookupAstSymbol(node, NULL);
+
+        if (sym && sym->module) {
+            Module *P = (Module *)sym->module;
+            if (P == systemModule && current != P) {
+                callobjid = getObjID(current, P->classname, &objtype);
+                if (callobjid<0) {
+                    ERROR(node->left, "Not an OBJ of this object");
+                    return;
+                }
+            }
+        }
     }
 
     ByteOpIR callOp = {0};
@@ -1995,6 +2006,18 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
 }
 
 static void
+BCInsertModule(Module *P, Module *sub, const char *subname) {
+    AST *classtype;
+    AST *ident;
+    
+    ident = AstIdentifier(subname);
+    classtype = ClassType(sub);
+
+    DeclareOneMemberVar(P, ident, classtype, 1 /* is_private */);
+    DeclareMemberVariables(P);
+}
+
+static void
 BCPrepareObject(Module *P) {
     // Init bedata
     if (P->bedata) return;
@@ -2099,6 +2122,11 @@ BCCompileObject(ByteOutputBuffer *bob, Module *P) {
 
     BOB_Comment(bob,auto_printf(128,"--- Object Header for %s",P->classname));
 
+    // insert system module
+    if (systemModule && systemModule != P && systemModule->functions) {
+        BCInsertModule(P, systemModule, "_system_");
+    }
+    // prepare object
     BCPrepareObject(P);
 
     if (ModData(P)->compiledAddress < 0) {

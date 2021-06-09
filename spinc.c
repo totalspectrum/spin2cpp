@@ -92,6 +92,8 @@ makeClassNameSafe(Module *P)
 
 #include "sys/p1_code.spin.h"
 #include "sys/p2_code.spin.h"
+#include "sys/bytecode_rom.spin.h"
+#include "sys/common_pasm.spin.h"
 #include "sys/common.spin.h"
 #include "sys/float.spin.h"
 #include "sys/gcalloc.spin.h"
@@ -133,23 +135,33 @@ InitGlobalModule(void)
     }
     
     /* compile inline assembly */
-    if (gl_output == OUTPUT_ASM || gl_output == OUTPUT_COGSPIN) {
+    if (gl_output == OUTPUT_ASM || gl_output == OUTPUT_COGSPIN || gl_output == OUTPUT_BYTECODE) {
         int old_normalize = gl_normalizeIdents;
         
         /* set up temporary variable processing */
         oldtmpnum = SetTempVariableBase(90000, 0);
 
         // add in processor specific code
-        if (gl_p2) {
-            syscode = (const char *)sys_p2_code_spin;
+        if (gl_output == OUTPUT_BYTECODE) {
+            syscode = (const char *)sys_bytecode_rom_spin;
         } else {
-            syscode = (const char *)sys_p1_code_spin;
+            if (gl_p2) {
+                syscode = (const char *)sys_p2_code_spin;
+            } else {
+                syscode = (const char *)sys_p1_code_spin;
+            }
         }
         gl_normalizeIdents = 0;
         systemModule->Lptr = (LexStream *)calloc(sizeof(*systemModule->Lptr), 1);
         systemModule->Lptr->flags |= LEXSTREAM_FLAG_NOSRC;
         strToLex(systemModule->Lptr, syscode, "_system_", LANG_SPIN_SPIN1);
         spinyyparse();
+
+        // add common PASM code
+        if (gl_output != OUTPUT_BYTECODE) {
+            strToLex(systemModule->Lptr, (const char *)sys_common_pasm_spin, "_common_pasm_", LANG_SPIN_SPIN1);
+            spinyyparse();
+        }
         strToLex(systemModule->Lptr, (const char *)sys_common_spin, "_common_", LANG_SPIN_SPIN1);
         spinyyparse();
         strToLex(systemModule->Lptr, (const char *)sys_float_spin, "_float_", LANG_SPIN_SPIN1);

@@ -1,6 +1,6 @@
 #
 # Makefile for spin compiler
-# Copyright (c) 2011-2020 Total Spectrum Software Inc.
+# Copyright (c) 2011-2021 Total Spectrum Software Inc.
 # Distributed under the MIT License (see COPYING for details)
 #
 # if CROSS is defined, we are building a cross compiler
@@ -132,7 +132,8 @@ LEXOBJS = $(LEXSRCS:%.c=$(BUILD)/%.o)
 SPINOBJS = $(SPINSRCS:%.c=$(BUILD)/%.o)
 OBJS = $(SPINOBJS) $(BUILD)/spin.tab.o $(BUILD)/basic.tab.o $(BUILD)/cgram.tab.o
 
-SPIN_CODE = sys/p1_code.spin.h sys/p2_code.spin.h sys/common.spin.h sys/float.spin.h sys/gcalloc.spin.h
+SPIN_CODE = sys/p1_code.spin.h sys/p2_code.spin.h sys/bytecode_rom.spin.h \
+    sys/common.spin.h sys/common_pasm.spin.h sys/float.spin.h sys/gcalloc.spin.h
 PASM_SUPPORT_CODE = sys/lmm_orig.spin.h sys/lmm_slow.spin.h sys/lmm_trace.spin.h sys/lmm_cache.spin.h sys/lmm_compress.spin.h
 
 help:
