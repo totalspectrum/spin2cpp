@@ -1166,7 +1166,11 @@ FixupCode(Module *P, int isBinary)
     }
 
     /* insert calls to __init__ if needed */
-    firstfunc = GetMainFunction(P);
+    if (isBinary) {
+        firstfunc = GetMainFunction(P);
+    } else {
+        firstfunc = NULL;
+    }
     if (firstfunc) {
         for (Q = allparse; Q; Q = Q->next) {
             for (pf = Q->functions; pf; pf = pf->next) {
