@@ -907,6 +907,10 @@ doDeclareFunction(AST *funcblock)
     if (FindAnnotation(annotation, "noinline") != 0) {
         fdef->no_inline = 1;
     }
+    if (FindAnnotation(annotation, "constructor")) fdef->attributes |= FUNC_ATTR_CONSTRUCTOR;
+    if (FindAnnotation(annotation, "destructor"))  fdef->attributes |= FUNC_ATTR_DESTRUCTOR;
+    if (FindAnnotation(annotation, "needsinit"))   fdef->attributes |= FUNC_ATTR_NEEDSINIT;
+    
     fdef->name = funcname_internal;
     fdef->user_name = funcname_user;
     fdef->annotations = annotation;
@@ -2504,6 +2508,13 @@ MarkUsedBody(AST *body, const char *caller)
         if (sym && sym->kind == SYM_FUNCTION) {
             Function *func = (Function *)sym->val;
             MarkUsed(func, sym->our_name);
+            if (func->attributes & FUNC_ATTR_NEEDSINIT) {
+                sym = LookupSymbol("__init__");
+                if (sym && sym->kind == SYM_FUNCTION) {
+                    func = (Function *)sym->val;
+                    MarkUsed(func, "needsinit");
+                }
+            }
         } else if (sym && !strcmp(name, "__lockreg")) {
             gl_features_used |= FEATURE_LOCKREG_USED;
         }

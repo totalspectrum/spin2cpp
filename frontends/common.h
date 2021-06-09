@@ -346,6 +346,11 @@ typedef struct funcdef {
     unsigned toplevel:1;     // 1 if function is top level
     unsigned sets_send:1;    // 1 if function sets SEND function
     unsigned sets_recv:1;    // 1 if function sets RECV function
+
+    unsigned attributes;     // various other attributes
+#define FUNC_ATTR_CONSTRUCTOR 0x0001  /* does not actually work yet */
+#define FUNC_ATTR_DESTRUCTOR  0x0002  /* does not actually work yet */
+#define FUNC_ATTR_NEEDSINIT   0x0004  /* triggers call to __init__ method to be inserted at start of main */
     
     /* number of places this function is called from */
     /* 0 == unused function, 1== ripe for inlining */

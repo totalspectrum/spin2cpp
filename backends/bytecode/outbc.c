@@ -986,6 +986,29 @@ static int getObjID(Module *M,const char *name, AST** gettype) {
     return 0;
 }
 
+// FIXME this seems very convoluted
+static int getObjIDByClass(Module *M, AST *classCast, AST** gettype) {
+    Module *classptr = GetClassPtr(classCast->left);
+    if (!M->bedata) {
+        ERROR(NULL,"Internal Error: bedata empty");
+        return -1;
+    }
+    for(int i=0;i<ModData(M)->obj_cnt;i++) {
+        AST *obj = ModData(M)->objs[i];
+        ASSERT_AST_KIND(obj,AST_DECLARE_VAR,return 0;);
+        ASSERT_AST_KIND(obj->left,AST_OBJECT,return 0;);
+        ASSERT_AST_KIND(obj->right,AST_LISTHOLDER,return 0;);
+        AST *ident = obj->right->left;
+        Module *ptr = GetClassPtr(obj->left);
+        ASSERT_AST_KIND(ident,AST_IDENTIFIER,return 0;);
+        if (ptr != classptr) continue; 
+        if (gettype) *gettype = obj->left;
+        return i+1+ModData(M)->pub_cnt+ModData(M)->pri_cnt;
+    }
+    ERROR(classCast,"can't find OBJ id for cast value");
+    return 0;
+}
+
 static void
 BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpression, bool rescueAbort) {
 
@@ -999,14 +1022,22 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
             index_expr = ident->right;
             ident = ident->left;
         }
-        ASSERT_AST_KIND(ident,AST_IDENTIFIER,return;);
-        Symbol *objsym = LookupAstSymbol(ident,NULL);
-        if(!objsym || objsym->kind != SYM_VARIABLE) {
-            ERROR(node->left,"Internal error: Invalid call receiver");
-            return;
-        }
+        if (ident->kind == AST_CAST) {
+            // assume this must be a call to a
+            // static method and use any available object
+            // (this may not actually always work, but it's enough to
+            // get us going)
+            callobjid = getObjIDByClass(current, ident, &objtype);
+        } else {
+            ASSERT_AST_KIND(ident,AST_IDENTIFIER,return;);
+            Symbol *objsym = LookupAstSymbol(ident,NULL);
+            if(!objsym || objsym->kind != SYM_VARIABLE) {
+                ERROR(node->left,"Internal error: Invalid call receiver");
+                return;
+            }
 
-        callobjid = getObjID(current,objsym->our_name,&objtype);
+            callobjid = getObjID(current,objsym->our_name,&objtype);
+        }
         if (callobjid<0) {
             ERROR(node->left,"Not an OBJ of this object");
             return;

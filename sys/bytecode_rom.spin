@@ -36,19 +36,30 @@ __helper_done
 ''
 '' init helper code
 ''
-pri _init | cog
+pri __init__ | cog
   cog := __helper_cog
   if cog => 0
     return
   cog := cognew(@__helper_entry, @__helper_cmd)
 
-pri _txraw(c)
+' FIXME needs to run in helper
+pri {++needsinit} _txraw(c)
   return
 
 ' timeout is in 1024ths of a second (roughly milliseconds)
-pri _rxraw(timeout = 0)
+' FIXME needs to run in helper
+pri {++needsinit} _rxraw(timeout = 0)
   return -1
   
+''
+'' divide (n, nlo) by d, producing qlo and rlo (used in FRAC operation)
+'' FIXME: needs to run in helper
+''
+pri {++needsinit} _div64(n, nlo, dlo) : qlo, rlo | q, r, d
+  qlo := -1
+  rlo := -1
+  return
+
 pri _waitx(tim)
   tim += cnt
   waitcnt(tim)
@@ -158,11 +169,3 @@ pri _cogchk(id) | flag, n
   ' otherwise it is running
   return n <> id
 
-''
-'' divide (n, nlo) by d, producing qlo and rlo (used in FRAC operation)
-''
-pri _div64(n, nlo, dlo) : qlo, rlo | q, r, d
-  qlo := -1
-  rlo := -1
-  return
-  

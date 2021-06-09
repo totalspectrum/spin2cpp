@@ -1023,11 +1023,50 @@ FixupFuncData(Module *P)
     }
 }
 
+/* insert a call to Q.funcname at start of function f */
+static void
+InsertInitCall(Function *f, Module *Q)
+{
+    ASTReportInfo saveinfo;
+    Symbol *sym;
+    const char *name = "__init__";
+    Function *pf;
+    AST *ident, *classtype, *expr;
+    
+    AstReportAs(f->body, &saveinfo); // reset error tracking
+    
+    // check that the function is static
+    sym = LookupSymbolInTable(&Q->objsyms, name);
+    if (!sym || !(sym->kind == SYM_FUNCTION)) {
+        ERROR(f->body, "function %s not found in class %s", name, Q->classname);
+        return;
+    }
+    
+    pf = (Function *)sym->val;
+    if (!pf->is_static) {
+        WARNING(pf->body, "initialization function %s is not static", name);
+    }
+    ident = AstIdentifier(name);
+    classtype = ClassType(Q);
+
+    expr = NewAST(AST_CAST, classtype, AstInteger(0));
+    expr = NewAST(AST_METHODREF, expr, ident);
+    expr = NewAST(AST_FUNCCALL, expr, NULL);
+    expr = NewAST(AST_STMTLIST, expr, f->body);
+    f->body = expr;
+
+    AstReportDone(&saveinfo);
+
+}
+
+/* P is top level module */
 static void
 FixupCode(Module *P, int isBinary)
 {
     Module *Q, *LastQ, *subQ;
     int changes;
+    Function *firstfunc;
+    Function *pf;
     
     // insert sub-classes into the global list after their modules
     // and append the global module to the list
@@ -1078,7 +1117,6 @@ FixupCode(Module *P, int isBinary)
     
     // see if we need a heap for garbage collection
     {
-        Function *pf;
         bool need_heap = false;
         for (pf = systemModule->functions; pf; pf = pf->next) {
             if (!strcasecmp(pf->name, "_gc_ptrs")) {
@@ -1122,6 +1160,19 @@ FixupCode(Module *P, int isBinary)
                 } else {
                     // reset the size
                     sym->val = heapAst;
+                }
+            }
+        }
+    }
+
+    /* insert calls to __init__ if needed */
+    firstfunc = GetMainFunction(P);
+    if (firstfunc) {
+        for (Q = allparse; Q; Q = Q->next) {
+            for (pf = Q->functions; pf; pf = pf->next) {
+                if (pf->attributes & FUNC_ATTR_NEEDSINIT) {
+                    InsertInitCall(firstfunc, Q);
+                    break;
                 }
             }
         }
