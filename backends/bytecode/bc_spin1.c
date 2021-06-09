@@ -98,13 +98,13 @@ enum Spin1ConstEncoding {
 static enum Spin1ConstEncoding GetSpin1ConstEncoding(int32_t imm) {
     uint32_t immu = imm;
     if(abs(imm)<=1) return S1ConEn_TINY;
-    else if (immu<=0x100) return S1ConEn_1B; // A 1-byte literal is preferrable to a bit literal
+    else if (immu<0x100) return S1ConEn_1B; // A 1-byte literal is preferrable to a bit literal
     else if (isPowerOf2(immu+1)) return S1ConEn_BMASKLOW;
     else if (isPowerOf2((~immu)+1)) return S1ConEn_BMASKHIGH;
     else if (isPowerOf2(immu)) return S1ConEn_DECOD;
     else if (isPowerOf2(~immu)) return S1ConEn_DECODNOT;
-    else if (immu<=0x10000) return S1ConEn_2B;
-    else if (immu<=0x1000000) return S1ConEn_3B;
+    else if (immu<0x10000) return S1ConEn_2B;
+    else if (immu<0x1000000) return S1ConEn_3B;
     else return S1ConEn_4B;
 }
 
