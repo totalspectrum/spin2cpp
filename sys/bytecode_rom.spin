@@ -12,25 +12,77 @@ __helper_entry
         mov	:cmdptr, par
 	mov	dira, :dira_init
 	mov	outa, :outa_init
-	mov	:nextcycle, cnt
-	add	:nextcycle, :delay
 :loop
-	waitcnt	:nextcycle, #0
-	add	:nextcycle, :delay
-	xor	outa, :outa_toggle
+	rdlong	:cmd, :cmdptr wz
+  if_z	jmp	#:loop
+  	add	:cmdptr, #4
+	rdlong	:arg0, :cmdptr
+	add	:cmdptr, #4
+	rdlong	:arg1, :cmdptr
+	add	:cmdptr, #4
+	rdlong	:arg2, :cmdptr
+	sub	:cmdptr, #4
+
+	' commands:
+	' #1 == _setbaud
+	' #2 == _txraw
+	' #3 == _rxraw
+	' #4 == _div64
+	add	:cmd, #:cmdtable
+	jmp	:cmd
+:cmddone
+	' write back results (at most 2 results)
+	wrlong	:arg1, :cmdptr
+	sub	:cmdptr, #4
+	wrlong	:arg0, :cmdptr
+	sub	:cmdptr, #4
+	mov	:cmd, #0
+	wrlong	:cmd, :cmdptr
 	jmp	#:loop
+
+:setbaud
+	mov	:baud_delay, :arg0
+	jmp	#:cmddone
+:txraw
+	or	outa, :txmask
+	or	dira, :txmask
+	or	:arg0, #$100
+	shl	:arg0, #1
+	mov	:nextcycle, cnt
+	add	:nextcycle, :baud_delay
+	mov	:arg2, #10
+:txloop
+	waitcnt :nextcycle, :baud_delay
+	shr	:arg0, #1 wc
+  	muxc	outa, :txmask
+  	djnz	:arg2, #:txloop
+	jmp	#:cmddone
 	
-:cmdptr
-        long 0
+:cmd    long 0
+:arg0	long 0
+:arg1	long 0
+:arg2	long 0
+
+:cmdtable
+	jmp	#:cmddone	' 0 == nop
+	jmp	#:setbaud	' 1 == setbaud
+	jmp	#:txraw		' 2 == txraw
+	
+:baud_delay
+	long 80_000_000 / 115_200
+
 :dira_init
 :outa_init
-        long (1<<31) | (1<<26)
-:outa_toggle
-	long (1<<26)
+        long (1<<30)
+:txmask
+	long (1<<30)
+:rxmask
+	long (1<<31)
+	
 :nextcycle
 	long 0
-:delay
-	long 20_000_000
+:cmdptr long 0
+
 __helper_done
 
 ''
@@ -42,9 +94,19 @@ pri __init__ | cog
     return
   cog := cognew(@__helper_entry, @__helper_cmd)
 
+pri {++needsinit} _remotecall(cmd, arg0 = 0, arg1 = 0, arg2 = 0)
+  longmove(@__helper_arg[0], @arg0, 3)
+  __helper_cmd := cmd
+  repeat until __helper_cmd == 0
+  
+pri _setbaud(rate)
+  _remotecall(1, __clkfreq_var / rate)
+  
 ' FIXME needs to run in helper
-pri {++needsinit} _txraw(c)
-  return
+pri _txraw(c)
+  _remotecall(2, c)
+  return 1
+
 
 ' timeout is in 1024ths of a second (roughly milliseconds)
 ' FIXME needs to run in helper
