@@ -1054,8 +1054,14 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
             return;
         }
     } else {
-        if (node->left) sym = LookupAstSymbol(node->left, NULL);
-        else sym = LookupAstSymbol(node, NULL);
+        if (IsIdentifier(node->left)) {
+            sym = LookupAstSymbol(node->left, NULL);
+        } else if (IsIdentifier(node)) {
+            sym = LookupAstSymbol(node, NULL);
+        } else {
+            ERROR(node, "Function call is not an identifier");
+            return;
+        }
 
         if (sym && sym->module) {
             Module *P = (Module *)sym->module;
@@ -1447,7 +1453,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
             case AST_IDENTIFIER: {
                 Symbol *sym = LookupAstSymbol(node,NULL);
                 if (!sym) {
-                    ERROR(node,"Internal Error: no symbol in identifier expression");
+                    ERROR(node,"Error: symbol %s not found", GetUserIdentifierName(node));
                     return;
                 }
                 switch (sym->kind) {
