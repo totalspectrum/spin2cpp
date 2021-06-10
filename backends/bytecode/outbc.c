@@ -1581,7 +1581,7 @@ BCCompileStmtlist(BCIRBuffer *irbuf,AST *list, BCContext context) {
 
 static void
 BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
-    while (node->kind == AST_COMMENTEDNODE) {
+    while (node && node->kind == AST_COMMENTEDNODE) {
         //printf("Node is allegedly commented:\n");
         // FIXME: this doesn't actually get any comments?
         /*
@@ -1590,7 +1590,8 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         }*/
         node = node->left;
     }
-
+    if (!node) return;
+    
     switch(node->kind) {
     case AST_COMMENT:
         // for now, do nothing
@@ -1657,8 +1658,9 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
 
         BCCompileStatement(irbuf,initStmnt,context);
         BIRB_Push(irbuf,topLabel);
-        if(!atleastonce) BCCompileConditionalJump(irbuf,condExpression,false,quitLabel,context);
-
+        if(!atleastonce && condExpression) {
+            BCCompileConditionalJump(irbuf,condExpression,false,quitLabel,context);
+        }
         BCContext newcontext = context;
         newcontext.quitLabel = quitLabel;
         newcontext.nextLabel = nextLabel;
@@ -1668,8 +1670,9 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         } else DEBUG(node,"Compiling empty FOR loop?");
 
         BIRB_Push(irbuf,nextLabel);
-        BCCompileExpression(irbuf,nextExpression,context,true); // Compile as statement!
-
+        if (nextExpression) {
+            BCCompileExpression(irbuf,nextExpression,context,true); // Compile as statement!
+        }
         if(atleastonce) BCCompileConditionalJump(irbuf,condExpression,true,topLabel,context);
         else BCCompileJump(irbuf,topLabel,context);
 
