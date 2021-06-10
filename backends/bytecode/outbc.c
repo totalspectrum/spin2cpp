@@ -1058,7 +1058,7 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
             return;
         }
     } else {
-        if (IsIdentifier(node->left)) {
+        if (node->left && IsIdentifier(node->left)) {
             sym = LookupAstSymbol(node->left, NULL);
         } else if (IsIdentifier(node)) {
             sym = LookupAstSymbol(node, NULL);
