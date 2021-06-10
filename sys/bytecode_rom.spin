@@ -231,3 +231,5 @@ pri _cogchk(id) | flag, n
   ' otherwise it is running
   return n <> id
 
+pri __topofstack(ptr)
+  return @ptr
