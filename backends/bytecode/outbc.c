@@ -887,6 +887,7 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
         memopNode = left;
     } break;
     case AST_SYMBOL:
+    case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER: {
         Symbol *sym = LookupAstSymbol(left,NULL);
         if (!sym) {
@@ -977,7 +978,10 @@ static int getObjID(Module *M,const char *name, AST** gettype) {
         ASSERT_AST_KIND(obj->right,AST_LISTHOLDER,return 0;);
         AST *ident = obj->right->left;
         if (ident && ident->kind == AST_ARRAYDECL) ident = ident->left;
-        ASSERT_AST_KIND(ident,AST_IDENTIFIER,return 0;);
+        if (!IsIdentifier(ident)) {
+            ERROR(ident, "Expected identifier");
+            return 0;
+        }
         if(strcmp(GetIdentifierName(ident),name)) continue; 
         if (gettype) *gettype = obj->left;
         return i+1+ModData(M)->pub_cnt+ModData(M)->pri_cnt;
@@ -1450,6 +1454,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 if (node->right) WARNING(node->right,"right side of AST_ADDROF not empty???");
                 BCCompileMemOp(irbuf,node->left,context,MEMOP_ADDRESS);
             } break;
+            case AST_LOCAL_IDENTIFIER:
             case AST_IDENTIFIER: {
                 Symbol *sym = LookupAstSymbol(node,NULL);
                 if (!sym) {
@@ -1926,6 +1931,7 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
             BCCompileJump(irbuf,context.quitLabel,context);
         }
     } break;
+    case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER: {
         Symbol *sym = LookupAstSymbol(node,NULL);
         if (!sym) ERROR(node,"Internal Error: Can't get symbol");
