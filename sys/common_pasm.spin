@@ -100,3 +100,18 @@ pri _lfsr_backward(x) | a
       rcr  x, #1
     endasm
   return x
+  
+pri __getsp | x
+  asm
+    mov x, sp
+  endasm
+  return x
+
+pri __topofstack(ptr)
+  return @ptr
+
+pri __get_heap_base : r
+  asm
+    mov r, __heap_ptr
+  endasm
+  

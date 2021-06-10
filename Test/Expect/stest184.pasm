@@ -87,6 +87,21 @@ LR__0007
 __system____builtin_memmove_ret
 	ret
 
+__system____topofstack
+	wrlong	fp, sp
+	add	sp, #4
+	mov	fp, sp
+	add	sp, #12
+	add	fp, #4
+	wrlong	arg01, fp
+	mov	result1, fp
+	sub	fp, #4
+	mov	sp, fp
+	sub	sp, #4
+	rdlong	fp, sp
+__system____topofstack_ret
+	ret
+
 __system___tx
 	mov	__system___tx_c, arg01
 	cmp	__system___tx_c, #10 wz
@@ -106,47 +121,47 @@ __system___tx_ret
 	ret
 
 __system___gc_ptrs
-	mov	_var01, __heap_ptr
-	mov	_var02, _var01
-	add	_var02, imm_1016_
-	rdlong	_var03, _var01 wz
+	mov	__system___gc_ptrs_base, __heap_ptr
+	mov	__system___gc_ptrs_end, __system___gc_ptrs_base
+	add	__system___gc_ptrs_end, imm_1016_
+	rdlong	_system___gc_ptrs_tmp001_, __system___gc_ptrs_base wz
  if_ne	jmp	#LR__0009
-	mov	_var04, _var02
-	sub	_var04, _var01
-	mov	_var03, #1
-	wrword	_var03, _var01
-	mov	_var05, _var01
-	add	_var05, #2
-	mov	_var03, imm_27792_
-	wrword	_var03, _var05
-	mov	_var06, _var01
-	add	_var06, #4
-	mov	_var03, #0
-	wrword	_var03, _var06
-	mov	_var07, _var01
-	add	_var07, #6
-	mov	_var03, #1
-	wrword	_var03, _var07
-	add	_var01, #16
-	abs	_var03, _var04 wc
-	shr	_var03, #4
- if_b	neg	_var03, _var03
-	wrword	_var03, _var01
-	mov	_var08, _var01
-	add	_var08, #2
-	mov	_var03, imm_27791_
-	wrword	_var03, _var08
-	mov	_var09, _var01
-	add	_var09, #4
-	mov	_var03, #0
-	wrword	_var03, _var09
-	mov	_var10, _var01
-	add	_var10, #6
-	wrword	_var03, _var10
-	sub	_var01, #16
+	mov	__system___gc_ptrs_size, __system___gc_ptrs_end
+	sub	__system___gc_ptrs_size, __system___gc_ptrs_base
+	mov	_system___gc_ptrs_tmp001_, #1
+	wrword	_system___gc_ptrs_tmp001_, __system___gc_ptrs_base
+	mov	__system___gc_ptrs__cse__0004, __system___gc_ptrs_base
+	add	__system___gc_ptrs__cse__0004, #2
+	mov	_system___gc_ptrs_tmp001_, imm_27792_
+	wrword	_system___gc_ptrs_tmp001_, __system___gc_ptrs__cse__0004
+	mov	__system___gc_ptrs__cse__0005, __system___gc_ptrs_base
+	add	__system___gc_ptrs__cse__0005, #4
+	mov	_system___gc_ptrs_tmp001_, #0
+	wrword	_system___gc_ptrs_tmp001_, __system___gc_ptrs__cse__0005
+	mov	__system___gc_ptrs__cse__0006, __system___gc_ptrs_base
+	add	__system___gc_ptrs__cse__0006, #6
+	mov	_system___gc_ptrs_tmp001_, #1
+	wrword	_system___gc_ptrs_tmp001_, __system___gc_ptrs__cse__0006
+	add	__system___gc_ptrs_base, #16
+	abs	_system___gc_ptrs_tmp001_, __system___gc_ptrs_size wc
+	shr	_system___gc_ptrs_tmp001_, #4
+ if_b	neg	_system___gc_ptrs_tmp001_, _system___gc_ptrs_tmp001_
+	wrword	_system___gc_ptrs_tmp001_, __system___gc_ptrs_base
+	mov	__system___gc_ptrs__cse__0010, __system___gc_ptrs_base
+	add	__system___gc_ptrs__cse__0010, #2
+	mov	_system___gc_ptrs_tmp001_, imm_27791_
+	wrword	_system___gc_ptrs_tmp001_, __system___gc_ptrs__cse__0010
+	mov	__system___gc_ptrs__cse__0011, __system___gc_ptrs_base
+	add	__system___gc_ptrs__cse__0011, #4
+	mov	_system___gc_ptrs_tmp001_, #0
+	wrword	_system___gc_ptrs_tmp001_, __system___gc_ptrs__cse__0011
+	mov	__system___gc_ptrs__cse__0012, __system___gc_ptrs_base
+	add	__system___gc_ptrs__cse__0012, #6
+	wrword	_system___gc_ptrs_tmp001_, __system___gc_ptrs__cse__0012
+	sub	__system___gc_ptrs_base, #16
 LR__0009
-	mov	result2, _var02
-	mov	result1, _var01
+	mov	result2, __system___gc_ptrs_end
+	mov	result1, __system___gc_ptrs_base
 __system___gc_ptrs_ret
 	ret
 
@@ -546,21 +561,6 @@ LR__0032
 __system___gc_dofree_ret
 	ret
 
-__system____topofstack
-	wrlong	fp, sp
-	add	sp, #4
-	mov	fp, sp
-	add	sp, #12
-	add	fp, #4
-	wrlong	arg01, fp
-	mov	result1, fp
-	sub	fp, #4
-	mov	sp, fp
-	sub	sp, #4
-	rdlong	fp, sp
-__system____topofstack_ret
-	ret
-
 __system___gc_docollect
 	call	#__system___gc_ptrs
 	mov	__system___gc_docollect_endheap, result2
@@ -914,6 +914,24 @@ __system___gc_nextBlockPtr_ptr
 	res	1
 __system___gc_nextBlockPtr_t
 	res	1
+__system___gc_ptrs__cse__0004
+	res	1
+__system___gc_ptrs__cse__0005
+	res	1
+__system___gc_ptrs__cse__0006
+	res	1
+__system___gc_ptrs__cse__0010
+	res	1
+__system___gc_ptrs__cse__0011
+	res	1
+__system___gc_ptrs__cse__0012
+	res	1
+__system___gc_ptrs_base
+	res	1
+__system___gc_ptrs_end
+	res	1
+__system___gc_ptrs_size
+	res	1
 __system___gc_tryalloc__cse__0000
 	res	1
 __system___gc_tryalloc__cse__0001
@@ -996,6 +1014,8 @@ _system___gc_markcog_tmp002_
 	res	1
 _system___gc_markhub_tmp002_
 	res	1
+_system___gc_ptrs_tmp001_
+	res	1
 _system___gc_tryalloc_tmp001_
 	res	1
 _system___gc_tryalloc_tmp002_
@@ -1015,18 +1035,6 @@ _var02
 _var03
 	res	1
 _var04
-	res	1
-_var05
-	res	1
-_var06
-	res	1
-_var07
-	res	1
-_var08
-	res	1
-_var09
-	res	1
-_var10
 	res	1
 arg01
 	res	1

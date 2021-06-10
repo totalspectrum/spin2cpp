@@ -100,10 +100,7 @@ _memory_mutex
 '' the heap
 ''
 pri _gc_ptrs : base, end | size
-  base := 0  ' will be overridden to __heap_ptr
-  asm
-    mov base, __heap_ptr
-  endasm
+  base := __get_heap_base  ' __heap_ptr is a special variable
   end := base + (__real_heapsize__*4) - headersize
   if (long[base] == 0)
     size := end - base
@@ -336,14 +333,6 @@ pri _gc_dofree(ptr) | prevptr, tmpptr, nextptr, heapbase, heapend, n
 
   return nextptr
    
-pri __topofstack(ptr)
-  return @ptr
-pri __getsp | x
-  asm
-    mov x, sp
-  endasm
-  return x
-
 ''
 '' user accessible garbage collection
 ''
