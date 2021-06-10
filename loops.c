@@ -1336,9 +1336,15 @@ TransformCountRepeat(AST *ast)
 
     if (gl_output == OUTPUT_BYTECODE) {
         // Leave REPEAT N kinda loops alone for bytecode
-        if (!loopvar && knownStepVal == 1 && fromval == NULL && isIntegerLoop) return origast;
+        if (!loopvar && knownStepVal == 1 && fromval == NULL && isIntegerLoop) {
+            AstReportDone(&saveinfo);
+            return origast;
+        }
         // Leave REPEAT i from X to Y (STEP Z) kinda loops alone for bytecode
-        if (loopvar && fromval && isIntegerLoop && !isUnsignedLoop) return origast;
+        if (loopvar && fromval && isIntegerLoop && !isUnsignedLoop) {
+            AstReportDone(&saveinfo);
+            return origast;
+        }
     }
 
     if (!IsSpinLang(curfunc->language)) {
