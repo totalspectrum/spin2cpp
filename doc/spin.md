@@ -571,7 +571,7 @@ The Spin1 `@@` operator always truncates its result to 16 bits; flexspin does no
 
 The Spin1 CHIPVER command always evaluates as 1, regardless of the actual chip version stored at $FFFF.
 
-## Symbols
+## Symbol Differences
 
 ### Local variables may shadow method names
 
@@ -653,6 +653,10 @@ is evaluated by flexspin as
   a := b
 ```
 This is sometimes different from how the official Spin1 interpreter does it. In particular, if `b` is a byte or word then the result of `b:=512` is truncated to 8 or 16 bits, whereas in the official interpreter the full 32 bit result is assigned to `a`. Thus, if `b` is a byte then flexspin sets `a` to `0` whereas Spin1 sets `a` to `512`.
+
+### Second argument to ORG is ignored
+
+In Spin the `org` pseudo-instruction has an optional second parameter giving a limit to the size of the assembly code (like an implied `fit` at the end). Flexspin ignores this second parameter.
 
 # P2 Considerations
 

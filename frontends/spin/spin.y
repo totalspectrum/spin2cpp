@@ -980,6 +980,12 @@ basedatline:
     { $$ = NewCommentedAST(AST_ORG, NULL, NULL, $1); }
   | SP_ORG expr SP_EOLN
     { $$ = NewCommentedAST(AST_ORG, $2, NULL, $1); }
+  | SP_ORG expr ',' expr SP_EOLN
+    {
+        AST *src = $2;
+        WARNING(src, "second parameter of ORG is ignored");
+        $$ = NewCommentedAST(AST_ORG, src, NULL, $1);
+    }
   | SP_ORGH SP_EOLN
     { $$ = NewCommentedAST(AST_ORGH, NULL, NULL, $1); }
   | SP_ORGH expr SP_EOLN
