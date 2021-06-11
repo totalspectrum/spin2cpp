@@ -244,11 +244,13 @@ static void OptimizeOperator(int *optoken, AST **left,AST **right) {
         canZeroOpt = true;
         zeroOptVal = 0;
         break;
+#if 0 /* fails for negative numbers */
     case '/':
         shiftOptOp = K_SAR;
         canNopOpt = true;
         nopOptVal = 1;
         break;
+#endif        
     case K_SHL:
     case K_SHR:
     case K_SAR:
