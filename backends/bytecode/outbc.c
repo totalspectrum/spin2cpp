@@ -642,7 +642,9 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
     nosymbol_memref:
     
     if (typeoverride) type = typeoverride;
-    type = RemoveTypeModifiers(BaseType(type));
+    if (IsPointerType(type))
+        type = ast_type_long;
+    else type = RemoveTypeModifiers(BaseType(type));
     
     // FIXME: should we actually use TYPESIZE here rather than relying on
     // particular types?
