@@ -641,6 +641,18 @@ As a workaround, enclose the value in parentheses:
    long (@foo)[3]
 ```
 
+### Type narrowing in assignment
+
+A series of assignments like:
+```
+  a := b := 512
+```
+is evaluated by flexspin as
+```
+  b := 512
+  a := b
+```
+This is sometimes different from how the official Spin1 interpreter does it. In particular, if `b` is a byte or word then the result of `b:=512` is truncated to 8 or 16 bits, whereas in the official interpreter the full 32 bit result is assigned to `a`. Thus, if `b` is a byte then flexspin sets `a` to `0` whereas Spin1 sets `a` to `512`.
 
 # P2 Considerations
 
@@ -656,7 +668,7 @@ Many Spin1 programs may be ported from the Propeller 1 to the Propeller 2, but t
 
 ## Compatibility with Spin2
 
-flexspin is mostly compatible with the standard Spin2 compiler. Not all Spin2 builtin functions are available on the P1; only the ones listed in the "New intrinsics for both P1 and P2" are available on all platforms. But when compiling for P2 all of the Spin2 builtin functions should be available.
+flexspin is mostly, but not completely, compatible with the standard Spin2 compiler. Not all Spin2 builtin functions are available on the P1; only the ones listed in the "New intrinsics for both P1 and P2" are available on all platforms. But when compiling for P2 all of the Spin2 builtin functions should be available.
 
 ### Expressions involving `:`
 
@@ -714,11 +726,3 @@ The `ASMCLK` pseudo-instruction is supported as a preprocessor macro in FlexSpin
 
 The `REGLOAD` and `REGEXEC` Spin2 instructions are not supported at this time, mainly because they depend on a particular layout of memory in the Spin2 interpreter.
 
-### Order of OBJ and VAR declarations
-
-flexspin may sometimes require OBJ declarations to come before their use, where regular Spin2 doesn't care. For example, in:
-```
-VAR
-   byte x[foo.BUF_SIZE]
-```
-the declaration of the object `foo` must come before the declaration of `x`.
