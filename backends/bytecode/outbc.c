@@ -2301,11 +2301,12 @@ void OutputByteCode(const char *fname, Module *P) {
     const int variableSize = P->varsize; // Already rounded up!
     const int stackBase = headerSize + programSize + variableSize + 8; // space for that stack init thing
 
-    
-    printf("Program size:  %6d bytes\n",programSize);
-    printf("Variable size: %6d bytes\n",variableSize);
-    if (!gl_p2) printf("Stack/Free:    %6d bytes\n",0x8000-(headerSize+programSize+variableSize));
-    else printf("Stack/Free:    %6d TODO\n",0);
+    if (gl_printprogress) {
+        printf("Program size:  %6d bytes\n",programSize);
+        printf("Variable size: %6d bytes\n",variableSize);
+        if (!gl_p2) printf("Stack/Free:    %6d bytes\n",0x8000-(headerSize+programSize+variableSize));
+        else printf("Stack/Free:    %6d TODO\n",0);
+    }
 
     Function *mainFunc = GetMainFunction(P);
     if (!mainFunc) {
