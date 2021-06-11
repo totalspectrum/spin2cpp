@@ -723,7 +723,7 @@ doSpinTransform(AST **astptr, int level, AST *parent)
                 curfunc->sets_recv = 1;
             }
         }
-        doSpinTransform(&ast->left, 0, ast);
+        doSpinTransform(&ast->left, 2, ast);  // the "2" inhibits some optimizations
         doSpinTransform(&ast->right, 0, ast);
         break;
     case AST_METHODREF:
@@ -803,7 +803,7 @@ doSpinTransform(AST **astptr, int level, AST *parent)
             case AST_OPERATOR:
             case AST_RETURN:
             {
-                AST *newexpr = CheckSimpleArrayref(ast);
+                AST *newexpr = (level < 2) ? CheckSimpleArrayref(ast) : 0;
                 if (newexpr) {
                     newexpr = TransformRangeUse(newexpr);
                     *astptr = ast = newexpr;

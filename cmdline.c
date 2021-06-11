@@ -122,11 +122,19 @@ int ProcessCommandLine(CmdLineOptions *cmd)
     }
     if (gl_output == OUTPUT_ASM || gl_output == OUTPUT_COGSPIN) {
         pp_define(&gl_pp, "__SPIN2PASM__", "1");
-    }
-    if (gl_output == OUTPUT_CPP || gl_output == OUTPUT_C) {
+        pp_define(&gl_pp, "__OUTPUT_ASM__", "1");
+    } else if (gl_output == OUTPUT_CPP || gl_output == OUTPUT_C) {
         pp_define(&gl_pp, "__SPIN2CPP__", "1");
         if (gl_output == OUTPUT_CPP) {
             pp_define(&gl_pp, "__cplusplus", "1");
+            pp_define(&gl_pp, "__OUTPUT_CPP__", "1");
+        } else {
+            pp_define(&gl_pp, "__OUTPUT_C__", "1");
+        }
+    } else if (gl_output == OUTPUT_BYTECODE) {
+        pp_define(&gl_pp, "__OUTPUT_BYTECODE__", "1");
+        if (gl_interp_kind == INTERP_KIND_P1ROM) {
+            pp_define(&gl_pp, "__OUTPUT_BYTECODE_P1ROM__", "1");
         }
     }
     pp_define(&gl_pp, "__ILP32__", "1");
