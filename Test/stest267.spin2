@@ -1,0 +1,14 @@
+dat
+  sclpin long 0[2]
+
+
+pub stop() | scl, sda, tix
+  tix := 1000
+  longmove(@scl, @sclpin, 2)
+  org
+    drvl sda
+    drvh scl
+    waitx tix
+    drvh sda
+  end
+

@@ -110,6 +110,9 @@ TransformLongMove(AST **astptr, AST *ast)
     if (!syms || !symd) return false;
 
     switch(syms->kind) {
+    case SYM_LABEL:
+        srcarray = true;
+        // fall through
     case SYM_VARIABLE:
         srctab = &current->objsyms;
         break;
@@ -122,6 +125,9 @@ TransformLongMove(AST **astptr, AST *ast)
         return false;
     }
     switch(symd->kind) {
+    case SYM_LABEL:
+        dstarray = true;
+        // fall through
     case SYM_VARIABLE:
         dsttab = &current->objsyms;
         break;

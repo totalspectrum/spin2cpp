@@ -8,6 +8,7 @@ Version 5.5.1
 - Fixed SIGNX= and ZEROX= in Spin2
 - Fixed ~~x and ~x in Spin1
 - Improved COG memory usage
+- Improved conversion of longmove() in Spin to handle labels
 - Made objects come after all variables in Spin
 - Merged colorized error message changes from Wuerfel21.
 - ALPHA: new bytecode backend from Wuerfel21, accessed by --interp=rom. This is not finished yet but can compile many Spin1 programs.
