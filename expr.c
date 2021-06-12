@@ -2301,12 +2301,12 @@ WidestType(AST *left, AST *right)
     int lsize, rsize;
     left = RemoveTypeModifiers(left);
     right = RemoveTypeModifiers(right);
-    if (!left) return right;
-    if (!right) return left;
     lsize = TypeSize(left);
     rsize = TypeSize(right);
-    if (left->kind != right->kind) {
-        if (lsize > 4 || rsize > 4) {
+    if (!left && rsize >= LONG_SIZE) return right;
+    if (!right && lsize >= LONG_SIZE) return left;
+    if (left && right && left->kind != right->kind) {
+        if (lsize > LONG_SIZE || rsize > LONG_SIZE) {
             return ast_type_long64;
         }
         return ast_type_long;
@@ -2611,9 +2611,8 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
                 return ltype;
             }
             if (curfunc && IsSpinLang(curfunc->language)) {
-                if (!ltype) ltype = rtype;
                 if (ltype) {
-                    if (IsIntOrGenericType(ltype)) return ltype;
+                    //if (IsIntOrGenericType(ltype)) return ltype;
                     if (IsPointerType(ltype)) {
                         if (PointerTypeIncrement(ltype) == 1) {
                             return ltype;
