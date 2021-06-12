@@ -382,6 +382,15 @@ BCPushLabel(BCIRBuffer *irbuf,BCContext context) {
     return BIRB_PushCopy(irbuf,&lbl);
 }
 
+static ByteOpIR*
+BCNewNamedLabelRef(BCContext context,const char *name) {
+    ByteOpIR *lbl = calloc(sizeof(ByteOpIR),1);
+    lbl->kind = BOK_NAMEDLABEL;
+    lbl->attr.labelHiddenVars = context.hiddenVariables;
+    lbl->data.stringPtr = name;
+    return lbl;
+}
+
 static void
 BCCompileInteger(BCIRBuffer *irbuf,int32_t ival) {
     ByteOpIR opc = {0};
@@ -401,7 +410,7 @@ static void BCCompilePopN(BCIRBuffer *irbuf,int popcount) {
 
 static void
 BCCompileJumpEx(BCIRBuffer *irbuf, ByteOpIR *label, enum ByteOpKind kind, BCContext context, int stackoffset) {
-    int stackdiff = context.hiddenVariables - label->attr.labelHiddenVars + stackoffset;
+    int stackdiff = context.hiddenVariables - label->attr.labelHiddenVars + stackoffset; // Will be zero if we got an AST_NAMEDLABEL
     if (stackdiff > 0) {
         // emit pop to get rid of hidden vars
         BCCompilePopN(irbuf,stackdiff);
@@ -511,7 +520,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
     } else ident = node;
 
     try_ident_again:
-    if (IsIdentifier(ident)) sym = LookupAstSymbol(ident,NULL);
+    if (IsIdentifier(ident) || ident->kind == AST_SYMBOL) sym = LookupAstSymbol(ident,NULL);
     else if (ident->kind == AST_RESULT) sym = LookupSymbol("result");
     else if (ident->kind == AST_MEMREF) {
         if (!typeoverride && 
@@ -1492,7 +1501,8 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 BCCompileMemOp(irbuf,node->left,context,MEMOP_ADDRESS);
             } break;
             case AST_LOCAL_IDENTIFIER:
-            case AST_IDENTIFIER: {
+            case AST_IDENTIFIER: 
+            case AST_SYMBOL: {
                 Symbol *sym = LookupAstSymbol(node,NULL);
                 if (!sym) {
                     ERROR(node,"Error: symbol %s not found", GetUserIdentifierName(node));
@@ -1638,6 +1648,21 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
     case AST_COMMENT:
         // for now, do nothing
         break;
+    case AST_LABEL: {
+        const char *name = GetUserIdentifierName(node->left);
+        if (!name) ERROR(node,"Can't get name of label");
+        ByteOpIR label = {.kind = BOK_NAMEDLABEL,.attr.labelHiddenVars = context.hiddenVariables,.data.stringPtr = name};
+        BIRB_PushCopy(irbuf,&label);
+        if (node->right) {
+            ASSERT_AST_KIND(node->right,AST_STMTLIST,break;);
+            BCCompileStmtlist(irbuf,node->right,context);
+        }
+    } break;
+    case AST_GOTO: {
+        const char *name = GetUserIdentifierName(node->left);
+        if (!name) ERROR(node,"Can't get name to goto");
+        BCCompileJump(irbuf,BCNewNamedLabelRef(context,name),context);
+    } break;
     case AST_ASSIGN:
         BCCompileAssignment(irbuf,node,context,false,0);
         break;
@@ -2080,6 +2105,8 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
     BIRB_PushCopy(&irbuf,&retop);
 
     BIRB_AppendPending(&irbuf);
+
+    BCIR_ResolveNamedLabels(&irbuf);
 
     BCIR_Optimize(&irbuf);
 

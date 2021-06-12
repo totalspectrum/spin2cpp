@@ -10,6 +10,7 @@
     X(UHHH) /*Error/undefined*/ \
     \
     X(LABEL) /* Virtual jump target opcode */\
+    X(NAMEDLABEL) /* For arbitrary GOTO, gets converted to LABEL early on. Also allocated loose as a jump target */\
     \
     X(CONSTANT)  /* Push immediate */\
     X(POP)  /* Pop N/4 values */\
@@ -226,7 +227,9 @@ typedef struct BCIRBuffer {
 } BCIRBuffer;
 
 void BIRB_Push(BCIRBuffer *buf,ByteOpIR *ir);
+ByteOpIR *BIRB_MakeCopy(ByteOpIR *ir);
 ByteOpIR *BIRB_PushCopy(BCIRBuffer *buf,ByteOpIR *ir);
+void BIRB_InsertBefore(BCIRBuffer *buf,ByteOpIR *target,ByteOpIR *ir);
 void BIRB_AppendPending(BCIRBuffer *buf);
 
 bool BCIR_SizeDetermined(ByteOpIR *ir);
@@ -236,6 +239,7 @@ int BCIR_GetJumpOffset(ByteOpIR *jump,bool func_relative);
 int pbase_offset; // distance of current function from PBASE (obj header)
 BCIRBuffer *current_birb;
 
+void BCIR_ResolveNamedLabels(BCIRBuffer *irbuf);
 void BCIR_Optimize(BCIRBuffer *irbuf);
 void BCIR_to_BOB(BCIRBuffer *irbuf,ByteOutputBuffer *bob,int pbase_funoffset);
 
