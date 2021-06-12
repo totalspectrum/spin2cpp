@@ -2,6 +2,40 @@
 '' ROM bytecode specific functions
 ''
 
+''
+'' _cogchk(id): check to see if cog id is still running
+'' on P1 there is no instruction for this, so we use
+'' coginit to start helpers until no more are left
+'' returns -1 if running, 0 if not
+dat
+	org 0
+_cogchk_helper
+	rdlong	_cogchk_tmp, par wz
+  if_z	jmp	#_cogchk_helper
+  	cogid	_cogchk_tmp
+	cogstop	_cogchk_tmp
+_cogchk_tmp
+	long	0
+
+pri _cogchk(id) | flag, n
+  flag := 0
+  repeat
+    n := coginit(8, @_cogchk_helper, @flag)
+  while n => 0 and n < id
+  flag := 1 ' shut down all helpers
+  ' if n is id, then the cog was free
+  ' otherwise it is running
+  return n <> id
+
+'
+' helper cog
+' this helper runs in any cog and handles serial I/O and some other
+' auxiliary functions. It works by polling the __helper_cmd
+' mailbox for commands. If more than a second passes without any
+' command being received, it checks to see if it is the only cog
+' still running, and if so, it terminates itself.
+'
+
 dat
 __helper_cog long -1
 __helper_cmd long 0
@@ -13,8 +47,25 @@ __helper_entry
 	mov	outa, :outa_init
 	mov	dira, :dira_init
 :loop
+	rdlong	:timeout, #0		' fetch clock frequency from HUB 0
+	shr	:timeout, #5		' loop takes around 16 cycles, check every half second
+:waitcmd
 	rdlong	:cmd, :cmdptr wz
-  if_z	jmp	#:loop
+  if_nz	jmp	#:docmd
+  	djnz	:timeout, #:waitcmd
+	
+	'
+	' if we get here, there have been no commands for a while
+	' check to see if we are the only cog left alive
+	'
+	call	#:check_all_cogs
+	cmp	:cog_count, #1 wz
+  if_nz	jmp	#:loop
+  	' we are the only cog left, halt
+	cogid	 :cog_count
+	cogstop	 :cog_count
+	
+:docmd
   	add	:cmdptr, #4
 	rdlong	:arg0, :cmdptr
 	add	:cmdptr, #4
@@ -58,6 +109,32 @@ __helper_entry
   	djnz	:arg2, #:txloop
 	jmp	#:cmddone
 	
+'
+' function to count number of cogs running
+' works by starting as many cogs as we can with a helper
+'
+:check_all_cogs
+	mov	:cogchk_arg, :flag_ptr	' parameter for call
+	shl	:cogchk_arg, #14
+	or	:cogchk_arg, :helper_ptr ' code for call
+	shl	:cogchk_arg, #2
+	or	:cogchk_arg, #$f	' start any cog
+	
+	mov	:arg0, #0
+	wrlong	:arg0, :flag_ptr
+	mov	:cog_count, #8		' assume all cogs free (this will be false :))
+:check_loop
+	coginit	:cogchk_arg wc, nr	' don't care which cog we started, just whether it did start
+  if_nc sub	:cog_count, #1
+  if_nc	jmp	#:check_loop
+  	wrlong	:cog_count, :flag_ptr	' shut down extra cogs (cog_count will be at least 1!)
+:check_all_cogs_ret
+	ret
+
+	' coginit argument
+:cogchk_arg
+	long 
+
 :cmd    long 0
 :arg0	long 0
 :arg1	long 0
@@ -71,6 +148,9 @@ __helper_entry
 :baud_delay
 	long 80_000_000 / 115_200
 
+:timeout
+	long 80_000_000
+
 :dira_init
 :outa_init
         long (1<<30)
@@ -82,7 +162,11 @@ __helper_entry
 :nextcycle
 	long 0
 :cmdptr long 0
-
+:cog_count long 0
+:helper_ptr
+	long @@@_cogchk_helper
+:flag_ptr
+	long @@@__helper_arg
 __helper_done
 
 ''
@@ -205,31 +289,6 @@ pri _getus() : r = +long | freq
   freq := __clkfreq_var +/ 1000000
   r := _getcnt()
   return r +/ freq
-
-''
-'' _cogchk(id): check to see if cog id is still running
-'' on P1 there is no instruction for this, so we use
-'' coginit to start helpers until no more are left
-'' returns -1 if running, 0 if not
-dat
-	org 0
-_cogchk_helper
-	rdlong	_cogchk_tmp, par wz
-  if_z	jmp	#_cogchk_helper
-  	cogid	_cogchk_tmp
-	cogstop	_cogchk_tmp
-_cogchk_tmp
-	long	0
-
-pri _cogchk(id) | flag, n
-  flag := 0
-  repeat
-    n := coginit(8, @_cogchk_helper, @flag)
-  while n => 0 and n < id
-  flag := 1 ' shut down all helpers
-  ' if n is id, then the cog was free
-  ' otherwise it is running
-  return n <> id
 
 pri __topofstack(ptr)
   return @ptr
