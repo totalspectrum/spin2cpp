@@ -1372,19 +1372,36 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 case K_SIGNEXTEND:
                 case K_ZEROEXTEND:
                     {
+                        ByteOpIR mathOp = {0};
+                        mathOp.kind = BOK_MATHOP;
                         if (ExprHasSideEffects(right)) {
                             ERROR(node, "Bytecode output cannot handle side effects in right argument of sign/zero extend");
                             right = AstInteger(16);
                         }
                         BCCompileExpression(irbuf, left, context, false);
+                        if (0 && IsConstExpr(right) && optoken == K_ZEROEXTEND) {
+                            // we can do this as an AND instead
+                            // but for some reason this code doesn't work???
+                            int32_t x = EvalConstExpr(right);
+                            if (x >= 32) {
+                                x = -1;
+                            } else {
+                                x = (1<<(x))-1;
+                            }
+                            BCCompileExpression(irbuf, AstInteger(x), context, false);
+                            mathOp.kind = MOK_BITAND;
+                            BIRB_PushCopy(irbuf, &mathOp);
+                            return;
+                        }
+                        right = FoldIfConst(AstOperator('-', AstInteger(32), right));
                         BCCompileExpression(irbuf, right, context, false);
-                        ByteOpIR mathOp = {0};
-                        mathOp.kind = BOK_MATHOP;
                         mathOp.mathKind = MOK_SHL;
                         BIRB_PushCopy(irbuf, &mathOp);
-                        mok = (optoken == K_SIGNEXTEND) ? MOK_SAR : MOK_SHR;
-                        unary = true;
-                    } break;
+                        mathOp.mathKind = (optoken == K_SIGNEXTEND) ? MOK_SAR : MOK_SHR;
+                        BCCompileExpression(irbuf, right, context, false);
+                        BIRB_PushCopy(irbuf, &mathOp);
+                        return;
+                    }
                 case K_INCREMENT: 
                 case K_DECREMENT:
                 case '?':
