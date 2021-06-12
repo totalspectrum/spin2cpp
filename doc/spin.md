@@ -172,7 +172,7 @@ The `@@@` operator returns the absolute hub address of a variable. This is the s
 
 ### Access to member variables
 
-Flexspin allows access to member variables and constants using the `.` notation. That is, if `S` is an object like:
+Flexspin allows (read only) access to member variables and constants using the `.` notation. That is, if `S` is an object like:
 ```
 CON
   rows = 24
@@ -180,6 +180,8 @@ VAR
   long x, y
 ```
 then one may write `S.x` to access member variable `x` of `S`, and `S.rows` to access the constant `rows`. The original Spin syntax `S#rows` is still accepted for accessing constants.
+
+Modifying member variables of another object directly is not permitted, and will produce a syntax error.
 
 ### Alternate string notation
 
