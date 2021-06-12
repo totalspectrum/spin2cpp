@@ -218,14 +218,54 @@ Optoken2MathOpKind(int token,bool *unaryOut) {
     return mok;
 }
 
+static bool OptNestedAdd(AST **node, int32_t *outVal) {
+    if ((*node)->kind != AST_OPERATOR) return false;
+    if (IsConstExpr(*node)) return false;
+    if ((*node)->d.ival == '+' && IsConstExpr((*node)->left)) {
+        *outVal = EvalConstExpr((*node)->left);
+        *node = (*node)->right;
+        return true;
+    } else if ((*node)->d.ival == '+' && IsConstExpr((*node)->right)) {
+        *outVal = EvalConstExpr((*node)->right);
+        *node = (*node)->left;
+        return true;
+    } else if ((*node)->d.ival == '-' && IsConstExpr((*node)->right)) {
+        *outVal = 0-EvalConstExpr((*node)->right);
+        *node = (*node)->left;
+        return true;
+    }
+    return false;
+}
+
 static void OptimizeOperator(int *optoken, AST **left,AST **right) {
     ASTReportInfo save;
+    int32_t addValue;
 
     // Try special cases first
     if (*optoken == K_SHL && left && IsConstExpr(*left) && EvalConstExpr(*left) == 1) {
+        // 1<<x can be |<x
         *left = NULL;
         *optoken = K_DECODE;
         return;
+    }
+    try_addopt_again:
+    if (*optoken == '+' && right && IsConstExpr(*right) && left && OptNestedAdd(left,&addValue)) {
+        *right = AstInteger(EvalConstExpr(*right)+addValue);
+        goto try_addopt_again;
+    }
+    if (*optoken == '+' && left && IsConstExpr(*left) && right && OptNestedAdd(right,&addValue)) {
+        *left = AstInteger(EvalConstExpr(*left)+addValue);
+        goto try_addopt_again;
+    }
+    if (*optoken == '-' && right && IsConstExpr(*right) && left && OptNestedAdd(left,&addValue)) {
+        // (x+2) - 3 can be x - 1
+        *right = AstInteger(EvalConstExpr(*right)-addValue);
+        goto try_addopt_again;
+    }
+    if (*optoken == '-'  && left && IsConstExpr(*left) && right && OptNestedAdd(right,&addValue)) {
+        // 3 - (x+2) can be 1 - x
+        *left = AstInteger(EvalConstExpr(*left)-addValue);
+        goto try_addopt_again;
     }
 
     int shiftOptOp = 0;
@@ -234,6 +274,7 @@ static void OptimizeOperator(int *optoken, AST **left,AST **right) {
     bool canZeroOpt = false;
     int32_t zeroOptVal;
     bool canCommute = false;
+    int negateOp = 0;
 
     switch (*optoken) {
     case '*':
@@ -262,9 +303,11 @@ static void OptimizeOperator(int *optoken, AST **left,AST **right) {
     case '-':
         canNopOpt = true;
         nopOptVal = 0;
+        negateOp = '+';
         break;
     case '+':
         canCommute = true;
+        negateOp = '-';
         break;
     default: return;
     }
@@ -307,8 +350,24 @@ static void OptimizeOperator(int *optoken, AST **left,AST **right) {
             *right = AstInteger(31-__builtin_clz(rightVal));
             AstReportDone(&save);
             return;
+        } else if (negateOp && rightVal < 0 && rightVal != INT32_MIN) {
+            AstReportAs(*right,&save);
+            *optoken = negateOp;
+            *right = AstInteger(-rightVal);
+            AstReportDone(&save);
+            return;
+        }
+    } else if (right) {
+        if (negateOp && (*right)->kind == AST_OPERATOR && (*right)->d.ival == K_NEGATE) {
+            // L + (-R) can be L - R
+            *right = (*right)->right;
+            *optoken = negateOp;
+            OptimizeOperator(optoken,left,right);
+            return;
         }
     }
+
+
     if (didSwap) {
         // Undo swap if we couldn't do anything (fixes "waitcnt(381+cnt)"")
         AST *swap = *left;
