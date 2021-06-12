@@ -14,6 +14,7 @@
 
 typedef struct {
     int hiddenVariables; // Count of hidden variables on stack
+    int caseVarsAt; // Where the nearest case has its hidden variables
     ByteOpIR *quitLabel,*nextLabel;
 } BCContext;
 

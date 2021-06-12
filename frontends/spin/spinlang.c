@@ -637,9 +637,7 @@ doSpinTransform(AST **astptr, int level, AST *parent)
             doSpinTransform(&caseitem->right, level, ast);
             list = list->right;
         }
-        if (gl_output != OUTPUT_BYTECODE) {
-            *ast = *CreateSwitch(ast->left, ast->right, case_name);
-        }
+        *ast = *CreateSwitch(ast, case_name);
         AstReportDone(&saveinfo);
         break;
     }

@@ -876,7 +876,7 @@ void DeclareTypedGlobalVariables(AST *ast, int inDat);
 void AddSymbolForLabel(AST *ast);
 
 /* transform a switch/case expression into a sequence of GOTOs */
-AST *CreateSwitch(AST *expr, AST *stmt, const char *force_reason);
+AST *CreateSwitch(AST *origast, const char *force_reason);
 
 // check to see if module is top level
 int IsTopLevel(Module *P);

@@ -219,6 +219,7 @@ enum astkind {
     AST_GETHIGH = 155,
 
     AST_FUNC_NAME = 156,
+    AST_CASEEXPR = 157, // Represents the hidden variable in a bytecode CASE. Very terrible hack.
 };
 
 /* forward reference */

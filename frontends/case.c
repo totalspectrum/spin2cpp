@@ -201,7 +201,8 @@ again:
     }
     switch (stmt->kind) {
     case AST_CASE:
-        ERROR(stmt, "Internal error, case not transformed");
+        // This can happen now, no need to err
+        // ERROR(stmt, "Internal error, case not transformed");
         return switchstmt;
     case AST_CASEITEM:
     {
@@ -242,11 +243,13 @@ again:
         AstReportDone(&saveinfo);
         goto again;
     case AST_ENDCASE:
-        AstReportAs(stmt, &saveinfo);
-        if (endswitch) {
-            *stmt = *NewAST(AST_GOTO, endswitch, NULL);
+        if (tmpvar->kind != AST_CASEEXPR) {
+            AstReportAs(stmt, &saveinfo);
+            if (endswitch) {
+                *stmt = *NewAST(AST_GOTO, endswitch, NULL);
+            }
+            AstReportDone(&saveinfo);
         }
-        AstReportDone(&saveinfo);
         return switchstmt;
     // for loops, "break" cannot have special meaning any more
     case AST_WHILE:
@@ -385,6 +388,10 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
     if (gl_output == OUTPUT_C || gl_output == OUTPUT_CPP) {
         return NULL;
     }
+    if (!force_reason && gl_output == OUTPUT_BYTECODE) {
+        // Currently don't auto-convert normal CASEs in bytecode mode
+        return NULL;
+    }
     if (force_reason) {
         density = 0; // we will always use a jump table
     } else {
@@ -515,8 +522,10 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
 // the jump table and print an error if it cannot be made
 //
 AST *
-CreateSwitch(AST *expr, AST *stmt, const char *force_reason)
+CreateSwitch(AST *origast, const char *force_reason)
 {
+    AST *expr = origast->left, *stmt = DupAST(origast->right);
+    
     AST *casetype;
     AST *tmpvar;
     AST *endswitch;
@@ -533,7 +542,22 @@ CreateSwitch(AST *expr, AST *stmt, const char *force_reason)
     
     AstReportAs(stmt, &saveinfo);
     casetype = ExprType(expr);
-    tmpvar = AstTempLocalVariable("_tmp_", RemoveTypeModifiers(casetype));
+
+    if (IsConstExpr(expr) && (optimize_flags & OPT_DEADCODE)) {
+        use_expr = expr;
+        tmpvar = NewAST(AST_EMPTY,NULL,NULL);
+        filterCases = 1;
+    } else if (gl_output == OUTPUT_BYTECODE) {
+        use_expr = NewAST(AST_CASEEXPR,AstTempIdentifier("_caseexpr"),NULL);
+        tmpvar = use_expr; // Assigning to AST_CASEEXPR can't compile to anything meaningful and thus it should not leave this function...
+        filterCases = 0;
+    } else {
+        tmpvar = AstTempLocalVariable("_tmp_", RemoveTypeModifiers(casetype));
+        use_expr = tmpvar;
+        filterCases = 0;
+    }
+
+    
     endswitch = AstTempIdentifier("_endswitch");
     
     switchstmt = NewAST(AST_STMTLIST, AstAssign(tmpvar, expr), NULL);
@@ -545,13 +569,6 @@ CreateSwitch(AST *expr, AST *stmt, const char *force_reason)
     AddSymbolForLabel(endlabel);
     
     // switchstmt will have all the gotos we make
-    if (IsConstExpr(expr)) {
-        use_expr = expr;
-        filterCases = (optimize_flags & OPT_DEADCODE) != 0;
-    } else {
-        use_expr = tmpvar;
-        filterCases = 0;
-    }
     switchstmt = CreateGotos(use_expr, switchstmt, stmt, &defaultlabel, endswitch);
     // add a "goto default"
     if (!defaultlabel) {
@@ -571,6 +588,9 @@ CreateSwitch(AST *expr, AST *stmt, const char *force_reason)
     }
     if (gostmt) {
         switchstmt = gostmt;
+    } else if (use_expr->kind == AST_CASEEXPR) {
+        AstReportDone(&saveinfo);
+        return origast;
     } else {
         gostmt = NewAST(AST_GOTO, defaultlabel, NULL);
         switchstmt = AddToList(switchstmt, NewAST(AST_STMTLIST, gostmt, NULL));

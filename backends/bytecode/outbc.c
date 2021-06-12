@@ -657,17 +657,32 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         type = ast_type_long;
     else type = RemoveTypeModifiers(BaseType(type));
     
-    // FIXME: should we actually use TYPESIZE here rather than relying on
-    // particular types?
-         if (type == ast_type_byte) memOp.attr.memop.memSize = MEMOP_SIZE_BYTE;
-    else if (type == ast_type_word) memOp.attr.memop.memSize = MEMOP_SIZE_WORD; 
-    else if (type == ast_type_long) memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
-    // \/ hack \/
-    else if (type == ast_type_unsigned_long && (kind != MEMOP_MODIFY || modifyMathKind == MOK_MOD_WRITE)) memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
-    else if (type == NULL) memOp.attr.memop.memSize = MEMOP_SIZE_LONG; // Assume long type... This is apparently neccessary
-    else {
-        ERROR(node,"Can't figure out mem op type, is unhandled");
-        printASTInfo(type);
+    if (!type) type = ast_type_long;
+
+    switch (type->kind) {
+    case AST_UNSIGNEDTYPE: {
+        int size = type->left->d.ival;
+        switch (size) {
+        case 1: memOp.attr.memop.memSize = MEMOP_SIZE_BYTE; break;
+        case 2: memOp.attr.memop.memSize = MEMOP_SIZE_WORD; break;
+        // Technically treated as signed, but all the unsigned operators are seperate, anyways, so I guess it's fine?
+        case 4: memOp.attr.memop.memSize = MEMOP_SIZE_LONG; break; 
+        default: ERROR(node,"Can't handle unsigned type with size %d",size); break;
+        }
+    } break;
+    case AST_INTTYPE: {
+        int size = type->left->d.ival;
+        switch (size) {
+        // Will need to generate a sign-extend for these, somehow
+        case 1: if (kind == MEMOP_WRITE) memOp.attr.memop.memSize = MEMOP_SIZE_BYTE; else goto signed_todo; break;
+        case 2: if (kind == MEMOP_WRITE) memOp.attr.memop.memSize = MEMOP_SIZE_WORD; else goto signed_todo; break;
+        case 4: memOp.attr.memop.memSize = MEMOP_SIZE_LONG; break; 
+        signed_todo:
+        default: ERROR(node,"Can't handle signed type with size %d",size); break;
+        }
+    } break;
+    default:
+        ERROR(node,"Unhandled type kind %d",type->kind);
     }
 
     after_typeinfer:
@@ -777,7 +792,7 @@ BCCompileMemOp(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind kin
 
 static void
 BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpression,enum MathOpKind modifyMathKind) {
-    ASSERT_AST_KIND(node,AST_ASSIGN,;);
+    ASSERT_AST_KIND(node,AST_ASSIGN,return;);
     AST *left = node->left, *right = node->right;
     bool modifyReverseMath = false;
 
@@ -889,6 +904,9 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
     AST *memopNode = NULL;
 
     switch(left->kind) {
+    case AST_EMPTY:
+        if (asExpression || ExprHasSideEffects(right)) BCCompileExpression(irbuf,right,context,!asExpression);
+        return;
     case AST_RANGEREF:
     case AST_HWREG: {
         memopNode = left;
@@ -1377,6 +1395,19 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                     if (IsConstExpr(right) && EvalConstExpr(right) == 0) goto noOp;
                     mok = MOK_ADD;
                     break;
+
+                case K_LIMITMAX_UNS:
+                case K_LIMITMIN_UNS: {
+                    // TODO: don't do this nonsense when there's a native op for this
+                    // also TODO: optimize to signed limit if possible
+                    BCCompileExpression(irbuf,AstOperator('+',
+                        AstOperator(optoken == K_LIMITMAX_UNS ? K_LIMITMAX : K_LIMITMIN,
+                            AstOperator('+',left,AstInteger(1U<<31)),
+                            AstOperator('+',right,AstInteger(1U<<31))
+                    ),AstInteger(1U<<31)),context,asStatement);
+
+                    return;
+                } break;
 
                 case K_SIGNEXTEND:
                 case K_ZEROEXTEND:
@@ -1868,6 +1899,7 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
 
         BCContext newcontext = context;
         newcontext.hiddenVariables += 2;
+        newcontext.caseVarsAt = newcontext.hiddenVariables;
 
         // Preview what we got
         int cases = 0;
@@ -1944,11 +1976,8 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         for(AST *list=node->right;list;list=list->right) {
             AST *item = list->left;
             if (item->kind == AST_COMMENTEDNODE) item = item->left;
-            if (item->kind == AST_ENDCASE) {
-                //printf("Got AST_ENDCASE\n");
-                ByteOpIR endOp = {.kind = BOK_CASE_DONE};
-                BIRB_PushCopy(irbuf,&endOp);
-            } else if (item->kind == AST_CASEITEM || item->kind == AST_OTHER) {
+
+            if (item->kind == AST_CASEITEM || item->kind == AST_OTHER) {
                 bool isOther = item->kind == AST_OTHER;
                 //printf(isOther ? "Got AST_OTHER\n" : "Got AST_CASEITEM\n");
                 BIRB_Push(irbuf,isOther?otherlabel:caselabels[whichcase]);
@@ -1973,6 +2002,43 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         BIRB_Push(irbuf,endlabel);
 
     } break;
+    case AST_JUMPTABLE: {
+        ASSERT_AST_KIND(node->left,AST_ASSIGN,return;);
+        ASSERT_AST_KIND(node->left->left,AST_CASEEXPR,return;);
+        
+        ByteOpIR align = {.kind = BOK_ALIGN,.data.int32 = 2};
+        if (!gl_p2) BIRB_PushCopy(irbuf->pending,&align); // P2 doesn't need alignment
+        ByteOpIR *tableLabel = BCNewOrphanLabel(context);
+        BIRB_Push(irbuf->pending,tableLabel);
+
+        ByteOpIR *endLabel = BCNewOrphanLabel(context);
+
+        BCContext newcontext = context;
+        newcontext.hiddenVariables += 2;
+        newcontext.caseVarsAt = newcontext.hiddenVariables;
+
+        ByteOpIR pushDoneAddr = {.kind = BOK_FUNDATA_PUSHADDRESS,.jumpTo=endLabel};
+        BIRB_PushCopy(irbuf,&pushDoneAddr);
+        BCCompileInteger(irbuf,0); // Fake index var so we can use CASE_DONE
+
+        BCCompileExpression(irbuf,node->left->right,context,false);
+        ByteOpIR lookupOp = {.kind = BOK_FUNDATA_LOOKUPJUMP,.jumpTo=tableLabel};
+        BIRB_PushCopy(irbuf,&lookupOp);
+        // There's no straightup "jump to value+PBASE". CASE_DONE does it, but we need to push a dummy value first
+        BCCompileInteger(irbuf,0);
+        ByteOpIR jumpOp = {.kind = BOK_CASE_DONE};
+        BIRB_PushCopy(irbuf,&jumpOp);
+
+        AST *ast = node->right;
+        for (;ast&&ast->kind==AST_LISTHOLDER;ast=ast->right) {
+            const char *name = GetUserIdentifierName(ast->left);
+            if (!name) ERROR(ast,"Can't get name of label");
+            ByteOpIR jumpEntry = {.kind = BOK_FUNDATA_JUMPENTRY,.jumpTo = BCNewNamedLabelRef(newcontext,name)};
+            BIRB_PushCopy(irbuf->pending,&jumpEntry);
+        }
+        if (ast) BCCompileStmtlist(irbuf,ast,newcontext);
+        BIRB_Push(irbuf,endLabel);
+    } break;
     case AST_FUNCCALL: {
         BCCompileFunCall(irbuf,node,context,false,false);
     } break;
@@ -1992,6 +2058,12 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         } else {
             BCCompileJump(irbuf,context.quitLabel,context);
         }
+    } break;
+    case AST_ENDCASE: {
+        if (context.caseVarsAt < 0) ERROR(node,"ENDCASE outside of a CASE");
+        BCCompilePopN(irbuf,context.hiddenVariables - context.caseVarsAt);
+        ByteOpIR doneOp = {.kind = BOK_CASE_DONE};
+        BIRB_PushCopy(irbuf,&doneOp);
     } break;
     case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER: {
@@ -2097,7 +2169,7 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
         ERROR(F->body,"Internal Error: Expected AST_STMTLIST, got id %d",F->body->kind);
         return;
     } else {
-        BCContext context = {0};
+        BCContext context = {.caseVarsAt = -1};
         BCCompileStmtlist(&irbuf,F->body,context);
     }
     // Always append a return (TODO: only when neccessary)

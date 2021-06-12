@@ -12,6 +12,8 @@
     X(LABEL) /* Virtual jump target opcode */\
     X(NAMEDLABEL) /* For arbitrary GOTO, gets converted to LABEL early on. Also allocated loose as a jump target */\
     \
+    X(ALIGN) \
+    \
     X(CONSTANT)  /* Push immediate */\
     X(POP)  /* Pop N/4 values */\
     \
@@ -26,7 +28,9 @@
     X(MEM_ADDRESS)  /* Push effective address */\
     \
     X(FUNDATA_PUSHADDRESS) /* Absolute address of function-relative labeled data (such as STRING) */ \
+    X(FUNDATA_LOOKUPJUMP) /* read(!) value from a jump table with popped index */\
     X(FUNDATA_STRING) \
+    X(FUNDATA_JUMPENTRY) \
     \
     X(ANCHOR) /* Set up stack frame for call */\
     \
@@ -232,7 +236,6 @@ ByteOpIR *BIRB_PushCopy(BCIRBuffer *buf,ByteOpIR *ir);
 void BIRB_InsertBefore(BCIRBuffer *buf,ByteOpIR *target,ByteOpIR *ir);
 void BIRB_AppendPending(BCIRBuffer *buf);
 
-bool BCIR_SizeDetermined(ByteOpIR *ir);
 void BCIR_GetJumpOffsetBounds(ByteOpIR *jump,bool func_relative,int *minDist, int *maxDist,int recursionsLeft);
 int BCIR_GetJumpOffset(ByteOpIR *jump,bool func_relative);
 
