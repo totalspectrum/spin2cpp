@@ -162,6 +162,9 @@ extern int gl_optimize_flags; /* flags for optimization */
 #define DEFAULT_ASM_OPTS        (OPT_DEADCODE|OPT_REMOVE_UNUSED_FUNCS|OPT_INLINE_SMALLFUNCS|OPT_ASM_BASIC|OPT_AUTO_FCACHE|OPT_LOOP_BASIC|OPT_TAIL_CALLS)
 #define EXTRA_ASM_OPTS          (OPT_INLINE_SINGLEUSE|OPT_PERFORM_CSE|OPT_PERFORM_LOOPREDUCE|OPT_REMOVE_HUB_BSS) /* extras added with -O2 */
 
+// bytecode defaults to no optimization except unused method removal
+#define DEFAULT_BYTECODE_OPTS   (OPT_REMOVE_UNUSED_FUNCS)
+
 extern int gl_warn_flags;     /* flags for warnings */
 #define WARN_LANG_EXTENSIONS    0x01
 #define WARN_HIDE_MEMBERS       0x02

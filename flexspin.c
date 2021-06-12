@@ -482,7 +482,7 @@ main(int argc, const char **argv)
 
     if (optimizeDefault) {
         if (cmd->outputBytecode) {
-            gl_optimize_flags = 0; // Defaults to O0
+            gl_optimize_flags = DEFAULT_BYTECODE_OPTS;
         } else {
             gl_optimize_flags = DEFAULT_ASM_OPTS;
         }
