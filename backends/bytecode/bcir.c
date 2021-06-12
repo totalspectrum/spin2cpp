@@ -28,10 +28,14 @@ static void (*GetSizeBound_Func)(ByteOpIR *,int *,int *,int);
 int pbase_offset; // distance of function from PBASE (obj header)
 BCIRBuffer *current_birb;
 
-
-ByteOpIR *BIRB_PushCopy(BCIRBuffer *buf,ByteOpIR *ir) {
+ByteOpIR *BIRB_MakeCopy(ByteOpIR *ir) {
     ByteOpIR *newIR = malloc(sizeof(ByteOpIR));
     memcpy(newIR,ir,sizeof(ByteOpIR));
+    return newIR;
+}
+
+ByteOpIR *BIRB_PushCopy(BCIRBuffer *buf,ByteOpIR *ir) {
+    ByteOpIR *newIR = BIRB_MakeCopy(ir);
     BIRB_Push(buf,newIR);
     return newIR;
 }
@@ -47,6 +51,13 @@ void BIRB_Push(BCIRBuffer *buf,ByteOpIR *ir) {
         buf->tail = ir;
     }
     buf->opCount++;
+}
+
+void BIRB_InsertBefore(BCIRBuffer *buf,ByteOpIR *target,ByteOpIR *ir) {
+    ir->next = target;
+    if (target->prev) target->prev->next = ir;
+    else buf->head = ir;
+    target->prev = ir;
 }
 
 void BIRB_RemoveBlock(BCIRBuffer *buf,ByteOpIR *first,ByteOpIR *last) {
@@ -409,6 +420,34 @@ void BCIR_Optimize(BCIRBuffer *irbuf) {
     if (iterations >= BCOPT_MAX_ITERATIONS) WARNING(curfunc->body,"Optimization pass limit (%d) exceeded on function %s",BCOPT_MAX_ITERATIONS,curfunc->name);
     DEBUG(NULL,"took %d passes to optimize function %s",iterations,curfunc->name);
     current_birb = NULL;
+}
+
+// Kindof duplicates BCCompilePopN...
+static void BCIR_InsertPopNBefore(BCIRBuffer *irbuf, ByteOpIR *jump, int popcount) {
+    if (popcount < 0) ERROR(NULL,"Internal Error: negative pop count");
+    else if (popcount > 0) {
+        ByteOpIR popAmount = {.kind = BOK_CONSTANT,.data.int32 = popcount*4};
+        BIRB_InsertBefore(irbuf,jump,BIRB_MakeCopy(&popAmount));
+        ByteOpIR popOp = {.kind = BOK_POP};
+        BIRB_InsertBefore(irbuf,jump,BIRB_MakeCopy(&popOp));
+    }
+}
+
+void BCIR_ResolveNamedLabels(BCIRBuffer *irbuf) {
+    for (ByteOpIR *lbl=irbuf->head;lbl;lbl=lbl->next) {
+        if (lbl->kind == BOK_NAMEDLABEL) {
+            const char *name = lbl->data.stringPtr;
+            lbl->kind = BOK_LABEL;
+            for (ByteOpIR *jr=irbuf->head;jr;jr=jr->next) {
+                if (BCIR_UsesLabel(jr) && jr->jumpTo->kind == BOK_NAMEDLABEL && !strcmp(name,jr->jumpTo->data.stringPtr)) {
+                    int stackdiff = jr->jumpTo->attr.labelHiddenVars - lbl->attr.labelHiddenVars;
+                    if (stackdiff > 0) BCIR_InsertPopNBefore(irbuf,jr,stackdiff);
+                    else if (stackdiff < 0) ERROR(NULL,"Jump to named label with deeper stack");
+                    jr->jumpTo = lbl;
+                }
+            }
+        }
+    }
 }
 
 static bool
