@@ -235,8 +235,7 @@ static bool CanUseEitherSignedOrUnsigned(AST *node) {
     printf("In CanUseEitherSignedOrUnsigned...\n");DumpAST(node);
     AST *type = ExprType(node);
     if (type) {
-        // FIXME: ExprType seems to return bogus values
-        //if (type->kind == AST_UNSIGNEDTYPE && type->left->d.ival < LONG_SIZE) return true;
+        if (type->kind == AST_UNSIGNEDTYPE && type->left->d.ival < LONG_SIZE) return true;
     }
     if (node->kind == AST_OPERATOR) {
         int32_t constVal;
