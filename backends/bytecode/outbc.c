@@ -21,6 +21,15 @@ bool interp_can_multireturn() {
     }
 }
 
+bool interp_can_unsigned() {
+    switch(gl_interp_kind) {
+    case INTERP_KIND_P1ROM: return false;
+    default:
+        ERROR(NULL,"Unknown interpreter kind");
+        return false;
+    }
+}
+
 static int BCResultsBase() {
     switch(gl_interp_kind) {
     case INTERP_KIND_P1ROM: return 0;
@@ -218,6 +227,32 @@ Optoken2MathOpKind(int token,bool *unaryOut) {
     return mok;
 }
 
+// FIXME: less clunky name
+// Basically returns true if the value will be the same when interpreted signed or unsigned
+static bool CanUseEitherSignedOrUnsigned(AST *node) {
+    if (!node) return false;
+    if (IsConstExpr(node)) return EvalConstExpr(node) >= 0;
+    printf("In CanUseEitherSignedOrUnsigned...\n");DumpAST(node);
+    AST *type = ExprType(node);
+    if (type) {
+        // FIXME: ExprType seems to return bogus values
+        //if (type->kind == AST_UNSIGNEDTYPE && type->left->d.ival < LONG_SIZE) return true;
+    }
+    if (node->kind == AST_OPERATOR) {
+        int32_t constVal;
+        bool constRight = false;
+        if (IsConstExpr(node->left)) constVal = EvalConstExpr(node->left);
+        else if (IsConstExpr(node->right)) constVal = EvalConstExpr(node->right), constRight = true;
+        else goto no_constop;
+
+        if (node->d.ival == '&' && constVal >= 0) return true;
+        if (node->d.ival == K_SHR && constRight && (constVal & 31)) return true;
+
+    }
+    no_constop:
+    return false;
+}
+
 static bool OptNestedAdd(AST **node, int32_t *outVal) {
     if ((*node)->kind != AST_OPERATOR) return false;
     if (IsConstExpr(*node)) return false;
@@ -275,6 +310,7 @@ static void OptimizeOperator(int *optoken, AST **left,AST **right) {
     int32_t zeroOptVal;
     bool canCommute = false;
     int negateOp = 0;
+    int unsignedToSignedOp = 0;
 
     switch (*optoken) {
     case '*':
@@ -285,13 +321,15 @@ static void OptimizeOperator(int *optoken, AST **left,AST **right) {
         canZeroOpt = true;
         zeroOptVal = 0;
         break;
-#if 0 /* fails for negative numbers */
     case '/':
-        shiftOptOp = K_SAR;
+        // Replacing with SAR doesn't work...
         canNopOpt = true;
         nopOptVal = 1;
         break;
-#endif        
+    case K_UNS_DIV:
+        shiftOptOp = K_SHR;
+        unsignedToSignedOp = '/';
+        break;
     case K_SHL:
     case K_SHR:
     case K_SAR:
@@ -300,6 +338,18 @@ static void OptimizeOperator(int *optoken, AST **left,AST **right) {
         canNopOpt = true;
         nopOptVal = 0;
         break;
+    case K_LIMITMAX_UNS:
+        unsignedToSignedOp = K_LIMITMAX;
+        break;
+    case K_LIMITMIN_UNS:
+        canNopOpt = true;
+        nopOptVal = 0;
+        unsignedToSignedOp = K_LIMITMIN;
+        break;
+    case K_LTU: unsignedToSignedOp = '<'; break;
+    case K_GTU: unsignedToSignedOp = '>'; break;
+    case K_LEU: unsignedToSignedOp = K_LE; break;
+    case K_GEU: unsignedToSignedOp = K_GE; break;
     case '-':
         canNopOpt = true;
         nopOptVal = 0;
@@ -323,7 +373,7 @@ static void OptimizeOperator(int *optoken, AST **left,AST **right) {
     if (right && *right && IsConstExpr(*right)) {
         int32_t rightVal = EvalConstExpr(*right);
 
-        if (canZeroOpt && rightVal == zeroOptVal) {
+        if (left && canZeroOpt && rightVal == zeroOptVal) {
             AstReportAs(*right,&save);
             *optoken = '+';
             *left = AstInteger(0);
@@ -365,6 +415,11 @@ static void OptimizeOperator(int *optoken, AST **left,AST **right) {
             OptimizeOperator(optoken,left,right);
             return;
         }
+    }
+
+    if (unsignedToSignedOp && !interp_can_unsigned() && left && right && CanUseEitherSignedOrUnsigned(*left) && CanUseEitherSignedOrUnsigned(*right)) {
+        *optoken = unsignedToSignedOp;
+        return;
     }
 
 
