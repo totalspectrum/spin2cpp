@@ -54,15 +54,19 @@ Flex C uses the open source mcpp preprocessor (originally from mcpp.sourceforge.
 
 ### Predefined symbols
 
-Symbol           | When Defined
------------------|-------------
-`__propeller__`  | always defined to 1 (for P1) or 2 (for P2)
-`__FLEXC__`      | always defined to the flexspin/flexcc major version number
-`__FLEXSPIN__`   | always defined to the flexspin/flexcc major version number
-`__P2__`         | only defined if compiling for Propeller 2 (obsolete)
-`__propeller2__` | only defined if compiling for Propeller 2
-`__ILP32__`      | always defined; some programs use this to determine pointer size
-`__VERSION__`    | defined to a string containing the full flexspin version
+Symbol                   | When Defined
+-------------------------|-------------
+`__propeller__`          | always defined to 1 (for P1) or 2 (for P2)
+`__FLEXC__`              | always defined to the flexspin/flexcc major version number
+`__FLEXSPIN__`           | always defined to the flexspin/flexcc major version number
+`__P2__`                 | only defined if compiling for Propeller 2 (obsolete)
+`__propeller2__`         | only defined if compiling for Propeller 2
+`__ILP32__`              | always defined; some programs use this to determine pointer size
+`__VERSION__`            | defined to a string containing the full flexspin version
+`__OUTPUT_ASM__`         | if PASM code is being generated
+`__OUTPUT_BYTECODE__`    | if bytecode is being generated
+`__OUTPUT_C__`           | if C code is being generated
+`__OUTPUT_CPP__`         | if C++ code is being generated
 
 ## Runtime Environment
 

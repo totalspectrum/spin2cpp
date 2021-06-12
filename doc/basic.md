@@ -112,6 +112,15 @@ Symbol           | When Defined
 `__TIME__`       | a string containing the time when compilation was begun
 `__VERSION__`    | a string containing the full version of flexspin in use
 
+A predefined symbol is also generated for type of output being created:
+
+Symbol                   | When Defined
+-------------------------|-------------
+`__OUTPUT_ASM__`         | if PASM code is being generated
+`__OUTPUT_BYTECODE__`    | if bytecode is being generated
+`__OUTPUT_C__`           | if C code is being generated
+`__OUTPUT_CPP__`         | if C++ code is being generated
+
 ## Language Syntax
 
 ### Comments

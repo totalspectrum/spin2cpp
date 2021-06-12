@@ -107,7 +107,8 @@ Symbol                   | When Defined
 -------------------------|-------------
 `__OUTPUT_ASM__`         | if PASM code is being generated
 `__OUTPUT_BYTECODE__`    | if bytecode is being generated
-
+`__OUTPUT_C__`           | if C code is being generated
+`__OUTPUT_CPP__`         | if C++ code is being generated
 
 ## Memory Management
 
