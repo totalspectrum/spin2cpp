@@ -1369,6 +1369,22 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                     mok = MOK_ADD;
                     break;
 
+                case K_SIGNEXTEND:
+                case K_ZEROEXTEND:
+                    {
+                        if (ExprHasSideEffects(right)) {
+                            ERROR(node, "Bytecode output cannot handle side effects in right argument of sign/zero extend");
+                            right = AstInteger(16);
+                        }
+                        BCCompileExpression(irbuf, left, context, false);
+                        BCCompileExpression(irbuf, right, context, false);
+                        ByteOpIR mathOp = {0};
+                        mathOp.kind = BOK_MATHOP;
+                        mathOp.mathKind = MOK_SHL;
+                        BIRB_PushCopy(irbuf, &mathOp);
+                        mok = (optoken == K_SIGNEXTEND) ? MOK_SAR : MOK_SHR;
+                        unary = true;
+                    } break;
                 case K_INCREMENT: 
                 case K_DECREMENT:
                 case '?':
@@ -1580,7 +1596,7 @@ BCCompileStmtlist(BCIRBuffer *irbuf,AST *list, BCContext context) {
     for (AST *ast=list;ast&&ast->kind==AST_STMTLIST;ast=ast->right) {
         AST *node = ast->left;
         if (!node) {
-            ERROR(ast,"empty node?!?");
+            //ERROR(ast,"empty node?!?"); ignore, this can happen
             continue;
         }
         BCCompileStatement(irbuf,node,context);
