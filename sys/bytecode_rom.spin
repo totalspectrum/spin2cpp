@@ -10,8 +10,8 @@ __helper_arg long 0[4]
         org 0
 __helper_entry
         mov	:cmdptr, par
-	mov	dira, :dira_init
 	mov	outa, :outa_init
+	mov	dira, :dira_init
 :loop
 	rdlong	:cmd, :cmdptr wz
   if_z	jmp	#:loop
