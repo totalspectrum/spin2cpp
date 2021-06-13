@@ -839,6 +839,7 @@ doSpinTransform(AST **astptr, int level, AST *parent)
             case K_BOOL_NOT:
             case K_DECODE:
             case K_ENCODE:
+            case K_SIGNEXTEND:
                 if (gl_output == OUTPUT_BYTECODE) {
                     lhsast = AstAssign(ast->right, NULL);
                     lhsast->d.ival = ast->d.ival;

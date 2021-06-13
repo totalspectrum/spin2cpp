@@ -1412,16 +1412,6 @@ expr:
     { $$ = AstOperator(K_BIT_NOT, NULL, $2); }
   | '!' '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign(K_BIT_NOT, $3, NULL); }
-  | '~' expr
-    { AST *shf;
-      shf = AstOperator(K_SHL, $2, AstInteger(24));
-      $$ = AstOperator(K_SAR, shf, AstInteger(24)); 
-    }
-  | SP_DOUBLETILDE expr
-    { AST *shf;
-      shf = AstOperator(K_SHL, $2, AstInteger(16));
-      $$ = AstOperator(K_SAR, shf, AstInteger(16)); 
-    }
   | SP_NOT expr
     { $$ = AstOperator(K_BOOL_NOT, NULL, $2); }
   | SP_NOT '=' expr %prec SP_ASSIGN
@@ -1491,6 +1481,18 @@ expr:
     { $$ = NewAST(AST_POSTSET, $1, AstInteger(0)); }
   | lhs SP_DOUBLETILDE
     { $$ = NewAST(AST_POSTSET, $1, AstInteger(-1)); }
+  | '~' lhs
+    { AST *shf;
+      AST *val = $2;
+      shf = AstOperator(K_SIGNEXTEND, val, AstInteger(8));
+      $$ = shf;
+    }
+  | SP_DOUBLETILDE lhs
+    { AST *shf;
+      AST *val = $2;
+      shf = AstOperator(K_SIGNEXTEND, val, AstInteger(16));
+      $$ = shf;
+    }
   | SP_CONSTANT '(' expr ')'
     { $$ = NewAST(AST_CONSTANT, $3, NULL); }
   | SP_ALLOCA '(' expr ')'

@@ -7,6 +7,7 @@ Version 5.5.1
 - Fixed some spurious warnings about uninitialized variables
 - Fixed an optimization error for BYTE[] and WORD[]
 - Fixed incorrect unary assignment operator behavior in Spin
+- Fixed ~x and ~~x at top level in Spin1
 - Fixed SIGNX= and ZEROX= in Spin2
 - Improved COG memory usage
 - Improved conversion of longmove() in Spin to handle labels
