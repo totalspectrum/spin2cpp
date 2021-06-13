@@ -2225,7 +2225,12 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         AST *retval = node->left;
         ByteOpIR returnOp = {0};
         returnOp.kind = isAbort ? (retval ? BOK_ABORT_POP : BOK_ABORT_PLAIN) : (retval ? BOK_RETURN_POP : BOK_RETURN_PLAIN);
-        if (retval) BCCompileExpression(irbuf,retval,context,false);
+        if (retval) {
+            if (retval->kind == AST_DECLARE_VAR) { // handle declared types in return values
+                retval = retval->right;
+            }
+            BCCompileExpression(irbuf,retval,context,false);
+        }
         BIRB_PushCopy(irbuf,&returnOp);
     } break;
     case AST_YIELD: {
