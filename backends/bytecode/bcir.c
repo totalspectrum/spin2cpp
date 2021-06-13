@@ -182,6 +182,8 @@ bool BCIR_isJump(ByteOpIR *ir) {
     case BOK_MEM_MODIFY:
     case BOK_REG_MODIFY:
         return ir->mathKind == MOK_MOD_REPEATSTEP;
+    case BOK_FUNDATA_PUSHADDRESS:
+        return ir->attr.pushaddress.forJump;
     default: return false;
     }
 }

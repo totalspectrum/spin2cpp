@@ -208,6 +208,7 @@ typedef struct bcirstruct {
         } coginit;
         struct {
             unsigned addPbase:1;
+            unsigned forJump:1;
         } pushaddress;
         int stringLength;
         int labelHiddenVars; // Not used by the actual IR step
