@@ -222,17 +222,12 @@ int _fmtnum(putfunc fn, unsigned fmt, int x, int base)
                 return _fmtchar(fn, fmt, '#');
             }
         }
-        switch (signchar) {
-        case SIGNCHAR_SPACE:
+        if (signchar == SIGNCHAR_SPACE) {
             *ptr++ = ' ';
-            break;
-        default:
-        case SIGNCHAR_PLUS:
-            *ptr++ = '+';
-            break;
-        case SIGNCHAR_MINUS:
+        } else if (signchar == SIGNCHAR_MINUS) {
             *ptr++ = '-';
-            break;
+        } else {
+            *ptr++ = '+';
         }
     }
     width += _uitoa(ptr, x, base, mindigits, 0 != (fmt & (1<<UPCASE_BIT)));
