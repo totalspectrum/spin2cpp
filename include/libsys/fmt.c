@@ -184,7 +184,7 @@ int _uitoa(char *orig_str, UITYPE num, unsigned base, unsigned mindigits, int up
         *str++ = digit;
         num = num / base;
         width++;
-    } while (num > 0 || width < mindigits);
+    } while (num != 0 || width < mindigits);
     *str++ = 0;
     _strrev(orig_str);
     return width;
