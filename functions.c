@@ -1393,6 +1393,10 @@ NormalizeFunc(AST *ast, Function *func, int setflag)
         rdecl = NormalizeFunc(ast->right, func, setflag);
         ldecl = NormalizeFunc(ast->left, func, setflag);
         return AddToList(ldecl, rdecl);
+    case AST_COUNTREPEAT:
+        ldecl = NormalizeFunc(ast->left, func, 1); // in a COUNTREPEAT the variable is initialized
+        rdecl = NormalizeFunc(ast->right, func, setflag);
+        return AddToList(ldecl, rdecl);
     case AST_FOR:
     case AST_FORATLEASTONCE:
         // initialization statement
