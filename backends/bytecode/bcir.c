@@ -461,8 +461,10 @@ void BCIR_ResolveNamedLabels(BCIRBuffer *irbuf) {
     }
     // Check for any unresolved labels
     for (ByteOpIR *jr=irbuf->head;jr;jr=jr->next) {
-        if (BCIR_UsesLabel(jr) && jr->jumpTo->kind == BOK_NAMEDLABEL) {
-            ERROR(NULL,"unresolved label %s in function %s",jr->jumpTo->data.stringPtr,curfunc->name);
+        if (BCIR_UsesLabel(jr)) {
+            if (jr->jumpTo) {
+                if (jr->jumpTo->kind == BOK_NAMEDLABEL) ERROR(NULL,"unresolved label %s in function %s",jr->jumpTo->data.stringPtr,curfunc->name);
+            } else ERROR(NULL,"Internal Error: Missing label in function %s",curfunc->name);
         }
     }
 }

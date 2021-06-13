@@ -285,6 +285,16 @@ static void OptimizeOperator(int *optoken, AST **left,AST **right) {
         *optoken = K_DECODE;
         return;
     }
+    if (*optoken == K_ZEROEXTEND && right && IsConstExpr(*right)) {
+        int32_t x = EvalConstExpr(*right);
+        if (x >= 32) {
+            x = -1; // TODO: Is this actually correct?
+        } else {
+            x = (1<<(x))-1;
+        }
+        *right = AstInteger(x);
+        *optoken = '&';
+    }
     if (*optoken == K_LIMITMIN && right && IsConstZero(*right) && left && CanUseEitherSignedOrUnsigned(*left)) {
         // Remove pointless limitmin
         *optoken = '+';
@@ -367,6 +377,19 @@ static void OptimizeOperator(int *optoken, AST **left,AST **right) {
         canCommute = true;
         negateOp = '-';
         break;
+    case '&':
+        canCommute = true;
+        canNopOpt = true;
+        nopOptVal = -1;
+        canZeroOpt = true;
+        zeroOptVal = 0;
+        break;
+    case '|':
+    case '^':
+        canCommute = true;
+        canNopOpt = true;
+        nopOptVal = 0;
+        break;
     default: return;
     }
 
@@ -381,7 +404,7 @@ static void OptimizeOperator(int *optoken, AST **left,AST **right) {
     if (right && *right && IsConstExpr(*right)) {
         int32_t rightVal = EvalConstExpr(*right);
 
-        if (left && canZeroOpt && rightVal == zeroOptVal) {
+        if (left && canZeroOpt && rightVal == zeroOptVal && *left && !ExprHasSideEffects(*left)) {
             AstReportAs(*right,&save);
             *optoken = '+';
             *left = AstInteger(0);
@@ -1530,27 +1553,12 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 case K_SIGNEXTEND:
                 case K_ZEROEXTEND:
                     {
-                        ByteOpIR mathOp = {0};
-                        mathOp.kind = BOK_MATHOP;
+                        ByteOpIR mathOp = {.kind = BOK_MATHOP};
                         if (ExprHasSideEffects(right)) {
                             ERROR(node, "Bytecode output cannot handle side effects in right argument of sign/zero extend");
                             right = AstInteger(16);
                         }
                         BCCompileExpression(irbuf, left, context, false);
-                        if (0 && IsConstExpr(right) && optoken == K_ZEROEXTEND) {
-                            // we can do this as an AND instead
-                            // but for some reason this code doesn't work???
-                            int32_t x = EvalConstExpr(right);
-                            if (x >= 32) {
-                                x = -1;
-                            } else {
-                                x = (1<<(x))-1;
-                            }
-                            BCCompileExpression(irbuf, AstInteger(x), context, false);
-                            mathOp.kind = MOK_BITAND;
-                            BIRB_PushCopy(irbuf, &mathOp);
-                            return;
-                        }
                         right = FoldIfConst(AstOperator('-', AstInteger(32), right));
                         BCCompileExpression(irbuf, right, context, false);
                         mathOp.mathKind = MOK_SHL;
