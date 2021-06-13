@@ -404,3 +404,23 @@ pri _getus() : r = +long | freq
 
 pri __topofstack(ptr)
   return @ptr
+
+''
+'' unsigned comparison: return sign of a-b where a and b are unsigned
+''
+pri _unsigned_cmp(a, b)
+  if (a => 0)
+    if (b => 0)
+      return a - b
+    else
+      ' b appears negative, a does not
+      ' then a < b, so return -1
+      return -1
+  else
+    ' a appears negative
+    if b => 0
+      ' b does not appear negative
+      ' so a-b should appear positive
+      return 1
+  return b-a
+  

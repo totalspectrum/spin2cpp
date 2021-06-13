@@ -2476,20 +2476,55 @@ InferTypes(Module *P)
     return changes;
 }
 
-static void
+static bool
 UseInternal(const char *name)
 {
     Symbol *sym = FindSymbol(&systemModule->objsyms, name);
     if (sym && sym->kind == SYM_FUNCTION) {
         Function *func = (Function *)sym->val;
         MarkUsed(func, "internal");
+        return true;
     } else {
         // don't actually error here, if we are in some modes the global modules
         // aren't compiled (e.g. C++ output)
         // ERROR(NULL, "UseInternal did not find the requested function %s", name);
     }
+    return false;
 }
 
+static AST *
+ConvertInternal(AST *body, const char *fname, AST *arg1, AST *arg2)
+{
+    AST *fcall;
+    AST *ident;
+    if (UseInternal(fname)) {
+        ASTReportInfo saveinfo;
+
+        AstReportAs(body, &saveinfo);
+        ident = AstIdentifier(fname);
+        if (arg2) {
+            arg2 = NewAST(AST_EXPRLIST, arg2, NULL);
+        }
+        arg1 = NewAST(AST_EXPRLIST, arg1, arg2);
+        fcall = NewAST(AST_FUNCCALL, ident, arg1);
+        AstReportDone(&saveinfo);
+        return fcall;
+    }
+    return body;
+}
+
+static int
+NonUnsignedOp(int val)
+{
+    switch(val) {
+    case K_LEU: return K_LE;
+    case K_GEU: return K_GE;
+    case K_LTU: return '<';
+    case K_GTU: return '>';
+    default: return val;
+    }
+}
+        
 static void
 MarkUsedBody(AST *body, const char *caller)
 {
@@ -2544,11 +2579,17 @@ MarkUsedBody(AST *body, const char *caller)
         break;
     case AST_OPERATOR:
         switch (body->d.ival) {
+        case K_UNS_DIV:
+            *body = *ConvertInternal(body, "_unsigned_div", body->left, body->right);
+            break;
+        case K_UNS_MOD:
+            *body = *ConvertInternal(body, "_unsigned_mod", body->left, body->right);
+            break;
         case K_SQRT:
-            UseInternal("_sqrt");
+            *body = *ConvertInternal(body, "_sqrt", body->right, NULL);
             break;
         case K_ONES_COUNT:
-            UseInternal("_ones");
+            *body = *ConvertInternal(body, "_ones", body->right, NULL);
             break;
         case K_QEXP:
             UseInternal("_qexp");
@@ -2567,6 +2608,20 @@ MarkUsedBody(AST *body, const char *caller)
                 UseInternal("_lfsr_forward");
             } else {
                 UseInternal("_lfsr_backward");
+            }
+            break;
+        case K_LTU:
+        case K_GTU:
+        case K_LEU:
+        case K_GEU:
+            if (gl_output == OUTPUT_BYTECODE && gl_interp_kind == INTERP_KIND_P1ROM) {
+                // convert to e.g. _unsigned_cmp(left, right) < 0
+                AST *replace = ConvertInternal(body, "_unsigned_cmp", body->left, body->right);
+                if (replace != body) {
+                    body->d.ival = NonUnsignedOp(body->d.ival);
+                    body->left = replace;
+                    body->right = AstInteger(0);
+                }
             }
             break;
         default:

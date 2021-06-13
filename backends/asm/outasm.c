@@ -2544,15 +2544,8 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
   }
   case K_SQRT:
   {
-      AST *fcall;
-      ASTReportInfo saveinfo;
-      
-      AstReportAs(expr, &saveinfo);
-      fcall = NewAST(AST_FUNCCALL, AstIdentifier("_sqrt"),
-                     NewAST(AST_EXPRLIST, expr->right, NULL));
-      left = CompileFunccallFirstResult(irl, fcall);
-      AstReportDone(&saveinfo);
-      return left;
+      ERROR(expr, "Unexpected K_SQRT found");
+      return EmptyOperand();
   }
   case K_ONES_COUNT:
   {
