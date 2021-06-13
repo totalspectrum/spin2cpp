@@ -17,7 +17,6 @@
 // string formatting functions
 //
 typedef int (*putfunc)(int c);
-#define CALL(fn, c) (*fn)(c)
 
 //
 // flags:

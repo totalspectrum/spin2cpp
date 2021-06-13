@@ -25,6 +25,12 @@
 #define DEFAULT_BASIC_FLOAT_FMT ((1<<UPCASE_BIT)|((4+1)<<PREC_BIT))
 #define DEFAULT_FLOAT_FMT ((1<<UPCASE_BIT))
 
+#ifdef SIMPLE_IO
+#define PUTC(c) (simple_tx(c))
+#else
+#define PUTC(c) (*fn)(c)
+#endif
+
 //
 // reverse a string in-place
 //
@@ -74,7 +80,7 @@ int _fmtpad(putfunc fn, unsigned fmt, int width, unsigned leftright)
         width = (width + (leftright==PAD_ON_RIGHT)) / 2;
     }
     for (i = 0; i < width; i++) {
-        r = CALL(fn, ' ');
+        r = PUTC(' ');
         if (r < 0) return r;
         n += r;
     }
@@ -94,7 +100,7 @@ int _fmtstr(putfunc fn, unsigned fmt, const char *str)
     n = _fmtpad(fn, fmt, width, PAD_ON_LEFT);
     if (n < 0) return n;
     for (i = 0; i < width; i++) {
-        r = CALL(fn, *str++);
+        r = PUTC(*str++);
         if (r < 0) return r;
         n += r;
     }
@@ -862,6 +868,15 @@ typedef int (*RxFunc)(void);
 typedef int (*CloseFunc)(void);
 typedef int (*VFS_CloseFunc)(vfs_file_t *);
 
+#ifdef SIMPLE_IO
+int simple_tx(c)
+{
+    _tx(c);
+    return 1;
+}
+#define _gettxfunc(h) ((void *)1)
+#define _getrxfunc(h) ((void *)1)
+#else
 // we want the BASIC open function to work correctly with old Spin
 // interfaces which don't return sensible values from send, so we
 // have to wrap the send function into one which always returns 1
@@ -884,12 +899,17 @@ RxFunc _getrxfunc(unsigned h) {
     if (!v || !v->state) return 0;
     return (RxFunc)&v->getchar;
 }
+#endif
+
 //
 // basic interfaces
 //
 
 int _basic_open(unsigned h, TxFunc sendf, RxFunc recvf, CloseFunc closef)
 {
+#ifdef SIMPLE_IO
+    return 0;
+#else    
     struct _bas_wrap_sender *wrapper;
     vfs_file_t *v;
 
@@ -911,6 +931,7 @@ int _basic_open(unsigned h, TxFunc sendf, RxFunc recvf, CloseFunc closef)
     v->getcf = (getcfunc_t)recvf;
     v->close = (VFS_CloseFunc)closef;
     return 0;
+#endif    
 }
 
 int _basic_open_string(unsigned h, char *fname, unsigned iomode)
@@ -937,9 +958,9 @@ void _basic_close(unsigned h)
 
 int _basic_print_char(unsigned h, int c, unsigned fmt)
 {
-    TxFunc tf = _gettxfunc(h);
-    if (!tf) return 0;
-    (*tf)(c);
+    TxFunc fn = _gettxfunc(h);
+    if (!fn) return 0;
+    PUTC(c);
     return 1;
 }
 
@@ -992,10 +1013,14 @@ int _basic_print_longinteger(unsigned h, long long int x, unsigned fmt, int base
 
 int _basic_get_char(unsigned h)
 {
+#ifdef SIMPLE_IO
+    return _rx();
+#else    
     RxFunc rf;
     rf = _getrxfunc(h);
     if (!rf) return -1;
     return (*rf)();
+#endif    
 }
 
 int _basic_print_float(unsigned h, FTYPE x, unsigned fmt, int ch)
