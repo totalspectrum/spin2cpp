@@ -14,12 +14,18 @@
 
 typedef struct {
     int hiddenVariables; // Count of hidden variables on stack
+    int caseVarsAt; // Where the nearest case has its hidden variables
     ByteOpIR *quitLabel,*nextLabel;
 } BCContext;
 
 enum MemOpKind {
     MEMOP_READ,MEMOP_WRITE,MEMOP_MODIFY,MEMOP_ADDRESS
 };
+
+bool interp_can_multireturn();
+bool interp_can_unsigned();
+
+bool CanUseEitherSignedOrUnsigned(AST *node);
 
 void OutputByteCode(const char *fname, Module *P);
 

@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include "common.h"
+#include "../backends/bytecode/outbc.h"
 #include "util/flexbuf.h"
 
 void
@@ -201,7 +202,8 @@ again:
     }
     switch (stmt->kind) {
     case AST_CASE:
-        ERROR(stmt, "Internal error, case not transformed");
+        // This can happen now, no need to err
+        // ERROR(stmt, "Internal error, case not transformed");
         return switchstmt;
     case AST_CASEITEM:
     {
@@ -242,11 +244,13 @@ again:
         AstReportDone(&saveinfo);
         goto again;
     case AST_ENDCASE:
-        AstReportAs(stmt, &saveinfo);
-        if (endswitch) {
-            *stmt = *NewAST(AST_GOTO, endswitch, NULL);
+        if (tmpvar->kind != AST_CASEEXPR) {
+            AstReportAs(stmt, &saveinfo);
+            if (endswitch) {
+                *stmt = *NewAST(AST_GOTO, endswitch, NULL);
+            }
+            AstReportDone(&saveinfo);
         }
-        AstReportDone(&saveinfo);
         return switchstmt;
     // for loops, "break" cannot have special meaning any more
     case AST_WHILE:
@@ -366,7 +370,6 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
 {
     AST *top, *ast;
     AST *assign, *ident;
-    AST *expr;
     AST *label;
     AST *exprtype;
     Flexbuf fb;
@@ -375,9 +378,6 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
     size_t siz;
     int i;
     int range, minval;
-    int maxrange = 255;
-    int minrange = 3;
-    int density; // at least density/maxrange items must be non-default
     int lastval;
     int defaults_seen = 0;
     int distinct_cases = 0;
@@ -385,11 +385,9 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
     if (gl_output == OUTPUT_C || gl_output == OUTPUT_CPP) {
         return NULL;
     }
-    if (force_reason) {
-        density = 0; // we will always use a jump table
-    } else {
-        // otherwise at least half the jump table entries must be non-default
-        density = maxrange / 2;
+    if (!force_reason && gl_output == OUTPUT_BYTECODE && !(curfunc->optimize_flags & OPT_CASETABLE)) {
+        // Don't auto-convert normal CASEs in bytecode mode by default
+        return NULL;
     }
     assign = switchstmt->left;
     switchstmt = switchstmt->right;
@@ -413,7 +411,7 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
             ERROR(NULL, "internal error in switch: IF not found");
             return NULL;
         }
-        expr = ast->left;
+        AST *expr = ast->left;
         label = ast->right;
         if (label->kind != AST_THENELSE || label->left->kind != AST_STMTLIST) {
             ERROR(NULL, "internal error in switch: thenelse not found");
@@ -452,6 +450,14 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
     qsort(cases, siz, sizeof(CaseHolder), caseCmp);
     minval = cases[0].val;
     range = (cases[siz-1].val - minval)+1;
+
+    // Perform some checks
+    AST *expr = assign->right;
+    const bool signed_limit = gl_output == OUTPUT_BYTECODE && !interp_can_unsigned() && !(minval == 0 && CanUseEitherSignedOrUnsigned(expr));
+
+    const int maxrange = 255;
+    const int minrange = gl_output != OUTPUT_BYTECODE ? 3 : (signed_limit ? 7 : 5);
+
     if (range > maxrange) {
         if (force_reason) {
             ERROR(switchstmt, "%s: too many entries needed for jump table", force_reason);
@@ -461,6 +467,12 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
     if (range < minrange && !force_reason) {
         return NULL;
     }
+    
+    // at least density/maxrange items must be non-default
+    const int density = force_reason
+        ? 0 // we will always use a jump table
+        : maxrange / 2; // otherwise at least half the jump table entries must be non-default
+
     ast = NewAST(AST_JUMPTABLE, NULL, NULL);
 
     curcase = cases;
@@ -484,20 +496,30 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
                            NewAST(AST_LISTHOLDER, defaultlabel, NULL));
     defaults_seen++;
 
+    if (signed_limit) {
+        minval--;
+        range++;
+        ast->right = NewAST(AST_LISTHOLDER, defaultlabel,ast->right);
+        defaults_seen++;
+    }
+
+
     // if the jump table is mostly defaults, revert to if/else
     // mathematically we want defaults_seen / range > density / maxrange
     if ( (defaults_seen * maxrange) / range > density  && density > 0) {
         return NULL;
     }
     // fix up the assignment
-    expr = assign->right;
     if (minval < 0) {
-        minval = -minval;
-        expr = AstOperator('+', expr, AstInteger(minval));
+        expr = AstOperator('+', expr, AstInteger(-minval));
     } else if (minval > 0) {
         expr = AstOperator('-', expr, AstInteger(minval));
     }
-    expr = AstOperator(K_LIMITMAX_UNS, expr, AstInteger(range));
+    if (signed_limit) {
+        expr = AstOperator(K_LIMITMIN,AstOperator(K_LIMITMAX, expr, AstInteger(range)),AstInteger(0));
+    } else {
+        expr = AstOperator(K_LIMITMAX_UNS, expr, AstInteger(range));
+    }
     assign->right = expr;
     ast->left = assign;
 
@@ -515,8 +537,10 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
 // the jump table and print an error if it cannot be made
 //
 AST *
-CreateSwitch(AST *expr, AST *stmt, const char *force_reason)
+CreateSwitch(AST *origast, const char *force_reason)
 {
+    AST *expr = origast->left, *stmt = DupAST(origast->right);
+    
     AST *casetype;
     AST *tmpvar;
     AST *endswitch;
@@ -533,7 +557,22 @@ CreateSwitch(AST *expr, AST *stmt, const char *force_reason)
     
     AstReportAs(stmt, &saveinfo);
     casetype = ExprType(expr);
-    tmpvar = AstTempLocalVariable("_tmp_", RemoveTypeModifiers(casetype));
+
+    if (IsConstExpr(expr) && (optimize_flags & OPT_DEADCODE)) {
+        use_expr = expr;
+        tmpvar = NewAST(AST_EMPTY,NULL,NULL);
+        filterCases = 1;
+    } else if (gl_output == OUTPUT_BYTECODE) {
+        use_expr = NewAST(AST_CASEEXPR,AstTempIdentifier("_caseexpr"),NULL);
+        tmpvar = use_expr; // Assigning to AST_CASEEXPR can't compile to anything meaningful and thus it should not leave this function...
+        filterCases = 0;
+    } else {
+        tmpvar = AstTempLocalVariable("_tmp_", RemoveTypeModifiers(casetype));
+        use_expr = tmpvar;
+        filterCases = 0;
+    }
+
+    
     endswitch = AstTempIdentifier("_endswitch");
     
     switchstmt = NewAST(AST_STMTLIST, AstAssign(tmpvar, expr), NULL);
@@ -545,13 +584,6 @@ CreateSwitch(AST *expr, AST *stmt, const char *force_reason)
     AddSymbolForLabel(endlabel);
     
     // switchstmt will have all the gotos we make
-    if (IsConstExpr(expr)) {
-        use_expr = expr;
-        filterCases = (optimize_flags & OPT_DEADCODE) != 0;
-    } else {
-        use_expr = tmpvar;
-        filterCases = 0;
-    }
     switchstmt = CreateGotos(use_expr, switchstmt, stmt, &defaultlabel, endswitch);
     // add a "goto default"
     if (!defaultlabel) {
@@ -571,6 +603,9 @@ CreateSwitch(AST *expr, AST *stmt, const char *force_reason)
     }
     if (gostmt) {
         switchstmt = gostmt;
+    } else if (use_expr->kind == AST_CASEEXPR) {
+        AstReportDone(&saveinfo);
+        return origast;
     } else {
         gostmt = NewAST(AST_GOTO, defaultlabel, NULL);
         switchstmt = AddToList(switchstmt, NewAST(AST_STMTLIST, gostmt, NULL));

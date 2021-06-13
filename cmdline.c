@@ -374,6 +374,7 @@ static struct optflag_table {
     { "inline-single", OPT_INLINE_SINGLEUSE },
     { "cse", OPT_PERFORM_CSE },
     { "remove-bss", OPT_REMOVE_HUB_BSS },
+    { "casetable", OPT_CASETABLE },
     { "all", OPT_FLAGS_ALL },
 };
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))

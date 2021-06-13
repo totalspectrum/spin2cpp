@@ -102,8 +102,8 @@ void BIRB_AppendPending(BCIRBuffer *buf) {
     buf->pending->opCount = 0;
 }
 
-bool BCIR_SizeDetermined(ByteOpIR *ir) {
-    return ir->fixedSize || ir->kind == BOK_LABEL;
+static bool BCIR_SizeDetermined(ByteOpIR *ir) {
+    return ir->fixedSize >= 0;
 }
 
 void BCIR_GetJumpOffsetBounds(ByteOpIR *jump,bool func_relative,int *minDist, int *maxDist,int recursionsLeft) {
@@ -157,6 +157,8 @@ bool BCIR_UsesLabel(ByteOpIR *ir) {
     case BOK_JUMP_IF_Z:
     case BOK_JUMP_IF_NZ:
     case BOK_FUNDATA_PUSHADDRESS:
+    case BOK_FUNDATA_LOOKUPJUMP:
+    case BOK_FUNDATA_JUMPENTRY:
     case BOK_CASE:
     case BOK_CASE_RANGE:
         return true;
@@ -202,6 +204,13 @@ bool BCIR_IsTerminalOp(ByteOpIR *ir) {
     }
 }
 
+bool BCIR_CanBeOversized(ByteOpIR *ir) {
+    switch (ir->kind) {
+    case BOK_ALIGN: return false;
+    default: return true;
+    }
+}
+
 // Is this memOp constant (i.e. doesn't pop any values to determine its address)
 bool BCIR_IsConstMemOp(ByteOpIR *ir) {
     return ir->attr.memop.base != MEMOP_BASE_POP && !ir->attr.memop.popIndex && ir->mathKind != MOK_MOD_REPEATSTEP;
@@ -242,7 +251,7 @@ static bool BCIR_OptDeadCode() {
     bool didWork = false;
     for(ByteOpIR *ir = current_birb->head;ir;ir=ir->next) {
         if(BCIR_IsTerminalOp(ir)) {
-            while (ir->next && !BCIR_IsLabel(ir->next)) {
+            while (ir->next && !(BCIR_IsLabel(ir->next) || (ir->next->kind == BOK_ALIGN && ir->next->next && BCIR_IsLabel(ir->next->next)))) {
                 BIRB_Remove(current_birb,ir->next);
                 didWork = true;
             }
@@ -441,11 +450,21 @@ void BCIR_ResolveNamedLabels(BCIRBuffer *irbuf) {
             for (ByteOpIR *jr=irbuf->head;jr;jr=jr->next) {
                 if (BCIR_UsesLabel(jr) && jr->jumpTo->kind == BOK_NAMEDLABEL && !strcmp(name,jr->jumpTo->data.stringPtr)) {
                     int stackdiff = jr->jumpTo->attr.labelHiddenVars - lbl->attr.labelHiddenVars;
-                    if (stackdiff > 0) BCIR_InsertPopNBefore(irbuf,jr,stackdiff);
-                    else if (stackdiff < 0) ERROR(NULL,"Jump to named label with deeper stack");
+                    if (stackdiff > 0) {
+                        if (jr->kind == BOK_JUMP) BCIR_InsertPopNBefore(irbuf,jr,stackdiff);
+                        else ERROR(NULL,"Named label reference to %s with uneven stack depth",name);
+                    } else if (stackdiff < 0) ERROR(NULL,"Jump to named label %s with deeper stack",name);
                     jr->jumpTo = lbl;
                 }
             }
+        }
+    }
+    // Check for any unresolved labels
+    for (ByteOpIR *jr=irbuf->head;jr;jr=jr->next) {
+        if (BCIR_UsesLabel(jr)) {
+            if (jr->jumpTo) {
+                if (jr->jumpTo->kind == BOK_NAMEDLABEL) ERROR(NULL,"unresolved label %s in function %s",jr->jumpTo->data.stringPtr,curfunc->name);
+            } else ERROR(NULL,"Internal Error: Missing label in function %s",curfunc->name);
         }
     }
 }
@@ -462,7 +481,7 @@ BCIR_DetermineSizes(BCIRBuffer *irbuf,bool force,int maxRecursion) {
         if (min==max) {
             ir->fixedSize = max;
             didSomething = true;
-        } else if (force) {
+        } else if (force && BCIR_CanBeOversized(ir)) {
             ir->fixedSize = max;
             return true;
         }
@@ -482,6 +501,7 @@ BCIR_AllDetermined(BCIRBuffer *irbuf) {
 
 static void
 BCIR_Compact(BCIRBuffer *irbuf,int maxRecursion) {
+    for(ByteOpIR *ir=irbuf->head;ir;ir=ir->next) ir->fixedSize = -1; // Initialize all sizes to -1
     for(;;) {
         // Fix sizes until we cant anymore
         while (BCIR_DetermineSizes(irbuf,false,maxRecursion));
