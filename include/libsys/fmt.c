@@ -6,15 +6,29 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#ifdef __OUTPUT_BYTECODE__
+#ifndef SIMPLE_IO
+#define SIMPLE_IO
+#endif
+#endif
+
 #ifdef __FLEXC__
+
 #define SMALL_INT
 #define strlen __builtin_strlen
 #define strcpy __builtin_strcpy
-#define THROW_RETURN(x) do { __throwifcaught(x); return -1; } while (0)
-#include <compiler.h>
+#ifdef SIMPLE_IO
+#define THROW_RETURN(err) return -1
 #else
+#define THROW_RETURN(x) do { __throwifcaught(x); return -1; } while (0)
+#endif
+#include <compiler.h>
+
+#else
+
 #define THROW_RETURN(x) return -1
 #include <string.h>
+
 #endif
 
 #define alloca(x) __builtin_alloca(x)
@@ -26,7 +40,7 @@
 #define DEFAULT_FLOAT_FMT ((1<<UPCASE_BIT))
 
 #ifdef SIMPLE_IO
-#define PUTC(c) (simple_tx(c))
+#define PUTC(c) (_tx(c), 1)
 #else
 #define PUTC(c) (*fn)(c)
 #endif
@@ -869,11 +883,6 @@ typedef int (*CloseFunc)(void);
 typedef int (*VFS_CloseFunc)(vfs_file_t *);
 
 #ifdef SIMPLE_IO
-int simple_tx(c)
-{
-    _tx(c);
-    return 1;
-}
 #define _gettxfunc(h) ((void *)1)
 #define _getrxfunc(h) ((void *)1)
 #else
@@ -908,7 +917,7 @@ RxFunc _getrxfunc(unsigned h) {
 int _basic_open(unsigned h, TxFunc sendf, RxFunc recvf, CloseFunc closef)
 {
 #ifdef SIMPLE_IO
-    return 0;
+    THROW_RETURN(EIO);
 #else    
     struct _bas_wrap_sender *wrapper;
     vfs_file_t *v;
@@ -936,6 +945,9 @@ int _basic_open(unsigned h, TxFunc sendf, RxFunc recvf, CloseFunc closef)
 
 int _basic_open_string(unsigned h, char *fname, unsigned iomode)
 {
+#ifdef SIMPLE_IO
+    THROW_RETURN(EIO);
+#else    
     vfs_file_t *v;
     int r;
     
@@ -949,6 +961,7 @@ int _basic_open_string(unsigned h, char *fname, unsigned iomode)
         THROW_RETURN(_geterror());
     }
     return r;
+#endif    
 }
 
 void _basic_close(unsigned h)
