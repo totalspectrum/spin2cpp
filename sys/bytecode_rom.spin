@@ -405,6 +405,7 @@ pri _getus() : r = +long | freq
 pri __topofstack(ptr)
   return @ptr
 
+{
 ''
 '' unsigned comparison: return sign of a-b where a and b are unsigned
 ''
@@ -423,4 +424,5 @@ pri _unsigned_cmp(a, b)
       ' so a-b should appear positive
       return 1
   return b-a
+}
   
