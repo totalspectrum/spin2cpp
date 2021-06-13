@@ -44,8 +44,6 @@ __helper_arg long 0[4]
         org 0
 __helper_entry
         mov	:cmdptr, par
-	mov	outa, :outa_init
-	mov	dira, :dira_init
 :loop
 	rdlong	:timeout, #0		' fetch clock frequency from HUB 0
 	shr	:timeout, #5		' loop takes around 16 cycles, check every half second
@@ -190,7 +188,6 @@ __helper_entry
 	
 	mov	:arg0, :qlo
 	mov	:arg1, :rlo
-	
 	jmp	#:cmddone
 	
 	
@@ -282,6 +279,7 @@ pri __init__ | cog
   cog := cognew(@__helper_entry, @__helper_cmd)
 
 pri {++needsinit} _remotecall(cmd, arg0 = 0, arg1 = 0, arg2 = 0)
+  repeat until __helper_cmd == 0
   longmove(@__helper_arg[0], @arg0, 3)
   __helper_cmd := cmd
   repeat until __helper_cmd == 0
