@@ -833,9 +833,9 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
     case AST_INTTYPE: {
         int size = type->left->d.ival;
         switch (size) {
-        // Will need to generate a sign-extend for these, somehow
-        case 1: if (kind == MEMOP_WRITE) memOp.attr.memop.memSize = MEMOP_SIZE_BYTE; else goto signed_todo; break;
-        case 2: if (kind == MEMOP_WRITE) memOp.attr.memop.memSize = MEMOP_SIZE_WORD; else goto signed_todo; break;
+        // sign-extend is generated for these
+        case 1: if (kind == MEMOP_WRITE || kind == MEMOP_READ) memOp.attr.memop.memSize = MEMOP_SIZE_BYTE; else goto signed_todo; break;
+        case 2: if (kind == MEMOP_WRITE || kind == MEMOP_READ) memOp.attr.memop.memSize = MEMOP_SIZE_WORD; else goto signed_todo; break;
         case 4: memOp.attr.memop.memSize = MEMOP_SIZE_LONG; break; 
         signed_todo:
         default: ERROR(node,"Can't handle signed type with size %d",size); break;
