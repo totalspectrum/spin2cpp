@@ -227,12 +227,15 @@ Optoken2MathOpKind(int token,bool *unaryOut) {
     return mok;
 }
 
+static bool IsConstZero(AST *ast) {
+    return IsConstExpr(ast) && EvalConstExpr(ast) == 0;
+}
+
 // FIXME: less clunky name
 // Basically returns true if the value will be the same when interpreted signed or unsigned
-static bool CanUseEitherSignedOrUnsigned(AST *node) {
+bool CanUseEitherSignedOrUnsigned(AST *node) {
     if (!node) return false;
     if (IsConstExpr(node)) return EvalConstExpr(node) >= 0;
-    printf("In CanUseEitherSignedOrUnsigned...\n");DumpAST(node);
     AST *type = ExprType(node);
     if (type) {
         if (type->kind == AST_UNSIGNEDTYPE && type->left->d.ival < LONG_SIZE) return true;
@@ -282,6 +285,12 @@ static void OptimizeOperator(int *optoken, AST **left,AST **right) {
         *optoken = K_DECODE;
         return;
     }
+    if (*optoken == K_LIMITMIN && right && IsConstZero(*right) && left && CanUseEitherSignedOrUnsigned(*left)) {
+        // Remove pointless limitmin
+        *optoken = '+';
+        *right = AstInteger(0);
+    }
+    // Handle nested add/sub
     try_addopt_again:
     if (*optoken == '+' && right && IsConstExpr(*right) && left && OptNestedAdd(left,&addValue)) {
         *right = AstInteger(EvalConstExpr(*right)+addValue);
@@ -428,10 +437,6 @@ static void OptimizeOperator(int *optoken, AST **left,AST **right) {
         *left = *right;
         *right = swap;
     }
-}
-
-static bool IsConstZero(AST *ast) {
-    return IsConstExpr(ast) && EvalConstExpr(ast) == 0;
 }
 
 static void StringAppend(Flexbuf *fb,AST *expr) {

@@ -22,6 +22,11 @@ enum MemOpKind {
     MEMOP_READ,MEMOP_WRITE,MEMOP_MODIFY,MEMOP_ADDRESS
 };
 
+bool interp_can_multireturn();
+bool interp_can_unsigned();
+
+bool CanUseEitherSignedOrUnsigned(AST *node);
+
 void OutputByteCode(const char *fname, Module *P);
 
 #endif

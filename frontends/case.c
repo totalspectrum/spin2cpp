@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include "common.h"
+#include "../backends/bytecode/outbc.h"
 #include "util/flexbuf.h"
 
 void
@@ -369,7 +370,6 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
 {
     AST *top, *ast;
     AST *assign, *ident;
-    AST *expr;
     AST *label;
     AST *exprtype;
     Flexbuf fb;
@@ -378,9 +378,6 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
     size_t siz;
     int i;
     int range, minval;
-    int maxrange = 255;
-    int minrange = 3;
-    int density; // at least density/maxrange items must be non-default
     int lastval;
     int defaults_seen = 0;
     int distinct_cases = 0;
@@ -388,15 +385,9 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
     if (gl_output == OUTPUT_C || gl_output == OUTPUT_CPP) {
         return NULL;
     }
-    if (!force_reason && gl_output == OUTPUT_BYTECODE) {
-        // Currently don't auto-convert normal CASEs in bytecode mode
+    if (!force_reason && gl_output == OUTPUT_BYTECODE && !(curfunc->optimize_flags & OPT_CASETABLE)) {
+        // Don't auto-convert normal CASEs in bytecode mode by default
         return NULL;
-    }
-    if (force_reason) {
-        density = 0; // we will always use a jump table
-    } else {
-        // otherwise at least half the jump table entries must be non-default
-        density = maxrange / 2;
     }
     assign = switchstmt->left;
     switchstmt = switchstmt->right;
@@ -420,7 +411,7 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
             ERROR(NULL, "internal error in switch: IF not found");
             return NULL;
         }
-        expr = ast->left;
+        AST *expr = ast->left;
         label = ast->right;
         if (label->kind != AST_THENELSE || label->left->kind != AST_STMTLIST) {
             ERROR(NULL, "internal error in switch: thenelse not found");
@@ -459,6 +450,14 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
     qsort(cases, siz, sizeof(CaseHolder), caseCmp);
     minval = cases[0].val;
     range = (cases[siz-1].val - minval)+1;
+
+    // Perform some checks
+    AST *expr = assign->right;
+    const bool signed_limit = gl_output == OUTPUT_BYTECODE && !interp_can_unsigned() && !(minval == 0 && CanUseEitherSignedOrUnsigned(expr));
+
+    const int maxrange = 255;
+    const int minrange = gl_output != OUTPUT_BYTECODE ? 3 : (signed_limit ? 7 : 5);
+
     if (range > maxrange) {
         if (force_reason) {
             ERROR(switchstmt, "%s: too many entries needed for jump table", force_reason);
@@ -468,6 +467,12 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
     if (range < minrange && !force_reason) {
         return NULL;
     }
+    
+    // at least density/maxrange items must be non-default
+    const int density = force_reason
+        ? 0 // we will always use a jump table
+        : maxrange / 2; // otherwise at least half the jump table entries must be non-default
+
     ast = NewAST(AST_JUMPTABLE, NULL, NULL);
 
     curcase = cases;
@@ -491,20 +496,30 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
                            NewAST(AST_LISTHOLDER, defaultlabel, NULL));
     defaults_seen++;
 
+    if (signed_limit) {
+        minval--;
+        range++;
+        ast->right = NewAST(AST_LISTHOLDER, defaultlabel,ast->right);
+        defaults_seen++;
+    }
+
+
     // if the jump table is mostly defaults, revert to if/else
     // mathematically we want defaults_seen / range > density / maxrange
     if ( (defaults_seen * maxrange) / range > density  && density > 0) {
         return NULL;
     }
     // fix up the assignment
-    expr = assign->right;
     if (minval < 0) {
-        minval = -minval;
-        expr = AstOperator('+', expr, AstInteger(minval));
+        expr = AstOperator('+', expr, AstInteger(-minval));
     } else if (minval > 0) {
         expr = AstOperator('-', expr, AstInteger(minval));
     }
-    expr = AstOperator(K_LIMITMAX_UNS, expr, AstInteger(range));
+    if (signed_limit) {
+        expr = AstOperator(K_LIMITMIN,AstOperator(K_LIMITMAX, expr, AstInteger(range)),AstInteger(0));
+    } else {
+        expr = AstOperator(K_LIMITMAX_UNS, expr, AstInteger(range));
+    }
     assign->right = expr;
     ast->left = assign;
 
