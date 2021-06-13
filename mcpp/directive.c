@@ -78,6 +78,7 @@ static void     dump_repl( const DEFBUF * dp, FILE * fp, int gcc2_va);
 #endif
 #define L_error         ('e' ^ ('r' << 1))
 #define L_pragma        ('p' ^ ('a' << 1))
+#define L_warning       ('w' ^ ('r' << 1))
 
 static const char * const   not_ident
             = "Not an identifier \"%s\"";               /* _E_      */
@@ -142,6 +143,7 @@ void    directive( void)
 #endif
     case L_error:   tp = "error";   break;
     case L_pragma:  tp = "pragma";  break;
+    case L_warning: tp = "warning"; break;
     default:        tp = NULL;      break;
     }
 
@@ -289,6 +291,10 @@ ifdo:
         cerror( infile->buffer, NULL, 0L, NULL);            /* _E_  */
         break;
 
+    case L_warning:
+        cwarn( infile->buffer, NULL, 0L, NULL);            /* _E_  */
+        break;
+
     case L_pragma:
         do_pragma();
         newlines = -1;              /* Do not putout excessive '\n' */
@@ -310,6 +316,7 @@ ifdo:
         if (file != infile)             /* File has been included   */
             newlines = -1;
 #endif
+    case L_warning  :
     case L_error    :
         goto  skip_line;
     case L_include  :
