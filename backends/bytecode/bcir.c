@@ -53,6 +53,12 @@ void BIRB_Push(BCIRBuffer *buf,ByteOpIR *ir) {
     buf->opCount++;
 }
 
+void BIRB_ReplaceInplace(ByteOpIR *target,ByteOpIR *ir) {
+    ByteOpIR *next = target->next,*prev = target->prev;
+    *target = *ir;
+    target->next = next,target->prev = prev;
+}
+
 void BIRB_InsertBefore(BCIRBuffer *buf,ByteOpIR *target,ByteOpIR *ir) {
     ir->next = target;
     if (target->prev) target->prev->next = ir;
@@ -89,7 +95,6 @@ void BIRB_MoveBlock(BCIRBuffer *buf,ByteOpIR *target,ByteOpIR *first,ByteOpIR *l
         target->next = first;
     }
 }
-
 
 void BIRB_AppendPending(BCIRBuffer *buf) {
     if (!buf->pending || buf->pending->opCount == 0) return;
@@ -182,6 +187,8 @@ bool BCIR_isJump(ByteOpIR *ir) {
     case BOK_MEM_MODIFY:
     case BOK_REG_MODIFY:
         return ir->mathKind == MOK_MOD_REPEATSTEP;
+    case BOK_FUNDATA_PUSHADDRESS:
+        return ir->attr.pushaddress.forJump;
     default: return false;
     }
 }
@@ -204,6 +211,20 @@ bool BCIR_IsTerminalOp(ByteOpIR *ir) {
     }
 }
 
+// Currently same as BCIR_IsTerminalOp, but if any large terminal ops are added, this may come in handy
+bool BCIR_CanReplaceJumpToOpWithItself(ByteOpIR *ir) {
+    switch(ir->kind) {
+    //case BOK_JUMP: // Handled seperately...
+    case BOK_CASE_DONE:
+    case BOK_LOOKEND:
+    case BOK_RETURN_PLAIN:
+    case BOK_RETURN_POP:
+    case BOK_ABORT_PLAIN:
+    case BOK_ABORT_POP:
+        return true;
+    default: return false;
+    }
+}
 bool BCIR_CanBeOversized(ByteOpIR *ir) {
     switch (ir->kind) {
     case BOK_ALIGN: return false;
@@ -321,6 +342,21 @@ static bool BCIR_OptJumpToJump() {
     return didWork;
 }
 
+static bool BCIR_OptReplaceJumpToOpWithItself() {
+    // An unconditional jump to a small terminal op can be replaced with that op
+    bool didWork = false;
+    for(ByteOpIR *ir = current_birb->head;ir;ir=ir->next) {
+        if (ir->kind == BOK_JUMP) {
+            ByteOpIR *next = ir->jumpTo->next;
+            if (BCIR_CanReplaceJumpToOpWithItself(next)) {
+                BIRB_ReplaceInplace(ir,next);
+                didWork = true;
+            }
+        }
+    }
+    return didWork;
+}
+
 #define MOVE_SINGLE_JUMP_THRESHOLD 18 // This could probably be tuned better
 
 static bool BCIR_OptMoveSingleJumpLabel() {
@@ -425,6 +461,7 @@ void BCIR_Optimize(BCIRBuffer *irbuf) {
         if (flags & OPT_PEEPHOLE) didWork |= BCIR_OptContractReturn();
         if (flags & OPT_PEEPHOLE) didWork |= BCIR_OptJumpOverJump();
         if (flags & OPT_PEEPHOLE) didWork |= BCIR_OptJumpToJump();
+        if (flags & OPT_PEEPHOLE) didWork |= BCIR_OptReplaceJumpToOpWithItself();
     } while (didWork && ++iterations < BCOPT_MAX_ITERATIONS);
     if (iterations >= BCOPT_MAX_ITERATIONS) WARNING(curfunc->body,"Optimization pass limit (%d) exceeded on function %s",BCOPT_MAX_ITERATIONS,curfunc->name);
     DEBUG(NULL,"took %d passes to optimize function %s",iterations,curfunc->name);
