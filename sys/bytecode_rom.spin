@@ -94,6 +94,7 @@ __helper_entry
 :setbaud
 	mov	:baud_delay, :arg0
 	jmp	#:cmddone
+
 :txraw
 	or	outa, :txmask
 	or	dira, :txmask
@@ -108,6 +109,91 @@ __helper_entry
   	muxc	outa, :txmask
   	djnz	:arg2, #:txloop
 	jmp	#:cmddone
+
+:rxraw
+	andn	dira, :rxmask
+	
+	cmp	:arg0, #0 wz
+  if_z  jmp	#:rxnowait
+  	add	:arg0, cnt	' final timeout time
+:rxwait
+	mov	:r, ina
+	test	:r, :rxmask wz
+  if_z  jmp	#:do_rx
+  	mov	:arg1, :arg0	' timeout wait cycle
+	sub	:arg1, cnt wc	' check count
+  if_ae	jmp	#:rxwait
+  	neg	:arg0, #1	' return -1
+	jmp	#:cmddone
+:rxnowait
+	mov	:r, ina
+	test	:r, :rxmask wz
+  if_nz jmp	#:rxnowait
+  
+:do_rx
+	mov	:arg0, #0
+	mov	:arg1, :baud_delay
+	shr	:arg1, #1
+	add	:arg1, cnt
+	mov	:counter, #8
+:rxloop
+	add	:arg1, :baud_delay
+	waitcnt	:arg1, #0
+	shr	:arg0, #1
+	mov	:r, ina
+	test	:r, :rxmask wz
+  if_nz	or	:arg0, #1<<7
+	djnz	:counter, #:rxloop
+
+	add	:arg1, :baud_delay
+	waitcnt	:arg1, #0
+
+	jmp	#:cmddone
+
+'
+' divide 64 bit unsigned by 32 bit unsigned
+'
+:div64
+	mov	:n, :arg0
+	mov	:nlo, :arg1
+	mov	:dlo, :arg2
+
+	mov	:d, #0
+	mov	:dlo, #0
+	mov	:r, #0
+	mov	:rlo, #0
+	mov	:q, #0
+	mov	:qlo, #0
+	mov	:counter, #64
+
+	' FIXME: could optimize case of :n == 0
+:divloop
+        ' Q <<= 1
+        shl :qlo, #1 wc
+        rcl :q, #1
+        ' R <<= 1
+        shl :rlo, #1 wc	' r := r<<1
+        rcl :r, #1
+	' bit 0 of r gets hi bit of n
+	shl :nlo, #1 wc
+        rcl :n, #1 wc		' bit 0 of r gets hi bit of n
+        muxc :rlo, #1
+	
+        cmp  :rlo, :dlo wc	' check for r <= d (r-d >= 0)
+        cmpx :r, :d wc,wz
+ if_b   jmp  #:skipfrac
+        sub  :rlo, :dlo wc
+        subx :r, :d
+        or   :qlo, #1
+:skipfrac
+	djnz	:counter, #:divloop
+	
+	mov	:arg0, :qlo
+	mov	:arg1, :rlo
+	
+	jmp	#:cmddone
+	
+	
 	
 '
 ' function to count number of cogs running
@@ -133,17 +219,21 @@ __helper_entry
 
 	' coginit argument
 :cogchk_arg
-	long 
+	long 0
 
+	' 
 :cmd    long 0
 :arg0	long 0
 :arg1	long 0
 :arg2	long 0
+:arg3   long 0
 
 :cmdtable
 	jmp	#:cmddone	' 0 == nop
 	jmp	#:setbaud	' 1 == setbaud
 	jmp	#:txraw		' 2 == txraw
+	jmp	#:rxraw		' 3 == rxraw
+	jmp	#:div64		' 4 == unsigned 64 / 32 division
 	
 :baud_delay
 	long 80_000_000 / 115_200
@@ -152,8 +242,9 @@ __helper_entry
 	long 80_000_000
 
 :dira_init
-:outa_init
         long (1<<30)
+:outa_init
+        long -1
 :txmask
 	long (1<<30)
 :rxmask
@@ -167,6 +258,18 @@ __helper_entry
 	long @@@_cogchk_helper
 :flag_ptr
 	long @@@__helper_arg
+
+	' temporary variables
+:n	res 1
+:nlo	res 1
+:dlo	res 1
+:d	res 1
+:qlo	res 1
+:q	res 1
+:rlo	res 1
+:r	res 1
+:counter res 1
+
 __helper_done
 
 ''
@@ -186,7 +289,6 @@ pri {++needsinit} _remotecall(cmd, arg0 = 0, arg1 = 0, arg2 = 0)
 pri _setbaud(rate)
   _remotecall(1, __clkfreq_var / rate)
   
-' FIXME needs to run in helper
 pri _txraw(c)
   _remotecall(2, c)
   return 1
@@ -194,18 +296,32 @@ pri _txraw(c)
 
 ' timeout is in 1024ths of a second (roughly milliseconds)
 ' FIXME needs to run in helper
-pri {++needsinit} _rxraw(timeout = 0)
-  return -1
-  
+pri _rxraw(timeout = 0)
+  if timeout
+    timeout *= __clkfreq_var >> 10
+  _remotecall(3, timeout)
+  return __helper_arg[0]
+
 ''
 '' divide (n, nlo) by d, producing qlo and rlo (used in FRAC operation)
-'' FIXME: needs to run in helper
 ''
-pri {++needsinit} _div64(n, nlo, dlo) : qlo, rlo | q, r, d
-  qlo := -1
-  rlo := -1
-  return
+pri _div64(n, nlo, dlo) : qlo, rlo | q, r, d
+  if dlo == 0
+    qlo := -1
+    rlo := -1
+    return
+  _remotecall(4, n, nlo, dlo)
+  qlo := __helper_arg[0]
+  rlo := __helper_arg[1]
 
+pri _unsigned_div(n, d) : r
+  _remotecall(4, 0, n, d)
+  return __helper_arg[0]
+
+pri _unsigned_mod(n, d)
+  _remotecall(4, 0, n, d)
+  return __helper_arg[1]
+  
 pri _waitx(tim)
   tim += cnt
   waitcnt(tim)
