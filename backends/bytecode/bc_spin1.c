@@ -594,18 +594,26 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
         comment = auto_printf(32,"ANCHOR %s %s",ir->attr.anchor.rescue?"(RESCUE)":"",ir->attr.anchor.withResult?"":"(DISCARD)");
     } break;
     case BOK_CALL_SELF: {
+        int funID = ir->attr.call.funID;
         buf[pos++] = 0b00000101;
-        buf[pos++] = ir->attr.call.funID;
+        buf[pos++] = funID;
+        comment = auto_printf(128,"CALL_SELF %d (%s)",funID,BCgetFuncNameForId(current,funID));
     } break;
     case BOK_CALL_OTHER: {
+        int funID = ir->attr.call.funID, objID = ir->attr.call.objID;
         buf[pos++] = 0b00000110;
-        buf[pos++] = ir->attr.call.objID;
-        buf[pos++] = ir->attr.call.funID;
+        buf[pos++] = objID;
+        buf[pos++] = funID;
+        Module *object = BCgetModuleForOBJID(current,objID);
+        comment = auto_printf(128,"CALL_OTHER %d.%d (%s.%s)",objID,funID,BCgetNameForOBJID(current,objID),BCgetFuncNameForId(object,funID));
     } break;
     case BOK_CALL_OTHER_IDX: {
+        int funID = ir->attr.call.funID, objID = ir->attr.call.objID;
         buf[pos++] = 0b00000111;
-        buf[pos++] = ir->attr.call.objID;
-        buf[pos++] = ir->attr.call.funID;
+        buf[pos++] = objID;
+        buf[pos++] = funID;
+        Module *object = BCgetModuleForOBJID(current,objID);
+        comment = auto_printf(128,"CALL_OTHER_IDX %d.%d (%s.%s)",objID,funID,BCgetNameForOBJID(current,objID),BCgetFuncNameForId(object,funID));
     } break;
     case BOK_JUMP:       buf[pos++] = 0b00000100; goto jump_common;
     case BOK_JUMP_TJZ:   buf[pos++] = 0b00001000; goto jump_common;

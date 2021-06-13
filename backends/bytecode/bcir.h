@@ -4,6 +4,7 @@
 
 #include "spinc.h"
 #include "bcbuffers.h"
+#include "bc_bedata.h"
 
 
 #define BYTE_OP_KINDS_XMACRO \

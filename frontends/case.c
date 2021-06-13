@@ -30,7 +30,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include "common.h"
-#include "../backends/bytecode/outbc.h"
+#include "../backends/bytecode/bc_bedata.h"
 #include "util/flexbuf.h"
 
 void

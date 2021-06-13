@@ -23,5 +23,12 @@ typedef struct {
 
 int BCgetDAToffset(Module *P, bool absolute, AST *errloc, bool printErrors); // defined in outbc.c
 bool interp_can_multireturn(); // defined in outbc.c
+bool interp_can_unsigned(); // defined in outbc.c
+
+Function *BCgetFuncForId(Module *M, int id); // defined in outbc.c
+const char *BCgetFuncNameForId(Module *M, int id); // defined in outbc.c
+Module *BCgetModuleForOBJID(Module *M,int id); // defined in outbc.cM
+const char *BCgetNameForOBJID(Module *M,int id); // defined in outbc.c
+bool CanUseEitherSignedOrUnsigned(AST *node); // defined in outbc.c
 
 #endif
