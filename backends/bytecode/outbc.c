@@ -274,7 +274,7 @@ static bool OptNestedAdd(AST **node, int32_t *outVal) {
     return false;
 }
 
-static void OptimizeOperator(int *optoken, AST **left,AST **right) {
+static bool OptimizeOperator(int *optoken, AST **left,AST **right) {
     ASTReportInfo save;
     int32_t addValue;
 
@@ -283,7 +283,7 @@ static void OptimizeOperator(int *optoken, AST **left,AST **right) {
         // 1<<x can be |<x
         *left = NULL;
         *optoken = K_DECODE;
-        return;
+        return true;
     }
     if (*optoken == K_ZEROEXTEND && right && IsConstExpr(*right)) {
         int32_t x = EvalConstExpr(*right);
@@ -327,6 +327,7 @@ static void OptimizeOperator(int *optoken, AST **left,AST **right) {
     bool canZeroOpt = false;
     int32_t zeroOptVal;
     bool canCommute = false;
+    int commuteOp = 0;
     int negateOp = 0;
     int unsignedToSignedOp = 0;
 
@@ -364,10 +365,10 @@ static void OptimizeOperator(int *optoken, AST **left,AST **right) {
         nopOptVal = 0;
         unsignedToSignedOp = K_LIMITMIN;
         break;
-    case K_LTU: unsignedToSignedOp = '<'; break;
-    case K_GTU: unsignedToSignedOp = '>'; break;
-    case K_LEU: unsignedToSignedOp = K_LE; break;
-    case K_GEU: unsignedToSignedOp = K_GE; break;
+    case K_LTU: unsignedToSignedOp = '<'; commuteOp = K_GTU; break;
+    case K_GTU: unsignedToSignedOp = '>'; commuteOp = K_LTU; break;
+    case K_LEU: unsignedToSignedOp = K_LE; commuteOp = K_GEU; break;
+    case K_GEU: unsignedToSignedOp = K_GE; commuteOp = K_LEU; break;
     case '-':
         canNopOpt = true;
         nopOptVal = 0;
@@ -390,15 +391,26 @@ static void OptimizeOperator(int *optoken, AST **left,AST **right) {
         canNopOpt = true;
         nopOptVal = 0;
         break;
-    default: return;
+    default: return false;
     }
 
-    bool didSwap = false;
-    if (canCommute && left && right && IsConstExpr(*left)) {
+    if (commuteOp) canCommute = true;
+    else if (canCommute && !commuteOp) commuteOp = *optoken;
+    // Try commuting constant to the right (mostly just makes the code simpler)
+    if (canCommute && left && right && IsConstExpr(*left) && !IsConstExpr(*right)) {
+        int uncommutedOp = *optoken;
         AST *swap = *left;
         *left = *right;
         *right = swap;
-        didSwap = true;
+        *optoken = commuteOp;
+        if (OptimizeOperator(optoken,left,right)) return true;
+        // Undo swap if we couldn't do anything (fixes "waitcnt(381+cnt)")
+        // TODO: Can we only do this when actually neccessary?
+        //       Because having the constant on the right is better for IR-level optimization (write+read contract)
+        swap = *left;
+        *left = *right;
+        *right = swap;
+        *optoken = uncommutedOp;
     }
 
     if (right && *right && IsConstExpr(*right)) {
@@ -410,33 +422,36 @@ static void OptimizeOperator(int *optoken, AST **left,AST **right) {
             *left = AstInteger(0);
             *right = AstInteger(0);
             AstReportDone(&save);
-            return;
+            return true;
         } else if (canNopOpt && rightVal == nopOptVal) {
             if (left && *left && (*left)->kind == AST_OPERATOR) {
                 *optoken = (*left)->d.ival;
                 *right = (*left)->right;
                 *left = (*left)->left;
                 OptimizeOperator(optoken,left,right);
-                return;
+                return true;
             } else {
                 AstReportAs(*right,&save);
                 *optoken = '+';
                 *right = AstInteger(0);
                 AstReportDone(&save);
-                return;
+                return true;
             }
         } else if (shiftOptOp && isPowerOf2(rightVal)) {
             AstReportAs(*right,&save);
             *optoken = shiftOptOp;
             *right = AstInteger(31-__builtin_clz(rightVal));
             AstReportDone(&save);
-            return;
+            return true;
         } else if (negateOp && rightVal < 0 && rightVal != INT32_MIN) {
             AstReportAs(*right,&save);
             *optoken = negateOp;
             *right = AstInteger(-rightVal);
             AstReportDone(&save);
-            return;
+            return true;
+        } else if (*optoken == K_GTU && rightVal == 0) {
+            *optoken = K_NE;
+            return true;
         }
     } else if (right) {
         if (negateOp && (*right)->kind == AST_OPERATOR && (*right)->d.ival == K_NEGATE) {
@@ -444,22 +459,16 @@ static void OptimizeOperator(int *optoken, AST **left,AST **right) {
             *right = (*right)->right;
             *optoken = negateOp;
             OptimizeOperator(optoken,left,right);
-            return;
+            return true;
         }
     }
 
     if (unsignedToSignedOp && !interp_can_unsigned() && left && right && CanUseEitherSignedOrUnsigned(*left) && CanUseEitherSignedOrUnsigned(*right)) {
         *optoken = unsignedToSignedOp;
-        return;
+        return true;
     }
 
-
-    if (didSwap) {
-        // Undo swap if we couldn't do anything (fixes "waitcnt(381+cnt)"")
-        AST *swap = *left;
-        *left = *right;
-        *right = swap;
-    }
+    return false;
 }
 
 static void StringAppend(Flexbuf *fb,AST *expr) {
@@ -583,41 +592,51 @@ BCCompileConditionalJump(BCIRBuffer *irbuf,AST *condition, bool ifNotZero, ByteO
         if (!!ival == !!ifNotZero) {  
             condjmp.kind = BOK_JUMP; // Unconditional jump
         } else return; // Impossible jump
-    } else if (condition->kind == AST_OPERATOR && condition->d.ival == K_BOOL_NOT) {
-        // Inverted jump
-        BCCompileConditionalJump(irbuf,condition->right,!ifNotZero,label,context);
-        return;
-    } else if (condition->kind == AST_OPERATOR && (condition->d.ival == K_EQ || condition->d.ival == K_NE) 
-    && ( IsConstZero(condition->left) || IsConstZero(condition->right))) {
-        // Slightly complex condition, I know
-        // optimize conditions like x == 0 and x<>0
-        BCCompileConditionalJump(irbuf,IsConstZero(condition->left) ? condition->right : condition->left,!!ifNotZero != !!(condition->d.ival == K_EQ),label,context);
-        return;
-    } else if (condition->kind == AST_OPERATOR && condition->d.ival == K_BOOL_AND && !ifNotZero) {
-        // like in "IF L AND R"
-        BCCompileConditionalJump(irbuf,condition->left,false,label,context);
-        BCCompileConditionalJump(irbuf,condition->right,false,label,context);
-        return;
-    } else if (condition->kind == AST_OPERATOR && condition->d.ival == K_BOOL_AND && ifNotZero) {
-        // like in "IFNOT L AND R"
-        ByteOpIR *skipLabel = BCNewOrphanLabel(context);
-        BCCompileConditionalJump(irbuf,condition->left,false,skipLabel,context);
-        BCCompileConditionalJump(irbuf,condition->right,true,label,context);
-        BIRB_Push(irbuf,skipLabel);
-        return;
-    } else if (condition->kind == AST_OPERATOR && condition->d.ival == K_BOOL_OR && !ifNotZero) {
-        // like in "IF L OR R"
-        ByteOpIR *skipLabel = BCNewOrphanLabel(context);
-        BCCompileConditionalJump(irbuf,condition->left,true,skipLabel,context);
-        BCCompileConditionalJump(irbuf,condition->right,false,label,context);
-        BIRB_Push(irbuf,skipLabel);
-        return;
-    } else if (condition->kind == AST_OPERATOR && condition->d.ival == K_BOOL_OR && ifNotZero) {
-        // like in "IFNOT L OR R"
-        BCCompileConditionalJump(irbuf,condition->left,true,label,context);
-        BCCompileConditionalJump(irbuf,condition->right,true,label,context);
-        return;
+    } else if (condition->kind == AST_OPERATOR) {
+        int optoken = condition->d.ival;
+        AST *left = condition->left, *right = condition->right;
+
+        OptimizeOperator(&optoken,&left,&right);
+
+        if (optoken == K_BOOL_NOT) {
+            // Inverted jump
+            BCCompileConditionalJump(irbuf,condition->right,!ifNotZero,label,context);
+            return;
+        } else if ((optoken == K_EQ || optoken == K_NE ) 
+        && ( IsConstZero(condition->left) || IsConstZero(condition->right))) {
+            // Slightly complex condition, I know
+            // optimize conditions like x == 0 and x<>0
+            BCCompileConditionalJump(irbuf,IsConstZero(condition->left) ? condition->right : condition->left,!!ifNotZero != !!(optoken == K_EQ),label,context);
+            return;
+        } else if (optoken == K_BOOL_AND && !ifNotZero) {
+            // like in "IF L AND R"
+            BCCompileConditionalJump(irbuf,condition->left,false,label,context);
+            BCCompileConditionalJump(irbuf,condition->right,false,label,context);
+            return;
+        } else if (optoken == K_BOOL_AND && ifNotZero) {
+            // like in "IFNOT L AND R"
+            ByteOpIR *skipLabel = BCNewOrphanLabel(context);
+            BCCompileConditionalJump(irbuf,condition->left,false,skipLabel,context);
+            BCCompileConditionalJump(irbuf,condition->right,true,label,context);
+            BIRB_Push(irbuf,skipLabel);
+            return;
+        } else if (optoken == K_BOOL_OR && !ifNotZero) {
+            // like in "IF L OR R"
+            ByteOpIR *skipLabel = BCNewOrphanLabel(context);
+            BCCompileConditionalJump(irbuf,condition->left,true,skipLabel,context);
+            BCCompileConditionalJump(irbuf,condition->right,false,label,context);
+            BIRB_Push(irbuf,skipLabel);
+            return;
+        } else if (optoken == K_BOOL_OR && ifNotZero) {
+            // like in "IFNOT L OR R"
+            BCCompileConditionalJump(irbuf,condition->left,true,label,context);
+            BCCompileConditionalJump(irbuf,condition->right,true,label,context);
+            return;
+        } else {
+            goto normal_condjump;
+        }
     } else {
+        normal_condjump:
         // Just normal
         BCCompileExpression(irbuf,condition,context,false);
         condjmp.kind = ifNotZero ? BOK_JUMP_IF_NZ : BOK_JUMP_IF_Z;
@@ -1501,6 +1520,20 @@ BCCompileCoginit(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpression
     BIRB_PushCopy(irbuf,&initOp);
 }
 
+static int
+NonUnsignedOp(int val)
+{
+    switch(val) {
+    case K_LEU: return K_LE;
+    case K_GEU: return K_GE;
+    case K_LTU: return '<';
+    case K_GTU: return '>';
+    case K_LIMITMIN_UNS: return K_LIMITMIN;
+    case K_LIMITMAX_UNS: return K_LIMITMAX;
+    default: return val;
+    }
+}
+
 static void
 BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStatement) {
     if(!node) {
@@ -1585,34 +1618,44 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 case K_LIMITMAX_UNS:
                 case K_LIMITMIN_UNS: {
                     // TODO: don't do this nonsense when there's a native op for this
-                    // also TODO: optimize to signed limit if possible
                     BCCompileExpression(irbuf,AstOperator('+',
-                        AstOperator(optoken == K_LIMITMAX_UNS ? K_LIMITMAX : K_LIMITMIN,
+                        AstOperator(NonUnsignedOp(optoken),
                             AstOperator('+',left,AstInteger(1U<<31)),
                             AstOperator('+',right,AstInteger(1U<<31))
                     ),AstInteger(1U<<31)),context,asStatement);
 
                     return;
                 } break;
+                case K_GEU:
+                case K_GTU:
+                case K_LEU:
+                case K_LTU: {
+                    BCCompileExpression(irbuf,AstOperator(NonUnsignedOp(optoken),
+                            AstOperator('+',left,AstInteger(1U<<31)),
+                            AstOperator('+',right,AstInteger(1U<<31))
+                    ),context,asStatement);
+
+                    return;
+                }
+
 
                 case K_SIGNEXTEND:
-                case K_ZEROEXTEND:
-                    {
-                        ByteOpIR mathOp = {.kind = BOK_MATHOP};
-                        if (ExprHasSideEffects(right)) {
-                            ERROR(node, "Bytecode output cannot handle side effects in right argument of sign/zero extend");
-                            right = AstInteger(16);
-                        }
-                        BCCompileExpression(irbuf, left, context, false);
-                        right = FoldIfConst(AstOperator('-', AstInteger(32), right));
-                        BCCompileExpression(irbuf, right, context, false);
-                        mathOp.mathKind = MOK_SHL;
-                        BIRB_PushCopy(irbuf, &mathOp);
-                        mathOp.mathKind = (optoken == K_SIGNEXTEND) ? MOK_SAR : MOK_SHR;
-                        BCCompileExpression(irbuf, right, context, false);
-                        BIRB_PushCopy(irbuf, &mathOp);
-                        return;
+                case K_ZEROEXTEND: {
+                    ByteOpIR mathOp = {.kind = BOK_MATHOP};
+                    if (ExprHasSideEffects(right)) {
+                        ERROR(node, "Bytecode output cannot handle side effects in right argument of sign/zero extend");
+                        right = AstInteger(16);
                     }
+                    BCCompileExpression(irbuf, left, context, false);
+                    right = FoldIfConst(AstOperator('-', AstInteger(32), right));
+                    BCCompileExpression(irbuf, right, context, false);
+                    mathOp.mathKind = MOK_SHL;
+                    BIRB_PushCopy(irbuf, &mathOp);
+                    mathOp.mathKind = (optoken == K_SIGNEXTEND) ? MOK_SAR : MOK_SHR;
+                    BCCompileExpression(irbuf, right, context, false);
+                    BIRB_PushCopy(irbuf, &mathOp);
+                    return;
+                }
                 case K_INCREMENT: 
                 case K_DECREMENT:
                 case '?':
