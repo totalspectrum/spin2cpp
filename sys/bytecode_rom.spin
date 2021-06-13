@@ -156,8 +156,6 @@ __helper_entry
 	mov	:nlo, :arg1
 	mov	:dlo, :arg2
 
-	mov	:d, #0
-	mov	:dlo, #0
 	mov	:r, #0
 	mov	:rlo, #0
 	mov	:q, #0
@@ -177,19 +175,19 @@ __helper_entry
         rcl :n, #1 wc		' bit 0 of r gets hi bit of n
         muxc :rlo, #1
 	
-        cmp  :rlo, :dlo wc	' check for r <= d (r-d >= 0)
-        cmpx :r, :d wc,wz
- if_b   jmp  #:skipfrac
+        cmp  :rlo, :dlo wc,wz	' check for r <= d (r-d >= 0)
+        cmpx :r, #0 wc,wz
+  if_b	jmp  #:skipset
         sub  :rlo, :dlo wc
-        subx :r, :d
+        subx :r, #0
         or   :qlo, #1
-:skipfrac
+:skipset
 	djnz	:counter, #:divloop
 	
 	mov	:arg0, :qlo
 	mov	:arg1, :rlo
+
 	jmp	#:cmddone
-	
 	
 	
 '

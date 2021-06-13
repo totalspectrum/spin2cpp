@@ -344,7 +344,7 @@ pri _div64(n, nlo, dlo) : qlo, rlo | q, r, d
         rcl n, #1 wc		' bit 0 of r gets hi bit of n
         muxc rlo, #1
 	
-        cmp  rlo, dlo wc	' check for r <= d (r-d >= 0)
+        cmp  rlo, dlo wc,wz	' check for r <= d (r-d >= 0)
         cmpx r, d wc,wz
  if_b   jmp  #zz_skipfrac
         sub  rlo, dlo wc
