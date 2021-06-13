@@ -1137,6 +1137,23 @@ static int getFuncIDForKnownFunc(Module *M,Function *F) {
     return -1;
 }
 
+Function *BCgetFuncForId(Module *M, int id) {
+    if (!M) return NULL;
+    if (!M->bedata) {
+        ERROR(NULL,"Internal Error: bedata empty");
+        return NULL;
+    }
+    if (id == 0) return NULL;
+    else if (id<=(ModData(M)->pub_cnt)) return ModData(M)->pubs[id-1];
+    else if (id<=(ModData(M)->pub_cnt+ModData(M)->pri_cnt)) return ModData(M)->pris[id-(1+ModData(M)->pub_cnt)];
+    else return NULL;
+}
+
+const char *BCgetFuncNameForId(Module *M, int id) {
+    Function *F = BCgetFuncForId(M,id);
+    return F ? F->name : "!!INVALID!!";
+}
+
 // FIXME this seems very convoluted
 static int getObjID(Module *M,const char *name, AST** gettype) {
     if (!M->bedata) {
@@ -1183,6 +1200,34 @@ static int getObjIDByClass(Module *M, AST *classCast, AST** gettype) {
     }
     ERROR(classCast,"can't find OBJ id for cast value");
     return 0;
+}
+
+Module *BCgetModuleForOBJID(Module *M,int id) {
+    if (!M->bedata) {
+        ERROR(NULL,"Internal Error: bedata empty");
+        return NULL;
+    }
+    id -= 1+ModData(M)->pub_cnt+ModData(M)->pri_cnt;
+    if (id<0) return NULL;
+    AST *obj = ModData(M)->objs[id];
+    ASSERT_AST_KIND(obj,AST_DECLARE_VAR,return 0;);
+    ASSERT_AST_KIND(obj->left,AST_OBJECT,return 0;);
+    return GetClassPtr(obj->left);
+}
+
+const char *BCgetNameForOBJID(Module *M,int id) {
+    if (!M->bedata) {
+        ERROR(NULL,"Internal Error: bedata empty");
+        return "!ERROR!";
+    }
+    id -= 1+ModData(M)->pub_cnt+ModData(M)->pri_cnt;
+    if (id<0) return "!INVALID!";
+    AST *obj = ModData(M)->objs[id];
+    ASSERT_AST_KIND(obj,AST_DECLARE_VAR,return 0;);
+    ASSERT_AST_KIND(obj->right,AST_LISTHOLDER,return 0;);
+    AST *ident = obj->right->left;
+    ASSERT_AST_KIND(ident,AST_IDENTIFIER,return 0;);
+    return GetIdentifierName(ident);
 }
 
 static void
