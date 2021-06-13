@@ -1,5 +1,6 @@
 Version 5.5.1
 - Added a warning for ignored second parameter to `org`
+- Added #warning directive to C preprocessor
 - Fixed Spin startup function (should be first PUB function, not first function)
 - Fixed evaluation of @ inside CONSTANT
 - Fixed assembly of PTRA++[0] and PTRA++[16]
