@@ -728,6 +728,7 @@ static const char *astnames[] = {
     "gethigh",
 
     "func_name",
+    "caseexpr_variable"
 };
 
 //
