@@ -14,17 +14,19 @@ enum Spin1OffsetEncoding {
     S1OffEn_VARLEN_SIGNED,
     S1OffEn_VARLEN_UNSIGNED,
     S1OffEn_FIXLEN,
+    S1OffEn_FIXLEN_LE, // little endian as opposed to everything else
 };
 
 static int CompileJumpOffset_Spin1(uint8_t *buf,int *pos,ByteOpIR *ir,int baseSize,bool func_relative,int offset_offset,enum Spin1OffsetEncoding encoding) {
     int offset = BCIR_GetJumpOffset(ir,func_relative) + offset_offset;
     if (encoding != S1OffEn_VARLEN_SIGNED && offset < 0) ERROR(NULL,"CompileJumpOffset_Spin1 with unsigned encoding but negative offset");
     int hlimit1=0,llimit1=0,hlimit2=0,llimit2=0;
-    bool isVarlen = encoding != S1OffEn_FIXLEN;
+    bool isVarlen = true, isLittleEndian = false;
     switch (encoding) {
     case S1OffEn_VARLEN_SIGNED: hlimit1 = 0x3F, llimit1 = -0x40, hlimit2 = 0x3FFF, llimit2 = -0x4000; break;
     case S1OffEn_VARLEN_UNSIGNED: hlimit1 = 0x7F, llimit1 = 0, hlimit2 = 0x7FFF, llimit2 = 0; break;
-    case S1OffEn_FIXLEN: hlimit1 = 0xFF, llimit1 = 0, hlimit2 = 0xFFFF, llimit2 = 0; break;
+    case S1OffEn_FIXLEN_LE: isLittleEndian = true; // \/ same otherwise \/
+    case S1OffEn_FIXLEN: hlimit1 = 0xFF, llimit1 = 0, hlimit2 = 0xFFFF, llimit2 = 0, isVarlen = false; break;
     }
     switch (ir->fixedSize-baseSize) {
     case 1:
@@ -33,8 +35,9 @@ static int CompileJumpOffset_Spin1(uint8_t *buf,int *pos,ByteOpIR *ir,int baseSi
         break;
     case 2:
         if (offset > hlimit2 || offset < llimit2) ERROR(NULL,"Jump offset %d too big for 2 bytes with encoding %d",offset,encoding);
+        if (isLittleEndian) buf[(*pos)++] = offset&0xFF;
         buf[(*pos)++] = isVarlen ? ((offset>>8)&0x7F)|0x80 : (offset>>8)&0xFF;
-        buf[(*pos)++] = offset&0xFF;
+        if (!isLittleEndian) buf[(*pos)++] = offset&0xFF;
         break;
     default:
         ERROR(NULL,"Internal error: Trying to emit jump offset of size %d",ir->fixedSize);
@@ -115,11 +118,26 @@ static bool IsShortFormMemOp(ByteOpIR *ir) {
 }
 
 void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsLeft) {
-    if (ir->fixedSize) {
+    if (ir->fixedSize >= 0) {
         *min = *max = ir->fixedSize;
         return;
     }
     switch (ir->kind) {
+    case BOK_ALIGN: {
+        // Align is slightly tricky, since it's size can only be determined if everything in front of it is
+        // However, it is only used in data appended to the function, so it should always resolve at some point
+        ir->jumpTo = ir; // Hack to get BCIR_GetJumpOffsetBounds to get offset to the align itself
+        int minoffset,maxoffset;
+        int alignto = ir->data.int32;
+        if (recursionsLeft) BCIR_GetJumpOffsetBounds(ir,true,&minoffset,&maxoffset,recursionsLeft);
+        if (!recursionsLeft || minoffset != maxoffset) {
+            // Can't determine size yet
+            *min = 0; *max = alignto-1;
+        } else {
+            int addr = minoffset+pbase_offset; // Assume PBASE is sufficiently aligned
+            *min = *max = ((alignto - (addr%alignto))%alignto);
+        }
+        } break;
     case BOK_CONSTANT:
         switch(GetSpin1ConstEncoding(ir->data.int32)) {
         case S1ConEn_TINY: *min = *max = 1; break;
@@ -133,7 +151,7 @@ void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsLeft) {
         case S1ConEn_3B: *min = *max = 4; break;
         case S1ConEn_4B: *min = *max = 5; break;
         }
-    break;
+        break;
     // Jump ops
     case BOK_JUMP:
     case BOK_JUMP_DJNZ:
@@ -159,12 +177,13 @@ void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsLeft) {
         }
         break;
     // Get function data
-    case BOK_FUNDATA_PUSHADDRESS: 
+    case BOK_FUNDATA_PUSHADDRESS:
+    case BOK_FUNDATA_LOOKUPJUMP:
         if (recursionsLeft) {
             int minDist,maxDist;
             BCIR_GetJumpOffsetBounds(ir,true,&minDist,&maxDist,recursionsLeft);
             minDist += pbase_offset; maxDist += pbase_offset;
-            if (ir->attr.pushaddress.addPbase) {
+            if (ir->kind == BOK_FUNDATA_LOOKUPJUMP || ir->attr.pushaddress.addPbase) {
                 if (maxDist < 0 || minDist < 0) {
                     ERROR(NULL,"Internal Error: negative distance in FUNDATA_PUSHADDRESS with PBASE");
                     *min = *max = 3;
@@ -190,7 +209,7 @@ void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsLeft) {
                 }
             }
         } else {
-            if (ir->attr.pushaddress.addPbase) {
+            if (ir->kind == BOK_FUNDATA_LOOKUPJUMP || ir->attr.pushaddress.addPbase) {
                 *min = 2;
                 *max = 3;
             } else {
@@ -199,6 +218,7 @@ void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsLeft) {
             }
         }
         break;
+    case BOK_FUNDATA_JUMPENTRY: *min = *max = 2; break; // Always word-sized
     // Memory ops
     case BOK_MEM_READ:
     case BOK_MEM_WRITE:
@@ -544,6 +564,15 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
         int offset = CompileJumpOffset_Spin1(buf,&pos,ir,1,true,pbase_offset, addPbase ? S1OffEn_VARLEN_UNSIGNED : S1OffEn_FIXLEN);
         comment = auto_printf(64,"FUNDATA_PUSHADDRESS %+d%s",offset,addPbase?" +PBASE":"");
     } break;
+    case BOK_FUNDATA_LOOKUPJUMP: {
+        buf[pos++] = 0xB4; // MEM_READ WORD with INDEX and PBASE
+        int offset = CompileJumpOffset_Spin1(buf,&pos,ir,1,true,pbase_offset,S1OffEn_VARLEN_UNSIGNED);
+        comment = auto_printf(64,"BOK_FUNDATA_LOOKUPJUMP %04X (+PBASE)",offset);
+    } break;
+    case BOK_FUNDATA_JUMPENTRY: {
+        int offset = CompileJumpOffset_Spin1(buf,&pos,ir,0,true,pbase_offset, S1OffEn_FIXLEN_LE);
+        comment = auto_printf(64,"FUNDATA_JUMPENTRY %04X (+PBASE)",offset);
+    } break;
     case BOK_FUNDATA_STRING : {
         memcpy((char*)buf,ir->data.stringPtr,size);
         pos+=size;
@@ -628,6 +657,7 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
     case BOK_RETURN_PLAIN: buf[pos++] = 0b00110010; break;
     case BOK_RETURN_POP:   buf[pos++] = 0b00110011; break;
     case BOK_LABEL: break;
+    case BOK_ALIGN: while(pos<size) buf[pos++] = 0; comment = auto_printf(14,"ALIGN %d",ir->data.int32); break;
     default: 
         ERROR(NULL,"Unhandled ByteOpIR kind %d = %s",ir->kind,byteOpKindNames[ir->kind]);
         return auto_printf(256,"Unhandled ByteOpIR kind %d = %s",ir->kind,byteOpKindNames[ir->kind]);

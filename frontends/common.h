@@ -156,6 +156,7 @@ extern int gl_optimize_flags; /* flags for optimization */
 #define OPT_CONST_PROPAGATE     0x000800  /* constant propagation */
 #define OPT_LOOP_BASIC          0x001000  /* simple loop conversion */
 #define OPT_TAIL_CALLS          0x002000  /* tail call optimization */
+#define OPT_CASETABLE           0x004000  /* convert CASE to CASE_FAST (only for bytecode mode) */
 
 #define OPT_FLAGS_ALL           0xffffff
 #define OPT_ASM_BASIC  (OPT_BASIC_REGS|OPT_BRANCHES|OPT_PEEPHOLE|OPT_CONST_PROPAGATE)                        
@@ -876,7 +877,7 @@ void DeclareTypedGlobalVariables(AST *ast, int inDat);
 void AddSymbolForLabel(AST *ast);
 
 /* transform a switch/case expression into a sequence of GOTOs */
-AST *CreateSwitch(AST *expr, AST *stmt, const char *force_reason);
+AST *CreateSwitch(AST *origast, const char *force_reason);
 
 // check to see if module is top level
 int IsTopLevel(Module *P);

@@ -849,7 +849,7 @@ doBasicTransform(AST **astptr)
             doBasicTransform(&caseitem->right);
             list = list->right;
         }
-        *ast = *CreateSwitch(ast->left, ast->right, case_name);
+        *ast = *CreateSwitch(ast, case_name);
         AstReportDone(&saveinfo);
         break;
     }        
