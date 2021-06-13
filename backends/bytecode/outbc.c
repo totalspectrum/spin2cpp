@@ -2016,7 +2016,7 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
     case AST_CASE: {
 
         ByteOpIR *endlabel = BCNewOrphanLabel(context);
-        ByteOpIR pushEnd = {.kind=BOK_FUNDATA_PUSHADDRESS,.jumpTo=endlabel};
+        ByteOpIR pushEnd = {.kind=BOK_FUNDATA_PUSHADDRESS,.jumpTo=endlabel,.attr.pushaddress.forJump=true};
         BIRB_PushCopy(irbuf,&pushEnd);
         // Compile switch expression
         BCCompileExpression(irbuf,node->left,context,false);
@@ -2143,7 +2143,7 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         newcontext.hiddenVariables += 2;
         newcontext.caseVarsAt = newcontext.hiddenVariables;
 
-        ByteOpIR pushDoneAddr = {.kind = BOK_FUNDATA_PUSHADDRESS,.jumpTo=endLabel};
+        ByteOpIR pushDoneAddr = {.kind = BOK_FUNDATA_PUSHADDRESS,.jumpTo=endLabel,.attr.pushaddress.forJump=true};
         BIRB_PushCopy(irbuf,&pushDoneAddr);
         BCCompileInteger(irbuf,0); // Fake index var so we can use CASE_DONE
 
