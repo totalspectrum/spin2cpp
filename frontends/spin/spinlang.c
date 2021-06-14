@@ -839,7 +839,6 @@ doSpinTransform(AST **astptr, int level, AST *parent)
             case K_BOOL_NOT:
             case K_DECODE:
             case K_ENCODE:
-            case K_SIGNEXTEND:
                 if (gl_output == OUTPUT_BYTECODE) {
                     lhsast = AstAssign(ast->right, NULL);
                     lhsast->d.ival = ast->d.ival;
@@ -856,6 +855,28 @@ doSpinTransform(AST **astptr, int level, AST *parent)
                     *astptr = ast = AstAssign(lhsast, ast);
                 }
                 doSpinTransform(astptr, level, parent);
+                break;
+            case K_SIGNEXTEND:
+                if (gl_output == OUTPUT_BYTECODE) {
+                    lhsast = AstAssign(ast->left, ast->right);
+                    lhsast->d.ival = ast->d.ival;
+                    *astptr = ast = lhsast;
+                } else if (ExprHasSideEffects(ast->left)) {
+                    AST *preseq = NULL;
+                    AST *lhs;
+                    lhs = ExtractSideEffects(ast->left, &preseq);
+                    lhsast = AstAssign(lhs, ast);
+                    if (preseq) {
+                        lhsast = NewAST(AST_SEQUENCE, preseq, lhsast);
+                    }
+                    *astptr = ast = lhsast;
+                } else {
+                    lhsast = DupAST(ast->left);
+                    *astptr = ast = AstAssign(lhsast, ast);
+                }
+                doSpinTransform(astptr, level, parent);
+                break;
+            default:
                 break;
             }
         } else {
