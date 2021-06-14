@@ -342,6 +342,7 @@ sin
 space$
 str$
 strerror$
+string$
 strint$
 tan
 trim$
@@ -2815,6 +2816,13 @@ Convert a number to a string. The input is a floating point number (integers wil
 msg$ = strerror$(e)
 ```
 Find an error message corresponding to the integer error number `e`. `e` is either the value thrown as an error by `open` (or a similar function), or else the system error returned by the `geterr()` function.
+
+### STRING$
+
+```
+a$ = string$(cnt, x$)
+```
+Returns a new string consisting of `cnt` copies of the first character of `x$`.
 
 ### STRINT$
 
