@@ -109,6 +109,13 @@ PUB shl64(ahi, a, bhi, b) : chi, c | t
   chi |= t
   c := a << b
 
+#ifdef __OUTPUT_BYTECODE__
+PUB add64(ahi, a, bhi, b) : chi, c
+  chi := ahi + bhi
+  c := a + b
+'  if c +< a
+'    chi++
+#else
 PUB add64(ahi, a, bhi, b) : chi, c
   chi := ahi
   c := a
@@ -116,7 +123,8 @@ PUB add64(ahi, a, bhi, b) : chi, c
     add c, b wc
     addx chi, bhi
   endasm
-  
+#endif
+
 PUB info(x,y)
   fds.str(string("func eval: x="))
   fds.hex(x,8)
