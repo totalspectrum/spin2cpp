@@ -200,6 +200,7 @@ typedef struct bcirstruct {
         } anchor;
         struct {
             int16_t funID,objID;
+            unsigned numResults;
         } call;
         struct {
             enum BCWaitType type;
@@ -211,6 +212,9 @@ typedef struct bcirstruct {
             unsigned addPbase:1;
             unsigned forJump:1;
         } pushaddress;
+        struct {
+            unsigned numResults;
+        } returninfo;
         int stringLength;
         int labelHiddenVars; // Not used by the actual IR step
     } attr;

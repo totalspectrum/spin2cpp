@@ -217,11 +217,13 @@ bool BCIR_CanReplaceJumpToOpWithItself(ByteOpIR *ir) {
     //case BOK_JUMP: // Handled seperately...
     case BOK_CASE_DONE:
     case BOK_LOOKEND:
-    case BOK_RETURN_PLAIN:
-    case BOK_RETURN_POP:
     case BOK_ABORT_PLAIN:
     case BOK_ABORT_POP:
         return true;
+    case BOK_RETURN_PLAIN:
+    case BOK_RETURN_POP:
+        if (ir->attr.returninfo.numResults == 1) return true;
+        // otherwise fall through
     default: return false;
     }
 }
@@ -431,11 +433,11 @@ static bool BCIR_OptContractReturn() {
     // read_result + return_pop -> return_plain
     bool didWork = false;
     for (ByteOpIR *ir=current_birb->head;ir;ir=ir->next) {
-        if (ir->kind == BOK_RETURN_PLAIN && ir->prev && ir->prev->kind == BOK_MEM_WRITE && BCIR_IsResultMemop(ir->prev)) {
+        if (ir->kind == BOK_RETURN_PLAIN && ir->attr.returninfo.numResults == 1 && ir->prev && ir->prev->kind == BOK_MEM_WRITE && BCIR_IsResultMemop(ir->prev)) {
             BIRB_Remove(current_birb,ir->prev);
             ir->kind = BOK_RETURN_POP;
             didWork = true;
-        } else if (ir->kind == BOK_RETURN_POP && ir->prev && ir->prev->kind == BOK_MEM_READ && BCIR_IsResultMemop(ir->prev)) {
+        } else if (ir->kind == BOK_RETURN_POP && ir->attr.returninfo.numResults == 1 && ir->prev && ir->prev->kind == BOK_MEM_READ && BCIR_IsResultMemop(ir->prev)) {
             BIRB_Remove(current_birb,ir->prev);
             ir->kind = BOK_RETURN_PLAIN;
             didWork = true;

@@ -257,10 +257,23 @@ void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsLeft) {
         break;
     // Virtual ops
     case BOK_LABEL: *min = *max = 0; break;
-    // Single byte ops
-    case BOK_MATHOP:
+    // returns: these are single byte if only 1 value to return, otherwise they have to emit
+    // extra code to pop results into registers
     case BOK_RETURN_PLAIN:
     case BOK_RETURN_POP:
+        if (ir->attr.returninfo.numResults == 1) {
+            *min = *max = 1;
+        } else {
+            if (ir->attr.returninfo.numResults > 4) {
+                ERROR(NULL,"Multiple return of more than 4 results not supported yet in Spin1");
+                ir->attr.returninfo.numResults = 1;
+            }
+            // for each extra result we emit a POP reg (2 bytes)
+            *min = *max = 1 + (ir->attr.returninfo.numResults - 1)*2;
+        }
+        break;
+    // Single byte ops
+    case BOK_MATHOP:
     case BOK_ABORT_PLAIN:
     case BOK_ABORT_POP:
     case BOK_WAIT:
@@ -647,6 +660,17 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
     case BOK_LOCKCLR: {
         buf[pos++] = ir->attr.coginit.pushResult ? 0b00101011 : 0b00101111;
     } break;
+    case BOK_RETURN_PLAIN:
+    case BOK_RETURN_POP: {
+        int n = ir->attr.returninfo.numResults;
+        switch (n) {
+        case 4: buf[pos++] = 0b00111111; buf[pos++] = 0x80 | 0x20 | (0x17); // pop DIRB; fall through
+        case 3: buf[pos++] = 0b00111111; buf[pos++] = 0x80 | 0x20 | (0x15); // pop OUTB; fall through
+        case 2: buf[pos++] = 0b00111111; buf[pos++] = 0x80 | 0x20 | (0x13); // pop INB; fall through
+        default:
+            buf[pos++] = (ir->kind == BOK_RETURN_PLAIN) ? 0b00110010 : 0b00110011;
+        }
+    } break;
     case BOK_CASE_DONE:      buf[pos++] = 0b00001100; break;
     case BOK_LOOKEND:        buf[pos++] = 0b00001111; break;
     case BOK_LOOKUP:         buf[pos++] = 0b00010000; break;
@@ -662,8 +686,6 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
     case BOK_LOCKRET:  buf[pos++] = 0b00100010; break;
     case BOK_ABORT_PLAIN:  buf[pos++] = 0b00110000; break;
     case BOK_ABORT_POP:    buf[pos++] = 0b00110001; break;
-    case BOK_RETURN_PLAIN: buf[pos++] = 0b00110010; break;
-    case BOK_RETURN_POP:   buf[pos++] = 0b00110011; break;
     case BOK_LABEL: break;
     case BOK_ALIGN: while(pos<size) buf[pos++] = 0; comment = auto_printf(14,"ALIGN %d",ir->data.int32); break;
     default: 

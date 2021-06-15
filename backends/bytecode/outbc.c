@@ -39,6 +39,11 @@ static int BCResultsBase() {
     }
 }
 
+static int BCGetNumResults(Function *F) {
+    int n = F->numresults;
+    return (n<=1) ? 1 : n;
+}
+
 static int BCParameterBase() {
     switch(gl_interp_kind) {
     case INTERP_KIND_P1ROM: return 4; // RESULT is always there
@@ -1422,6 +1427,7 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
         }
     } else if (sym->kind == SYM_FUNCTION) {
         // Function call
+        Function *func = (Function *)sym->val;
         int funid = getFuncID(objtype ? GetClassPtr(objtype) : current, sym->our_name);
         if (funid < 0) {
             ERROR(node,"Can't get function id for %s",sym->our_name);
@@ -1434,6 +1440,7 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
             callOp.attr.call.objID = callobjid;
         }
         callOp.attr.call.funID = funid;
+        callOp.attr.call.numResults = BCGetNumResults(func);
 
     } else {
         ERROR(node,"Unhandled FUNCALL symbol (name is %s and sym kind is %d)",sym->our_name,sym->kind);
@@ -2340,6 +2347,7 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         AST *retval = node->left;
         ByteOpIR returnOp = {0};
         returnOp.kind = isAbort ? (retval ? BOK_ABORT_POP : BOK_ABORT_PLAIN) : (retval ? BOK_RETURN_POP : BOK_RETURN_PLAIN);
+        returnOp.attr.returninfo.numResults = BCGetNumResults(curfunc);
         if (retval) {
             if (retval->kind == AST_DECLARE_VAR) { // handle declared types in return values
                 retval = retval->right;
@@ -2418,9 +2426,12 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
         BCContext context = {.caseVarsAt = -1};
         BCCompileStmtlist(&irbuf,F->body,context);
     }
-    // Always append a return (TODO: only when neccessary)
-    ByteOpIR retop = {0,.kind = BOK_RETURN_PLAIN};
-    BIRB_PushCopy(&irbuf,&retop);
+    // Only need to append a return for void functions
+    int numPushed = BCGetNumResults(F);
+    if (numPushed > 0) {
+        ByteOpIR retop = {0,.kind = BOK_RETURN_PLAIN,.attr.returninfo.numResults=numPushed};
+        BIRB_PushCopy(&irbuf,&retop);
+    }
 
     BIRB_AppendPending(&irbuf);
 
