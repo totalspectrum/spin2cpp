@@ -950,11 +950,49 @@ BCCompileMemOp(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind kin
     BCCompileMemOpEx(irbuf,node,context,kind,0,false,false);
 }
 
+static void BCCompileMultiAssignment(BCIRBuffer *irbuf,AST *node,BCContext context) {
+    AST *left = node->left, *right = node->right;
+
+    ASSERT_AST_KIND(left,AST_EXPRLIST,return;);
+    ASSERT_AST_KIND(right,AST_EXPRLIST,return;);
+
+    int exprCount = 0;
+    for (AST *list=node->right;list;list=list->right) {
+        ASSERT_AST_KIND(list,AST_EXPRLIST,return;);
+        BCCompileExpression(irbuf,list->left,context,false);
+        exprCount++;
+    }
+
+    int targetCount = 0;
+    // Iterating a single linked list in reverse...
+    for (AST *last=NULL;last!=node->left;) {
+        AST *current = node->left;
+        while (current->right != last) current = current->right;
+        ASSERT_AST_KIND(current,AST_EXPRLIST,return;);
+        
+        // In BCCompileAssignment, we have some special cases that are
+        // missing here. IDK.
+        BCCompileMemOp(irbuf,current->left,context,MEMOP_WRITE);
+
+        targetCount++;
+        last = current;
+    }
+
+    if (targetCount != exprCount) ERROR(node,"Mismatched multi-assign");
+
+}
+
 static void
 BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpression,enum MathOpKind modifyMathKind) {
     ASSERT_AST_KIND(node,AST_ASSIGN,return;);
     AST *left = node->left, *right = node->right;
     bool modifyReverseMath = false;
+
+    if (left && right && left->kind == AST_EXPRLIST && right->kind == AST_EXPRLIST) {
+        if (modifyMathKind || asExpression) ERROR(node,"Internal error: unhandled parameters for multi-assign");
+        BCCompileMultiAssignment(irbuf,node,context);
+        return;
+    }
 
     // This only happens with assignments where the lhs has side effects
     if (node->d.ival != K_ASSIGN) {
