@@ -951,6 +951,14 @@ BCCompileMemOp(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind kin
 }
 
 static void
+BCPopRestOfList(BCIRBuffer *irbuf,AST*list,BCContext context)
+{
+    if (!list) return;
+    BCPopRestOfList(irbuf,list->right,context);
+    BCCompileMemOp(irbuf,list->left,context,MEMOP_WRITE);
+}
+
+static void
 BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpression,enum MathOpKind modifyMathKind) {
     ASSERT_AST_KIND(node,AST_ASSIGN,return;);
     AST *left = node->left, *right = node->right;
@@ -1105,6 +1113,16 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
             ERROR(left,"Unhandled Identifier symbol kind %d in assignment",sym->kind);
             return;
         }
+    } break;
+    case AST_EXPRLIST: {
+        if (asExpression) {
+            ERROR(left, "Multiple assignment is valid only at top level");
+            return;
+        }
+        BCCompileExpression(irbuf, right, context, false);
+        // we have to pop the values off in the reverse order
+        BCPopRestOfList(irbuf, left, context);
+        return;
     } break;
     default:
         ERROR(left,"Unhandled assign left kind %d",left->kind);
@@ -1548,6 +1566,15 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
     } else {
         unsigned popResults = asStatement ? 1 : 0;
         switch(node->kind) {
+            case AST_EXPRLIST: {
+                AST *list = node;
+                while (list) {
+                    node = list->left;
+                    list = list->right;
+                    BCCompileExpression(irbuf,node,context,false);
+                }
+                return;
+            }
             case AST_FUNCCALL: {
                 BCCompileFunCall(irbuf,node,context,!asStatement,false);
                 popResults = 0;
