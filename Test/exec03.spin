@@ -113,8 +113,8 @@ PUB shl64(ahi, a, bhi, b) : chi, c | t
 PUB add64(ahi, a, bhi, b) : chi, c
   chi := ahi + bhi
   c := a + b
-'  if c +< a
-'    chi++
+  if c +< a
+    chi++
 #else
 PUB add64(ahi, a, bhi, b) : chi, c
   chi := ahi
