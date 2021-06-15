@@ -1580,8 +1580,8 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                     list = list->right;
                     BCCompileExpression(irbuf,node,context,false);
                 }
-                return;
-            }
+                popResults = 0;
+            } break;
             case AST_FUNCCALL: {
                 BCCompileFunCall(irbuf,node,context,!asStatement,false);
                 popResults = 0;
@@ -2379,10 +2379,6 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
     int func_ptr = bob->total_size;
     int func_offset = 0;
     int func_localsize = F->numlocals*4; // SUPER DUPER FIXME smaller locals
-    if (interp_can_multireturn() && F->numresults > 1) {
-        ERROR(F->body,"Multi-return is not supported by the used interpreter");
-        return;
-    }
     Module *M = F->module;
     if (M->bedata == NULL || ModData(M)->compiledAddress < 0) {
         ERROR(NULL,"Compiling function on Module whose address is not yet determined???");
@@ -2428,7 +2424,7 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
     }
     // Only need to append a return for void functions
     int numPushed = BCGetNumResults(F);
-    if (numPushed > 0) {
+    if (numPushed <= 1) {
         ByteOpIR retop = {0,.kind = BOK_RETURN_PLAIN,.attr.returninfo.numResults=numPushed};
         BIRB_PushCopy(&irbuf,&retop);
     }
