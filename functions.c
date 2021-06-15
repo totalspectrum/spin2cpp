@@ -1983,7 +1983,7 @@ CheckFunctionCalls(AST *ast)
         a = ast->right;
         while (a) {
             n = NumExprItemsOnStack(a->left);
-            if (n > 1) {
+            if (n > 1 && gl_output != OUTPUT_BYTECODE) {
                 AST *lhsseq = NULL;
                 AST *assign;
                 AST *newparams;
