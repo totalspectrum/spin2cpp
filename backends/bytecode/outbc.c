@@ -951,10 +951,8 @@ BCCompileMemOp(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind kin
 }
 
 static void BCCompileMultiAssignment(BCIRBuffer *irbuf,AST *node,BCContext context) {
-    AST *left = node->left, *right = node->right;
-
-    ASSERT_AST_KIND(left,AST_EXPRLIST,return;);
-    ASSERT_AST_KIND(right,AST_EXPRLIST,return;);
+    ASSERT_AST_KIND(node->left,AST_EXPRLIST,return;);
+    ASSERT_AST_KIND(node->right,AST_EXPRLIST,return;);
 
     int exprCount = 0;
     for (AST *list=node->right;list;list=list->right) {
