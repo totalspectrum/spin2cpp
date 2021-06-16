@@ -145,7 +145,7 @@ typedef struct DoubleUint_ {
 
 // calculate 64 bit addition
 // (desthi, destlo) += (srchi, srclo)
-#ifdef __FLEXC__
+#if defined(__FLEXC__) && !defined(__OUTPUT_BYTECODE__)
 #define ADD_LONG(desthi, destlo, srchi, srclo)     \
     __asm {                                        \
         add destlo, srclo wc;                      \
