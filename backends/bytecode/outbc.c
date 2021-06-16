@@ -862,6 +862,13 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         default: ERROR(node,"Can't handle signed type with size %d",size); break;
         }
     } break;
+    case AST_FLOATTYPE: {
+        int size = type->left->d.ival;
+        switch (size) {
+        case 4: memOp.attr.memop.memSize = MEMOP_SIZE_LONG; break; 
+        default: ERROR(node,"Can't handle float type with size %d",size); break;
+        }
+    } break;
     default:
         ERROR(node,"Unhandled type kind %d",type->kind);
     }
