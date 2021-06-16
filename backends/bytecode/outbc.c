@@ -2401,6 +2401,9 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
             BCCompileExpression(irbuf,retval,context,false);
         }
         if (returnOp.attr.returninfo.numResults > 1 && !interp_can_multireturn()) {
+            if (returnOp.kind != BOK_RETURN_POP) {
+                ERROR(node, "Internal issue, cannot handle multi-assign for this return/abort");
+            }
             // pop extra values off stack into temporary registers
             ByteOpIR memOp = { .kind = BOK_REG_WRITE };
             int n;
