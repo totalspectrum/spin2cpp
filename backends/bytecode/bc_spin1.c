@@ -655,14 +655,7 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
     } break;
     case BOK_RETURN_PLAIN:
     case BOK_RETURN_POP: {
-        int n = ir->attr.returninfo.numResults;
-        switch (n) {
-        case 4: buf[pos++] = 0b00111111; buf[pos++] = 0x80 | 0x20 | (0x17); // pop DIRB; fall through
-        case 3: buf[pos++] = 0b00111111; buf[pos++] = 0x80 | 0x20 | (0x15); // pop OUTB; fall through
-        case 2: buf[pos++] = 0b00111111; buf[pos++] = 0x80 | 0x20 | (0x13); // pop INB; fall through
-        default:
-            buf[pos++] = (ir->kind == BOK_RETURN_PLAIN) ? 0b00110010 : 0b00110011;
-        }
+        buf[pos++] = (ir->kind == BOK_RETURN_PLAIN) ? 0b00110010 : 0b00110011;
     } break;
     case BOK_CASE_DONE:      buf[pos++] = 0b00001100; break;
     case BOK_LOOKEND:        buf[pos++] = 0b00001111; break;

@@ -2381,7 +2381,6 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
     } break;
     case AST_THROW:
     case AST_RETURN: {
-        // FIXME: Spin2 multi-return
         // TODO: This generates explicit returns of the result var. Fix in peephole step?
         bool isAbort = node->kind == AST_THROW;
         AST *retval = node->left;
@@ -2400,7 +2399,7 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
             int n;
             memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
             n = returnOp.attr.returninfo.numResults - 1;
-            while (n > 1) {
+            while (n > 0) {
                 memOp.data.int32 = HWRegRetval(n);
                 BIRB_PushCopy(irbuf,&memOp);
                 --n;
