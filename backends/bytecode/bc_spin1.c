@@ -257,20 +257,10 @@ void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsLeft) {
         break;
     // Virtual ops
     case BOK_LABEL: *min = *max = 0; break;
-    // returns: these are single byte if only 1 value to return, otherwise they have to emit
-    // extra code to pop results into registers
+    // returns: the higher level is responsible for adding any pushes/pops needed before the returns
     case BOK_RETURN_PLAIN:
     case BOK_RETURN_POP:
-        if (ir->attr.returninfo.numResults == 1) {
-            *min = *max = 1;
-        } else {
-            if (ir->attr.returninfo.numResults > 4) {
-                ERROR(NULL,"Multiple return of more than 4 results not supported yet in Spin1");
-                ir->attr.returninfo.numResults = 1;
-            }
-            // for each extra result we emit a POP reg (2 bytes)
-            *min = *max = 1 + (ir->attr.returninfo.numResults - 1)*2;
-        }
+        *min = *max = 1;
         break;
     // Single byte ops
     case BOK_MATHOP:
@@ -314,11 +304,6 @@ void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsLeft) {
     case BOK_CALL_OTHER:
     case BOK_CALL_OTHER_IDX: {
         int sz = (ir->kind == BOK_CALL_SELF) ? 2 : 3;
-        // for multiple returns, we have to emit a PUSH reg (2 bytes) for
-        // each return beyond the first
-        if (ir->attr.call.numResults > 1) {
-            sz += 2 * (ir->attr.call.numResults-1);
-        }
         *min = *max = sz;
     } break;
     default: 
@@ -361,34 +346,6 @@ static uint8_t GetModifyByte_Spin1(ByteOpIR *ir, bool *sizedOpReturn) {
     modifyCode += ir->attr.memop.pushModifyResult << 7;
     if (sizedOpReturn) *sizedOpReturn = sizedModifyOp;
     return modifyCode;
-}
-
-// on P1 extra function results are returned in INB, DIRB, OUTB
-// if these are present, push them onto the stack after the call
-static int BCAddCallPushesSpin1(uint8_t *buf, int pos, ByteOpIR *ir) {
-    int bytesAdded = 0;
-    if (ir->attr.call.numResults <= 1) {
-        return 0; // no extra work required
-    }
-    if (ir->attr.call.numResults >= 2) {
-        // need to push INB (REG_READ)
-        buf[pos++] = 0b00111111; buf[pos++] = 0x80 | 0x00 | 0x13;
-        bytesAdded += 2;
-    }
-    if (ir->attr.call.numResults >= 3) {
-        // push DIRB
-        buf[pos++] = 0b00111111; buf[pos++] = 0x80 | 0x00 | 0x15;
-        bytesAdded += 2;
-    }
-    if (ir->attr.call.numResults >= 4) {
-        // push OUTB
-        buf[pos++] = 0b00111111; buf[pos++] = 0x80 | 0x00 | 0x17;
-        bytesAdded += 2;
-    }
-    if (ir->attr.call.numResults > 4) {
-        ERROR(NULL, "ROM bytecode allows only up to 4 values returned from a function");
-    }
-    return bytesAdded;
 }
 
 const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
@@ -646,7 +603,6 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
         int funID = ir->attr.call.funID;
         buf[pos++] = 0b00000101;
         buf[pos++] = funID;
-        pos += BCAddCallPushesSpin1(buf, pos, ir);
         comment = auto_printf(128,"CALL_SELF %d (%s)",funID,BCgetFuncNameForId(current,funID));
     } break;
     case BOK_CALL_OTHER: {
@@ -654,7 +610,6 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
         buf[pos++] = 0b00000110;
         buf[pos++] = objID;
         buf[pos++] = funID;
-        pos += BCAddCallPushesSpin1(buf, pos, ir);
         Module *object = BCgetModuleForOBJID(current,objID);
         comment = auto_printf(128,"CALL_OTHER %d.%d (%s.%s)",objID,funID,BCgetNameForOBJID(current,objID),BCgetFuncNameForId(object,funID));
     } break;
@@ -663,7 +618,6 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
         buf[pos++] = 0b00000111;
         buf[pos++] = objID;
         buf[pos++] = funID;
-        pos += BCAddCallPushesSpin1(buf, pos, ir);
         Module *object = BCgetModuleForOBJID(current,objID);
         comment = auto_printf(128,"CALL_OTHER_IDX %d.%d (%s.%s)",objID,funID,BCgetNameForOBJID(current,objID),BCgetFuncNameForId(object,funID));
     } break;

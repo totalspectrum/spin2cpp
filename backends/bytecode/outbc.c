@@ -160,6 +160,22 @@ OutputSpinBCHeader(ByteOutputBuffer *bob, Module *P)
     return spans;
 }
 
+// get HW register for extra return values
+static int
+HWRegRetval(int n) {
+    if (gl_interp_kind == INTERP_KIND_P1ROM) {
+        if (n < 1 || n > 3) {
+            ERROR(NULL, "Return value index %d is out of range", n);
+            return 0;
+        }
+        // return index for INB, DIRB, OUTB
+        // these are $1f3, $1f5, $1f7 respectively
+        return (0x1f3 + ((n-1)*2)) - 0x1e0;
+    }
+    ERROR(NULL, "Internal error, interpreter does not need return registers");
+    return 0;
+}
+
 static int
 HWReg2Index(HwReg *reg) {
     switch(gl_interp_kind) {
@@ -1277,6 +1293,7 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
 
     Symbol *sym = NULL;
     int callobjid = -1;
+    int extraResults = 0;
     AST *objtype = NULL;
     AST *index_expr = NULL;
     if (node->left && node->left->kind == AST_METHODREF) {
@@ -1441,7 +1458,9 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
         }
         callOp.attr.call.funID = funid;
         callOp.attr.call.numResults = BCGetNumResults(func);
-
+        if (callOp.attr.call.numResults >= 1) {
+            extraResults = callOp.attr.call.numResults - 1;
+        }
     } else {
         ERROR(node,"Unhandled FUNCALL symbol (name is %s and sym kind is %d)",sym->our_name,sym->kind);
         return;
@@ -1459,6 +1478,27 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
 
     if (index_expr) BCCompileExpression(irbuf,index_expr,context,false);
     BIRB_PushCopy(irbuf,&callOp);
+
+    if (!interp_can_multireturn() && asExpression && extraResults) {
+        // push extra result parameters
+        ByteOpIR memOp = { .kind = BOK_REG_READ };
+        memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
+        if (extraResults >= 1) {
+            memOp.data.int32 = HWRegRetval(1);
+            BIRB_PushCopy(irbuf, &memOp);
+        }
+        if (extraResults >= 2) {
+            memOp.data.int32 = HWRegRetval(2);
+            BIRB_PushCopy(irbuf, &memOp);
+        }
+        if (extraResults >= 3) {
+            memOp.data.int32 = HWRegRetval(3);
+            BIRB_PushCopy(irbuf, &memOp);
+        }
+        if (extraResults >= 4) {
+            ERROR(node, "This interpreter cannot handle more than 4 return values from a function");
+        }
+    }
 
     // TODO pop unwanted results????
 
@@ -2353,6 +2393,18 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
                 retval = retval->right;
             }
             BCCompileExpression(irbuf,retval,context,false);
+        }
+        if (returnOp.attr.returninfo.numResults > 1 && !interp_can_multireturn()) {
+            // pop extra values off stack into temporary registers
+            ByteOpIR memOp = { .kind = BOK_REG_WRITE };
+            int n;
+            memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
+            n = returnOp.attr.returninfo.numResults - 1;
+            while (n > 1) {
+                memOp.data.int32 = HWRegRetval(n);
+                BIRB_PushCopy(irbuf,&memOp);
+                --n;
+            }
         }
         BIRB_PushCopy(irbuf,&returnOp);
     } break;
