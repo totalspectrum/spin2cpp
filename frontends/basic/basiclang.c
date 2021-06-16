@@ -783,7 +783,18 @@ ParsePrintStatement(AST *ast)
             int ch = '#';
             seq = addFloatPrintCall(seq, handle, basic_print_float, expr, fmtAst, ch);
         } else if (IsStringType(type)) {
-            seq = addPrintCall(seq, handle, basic_print_string, expr, fmtAst);
+            bool print_done = false;
+            // optimize print chr$(x) to use basic_print_char
+            if (expr->kind == AST_FUNCCALL && IsIdentifier(expr->left)) {
+                const char *name = GetIdentifierName(expr->left);
+                if (strcasecmp(name, "chr$")==0 && expr->right && !expr->right->right) {
+                    seq = addPrintCall(seq, handle, basic_print_char, expr->right->left, fmtAst);
+                    print_done = true;
+                }
+            }
+            if (!print_done) {   
+                seq = addPrintCall(seq, handle, basic_print_string, expr, fmtAst);
+            }
         } else if (IsGenericType(type)) {
             // create a hex call
             seq = addPrintHex(seq, handle, basic_print_unsigned, expr, fmtAst);

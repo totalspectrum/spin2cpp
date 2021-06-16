@@ -13,6 +13,7 @@ Version 5.5.1
 - Improved conversion of longmove() in Spin to handle labels
 - Made objects come after all variables in Spin
 - Merged colorized error message changes from Wuerfel21.
+- Optimized PRINT CHR$(x) in BASIC
 - ALPHA: new bytecode backend from Wuerfel21, accessed by --interp=rom. This is not finished yet but can compile many Spin1 programs.
 
 Version 5.5.0
