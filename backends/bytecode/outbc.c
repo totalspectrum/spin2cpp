@@ -1137,6 +1137,10 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
                 ERROR(node,"Unhandled reserved word %s in assignment",sym->our_name);
             }
             break;
+        case SYM_HWREG:
+            memopNode = NewAST(AST_HWREG, NULL, NULL);
+            memopNode->d.ptr = sym->val;
+            break;
         default:
             ERROR(left,"Unhandled Identifier symbol kind %d in assignment",sym->kind);
             return;
@@ -1607,6 +1611,29 @@ NonUnsignedOp(int val)
 }
 
 static void
+BCCompileCast(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStatement)
+{
+    AST *newType = node->left;
+    AST *expr = node->right;
+    BCCompileExpression(irbuf,expr,context,asStatement);
+    if (asStatement || !newType) return;
+    // sanity check results
+    AST *oldType = ExprType(expr);
+    int newSize, oldSize;
+    newSize = TypeSize(newType);
+    oldSize = TypeSize(oldType);
+    if (newSize != oldSize) {
+        ERROR(node, "casts that change size not supported in bytecode yet");
+        return;
+    }
+    if ( (IsFloatType(oldType) && !IsFloatType(newType)) || 
+         (IsFloatType(newType) && !IsFloatType(oldType)) ) {
+        ERROR(node, "casts to/from float not supported in bytecode yet");
+        return;
+    }
+}
+
+static void
 BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStatement) {
     if(!node) {
         ERROR(NULL,"Internal Error: Null expression!!");
@@ -1934,6 +1961,9 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                     addPbaseOp.attr.memop.popIndex = true;
                 }
                 BIRB_PushCopy(irbuf,&addPbaseOp);
+            } break;
+            case AST_CAST: {
+                BCCompileCast(irbuf, node, context, asStatement);
             } break;
             default:
                 ERROR(node,"Unhandled node kind %d in expression",node->kind);
