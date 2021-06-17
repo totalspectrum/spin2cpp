@@ -711,10 +711,11 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
             ERROR(node,"Expected identifier after `.'");
             return;
         }
+        const char *memberName = GetUserIdentifierName(selector);
         node = node->left;
-        sym = LookupSymbolInTable(&P->objsyms, GetIdentifierName(selector));
+        sym = LookupSymbolInTable(&P->objsyms, memberName);
         if (!sym) {
-            ERROR(node,"Unable to find member %s in class %s", GetIdentifierName(selector), P->classname);
+            ERROR(node,"Unable to find member %s in class %s", memberName, P->classname);
             return;
         }
         switch(sym->kind) {
