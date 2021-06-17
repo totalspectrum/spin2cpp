@@ -317,7 +317,14 @@ pri _unsigned_div(n, d) : r
 pri _unsigned_mod(n, d)
   _remotecall(4, 0, n, d)
   return __helper_arg[1]
-  
+
+pri _unsigned_himul(a, b) : r
+  r := a**b
+  if a < 0
+    r += b
+  if b < 0
+    r += a
+
 pri _waitx(tim)
   tim += cnt
   waitcnt(tim)

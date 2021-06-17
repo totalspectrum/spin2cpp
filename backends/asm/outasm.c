@@ -2543,21 +2543,12 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
       return temp;
   }
   case K_SQRT:
-  {
-      ERROR(expr, "Unexpected K_SQRT found");
-      return EmptyOperand();
-  }
   case K_ONES_COUNT:
+  case K_SCAS:
+  case K_FRAC64:
   {
-      AST *fcall;
-      ASTReportInfo saveinfo;
-      
-      AstReportAs(expr, &saveinfo);
-      fcall = NewAST(AST_FUNCCALL, AstIdentifier("_ones"),
-                     NewAST(AST_EXPRLIST, expr->right, NULL));
-      left = CompileFunccallFirstResult(irl, fcall);
-      AstReportDone(&saveinfo);
-      return left;
+      ERROR(expr, "Internal error: Unexpected operator 0x%x found, should have been converted to function", op);
+      return EmptyOperand();
   }
   case K_QLOG:
   {
@@ -2590,32 +2581,6 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
       left = CompileFunccallFirstResult(irl, fcall);
       AstReportDone(&saveinfo);
       return left;
-  }
-  case K_SCAS:
-  {
-      AST *fcall;
-      ASTReportInfo saveinfo;
-      
-      AstReportAs(expr, &saveinfo);
-      fcall = NewAST(AST_FUNCCALL, AstIdentifier("_scas"),
-                     NewAST(AST_EXPRLIST, expr->left,
-                            NewAST(AST_EXPRLIST, expr->right, NULL)));
-      left = CompileFunccallFirstResult(irl, fcall);
-      AstReportDone(&saveinfo);
-      return left;
-  }
-  case K_FRAC64:
-  {
-        AST *fcall;
-        ASTReportInfo saveinfo;
-      
-        AstReportAs(expr, &saveinfo);
-        fcall = NewAST(AST_FUNCCALL, AstIdentifier("_qfrac"),
-                       NewAST(AST_EXPRLIST, expr->left,
-                              NewAST(AST_EXPRLIST, expr->right, NULL)));
-        left = CompileFunccallFirstResult(irl, fcall);
-        AstReportDone(&saveinfo);
-        return left;
   }
   case '?':
   {

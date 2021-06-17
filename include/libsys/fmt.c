@@ -610,10 +610,11 @@ int _fmtfloat(putfunc fn, unsigned fmt, FTYPE x, int spec)
     int needUpper;
     char *buf;
     char *origbuf;
+    char tmpbuf[MAXWIDTH + 1];
     int justify;
     int hash_format;
     
-    origbuf = buf = alloca(MAXWIDTH + 1);
+    origbuf = buf = tmpbuf;
 
     prec = (fmt >> PREC_BIT) & PREC_MASK;
     hash_format = (fmt >> ALTFMT_BIT) & 1;
@@ -688,13 +689,11 @@ int _fmtfloat(putfunc fn, unsigned fmt, FTYPE x, int spec)
 
     // handle special cases
     if (isinf(x)) {
-        origbuf = buf = alloca(6);
         // emit sign
         if (sign) *buf++ = sign;
         strcpy(buf, "inf");
         goto done;
     } else if (isnan(x)) {
-        origbuf = buf = alloca(6);
         if (sign) *buf++ = sign;
         strcpy(buf, "nan");
         goto done;

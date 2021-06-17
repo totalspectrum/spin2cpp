@@ -2583,17 +2583,14 @@ MarkUsedBody(AST *body, const char *caller)
         break;
     case AST_OPERATOR:
         switch (body->d.ival) {
-        case K_UNS_DIV:
-            *body = *ConvertInternal(body, "_unsigned_div", body->left, body->right);
-            break;
-        case K_UNS_MOD:
-            *body = *ConvertInternal(body, "_unsigned_mod", body->left, body->right);
-            break;
         case K_SQRT:
             *body = *ConvertInternal(body, "_sqrt", body->right, NULL);
             break;
         case K_ONES_COUNT:
             *body = *ConvertInternal(body, "_ones", body->right, NULL);
+            break;
+        case K_SCAS:
+            *body = *ConvertInternal(body, "_scas", body->left, body->right);
             break;
         case K_QEXP:
             UseInternal("_qexp");
@@ -2601,11 +2598,8 @@ MarkUsedBody(AST *body, const char *caller)
         case K_QLOG:
             UseInternal("_qlog");
             break;
-        case K_SCAS:
-            UseInternal("_scas");
-            break;
         case K_FRAC64:
-            UseInternal("_qfrac");
+            *body = *ConvertInternal(body, "_qfrac", body->left, body->right);
             break;
         case '?':
             if (body->left) {
@@ -2613,6 +2607,18 @@ MarkUsedBody(AST *body, const char *caller)
             } else {
                 UseInternal("_lfsr_backward");
             }
+            break;
+            /* on some platforms, some unsigned operations are done in software */
+            /* NOTE: ConvertInternal will return the original AST if the specified function is not found,
+               so we can easily disable these conversions by deleting them from the appropriate file in sys/ */
+        case K_UNS_DIV:
+            *body = *ConvertInternal(body, "_unsigned_div", body->left, body->right);
+            break;
+        case K_UNS_MOD:
+            *body = *ConvertInternal(body, "_unsigned_mod", body->left, body->right);
+            break;
+        case K_UNS_HIGHMULT:
+            *body = *ConvertInternal(body, "_unsigned_himul", body->left, body->right);
             break;
         case K_LTU:
         case K_GTU:
