@@ -724,6 +724,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
             type = sym->val;
             break;
         default:
+            ERROR(node,"Wrong kind of symbol (%d) in method reference", sym->kind);
             break;
         }
     }
@@ -905,7 +906,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         int size = TypeSize(type);
         if (size == 4) {
             memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
-        } else if (kind == MEMOP_ADDRESS) {
+        } else if (kind == MEMOP_ADDRESS || indexExpr) {
             memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
         } else {
             ERROR(node, "Cannot perform operation on object type");
@@ -1033,11 +1034,34 @@ static void
 BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpression,enum MathOpKind modifyMathKind) {
     ASSERT_AST_KIND(node,AST_ASSIGN,return;);
     AST *left = node->left, *right = node->right;
+    AST *type;
     bool modifyReverseMath = false;
 
+    // check for left hand side needing multiple assignments
+    if (left->kind != AST_EXPRLIST) {
+        int size = LONG_SIZE;
+        type = ExprType(left);
+        if (type) size = TypeSize(type);
+        if (size > LONG_SIZE) {
+            ASTReportInfo save;
+            AST *list = NULL;
+            AST *elem;
+            size = (size + LONG_SIZE-1)/LONG_SIZE;
+            AstReportAs(left,&save);
+            // pop all the words off in reverse order
+            while (size > 0) {
+                size--;
+                elem = NewAST(AST_ARRAYREF, left, AstInteger(size));
+                list = AddToList(list, NewAST(AST_EXPRLIST, elem, NULL));
+            }
+            AstReportDone(&save);
+            left = list;
+        }
+    }
     // This only happens with assignments where the lhs has side effects
     if (node->d.ival != K_ASSIGN) {
         if (modifyMathKind) ERROR(node,"direct operator AND given modfiyMathKind in AST_ASSIGN is unhandled");
+        if (left->kind == AST_EXPRLIST) ERROR(node,"multiple assignment with side effects is unhandled");
         bool isUnary = false;
         enum MathOpKind mok = 0;
         int optoken = node->d.ival;
@@ -1366,7 +1390,9 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
             // get us going)
             callobjid = getObjIDByClass(current, ident, &objtype);
         } else {
-            ASSERT_AST_KIND(ident,AST_IDENTIFIER,return;);
+            if (!IsIdentifier(ident)) {
+                ASSERT_AST_KIND(ident,AST_IDENTIFIER,return;);
+            }
             Symbol *objsym = LookupAstSymbol(ident,NULL);
             if(!objsym || objsym->kind != SYM_VARIABLE) {
                 ERROR(node->left,"Internal error: Invalid call receiver");
@@ -2483,6 +2509,23 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         if (retval) {
             if (retval->kind == AST_DECLARE_VAR) { // handle declared types in return values
                 retval = retval->right;
+            }
+            if (returnOp.attr.returninfo.numResults > 1 && IsIdentifier(retval)) {
+                // return x when x is large type needs multiple pushes
+                int size = TypeSize(ExprType(retval)) / LONG_SIZE;
+                ASTReportInfo save;
+                AST *elem, *list = NULL;
+                if (size != returnOp.attr.returninfo.numResults) {
+                    ERROR(node,"Return value size does not match function return size");
+                    size = returnOp.attr.returninfo.numResults;
+                }
+                AstReportAs(node,&save);
+                for (int i = 0; i < size; i++) {
+                    elem = NewAST(AST_ARRAYREF, retval, AstInteger(i));
+                    list = AddToList(list, NewAST(AST_EXPRLIST, elem, NULL));
+                }
+                AstReportDone(&save);
+                retval = list;
             }
             BCCompileExpression(irbuf,retval,context,false);
         }
