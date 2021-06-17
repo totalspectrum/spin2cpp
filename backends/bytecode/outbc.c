@@ -525,6 +525,7 @@ ByteOpIR BCBuildString(AST *expr) {
     return ir;
 }
 
+#ifdef NEED_ORIG_DEBUG
 static void
 printASTInfo(AST *node) {
     if (node) {
@@ -535,7 +536,10 @@ printASTInfo(AST *node) {
         else printf("right empty\n");
     } else printf("null node");
 }
- 
+#else
+#define printASTInfo(node) DumpAST(node)
+#endif
+
 static void BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStatement); // forward decl;
 static void BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context); // forward decl;
 
@@ -693,8 +697,35 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
     AST *indexExpr = NULL;
     AST *bitExpr1 = NULL;
     AST *bitExpr2 = NULL;
-
     AST *ident;
+    int memberOffset = 0;
+    
+    if (node->kind == AST_METHODREF) {
+        AST *selector = node->right;
+        Module *P = GetClassPtr(ExprType(node->left));
+        if (!P) {
+            ERROR(node,"Unable to find object");
+            return;
+        }
+        if (!IsIdentifier(selector)) {
+            ERROR(node,"Expected identifier after `.'");
+            return;
+        }
+        node = node->left;
+        sym = LookupSymbolInTable(&P->objsyms, GetIdentifierName(selector));
+        if (!sym) {
+            ERROR(node,"Unable to find member %s in class %s", GetIdentifierName(selector), P->classname);
+            return;
+        }
+        switch(sym->kind) {
+        case SYM_VARIABLE:
+            memberOffset += sym->offset;
+            type = sym->val;
+            break;
+        default:
+            break;
+        }
+    }
     if (node->kind == AST_ARRAYREF) {
         ident = node->left;
         indexExpr = node->right;
@@ -746,7 +777,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         return;
     } else {
         //printf("got symbol with name %s and kind %d\n",sym->our_name,sym->kind);
-        type = ExprType(ident);
+        if (!type) type = ExprType(ident);
         switch (sym->kind) {
         case SYM_LABEL: {
             memOp.attr.memop.base = MEMOP_BASE_PBASE;
@@ -869,6 +900,16 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         default: ERROR(node,"Can't handle float type with size %d",size); break;
         }
     } break;
+    case AST_OBJECT: {
+        int size = TypeSize(type);
+        if (size == 4) {
+            memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
+        } else if (kind == MEMOP_ADDRESS) {
+            memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
+        } else {
+            ERROR(node, "Cannot perform operation on object type");
+        }
+    } break;
     default:
         ERROR(node,"Unhandled type kind %d",type->kind);
     }
@@ -884,11 +925,12 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         if (bitExpr2) ERROR(node,"Bit2 expression on memory op!");
         if (baseExpr) BCCompileExpression(irbuf,baseExpr,context,false);
 
-        if (indexExpr) {
-            bool indexConst = IsConstExpr(indexExpr);
-            int constIndexVal;
-            if (indexConst) constIndexVal = EvalConstExpr(indexExpr);
+        if (indexExpr || memberOffset) {
+            bool indexConst = !indexExpr || IsConstExpr(indexExpr);
+            int constIndexVal = 0;
+            if (indexConst && indexExpr) constIndexVal = EvalConstExpr(indexExpr);
 
+            memOp.data.int32 += memberOffset;
             if (baseExpr && indexConst && constIndexVal == 0) {
                 // In this case, do nothing
             } else if (!baseExpr && indexConst) {
@@ -1111,6 +1153,9 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
         memopNode = left;
     } break;
     case AST_RESULT: {
+        memopNode = left;
+    } break;
+    case AST_METHODREF: {
         memopNode = left;
     } break;
     case AST_SYMBOL:
@@ -1965,6 +2010,9 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
             case AST_CAST: {
                 BCCompileCast(irbuf, node, context, asStatement);
             } break;
+            case AST_METHODREF: {
+                BCCompileMemOp(irbuf,node,context,MEMOP_READ);
+            } break;
             default:
                 ERROR(node,"Unhandled node kind %d in expression",node->kind);
                 return;
@@ -2661,7 +2709,7 @@ BCCompileObject(ByteOutputBuffer *bob, Module *P) {
     BOB_Comment(bob,auto_printf(128,"--- Object Header for %s",P->classname));
 
     // insert system module
-    if (systemModule && systemModule != P && systemModule->functions) {
+    if (systemModule && systemModule != P && systemModule->functions && P->functions) {
         BCInsertModule(P, systemModule, "_system_");
     }
     // prepare object
