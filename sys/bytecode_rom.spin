@@ -302,10 +302,6 @@ pri _rxraw(timeout = 0)
 '' divide (n, nlo) by d, producing qlo and rlo (used in FRAC operation)
 ''
 pri _div64(n, nlo, dlo) : qlo, rlo | q, r, d
-  if dlo == 0
-    qlo := -1
-    rlo := -1
-    return
   _remotecall(4, n, nlo, dlo)
   qlo := __helper_arg[0]
   rlo := __helper_arg[1]
