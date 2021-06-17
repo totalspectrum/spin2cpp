@@ -2453,6 +2453,9 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
     case AST_STMTLIST: {
         BCCompileStmtlist(irbuf,node,context);
     } break;
+    case AST_SCOPE: {
+        BCCompileStmtlist(irbuf,node->left,context);
+    } break;
     default:
         ERROR(node,"Unhandled node kind %d in statement",node->kind);
         break;
