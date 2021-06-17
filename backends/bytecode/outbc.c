@@ -2385,7 +2385,14 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         }
     } break;
     case AST_ENDCASE: {
-        if (context.caseVarsAt < 0) ERROR(node,"ENDCASE outside of a CASE");
+        if (context.caseVarsAt < 0) {
+            if (IsCLang(curfunc->language) && context.nextLabel) {
+                // in C "break" acts as both ENDCASE and QUIT
+                BCCompileJump(irbuf, context.quitLabel, context);
+                break;
+            }
+            ERROR(node,"ENDCASE outside of a CASE");
+        }
         BCCompilePopN(irbuf,context.hiddenVariables - context.caseVarsAt);
         ByteOpIR doneOp = {.kind = BOK_CASE_DONE};
         BIRB_PushCopy(irbuf,&doneOp);
