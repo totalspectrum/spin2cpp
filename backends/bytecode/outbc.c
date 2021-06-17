@@ -2461,6 +2461,8 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         BCCompileStmtlist(irbuf,node,context);
     } break;
     case AST_SCOPE: {
+        // TODO: When we implement __builtin_alloca(), we should restore the
+        // stack after compiling the contents of the scope.
         BCCompileStmtlist(irbuf,node->left,context);
     } break;
     default:
