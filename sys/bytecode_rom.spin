@@ -430,6 +430,6 @@ pri _unsigned_cmp(a, b)
 }
 
 pri __builtin_strcpy(dst, src) : r=@byte | n
-  n := __builtin_strlen(src)
+  n := __builtin_strlen(src)+1
   bytemove(dst, src, n)
   return dst
