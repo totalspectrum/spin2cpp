@@ -879,6 +879,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
     if (!type) type = ast_type_long;
 
     switch (type->kind) {
+    case AST_GENERICTYPE:
     case AST_UNSIGNEDTYPE: {
         int size = type->left->d.ival;
         switch (size) {
