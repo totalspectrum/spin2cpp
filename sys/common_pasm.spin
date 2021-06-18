@@ -114,4 +114,6 @@ pri __get_heap_base : r
   asm
     mov r, __heap_ptr
   endasm
-  
+
+pri __getlockreg
+  return __lockreg

@@ -215,6 +215,9 @@ typedef struct bcirstruct {
         struct {
             unsigned numResults;
         } returninfo;
+        struct {
+            unsigned logicallyTerminal:1; // For conditional jumps that logically can't fail.
+        } condjump;
         int stringLength;
         int labelHiddenVars; // Not used by the actual IR step
     } attr;
@@ -245,8 +248,8 @@ void BIRB_AppendPending(BCIRBuffer *buf);
 void BCIR_GetJumpOffsetBounds(ByteOpIR *jump,bool func_relative,int *minDist, int *maxDist,int recursionsLeft);
 int BCIR_GetJumpOffset(ByteOpIR *jump,bool func_relative);
 
-int pbase_offset; // distance of current function from PBASE (obj header)
-BCIRBuffer *current_birb;
+extern int pbase_offset; // distance of current function from PBASE (obj header)
+extern BCIRBuffer *current_birb;
 
 void BCIR_ResolveNamedLabels(BCIRBuffer *irbuf);
 void BCIR_Optimize(BCIRBuffer *irbuf);
