@@ -35,4 +35,4 @@ jobs:
      - name: make
        run: make
      - name: test
-       run: make test
+       run: make test_offline
