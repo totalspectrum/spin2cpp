@@ -215,6 +215,9 @@ typedef struct bcirstruct {
         struct {
             unsigned numResults;
         } returninfo;
+        struct {
+            unsigned logicallyTerminal:1; // For conditional jumps that logically can't fail.
+        } condjump;
         int stringLength;
         int labelHiddenVars; // Not used by the actual IR step
     } attr;

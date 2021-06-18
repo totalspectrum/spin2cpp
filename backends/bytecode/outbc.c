@@ -584,23 +584,25 @@ static void BCCompilePopN(BCIRBuffer *irbuf,int popcount) {
 }
 
 static void
-BCCompileJumpEx(BCIRBuffer *irbuf, ByteOpIR *label, enum ByteOpKind kind, BCContext context, int stackoffset) {
+BCCompileJumpEx(BCIRBuffer *irbuf, ByteOpIR *label, enum ByteOpKind kind, BCContext context, int stackoffset, bool logicallyTerminal) {
     int stackdiff = context.hiddenVariables - label->attr.labelHiddenVars + stackoffset; // Will be zero if we got an AST_NAMEDLABEL
     if (stackdiff > 0) {
         // emit pop to get rid of hidden vars
-        BCCompilePopN(irbuf,stackdiff);
+        if (kind != BOK_JUMP) ERROR(NULL,"Internal Error: Compiling conditional jump to label with less hidden vars than current context");
+        else BCCompilePopN(irbuf,stackdiff);
     } else if (stackdiff < 0) {
         ERROR(NULL,"Internal Error: Compiling jump to label with more hidden vars than current context");
     }
     ByteOpIR condjmp = {0};
     condjmp.kind = kind;
     condjmp.jumpTo = label;
+    condjmp.attr.condjump.logicallyTerminal = logicallyTerminal;
     BIRB_PushCopy(irbuf,&condjmp);
 }
 
 static void
 BCCompileJump(BCIRBuffer *irbuf, ByteOpIR *label, BCContext context) {
-    BCCompileJumpEx(irbuf,label,BOK_JUMP,context,0);
+    BCCompileJumpEx(irbuf,label,BOK_JUMP,context,0,false);
 }
 
 static void
@@ -2215,13 +2217,14 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
 
             BCContext newcontext = context;
             newcontext.hiddenVariables += 1;
+            newcontext.countRepeatAt = newcontext.hiddenVariables;
             ByteOpIR *topLabel = BCNewOrphanLabel(newcontext);
             ByteOpIR *nextLabel = BCNewOrphanLabel(newcontext);
             ByteOpIR *quitLabel = BCNewOrphanLabel(context);
             newcontext.nextLabel = nextLabel;
             newcontext.quitLabel = quitLabel;
 
-            if (!isConst || constVal == 0) BCCompileJumpEx(irbuf,quitLabel,BOK_JUMP_TJZ,newcontext,-1); 
+            if (!isConst || constVal == 0) BCCompileJumpEx(irbuf,quitLabel,BOK_JUMP_TJZ,newcontext,-1,false); 
             BIRB_Push(irbuf,topLabel);
 
             if (body) {
@@ -2230,7 +2233,7 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
             } else DEBUG(node,"Compiling empty REPEAT N loop?");
 
             BIRB_Push(irbuf,nextLabel);
-            BCCompileJumpEx(irbuf,topLabel,BOK_JUMP_DJNZ,newcontext,0);
+            BCCompileJumpEx(irbuf,topLabel,BOK_JUMP_DJNZ,newcontext,0,false);
             BIRB_Push(irbuf,quitLabel);
         } else {
             // REPEAT FROM TO
@@ -2459,19 +2462,24 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
             BCCompileJump(irbuf,context.nextLabel,context);
         }
     } break;
+    do_quitloop:
     case AST_QUITLOOP: {
         if (!context.nextLabel) {
             ERROR(node,"QUIT outside loop");
         } else {
-            BCCompileJump(irbuf,context.quitLabel,context);
+            if (context.hiddenVariables == context.countRepeatAt && context.hiddenVariables-1 == context.quitLabel->attr.labelHiddenVars && (curfunc->optimize_flags & OPT_PEEPHOLE)) {
+                // Since the count variable in a counted repeat can never be zero, instead of compiling a pop+jump, we can use a jump_if_nz
+                BCCompileJumpEx(irbuf,context.quitLabel,BOK_JUMP_IF_NZ,context,-1,true);
+            } else {
+                BCCompileJump(irbuf,context.quitLabel,context);
+            }
         }
     } break;
     case AST_ENDCASE: {
         if (context.caseVarsAt < 0) {
             if (IsCLang(curfunc->language) && context.nextLabel) {
                 // in C "break" acts as both ENDCASE and QUIT
-                BCCompileJump(irbuf, context.quitLabel, context);
-                break;
+                goto do_quitloop;
             }
             ERROR(node,"ENDCASE outside of a CASE");
         }
@@ -2621,7 +2629,7 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
         ERROR(F->body,"Internal Error: Expected AST_STMTLIST, got id %d",F->body->kind);
         return;
     } else {
-        BCContext context = {.caseVarsAt = -1};
+        BCContext context = {.caseVarsAt = -1,.countRepeatAt = -1};
         BCCompileStmtlist(&irbuf,F->body,context);
     }
     // Only need to append a return for void functions

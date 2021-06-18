@@ -207,26 +207,40 @@ bool BCIR_IsTerminalOp(ByteOpIR *ir) {
     case BOK_ABORT_PLAIN:
     case BOK_ABORT_POP:
         return true;
+    case BOK_JUMP_IF_NZ:
+    case BOK_JUMP_IF_Z:
+        return ir->attr.condjump.logicallyTerminal;
     default: return false;
     }
 }
 
 // Currently same as BCIR_IsTerminalOp, but if any large terminal ops are added, this may come in handy
-bool BCIR_CanReplaceJumpToOpWithItself(ByteOpIR *ir) {
+bool BCIR_CanReplaceJumpToOpWithItself(ByteOpIR *ir,bool stackDirty) {
     switch(ir->kind) {
     //case BOK_JUMP: // Handled seperately...
     case BOK_CASE_DONE:
     case BOK_LOOKEND:
-    case BOK_ABORT_PLAIN:
     case BOK_ABORT_POP:
+        return !stackDirty;
+    case BOK_ABORT_PLAIN:
         return true;
     case BOK_RETURN_PLAIN:
+        return (ir->attr.returninfo.numResults == 1);
     case BOK_RETURN_POP:
-        if (ir->attr.returninfo.numResults == 1) return true;
-        // otherwise fall through
+        return (ir->attr.returninfo.numResults == 1) && !stackDirty;
     default: return false;
     }
 }
+
+bool BCIR_CanRemoveBeforeReturn(ByteOpIR *ir) {
+    switch(ir->kind) {
+    case BOK_CONSTANT:
+    case BOK_POP:
+        return true;
+    default: return false;
+    }
+}
+
 bool BCIR_CanBeOversized(ByteOpIR *ir) {
     switch (ir->kind) {
     case BOK_ALIGN: return false;
@@ -276,6 +290,21 @@ static bool BCIR_OptDeadCode() {
         if(BCIR_IsTerminalOp(ir)) {
             while (ir->next && !(BCIR_IsLabel(ir->next) || (ir->next->kind == BOK_ALIGN && ir->next->next && BCIR_IsLabel(ir->next->next)))) {
                 BIRB_Remove(current_birb,ir->next);
+                didWork = true;
+            }
+        }
+    }
+    return didWork;
+}
+
+static bool BCIR_OptRemoveBeforeReturn() {
+    // Since RETURN_PLAIN and ABORT_PLAIN discard the stack frame, some ops can be deleted if preceding one
+    // This usually happens as a result of BCIR_OptReplaceJumpToOpWithItself
+    bool didWork = false;
+    for(ByteOpIR *ir = current_birb->head;ir;ir=ir->next) {
+        if((ir->kind == BOK_RETURN_PLAIN && ir->attr.returninfo.numResults == 1) || ir->kind == BOK_ABORT_PLAIN) {
+            while (ir->prev && BCIR_CanRemoveBeforeReturn(ir->prev)) {
+                BIRB_Remove(current_birb,ir->prev);
                 didWork = true;
             }
         }
@@ -348,9 +377,22 @@ static bool BCIR_OptReplaceJumpToOpWithItself() {
     // An unconditional jump to a small terminal op can be replaced with that op
     bool didWork = false;
     for(ByteOpIR *ir = current_birb->head;ir;ir=ir->next) {
-        if (ir->kind == BOK_JUMP) {
+        bool stackDirty, tryReplace = false;
+        switch (ir->kind) {
+        case BOK_JUMP:
+            tryReplace = true;
+            stackDirty = false;
+            break;
+        case BOK_JUMP_IF_Z:
+        case BOK_JUMP_IF_NZ:
+            tryReplace = ir->attr.condjump.logicallyTerminal;
+            stackDirty = true;
+            break;
+        default: break;
+        }
+        if (tryReplace) {
             ByteOpIR *next = ir->jumpTo->next;
-            if (BCIR_CanReplaceJumpToOpWithItself(next)) {
+            if (BCIR_CanReplaceJumpToOpWithItself(next,stackDirty)) {
                 BIRB_ReplaceInplace(ir,next);
                 didWork = true;
             }
@@ -464,6 +506,7 @@ void BCIR_Optimize(BCIRBuffer *irbuf) {
         if (flags & OPT_PEEPHOLE) didWork |= BCIR_OptJumpOverJump();
         if (flags & OPT_PEEPHOLE) didWork |= BCIR_OptJumpToJump();
         if (flags & OPT_PEEPHOLE) didWork |= BCIR_OptReplaceJumpToOpWithItself();
+        if (flags & OPT_DEADCODE) didWork |= BCIR_OptRemoveBeforeReturn();
     } while (didWork && ++iterations < BCOPT_MAX_ITERATIONS);
     if (iterations >= BCOPT_MAX_ITERATIONS) WARNING(curfunc->body,"Optimization pass limit (%d) exceeded on function %s",BCOPT_MAX_ITERATIONS,curfunc->name);
     DEBUG(NULL,"took %d passes to optimize function %s",iterations,curfunc->name);
