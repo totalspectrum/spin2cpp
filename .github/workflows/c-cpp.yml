@@ -44,7 +44,7 @@ jobs:
       if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled }}
     - name: Install non-buggy GCC/GCOV
       run: |
-        sudo add-apt-repository ppa:ubuntu-toolchain-r/test"
+        sudo add-apt-repository ppa:ubuntu-toolchain-r/test
         sudo apt-get update
         sudp apt-get install gcc-10
     - name: make
