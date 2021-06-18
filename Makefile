@@ -69,14 +69,16 @@ else ifeq ($(CROSS),macosx)
   EXT=
   BUILD=./build-macosx
 else ifeq ($(OS),Windows_NT)
-  CC=gcc
+  CC?=gcc
   EXT=.exe
   BUILD=./build
 else
-  CC=gcc
+  CC?=gcc
   EXT=
   BUILD=./build
 endif
+
+CCOV?=gcov
 
 ifdef TEST_COVERAGE
 	BUILD=./build-gcov
@@ -187,7 +189,7 @@ test: test_offline runtest
 #test: lextest asmtest cpptest errtest runtest
 
 coverage: 
-	(cd $(BUILD); gcov testlex.c cmdline.c spin2cpp.c flexspin.c flexcc.c $(SPINSRCS))
+	(cd $(BUILD); $(CCOV) testlex.c cmdline.c spin2cpp.c flexspin.c flexcc.c $(SPINSRCS))
 
 lextest: $(PROGS)
 	$(BUILD)/testlex
