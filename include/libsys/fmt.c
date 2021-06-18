@@ -523,7 +523,7 @@ static void disassemble(FTYPE x, UITYPE *aip, int *np, int numdigits, int base)
         numdigits = maxdigits;
     maxu = 1; // for overflow
     while ( u < DOUBLE_ONE && numdigits-- > 0) {
-        FTYPE d;
+        UITYPE d;
         d = (ai >> DOUBLE_BITS); // next digit
         ai &= DOUBLE_MASK;
         u = u * base;
