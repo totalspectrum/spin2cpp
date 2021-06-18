@@ -33,6 +33,8 @@ jobs:
     steps:
      - uses: actions/checkout@v2
      - name: make
-       run: make
+       run: make all TEST_COVERAGE=1
      - name: test
-       run: make test_offline
+       run: make test_offline TEST_COVERAGE=1
+     - name: gcov
+       run: make coverage TEST_COVERAGE=1

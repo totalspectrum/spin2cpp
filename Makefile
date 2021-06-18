@@ -78,6 +78,11 @@ else
   BUILD=./build
 endif
 
+ifdef TEST_COVERAGE
+	BUILD=./build-gcov
+	CFLAGS+=--coverage -fprofile-dir=$(realpath .) -fprofile-abs-path
+endif
+
 INC=-I. -I$(BUILD)
 DEFS=-DFLEXSPIN_BUILD
 
@@ -106,9 +111,9 @@ endif
 #check:
 #	echo YACC="$(RUNYACC)" YACCVER="$(YACCVER)" YACC_CHECK="$(YACC_CHECK)"
 
-CFLAGS = -g -Wall $(INC) $(DEFS)
-#CFLAGS = -no-pie -pg -Wall $(INC) $(DEFS)
-#CFLAGS = -g -Og -Wall -Wc++-compat -Werror $(INC) $(DEFS)
+CFLAGS += -g -Wall $(INC) $(DEFS)
+#CFLAGS += -no-pie -pg -Wall $(INC) $(DEFS)
+#CFLAGS += -g -Og -Wall -Wc++-compat -Werror $(INC) $(DEFS)
 LIBS = -lm
 RM = rm -rf
 
@@ -151,7 +156,7 @@ help:
 
 all: $(BUILD) $(PROGS)
 
-$(BUILD)/testlex$(EXT): testlex.c $(LEXOBJS)
+$(BUILD)/testlex$(EXT): $(LEXOBJS) $(BUILD)/testlex.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 $(BUILD)/spin.tab.c $(BUILD)/spin.tab.h: frontends/spin/spin.y
@@ -172,9 +177,15 @@ preproc: preprocess.c $(UTIL)
 clean:
 	$(RM) $(PROGS) $(BUILD)/* *.zip
 
-test_offline: lextest asmtest cpptest errtest p2test
+clean_profile:
+	$(RM) $(BUILD)/*.gcda $(BUILD)/*.gcov
+
+test_offline: $(BUILD) lextest asmtest cpptest errtest p2test
 test: test_offline runtest
 #test: lextest asmtest cpptest errtest runtest
+
+coverage: 
+	(cd $(BUILD); gcov testlex.c cmdline.c spin2cpp.c flexspin.c flexcc.c $(SPINSRCS))
 
 lextest: $(PROGS)
 	$(BUILD)/testlex
@@ -194,13 +205,13 @@ p2test: $(PROGS)
 runtest: $(PROGS)
 	(cd Test; ./runtests.sh)
 
-$(BUILD)/spin2cpp$(EXT): spin2cpp.c cmdline.c $(OBJS)
+$(BUILD)/spin2cpp$(EXT): $(BUILD)/spin2cpp.o $(BUILD)/cmdline.o $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
-$(BUILD)/flexspin$(EXT): flexspin.c cmdline.c $(OBJS)
+$(BUILD)/flexspin$(EXT): $(BUILD)/flexspin.o $(BUILD)/cmdline.o $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
-$(BUILD)/flexcc$(EXT): flexcc.c cmdline.c $(OBJS)
+$(BUILD)/flexcc$(EXT): $(BUILD)/flexcc.o $(BUILD)/cmdline.o $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 $(BUILD):
