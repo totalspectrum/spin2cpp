@@ -148,7 +148,7 @@ pri __builtin_nan(p) : r=float
 pri _lockmem(addr) | oldlock, oldmem, lockreg
   '''_tx("L")
   '''_gc_errhex(addr)
-  lockreg := __getlockreg()
+  lockreg := __getlockreg
   repeat
     repeat
       oldlock := _lockset(lockreg)
