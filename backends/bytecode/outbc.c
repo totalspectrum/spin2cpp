@@ -750,8 +750,13 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
             memOp.attr.memop.base = MEMOP_BASE_POP;
             targetKind = MOT_MEM;
 
+            if (type) typeoverride = type;
             type = ident->left;
             baseExpr = ident->right;
+            if (memberOffset) {
+                baseExpr = AstOperator('+', baseExpr, AstInteger(memberOffset));
+                memberOffset = 0;
+            }
             goto nosymbol_memref;
         }
     } else if (ident->kind == AST_HWREG) {
@@ -927,12 +932,14 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         if (bitExpr2) ERROR(node,"Bit2 expression on memory op!");
         if (baseExpr) BCCompileExpression(irbuf,baseExpr,context,false);
 
-        if (indexExpr || memberOffset) {
-            bool indexConst = !indexExpr || IsConstExpr(indexExpr);
-            int constIndexVal = 0;
-            if (indexConst && indexExpr) constIndexVal = EvalConstExpr(indexExpr);
-
+        if (memberOffset) {
             memOp.data.int32 += memberOffset;
+        }
+        if (indexExpr) {
+            bool indexConst = IsConstExpr(indexExpr);
+            int constIndexVal;
+            if (indexConst) constIndexVal = EvalConstExpr(indexExpr);
+
             if (baseExpr && indexConst && constIndexVal == 0) {
                 // In this case, do nothing
             } else if (!baseExpr && indexConst) {
@@ -1048,10 +1055,9 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
             AST *elem;
             size = (size + LONG_SIZE-1)/LONG_SIZE;
             AstReportAs(left,&save);
-            // pop all the words off in reverse order
-            while (size > 0) {
-                size--;
-                elem = NewAST(AST_ARRAYREF, left, AstInteger(size));
+            // convert to a list of assignments
+            for (int i = 0; i < size; i++) {
+                elem = NewAST(AST_ARRAYREF, left, AstInteger(i));
                 list = AddToList(list, NewAST(AST_EXPRLIST, elem, NULL));
             }
             AstReportDone(&save);
