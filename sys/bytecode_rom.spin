@@ -446,3 +446,6 @@ pri __getlockreg : r
 
 pri __get_heap_base : r
   r := __heap_base
+
+pri _cogid : r
+  r := __interp_cogid
