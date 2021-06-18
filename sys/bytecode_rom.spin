@@ -37,10 +37,11 @@ pri _cogchk(id) | flag, n
 '
 
 dat
-__helper_cog long -1
 __helper_cmd long 0
 __helper_arg long 0[4]
-__lockreg    long -1
+
+__helper_cog byte $ff
+__lockreg    byte $ff
 
         org 0
 __helper_entry
@@ -273,7 +274,7 @@ __helper_done
 ''
 pri __init__ | cog
   cog := __helper_cog
-  if cog => 0
+  if cog <> $ff
     return
   cog := cognew(@__helper_entry, @__helper_cmd)
 
@@ -439,5 +440,5 @@ pri __builtin_strcpy(dst, src) : r=@byte | n
 
 pri __getlockreg : r
   r := __lockreg
-  if r < 0
+  if r == $ff
     __lockreg := r := _locknew
