@@ -86,7 +86,7 @@ CCOV?=gcov
 
 ifdef TEST_COVERAGE
 	BUILD=./build-gcov
-	CFLAGS+=--coverage -fprofile-dir=$(realpath ./$(BUILD)) -fprofile-abs-path
+	CFLAGS+=--coverage -fprofile-dir=$(realpath .) -fprofile-abs-path
 endif
 
 export BUILD
