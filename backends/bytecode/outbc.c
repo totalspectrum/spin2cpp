@@ -1258,15 +1258,23 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
 }
 
 static int getFuncID(Module *M,const char *name) {
+    int (*StrComp)(const char *, const char *);
+    
     if (!M->bedata) {
         ERROR(NULL,"Internal Error: bedata empty");
         return -1;
     }
+    if ( (curfunc && LangCaseSensitive(curfunc->language)) ||
+         LangCaseSensitive(M->curLanguage)) {
+        StrComp = strcmp;
+    } else {
+        StrComp = strcasecmp;
+    }
     for (int i=0;i<ModData(M)->pub_cnt;i++) {
-        if (!strcmp(ModData(M)->pubs[i]->name,name)) return i + 1;
+        if (!StrComp(ModData(M)->pubs[i]->name,name)) return i + 1;
     }
     for (int i=0;i<ModData(M)->pri_cnt;i++) {
-        if (!strcmp(ModData(M)->pris[i]->name,name)) return ModData(M)->pub_cnt + i + 1;
+        if (!StrComp(ModData(M)->pris[i]->name,name)) return ModData(M)->pub_cnt + i + 1;
     }
     return -1;
 }
