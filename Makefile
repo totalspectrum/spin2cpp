@@ -172,7 +172,8 @@ preproc: preprocess.c $(UTIL)
 clean:
 	$(RM) $(PROGS) $(BUILD)/* *.zip
 
-test: lextest asmtest cpptest errtest p2test runtest
+test_offline: lextest asmtest cpptest errtest p2test
+test: test_offline runtest
 #test: lextest asmtest cpptest errtest runtest
 
 lextest: $(PROGS)
