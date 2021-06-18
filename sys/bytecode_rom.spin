@@ -40,6 +40,7 @@ dat
 __helper_cog long -1
 __helper_cmd long 0
 __helper_arg long 0[4]
+__lockreg    long -1
 
         org 0
 __helper_entry
@@ -276,11 +277,13 @@ pri __init__ | cog
     return
   cog := cognew(@__helper_entry, @__helper_cmd)
 
-pri {++needsinit} _remotecall(cmd, arg0 = 0, arg1 = 0, arg2 = 0)
-  repeat until __helper_cmd == 0
+pri {++needsinit} _remotecall(cmd, arg0 = 0, arg1 = 0, arg2 = 0) | rlock
+  rlock := __getlockreg
+  repeat while _lockset(rlock)
   longmove(@__helper_arg[0], @arg0, 3)
   __helper_cmd := cmd
   repeat until __helper_cmd == 0
+  _lockclr(rlock)
   
 pri _setbaud(rate)
   _remotecall(1, __clkfreq_var / rate)
@@ -433,3 +436,8 @@ pri __builtin_strcpy(dst, src) : r=@byte | n
   n := __builtin_strlen(src)+1
   bytemove(dst, src, n)
   return dst
+
+pri __getlockreg : r
+  r := __lockreg
+  if r < 0
+    __lockreg := r := _locknew

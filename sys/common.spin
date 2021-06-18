@@ -145,19 +145,20 @@ pri __builtin_inf : r=float
 pri __builtin_nan(p) : r=float
   return $7fc00000
 
-pri _lockmem(addr) | oldlock, oldmem
+pri _lockmem(addr) | oldlock, oldmem, lockreg
   '''_tx("L")
   '''_gc_errhex(addr)
+  lockreg := __getlockreg()
   repeat
     repeat
-      oldlock := _lockset(__lockreg)
+      oldlock := _lockset(lockreg)
     while oldlock
     oldmem := byte[addr]
     '''_tx("g")
     '''_gc_errhex(oldmem)
     if oldmem == 0
       byte[addr] := 1
-    _lockclr(__lockreg)
+    _lockclr(lockreg)
   while oldmem <> 0
 
 pri _unlockmem(addr) | oldlock
