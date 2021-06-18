@@ -2,6 +2,7 @@
 #include <sys/limits.h>
 #include <sys/stat.h>
 #include <stdio.h>
+#include <string.h>
 #include <errno.h>
 
 //#define _DEBUG
