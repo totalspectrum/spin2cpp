@@ -4,8 +4,8 @@ if [ "$1" != "" ]; then
     SPIN2CPP=$1
     FASTSPIN="$1 -g -q --interp=rom"
 else
-    SPIN2CPP=../build/spin2cpp
-    FASTSPIN="../build/flexspin -g -q --interp=rom"
+    SPIN2CPP=../${BUILD:='./build'}/spin2cpp
+    FASTSPIN="../${BUILD:='./build'}/flexspin -g -q --interp=rom"
 fi
 
 PROG_ASM="$FASTSPIN -I../Lib"

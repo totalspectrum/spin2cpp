@@ -3,7 +3,7 @@
 if [ "$1" != "" ]; then
   FASTSPIN=$1
 else
-  FASTSPIN=../build/flexspin
+  FASTSPIN=../${BUILD:='./build'}/flexspin
 fi
 
 PROG="$FASTSPIN -q -2b -I../Lib"

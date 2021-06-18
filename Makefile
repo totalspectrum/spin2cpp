@@ -83,6 +83,8 @@ ifdef TEST_COVERAGE
 	CFLAGS+=--coverage -fprofile-dir=$(realpath .) -fprofile-abs-path
 endif
 
+export BUILD
+
 INC=-I. -I$(BUILD)
 DEFS=-DFLEXSPIN_BUILD
 
