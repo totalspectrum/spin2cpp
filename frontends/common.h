@@ -231,6 +231,7 @@ extern int gl_features_used;
 #define FEATURE_LONGJMP_USED 0x01
 #define FEATURE_GOSUB_USED   0x02
 #define FEATURE_LOCKREG_USED 0x04
+#define FEATURE_NEED_HEAP    0x08
 
 /* default value for baud rate (set on command line with -D_BAUD=) */
 extern int gl_default_baud;

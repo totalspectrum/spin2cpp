@@ -112,7 +112,7 @@ int BCgetDAToffset(Module *P, bool absolute, AST *errloc, bool printErrors) {
     }
     int pbase_offset = -1;
     switch(gl_interp_kind) {
-    case INTERP_KIND_P1ROM: pbase_offset = 4*(ModData(current)->pub_cnt+ModData(current)->pri_cnt+ModData(current)->obj_cnt+1); break;
+    case INTERP_KIND_P1ROM: pbase_offset = 4*(ModData(P)->pub_cnt+ModData(P)->pri_cnt+ModData(P)->obj_cnt+1); break;
     default:
         if (printErrors) ERROR(errloc,"Unknown interpreter kind");
         return -1;
@@ -2866,10 +2866,36 @@ BCCompileObject(ByteOutputBuffer *bob, Module *P) {
     current = save;
 }
 
+static void BCAddHeap(ByteOutputBuffer *bob, Module*P) {
+    Symbol *sym = LookupSymbolInTable(&systemModule->objsyms, "__heap_base");
+    Symbol *objsym = LookupSymbolInTable(&P->objsyms, "_system_");
+    Label *L;
+
+    if (! (gl_features_used & FEATURE_NEED_HEAP)) return;
+    if (!objsym) return;
+    if (!sym || sym->kind != SYM_LABEL) return;
+    
+    L = (Label *)sym->val;
+    int off = L->hubval;
+    off += BCgetDAToffset(systemModule,true,NULL,false);
+
+    sym = LookupSymbolInTable(&systemModule->objsyms, "__real_heapsize__");
+    if (!sym || sym->kind != SYM_CONSTANT) return;
+
+    uint32_t heapstart = bob->total_size;
+    uint32_t heapsize = EvalPasmExpr((AST *)sym->val);
+
+    heapsize = (heapsize+3)&~3; // long align
+    P->varsize += heapsize;
+
+    //printf("label offset is: 0x%x heap size is %d\n", off, heapsize);
+
+    BOB_FixupWord(bob, off, heapstart);
+}
+
 void OutputByteCode(const char *fname, Module *P) {
     FILE *bin_file = NULL,*lst_file = NULL;
     ByteOutputBuffer bob = {0};
-
     Module *save = current;
     current = P;
 
@@ -2894,6 +2920,10 @@ void OutputByteCode(const char *fname, Module *P) {
     BCCompileObject(&bob,P);
 
     BOB_Align(&bob,4);
+
+    // now append a heap, if necessary
+    BCAddHeap(&bob,P);
+    
     const int programSize = bob.total_size - headerSize;
     const int variableSize = P->varsize; // Already rounded up!
     const int stackBase = headerSize + programSize + variableSize + 8; // space for that stack init thing

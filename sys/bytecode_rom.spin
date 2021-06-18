@@ -40,6 +40,7 @@ dat
 __helper_cmd long 0
 __helper_arg long 0[4]
 
+__heap_base  word $ffff
 __helper_cog byte $ff
 __lockreg    byte $ff
 
@@ -442,3 +443,6 @@ pri __getlockreg : r
   r := __lockreg
   if r == $ff
     __lockreg := r := _locknew
+
+pri __get_heap_base : r
+  r := __heap_base

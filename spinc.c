@@ -1122,6 +1122,7 @@ FixupCode(Module *P, int isBinary)
         for (pf = systemModule->functions; pf; pf = pf->next) {
             if (!strcasecmp(pf->name, "_gc_ptrs")) {
                 need_heap = true;
+                gl_features_used |= FEATURE_NEED_HEAP;
                 break;
             }
         }

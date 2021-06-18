@@ -91,3 +91,41 @@ char *auto_printf(size_t max,const char *format,...) {
     va_end(args);
     return buffer;
 }
+
+// fixup bytes in an existing ByteOutputBuffer
+void BOB_FixupData(ByteOutputBuffer *bob, uint32_t fixaddr, uint8_t *data, size_t size)
+{
+    uint32_t off = 0;
+    OutputSpan *sp;
+    if (size > (size_t)bob->total_size) {
+        ERROR(NULL, "fixup beyond end of buffer");
+        return;
+    }
+    for (sp = bob->head; sp; sp = sp->next) {
+        if (off <= fixaddr && fixaddr < off + sp->size) {
+            break;
+        }
+        off += sp->size;
+    }
+    if (!sp || fixaddr + size > off + sp->size) {
+        ERROR(NULL, "bad fixup");
+    }
+    uint8_t *ptr = &sp->data[fixaddr - off];
+    for (int i = 0; i < size; i++) {
+        *ptr++ = *data++;
+    }
+}
+
+void BOB_FixupWord(ByteOutputBuffer *bob,uint32_t addr,uint16_t data) {
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+    data = __builtin_bswap16(data);
+#endif
+    BOB_FixupData(bob,addr,(uint8_t *)&data,sizeof(uint16_t));
+}
+
+void BOB_FixupLong(ByteOutputBuffer *bob,uint32_t addr,uint32_t data) {
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+    data = __builtin_bswap32(data);
+#endif
+    BOB_FixupData(bob,addr,(uint8_t *)&data,sizeof(uint32_t));
+}
