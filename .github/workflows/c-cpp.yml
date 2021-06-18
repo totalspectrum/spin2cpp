@@ -46,7 +46,7 @@ jobs:
       run: |
         sudo add-apt-repository ppa:ubuntu-toolchain-r/test
         sudo apt-get update
-        sudo apt-get install gcc-10
+        sudo apt-get install gcc-11
     - name: make
       run: make all TEST_COVERAGE=1 CC=gcc-10 CCOV=gcov-10
     - name: test

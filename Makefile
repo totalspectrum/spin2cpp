@@ -68,7 +68,11 @@ else ifeq ($(CROSS),macosx)
   CC=o64-clang -DMACOSX -O
   EXT=
   BUILD=./build-macosx
-else ifeq ($(OS),Windows_NT)
+else ifeq ($(OS),Windows_NT)	
+  ifeq ($(CC),cc)
+    # Workaround for weird windows/mingw/msys/whatever nonsense
+	CC=gcc
+  endif
   CC?=gcc
   EXT=.exe
   BUILD=./build
@@ -82,7 +86,7 @@ CCOV?=gcov
 
 ifdef TEST_COVERAGE
 	BUILD=./build-gcov
-	CFLAGS+=--coverage -fprofile-dir=$(realpath .) -fprofile-abs-path
+	CFLAGS+=--coverage -fprofile-dir=$(realpath ./$(BUILD)) -fprofile-abs-path
 endif
 
 export BUILD
