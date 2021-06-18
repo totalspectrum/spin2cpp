@@ -1034,7 +1034,7 @@ AstSprRef(AST *index, int offset)
     AST *expr;
 
     if (offset) {
-        expr = AstOperator('+', AstInteger(offset), index);
+        expr = AstOperator('+', index, AstInteger(offset));
     } else {
         expr = index;
     }
