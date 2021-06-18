@@ -355,16 +355,18 @@ __system___gc_doalloc
 	mov	__system___gc_doalloc__cse__0005, ptr___system__dat__
 	mov	arg01, __system___gc_doalloc__cse__0005
 	sub	ptr___system__dat__, #28
+	mov	result1, __lockreg
+	mov	__system___lockmem_lockreg, result1
 LR__0018
 LR__0019
-	lockset	__lockreg wc
+	lockset	__system___lockmem_lockreg wc
 	muxc	result1, imm_4294967295_
 	cmp	result1, #0 wz
  if_ne	jmp	#LR__0019
 	rdbyte	__system___lockmem_oldmem, arg01 wz
  if_e	mov	_system___lockmem_tmp001_, #1
  if_e	wrbyte	_system___lockmem_tmp001_, arg01
-	lockclr	__lockreg wc
+	lockclr	__system___lockmem_lockreg wc
 	muxc	result1, imm_4294967295_
 	cmp	__system___lockmem_oldmem, #0 wz
  if_ne	jmp	#LR__0018
@@ -979,6 +981,8 @@ __system___gc_tryalloc_reserveflag
 __system___gc_tryalloc_saveptr
 	res	1
 __system___gc_tryalloc_size
+	res	1
+__system___lockmem_lockreg
 	res	1
 __system___lockmem_oldmem
 	res	1
