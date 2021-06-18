@@ -43,13 +43,10 @@ jobs:
       uses: mxschmitt/action-tmate@v3
       if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled }}
     - name: Install non-buggy GCC/GCOV
-      run: |
-        sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-        sudo apt-get update
-        sudo apt-get install gcc-11
+      run: "sudo apt-get install gcc-8"
     - name: make
-      run: make all TEST_COVERAGE=1 CC=gcc-11 CCOV=gcov-11
+      run: make all TEST_COVERAGE=1 CC=gcc-8 CCOV=gcov-8
     - name: test
-      run: make test_offline TEST_COVERAGE=1 CC=gcc-11 CCOV=gcov-11
+      run: make test_offline TEST_COVERAGE=1 CC=gcc-8 CCOV=gcov-8
     - name: gcov
-      run: make coverage TEST_COVERAGE=1 CC=gcc-11 CCOV=gcov-11
+      run: make coverage TEST_COVERAGE=1 CC=gcc-8 CCOV=gcov-8
