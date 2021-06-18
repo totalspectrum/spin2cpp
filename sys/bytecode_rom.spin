@@ -278,7 +278,10 @@ pri __init__ | cog
   if cog <> $ff
     return
   cog := cognew(@__helper_entry, @__helper_cmd)
-
+  ' vbase := word[8]
+  ' size := word[10] - vbase
+  ' bytefill(vbase, 0, size)
+  
 pri {++needsinit} _remotecall(cmd, arg0 = 0, arg1 = 0, arg2 = 0) | rlock
   rlock := __getlockreg
   repeat while _lockset(rlock)

@@ -97,6 +97,8 @@ makeClassNameSafe(Module *P)
 #include "sys/common.spin.h"
 #include "sys/float.spin.h"
 #include "sys/gcalloc.spin.h"
+#include "sys/gc_pasm.spin.h"
+#include "sys/gc_bytecode.spin.h"
 
 void
 InitGlobalModule(void)
@@ -169,7 +171,13 @@ InitGlobalModule(void)
         spinyyparse();
         strToLex(systemModule->Lptr, (const char *)sys_gcalloc_spin, "_gc_", LANG_SPIN_SPIN1);
         spinyyparse();
-        
+        if (gl_output == OUTPUT_BYTECODE) {
+            strToLex(systemModule->Lptr, (const char *)sys_gc_bytecode_spin, "_platform_", LANG_SPIN_SPIN1);
+            spinyyparse();
+        } else {
+            strToLex(systemModule->Lptr, (const char *)sys_gc_pasm_spin, "_platform_", LANG_SPIN_SPIN1);
+            spinyyparse();
+        }
         ProcessModule(systemModule);
 
         curfunc = NULL;

@@ -2882,9 +2882,10 @@ static void BCAddHeap(ByteOutputBuffer *bob, Module*P) {
     sym = LookupSymbolInTable(&systemModule->objsyms, "__real_heapsize__");
     if (!sym || sym->kind != SYM_CONSTANT) return;
 
-    uint32_t heapstart = bob->total_size;
-    uint32_t heapsize = EvalPasmExpr((AST *)sym->val);
+    uint32_t heapstart = bob->total_size + P->varsize;
+    uint32_t heapsize = EvalPasmExpr((AST *)sym->val) * LONG_SIZE;
 
+    heapsize += 4*LONG_SIZE; // reserve a slot at the end
     heapsize = (heapsize+3)&~3; // long align
     P->varsize += heapsize;
 
@@ -2933,6 +2934,7 @@ void OutputByteCode(const char *fname, Module *P) {
         printf("Variable size: %6d bytes\n",variableSize);
         if (!gl_p2) printf("Stack/Free:    %6d bytes\n",0x8000-(headerSize+programSize+variableSize));
         else printf("Stack/Free:    %6d TODO\n",0);
+        //printf("Stack base = %x\n", stackBase);
     }
 
     Function *mainFunc = GetMainFunction(P);

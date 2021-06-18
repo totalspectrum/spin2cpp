@@ -598,10 +598,9 @@ LR__0034
 	mov	__system___gc_markcog_heap_end, result2
 	mov	__system___gc_markcog_cogaddr, #0
 LR__0035
-	mov	_system___gc_markcog_tmp002_, #496
-	sub	_system___gc_markcog_tmp002_, __system___gc_markcog_cogaddr
 	mov	_system___gc_markcog_tmp001_, #496
-	add	_system___gc_markcog_tmp001_, _system___gc_markcog_tmp002_
+	sub	_system___gc_markcog_tmp001_, __system___gc_markcog_cogaddr
+	add	_system___gc_markcog_tmp001_, #496
 	'.live	__system___gc_markcog_ptr
 	movs	wrcog, _system___gc_markcog_tmp001_
 	movd	wrcog, #__system___gc_markcog_ptr
@@ -1013,8 +1012,6 @@ _system___gc_dofree_tmp002_
 _system___gc_dofree_tmp003_
 	res	1
 _system___gc_markcog_tmp001_
-	res	1
-_system___gc_markcog_tmp002_
 	res	1
 _system___gc_markhub_tmp002_
 	res	1

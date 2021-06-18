@@ -8,8 +8,8 @@ _get
 	mov	_var01, #0
 	mov	_var02, #0
 LR__0001
-	mov	_var03, #496
-	add	_var03, _var02
+	mov	_var03, _var02
+	add	_var03, #496
 	'.live	_var04
 	movs	wrcog, _var03
 	movd	wrcog, #_var04
@@ -25,8 +25,8 @@ _get_ret
 _put
 	mov	_var01, #0
 LR__0002
-	mov	_var02, #496
-	add	_var02, _var01
+	mov	_var02, _var01
+	add	_var02, #496
 	'.live	_var01
 	movs	wrcog, #_var01
 	movd	wrcog, _var02
