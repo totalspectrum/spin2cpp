@@ -48,8 +48,8 @@ jobs:
         sudo apt-get update
         sudo apt-get install gcc-11
     - name: make
-      run: make all TEST_COVERAGE=1 CC=gcc-10 CCOV=gcov-10
+      run: make all TEST_COVERAGE=1 CC=gcc-11 CCOV=gcov-11
     - name: test
-      run: make test_offline TEST_COVERAGE=1 CC=gcc-10 CCOV=gcov-10
+      run: make test_offline TEST_COVERAGE=1 CC=gcc-11 CCOV=gcov-11
     - name: gcov
-      run: make coverage TEST_COVERAGE=1 CC=gcc-10 CCOV=gcov-10
+      run: make coverage TEST_COVERAGE=1 CC=gcc-11 CCOV=gcov-11
