@@ -51,4 +51,4 @@ jobs:
     - name: gcov
       run: make coverage TEST_COVERAGE=1 CC=gcc-8 CCOV=gcov-8
     - name: Upload coverage
-      run: "bash <(curl -s https://codecov.io/bash)"
+      run: "bash <(curl -s https://codecov.io/bash) -X gcov"
