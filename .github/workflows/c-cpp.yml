@@ -37,11 +37,11 @@ jobs:
   test:
     runs-on: ubuntu-20.04
     steps:
+     - uses: actions/checkout@v2
      # Enable tmate debugging of manually-triggered workflows if the input option was provided
      - name: Setup tmate session
        uses: mxschmitt/action-tmate@v3
        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled }}
-     - uses: actions/checkout@v2
      - name: make
        run: make all TEST_COVERAGE=1
      - name: test
