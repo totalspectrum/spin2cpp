@@ -96,6 +96,8 @@ enum Spin1ConstEncoding {
     S1ConEn_2B,
     S1ConEn_3B,
     S1ConEn_4B,
+    S1ConEn_NEG1B,
+    S1ConEn_NEG2B,
 };
 
 static enum Spin1ConstEncoding GetSpin1ConstEncoding(int32_t imm) {
@@ -108,6 +110,8 @@ static enum Spin1ConstEncoding GetSpin1ConstEncoding(int32_t imm) {
     else if (isPowerOf2(~immu)) return S1ConEn_DECODNOT;
     else if (immu<0x10000) return S1ConEn_2B;
     else if (immu<0x1000000) return S1ConEn_3B;
+    else if (imm < 0 && imm > -0x00FF  && (curfunc->optimize_flags & OPT_EXTRASMALL)) return S1ConEn_NEG1B;
+    else if (imm < 0 && imm > -0xFFFF  && (curfunc->optimize_flags & OPT_EXTRASMALL)) return S1ConEn_NEG2B;
     else return S1ConEn_4B;
 }
 
@@ -150,6 +154,8 @@ void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsLeft) {
         case S1ConEn_2B: *min = *max = 3; break;
         case S1ConEn_3B: *min = *max = 4; break;
         case S1ConEn_4B: *min = *max = 5; break;
+        case S1ConEn_NEG1B: *min = *max = 3; break;
+        case S1ConEn_NEG2B: *min = *max = 4; break;
         }
         break;
     // Jump ops
@@ -396,6 +402,17 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
             buf[pos++] = (immu>>16)&255;
             buf[pos++] = (immu>>8)&255;
             buf[pos++] = (immu>>0)&255;
+            break;
+        case S1ConEn_NEG1B: // 1 byte + NEG
+            buf[pos++] = 0b00111000;
+            buf[pos++] = ((-imm)>>0)&255;
+            buf[pos++] = 0xE0+0b00110; // NEG
+            break;
+        case S1ConEn_NEG2B: // 2 byte + NEG
+            buf[pos++] = 0b00111001;
+            buf[pos++] = ((-imm)>>8)&255;
+            buf[pos++] = ((-imm)>>0)&255;
+            buf[pos++] = 0xE0+0b00110; // NEG
             break;
         }
         comment = auto_printf(32,"CONSTANT %d",imm);

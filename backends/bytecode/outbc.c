@@ -622,46 +622,48 @@ BCCompileConditionalJump(BCIRBuffer *irbuf,AST *condition, bool ifNotZero, ByteO
     } else if (condition->kind == AST_OPERATOR) {
         int optoken = condition->d.ival;
         AST *left = condition->left, *right = condition->right;
+        bool extrasmall = curfunc->optimize_flags & OPT_EXTRASMALL;
 
         OptimizeOperator(&optoken,&left,&right);
 
         if (optoken == K_BOOL_NOT) {
             // Inverted jump
-            BCCompileConditionalJump(irbuf,condition->right,!ifNotZero,label,context);
+            BCCompileConditionalJump(irbuf,right,!ifNotZero,label,context);
             return;
         } else if ((optoken == K_EQ || optoken == K_NE ) 
-        && ( IsConstZero(condition->left) || IsConstZero(condition->right))) {
+        && ( IsConstZero(left) || IsConstZero(right))) {
             // Slightly complex condition, I know
             // optimize conditions like x == 0 and x<>0
-            BCCompileConditionalJump(irbuf,IsConstZero(condition->left) ? condition->right : condition->left,!!ifNotZero != !!(optoken == K_EQ),label,context);
+            BCCompileConditionalJump(irbuf,IsConstZero(left) ? right : left,!!ifNotZero != !!(optoken == K_EQ),label,context);
             return;
+        } else if ((optoken == K_BOOL_AND || optoken == K_BOOL_OR) && extrasmall && !ExprHasSideEffects(right)) {
+            goto normal_condjump; // using an AND/OR operator is smaller but slower
         } else if (optoken == K_BOOL_AND && !ifNotZero) {
             // like in "IF L AND R"
-            BCCompileConditionalJump(irbuf,condition->left,false,label,context);
-            BCCompileConditionalJump(irbuf,condition->right,false,label,context);
+            BCCompileConditionalJump(irbuf,left,false,label,context);
+            BCCompileConditionalJump(irbuf,right,false,label,context);
             return;
         } else if (optoken == K_BOOL_AND && ifNotZero) {
             // like in "IFNOT L AND R"
             ByteOpIR *skipLabel = BCNewOrphanLabel(context);
-            BCCompileConditionalJump(irbuf,condition->left,false,skipLabel,context);
-            BCCompileConditionalJump(irbuf,condition->right,true,label,context);
+            BCCompileConditionalJump(irbuf,left,false,skipLabel,context);
+            BCCompileConditionalJump(irbuf,right,true,label,context);
             BIRB_Push(irbuf,skipLabel);
             return;
         } else if (optoken == K_BOOL_OR && !ifNotZero) {
             // like in "IF L OR R"
             ByteOpIR *skipLabel = BCNewOrphanLabel(context);
-            BCCompileConditionalJump(irbuf,condition->left,true,skipLabel,context);
-            BCCompileConditionalJump(irbuf,condition->right,false,label,context);
+            BCCompileConditionalJump(irbuf,left,true,skipLabel,context);
+            BCCompileConditionalJump(irbuf,right,false,label,context);
             BIRB_Push(irbuf,skipLabel);
             return;
         } else if (optoken == K_BOOL_OR && ifNotZero) {
             // like in "IFNOT L OR R"
-            BCCompileConditionalJump(irbuf,condition->left,true,label,context);
-            BCCompileConditionalJump(irbuf,condition->right,true,label,context);
+            BCCompileConditionalJump(irbuf,left,true,label,context);
+            BCCompileConditionalJump(irbuf,right,true,label,context);
             return;
-        } else {
-            goto normal_condjump;
         }
+        goto normal_condjump;
     } else {
         normal_condjump:
         // Just normal
