@@ -157,6 +157,7 @@ extern int gl_optimize_flags; /* flags for optimization */
 #define OPT_LOOP_BASIC          0x001000  /* simple loop conversion */
 #define OPT_TAIL_CALLS          0x002000  /* tail call optimization */
 #define OPT_CASETABLE           0x004000  /* convert CASE to CASE_FAST (only for bytecode mode) */
+#define OPT_EXTRASMALL          0x008000  /* Use smaller-but-slower constructs */
 
 #define OPT_FLAGS_ALL           0xffffff
 #define OPT_ASM_BASIC  (OPT_BASIC_REGS|OPT_BRANCHES|OPT_PEEPHOLE|OPT_CONST_PROPAGATE)                        

@@ -295,6 +295,21 @@ static bool OptNestedAdd(AST **node, int32_t *outVal) {
     return false;
 }
 
+static bool isBoolOperator(int optoken) {
+    switch (optoken) {
+    case K_BOOL_AND:
+    case K_BOOL_NOT:
+    case K_BOOL_OR:
+    case K_BOOL_XOR:
+    case K_LOGIC_AND:
+    case K_LOGIC_OR:
+    case K_LOGIC_XOR:
+        return true;
+    default:
+        return false;
+    }
+}
+
 static bool OptimizeOperator(int *optoken, AST **left,AST **right) {
     ASTReportInfo save;
     int32_t addValue;
@@ -340,6 +355,15 @@ static bool OptimizeOperator(int *optoken, AST **left,AST **right) {
         // 3 - (x+2) can be 1 - x
         *left = AstInteger(EvalConstExpr(*left)-addValue);
         goto try_addopt_again;
+    }
+    // Handle x != 0 in boolean operators
+    if (isBoolOperator(*optoken) && left && *left && (*left)->kind == AST_OPERATOR && (*left)->d.ival == K_NE) {
+        if (IsConstZero((*left)->left)) *left = (*left)->right;
+        else if (IsConstZero((*left)->right)) *left = (*left)->left;
+    }
+    if (isBoolOperator(*optoken) && right && *right && (*right)->kind == AST_OPERATOR && (*right)->d.ival == K_NE) {
+        if (IsConstZero((*right)->left)) *right = (*right)->right;
+        else if (IsConstZero((*right)->right)) *right = (*right)->left;
     }
 
     int shiftOptOp = 0;
@@ -412,6 +436,10 @@ static bool OptimizeOperator(int *optoken, AST **left,AST **right) {
         canNopOpt = true;
         nopOptVal = 0;
         break;
+    case K_EQ:
+    case K_NE:
+        canCommute = true;
+        break;
     default: return false;
     }
 
@@ -472,6 +500,11 @@ static bool OptimizeOperator(int *optoken, AST **left,AST **right) {
             return true;
         } else if (*optoken == K_GTU && rightVal == 0) {
             *optoken = K_NE;
+            return true;
+        } else if (*optoken == K_EQ && rightVal == 0) {
+            *optoken = K_BOOL_NOT;
+            *right = *left;
+            *left = NULL;
             return true;
         }
     } else if (right) {
@@ -622,46 +655,48 @@ BCCompileConditionalJump(BCIRBuffer *irbuf,AST *condition, bool ifNotZero, ByteO
     } else if (condition->kind == AST_OPERATOR) {
         int optoken = condition->d.ival;
         AST *left = condition->left, *right = condition->right;
+        bool extrasmall = curfunc->optimize_flags & OPT_EXTRASMALL;
 
         OptimizeOperator(&optoken,&left,&right);
 
         if (optoken == K_BOOL_NOT) {
             // Inverted jump
-            BCCompileConditionalJump(irbuf,condition->right,!ifNotZero,label,context);
+            BCCompileConditionalJump(irbuf,right,!ifNotZero,label,context);
             return;
         } else if ((optoken == K_EQ || optoken == K_NE ) 
-        && ( IsConstZero(condition->left) || IsConstZero(condition->right))) {
+        && ( IsConstZero(left) || IsConstZero(right))) {
             // Slightly complex condition, I know
             // optimize conditions like x == 0 and x<>0
-            BCCompileConditionalJump(irbuf,IsConstZero(condition->left) ? condition->right : condition->left,!!ifNotZero != !!(optoken == K_EQ),label,context);
+            BCCompileConditionalJump(irbuf,IsConstZero(left) ? right : left,!!ifNotZero != !!(optoken == K_EQ),label,context);
             return;
+        } else if ((optoken == K_BOOL_AND || optoken == K_BOOL_OR) && extrasmall && !ExprHasSideEffects(right)) {
+            goto normal_condjump; // using an AND/OR operator is smaller but slower
         } else if (optoken == K_BOOL_AND && !ifNotZero) {
             // like in "IF L AND R"
-            BCCompileConditionalJump(irbuf,condition->left,false,label,context);
-            BCCompileConditionalJump(irbuf,condition->right,false,label,context);
+            BCCompileConditionalJump(irbuf,left,false,label,context);
+            BCCompileConditionalJump(irbuf,right,false,label,context);
             return;
         } else if (optoken == K_BOOL_AND && ifNotZero) {
             // like in "IFNOT L AND R"
             ByteOpIR *skipLabel = BCNewOrphanLabel(context);
-            BCCompileConditionalJump(irbuf,condition->left,false,skipLabel,context);
-            BCCompileConditionalJump(irbuf,condition->right,true,label,context);
+            BCCompileConditionalJump(irbuf,left,false,skipLabel,context);
+            BCCompileConditionalJump(irbuf,right,true,label,context);
             BIRB_Push(irbuf,skipLabel);
             return;
         } else if (optoken == K_BOOL_OR && !ifNotZero) {
             // like in "IF L OR R"
             ByteOpIR *skipLabel = BCNewOrphanLabel(context);
-            BCCompileConditionalJump(irbuf,condition->left,true,skipLabel,context);
-            BCCompileConditionalJump(irbuf,condition->right,false,label,context);
+            BCCompileConditionalJump(irbuf,left,true,skipLabel,context);
+            BCCompileConditionalJump(irbuf,right,false,label,context);
             BIRB_Push(irbuf,skipLabel);
             return;
         } else if (optoken == K_BOOL_OR && ifNotZero) {
             // like in "IFNOT L OR R"
-            BCCompileConditionalJump(irbuf,condition->left,true,label,context);
-            BCCompileConditionalJump(irbuf,condition->right,true,label,context);
+            BCCompileConditionalJump(irbuf,left,true,label,context);
+            BCCompileConditionalJump(irbuf,right,true,label,context);
             return;
-        } else {
-            goto normal_condjump;
         }
+        goto normal_condjump;
     } else {
         normal_condjump:
         // Just normal
@@ -1382,6 +1417,7 @@ const char *BCgetNameForOBJID(Module *M,int id) {
     ASSERT_AST_KIND(obj,AST_DECLARE_VAR,return 0;);
     ASSERT_AST_KIND(obj->right,AST_LISTHOLDER,return 0;);
     AST *ident = obj->right->left;
+    if (ident && ident->kind == AST_ARRAYDECL) ident = ident->left;
     ASSERT_AST_KIND(ident,AST_IDENTIFIER,return 0;);
     return GetIdentifierName(ident);
 }
