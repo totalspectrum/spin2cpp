@@ -1384,6 +1384,7 @@ const char *BCgetNameForOBJID(Module *M,int id) {
     ASSERT_AST_KIND(obj,AST_DECLARE_VAR,return 0;);
     ASSERT_AST_KIND(obj->right,AST_LISTHOLDER,return 0;);
     AST *ident = obj->right->left;
+    if (ident && ident->kind == AST_ARRAYDECL) ident = ident->left;
     ASSERT_AST_KIND(ident,AST_IDENTIFIER,return 0;);
     return GetIdentifierName(ident);
 }
