@@ -1993,6 +1993,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 case SYM_PARAMETER:
                 case SYM_RESULT:
                 case SYM_HWREG:
+                case SYM_LABEL:
                     BCCompileMemOp(irbuf,node,context,MEMOP_READ);
                     break;
                 case SYM_RESERVED:
@@ -2012,12 +2013,6 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                         popResults = 0;
                     }
                     break;
-                case SYM_LABEL: {
-                    // the Spin backend always converts these to ARRAYREFs, but other backends
-                    // don't always
-                    AST *newNode = NewAST(AST_ARRAYREF, node, AstInteger(0));
-                    BCCompileMemOp(irbuf,newNode,context,MEMOP_READ);
-                } break;
                 default:
                     ERROR(node,"Unhandled Identifier symbol kind %d in expression",sym->kind);
                     return;
