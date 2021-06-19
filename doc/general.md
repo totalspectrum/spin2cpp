@@ -145,7 +145,7 @@ The first part of LUT memory (from $200 to $300) is used for any functions expli
 
 ## Optimizations
 
-Listed below are optimizations which may be enabled on the command line or on a per-function basis.
+Listed below are optimizations which may be enabled on the command line or on a per-function basis. The general optimization level may be specified by a number: 0 for no optimizations, 1 for basic (reliable) optimizations, and 2 for additional optimizations. `-Os` is generally equivalent to `-O1`, but favors size over speed (and may enable a few additional space optimizations).
 
 ### Multiplication conversion (always)
 
@@ -271,6 +271,10 @@ Thus, a Spin function with `{++opt(0,peephole)}` will always be compiled with no
 ### Optimization control on the command line
 
 Multiple `-O` options may be given, or combined separated by commas. So for example to compile with no optimizations except basic register and peephole, one would give `-O0,regs,peephole`. To compile with `-O2` but with peepholes turned off, one would give `-O2,!peephole`.
+
+### Optimizing for size
+
+The `-Os` option enables all of the optimizations specified by `-O1`, plus some size related optimizations.
 
 ## Memory Management
 
