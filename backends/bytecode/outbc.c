@@ -295,6 +295,21 @@ static bool OptNestedAdd(AST **node, int32_t *outVal) {
     return false;
 }
 
+static bool isBoolOperator(int optoken) {
+    switch (optoken) {
+    case K_BOOL_AND:
+    case K_BOOL_NOT:
+    case K_BOOL_OR:
+    case K_BOOL_XOR:
+    case K_LOGIC_AND:
+    case K_LOGIC_OR:
+    case K_LOGIC_XOR:
+        return true;
+    default:
+        return false;
+    }
+}
+
 static bool OptimizeOperator(int *optoken, AST **left,AST **right) {
     ASTReportInfo save;
     int32_t addValue;
@@ -340,6 +355,15 @@ static bool OptimizeOperator(int *optoken, AST **left,AST **right) {
         // 3 - (x+2) can be 1 - x
         *left = AstInteger(EvalConstExpr(*left)-addValue);
         goto try_addopt_again;
+    }
+    // Handle x != 0 in boolean operators
+    if (isBoolOperator(*optoken) && left && *left && (*left)->kind == AST_OPERATOR && (*left)->d.ival == K_NE) {
+        if (IsConstZero((*left)->left)) *left = (*left)->right;
+        else if (IsConstZero((*left)->right)) *left = (*left)->left;
+    }
+    if (isBoolOperator(*optoken) && right && *right && (*right)->kind == AST_OPERATOR && (*right)->d.ival == K_NE) {
+        if (IsConstZero((*right)->left)) *right = (*right)->right;
+        else if (IsConstZero((*right)->right)) *right = (*right)->left;
     }
 
     int shiftOptOp = 0;
@@ -412,6 +436,10 @@ static bool OptimizeOperator(int *optoken, AST **left,AST **right) {
         canNopOpt = true;
         nopOptVal = 0;
         break;
+    case K_EQ:
+    case K_NE:
+        canCommute = true;
+        break;
     default: return false;
     }
 
@@ -472,6 +500,11 @@ static bool OptimizeOperator(int *optoken, AST **left,AST **right) {
             return true;
         } else if (*optoken == K_GTU && rightVal == 0) {
             *optoken = K_NE;
+            return true;
+        } else if (*optoken == K_EQ && rightVal == 0) {
+            *optoken = K_BOOL_NOT;
+            *right = *left;
+            *left = NULL;
             return true;
         }
     } else if (right) {
