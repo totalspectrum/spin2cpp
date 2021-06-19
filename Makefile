@@ -220,7 +220,7 @@ $(BUILD)/lexer.o: frontends/lexer.c $(LEXHEADERS)
 
 $(BUILD)/version.o: version.c version.h FORCE
 	$(eval gitbranch=$(shell git rev-parse --abbrev-ref HEAD))
-	$(CC) $(CFLAGS) -DGITREV=$(shell git describe --tags --always) $(if $(filter master,$(gitbranch)),,-DGITBRANCH=$(gitbranch)) -o $@ -c $<
+	$(CC) $(CFLAGS) -DGITREV=$(shell git describe --tags --always) $(if $(filter release/%,$(patsubst master,release/master,$(gitbranch))),,-DGITBRANCH=$(gitbranch)) -o $@ -c $<
 
 $(BUILD)/%.o: %.c
 	$(CC) -MMD -MP $(CFLAGS) -o $@ -c $<
