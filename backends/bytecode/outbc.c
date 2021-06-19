@@ -945,6 +945,9 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         default: ERROR(node,"Can't handle float type with size %d",size); break;
         }
     } break;
+    case AST_PTRTYPE: {
+        memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
+    } break;
     case AST_OBJECT: {
         int size = TypeSize(type);
         if (size == 4) {
@@ -2093,6 +2096,11 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
             } break;
             case AST_METHODREF: {
                 BCCompileMemOp(irbuf,node,context,MEMOP_READ);
+            } break;
+            case AST_MEMREF: {
+                // some frontends neglect to dereference this
+                AST *newNode = NewAST(AST_ARRAYREF, node, AstInteger(0));
+                BCCompileMemOp(irbuf,newNode,context,MEMOP_READ);
             } break;
             default:
                 ERROR(node,"Unhandled node kind %d in expression",node->kind);
