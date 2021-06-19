@@ -1240,6 +1240,7 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
         }
         switch (sym->kind) {
         case SYM_TEMPVAR: DEBUG(node,"temp variable %s used",sym->our_name); // fall through
+        case SYM_LABEL:
         case SYM_VARIABLE:
         case SYM_LOCALVAR:
         case SYM_PARAMETER:
