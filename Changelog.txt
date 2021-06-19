@@ -1,5 +1,6 @@
 Version 5.5.1
 - Added a warning for ignored second parameter to `org`
+- Added -Os option; similar to -O1, but favors smaller size.
 - Added #warning directive to C preprocessor
 - Fixed Spin startup function (should be first PUB function, not first function)
 - Fixed evaluation of @ inside CONSTANT
