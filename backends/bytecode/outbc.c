@@ -1524,7 +1524,6 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
                 callobjid = getObjID(current,objsym->our_name,&objtype);
             } else {
                 DEBUG(node->left,"Converting call with receiver symbol kind %d to pointer call",objsym->kind);
-                DumpAST(ident);
                 ASTReportInfo save;
                 AST *type = ExprType(ident);
                 callobjid = getObjIDByClass(current, type, true, &objtype);
@@ -2835,7 +2834,6 @@ BCAddPointerCalledObjects(Module *P, AST *ast) {
                 Symbol *objsym = LookupAstSymbol(receiver,NULL);
                 if (objsym) DEBUG(ast,"Got identifier call with symbol kind %d",objsym->kind);
                 else DEBUG(ast,"Got identifier call with null symbol");
-                DumpAST(receiver);
                 if (objsym && objsym->kind != SYM_VARIABLE) {
                     DEBUG(ast,"Got non-variable call");
                     AST *type = ExprType(receiver);
