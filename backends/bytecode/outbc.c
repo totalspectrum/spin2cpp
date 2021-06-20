@@ -1160,11 +1160,7 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
                     opright = opleft;
                     opleft = NULL;
                     isUnary = true;
-                } else {
-                    ERROR(node,"Sign-extend must be 8 or 16 bits");
                 }
-            } else {
-                ERROR(node,"Sign-extend must have constant length");
             }
             break;
         default: mok = Optoken2MathOpKind(optoken,&isUnary); break;
