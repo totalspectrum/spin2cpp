@@ -166,7 +166,7 @@ CTransform(Function *func)
 {
     InitGlobalFuncs();
 
-    SimplifyAssignments(&func->body);
+    SimplifyAssignments(&func->body, 1); // insert casts in assignment chains
     doCTransform(&func->body, 0);
     CheckTypes(func->body);
 }

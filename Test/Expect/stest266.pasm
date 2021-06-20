@@ -22,6 +22,17 @@ _byteextend2
 _byteextend2_ret
 	ret
 
+_byteextend3
+	add	objptr, #4
+	rdbyte	_var01, objptr
+	shl	_var01, #24
+	sar	_var01, #24
+	wrbyte	_var01, objptr
+	sub	objptr, #4
+	wrlong	_var01, objptr
+_byteextend3_ret
+	ret
+
 objptr
 	long	@@@objmem
 result1
@@ -29,7 +40,7 @@ result1
 COG_BSS_START
 	fit	496
 objmem
-	long	0[1]
+	long	0[2]
 	org	COG_BSS_START
 _var01
 	res	1

@@ -748,7 +748,7 @@ void PerformCSE(Module *P);
 void PerformLoopOptimization(Module *P);
 
 // simplify statments like a^=b to a = a^b
-void SimplifyAssignments(AST **astptr);
+void SimplifyAssignments(AST **astptr, int insertCasts);
 
 // helper for SimplifyAssignments
 AST *ExtractSideEffects(AST *expr, AST **preseq);

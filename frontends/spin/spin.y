@@ -1484,13 +1484,13 @@ expr:
   | '~' lhs
     { AST *shf;
       AST *val = $2;
-      shf = AstOperator(K_SIGNEXTEND, val, AstInteger(8));
+      shf = AstOpAssign(K_SIGNEXTEND, val, AstInteger(8));
       $$ = shf;
     }
   | SP_DOUBLETILDE lhs
     { AST *shf;
       AST *val = $2;
-      shf = AstOperator(K_SIGNEXTEND, val, AstInteger(16));
+      shf = AstOpAssign(K_SIGNEXTEND, val, AstInteger(16));
       $$ = shf;
     }
   | SP_CONSTANT '(' expr ')'

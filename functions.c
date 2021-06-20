@@ -2884,14 +2884,58 @@ static int IsBoolOp(int op)
     return (op == K_BOOL_OR || op == K_BOOL_AND || op == K_BOOL_XOR);
 }
 
+// transform an assignment chain like a := b := expr
+// into (tmp := expr, b := tmp, a := tmp)
+// we do this recursively:
+//    b := expr  -> (tmp := expr, b:=tmp) if expr is not an assign
+//    a := (tmp := expr, b:=tmp) -> ( (tmp := expr, b:=tmp), a:=tmp)
+
+static AST *
+TransformAssignChainNoCasts(AST **astptr)
+{
+    AST *ast = *astptr;
+    AST *tmp = NULL;
+    AST *lhs, *rhs;
+    AST *newseq;
+    if (!ast) return tmp;
+    if (ast->kind != AST_ASSIGN) return tmp;
+    lhs = ast->left;
+    rhs = ast->right;
+    if (rhs->kind != AST_ASSIGN) {
+        switch (rhs->kind) {
+        case AST_IDENTIFIER:
+        case AST_LOCAL_IDENTIFIER:
+        case AST_FLOAT:
+        case AST_INTEGER:
+            tmp = rhs;
+            break;
+        default:
+            tmp = AstTempLocalVariable("_temp_", NULL);
+            newseq = NewAST(AST_SEQUENCE, AstAssign(tmp, rhs), AstAssign(lhs, tmp));
+            *astptr = newseq;
+            break;
+        }
+    } else {
+        tmp = TransformAssignChainNoCasts(&ast->right);
+        if (!tmp) return tmp;
+        newseq = NewAST(AST_SEQUENCE, ast->right, AstAssign(lhs, tmp));
+        *astptr = newseq;
+    }
+    return tmp;
+}
+
 void
-SimplifyAssignments(AST **astptr)
+SimplifyAssignments(AST **astptr, int insertCasts)
 {
     AST *ast = *astptr;
     AST *preseq = NULL;
     AST *lhs, *rhs;
     
     if (!ast) return;
+
+    SimplifyAssignments(&ast->left, insertCasts);
+    SimplifyAssignments(&ast->right, insertCasts);
+
     if (ast->kind == AST_ASSIGN) {
         int op = ast->d.ival;
         lhs = ast->left;
@@ -2970,6 +3014,11 @@ SimplifyAssignments(AST **astptr)
                 ast->left = lhs = newexpr;
             }
         }
+        if (rhs && rhs->kind == AST_ASSIGN) {
+            if (gl_output != OUTPUT_BYTECODE && !insertCasts) {
+                TransformAssignChainNoCasts(astptr);
+            }
+        }
     }
     /* optimize K_LOGIC_AND and K_LOGIC_OR (which do not short-circuit)
        to K_BOOL_AND/K_BOOL_OR (which do short-circuit) if we can
@@ -3012,10 +3061,7 @@ SimplifyAssignments(AST **astptr)
             break;
         }
     }
-       
-    SimplifyAssignments(&ast->left);
-    SimplifyAssignments(&ast->right);
-}
+ }
 
 void
 DeclareFunctionTemplate(Module *P, AST *templ)

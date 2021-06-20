@@ -856,26 +856,6 @@ doSpinTransform(AST **astptr, int level, AST *parent)
                 }
                 doSpinTransform(astptr, level, parent);
                 break;
-            case K_SIGNEXTEND:
-                if (gl_output == OUTPUT_BYTECODE) {
-                    lhsast = AstAssign(ast->left, ast->right);
-                    lhsast->d.ival = ast->d.ival;
-                    *astptr = ast = lhsast;
-                } else if (ExprHasSideEffects(ast->left)) {
-                    AST *preseq = NULL;
-                    AST *lhs;
-                    lhs = ExtractSideEffects(ast->left, &preseq);
-                    lhsast = AstAssign(lhs, ast);
-                    if (preseq) {
-                        lhsast = NewAST(AST_SEQUENCE, preseq, lhsast);
-                    }
-                    *astptr = ast = lhsast;
-                } else {
-                    lhsast = DupAST(ast->left);
-                    *astptr = ast = AstAssign(lhsast, ast);
-                }
-                doSpinTransform(astptr, level, parent);
-                break;
             default:
                 break;
             }
@@ -947,8 +927,8 @@ SpinTransform(Function *func)
     
     // simplify assignments: this is required for some of
     // the other passes to work
-    SimplifyAssignments(&func->body);
-        
+    SimplifyAssignments(&func->body, 0);  // do not insert casts
+    
     // spin specific stuff
     doSpinTransform(&func->body, 1, func->body);
 

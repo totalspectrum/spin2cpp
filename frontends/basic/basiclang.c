@@ -1036,7 +1036,7 @@ BasicTransform(Function *func)
 {
     InitGlobalFuncs();
 
-    SimplifyAssignments(&func->body);
+    SimplifyAssignments(&func->body, 1); // insert casts in assignment chains
     doBasicTransform(&func->body);
     CheckTypes(func->body);
 }
