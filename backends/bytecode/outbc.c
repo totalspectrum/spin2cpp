@@ -2862,6 +2862,10 @@ BCPrepareObject(Module *P) {
     P->bedata = calloc(sizeof(BCModData), 1);
     ModData(P)->compiledAddress = -1;
 
+    // insert system module
+    if (systemModule && systemModule != P && systemModule->functions && P->functions) {
+        BCInsertModule(P, systemModule, "_system_");
+    }
 
     // Count and gather private/public methods
     {
@@ -2964,10 +2968,6 @@ BCCompileObject(ByteOutputBuffer *bob, Module *P) {
 
     BOB_Comment(bob,auto_printf(128,"--- Object Header for %s",P->classname));
 
-    // insert system module
-    if (systemModule && systemModule != P && systemModule->functions && P->functions) {
-        BCInsertModule(P, systemModule, "_system_");
-    }
     // prepare object
     BCPrepareObject(P);
 
