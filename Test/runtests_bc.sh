@@ -48,6 +48,31 @@ done
 
 if false; then
 #
+# C tests; obviously no need to test conversion to C
+#
+for i in cexec*.c
+do
+  j=`basename $i .c`
+    
+  # now compile with asm
+  if $PROG_ASM -o $j.binary $i; then
+    $LOADP1 $j.binary -t -q > $j.out
+  fi
+  # the --lines=+6 skips the first 6 lines that propeller-load printed
+  tail --lines=+6 $j.out >$j.txt
+  if diff -ub Expect/$j.txt $j.txt
+  then
+    echo $j passed for ASM
+    rm -f $j.out $j.txt $j.binary $j.pasm
+  else
+    echo $j failed
+    endmsg="TEST FAILURES"
+  fi  
+done
+fi  # end of C tests
+
+if true; then
+#
 # BASIC tests
 #
 for i in basexec*.bas
@@ -70,29 +95,7 @@ do
   fi  
 done
 
-#
-# C tests; obviously no need to test conversion to C
-#
-for i in cexec*.c
-do
-  j=`basename $i .c`
-    
-  # now compile with asm
-  if $PROG_ASM -o $j.binary $i; then
-    $LOADP1 $j.binary -t -q > $j.out
-  fi
-  # the --lines=+6 skips the first 6 lines that propeller-load printed
-  tail --lines=+6 $j.out >$j.txt
-  if diff -ub Expect/$j.txt $j.txt
-  then
-    echo $j passed for ASM
-    rm -f $j.out $j.txt $j.binary $j.pasm
-  else
-    echo $j failed
-    endmsg="TEST FAILURES"
-  fi  
-done
-fi
+fi # end of BASIC tests
 
 # clean up
 rm -f FullDuplexSerial.cpp FullDuplexSerial.h

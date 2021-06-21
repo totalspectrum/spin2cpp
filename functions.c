@@ -682,7 +682,9 @@ findLocalsAndDeclare(Function *func, AST *ast)
             // we have to mark the global bytemove and _gc_alloc_managed functions
             // as in used
             MarkSystemFuncUsed("_gc_alloc_managed");
-            MarkSystemFuncUsed("bytemove");
+            if (gl_output != OUTPUT_BYTECODE) {
+                MarkSystemFuncUsed("bytemove");
+            }
         }
         {
             AST *ftype = ast->left;
