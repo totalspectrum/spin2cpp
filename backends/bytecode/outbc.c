@@ -924,6 +924,18 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
                 return;
             }
         } break;
+        case SYM_LOCALLABEL: {
+            if (kind == MEMOP_ADDRESS) {
+                if (indexExpr || baseExpr) {
+                    ERROR(node,"Unable to offset label");
+                }
+                ByteOpIR *labelRef = BCNewNamedLabelRef(context,sym->our_name);
+                ByteOpIR pushOp = {.kind = BOK_FUNDATA_PUSHADDRESS, .jumpTo = labelRef, .attr.pushaddress.addPbase = true};
+                BIRB_PushCopy(irbuf, &pushOp);
+                return;
+            }
+            ERROR(node,"Unhandled memory operation on local label");
+        } break;
         default:
             ERROR(ident,"Unhandled Symbol type %d in memop",sym->kind);
             return;
@@ -2245,9 +2257,20 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         }
     } break;
     case AST_GOTO: {
-        const char *name = GetUserIdentifierName(node->left);
+        const char *name = GetIdentifierName(node->left);
         if (!name) ERROR(node,"Can't get name to goto");
         BCCompileJump(irbuf,BCNewNamedLabelRef(context,name),context);
+    } break;
+    case AST_GOSUB: {
+        AST *identAddr = NewAST(AST_ABSADDROF,node->left,NULL);
+        AST *gosubCall = AstIdentifier("__gosub_helper");
+        AST *exprList = NULL;
+
+        exprList = NewAST(AST_EXPRLIST, AstIdentifier("__interp_pbase"), exprList);
+        exprList = NewAST(AST_EXPRLIST, AstIdentifier("__interp_vbase"), exprList);
+        exprList = NewAST(AST_EXPRLIST, identAddr, exprList);
+        gosubCall = NewAST(AST_FUNCCALL, gosubCall, exprList);
+        BCCompileFunCall(irbuf,gosubCall,context,false,false);
     } break;
     case AST_ASSIGN:
         BCCompileAssignment(irbuf,node,context,false,0);

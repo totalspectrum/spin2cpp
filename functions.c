@@ -2649,6 +2649,7 @@ MarkUsedBody(AST *body, const char *caller)
         break;
     case AST_GOSUB:
         gl_features_used |= FEATURE_GOSUB_USED;
+        UseInternal("__gosub_helper");
         break;
     default:
         break;

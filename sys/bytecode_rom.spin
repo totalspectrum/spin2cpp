@@ -452,3 +452,8 @@ pri __get_heap_base : r
 
 pri _cogid : r
   r := __interp_cogid
+
+pri __gosub_helper(pc, vbase, pbase)
+  __interp_vbase := vbase
+  __interp_pbase := pbase
+  __interp_pcurr := pc  ' jump to new address
