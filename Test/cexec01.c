@@ -36,11 +36,15 @@ void myexit(int n)
     putchar(0xff);
     putchar(0x0);
     putchar(n);
-    waitcnt(getcnt() + 80000000);
+    waitcnt(getcnt() + 40000000);
+#ifdef __OUTPUT_BYTECODE__
+    _cogstop(_cogid());
+#else        
     __asm {
         cogid n
         cogstop n
     }
+#endif    
 }
 
 void msg(const char *msg, int n)
