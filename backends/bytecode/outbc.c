@@ -968,14 +968,39 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
 
     switch(targetKind) {
     case MOT_MEM: {
-        if (!!baseExpr != !!(memOp.attr.memop.base == MEMOP_BASE_POP)) ERROR(node,"Internal Error: baseExpr condition mismatch");
-        if (bitExpr1) ERROR(node,"Bit1 expression on memory op!");
-        if (bitExpr2) ERROR(node,"Bit2 expression on memory op!");
-        if (baseExpr) BCCompileExpression(irbuf,baseExpr,context,false);
 
         if (memberOffset) {
             memOp.data.int32 += memberOffset;
+            if (memOp.attr.memop.base == MEMOP_BASE_POP) ERROR(node,"Internal Error: memberOffset on POP base");
         }
+        
+        // transform long[a+b] to long[a][b/4]
+        if (baseExpr && (!indexExpr || IsConstZero(indexExpr)) && baseExpr->kind == AST_OPERATOR && baseExpr->d.ival == '+') {
+
+            if (memOp.attr.memop.memSize == MEMOP_SIZE_BYTE) {
+                // Can always do this transform for bytes
+                indexExpr = baseExpr->right;
+                baseExpr = baseExpr->left;
+            } else {
+                int typeShift = memOp.attr.memop.memSize == MEMOP_SIZE_WORD ? 1 : 2;
+                int typeMask  = memOp.attr.memop.memSize == MEMOP_SIZE_WORD ? 1 : 3;
+                if (IsConstExpr(baseExpr->right) && (EvalConstExpr(baseExpr->right) & typeMask) == 0) {
+                    indexExpr = AstInteger(EvalConstExpr(baseExpr->right) >> typeShift);
+                    baseExpr = baseExpr->left;
+                } else if (IsConstExpr(baseExpr->left) && (EvalConstExpr(baseExpr->left) & typeMask) == 0) {
+                    indexExpr = AstInteger(EvalConstExpr(baseExpr->left) >> typeShift);
+                    baseExpr = baseExpr->right;
+                }
+            }
+        }
+
+        if (!!baseExpr != !!(memOp.attr.memop.base == MEMOP_BASE_POP)) ERROR(node,"Internal Error: baseExpr condition mismatch");
+        if (bitExpr1) ERROR(node,"Bit1 expression on memory op!");
+        if (bitExpr2) ERROR(node,"Bit2 expression on memory op!");
+
+        if (baseExpr) BCCompileExpression(irbuf,baseExpr,context,false);
+
+        // handle index
         if (indexExpr) {
             bool indexConst = IsConstExpr(indexExpr);
             int constIndexVal;
