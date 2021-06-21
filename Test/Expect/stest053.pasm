@@ -18,14 +18,14 @@ _serchar
 	or	_serchar_val, #256
 	shl	_serchar_val, #1
 	mov	_serchar_waitcycles, cnt
-	mov	_serchar__idx__0000, #10
+	mov	_serchar__idx__0001, #10
 LR__0001
 	add	_serchar_waitcycles, imm_694_
 	mov	arg01, _serchar_waitcycles
 	waitcnt	arg01, #0
 	shr	_serchar_val, #1 wc
 	muxc	outa, imm_1073741824_
-	djnz	_serchar__idx__0000, #LR__0001
+	djnz	_serchar__idx__0001, #LR__0001
 _serchar_ret
 	ret
 
@@ -36,7 +36,7 @@ imm_694_
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_serchar__idx__0000
+_serchar__idx__0001
 	res	1
 _serchar_val
 	res	1

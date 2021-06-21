@@ -2925,16 +2925,43 @@ TransformAssignChainNoCasts(AST **astptr)
 }
 
 void
-SimplifyAssignments(AST **astptr, int insertCasts)
+doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
 {
     AST *ast = *astptr;
     AST *preseq = NULL;
     AST *lhs, *rhs;
-    
+    int lhsTopLevel, rhsTopLevel;
     if (!ast) return;
 
-    SimplifyAssignments(&ast->left, insertCasts);
-    SimplifyAssignments(&ast->right, insertCasts);
+    lhsTopLevel = rhsTopLevel = atTopLevel;
+    switch (ast->kind) {
+    case AST_SEQUENCE:
+    case AST_STMTLIST:
+    case AST_OTHER:
+        lhsTopLevel = rhsTopLevel = 1;
+        break;
+    case AST_ASSIGN:
+        lhsTopLevel = rhsTopLevel = 0;
+        break;
+    case AST_EXPRLIST:
+        lhsTopLevel = 0;
+        break;
+    case AST_CASEITEM:
+    case AST_WHILE:
+    case AST_DOWHILE:
+        lhsTopLevel = 0;
+        rhsTopLevel = 1;
+        break;
+    case AST_COMMENT:
+    case AST_COMMENTEDNODE:
+        // no change to level status
+        break;
+    default:
+        lhsTopLevel = rhsTopLevel = 0;
+        break;
+    }
+    doSimplifyAssignments(&ast->left, insertCasts, lhsTopLevel);
+    doSimplifyAssignments(&ast->right, insertCasts, rhsTopLevel);
 
     if (ast->kind == AST_ASSIGN) {
         int op = ast->d.ival;
@@ -3014,9 +3041,17 @@ SimplifyAssignments(AST **astptr, int insertCasts)
                 ast->left = lhs = newexpr;
             }
         }
-        if (rhs && rhs->kind == AST_ASSIGN) {
+        if (!atTopLevel) {
             if (gl_output != OUTPUT_BYTECODE && !insertCasts) {
-                TransformAssignChainNoCasts(astptr);
+                AST *tmp = TransformAssignChainNoCasts(astptr);
+                if (tmp) {
+                    // we probably have something like a := b := expr
+                    // which got transformed to (tmp := expr, b := tmp, a := tmp);
+                    // make sure to return tmp as the final result
+                    AST *ast = *astptr;
+                    ast = NewAST(AST_SEQUENCE, ast, tmp);
+                    *astptr = ast;
+                }
             }
         }
     }
@@ -3061,7 +3096,13 @@ SimplifyAssignments(AST **astptr, int insertCasts)
             break;
         }
     }
- }
+}
+
+void
+SimplifyAssignments(AST **astptr, int insertCasts)
+{
+    return doSimplifyAssignments(astptr, insertCasts, 1);
+}
 
 void
 DeclareFunctionTemplate(Module *P, AST *templ)

@@ -1,3 +1,6 @@
+Version 6.0.0
+- Fixed multiple assignments in Spin (a:=b:=c) to have the same semantics as Spin
+
 Version 5.5.1
 - Added a warning for ignored second parameter to `org`
 - Added -Os option; similar to -O1, but favors smaller size.
