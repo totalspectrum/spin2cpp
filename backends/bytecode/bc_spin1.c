@@ -636,7 +636,7 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
         buf[pos++] = objID;
         buf[pos++] = funID;
         Module *object = BCgetModuleForOBJID(current,objID);
-        comment = auto_printf(128,"CALL_OTHER_IDX %d.%d (%s.%s)",objID,funID,BCgetNameForOBJID(current,objID),BCgetFuncNameForId(object,funID));
+        comment = auto_printf(128,"CALL_OTHER_IDX %d[].%d (%s[].%s)",objID,funID,BCgetNameForOBJID(current,objID),BCgetFuncNameForId(object,funID));
     } break;
     case BOK_JUMP:       buf[pos++] = 0b00000100; goto jump_common;
     case BOK_JUMP_TJZ:   buf[pos++] = 0b00001000; goto jump_common;

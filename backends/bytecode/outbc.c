@@ -71,6 +71,9 @@ static int BCGetOBJSize(Module *P,AST *ast) {
             return 0;
         }
         return mod->varsize;
+    } else if (ast->kind == AST_OBJECT) {
+        // static reference has no size
+        return 0;
     } else ERROR(ast,"Unhandled AST Kind %d in BCGetOBJSize\n",ast->kind);
     return 0;
 }
@@ -90,6 +93,9 @@ static int BCGetOBJOffset(Module *P,AST *ast) {
         if(name) sym = LookupSymbolInTable(&P->objsyms,name);
     } else if (ast->kind == AST_IDENTIFIER) {
         sym = LookupAstSymbol(ast,NULL);
+    } else if (ast->kind == AST_OBJECT) {
+        // Static reference to type, must have zero offset
+        return 0;
     } else ERROR(ast,"Unhandled AST Kind %d in BCGetOBJOffset\n",ast->kind);
     if (!sym) {
         ERROR(ast,"Can't find symbol for an OBJ");
@@ -174,6 +180,18 @@ HWRegRetval(int n) {
     }
     ERROR(NULL, "Internal error, interpreter does not need return registers");
     return 0;
+}
+
+static int
+HWRegVBase() {
+    switch(gl_interp_kind) {
+    case INTERP_KIND_P1ROM: {
+        return 0x1EC - 0x1E0;
+    } break;
+    default:
+        ERROR(NULL,"Unknown interpreter kind");
+        return 0;
+    }
 }
 
 static int
@@ -973,7 +991,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
             memOp.data.int32 += memberOffset;
             if (memOp.attr.memop.base == MEMOP_BASE_POP) ERROR(node,"Internal Error: memberOffset on POP base");
         }
-        
+
         // transform long[a+b] to long[a][b/4]
         if (baseExpr && (!indexExpr || IsConstZero(indexExpr)) && baseExpr->kind == AST_OPERATOR && baseExpr->d.ival == '+') {
 
@@ -1378,7 +1396,7 @@ static int getObjID(Module *M,const char *name, AST** gettype) {
     }
     for(int i=0;i<ModData(M)->obj_cnt;i++) {
         AST *obj = ModData(M)->objs[i];
-        ASSERT_AST_KIND(obj,AST_DECLARE_VAR,return 0;);
+        if (obj->kind != AST_DECLARE_VAR) continue;
         ASSERT_AST_KIND(obj->left,AST_OBJECT,return 0;);
         ASSERT_AST_KIND(obj->right,AST_LISTHOLDER,return 0;);
         AST *ident = obj->right->left;
@@ -1396,25 +1414,33 @@ static int getObjID(Module *M,const char *name, AST** gettype) {
 }
 
 // FIXME this seems very convoluted
-static int getObjIDByClass(Module *M, AST *classCast, AST** gettype) {
-    Module *classptr = GetClassPtr(classCast->left);
+static int getObjIDByClass(Module *M, AST *class, bool mustBeStatic, AST** gettype) {
+    Module *classptr = GetClassPtr(class);
+    if (!classptr) return 0;
     if (!M->bedata) {
         ERROR(NULL,"Internal Error: bedata empty");
         return -1;
     }
     for(int i=0;i<ModData(M)->obj_cnt;i++) {
         AST *obj = ModData(M)->objs[i];
-        ASSERT_AST_KIND(obj,AST_DECLARE_VAR,return 0;);
-        ASSERT_AST_KIND(obj->left,AST_OBJECT,return 0;);
-        ASSERT_AST_KIND(obj->right,AST_LISTHOLDER,return 0;);
-        AST *ident = obj->right->left;
-        Module *ptr = GetClassPtr(obj->left);
-        ASSERT_AST_KIND(ident,AST_IDENTIFIER,return 0;);
-        if (ptr != classptr) continue; 
-        if (gettype) *gettype = obj->left;
-        return i+1+ModData(M)->pub_cnt+ModData(M)->pri_cnt;
+        if (obj->kind == AST_DECLARE_VAR) {
+            if (mustBeStatic) continue;
+            ASSERT_AST_KIND(obj->left,AST_OBJECT,return 0;);
+            ASSERT_AST_KIND(obj->right,AST_LISTHOLDER,return 0;);
+            AST *ident = obj->right->left;
+            Module *ptr = GetClassPtr(obj->left);
+            ASSERT_AST_KIND(ident,AST_IDENTIFIER,return 0;);
+            if (ptr != classptr) continue; 
+            if (gettype) *gettype = obj->left;
+            return i+1+ModData(M)->pub_cnt+ModData(M)->pri_cnt;
+        } else {
+            Module *ptr = GetClassPtr(obj);
+            if (ptr != classptr) continue; 
+            if (gettype) *gettype = obj;
+            return i+1+ModData(M)->pub_cnt+ModData(M)->pri_cnt;
+        }
     }
-    ERROR(classCast,"can't find OBJ id for cast value");
+    ERROR(class,"can't find OBJ id for class %s",classptr->classname);
     return 0;
 }
 
@@ -1426,11 +1452,18 @@ Module *BCgetModuleForOBJID(Module *M,int id) {
     id -= 1+ModData(M)->pub_cnt+ModData(M)->pri_cnt;
     if (id<0) return NULL;
     AST *obj = ModData(M)->objs[id];
-    ASSERT_AST_KIND(obj,AST_DECLARE_VAR,return 0;);
-    ASSERT_AST_KIND(obj->left,AST_OBJECT,return 0;);
-    return GetClassPtr(obj->left);
+    if (obj->kind == AST_DECLARE_VAR) {
+        ASSERT_AST_KIND(obj->left,AST_OBJECT,return NULL;);
+        return GetClassPtr(obj->left);
+    } else if (obj->kind == AST_OBJECT) {
+        return GetClassPtr(obj);
+    } else {
+        ERROR(obj,"Internal Error: Unhandled node kind %d in BCgetModuleForOBJID",obj->kind);
+        return NULL;
+    }
 }
 
+// only really for display purposes
 const char *BCgetNameForOBJID(Module *M,int id) {
     if (!M->bedata) {
         ERROR(NULL,"Internal Error: bedata empty");
@@ -1439,12 +1472,18 @@ const char *BCgetNameForOBJID(Module *M,int id) {
     id -= 1+ModData(M)->pub_cnt+ModData(M)->pri_cnt;
     if (id<0) return "!INVALID!";
     AST *obj = ModData(M)->objs[id];
-    ASSERT_AST_KIND(obj,AST_DECLARE_VAR,return 0;);
-    ASSERT_AST_KIND(obj->right,AST_LISTHOLDER,return 0;);
-    AST *ident = obj->right->left;
-    if (ident && ident->kind == AST_ARRAYDECL) ident = ident->left;
-    ASSERT_AST_KIND(ident,AST_IDENTIFIER,return 0;);
-    return GetIdentifierName(ident);
+    if (obj->kind == AST_DECLARE_VAR) {
+        ASSERT_AST_KIND(obj->right,AST_LISTHOLDER,return NULL;);
+        AST *ident = obj->right->left;
+        if (ident && ident->kind == AST_ARRAYDECL) ident = ident->left;
+        ASSERT_AST_KIND(ident,AST_IDENTIFIER,return NULL;);
+        return GetIdentifierName(ident);
+    } else if (obj->kind == AST_OBJECT) {
+        return GetClassPtr(obj)->classname;
+    } else {
+        ERROR(obj,"Internal Error: Unhandled node kind %d in BCgetNameForOBJID",obj->kind);
+        return NULL;
+    }
 }
 
 static void
@@ -1454,11 +1493,12 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
     int callobjid = -1;
     int extraResults = 0;
     AST *objtype = NULL;
-    AST *index_expr = NULL;
+    AST *vbase_expr = NULL;
+    AST *objindex_expr = NULL;
     if (node->left && node->left->kind == AST_METHODREF) {
         AST *ident = node->left->left;
         if (ident->kind == AST_ARRAYREF) {
-            index_expr = ident->right;
+            objindex_expr = ident->right;
             ident = ident->left;
         }
         if (ident->kind == AST_CAST) {
@@ -1466,22 +1506,42 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
             // static method and use any available object
             // (this may not actually always work, but it's enough to
             // get us going)
-            callobjid = getObjIDByClass(current, ident, &objtype);
+            callobjid = getObjIDByClass(current, ident->left, false, &objtype);
+        } else if (ident->kind == AST_MEMREF) {
+            callobjid = getObjIDByClass(current, ident->left, true, &objtype);
+            vbase_expr = ident->right;
+            // This only seems to occur inside of AST_ARRAYREF. Let's hope the index is never not zero
         } else {
             if (!IsIdentifier(ident)) {
                 ASSERT_AST_KIND(ident,AST_IDENTIFIER,return;);
             }
             Symbol *objsym = LookupAstSymbol(ident,NULL);
-            if(!objsym || objsym->kind != SYM_VARIABLE) {
-                ERROR(node->left,"Internal error: Invalid call receiver");
+            if (!objsym) {
+                ERROR(node->left,"Internal error: Null call receiver");
                 return;
+            } else if (objsym->kind == SYM_VARIABLE) {
+                // Normal call
+                callobjid = getObjID(current,objsym->our_name,&objtype);
+            } else {
+                DEBUG(node->left,"Converting call with receiver symbol kind %d to pointer call",objsym->kind);
+                ASTReportInfo save;
+                AST *type = ExprType(ident);
+                callobjid = getObjIDByClass(current, type, true, &objtype);
+                AstReportAs(ident,&save);
+                vbase_expr = NewAST(AST_ADDROF,ident,NULL);
+                AstReportDone(&save);
             }
 
-            callobjid = getObjID(current,objsym->our_name,&objtype);
+            
         }
         if (callobjid<0) {
             ERROR(node->left,"Not an OBJ of this object");
             return;
+        }
+        if (vbase_expr && objindex_expr && !IsConstZero(objindex_expr)) WARNING(node,"Call through pointer with non-zero index!");
+        if (objindex_expr && IsConstExpr(objindex_expr)) {
+            callobjid += EvalConstExpr(objindex_expr);
+            objindex_expr = NULL;
         }
 
         const char *thename = GetIdentifierName(node->left->right);
@@ -1614,7 +1674,7 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
         if (callobjid<0) {
             callOp.kind = BOK_CALL_SELF;
         } else {
-            callOp.kind = index_expr ? BOK_CALL_OTHER_IDX : BOK_CALL_OTHER;
+            callOp.kind = objindex_expr ? BOK_CALL_OTHER_IDX : BOK_CALL_OTHER;
             callOp.attr.call.objID = callobjid;
         }
         callOp.attr.call.funID = funid;
@@ -1637,7 +1697,13 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
         }
     }
 
-    if (index_expr) BCCompileExpression(irbuf,index_expr,context,false);
+    if (vbase_expr) {
+        ByteOpIR regOp = { .kind = BOK_REG_WRITE, .data.int32 = HWRegVBase()};
+        BCCompileExpression(irbuf,vbase_expr,context,false);
+        BIRB_PushCopy(irbuf,&regOp);
+    }
+
+    if (objindex_expr) BCCompileExpression(irbuf,objindex_expr,context,false);
     BIRB_PushCopy(irbuf,&callOp);
 
     if (!interp_can_multireturn() && asExpression && extraResults) {
@@ -2725,6 +2791,8 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
     curfunc = NULL;
 }
 
+static void BCPrepareObject(Module *P);
+
 static void
 BCInsertModule(Module *P, Module *sub, const char *subname) {
     AST *classtype;
@@ -2735,6 +2803,50 @@ BCInsertModule(Module *P, Module *sub, const char *subname) {
 
     DeclareOneMemberVar(P, ident, classtype, 1 /* is_private */);
     DeclareMemberVariables(P);
+}
+
+static void
+BCAddStaticReference(Module *P, AST *obj) {
+    ASSERT_AST_KIND(obj,AST_OBJECT,return;);
+    for (int i=0;i<ModData(P)->obj_cnt;i++) {
+        if (AstMatch(obj,ModData(P)->objs[i])) return;
+    }
+    ModData(P)->objs[ModData(P)->obj_cnt++] = obj;
+    BCPrepareObject(GetClassPtr(obj));
+    DEBUG(obj,"Added static OBJ reference for %s",GetClassPtr(obj)->classname);
+}
+
+static void
+BCAddPointerCalledObjects(Module *P, AST *ast) {
+
+    if (!ast) return;
+
+    switch (ast->kind) {
+    case AST_FUNCCALL:
+        if (ast->left->kind == AST_METHODREF) {
+            AST *methodref = ast->left;
+            AST *receiver = methodref->left;
+            if (!receiver) return;
+            if (receiver->kind == AST_ARRAYREF) receiver = receiver->left; // ???
+            if (receiver->kind == AST_MEMREF) {
+                BCAddStaticReference(P,receiver->left);
+            } else if (IsIdentifier(receiver)) {
+                Symbol *objsym = LookupAstSymbol(receiver,NULL);
+                if (objsym) DEBUG(ast,"Got identifier call with symbol kind %d",objsym->kind);
+                else DEBUG(ast,"Got identifier call with null symbol");
+                if (objsym && objsym->kind != SYM_VARIABLE) {
+                    DEBUG(ast,"Got non-variable call");
+                    AST *type = ExprType(receiver);
+                    if (type && type->kind == AST_OBJECT) BCAddStaticReference(P,type);
+                }
+            }
+        }
+        // Fall through to find nested function calls
+    default:
+        BCAddPointerCalledObjects(P,ast->left);
+        BCAddPointerCalledObjects(P,ast->right);
+        break;
+    }
 }
 
 static void
@@ -2750,6 +2862,10 @@ BCPrepareObject(Module *P) {
     P->bedata = calloc(sizeof(BCModData), 1);
     ModData(P)->compiledAddress = -1;
 
+    // insert system module
+    if (systemModule && systemModule != P && systemModule->functions && P->functions) {
+        BCInsertModule(P, systemModule, "_system_");
+    }
 
     // Count and gather private/public methods
     {
@@ -2774,9 +2890,10 @@ BCPrepareObject(Module *P) {
     const int pub_cnt = ModData(P)->pub_cnt;
     const int pri_cnt = ModData(P)->pri_cnt;
 
-    // Count and gather object members - (TODO does this actually work properly?)
+    
     {
         int obj_cnt = 0;
+        // Count and gather object members
         for (AST *upper = P->finalvarblock; upper; upper = upper->right) {
             if (upper->kind != AST_LISTHOLDER) {
                 ERROR(upper, "internal error: expected listholder");
@@ -2826,6 +2943,15 @@ BCPrepareObject(Module *P) {
         ModData(P)->obj_cnt = obj_cnt;
     }
 
+    // Register static references for objects that are called through pointers
+    for (Function *f = P->functions; f; f = f->next) {
+        if (ShouldSkipFunction(f)) continue;
+        Function *fsave = curfunc;
+        curfunc = f;
+        BCAddPointerCalledObjects(P,f->body);
+        curfunc = fsave;
+    }
+
     current = save;
     
 }
@@ -2842,10 +2968,6 @@ BCCompileObject(ByteOutputBuffer *bob, Module *P) {
 
     BOB_Comment(bob,auto_printf(128,"--- Object Header for %s",P->classname));
 
-    // insert system module
-    if (systemModule && systemModule != P && systemModule->functions && P->functions) {
-        BCInsertModule(P, systemModule, "_system_");
-    }
     // prepare object
     BCPrepareObject(P);
 
@@ -2887,7 +3009,7 @@ BCCompileObject(ByteOutputBuffer *bob, Module *P) {
             objOffsetSpans[i] = BOB_PushWord(bob,0,"Header offset");
             AST *obj = ModData(P)->objs[i];
             int varOffset = BCGetOBJOffset(P,obj) + ModData(P)->objs_arr_index[i] * BCGetOBJSize(P,obj);
-            BOB_PushWord(bob,varOffset,"VAR offset"); // VAR Offset (from current object's VAR base)
+            BOB_PushWord(bob,varOffset,obj->kind == AST_OBJECT?"(Static Reference)":"VAR offset"); // VAR Offset (from current object's VAR base)
         }
 
         break;
@@ -2925,7 +3047,9 @@ BCCompileObject(ByteOutputBuffer *bob, Module *P) {
 
     // emit subobjects
     for (int i=0;i<obj_cnt;i++) {
-        Module *mod = ModData(P)->objs[i]->left->d.ptr;
+        AST *obj = ModData(P)->objs[i];
+        if (obj->kind == AST_DECLARE_VAR) obj = obj->left;
+        Module *mod = GetClassPtr(obj);
         if (mod->bedata == NULL || ModData(mod)->compiledAddress < 0) {
             BCCompileObject(bob,mod);
         }
