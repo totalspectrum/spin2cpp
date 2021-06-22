@@ -2,6 +2,14 @@
 #include <compiler.h>
 #include "sys/fmt.h"
 
+#ifdef __FLEXC__
+# ifdef __FEATURE_FLOAT__
+#  define INCLUDE_FLOATS
+# endif
+#else
+#define INCLUDE_FLOATS
+#endif
+
 #define va_ptr          va_list *
 #define va_ptrarg(x, t) va_arg(*x, t)
 
@@ -114,12 +122,14 @@ union f_or_i {
     unsigned int i;
 };
 
+#ifdef INCLUDE_FLOATS
 static inline float _asfloat(unsigned int x)
 {
     union f_or_i v;
     v.i = x;
     return v.f;
 }
+#endif
 
 int _dofmt(putfunc fn, const char *fmtstr, va_list *args)
 {
@@ -221,12 +231,14 @@ int _dofmt(putfunc fn, const char *fmtstr, va_list *args)
             flags |= SIGNCHAR_UNSIGNED << SIGNCHAR_BIT;
             q = _fmtnum(fn, flags, val, 16);
             break;
+#ifdef INCLUDE_FLOATS            
         case 'a':
         case 'e':
         case 'f':
         case 'g':
             q = _fmtfloat(fn, flags, _asfloat(val), c);
             break;
+#endif            
         default:
             q = _fmtstr(fn, flags, "???");
             break;

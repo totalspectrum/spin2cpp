@@ -497,7 +497,7 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
         return lefttype;
     }
     if (isfloat) {
-        switch (op) {
+         switch (op) {
         case '+':
             if (!gl_fixedreal) {
                 *ast = *MakeOperatorCall( isfloat64 ? double_add : float_add, ast->left, ast->right, NULL);
@@ -1773,6 +1773,9 @@ AST *CheckTypes(AST *ast)
         return ast_type_generic;
     default:
         break;
+    }
+    if (IsFloatType(ltype)) {
+       gl_features_used |= FEATURE_FLOAT_USED;
     }
     return ltype;
 }

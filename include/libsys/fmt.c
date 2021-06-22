@@ -12,7 +12,15 @@
 #endif
 #endif
 
+#define INCLUDE_FLOATS
+
 #ifdef __FLEXC__
+
+#ifdef __FEATURE_COMPLEXIO__
+#error "complexio"
+#else
+#define SIMPLE_IO
+#endif
 
 #define SMALL_INT
 #define strlen __builtin_strlen
@@ -293,6 +301,7 @@ int _fmtnumlong(putfunc fn, unsigned fmt, long long x, int base)
     return _fmtstr(fn, fmt, buf);
 }
 
+#ifdef INCLUDE_FLOATS
 /*******************************************************
  * floating point support
  *******************************************************/
@@ -864,6 +873,7 @@ done:
     }
     return _fmtstr(fn, fmt, origbuf);
 }
+#endif /* INCLUDE_FLOATS */
 
 #ifndef __FLEXC__
 // BASIC support routines

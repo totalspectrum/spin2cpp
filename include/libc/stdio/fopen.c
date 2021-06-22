@@ -11,8 +11,7 @@
 #include <stdio.h>
 #include <errno.h>
 
-FILE *
-fopen(const char *pathname, const char *mode)
+FILE *fopen(const char *pathname, const char *mode) _COMPLEXIO
 {
     int want_read = 0;
     int want_write = 0;
@@ -92,7 +91,7 @@ fopen(const char *pathname, const char *mode)
     return ftab;
 }
 
-int fclose(FILE *f)
+int fclose(FILE *f) _COMPLEXIO
 {
     return _closeraw(f);
 }

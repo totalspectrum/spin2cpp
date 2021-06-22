@@ -60,7 +60,7 @@ __getvfsforfile(char *name, const char *orig_name, char *full_path = 0)
     return v;
 }
 
-int _mount(char *name, struct vfs *v)
+int _mount(char *name, struct vfs *v) _COMPLEXIO
 {
     int i, len;
     int firstfree = -1;
@@ -109,7 +109,7 @@ int _mount(char *name, struct vfs *v)
     return 0;
 }
 
-char *getcwd(char *buf, size_t size)
+char *getcwd(char *buf, size_t size) _COMPLEXIO
 {
     size_t needed = 2 + strlen(curdir);
 
@@ -125,7 +125,7 @@ char *getcwd(char *buf, size_t size)
     return buf;
 }
 
-int chdir(const char *path)
+int chdir(const char *path) _COMPLEXIO
 {
     struct stat s;
     char *tmp;

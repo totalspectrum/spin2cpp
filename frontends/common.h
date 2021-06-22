@@ -232,7 +232,9 @@ extern int gl_features_used;
 #define FEATURE_LONGJMP_USED 0x01
 #define FEATURE_GOSUB_USED   0x02
 #define FEATURE_LOCKREG_USED 0x04
-#define FEATURE_NEED_HEAP    0x08
+#define FEATURE_NEED_HEAP    0x08  /* garbage collector used */
+#define FEATURE_FLOAT_USED   0x10  /* some float operations */
+#define FEATURE_COMPLEXIO    0x20  /* mount or other file I/O */
 
 /* default value for baud rate (set on command line with -D_BAUD=) */
 extern int gl_default_baud;
@@ -357,7 +359,7 @@ typedef struct funcdef {
 #define FUNC_ATTR_CONSTRUCTOR 0x0001  /* does not actually work yet */
 #define FUNC_ATTR_DESTRUCTOR  0x0002  /* does not actually work yet */
 #define FUNC_ATTR_NEEDSINIT   0x0004  /* triggers call to __init__ method to be inserted at start of main */
-    
+#define FUNC_ATTR_COMPLEXIO   0x0008  /* full file I/O required for program if this function is called */
     /* number of places this function is called from */
     /* 0 == unused function, 1== ripe for inlining */
     unsigned callSites;

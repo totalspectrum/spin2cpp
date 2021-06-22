@@ -912,6 +912,7 @@ doDeclareFunction(AST *funcblock)
     if (FindAnnotation(annotation, "constructor")) fdef->attributes |= FUNC_ATTR_CONSTRUCTOR;
     if (FindAnnotation(annotation, "destructor"))  fdef->attributes |= FUNC_ATTR_DESTRUCTOR;
     if (FindAnnotation(annotation, "needsinit"))   fdef->attributes |= FUNC_ATTR_NEEDSINIT;
+    if (FindAnnotation(annotation, "complexio"))   fdef->attributes |= FUNC_ATTR_COMPLEXIO;
     
     fdef->name = funcname_internal;
     fdef->user_name = funcname_user;
@@ -2542,6 +2543,9 @@ MarkUsedBody(AST *body, const char *caller)
     
     if (!body) return;
     switch(body->kind) {
+    case AST_FLOAT:
+        gl_features_used |= FEATURE_FLOAT_USED;
+        break;
     case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER:
         name = GetIdentifierName(body);
@@ -2668,6 +2672,9 @@ MarkUsed(Function *f, const char *caller)
     
     if (!f || f->callSites > CALLSITES_MANY) {
         return;
+    }
+    if (f->attributes & FUNC_ATTR_COMPLEXIO) {
+        gl_features_used |= FEATURE_COMPLEXIO;
     }
     f->callSites++;
     if (f->callSites == 1) {

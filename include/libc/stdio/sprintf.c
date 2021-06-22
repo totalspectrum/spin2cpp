@@ -13,7 +13,7 @@ typedef struct {
     }
 } SPInfo;
 
-int sprintf(char *buf, const char *fmt, ...)
+int sprintf(char *buf, const char *fmt, ...) _STRINGIO
 {
     va_list args;
     int r;
@@ -29,7 +29,7 @@ int sprintf(char *buf, const char *fmt, ...)
     return r;
 }
 
-int snprintf(char *buf, size_t size, const char *fmt, ...)
+int snprintf(char *buf, size_t size, const char *fmt, ...) _STRINGIO
 {
     va_list args;
     int r;
@@ -49,7 +49,7 @@ int snprintf(char *buf, size_t size, const char *fmt, ...)
     return r+1;
 }
 
-int vsprintf(char *buf, const char *fmt, va_list ap)
+int vsprintf(char *buf, const char *fmt, va_list ap) _STRINGIO
 {
     SPInfo S;
     int r;
@@ -61,7 +61,7 @@ int vsprintf(char *buf, const char *fmt, va_list ap)
     return r;
 }
 
-int vsnprintf(char *buf, size_t size, const char *fmt, va_list ap)
+int vsnprintf(char *buf, size_t size, const char *fmt, va_list ap) _STRINGIO
 {
     SPInfo S;
     int r;

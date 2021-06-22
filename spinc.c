@@ -823,6 +823,15 @@ MarkStaticFunctionPointers(AST *list)
     }
 }
 
+static void
+ActivateFeature(unsigned flag, const char *define)
+{
+    if (0 == (gl_features_used & flag)) {
+        gl_features_used |= flag;
+        pp_define(&gl_pp, define, "1");
+    }
+}
+
 void
 RemoveUnusedMethods(int isBinary)
 {
@@ -910,15 +919,22 @@ ResolveSymbols()
     savecurrent = current;
     for (Q = allparse; Q; Q = Q->next) {
         for (pf = Q->functions; pf; pf = pf->next) {
-            if ((pf->callSites > 0) && pf->body && pf->body->kind == AST_STRING) {
-                const char *filename = pf->body->d.string;
-                current = Q;
-                LoadFileIntoModule(filename, pf->module);
-                pf->callSites++;
+            if ((pf->callSites > 0) && pf->body) {
                 if (pf->body->kind == AST_STRING) {
-                    ERROR(NULL, "No implementation for `%s' found in `%s'", pf->name, filename);
+                    const char *filename = pf->body->d.string;
+                    current = Q;
+                    LoadFileIntoModule(filename, pf->module);
+                    pf->callSites++;
+                    if (pf->body->kind == AST_STRING) {
+                        ERROR(NULL, "No implementation for `%s' found in `%s'", pf->name, filename);
+                    } else {
+                        changes = 1;
+                    }
                 } else {
-                    changes = 1;
+                    // possibly need COMPLEXIO
+                    if (pf->attributes & FUNC_ATTR_COMPLEXIO) {
+                        ActivateFeature(FEATURE_COMPLEXIO, "__FEATURE_COMPLEXIO__");
+                    }
                 }
             }
         }
