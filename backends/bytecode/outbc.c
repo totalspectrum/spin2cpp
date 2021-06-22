@@ -30,15 +30,6 @@ bool interp_can_unsigned() {
     }
 }
 
-static int BCResultsBase() {
-    switch(gl_interp_kind) {
-    case INTERP_KIND_P1ROM: return 0;
-    default:
-        ERROR(NULL,"Unknown interpreter kind");
-        return 0;
-    }
-}
-
 static int BCGetNumResults(Function *F) {
     int n = F->numresults;
     return (n<=1) ? 1 : n;
@@ -53,9 +44,21 @@ static int BCParameterBase() {
     }
 }
 
+static int BCResultOffset(int offset) {
+    switch(gl_interp_kind) {
+    case INTERP_KIND_P1ROM:
+        if (offset == 0) return 0;
+        return 4+curfunc->numparams*4 + (offset-1)*4;
+    default:
+        ERROR(NULL,"Unknown interpreter kind");
+        return 0;
+    }
+}
+
 static int BCLocalBase() {
     switch(gl_interp_kind) {
-    case INTERP_KIND_P1ROM: return 4+curfunc->numparams*4; // FIXME small variables
+    case INTERP_KIND_P1ROM:
+        return (BCGetNumResults(curfunc)+curfunc->numparams)*4; // FIXME small variables
     default:
         ERROR(NULL,"Unknown interpreter kind");
         return 0;
@@ -897,7 +900,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         case SYM_RESULT: {
             memOp.attr.memop.base = MEMOP_BASE_DBASE;
             targetKind = MOT_MEM;
-            memOp.data.int32 = sym->offset + BCResultsBase();
+            memOp.data.int32 = BCResultOffset(sym->offset);
         } break;   
         case SYM_HWREG: {
             targetKind = MOT_REG;
@@ -1885,6 +1888,13 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 while (list) {
                     node = list->left;
                     list = list->right;
+                    // the default RETURN statement lists can have DECLARE_VAR in them
+                    if (node->kind == AST_DECLARE_VAR) {
+                        node = node->right;
+                        if (!IsIdentifier(node)) {
+                            ERROR(node,"bad return list");
+                        }
+                    }
                     BCCompileExpression(irbuf,node,context,false);
                 }
                 popResults = 0;
