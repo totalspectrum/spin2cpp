@@ -399,6 +399,19 @@ pri _ones(v) : r
       r++
     v := v >> 1
     
+' find 64 bit integer square root (approximate)
+' not necessarily very accurate, but close enough
+' for what we want to do with it (floating point)
+pri _sqrt64(alo, ahi) | x0, x1
+  if (ahi < 0)
+    return 0
+
+  ' get an initial estimate of sqrt
+  x0 := (^^ahi)<<16
+  ' do one round of iteration
+  x1 := (x0 + _div64(ahi, alo, x0)) >> 1
+  return x1
+
 pri _getsec() : r = +long
   r := _getcnt()
   return r +/ __clkfreq_var

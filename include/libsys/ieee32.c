@@ -532,7 +532,7 @@ calc:
     // a is currently 2.23
     // shift it up to 2.28
     a = a<<5;
-    a = _sqrt64(a, 0);
+    a = _sqrt64(0, a);
     // a is now 1.30
     // take it down to .23
     alo = a<<25;

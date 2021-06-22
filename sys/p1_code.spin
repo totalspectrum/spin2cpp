@@ -109,7 +109,7 @@ pri _sqrt(a) | r, bit, tmp
 
 ' not necessarily very accurate, but close enough
 ' for what we want to do with it (floating point)
-pri _sqrt64(ahi, alo) | x0, x1
+pri _sqrt64(alo, ahi) | x0, x1
   if (ahi < 0)
     return 0
 

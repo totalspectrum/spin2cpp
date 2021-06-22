@@ -107,7 +107,7 @@ pri _sqrt(a) | r
     getqx r
   endasm
   return r
-pri _sqrt64(hi, lo) | r
+pri _sqrt64(lo, hi) | r
   asm
     qsqrt lo, hi
     getqx r
