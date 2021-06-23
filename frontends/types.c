@@ -1090,6 +1090,8 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
             AST *lptr = MakeOperatorCall(gc_alloc_managed, sizeExpr, NULL, NULL);;
             AST *rptr = StructAddress(expr);
             AST *copy = MakeOperatorCall(struct_copy, lptr, rptr, sizeExpr);
+
+            copy = NewAST(AST_SEQUENCE, copy, lptr); // bytecode struct_copy is a subroutine, not a function
             *astptr = copy;
         } else {
             *astptr = NewAST(AST_ADDROF, expr, NULL);
