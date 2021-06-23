@@ -823,15 +823,6 @@ MarkStaticFunctionPointers(AST *list)
     }
 }
 
-static void
-ActivateFeature(unsigned flag, const char *define)
-{
-    if (0 == (gl_features_used & flag)) {
-        gl_features_used |= flag;
-        pp_define(&gl_pp, define, "1");
-    }
-}
-
 void
 RemoveUnusedMethods(int isBinary)
 {
@@ -929,11 +920,6 @@ ResolveSymbols()
                         ERROR(NULL, "No implementation for `%s' found in `%s'", pf->name, filename);
                     } else {
                         changes = 1;
-                    }
-                } else {
-                    // possibly need COMPLEXIO
-                    if (pf->attributes & FUNC_ATTR_COMPLEXIO) {
-                        ActivateFeature(FEATURE_COMPLEXIO, "__FEATURE_COMPLEXIO__");
                     }
                 }
             }

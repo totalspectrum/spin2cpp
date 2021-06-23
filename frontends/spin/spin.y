@@ -516,6 +516,12 @@ topelement:
     { DeclareFunction(current, SpinRetType($4), 1, $4, $3, NULL, $1); }
   | SP_PRI SP_FILE SP_STRING funcdef
     { DeclareFunction(current, SpinRetType($4), 0, $4, $3, NULL, $1); }
+
+  | SP_PUB annotation SP_FILE SP_STRING funcdef
+    { DeclareFunction(current, SpinRetType($5), 1, $5, $4, $2, $1); }
+  | SP_PRI annotation SP_FILE SP_STRING funcdef
+    { DeclareFunction(current, SpinRetType($5), 0, $5, $4, $2, $1); }
+
   | SP_PRI identifier '=' identifier SP_EOLN
     {
         const char *oldname = GetIdentifierName($4);

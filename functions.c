@@ -11,6 +11,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "spinc.h"
+#include "preprocess.h"
 
 // marked in MarkUsed(); checks for things like try()/catch() that
 // may affect global code generation
@@ -66,6 +67,29 @@ static void ReinitFunction(Function *f, int language)
         f->localsyms.flags = SYMTAB_FLAG_NOCASE;
     }
     f->optimize_flags = gl_optimize_flags;
+}
+static const char *
+FindAnnotation(AST *annotations, const char *key)
+{
+    const char *ptr;
+    int len = strlen(key);
+    while (annotations) {
+        if (annotations->kind == AST_ANNOTATION) {
+            ptr = annotations->d.string;
+            while (ptr && *ptr == '(') ptr++;
+            while (ptr && *ptr) {
+                if (!strncmp(ptr, key, len)) {
+                    if (ptr[len] == 0 || !isalpha(ptr[len])) {
+                        return ptr+len;
+                    }
+                }
+                while (*ptr && *ptr != ',') ptr++;
+                if (*ptr == ',') ptr++;
+            }
+        }
+        annotations = annotations->right;
+    }
+    return 0;
 }
 
 Function *
@@ -761,30 +785,6 @@ AdjustParameterTypes(AST *paramlist, int lang)
     }
 }
 
-static const char *
-FindAnnotation(AST *annotations, const char *key)
-{
-    const char *ptr;
-    int len = strlen(key);
-    while (annotations) {
-        if (annotations->kind == AST_ANNOTATION) {
-            ptr = annotations->d.string;
-            while (ptr && *ptr == '(') ptr++;
-            while (ptr && *ptr) {
-                if (!strncmp(ptr, key, len)) {
-                    if (ptr[len] == 0 || !isalpha(ptr[len])) {
-                        return ptr+len;
-                    }
-                }
-                while (*ptr && *ptr != ',') ptr++;
-                if (*ptr == ',') ptr++;
-            }
-        }
-        annotations = annotations->right;
-    }
-    return 0;
-}
-
 static Function *
 doDeclareFunction(AST *funcblock)
 {
@@ -864,6 +864,11 @@ doDeclareFunction(AST *funcblock)
         sym->module = current;
     }
     
+    if (FindAnnotation(annotation, "constructor")) fdef->attributes |= FUNC_ATTR_CONSTRUCTOR;
+    if (FindAnnotation(annotation, "destructor"))  fdef->attributes |= FUNC_ATTR_DESTRUCTOR;
+    if (FindAnnotation(annotation, "needsinit"))   fdef->attributes |= FUNC_ATTR_NEEDSINIT;
+    if (FindAnnotation(annotation, "complexio"))   fdef->attributes |= FUNC_ATTR_COMPLEXIO;
+
     if (fdef->body) {
         // we already saw a definition for the function; if this was just
         // an alias then it may be OK
@@ -909,10 +914,6 @@ doDeclareFunction(AST *funcblock)
     if (FindAnnotation(annotation, "noinline") != 0) {
         fdef->no_inline = 1;
     }
-    if (FindAnnotation(annotation, "constructor")) fdef->attributes |= FUNC_ATTR_CONSTRUCTOR;
-    if (FindAnnotation(annotation, "destructor"))  fdef->attributes |= FUNC_ATTR_DESTRUCTOR;
-    if (FindAnnotation(annotation, "needsinit"))   fdef->attributes |= FUNC_ATTR_NEEDSINIT;
-    if (FindAnnotation(annotation, "complexio"))   fdef->attributes |= FUNC_ATTR_COMPLEXIO;
     
     fdef->name = funcname_internal;
     fdef->user_name = funcname_user;
@@ -2662,6 +2663,15 @@ MarkUsedBody(AST *body, const char *caller)
     MarkUsedBody(body->right, caller);
 }
 
+static void
+ActivateFeature(unsigned flag, const char *define)
+{
+    if (0 == (gl_features_used & flag)) {
+        gl_features_used |= flag;
+        pp_define(&gl_pp, define, "1");
+    }
+}
+
 #define CALLSITES_MANY 8
 
 void
@@ -2674,7 +2684,7 @@ MarkUsed(Function *f, const char *caller)
         return;
     }
     if (f->attributes & FUNC_ATTR_COMPLEXIO) {
-        gl_features_used |= FEATURE_COMPLEXIO;
+        ActivateFeature(FEATURE_COMPLEXIO, "__FEATURE_COMPLEXIO__");
     }
     f->callSites++;
     if (f->callSites == 1) {

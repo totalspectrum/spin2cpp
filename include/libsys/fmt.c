@@ -6,18 +6,17 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#ifdef __OUTPUT_BYTECODE__
-#ifndef SIMPLE_IO
-#define SIMPLE_IO
-#endif
-#endif
-
 #define INCLUDE_FLOATS
+#undef SIMPLE_IO
 
 #ifdef __FLEXC__
 
-#ifdef __FEATURE_COMPLEXIO__
-#error "complexio"
+#ifdef __OUTPUT_BYTECODE__
+#define SIMPLE_IO
+#endif
+
+#if defined(__FEATURE_COMPLEXIO__) && !defined(SIMPLE_IO)
+//#error "complexio" // debug
 #else
 #define SIMPLE_IO
 #endif

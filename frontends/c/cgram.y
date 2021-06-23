@@ -2258,7 +2258,7 @@ function_definition
                 type = CombineTypes(type, decl, &ident);
                 DeclareCTypedFunction(current, type, ident, is_public, body, NULL);
             }
-	| declaration_specifiers declarator attribute_decl compound_statement
+	| declaration_specifiers declarator attribute_decl compound_statement_or_fromfile
             {
                 AST *type = $1;
                 AST *decl = $2;
@@ -2269,7 +2269,7 @@ function_definition
                 type = CombineTypes(type, decl, &ident);
                 DeclareCTypedFunction(current, type, ident, is_public, body, anno);
             }
-	| declarator func_declaration_list compound_statement
+	| declarator func_declaration_list compound_statement_or_fromfile
             {
                 AST *type;
                 AST *ident;
@@ -2281,7 +2281,7 @@ function_definition
                 type = CombineTypes(NULL, decl, &ident);
                 DeclareCTypedFunction(current, type, ident, is_public, body, NULL);
             }
-	| declarator attribute_decl compound_statement
+	| declarator attribute_decl compound_statement_or_fromfile
             {
                 AST *type;
                 AST *ident;
@@ -2291,25 +2291,6 @@ function_definition
                 int is_public = 1;
                 type = CombineTypes(NULL, decl, &ident);
                 DeclareCTypedFunction(current, type, ident, is_public, body, anno);
-            }
-	| declaration_specifiers declarator fromfile_decl
-            {
-                AST *ident;
-                AST *decl_list = $1;
-                AST *type = $2;
-                AST *body = $3;
-                int is_public = 1;
-                type = CombineTypes(decl_list, type, &ident);
-                DeclareCTypedFunction(current, type, ident, is_public, body, NULL);
-            }
-	| declarator fromfile_decl
-            {
-                AST *type = $1;
-                AST *ident;
-                AST *body = $2;
-                int is_public = 1;
-                type = CombineTypes(NULL, type, &ident);
-                DeclareCTypedFunction(current, type, ident, is_public, body, NULL);
             }
 	;
 
@@ -2331,6 +2312,11 @@ fromfile_decl
                 }
                 $$ = str;
             }
+        ;
+
+compound_statement_or_fromfile
+        : fromfile_decl
+        | compound_statement
         ;
 
 /* PASM syntax: this is awkward, so not fully supported yet */

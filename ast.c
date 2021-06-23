@@ -891,6 +891,10 @@ static void doASTDump(AST *ast, int indent)
         }
         astname = "operator";
         break;
+    case AST_ANNOTATION:
+        sprintf(buf, "<annotation %s>", ast->d.string);
+        leaf = 1;
+        break;        
     case AST_FUNC_NAME:
         sprintf(buf, "<func_name/>");
         leaf = 1;

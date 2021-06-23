@@ -269,17 +269,19 @@ pri file "libsys/random.c" _randfloat : r=float
 pri file "libsys/random.c" _basic_rnd(x=long) : r=float
 
 '' low level file system functions
-pri file "libc/unix/vfs.c" _getrootvfs()
-pri file "libc/unix/vfs.c" _setrootvfs(root)
-pri file "libc/unix/mount.c" _mount(name, volume)
-pri file "libc/unix/mount.c" __getfilebuffer() : r=@byte
-pri file "libc/unix/mount.c" __getvfsforfile(name, orig_name)
-pri file "libc/unix/exec.c" _execve(name=string, argv=0, envp=0)
+'' marked as "complexio" because if used we need the full standard library;
+'' otherwise we can use a simple serial based library
+pri {++complexio} file "libc/unix/vfs.c" _getrootvfs()
+pri {++complexio} file "libc/unix/vfs.c" _setrootvfs(root)
+pri {++complexio} file "libc/unix/mount.c" _mount(name, volume)
+pri {++complexio} file "libc/unix/mount.c" __getfilebuffer() : r=@byte
+pri {++complexio} file "libc/unix/mount.c" __getvfsforfile(name, orig_name)
+pri {++complexio} file "libc/unix/exec.c" _execve(name=string, argv=0, envp=0)
 
 '' I/O functions
-pri file "libsys/fmt.c" _basic_open(h, sendf, recf, closef)
-pri file "libsys/fmt.c" _basic_open_string(h, str, iomode)
-pri file "libsys/fmt.c" _basic_close(h)
+pri {++complexio} file "libsys/fmt.c" _basic_open(h, sendf, recf, closef)
+pri {++complexio} file "libsys/fmt.c" _basic_open_string(h, str, iomode)
+pri {++complexio} file "libsys/fmt.c" _basic_close(h)
 pri file "libsys/fmt.c" _basic_print_nl(h)
 pri file "libsys/fmt.c" _basic_print_char(h, c, fmt = 0)
 pri file "libsys/fmt.c" _basic_print_string(h, ptr, fmt = 0)
@@ -302,7 +304,7 @@ pri file "libsys/strings.bas" left`$(x=string, n) : r=string
 pri file "libsys/strings.bas" right`$(x=string, n): r=string
 pri file "libsys/strings.bas" mid`$(s=string, n=0, m=9999999): r=string
 pri file "libsys/strings.bas" chr`$(x): r=string
-pri file "libsys/strings.bas" str`$(x=float): r=string
+pri {++complexio} file "libsys/strings.bas" str`$(x=float): r=string
 pri file "libsys/strings.bas" strint`$(x=long): r=string
 pri file "libsys/strings.bas" bin`$(x, n=0): r=string
 pri file "libsys/strings.bas" decuns`$(x, n=0): r=string

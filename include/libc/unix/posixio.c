@@ -84,7 +84,7 @@ __getftab(int i)
 }
 
 int
-_openraw(void *fil_ptr, const char *orig_name, int flags, mode_t mode) _COMPLEXIO
+_openraw(void *fil_ptr, const char *orig_name, int flags, mode_t mode)
 {
     int r;
     struct vfs *v;
@@ -201,7 +201,7 @@ int _closeraw(void *f_ptr)
     return r;
 }
 
-int open(const char *orig_name, int flags, mode_t mode=0644) _COMPLEXIO
+int open(const char *orig_name, int flags, mode_t mode=0644)
 {
     vfs_file_t *tab = &__filetab[0];
     int fd;

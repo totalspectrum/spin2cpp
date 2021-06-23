@@ -4,8 +4,8 @@
 
 #ifndef _COMPLEXIO
 #ifdef __FLEXC__
-#define _COMPLEXIO __attribute__(("complexio"))
-#define _STRINGIO  __attribute__(("complexio"))
+#define _COMPLEXIO __attribute__((complexio))
+#define _STRINGIO  __attribute__((complexio))
 #else
 #define _COMPLEXIO
 #define _STRINGIO
