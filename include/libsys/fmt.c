@@ -11,10 +11,6 @@
 
 #ifdef __FLEXC__
 
-#ifdef __OUTPUT_BYTECODE__
-#define SIMPLE_IO
-#endif
-
 #if defined(__FEATURE_COMPLEXIO__) && !defined(SIMPLE_IO)
 //#error "complexio" // debug
 #else
