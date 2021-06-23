@@ -2439,7 +2439,13 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
             } else DEBUG(node,"Compiling empty REPEAT FROM TO loop?");
 
             BIRB_Push(irbuf,nextLabel);
-            if (haveStep) BCCompileExpression(irbuf,stepExpression,newcontext,false);
+            if (haveStep) {
+                if ( 0 > (int32_t)stepConstVal ) {
+                    BCCompileInteger(irbuf, -stepConstVal);
+                } else {
+                    BCCompileExpression(irbuf,stepExpression,newcontext,false);
+                }
+            }
             BCCompileExpression(irbuf,fromExpression,newcontext,false);
             BCCompileExpression(irbuf,toExpression,newcontext,false);
             BCCompileMemOpExEx(irbuf,loopvar,newcontext,MEMOP_MODIFY,MOK_MOD_REPEATSTEP,false,false,topLabel,haveStep);
