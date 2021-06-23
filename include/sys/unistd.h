@@ -37,7 +37,7 @@ extern "C" {
 
   int isatty(int fd) _IMPL("libc/unix/isatty.c");
 
-  char *getcwd(char *buf, int size) _IMPL("libc/unix/mount.c");
+  char *getcwd(char *buf, int size) _COMPLEXIO _IMPL("libc/unix/mount.c");
   int chdir(const char *path) _COMPLEXIO _IMPL("libc/unix/mount.c");
   int rmdir(const char *path) _COMPLEXIO _IMPL("libc/unix/posixio.c");
   int mkdir(const char *path, int mode) _COMPLEXIO _IMPL("libc/unix/posixio.c");

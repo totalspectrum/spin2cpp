@@ -497,7 +497,7 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
         return lefttype;
     }
     if (isfloat) {
-         switch (op) {
+        switch (op) {
         case '+':
             if (!gl_fixedreal) {
                 *ast = *MakeOperatorCall( isfloat64 ? double_add : float_add, ast->left, ast->right, NULL);
