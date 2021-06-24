@@ -158,14 +158,14 @@ extern int gl_optimize_flags; /* flags for optimization */
 #define OPT_TAIL_CALLS          0x002000  /* tail call optimization */
 #define OPT_CASETABLE           0x004000  /* convert CASE to CASE_FAST (only for bytecode mode) */
 #define OPT_EXTRASMALL          0x008000  /* Use smaller-but-slower constructs */
-
+#define OPT_REMOVE_FEATURES     0x010000  /* remove unused features in libraries */
 #define OPT_FLAGS_ALL           0xffffff
-#define OPT_ASM_BASIC  (OPT_BASIC_REGS|OPT_BRANCHES|OPT_PEEPHOLE|OPT_CONST_PROPAGATE)                        
+#define OPT_ASM_BASIC  (OPT_BASIC_REGS|OPT_BRANCHES|OPT_PEEPHOLE|OPT_CONST_PROPAGATE|OPT_REMOVE_FEATURES)                        
 #define DEFAULT_ASM_OPTS        (OPT_DEADCODE|OPT_REMOVE_UNUSED_FUNCS|OPT_INLINE_SMALLFUNCS|OPT_ASM_BASIC|OPT_AUTO_FCACHE|OPT_LOOP_BASIC|OPT_TAIL_CALLS)
 #define EXTRA_ASM_OPTS          (OPT_INLINE_SINGLEUSE|OPT_PERFORM_CSE|OPT_PERFORM_LOOPREDUCE|OPT_REMOVE_HUB_BSS) /* extras added with -O2 */
 
 // bytecode defaults to no optimization except unused method removal
-#define DEFAULT_BYTECODE_OPTS   (OPT_REMOVE_UNUSED_FUNCS)
+#define DEFAULT_BYTECODE_OPTS   (OPT_REMOVE_UNUSED_FUNCS|OPT_REMOVE_FEATURES)
 
 extern int gl_warn_flags;     /* flags for warnings */
 #define WARN_LANG_EXTENSIONS    0x01
@@ -235,6 +235,12 @@ extern int gl_features_used;
 #define FEATURE_NEED_HEAP    0x08  /* garbage collector used */
 #define FEATURE_FLOAT_USED   0x10  /* some float operations */
 #define FEATURE_COMPLEXIO    0x20  /* mount or other file I/O */
+
+/* features which are checked for in -Oremove-features */
+/* NOTE: when you change this, add appropriate preprocessor symbols */
+#define FEATURE_DEFAULTS_NOOPT (FEATURE_FLOAT_USED|FEATURE_COMPLEXIO)
+
+extern void ActivateFeature(unsigned flag);
 
 /* default value for baud rate (set on command line with -D_BAUD=) */
 extern int gl_default_baud;

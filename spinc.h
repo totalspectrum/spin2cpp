@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2018 Total Spectrum Software Inc.
+ * Copyright 2011-2021 Total Spectrum Software Inc.
  * main header file
  */
 
@@ -17,8 +17,6 @@
 #define SPINYYSTYPE AST*
 #define BASICYYSTYPE AST*
 #define CGRAMYYSTYPE AST*
-
-extern struct preprocess gl_pp;
 
 extern Module *allparse;
 

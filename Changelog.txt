@@ -1,5 +1,6 @@
 Version 6.0.0
 - Fixed multiple assignments in Spin (a:=b:=c) to have the same semantics as Spin
+- New optimization: -Oremove-features removes advanced file I/O features if not needed by the program; this can save a lot of space. Enabled by default in -O1.
 
 Version 5.5.1
 - Added a warning for ignored second parameter to `org`

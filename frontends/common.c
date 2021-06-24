@@ -2177,3 +2177,32 @@ void DeclareBaud(Module *P)
     AddInternalSymbol(&P->objsyms, "__default_baud__", SYM_CONSTANT, AstInteger(baud), NULL);
     AddInternalSymbol(&systemModule->objsyms, "__default_baud__", SYM_CONSTANT, AstInteger(baud), NULL);
 }
+
+static struct FeatureDef {
+    unsigned flag;
+    const char *def;
+} feature_defs[] = {
+    { FEATURE_COMPLEXIO, "__FEATURE_COMPLEXIO__" },
+    { FEATURE_FLOAT_USED, "__FEATURE_FLOATS__" },
+    { 0, NULL }
+};
+
+void
+ActivateFeature(unsigned flag)
+{
+    int i;
+    if (0 == (gl_features_used & flag)) {
+        bool found = false;
+        gl_features_used |= flag;
+        for (i = 0; feature_defs[i].flag; i++) {
+            if (feature_defs[i].flag == flag) {
+                found = true;
+                pp_define(&gl_pp, feature_defs[i].def, "1");
+                break;
+            }
+        }
+        if (!found) {
+            ERROR(NULL, "ActivateFeature: no define found for %x", flag);
+        }
+    }
+}

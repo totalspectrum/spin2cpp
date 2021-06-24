@@ -162,7 +162,11 @@ A similar optimization is performed for divisions by powers of two.
 
 ### Unused method removal (-O1, -Oremove-unused)
 
-This is pretty standard; if a method is not used, no code is emitted for it.
+This is pretty standard; if a method is not used, no code is emitted for it. This optimization works at high level, so enabling/disabling it per function is not useful.
+
+### Unused feature removal (-O1, -Oremove-features)
+
+Scans the program for certain library features (like file I/O and floating point usage) and disables those features if unused. This can save quite a bit of space. Depends on unused method removal to work properly/
 
 ### Dead code elimination (-O1, -Oremove-dead)
 

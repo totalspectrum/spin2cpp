@@ -145,6 +145,16 @@ int ProcessCommandLine(CmdLineOptions *cmd)
     if (gl_fixedreal) {
         pp_define(&gl_pp, "__fixedreal__", "1");
     }
+    /* if -Oremove-features is not on, then assume certain features are present */
+    if ( 0 == (gl_optimize_flags & OPT_REMOVE_FEATURES) ) {
+        unsigned i, flag;
+        for (i = 0; i < 32; i++) {
+            flag = 1U << i;
+            if ( (FEATURE_DEFAULTS_NOOPT) & flag ) {
+                ActivateFeature(flag);
+            }
+        }
+    }
     /* set up the binary offset */
     gl_dat_offset = -1; // by default offset is unknown
     if ( (gl_output == OUTPUT_DAT||gl_output == OUTPUT_ASM) && cmd->outputBin) {
@@ -316,6 +326,7 @@ int ProcessCommandLine(CmdLineOptions *cmd)
         fprintf(stderr, "parse error\n");
         return 1;
     }
+
     return 0;
 }
 
@@ -361,6 +372,7 @@ static struct optflag_table {
     int bits;
 } optflag[] = {
     { "remove-unused", OPT_REMOVE_UNUSED_FUNCS },
+    { "remove-features", OPT_REMOVE_FEATURES },
     { "remove-dead", OPT_DEADCODE },
     { "inline-small", OPT_INLINE_SMALLFUNCS },
     { "regs", OPT_BASIC_REGS },

@@ -135,4 +135,6 @@ void pp_add_to_path(struct preprocess *pp, const char *dir);
  */
 int pp_get_defines_as_args(struct preprocess *pp, int argc, char **argv, int max_argc);
 
+extern struct preprocess gl_pp;
+
 #endif

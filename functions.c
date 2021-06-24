@@ -2663,15 +2663,6 @@ MarkUsedBody(AST *body, const char *caller)
     MarkUsedBody(body->right, caller);
 }
 
-static void
-ActivateFeature(unsigned flag, const char *define)
-{
-    if (0 == (gl_features_used & flag)) {
-        gl_features_used |= flag;
-        pp_define(&gl_pp, define, "1");
-    }
-}
-
 #define CALLSITES_MANY 8
 
 void
@@ -2684,7 +2675,7 @@ MarkUsed(Function *f, const char *caller)
         return;
     }
     if (f->attributes & FUNC_ATTR_COMPLEXIO) {
-        ActivateFeature(FEATURE_COMPLEXIO, "__FEATURE_COMPLEXIO__");
+        ActivateFeature(FEATURE_COMPLEXIO);
     }
     f->callSites++;
     if (f->callSites == 1) {
