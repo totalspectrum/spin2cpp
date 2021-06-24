@@ -10,11 +10,11 @@ _foo
 _foo_ret
 	ret
 
-___struct_bar_getx
+_bar_getx
 	add	objptr, #4
 	rdlong	result1, objptr
 	sub	objptr, #4
-___struct_bar_getx_ret
+_bar_getx_ret
 	ret
 
 objptr

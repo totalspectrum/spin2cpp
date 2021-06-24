@@ -1,4 +1,5 @@
 Version 6.0.0
+- Automatically typedef struct and class names in C++
 - Fixed multiple assignments in Spin (a:=b:=c) to have the same semantics as Spin
 - New optimization: -Oremove-features removes advanced file I/O features if not needed by the program; this can save a lot of space. Enabled by default in -O1.
 

@@ -152,7 +152,7 @@ CombineTypes(AST *first, AST *second, AST **identifier)
     if (first && first->kind == AST_COMMENT) {
         first = NULL;
     }
-    if (!second) {
+    if (!second || first == second) {
         return first;
     }
     if (first && (first->kind == AST_STATIC || first->kind == AST_TYPEDEF || first->kind == AST_EXTERN)) {
@@ -627,10 +627,13 @@ MakeNewStruct(Module *Parent, AST *skind, AST *identifier, AST *body)
     }
     name = GetIdentifierName(identifier);
     typname = (char *)malloc(strlen(name)+strlen(classname)+16);
-    strcpy(typname, classname);
-    strcat(typname, "__struct_");
-    strcat(typname, name);
-
+    if (LangStructAutoTypedef(current->curLanguage)) {
+        strcpy(typname, name);
+    } else {
+        strcpy(typname, classname);
+        strcat(typname, "_struct__");
+        strcat(typname, name);
+    }
     /* see if there is already a type with that name */
     sym = LookupSymbolInTable(currentTypes, typname);
     if (!sym) {
