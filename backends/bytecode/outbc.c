@@ -2217,6 +2217,10 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 AST *newNode = NewAST(AST_ARRAYREF, node, AstInteger(0));
                 BCCompileMemOp(irbuf,newNode,context,MEMOP_READ);
             } break;
+            case AST_SELF: {
+                AST *newNode = AstIdentifier("__interp_vbase");
+                BCCompileMemOp(irbuf,newNode,context,MEMOP_READ);
+            } break;
             default:
                 ERROR(node,"Unhandled node kind %d in expression",node->kind);
                 return;
