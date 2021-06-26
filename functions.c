@@ -2645,6 +2645,13 @@ MarkUsedBody(AST *body, const char *caller)
             break;
         }
         break;
+    case AST_ADDROF:
+    case AST_ABSADDROF:
+        if (IsFunctionType(ExprType(body->left))) {
+            // we will need method pointers
+            UseInternal("__call_methodptr");
+        }
+        break;
     case AST_SETJMP:
     case AST_THROW:
     case AST_CATCH:

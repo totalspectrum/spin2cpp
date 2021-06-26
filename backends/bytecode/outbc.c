@@ -32,6 +32,11 @@ bool interp_can_unsigned() {
     }
 }
 
+static int BCGetNumResultsByType(AST *funcType) {
+    int n = FuncNumResults(funcType);
+    return (n<=1) ? 1 : n;
+}
+
 static int BCGetNumResults(Function *F) {
     int n = F->numresults;
     return (n<=1) ? 1 : n;
@@ -1720,8 +1725,33 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
             extraResults = callOp.attr.call.numResults - 1;
         }
     } else {
-        ERROR(node,"Unhandled FUNCALL symbol (name is %s and sym kind is %d)",sym->our_name,sym->kind);
-        return;
+        // not a direct call: so instead we need to do a __call_methodptr(p) where p is the pointer
+        AST *ident = node->left;
+        AST *funcType = ExprType(ident);
+        Function *func;
+        int funid;
+        if (!IsFunctionType(funcType)) {
+            ERROR(node,"Unhandled FUNCALL symbol (name is %s and sym kind is %d)",sym->our_name,sym->kind);
+            return;
+        }
+        BCCompileExpression(irbuf,ident,context,false); // push as parameter
+        ByteOpIR regPushOp = { .kind = BOK_REG_WRITE, .data.int32 = HWRegRetval(1) };
+        BIRB_PushCopy(irbuf,&regPushOp);
+        sym = LookupSymbol("__call_methodptr");
+        if (!sym || sym->kind != SYM_FUNCTION) {
+            ERROR(node,"Internal error, missing __call_methodptr");
+            return;
+        }
+        func = (Function *)sym->val;
+        funid = getFuncID(func->module, sym->our_name);
+        callobjid = getObjID(current, func->module->classname, &objtype);
+        callOp.kind = BOK_CALL_OTHER;
+        callOp.attr.call.objID = callobjid;
+        callOp.attr.call.funID = funid;
+        callOp.attr.call.numResults = BCGetNumResultsByType(funcType);
+        if (callOp.attr.call.numResults >= 1) {
+            extraResults = callOp.attr.call.numResults - 1;
+        }
     }
 
     if (anchorOp.kind) BIRB_PushCopy(irbuf,&anchorOp);
