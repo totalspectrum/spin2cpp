@@ -3,7 +3,7 @@
 if [ "$1" != "" ]; then
   SPIN2CPP=$1
 else
-  SPIN2CPP=../build/spin2cpp
+  SPIN2CPP=../${BUILD:='./build'}/spin2cpp
 fi
 
 PROG="$SPIN2CPP -I../Lib"
