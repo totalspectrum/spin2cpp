@@ -80,13 +80,6 @@ pri _string_concat(x, y) : ptr = @byte | lenx, leny
     bytemove(ptr + lenx, y, leny+1)
   return ptr
 
-pri _make_methodptr(o, func) | ptr
-  ptr := _gc_alloc_managed(8)
-  if (ptr)
-    long[ptr] := o
-    long[ptr+4] := func
-  return ptr
-
 pri SendRecvDevice(sendf, recvf = 0, closef = 0)
   return (sendf, recvf, closef)
 

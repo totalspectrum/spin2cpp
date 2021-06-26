@@ -117,3 +117,11 @@ pri __get_heap_base : r
 
 pri __getlockreg
   return __lockreg
+
+pri _make_methodptr(o, func) | ptr
+  ptr := _gc_alloc_managed(8)
+  if (ptr)
+    long[ptr] := o
+    long[ptr+4] := func
+  return ptr
+

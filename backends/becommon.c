@@ -41,6 +41,7 @@ BuildMethodPointer(AST *ast)
     AST *objast;
     AST *funcaddr;
     AST *result;
+    AST *call;
     Function *func;
     
     sym = FindCalledFuncSymbol(ast, &objast, 0);
@@ -68,8 +69,10 @@ BuildMethodPointer(AST *ast)
     funcaddr = NewAST(AST_ADDROF, ast->left, ast->right);
     // create a call
     if (!make_methodptr) {
-        make_methodptr = getBasicPrimitive("_make_methodptr");
+        make_methodptr = AstIdentifier("_make_methodptr");
     }
-    result = MakeOperatorCall(make_methodptr, objast, funcaddr, NULL);
+    call = NewAST(AST_EXPRLIST, funcaddr, NULL);
+    call = NewAST(AST_EXPRLIST, objast, call);
+    result = NewAST(AST_FUNCCALL, make_methodptr, call);
     return result;
 }

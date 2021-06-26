@@ -78,7 +78,7 @@ else
   BUILD=./build
 endif
 
-INC=-I. -I$(BUILD)
+INC=-I. -I./backends -I./frontends -I$(BUILD)
 DEFS=-DFLEXSPIN_BUILD
 
 ifeq ($(YACCVER),bison3)
@@ -126,7 +126,7 @@ LEXSRCS = lexer.c symbol.c ast.c expr.c $(UTIL) preprocess.c
 PASMBACK = outasm.c assemble_ir.c optimize_ir.c inlineasm.c compress_ir.c
 BCBACK = outbc.c bcbuffers.c bcir.c bc_spin1.c
 CPPBACK = outcpp.c cppfunc.c outgas.c cppexpr.c cppbuiltin.c
-SPINSRCS = common.c case.c spinc.c $(LEXSRCS) functions.c cse.c loops.c hloptimize.c types.c pasm.c outdat.c outlst.c outobj.c spinlang.c basiclang.c clang.c $(PASMBACK) $(BCBACK) $(CPPBACK) $(MCPP) version.c
+SPINSRCS = common.c case.c spinc.c $(LEXSRCS) functions.c cse.c loops.c hloptimize.c types.c pasm.c outdat.c outlst.c outobj.c spinlang.c basiclang.c clang.c $(PASMBACK) $(BCBACK) $(CPPBACK) $(MCPP) version.c becommon.c
 
 LEXOBJS = $(LEXSRCS:%.c=$(BUILD)/%.o)
 SPINOBJS = $(SPINSRCS:%.c=$(BUILD)/%.o)

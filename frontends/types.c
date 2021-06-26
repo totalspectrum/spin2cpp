@@ -31,7 +31,7 @@
 #include <ctype.h>
 #include "common.h"
 #include "preprocess.h"
-#include "version.h"
+#include "becommon.h"
 
 AST *basic_get_float;
 AST *basic_get_string;
@@ -91,13 +91,11 @@ static AST *int64_signx, *int64_zerox;
 static AST *struct_copy;
 static AST *string_cmp;
 static AST *string_concat;
-static AST *make_methodptr;
 static AST *gc_alloc_managed;
 static AST *gc_free;
 
 static AST *funcptr_cmp;
 
-AST *BuildMethodPointer(AST *ast);
 static AST * getBasicPrimitive(const char *name);
 
 /* check that "typ" is an integer type */
@@ -1319,45 +1317,6 @@ doCast(AST *desttype, AST *srctype, AST *src)
     return NULL;
 }
 
-AST *
-BuildMethodPointer(AST *ast)
-{
-    Symbol *sym;
-    AST *objast;
-    AST *funcaddr;
-    AST *result;
-    Function *func;
-    
-    sym = FindCalledFuncSymbol(ast, &objast, 0);
-    if (!sym || sym->kind != SYM_FUNCTION) {
-        if (sym) {
-            ERROR(ast, "%s is not a function", sym->user_name);
-        } else {
-            ERROR(ast, "Internal error, unable to find function address");
-        }
-        return ast;
-    }
-    func = (Function *)sym->val;
-    if (func->is_static) {
-        objast = AstInteger(0);
-    } else if (objast == NULL) {
-        objast = NewAST(AST_SELF, NULL, NULL);
-    } else {
-        objast = NewAST(AST_ADDROF, objast, NULL);
-    }
-    func->used_as_ptr = 1;
-    if (func->callSites == 0) {
-        MarkUsed(func, "func pointer");
-    }
-    // save off the current @ node
-    funcaddr = NewAST(AST_ADDROF, ast->left, ast->right);
-    // create a call
-    if (!make_methodptr) {
-        make_methodptr = getBasicPrimitive("_make_methodptr");
-    }
-    result = MakeOperatorCall(make_methodptr, objast, funcaddr, NULL);
-    return result;
-}
 
 //
 // function for doing type checking and various kinds of
@@ -1861,7 +1820,6 @@ InitGlobalFuncs(void)
 
         string_cmp = getBasicPrimitive("_string_cmp");
         string_concat = getBasicPrimitive("_string_concat");
-        make_methodptr = getBasicPrimitive("_make_methodptr");
         gc_alloc_managed = getBasicPrimitive("_gc_alloc_managed");
         gc_free = getBasicPrimitive("_gc_free");
 

@@ -12,6 +12,8 @@
 
 const BCContext nullcontext = {.hiddenVariables = 0};
 
+static int getFuncIDForKnownFunc(Module *M,Function *F);  // forward declaration
+
 bool interp_can_multireturn() {
     switch(gl_interp_kind) {
     case INTERP_KIND_P1ROM: return false;
@@ -938,6 +940,21 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
                 return;
             }
             ERROR(node,"Unhandled memory operation on local label");
+        } break;
+        case SYM_FUNCTION: {
+            if (kind == MEMOP_ADDRESS) {
+                Function *F = (Function *)sym->val;
+                Module *M = F->module;
+                if (M->bedata == NULL || ModData(M)->compiledAddress < 0) {
+                    ERROR(node, "Cannot find address for function");
+                    return;
+                }
+                int id = getFuncIDForKnownFunc(M, F);
+                uint32_t val = id | (ModData(M)->compiledAddress<<16);
+                BCCompileInteger(irbuf, val);
+                return;
+            }
+            ERROR(node, "Unhandled memory operation on function");
         } break;
         default:
             ERROR(ident,"Unhandled Symbol type %d in memop",sym->kind);

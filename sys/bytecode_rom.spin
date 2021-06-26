@@ -470,3 +470,24 @@ pri __gosub_helper(pc, vbase, pbase)
   __interp_vbase := vbase
   __interp_pbase := pbase
   __interp_pcurr := pc  ' jump to new address
+
+pri _make_methodptr(o, func) | ptr
+  ptr := _gc_alloc_managed(8)
+  if (ptr)
+    long[ptr] := o
+    long[ptr+4] := func
+  return ptr
+
+pri __call_methodptr(p) | off, pc
+  __interp_vbase := long[p]
+  off := word[p+4]<<2  ' function offset as words
+  p := word[p+6]       ' new pbase
+  
+  __interp_pbase := p
+  p += off
+  pc := word[p] + __interp_pbase   ' new pc
+  off := word[p][1] ' number of locals
+  off -= 8              ' we have 2 locals already
+  if off > 0
+    __interp_dcurr += (off)
+  __interp_pcurr := pc
