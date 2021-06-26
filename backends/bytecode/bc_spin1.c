@@ -165,7 +165,11 @@ void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsLeft) {
         }
         break;
     case BOK_CONSTANT_FUNCREF:
-        *min = *max = 5;
+        if (0 == (ir->data.int32 & 0xff00) ) {
+            *min = *max = 4;
+        } else {
+            *min = *max = 5;
+        }
         break;
     // Jump ops
     case BOK_JUMP:
@@ -374,14 +378,19 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
         reloc->next = ModData(P)->relocList;
         ModData(P)->relocList = reloc;
         reloc->func = Spin1RelocFuncAddr;
-        buf[pos++] = 0b00111011; // 5 byte
+        if (0 != (id & 0xff00)) {
+            buf[pos++] = 0b00111011; // 4 byte immediate
+            buf[pos++] = (id>>8) & 255;
+            buf[pos++] = (id>>0) & 255;
+        } else {
+            buf[pos++] = 0b00111010; // 3 byte immediate
+            buf[pos++] = (id>>0) & 255;
+        }
         // add a relocation for this
         reloc->pos = &buf[pos];
         
         buf[pos++] = 0;          // module address
         buf[pos++] = 0;          // module address
-        buf[pos++] = (id>>8) & 255;
-        buf[pos++] = (id>>0) & 255;
     } break;
     case BOK_CONSTANT: {
         int32_t imm = ir->data.int32;

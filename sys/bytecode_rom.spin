@@ -485,8 +485,8 @@ pri _make_methodptr(o, func) | ptr
 pri __call_methodptr(a,b,c,d,e,f,g,h) | p, off, pc
   p := INB
   __interp_vbase := long[p]
-  off := word[p+4]<<2  ' function offset as words
-  p := word[p+6]       ' new pbase
+  off := word[p+6]<<2  ' function offset as words
+  p := word[p+4]       ' new pbase
   
   __interp_pbase := p
   p += off

@@ -803,7 +803,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
                 Function *F = (Function *)sym->val;
                 Module *M = F->module;
                 if (M->bedata == NULL) {
-                    ERROR(node, "Cannot find address for function");
+                    ERROR(node, "Cannot find address for function (no module info)");
                     return;
                 }
                 int32_t addr = ModData(M)->compiledAddress;
@@ -812,7 +812,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
                     //WARNING(node, "Need to patch address later");
                     BCCompileModuleFuncRef(irbuf, M, id);
                 } else {
-                    uint32_t val = id | (addr<<16);
+                    uint32_t val = (id<<16) | addr;
                     BCCompileInteger(irbuf, val);
                 }
                 return;
@@ -981,13 +981,19 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
             if (kind == MEMOP_ADDRESS) {
                 Function *F = (Function *)sym->val;
                 Module *M = F->module;
-                if (M->bedata == NULL || ModData(M)->compiledAddress < 0) {
-                    ERROR(node, "Cannot find address for function");
+                if (M->bedata == NULL) {
+                    ERROR(node, "Cannot find address for function (no module info)");
                     return;
                 }
+                int32_t addr = ModData(M)->compiledAddress;
                 int id = getFuncIDForKnownFunc(M, F);
-                uint32_t val = id | (ModData(M)->compiledAddress<<16);
-                BCCompileInteger(irbuf, val);
+                if (addr < 0) {
+                    //WARNING(node, "Need to patch address later");
+                    BCCompileModuleFuncRef(irbuf, M, id);
+                } else {
+                    uint32_t val = (id<<16) | (addr);
+                    BCCompileInteger(irbuf, val);
+                }
                 return;
             }
             ERROR(node, "Unhandled memory operation on function");
