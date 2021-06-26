@@ -635,6 +635,16 @@ BCCompileInteger(BCIRBuffer *irbuf,int32_t ival) {
     BIRB_PushCopy(irbuf,&opc);
 }
 
+static void
+BCCompileModuleFuncRef(BCIRBuffer *irbuf,Module *M,int32_t funcid)
+{
+    ByteOpIR opc = {0};
+    opc.kind = BOK_CONSTANT_FUNCREF;
+    opc.attr.funcval.modref = M;
+    opc.data.int32 = funcid;
+    BIRB_PushCopy(irbuf,&opc);
+}
+
 static void BCCompilePopN(BCIRBuffer *irbuf,int popcount) {
     if (popcount < 0) ERROR(NULL,"Internal Error: negative pop count");
     else if (popcount > 0) {
@@ -787,6 +797,27 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         case SYM_VARIABLE:
             memberOffset += sym->offset;
             type = sym->val;
+            break;
+        case SYM_FUNCTION:
+            if (kind == MEMOP_ADDRESS) {
+                Function *F = (Function *)sym->val;
+                Module *M = F->module;
+                if (M->bedata == NULL) {
+                    ERROR(node, "Cannot find address for function");
+                    return;
+                }
+                int32_t addr = ModData(M)->compiledAddress;
+                int id = getFuncIDForKnownFunc(M, F);
+                if (addr < 0) {
+                    //WARNING(node, "Need to patch address later");
+                    BCCompileModuleFuncRef(irbuf, M, id);
+                } else {
+                    uint32_t val = id | (addr<<16);
+                    BCCompileInteger(irbuf, val);
+                }
+                return;
+            }
+            ERROR(node, "Unhandled memory operation on function");
             break;
         default:
             ERROR(node,"Wrong kind of symbol (%d) in method reference", sym->kind);
@@ -3052,6 +3083,26 @@ BCPrepareObject(Module *P) {
 }
 
 static void
+BCEmitModuleRelocations(ByteOutputBuffer *bob,Module *P) {
+    BCRelocList *list = ModData(P)->relocList;
+    uint8_t *dataptr;
+    uint32_t addr = ModData(P)->compiledAddress;
+    while (list) {
+        dataptr = list->pos;
+        switch (list->kind) {
+        case BC_RELOC_MODULE_FUNCPTR:
+            dataptr[0] = (addr>>8) & 0xff;
+            dataptr[1] = (addr>>0) & 0xff;
+            break;
+        default:
+            ERROR(NULL, "Unknown module reloc %d", list->kind);
+            break;
+        }
+        list = list->next;
+    }
+}
+
+static void
 BCCompileObject(ByteOutputBuffer *bob, Module *P) {
 
     Module *save = current;
@@ -3068,6 +3119,7 @@ BCCompileObject(ByteOutputBuffer *bob, Module *P) {
 
     if (ModData(P)->compiledAddress < 0) {
         ModData(P)->compiledAddress = bob->total_size;
+        BCEmitModuleRelocations(bob,P);
     } else {
         ERROR(NULL,"Already compiled module %s",P->fullname);
         return;
@@ -3214,11 +3266,10 @@ void OutputByteCode(const char *fname, Module *P) {
 
     BCCompileObject(&bob,P);
 
+    // Align and append any needed heap
     BOB_Align(&bob,4);
-
-    // now append a heap, if necessary
     BCAddHeap(&bob,P);
-    
+
     const int programSize = bob.total_size - headerSize;
     const int variableSize = P->varsize; // Already rounded up!
     const int stackBase = headerSize + programSize + variableSize + 8; // space for that stack init thing

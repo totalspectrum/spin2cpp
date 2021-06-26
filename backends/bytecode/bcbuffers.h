@@ -18,6 +18,18 @@ typedef struct {
     int total_size;
 } ByteOutputBuffer;
 
+typedef enum {
+    BC_RELOC_NONE = 0,
+    BC_RELOC_MODULE_FUNCPTR = 1,
+} BCRelocKind;
+
+typedef struct BCRelocList {
+    struct BCRelocList *next;
+    BCRelocKind kind;
+    uint8_t *pos;
+} BCRelocList;
+
+OutputSpan *BOB_PushSpan(ByteOutputBuffer *buf,OutputSpan *span);
 OutputSpan *BOB_Push(ByteOutputBuffer *buf,uint8_t *data,int data_size,const char *comment);
 OutputSpan *BOB_PushByte(ByteOutputBuffer *buf,uint8_t data,const char *comment);
 OutputSpan *BOB_PushWord(ByteOutputBuffer *buf,uint16_t data,const char *comment);

@@ -10,6 +10,16 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+OutputSpan *BOB_PushSpan(ByteOutputBuffer* buf, OutputSpan* newSpan) {
+    if (buf->tail != NULL) buf->tail->next = newSpan;
+    buf->tail = newSpan;
+    if (buf->head == NULL) buf->head = newSpan;
+
+    buf->total_size += newSpan->size;
+
+    return newSpan;
+}
+
 OutputSpan *BOB_Push(ByteOutputBuffer *buf,uint8_t *data,int data_size,const char *comment) {
     OutputSpan *newSpan = calloc(sizeof(OutputSpan)+data_size,1);
     if (!newSpan) {
@@ -21,13 +31,7 @@ OutputSpan *BOB_Push(ByteOutputBuffer *buf,uint8_t *data,int data_size,const cha
     newSpan->size = data_size;
     newSpan->comment = comment;
 
-    if (buf->tail != NULL) buf->tail->next = newSpan;
-    buf->tail = newSpan;
-    if (buf->head == NULL) buf->head = newSpan;
-
-    buf->total_size += data_size;
-
-    return newSpan;
+    return BOB_PushSpan(buf,newSpan);
 }
 
 void BOB_Replace(OutputSpan *span,uint8_t *data,int data_size,const char *comment) {

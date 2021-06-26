@@ -598,15 +598,20 @@ void BCIR_to_BOB(BCIRBuffer *irbuf,ByteOutputBuffer *bob,int pbase_funoffset) {
     if (!irbuf->opCount) return;
     BCIR_Compact(irbuf,2);
     for(ByteOpIR *ir=irbuf->head;ir;ir=ir->next) {
+        OutputSpan *instrSpan = 0;
         if (ir->fixedSize<0) {
             ERROR(NULL,"Internal Errror: IR with negative size");
             continue;
         }
-        uint8_t code[ir->fixedSize];
-        memset(code,0,ir->fixedSize);
-        const char *comment = CompileIROP_Func(code,ir->fixedSize,ir);
+        instrSpan = calloc(sizeof(OutputSpan)+ir->fixedSize,1);
+        if (!instrSpan) {
+            ERROR(NULL,"Out of memory (while allocating instruction span)");
+        }
+        instrSpan->size = ir->fixedSize;
+        const char *comment = CompileIROP_Func(instrSpan->data,instrSpan->size,ir);
         if (!comment) comment = "(MISSING COMMENT)";
-        BOB_Push(bob,code,ir->fixedSize,comment);
+        instrSpan->comment = comment;
+        BOB_PushSpan(bob,instrSpan);
     }
     current_birb = NULL;
 }

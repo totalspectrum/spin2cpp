@@ -13,6 +13,7 @@ typedef struct {
     Function *pubs[BC_MAX_POINTERS],*pris[BC_MAX_POINTERS];
     AST *objs[BC_MAX_POINTERS];
     int objs_arr_index[BC_MAX_POINTERS]; // Index of the object in the array it is part of. 0 for single objects
+    BCRelocList *relocList;              // relocations for "compiledAddress"
 } BCModData;
 
 typedef struct {

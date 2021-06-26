@@ -5,6 +5,7 @@
 // see the file COPYING for conditions of redistribution
 //
 
+#include "outbc.h"
 #include "bc_spin1.h"
 #include <stdlib.h>
 
@@ -157,6 +158,9 @@ void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsLeft) {
         case S1ConEn_NEG1B: *min = *max = 3; break;
         case S1ConEn_NEG2B: *min = *max = 4; break;
         }
+        break;
+    case BOK_CONSTANT_FUNCREF:
+        *min = *max = 5;
         break;
     // Jump ops
     case BOK_JUMP:
@@ -358,6 +362,22 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
     int pos = 0;
     const char *comment = NULL;
     switch (ir->kind) {
+    case BOK_CONSTANT_FUNCREF: {
+        int32_t id = ir->data.int32;
+        Module *P = ir->attr.funcval.modref;
+        BCRelocList *reloc = calloc(1, sizeof(*reloc));
+        reloc->next = ModData(P)->relocList;
+        ModData(P)->relocList = reloc;
+        reloc->kind = BC_RELOC_MODULE_FUNCPTR;
+        buf[pos++] = 0b00111011; // 5 byte
+        // add a relocation for this
+        reloc->pos = &buf[pos];
+        
+        buf[pos++] = 0;          // module address
+        buf[pos++] = 0;          // module address
+        buf[pos++] = (id>>8) & 255;
+        buf[pos++] = (id>>0) & 255;
+    } break;
     case BOK_CONSTANT: {
         int32_t imm = ir->data.int32;
         uint32_t immu = imm;

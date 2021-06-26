@@ -16,6 +16,7 @@
     X(ALIGN) \
     \
     X(CONSTANT)  /* Push immediate */\
+    X(CONSTANT_FUNCREF)  /* Push immediate function reference */\
     X(POP)  /* Pop N/4 values */\
     \
     X(RETURN_PLAIN)  /* Plain return (keep set results)*/\
@@ -218,6 +219,9 @@ typedef struct bcirstruct {
         struct {
             unsigned logicallyTerminal:1; // For conditional jumps that logically can't fail.
         } condjump;
+        struct {
+            Module *modref;
+        } funcval;
         int stringLength;
         int labelHiddenVars; // Not used by the actual IR step
     } attr;
