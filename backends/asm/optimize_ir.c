@@ -3150,7 +3150,7 @@ IsNonReadWriteOpcode(IR *ir)
 static bool
 CanSwap(IR *a, IR *b)
 {
-    if (InstrSetsAnyFlags(a)) return false;
+    if (InstrSetsAnyFlags(a) || InstrSetsAnyFlags(b)) return false;
     if (InstrIsVolatile(a) || InstrIsVolatile(b)) return false;
     if (IsBranch(a) || IsBranch(b)) return false;
     if (InstrModifies(a, b->src)) return false;
@@ -3205,7 +3205,7 @@ restart_check:
             dst1 = ir->dst;
             base = ir->src;
             nextread = FindNextRead(ir, dst1, base);
-            if (nextread && nextread->cond == ir->cond) {
+            if (nextread && nextread->cond == ir->cond && !InstrSetsAnyFlags(nextread)) {
                 // wrlong a, b ... rdlong c, b  -> mov c, a
                 // rdlong a, b ... rdlong c, b  -> mov c, a
                 nextread->src = dst1;
