@@ -3151,6 +3151,7 @@ static bool
 CanSwap(IR *a, IR *b)
 {
     if (InstrSetsAnyFlags(a) || InstrSetsAnyFlags(b)) return false;
+    if (a->cond != b->cond) return false;
     if (InstrIsVolatile(a) || InstrIsVolatile(b)) return false;
     if (IsBranch(a) || IsBranch(b)) return false;
     if (InstrModifies(a, b->src)) return false;
