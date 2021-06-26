@@ -116,6 +116,11 @@ static enum Spin1ConstEncoding GetSpin1ConstEncoding(int32_t imm) {
     else return S1ConEn_4B;
 }
 
+static void Spin1RelocFuncAddr(uint8_t *dataptr, uint32_t addr) {
+    dataptr[0] = (addr>>8) & 0xff;
+    dataptr[1] = (addr>>0) & 0xff;
+}
+
 static bool IsShortFormMemOp(ByteOpIR *ir) {
     if (!(ir->kind == BOK_MEM_READ || ir->kind == BOK_MEM_WRITE || ir->kind == BOK_MEM_MODIFY || ir->kind == BOK_MEM_ADDRESS)) return false;
     if (!(ir->attr.memop.base == MEMOP_BASE_VBASE || ir->attr.memop.base == MEMOP_BASE_DBASE)) return false;
@@ -368,7 +373,7 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
         BCRelocList *reloc = calloc(1, sizeof(*reloc));
         reloc->next = ModData(P)->relocList;
         ModData(P)->relocList = reloc;
-        reloc->kind = BC_RELOC_MODULE_FUNCPTR;
+        reloc->func = Spin1RelocFuncAddr;
         buf[pos++] = 0b00111011; // 5 byte
         // add a relocation for this
         reloc->pos = &buf[pos];

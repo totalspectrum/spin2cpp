@@ -3085,19 +3085,13 @@ BCPrepareObject(Module *P) {
 static void
 BCEmitModuleRelocations(ByteOutputBuffer *bob,Module *P) {
     BCRelocList *list = ModData(P)->relocList;
-    uint8_t *dataptr;
     uint32_t addr = ModData(P)->compiledAddress;
     while (list) {
-        dataptr = list->pos;
-        switch (list->kind) {
-        case BC_RELOC_MODULE_FUNCPTR:
-            dataptr[0] = (addr>>8) & 0xff;
-            dataptr[1] = (addr>>0) & 0xff;
-            break;
-        default:
-            ERROR(NULL, "Unknown module reloc %d", list->kind);
-            break;
-        }
+        if (list->func) {
+            (*list->func)(list->pos, addr);
+        } else {
+            ERROR(NULL, "No relocation function provided");
+        } 
         list = list->next;
     }
 }

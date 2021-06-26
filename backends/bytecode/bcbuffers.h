@@ -18,14 +18,11 @@ typedef struct {
     int total_size;
 } ByteOutputBuffer;
 
-typedef enum {
-    BC_RELOC_NONE = 0,
-    BC_RELOC_MODULE_FUNCPTR = 1,
-} BCRelocKind;
+typedef void (*BCRelocFunc)(uint8_t *where, uint32_t addr);
 
 typedef struct BCRelocList {
     struct BCRelocList *next;
-    BCRelocKind kind;
+    BCRelocFunc func;
     uint8_t *pos;
 } BCRelocList;
 
