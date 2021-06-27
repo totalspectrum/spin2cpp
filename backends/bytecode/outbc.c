@@ -776,6 +776,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
     HwReg *hwreg;
     AST *baseExpr = NULL;
     AST *indexExpr = NULL;
+    AST *typeForIndex = NULL;
     AST *bitExpr1 = NULL;
     AST *bitExpr2 = NULL;
     AST *ident;
@@ -833,6 +834,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
     if (node->kind == AST_ARRAYREF) {
         ident = node->left;
         indexExpr = node->right;
+        typeForIndex = BaseType(ExprType(ident));
     } else ident = node;
 
     try_ident_again:
@@ -1070,6 +1072,10 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
 
     memOp.attr.memop.modSize = memOp.attr.memop.memSize; // Let's just assume these are the same
 
+    if (indexExpr && TypeSize(typeForIndex) != TypeSize(type)) {
+        indexExpr = AstOperator('*', indexExpr, AstInteger(TypeSize(typeForIndex) / TypeSize(type)));
+        typeForIndex = NULL;
+    }
     switch(targetKind) {
     case MOT_MEM: {
 
