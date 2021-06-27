@@ -1048,7 +1048,8 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         default: ERROR(node,"Can't handle float type with size %d",size); break;
         }
     } break;
-    case AST_PTRTYPE: {
+    case AST_PTRTYPE:
+    case AST_FUNCTYPE: {
         memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
     } break;
     case AST_OBJECT: {
@@ -1580,6 +1581,13 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
     AST *objtype = NULL;
     AST *vbase_expr = NULL;
     AST *objindex_expr = NULL;
+
+    ByteOpIR callOp = {0};
+    ByteOpIR anchorOp = {0};
+    anchorOp.kind = BOK_ANCHOR;
+    anchorOp.attr.anchor.withResult = asExpression;
+    anchorOp.attr.anchor.rescue = rescueAbort;
+
     if (node->left && node->left->kind == AST_METHODREF) {
         AST *ident = node->left->left;
         if (ident->kind == AST_ARRAYREF) {
@@ -1645,8 +1653,9 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
         } else if (IsIdentifier(node)) {
             sym = LookupAstSymbol(node, NULL);
         } else {
-            ERROR(node, "Function call is not an identifier");
-            return;
+            // not an identifier: assume a method call
+            // ERROR(node, "Function call is not an identifier");
+            goto indirect_call;
         }
 
         if (sym && sym->module) {
@@ -1661,11 +1670,6 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
         }
     }
 
-    ByteOpIR callOp = {0};
-    ByteOpIR anchorOp = {0};
-    anchorOp.kind = BOK_ANCHOR;
-    anchorOp.attr.anchor.withResult = asExpression;
-    anchorOp.attr.anchor.rescue = rescueAbort;
     if (!sym) {
         ERROR(node,"Function call has no symbol");
         return;
@@ -1768,6 +1772,7 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
             extraResults = callOp.attr.call.numResults - 1;
         }
     } else {
+    indirect_call: {
         // not a direct call: so instead we need to do a __call_methodptr(p) where p is the pointer
         AST *ident = node->left;
         AST *funcType = ExprType(ident);
@@ -1790,13 +1795,18 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
         if (funid < 0) {
             ERROR(node, "Unable to get function ID for %s", sym->our_name);
         }
-        callobjid = getObjID(current, func->module->classname, &objtype);
-        callOp.kind = BOK_CALL_OTHER;
-        callOp.attr.call.objID = callobjid;
+        if (func->module == current) {
+            callOp.kind = BOK_CALL_SELF;
+        } else {
+            callobjid = getObjID(current, func->module->classname, &objtype);
+            callOp.kind = BOK_CALL_OTHER;
+            callOp.attr.call.objID = callobjid;
+        }
         callOp.attr.call.funID = funid;
         callOp.attr.call.numResults = BCGetNumResultsByType(funcType);
         if (callOp.attr.call.numResults >= 1) {
             extraResults = callOp.attr.call.numResults - 1;
+        }
         }
     }
 
