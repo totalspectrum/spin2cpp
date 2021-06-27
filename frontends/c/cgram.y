@@ -1874,11 +1874,15 @@ labeled_statement
             {
                 AST *stmt = $6;
                 AST *range = NewAST(AST_RANGE, $2, $4);
+                range = NewAST(AST_EXPRLIST, range, NULL);
                 $$ = NewAST(AST_CASEITEM, range, stmt);
             }
 	| C_CASE constant_expression ':' statement
             {
-                $$ = NewAST(AST_CASEITEM, $2, $4);
+                AST *range = $2;
+                AST *stmt = $4;
+                range = NewAST(AST_EXPRLIST, range, NULL);
+                $$ = NewAST(AST_CASEITEM, range, stmt);
             }
 	| C_DEFAULT ':' statement
             {
