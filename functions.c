@@ -3037,13 +3037,13 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
             }
             if (op == K_ASSIGN) {
                 ast = AstAssign(lhs, rhs);
-            } else if (!ExprHasSideEffects(lhs)) {
+            } else {
                 if (rhs) {
                     ast = AstAssign(lhs, AstOperator(op, lhs, rhs));
                 } else {
                     ast = AstAssign(lhs, AstOperator(op, NULL, lhs));
                 }                    
-            }
+            } 
             if (preseq) {
                 ast = NewAST(AST_SEQUENCE, preseq, ast);
             }
