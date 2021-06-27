@@ -815,6 +815,7 @@ MarkStaticFunctionPointers(AST *list)
             f = (Function *)sym->val;
             f->used_as_ptr = 1;
             MarkUsed(f, "static func");
+            MarkSystemFuncUsed("__call_methodptr");
         }
         return;
     default:

@@ -366,7 +366,7 @@ TranslateToExprList(AST *listholder)
     return head;
 }
 
-static void
+void
 MarkSystemFuncUsed(const char *name)
 {
     Symbol *sym;

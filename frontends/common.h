@@ -627,6 +627,7 @@ void ProcessOneFunc(Function *pf);
 
 /* mark a function (and all functions it references) as used */
 void MarkUsed(Function *f, const char *callerName);
+void MarkSystemFuncUsed(const char *systemName);
 
 /* return true if a function should be removed */
 bool ShouldSkipFunction(Function *f);

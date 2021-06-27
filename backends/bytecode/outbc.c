@@ -636,13 +636,19 @@ BCCompileInteger(BCIRBuffer *irbuf,int32_t ival) {
 }
 
 static void
-BCCompileModuleFuncRef(BCIRBuffer *irbuf,Module *M,int32_t funcid)
+BCCompilePushModuleFuncRef(BCIRBuffer *irbuf,Module *M,int32_t funcid)
 {
     ByteOpIR opc = {0};
     opc.kind = BOK_CONSTANT_FUNCREF;
     opc.attr.funcval.modref = M;
     opc.data.int32 = funcid;
     BIRB_PushCopy(irbuf,&opc);
+}
+
+static void
+BCCompileDatModuleFuncRef(uint8_t *where,Module *M,int32_t funcid)
+{
+    ERROR(NULL, "Unable to put data reloc");
 }
 
 static void BCCompilePopN(BCIRBuffer *irbuf,int popcount) {
@@ -810,7 +816,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
                 int id = getFuncIDForKnownFunc(M, F);
                 if (addr < 0) {
                     //WARNING(node, "Need to patch address later");
-                    BCCompileModuleFuncRef(irbuf, M, id);
+                    BCCompilePushModuleFuncRef(irbuf, M, id);
                 } else {
                     uint32_t val = (id<<16) | addr;
                     BCCompileInteger(irbuf, val);
@@ -989,7 +995,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
                 int id = getFuncIDForKnownFunc(M, F);
                 if (addr < 0) {
                     //WARNING(node, "Need to patch address later");
-                    BCCompileModuleFuncRef(irbuf, M, id);
+                    BCCompilePushModuleFuncRef(irbuf, M, id);
                 } else {
                     uint32_t val = (id<<16) | (addr);
                     BCCompileInteger(irbuf, val);
@@ -1781,6 +1787,9 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
         }
         func = (Function *)sym->val;
         funid = getFuncID(func->module, sym->our_name);
+        if (funid < 0) {
+            ERROR(node, "Unable to get function ID for %s", sym->our_name);
+        }
         callobjid = getObjID(current, func->module->classname, &objtype);
         callOp.kind = BOK_CALL_OTHER;
         callOp.attr.call.objID = callobjid;
@@ -3103,6 +3112,76 @@ BCEmitModuleRelocations(ByteOutputBuffer *bob,Module *P) {
 }
 
 static void
+BCDatPutLong(uint8_t *ptr, uint32_t data) {
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+    data = __builtin_bswap32(data);
+#endif
+    memcpy(ptr, &data, 4);
+}
+
+static void
+BCProcessDatRelocs(Module *P, OutputSpan *span, Reloc *reloc, size_t numRelocs)
+{
+    size_t i;
+    int datbase = BCgetDAToffset(P, true, NULL, true);
+    uint8_t *spdata = span->data;
+    size_t maxsize = span->size;
+
+    if (datbase < 0) {
+        ERROR(NULL, "Unable to get DAT base for %s", P->classname);
+        return;
+    }
+    for (i = 0; i < numRelocs; i++, reloc++) {
+        switch (reloc->kind) {
+        case RELOC_KIND_I32: {
+            Symbol *sym = reloc->sym;
+            int off = reloc->addr;
+            uint32_t data;
+
+            if (off + 4 > maxsize) {
+                ERROR(NULL, "Relocation goes past end of span");
+                return;
+            }
+            if (!sym) {
+                // relocation relative to start of dat
+                data = reloc->symoff + datbase;
+                BCDatPutLong(&spdata[off], data);
+            } else if (sym->kind == SYM_FUNCTION) {
+                Function *F = (Function *)sym->val;
+                Module *Obj = F->module;
+                if (Obj->bedata == NULL) {
+                    ERROR(NULL, "No module data for %s", Obj->classname);
+                    return;
+                }
+                int32_t addr = ModData(Obj)->compiledAddress;
+                int id = getFuncIDForKnownFunc(Obj, F);
+                if (id < 0) {
+                    ERROR(NULL, "Unable to get id for function %s", F->name);
+                }
+                if (addr < 0) {
+                    BCCompileDatModuleFuncRef(&spdata[off], Obj, id);
+                } else {
+                    data = (id<<16) | addr;
+                    BCDatPutLong(&spdata[off], data);
+                }
+            } else {
+                ERROR(NULL, "Unable to handle relocation for %s", sym->user_name);
+            }
+        } break;
+        case RELOC_KIND_NONE:
+        case RELOC_KIND_DEBUG:
+            break; /* nothing to do */
+        case RELOC_KIND_AUGS:
+        case RELOC_KIND_AUGD:
+        default:
+            ERROR(NULL, "Unable to handle reloc %d in bytecode", reloc->kind);
+            break;
+        }
+    }
+}
+
+
+static void
 BCCompileObject(ByteOutputBuffer *bob, Module *P) {
 
     Module *save = current;
@@ -3169,11 +3248,16 @@ BCCompileObject(ByteOutputBuffer *bob, Module *P) {
         // Got DAT block
         // TODO pass through listing data
         Flexbuf datBuf;
+        Flexbuf datRelocs;
+        OutputSpan *datSpan;
         flexbuf_init(&datBuf,2048);
+        flexbuf_init(&datRelocs,1024);
         // FIXME for some reason, this sometimes(??) prints empty DAT blocks for subobjects ???
-        PrintDataBlock(&datBuf,P,NULL,NULL);
+        PrintDataBlock(&datBuf,P,NULL,&datRelocs);
         BOB_Comment(bob,"--- DAT Block");
-        BOB_Push(bob,(uint8_t*)flexbuf_peek(&datBuf),flexbuf_curlen(&datBuf),NULL);
+        datSpan = BOB_Push(bob,(uint8_t*)flexbuf_peek(&datBuf),flexbuf_curlen(&datBuf),NULL);
+        BCProcessDatRelocs(P,datSpan,(Reloc*)flexbuf_peek(&datRelocs),flexbuf_curlen(&datRelocs)/sizeof(Reloc));
+        flexbuf_delete(&datRelocs);
         flexbuf_delete(&datBuf);
     }
 
