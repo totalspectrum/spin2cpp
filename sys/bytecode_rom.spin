@@ -482,17 +482,9 @@ pri _make_methodptr(o, func) | ptr
 ' up to 8 parameters works OK; more than that and we could
 ' run into problems
 '
-pri __call_methodptr(a,b,c,d,e,f,g,h) | p, off, pc
-  p := INB
-  __interp_vbase := long[p]
-  off := word[p+6]<<2  ' function offset as words
-  p := word[p+4]       ' new pbase
-  
-  __interp_pbase := p
-  p += off
-  pc := word[p] + __interp_pbase   ' new pc
-  'off := word[p][1] ' number of locals
-  'off -= 12              ' we have 2 locals already
-  'if off > 0
-  '  __interp_dcurr += (off)
-  __interp_pcurr := pc
+pri __call_methodptr
+  __interp_vbase := long[INB]
+  result := word[INB+6]<<1  ' function offset as words
+  __interp_pbase := word[INB+4]       ' new pbase
+  __interp_dcurr += word[__interp_pbase][result+1]
+  __interp_pcurr := word[__interp_pbase][result~] + __interp_pbase ' new pc
