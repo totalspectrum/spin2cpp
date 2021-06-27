@@ -373,7 +373,8 @@ MarkSystemFuncUsed(const char *name)
     Function *calledf;
     sym = FindSymbol(&systemModule->objsyms, name);
     if (!sym) {
-        ERROR(NULL, "Internal error could not find %s", name);
+        //it's OK, not all back ends have all system functions
+        //ERROR(NULL, "Internal error could not find %s", name);
         return;
     }
     if (sym->kind == SYM_FUNCTION) {
