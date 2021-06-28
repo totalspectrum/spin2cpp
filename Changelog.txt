@@ -1,5 +1,4 @@
 Version 6.0.0
-- Automatically typedef struct and class names in C++
 - Fixed multiple assignments in Spin (a:=b:=c) to have the same semantics as Spin
 - Fixed an optimizer bug where reads/writes could be incorrectly re-ordered
 - Fixed an error parsing += in BASIC array operations

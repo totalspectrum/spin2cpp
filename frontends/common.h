@@ -801,7 +801,7 @@ void initSpinLexer(int flags);
 #define LangBoolIsOne(lang) (IsCLang(lang)||IsPythonLang(lang))
 #define LangCaseSensitive(lang) (IsCLang(lang))
 #define LangCaseInSensitive(lang) (!LangCaseSensitive(lang))
-#define LangStructAutoTypedef(lang) ((lang) == LANG_CFAMILY_CPP)
+#define LangStructAutoTypedef(lang) (0 && (lang) == LANG_CFAMILY_CPP)
 
 void InitGlobalModule(void);
 Module *NewModule(const char *modulename, int language);
