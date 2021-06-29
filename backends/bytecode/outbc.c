@@ -1587,7 +1587,8 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
     AST *objtype = NULL;
     AST *vbase_expr = NULL;
     AST *objindex_expr = NULL;
-
+    AST *indirect_call_expr = NULL;
+    
     ByteOpIR callOp = {0};
     ByteOpIR anchorOp = {0};
     anchorOp.kind = BOK_ANCHOR;
@@ -1788,9 +1789,7 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
             ERROR(node,"Unhandled FUNCALL symbol (name is %s and sym kind is %d)",sym->our_name,sym->kind);
             return;
         }
-        BCCompileExpression(irbuf,ident,context,false); // push as parameter
-        ByteOpIR regPushOp = { .kind = BOK_REG_WRITE, .data.int32 = HWRegRetval(1) };
-        BIRB_PushCopy(irbuf,&regPushOp);
+        indirect_call_expr = ident;
         sym = LookupSymbol("__call_methodptr");
         if (!sym || sym->kind != SYM_FUNCTION) {
             ERROR(node,"Internal error, missing __call_methodptr");
@@ -1832,6 +1831,11 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
         BIRB_PushCopy(irbuf,&regOp);
     }
 
+    if (indirect_call_expr) {
+        BCCompileExpression(irbuf,indirect_call_expr,context,false); // push as parameter
+        ByteOpIR regPushOp = { .kind = BOK_REG_WRITE, .data.int32 = HWRegRetval(1) };
+        BIRB_PushCopy(irbuf,&regPushOp);
+    }
     if (objindex_expr) BCCompileExpression(irbuf,objindex_expr,context,false);
     BIRB_PushCopy(irbuf,&callOp);
 
@@ -1911,7 +1915,6 @@ BCCompileCoginit(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpression
         BCCompileInteger(irbuf,-4); // Magic number
         ByteOpIR magicWriteOp = {.kind = BOK_MEM_WRITE,.attr.memop = {.base = MEMOP_BASE_POP, .memSize = MEMOP_SIZE_LONG, .popIndex = true}};
         BIRB_PushCopy(irbuf,&magicWriteOp);  // Write cogid????
-
 
 
     } else {
