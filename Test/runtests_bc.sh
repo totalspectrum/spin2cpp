@@ -46,7 +46,7 @@ do
   fi  
 done
 
-if false; then
+if true; then
 #
 # C tests; obviously no need to test conversion to C
 #
@@ -71,7 +71,7 @@ do
 done
 fi  # end of C tests
 
-if true; then
+if false; then
 #
 # BASIC tests
 #

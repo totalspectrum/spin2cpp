@@ -1790,6 +1790,13 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
             return;
         }
         indirect_call_expr = ident;
+        // strip off one level of indirection if this is not a pointer
+        if (!IsPointerType(indirect_call_expr) && indirect_call_expr->kind == AST_ARRAYREF && IsConstZero(indirect_call_expr->right)) {
+            indirect_call_expr = indirect_call_expr->left;
+            if (indirect_call_expr->kind == AST_MEMREF) {
+                indirect_call_expr = indirect_call_expr->right;
+            }
+        }
         sym = LookupSymbol("__call_methodptr");
         if (!sym || sym->kind != SYM_FUNCTION) {
             ERROR(node,"Internal error, missing __call_methodptr");
