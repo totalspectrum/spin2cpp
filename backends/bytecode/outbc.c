@@ -810,7 +810,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
                 Function *F = (Function *)sym->val;
                 Module *M = F->module;
                 if (M->bedata == NULL) {
-                    ERROR(node, "Cannot find address for function (no module info)");
+                    ERROR(node, "Cannot find address for function %s (no module info)",  sym->user_name);
                     return;
                 }
                 int32_t addr = ModData(M)->compiledAddress;
@@ -2933,6 +2933,8 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
     // I think there's other body types so let's leave this instead of using ASSERT_AST_KIND
     if (!F->body) {
         DEBUG(NULL,"compiling function %s with no body...",F->name);
+    } else if (F->body->kind == AST_STRING) {
+        WARNING(NULL,"compiling function %s which is just a reference",F->name);
     } else if (F->body->kind != AST_STMTLIST) {
         ERROR(F->body,"Internal Error: Expected AST_STMTLIST, got id %d",F->body->kind);
         return;
