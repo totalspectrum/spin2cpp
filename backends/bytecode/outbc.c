@@ -928,12 +928,12 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
             memOp.data.int32 = 0;
         } break;
         case SYM_LOCALVAR: {
-            memOp.attr.memop.base = MEMOP_BASE_DBASE;
+            memOp.attr.memop.base = (curfunc->closure) ? MEMOP_BASE_VBASE : MEMOP_BASE_DBASE;
             targetKind = MOT_MEM;
             memOp.data.int32 = sym->offset + BCLocalBase();
         } break;
         case SYM_PARAMETER: {
-            memOp.attr.memop.base = MEMOP_BASE_DBASE;
+            memOp.attr.memop.base = (curfunc->closure) ? MEMOP_BASE_VBASE : MEMOP_BASE_DBASE;
             targetKind = MOT_MEM;
             memOp.data.int32 = sym->offset + BCParameterBase();
         } break;
