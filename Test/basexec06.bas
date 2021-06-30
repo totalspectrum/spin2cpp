@@ -1,3 +1,5 @@
+const heapsize = 2048
+
 class counter
   dim n as integer
   sub set(x as integer)

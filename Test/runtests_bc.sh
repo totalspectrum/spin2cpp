@@ -21,31 +21,6 @@ endmsg=$ok
 
 echo "running bytecode tests on propeller..."
 
-
-#
-# Spin tests
-#
-
-for i in exec*.spin
-do
-  j=`basename $i .spin`
-
-  # now compile with asm
-  if $PROG_ASM -o $j.binary $i; then
-    $LOADP1 $j.binary -t -q > $j.out
-  fi
-  # the --lines=+6 skips the first 6 lines that propeller-load printed
-  tail --lines=+6 $j.out >$j.txt
-  if diff -ub Expect/$j.txt $j.txt
-  then
-    echo $j passed for ASM
-    rm -f $j.out $j.txt $j.binary $j.pasm
-  else
-    echo $j failed
-    endmsg="TEST FAILURES"
-  fi  
-done
-
 if true; then
 #
 # C tests; obviously no need to test conversion to C
@@ -71,7 +46,7 @@ do
 done
 fi  # end of C tests
 
-if false; then
+if true; then
 #
 # BASIC tests
 #
@@ -96,6 +71,30 @@ do
 done
 
 fi # end of BASIC tests
+
+#
+# Spin tests
+#
+
+for i in exec*.spin
+do
+  j=`basename $i .spin`
+
+  # now compile with asm
+  if $PROG_ASM -o $j.binary $i; then
+    $LOADP1 $j.binary -t -q > $j.out
+  fi
+  # the --lines=+6 skips the first 6 lines that propeller-load printed
+  tail --lines=+6 $j.out >$j.txt
+  if diff -ub Expect/$j.txt $j.txt
+  then
+    echo $j passed for ASM
+    rm -f $j.out $j.txt $j.binary $j.pasm
+  else
+    echo $j failed
+    endmsg="TEST FAILURES"
+  fi  
+done
 
 # clean up
 rm -f FullDuplexSerial.cpp FullDuplexSerial.h
