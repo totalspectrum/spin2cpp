@@ -907,6 +907,13 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
     }
 
     if (!sym) {
+        if (node->kind == AST_ARRAYREF && indexExpr && !baseExpr) {
+            memOp.attr.memop.base = MEMOP_BASE_POP;
+            targetKind = MOT_MEM;
+            
+            baseExpr = ident;
+            goto nosymbol_memref;
+        }
         ERROR(ident,"Can't get symbol");
         return;
     } else {
@@ -1612,6 +1619,7 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
     AST *vbase_expr = NULL;
     AST *objindex_expr = NULL;
     AST *indirect_call_expr = NULL;
+    bool dupFirstParameter = false;
     
     ByteOpIR callOp = {0};
     ByteOpIR anchorOp = {0};
@@ -1654,9 +1662,7 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
                 AstReportAs(ident,&save);
                 vbase_expr = NewAST(AST_ADDROF,ident,NULL);
                 AstReportDone(&save);
-            }
-
-            
+            }           
         }
         if (callobjid<0) {
             ERROR(node->left,"Not an OBJ of this object");
@@ -1722,6 +1728,13 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
                 callOp.kind = BOK_BUILTIN_STRSIZE;
             } else if (!strcmp(sym->our_name,"strcomp")) {
                 callOp.kind = BOK_BUILTIN_STRCOMP;
+            } else if (!strcmp(sym->our_name,"bytemove")) {
+                // need to manually return the first parameter
+                // (the interpreter doesn't do this for us)
+                callOp.kind = BOK_BUILTIN_BULKMEM;
+                callOp.attr.bulkmem.isMove = true;
+                callOp.attr.bulkmem.memSize = BULKMEM_SIZE_BYTE;
+                dupFirstParameter = true;
             } else {
                 ERROR(node,"Unhandled expression builtin %s",sym->our_name);
                 return;
@@ -1853,6 +1866,13 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
         for (AST *list=node->right;list;list=list->right) {
             ASSERT_AST_KIND(list,AST_EXPRLIST,return;);
             BCCompileExpression(irbuf,list->left,context,false);
+            if (dupFirstParameter) {
+                ByteOpIR regOp = { .kind = BOK_REG_WRITE, .data.int32 = HWRegRetval(1) };
+                BIRB_PushCopy(irbuf,&regOp);
+                regOp.kind = BOK_REG_READ;
+                BIRB_PushCopy(irbuf,&regOp);
+                BIRB_PushCopy(irbuf,&regOp);
+            }
         }
     }
 
