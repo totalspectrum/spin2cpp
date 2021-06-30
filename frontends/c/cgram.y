@@ -867,8 +867,10 @@ ConstructDefaultValue(AST *decl, AST *val)
 %token C_CATCH "catch"
 %token C_CLASS "class"
 %token C_DELETE "delete"
+%token C_FALSE "false"
 %token C_NEW "new"
 %token C_NULLPTR "nullptr"
+%token C_TRUE "true"
 %token C_PRIVATE "private"
 %token C_PUBLIC "public"
 %token C_TEMPLATE "template"
@@ -924,6 +926,10 @@ primary_expression
             { $$ = $1; }
 	| C_THIS
             { $$ = NewAST(AST_SELF, NULL, NULL); }
+        | C_TRUE
+            { $$ = AstInteger(1); }
+        | C_FALSE
+            { $$ = AstInteger(0); }
         | C_NULLPTR
             { $$ = AstBitValue(0); }
 	| C_STRING_LITERAL

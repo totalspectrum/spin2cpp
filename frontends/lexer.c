@@ -2082,14 +2082,17 @@ struct reservedword c_keywords[] = {
 };
 // C++ keywords
 struct reservedword cpp_keywords[] = {
+  { "bool", C_BOOL },
   { "catch", C_CATCH },
   { "class", C_CLASS },
+  { "false", C_FALSE },
   { "nullptr", C_NULLPTR },
   { "private", C_PRIVATE },
   { "public", C_PUBLIC },
   { "template", C_TEMPLATE },
   { "this", C_THIS },
   { "throw", C_THROW },
+  { "true", C_TRUE },
 };
 
 // keywords reserved in BASIC only in asm blocks
