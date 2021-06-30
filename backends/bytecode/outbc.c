@@ -33,6 +33,23 @@ bool interp_can_unsigned() {
     }
 }
 
+static AST *BCAllocaExpr(AST *siz) {
+    if (gl_interp_kind != INTERP_KIND_P1ROM) {
+        ERROR(siz, "Interpreter does not support __builtin_alloca");
+        return siz;
+    }
+    AST *tmp = AstIdentifier("INB");
+    AST *dcurr = AstIdentifier("__interp_dcurr");
+    AST *assign = AstAssign(tmp, dcurr);
+    AST *expr = AstOperator('+', siz, AstInteger(3));
+    expr = AstOperator('&', expr, AstInteger(0xfffffffc));
+    expr = FoldIfConst(expr);
+    expr = AstOpAssign('+', dcurr, expr);
+    expr = NewAST(AST_SEQUENCE, assign, expr);
+    expr = NewAST(AST_SEQUENCE, expr, tmp);
+    return expr;
+}
+
 static int BCGetNumResultsByType(AST *funcType) {
     int n = FuncNumResults(funcType);
     return (n<=1) ? 1 : n;
@@ -2346,6 +2363,11 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
             case AST_SELF: {
                 AST *newNode = AstIdentifier("__interp_vbase");
                 BCCompileMemOp(irbuf,newNode,context,MEMOP_READ);
+            } break;
+            case AST_ALLOCA: {
+                // compile as "INB = __interp_dcurr; __interp_dcurr += ((n+3)&~3); INB"
+                AST *expr = BCAllocaExpr(node->right);
+                BCCompileExpression(irbuf, expr, context, asStatement);
             } break;
             default:
                 ERROR(node,"Unhandled node kind %d in expression",node->kind);
