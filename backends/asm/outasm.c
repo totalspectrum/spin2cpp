@@ -1387,35 +1387,6 @@ static void EmitPop(IRList *irl, Operand *src)
 }
 
 //
-// the size of local variables
-//
-static int AddSize(Symbol *sym, void *arg)
-{
-    int *ptr = (int *)arg;
-    int size;
-    switch (sym->kind) {
-    case SYM_LOCALVAR:
-    case SYM_TEMPVAR:
-    case SYM_PARAMETER:
-        size = TypeSize(sym->val);
-        size = (size + LONG_SIZE - 1) & ~(LONG_SIZE - 1);
-        *ptr += size;
-        break;
-    default:
-        break;
-    }
-    return 1;
-}
-
-static int LocalSize(Function *func)
-{
-    int size = LONG_SIZE * (func->numresults);
-    // iterate over local variables, incrementing the size
-    IterateOverSymbols(&func->localsyms, AddSize, (void *)&size);
-    return size;
-}
-
-//
 // the function Prolog and Epilog are always output, and do things
 // like stack management and variable setup
 //
@@ -1485,7 +1456,7 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
     }
     if (func->closure) {
         // need to copy the stack frame into the heap
-        Operand *framesize = NewImmediate(LocalSize(func));
+        Operand *framesize = NewImmediate(FuncLocalSize(func));
         Operand *tmp;
         if (!allocfunc) {
             allocfunc = GetSystemFunction("_gc_alloc_managed");
@@ -1774,7 +1745,7 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
         //
         // adjust stack as necessary
         //
-        localsize = LocalSize(func);
+        localsize = FuncLocalSize(func);
         if (COG_DATA) {
             EmitOp2(irl, OPC_ADD, stackptr, NewImmediate(localsize / LONG_SIZE));
         } else {
@@ -6382,7 +6353,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
                 }
             }
             if (func->local_address_taken || func->is_recursive || func->cog_task) {
-                int savesize = LocalSize(func) / LONG_SIZE;
+                int savesize = FuncLocalSize(func) / LONG_SIZE;
                 if (func->is_recursive) {
                     savesize *= 16;
                 }

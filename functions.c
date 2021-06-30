@@ -695,7 +695,6 @@ findLocalsAndDeclare(Function *func, AST *ast)
             C = func->closure = NewModule(closure_name, current->curLanguage);
             C->Lptr = current->Lptr;
             closure_type = NewAbstractObject(AstIdentifier(closure_name), NULL);
-            closure_type = NewAST(AST_OBJECT, closure_type, NULL);
             closure_type->d.ptr = func->closure;
             AddSymbol(&func->localsyms, closure_name, SYM_CLOSURE, closure_type, NULL);
 
@@ -3399,4 +3398,33 @@ ShouldSkipFunction(Function *f)
     if (0 == (gl_optimize_flags & OPT_REMOVE_UNUSED_FUNCS))
         return false;
     return true;
+}
+
+//
+// the size of local variables
+//
+static int AddSize(Symbol *sym, void *arg)
+{
+    int *ptr = (int *)arg;
+    int size;
+    switch (sym->kind) {
+    case SYM_LOCALVAR:
+    case SYM_TEMPVAR:
+    case SYM_PARAMETER:
+        size = TypeSize(sym->val);
+        size = (size + LONG_SIZE - 1) & ~(LONG_SIZE - 1);
+        *ptr += size;
+        break;
+    default:
+        break;
+    }
+    return 1;
+}
+
+int FuncLocalSize(Function *func)
+{
+    int size = LONG_SIZE * (func->numresults);
+    // iterate over local variables, incrementing the size
+    IterateOverSymbols(&func->localsyms, AddSize, (void *)&size);
+    return size;
 }

@@ -13,6 +13,7 @@
 const BCContext nullcontext = {.hiddenVariables = 0};
 
 static int getFuncIDForKnownFunc(Module *M,Function *F);  // forward declaration
+static void BCAddStaticReference(Module *P, AST *obj);
 
 bool interp_can_multireturn() {
     switch(gl_interp_kind) {
@@ -919,6 +920,12 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
                 memOp.data.int32 = sym->offset;
             }
 
+        } break;
+        case SYM_CLOSURE:{
+            BCAddStaticReference(current, (AST *)sym->val);
+            memOp.attr.memop.base = MEMOP_BASE_VBASE;
+            targetKind = MOT_MEM;
+            memOp.data.int32 = 0;
         } break;
         case SYM_LOCALVAR: {
             memOp.attr.memop.base = MEMOP_BASE_DBASE;
@@ -2929,7 +2936,6 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
     BCIRBuffer irbuf_pending = {0};
     irbuf.pending = &irbuf_pending;
 
-
     // I think there's other body types so let's leave this instead of using ASSERT_AST_KIND
     if (!F->body) {
         DEBUG(NULL,"compiling function %s with no body...",F->name);
@@ -2940,6 +2946,32 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
         return;
     } else {
         BCContext context = {.caseVarsAt = -1,.countRepeatAt = -1};
+        if (F->closure) {
+            // actually need variables to be in the heap
+            // so insert some code to copy them
+            AST *allocmem;
+            AST *copymem;
+            AST *args;
+            int framesize = FuncLocalSize(F);
+            // result = _gc_alloc_managed(framesize)
+            args = NewAST(AST_EXPRLIST, AstInteger(framesize), NULL);
+            allocmem = NewAST(AST_FUNCCALL, AstIdentifier("_gc_alloc_managed"), args);
+            allocmem = AstAssign(AstIdentifier("result"), allocmem);
+            allocmem = NewAST(AST_STMTLIST, allocmem, NULL);
+            // longcopy(result, dbase, framesize)
+            args = NewAST(AST_EXPRLIST, AstInteger(framesize), NULL);
+            args = NewAST(AST_EXPRLIST, AstIdentifier("__interp_dbase"), args);
+            args = NewAST(AST_EXPRLIST, AstIdentifier("result"), args);
+            copymem = NewAST(AST_FUNCCALL, AstIdentifier("bytemove"), args);
+            copymem = NewAST(AST_STMTLIST, copymem, NULL);
+            // dbase := result
+            args = AstAssign(AstIdentifier("__interp_vbase"), AstIdentifier("result"));
+            args = NewAST(AST_STMTLIST, args, F->body);
+            allocmem = AddToList(allocmem, copymem);
+            allocmem = AddToList(allocmem, args);
+            F->body = allocmem;
+        }
+    
         BCCompileStmtlist(&irbuf,F->body,context);
     }
     // Only need to append a return for void functions
@@ -2991,6 +3023,7 @@ BCAddPointerCalledObjects(Module *P, AST *ast) {
     if (!ast) return;
 
     switch (ast->kind) {
+    case AST_ADDROF:
     case AST_FUNCCALL:
         if (ast->left->kind == AST_METHODREF) {
             AST *methodref = ast->left;
@@ -3304,6 +3337,9 @@ BCCompileObject(ByteOutputBuffer *bob, Module *P) {
         return;
     }
 
+    if (obj_cnt != ModData(P)->obj_cnt) {
+        ERROR(NULL,"Object count for %s changed!", P->classname);
+    }
     // emit subobjects
     for (int i=0;i<obj_cnt;i++) {
         AST *obj = ModData(P)->objs[i];

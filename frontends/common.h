@@ -692,6 +692,9 @@ void SetFunctionReturnType(Function *func, AST *type);
 /* get the return type for a function */
 AST *GetFunctionReturnType(Function *func);
 
+/* number of local variables in a function */
+int FuncLocalSize(Function *func);
+
 /* find function symbol in a function call; optionally returns the object ref */
 Symbol *FindFuncSymbol(AST *funccall, AST **objrefPtr, int errflag);
 
