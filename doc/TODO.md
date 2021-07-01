@@ -3,8 +3,6 @@ Things to do
 
 C Improvements
 --------------
-__attribute__ for constructors and cogexec
-
 Finish porting simpletools.h
 
 virtual methods?
@@ -56,7 +54,6 @@ Add in the missing openspin options to flexspin.
 
 Add an option to get a report of method sizes and free space left.
 
-full public/private support
 
 Optimization
 ------------
@@ -70,6 +67,6 @@ Better fcache loading code.
 Long Term
 ---------
 
-Implement a spin bytecode back end.
+Extend bytecode backend to cover P2 interpreter
 
 Implement a Python-like front end.
