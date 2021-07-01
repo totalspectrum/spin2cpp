@@ -1735,7 +1735,15 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
     }
 
     if (!sym) {
-        ERROR(node,"Function call has no symbol");
+        if (IsIdentifier(node->left)) {
+            const char *name = GetUserIdentifierName(node->left);
+            ERROR(node,"Function %s not found", name);
+        } else if (IsIdentifier(node)) {
+            const char *name = GetUserIdentifierName(node);
+            ERROR(node,"Identifier %s not found", name);
+        } else {
+            ERROR(node,"Function call has no symbol");
+        }
         return;
     } else if (sym->kind == SYM_BUILTIN) {
         anchorOp.kind = 0; // Where we're going, we don't need Stack Frames
