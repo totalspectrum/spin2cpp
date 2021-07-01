@@ -60,6 +60,10 @@ static int BCGetNumResults(Function *F) {
     return (n<=1) ? 1 : n;
 }
 
+static int BCLocalSize(Function *F) {
+    return FuncLocalSize(F); // F->numlocals*LONG_SIZE;
+}
+
 static int BCParameterBase() {
     switch(gl_interp_kind) {
     case INTERP_KIND_P1ROM: return 4; // RESULT is always there
@@ -799,6 +803,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
     AST *bitExpr2 = NULL;
     AST *ident;
     int memberOffset = 0;
+    int pushMultiple = 0;
     
     if (node->kind == AST_METHODREF) {
         AST *selector = node->right;
@@ -1059,7 +1064,8 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         case 1: memOp.attr.memop.memSize = MEMOP_SIZE_BYTE; break;
         case 2: memOp.attr.memop.memSize = MEMOP_SIZE_WORD; break;
         // Technically treated as signed, but all the unsigned operators are seperate, anyways, so I guess it's fine?
-        case 4: memOp.attr.memop.memSize = MEMOP_SIZE_LONG; break; 
+        case 4: memOp.attr.memop.memSize = MEMOP_SIZE_LONG; break;
+        case 8: memOp.attr.memop.memSize = MEMOP_SIZE_LONG; pushMultiple = 2; break;
         default: ERROR(node,"Can't handle unsigned type with size %d",size); break;
         }
     } break;
@@ -1070,6 +1076,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         case 1: if (kind == MEMOP_WRITE || kind == MEMOP_READ) memOp.attr.memop.memSize = MEMOP_SIZE_BYTE; else goto signed_todo; break;
         case 2: if (kind == MEMOP_WRITE || kind == MEMOP_READ) memOp.attr.memop.memSize = MEMOP_SIZE_WORD; else goto signed_todo; break;
         case 4: memOp.attr.memop.memSize = MEMOP_SIZE_LONG; break; 
+        case 8: memOp.attr.memop.memSize = MEMOP_SIZE_LONG; pushMultiple = 2; break;
         signed_todo:
         default: ERROR(node,"Can't handle signed type with size %d",size); break;
         }
@@ -1078,6 +1085,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         int size = type->left->d.ival;
         switch (size) {
         case 4: memOp.attr.memop.memSize = MEMOP_SIZE_LONG; break; 
+        case 8: memOp.attr.memop.memSize = MEMOP_SIZE_LONG; pushMultiple = 2; break;
         default: ERROR(node,"Can't handle float type with size %d",size); break;
         }
     } break;
@@ -1089,10 +1097,12 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         int size = TypeSize(type);
         if (size == 4) {
             memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
-        } else if (kind == MEMOP_ADDRESS || indexExpr) {
+        } else if (kind == MEMOP_ADDRESS) {
             memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
         } else {
-            ERROR(node, "Cannot perform operation on object type");
+            // need to push multiple values here
+            memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
+            pushMultiple = size / 4;
         }
     } break;
     default:
@@ -1223,7 +1233,21 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
     } break;
     }
 
-    BIRB_PushCopy(irbuf,&memOp);
+    if (pushMultiple && memOp.attr.memop.memSize == MEMOP_SIZE_LONG) {
+        if (kind == MEMOP_READ) {
+            // push in regular order
+            for (int i = 0; i < pushMultiple; i++) {
+                BIRB_PushCopy(irbuf,&memOp);
+                memOp.data.int32 += LONG_SIZE;
+            }
+        } else if (kind == MEMOP_WRITE && 0) {
+            // pop in reverse order
+        } else {
+            ERROR(node,"Cannot handle large objects yet");
+        }
+    } else {
+        BIRB_PushCopy(irbuf,&memOp);
+    }
 }
 
 static inline void
@@ -1263,8 +1287,11 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
             size = (size + LONG_SIZE-1)/LONG_SIZE;
             AstReportAs(left,&save);
             // convert to a list of assignments
+            // like long[@foo][n] = ...
+            AST *ref = NewAST(AST_ADDROF, left, NULL);
+            ref = NewAST(AST_MEMREF, ast_type_long, ref);
             for (int i = 0; i < size; i++) {
-                elem = NewAST(AST_ARRAYREF, left, AstInteger(i));
+                elem = NewAST(AST_ARRAYREF, ref, AstInteger(i));
                 list = AddToList(list, NewAST(AST_EXPRLIST, elem, NULL));
             }
             AstReportDone(&save);
@@ -2892,8 +2919,10 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
                     size = returnOp.attr.returninfo.numResults;
                 }
                 AstReportAs(node,&save);
+                AST *ref = NewAST(AST_ADDROF, retval, NULL);
+                ref = NewAST(AST_MEMREF, ast_type_long, ref);
                 for (int i = 0; i < size; i++) {
-                    elem = NewAST(AST_ARRAYREF, retval, AstInteger(i));
+                    elem = NewAST(AST_ARRAYREF, ref, AstInteger(i));
                     list = AddToList(list, NewAST(AST_EXPRLIST, elem, NULL));
                 }
                 AstReportDone(&save);
@@ -2945,7 +2974,7 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
     // first up, we now know the function's address, so let's fix it up in the header
     int func_ptr = bob->total_size;
     int func_offset = 0;
-    int func_localsize = F->numlocals*4; // SUPER DUPER FIXME smaller locals
+    int func_localsize = BCLocalSize(F); // F->numlocals*4; // SUPER DUPER FIXME smaller locals
     Module *M = F->module;
     if (M->bedata == NULL || ModData(M)->compiledAddress < 0) {
         ERROR(NULL,"Compiling function on Module whose address is not yet determined???");
