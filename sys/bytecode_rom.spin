@@ -488,3 +488,11 @@ pri __call_methodptr
   __interp_pbase := word[INB+4]       ' new pbase
   __interp_dcurr += word[__interp_pbase][result+1]
   __interp_pcurr := word[__interp_pbase][result~] + __interp_pbase ' new pc
+
+'
+' memset(): we may want to optimize this to use longfill in special cases?
+'
+pri __builtin_memset(ptr, val, count) : r
+  r := ptr
+  bytefill(ptr, val, count)
+  
