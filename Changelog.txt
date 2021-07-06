@@ -3,6 +3,7 @@ Version 5.5.2
 - Allow relative branches between COG and LUT RAM
 - Cleaned up exec() and CHAIN to clear RAM before starting the new program
 - Fixed an optimizer bug where reads/writes could be incorrectly re-ordered
+- Fixed a bug in *s parsing in sscanf()
 
 Version 5.5.1
 - Added a warning for ignored second parameter to `org`
