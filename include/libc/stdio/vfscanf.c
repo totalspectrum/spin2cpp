@@ -207,7 +207,6 @@ get_string(int is_wchar, void *dest, size_t width, int c, FILE *stream,
 
   while (VAL(c!=EOF))
     {
-      if (!ignore)
 	{
 	  if (is_wchar)
 	    {
@@ -215,13 +214,13 @@ get_string(int is_wchar, void *dest, size_t width, int c, FILE *stream,
 	      c = mywgetc(c, &wc, stream, ms_ptr, scanset, &scan_check);
 	      if (!scan_check)
 		break;
-	      *wp++ = wc;
+              if (!ignore) *wp++ = wc;
 	    }
 	  else
 	    {
 	      if (!(in_scanset(c, scanset)))
 		break;
-	      *bp++ = c;
+	      if (!ignore) *bp++ = c;
 	    }
 	}
       NEXT(c);
@@ -335,7 +334,6 @@ int vfscanf(FILE *stream,const char *format_ptr,va_list args)
 	      }
 	    case 's':
 	      { void *destp = NULL;
-
 		if(!ignore)
 		  {
 		    destp=va_arg(args,void *);
@@ -521,9 +519,9 @@ int vfscanf(FILE *stream,const char *format_ptr,va_list args)
 
 		PREV(c);
 
-		if(ignore||!ms.size)
+		if(ignore||!ms.size) {
 		  break;
-
+                }
 		if(type=='u')
 		  switch(subtype)
 		    {
