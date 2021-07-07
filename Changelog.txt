@@ -1,6 +1,8 @@
 Version 6.0.0
 - Added support for bool, false, and true to C++
 - Allow relative branches between COG and LUT RAM
+- Changed "ASM CONST" to "CONST ASM" in BASIC
+- Added "ASM_CONST" keyword to Spin
 - Fixed multiple assignments in Spin (a:=b:=c) to have the same semantics as Spin
 - Fixed an optimizer bug where reads/writes could be incorrectly re-ordered
 - Fixed an error parsing += in BASIC array operations

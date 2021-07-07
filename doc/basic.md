@@ -1075,21 +1075,21 @@ function rotleft(x as uinteger, y as uinteger)
 end function
 ```
 
-#### ASM CONST
+#### CONST ASM
 
-If a `const` keyword appears after `asm` then the optimizer will leave untouched all code within the `asm` block. Normally this code is optimized along with the generated code, and this is usually what is desired, because often the compiler can make helpful changes like re-using registers for arguments and local variables. `asm const` should thus be avoided in general, but if there is some particular sequence that you need to have compiled exactly as-is, then you may use it.
+If a `const` keyword appears before `asm` then the optimizer will leave untouched all code within the `asm` block. Normally this code is optimized along with the generated code, and this is usually what is desired, because often the compiler can make helpful changes like re-using registers for arguments and local variables. `asm const` should thus be avoided in general, but if there is some particular sequence that you need to have compiled exactly as-is, then you may use it.
 
-#### ASM CPU
+#### CPU ASM
 
-`asm cpu` is like `asm const` but as well as leaving the code unoptimized it will copy it to the internal FCACHE area (rather than executing it from HUB memory). This can be useful if precise timing is required for loops.
+`cpu asm` is like `const asm` but as well as leaving the code unoptimized it will copy it to the internal FCACHE area (rather than executing it from HUB memory). This can be useful if precise timing is required for loops.
 
-#### ASM SHARED
+#### SHARED ASM
 
-An `asm shared` block declares some static code and/or data which is not intended to be executed immediately, but may be invoked with `cpu`. In this respect it is like a Spin language `DAT` block.
+A `shared asm` block declares some static code and/or data which is not intended to be executed immediately, but may be invoked with `cpu`. In this respect it is like a Spin language `DAT` block.
 
-The main difference between `asm` and `asm shared` is that the `asm shared` blocks are kept separate, outside of all functions and subroutines, whereas `asm` blocks are always part of a function or subroutine (or the main program). `asm` blocks are executed when control flow reaches them; code within `asm shared` must be explicitly invoked via `cpu`.
+The main difference between `asm` and `shared asm` is that the `shared asm` blocks are kept separate, outside of all functions and subroutines, whereas `asm` blocks are always part of a function or subroutine (or the main program). `asm` blocks are executed when control flow reaches them; code within `shared asm` must be explicitly invoked via `cpu`.
 
-`asm shared` blocks, like `asm const`, are not optimized by the optimizer.
+`shared asm` blocks, like `const asm`, are not optimized by the optimizer.
 
 ### ATAN
 

@@ -306,6 +306,7 @@ BuildDebugList(AST *exprlist)
 %token SP_PRI        "PRI"
 %token SP_OBJ        "OBJ"
 %token SP_ASM        "ASM"
+%token SP_ASM_CONST  "ASM_CONST"
 %token SP_ENDASM     "ENDASM"
 %token SP_END        "END"
 %token SP_INLINECCODE "CCODE"
@@ -860,6 +861,12 @@ repeatstmt:
   | SP_ASM datblock SP_ENDASM
     {
         AST *ast = NewCommentedAST(AST_INLINEASM, $2, AstInteger(0), $1);
+        $$ = ast;
+        LANGUAGE_WARNING(LANG_ANY, NULL, "asm/endasm is a flexspin extension");
+    }
+  | SP_ASM_CONST datblock SP_ENDASM
+    {
+        AST *ast = NewCommentedAST(AST_INLINEASM, $2, AstInteger(1), $1);
         $$ = ast;
         LANGUAGE_WARNING(LANG_ANY, NULL, "asm/endasm is a flexspin extension");
     }

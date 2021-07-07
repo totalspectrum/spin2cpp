@@ -2273,16 +2273,20 @@ asmstmt:
           // integer 0 means default asm
           $$ = NewCommentedAST(AST_INLINEASM, $3, AstInteger(0), $1);
       }
-  | BAS_ASM BAS_CONST eoln asmlist BAS_END BAS_ASM
+  | BAS_CONST BAS_ASM eoln asmlist BAS_END BAS_ASM
       {
           // integer 1 means const asm
           $$ = NewCommentedAST(AST_INLINEASM, $4, AstInteger(1), $1);
       }
-  | BAS_ASM BAS_CPU eoln asmlist BAS_END BAS_ASM
+  | BAS_CPU BAS_ASM eoln asmlist BAS_END BAS_ASM
       {
           // integer 3 means const asm execute from FCACHE
           $$ = NewCommentedAST(AST_INLINEASM, $4, AstInteger(3), $1);
       }
+  | BAS_SHARED BAS_ASM eoln asmlist BAS_END BAS_ASM
+      { current->datblock = AddToListEx(current->datblock, $4, &current->datblock_tail); $$ = 0;}
+  ;
+
   | BAS_ASM BAS_SHARED eoln asmlist BAS_END BAS_ASM
       { current->datblock = AddToListEx(current->datblock, $4, &current->datblock_tail); $$ = 0;}
   ;
