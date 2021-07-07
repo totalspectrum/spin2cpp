@@ -570,6 +570,7 @@ static int MapSpinBlock(int c)
     case SP_DAT:
         return BLOCK_DAT;
     case SP_ASM:
+    case SP_ASM_CONST:
     case SP_ORG:
         return BLOCK_ASM;
     case SP_PUB:
@@ -699,13 +700,14 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                 L->sawInstruction = 1;
                 break;
 	    case SP_ASM:
+            case SP_ASM_CONST:
             case SP_ORG:
-	        if (L->block_type == BLOCK_ASM && c == SP_ASM) {
+	        if (L->block_type == BLOCK_ASM && (c == SP_ASM || c == SP_ASM_CONST)) {
 		    fprintf(stderr, "WARNING: ignoring nested asm\n");
                 } else if (InDatBlock(L)) {
                     /* for ORG, nothing special to do */
                     /* for ASM, check for identifier */
-                    if (c == SP_ASM && L->colCounter - L->firstNonBlank > 4) {
+                    if ( (c == SP_ASM || c == SP_ASM_CONST) && L->colCounter - L->firstNonBlank > 4) {
                         goto is_identifier;
                     }
                     L->sawInstruction = 1;
@@ -1730,7 +1732,7 @@ struct reservedword {
     { "and", SP_AND },
     { "__andthen__", SP_ANDTHEN },
     { "asm", SP_ASM },  // NON-STANDARD
-
+    { "asm_const", SP_ASM_CONST }, // NON-STANDARD
     { "__builtin_alloca", SP_ALLOCA }, // NON-STANDARD
     { "byte", SP_BYTE },
 
@@ -2900,10 +2902,10 @@ instr_p1[] = {
     { "jmp",    0x5c000000, JMP_OPERAND, OPC_JUMP, FLAG_P1_STD },
     { "jmpret", 0x5c800000, JMPRET_OPERANDS, OPC_JMPRET, FLAG_P1_STD },
 
-    { "lockclr",0x0c400007, DST_OPERAND_ONLY, OPC_GENERIC_NR, FLAG_P1_STD },
+    { "lockclr",0x0c400007, DST_OPERAND_ONLY, OPC_LOCKCLR, FLAG_P1_STD },
     { "locknew",0x0cc00004, DST_OPERAND_ONLY, OPC_LOCKNEW, FLAG_P1_STD },
     { "lockret",0x0c400005, DST_OPERAND_ONLY, OPC_GENERIC_NR, FLAG_P1_STD },
-    { "lockset",0x0c400006, DST_OPERAND_ONLY, OPC_GENERIC_NR, FLAG_P1_STD },
+    { "lockset",0x0c400006, DST_OPERAND_ONLY, OPC_LOCKSET, FLAG_P1_STD },
 
     { "max",    0x4c800000, TWO_OPERANDS, OPC_MAXU, FLAG_P1_STD },
     { "maxs",   0x44800000, TWO_OPERANDS, OPC_MAXS, FLAG_P1_STD },
