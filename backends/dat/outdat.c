@@ -1516,20 +1516,24 @@ decode_instr:
                     } else {
                         ERROR(line, "%s branch crosses HUB/COG boundary", instr->name);
                     }
-                    isrc = curpc;
+                    //isrc = curpc;
                 }
             } else {
                 if (dstLut && curpc < 0x800) {
+#ifdef NEVER  /* crossing LUT/COG is OK  */
                     ERROR(line, "%s branch crosses LUT/COG boundary", instr->name);
                     isrc = curpc;
+#endif
                 } else if (!dstLut && !dstHub && curpc >= 0x800) {
+#ifdef NEVER
                     ERROR(line, "%s branch crosses LUT/COG boundary", instr->name);
                     isrc = curpc;
+#endif
                 } else if (dstHub) {
-                    ERROR(line, "%s branch crosses HUB/COG boundary", instr->name);
-                    isrc = curpc;
+                    WARNING(line, "%s branch crosses HUB/COG boundary", instr->name);
                 }
             }
+
             isrc = (isrc - (int)(curpc+4)) / 4;
             if ( (isrc < -256) || (isrc > 255) ) {
                 ERROR(line, "Source out of range for relative branch %s", instr->name);
