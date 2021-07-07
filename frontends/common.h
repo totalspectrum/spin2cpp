@@ -229,12 +229,12 @@ extern int gl_interp_kind;
 /* various global feature flags */
 /* set in MarkUsed() in functions.c */
 extern int gl_features_used;
-#define FEATURE_LONGJMP_USED 0x01
-#define FEATURE_GOSUB_USED   0x02
-#define FEATURE_LOCKREG_USED 0x04
-#define FEATURE_NEED_HEAP    0x08  /* garbage collector used */
-#define FEATURE_FLOAT_USED   0x10  /* some float operations */
-#define FEATURE_COMPLEXIO    0x20  /* mount or other file I/O */
+#define FEATURE_LONGJMP_USED  0x01
+#define FEATURE_GOSUB_USED    0x02
+#define FEATURE_MULTICOG_USED 0x04
+#define FEATURE_NEED_HEAP     0x08  /* garbage collector used */
+#define FEATURE_FLOAT_USED    0x10  /* some float operations */
+#define FEATURE_COMPLEXIO     0x20  /* mount or other file I/O */
 
 /* features which are checked for in -Oremove-features */
 /* NOTE: when you change this, add appropriate preprocessor symbols */

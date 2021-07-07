@@ -5982,12 +5982,6 @@ EmitMain_P1(IRList *irl, Module *P)
     ir = EmitMove(irl, arg1, GetOneGlobal(REG_HW, "par", 0));
     ir->flags |= FLAG_WZ;
 
-    // set up global lock register
-    if (gl_features_used & FEATURE_LOCKREG_USED) {
-        EmitOp1(irl, OPC_LOCKNEW, lockreg);
-        EmitOp2(irl, OPC_WRLONG, lockreg, lockreg_addr_ptr);
-    }
-    
     // set up to run LMM
     if (HUB_CODE) {
         ValidateStackptr();
@@ -6116,12 +6110,6 @@ EmitMain_P2(IRList *irl, Module *P, Operand *lutstart)
     
     EmitLabel(irl, skip_clock_label);
 
-    // set up global lock register
-    if (gl_features_used & FEATURE_LOCKREG_USED) {
-        EmitOp1(irl, OPC_LOCKNEW, lockreg);
-        EmitOp2(irl, OPC_WRLONG, lockreg, lockreg_addr_ptr);
-    }
-    
     // force LUT code, if any, to be loaded
     if (lutstart) {
         ir = EmitOp2(irl, OPC_MOV, pa_reg, lutstart);
@@ -6415,11 +6403,6 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
             lutstart = NewOperand(STRING_DEF, "lutentry", 0);
             EmitOp1(&lutcode, OPC_ORG, NewImmediate(0x200));
             EmitLabel(&lutcode, lutstart);
-        }
-        if (gl_features_used & FEATURE_LOCKREG_USED) {
-            lockreg = GetOneGlobal(REG_REG, "__lockreg", 0);
-            lockreg_addr_ptr = NewOperand(IMM_HUB_LABEL, "__lockreg", 0);
-            lockreg_addr_ptr = NewImmediatePtr(NULL, lockreg_addr_ptr);
         }
         if (gl_output == OUTPUT_COGSPIN) {
             EmitMain_CogSpin(&cogcode, P, maxargs, maxrets);

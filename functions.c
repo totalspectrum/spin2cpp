@@ -380,9 +380,6 @@ MarkSystemFuncUsed(const char *name)
     if (sym->kind == SYM_FUNCTION) {
         calledf = (Function *)sym->val;
         calledf->used_as_ptr = 1;
-        if (!strncmp(name, "_gc_alloc", 9)) {
-            gl_features_used |= FEATURE_LOCKREG_USED;
-        }
     }
 }
 
@@ -2561,8 +2558,6 @@ MarkUsedBody(AST *body, const char *caller)
                     MarkUsed(func, "needsinit");
                 }
             }
-        } else if (sym && !strcmp(name, "__lockreg")) {
-            gl_features_used |= FEATURE_LOCKREG_USED;
         }
         return;
     case AST_METHODREF:
