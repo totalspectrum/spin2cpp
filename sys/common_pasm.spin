@@ -115,9 +115,6 @@ pri __get_heap_base : r
     mov r, __heap_ptr
   endasm
 
-pri __getlockreg
-  return __lockreg
-
 pri _make_methodptr(o, func) | ptr
   ptr := _gc_alloc_managed(8)
   if (ptr)
@@ -125,3 +122,17 @@ pri _make_methodptr(o, func) | ptr
     long[ptr+4] := func
   return ptr
 
+pri _lockmem(addr) | r, mask
+  mask := _cogid() + $100
+  repeat
+    asm_const
+         rdlong r, addr wz
+  if_z   wrlong mask, addr
+  if_z   rdlong r, addr
+  if_z   rdlong r, addr
+    endasm
+  until r == mask
+
+pri _unlockmem(addr) | oldlock
+  long[addr] := 0
+    

@@ -495,4 +495,19 @@ pri __call_methodptr
 pri __builtin_memset(ptr, val, count) : r
   r := ptr
   bytefill(ptr, val, count)
-  
+
+pri _lockmem(addr) | oldlock, oldmem, lockreg
+  lockreg := __getlockreg
+  repeat
+    repeat
+      oldlock := _lockset(lockreg)
+    while oldlock
+    oldmem := byte[addr]
+    if oldmem == 0
+      long[addr] := 1
+    _lockclr(lockreg)
+  while oldmem <> 0
+
+pri _unlockmem(addr) | oldlock
+  long[addr] := 0
+    
