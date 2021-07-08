@@ -424,6 +424,8 @@ genPrintf(AST *ast)
         return NULL;
     }
     AstReportAs(ast, &saveinfo);
+
+    seq = addPrintCall(seq, Handle, basic_lock_io, NULL, NULL);
     while (*fmtstring) {
         c = *fmtstring++;
         if (!c) {
@@ -529,6 +531,7 @@ genPrintf(AST *ast)
     if (exprlist) {
         seq = addPrintCall(seq, Handle, basic_print_string, exprlist->left, Zero);
     }
+    seq = addPrintCall(seq, Handle, basic_unlock_io, NULL, NULL);
     AstReportDone(&saveinfo);
     return seq;
 }
@@ -741,6 +744,7 @@ ParsePrintStatement(AST *ast)
     if (!handle) {
         handle = AstInteger(0);
     }
+    seq = addPrintCall(seq, handle, basic_lock_io, NULL, NULL);
     while (exprlist) {
         fmtAst = defaultFmt;
         if (exprlist->kind != AST_EXPRLIST) {
@@ -814,6 +818,7 @@ ParsePrintStatement(AST *ast)
             ERROR(ast, "Unable to print expression of this type");
         }
     }
+    seq = addPrintCall(seq, handle, basic_unlock_io, NULL, NULL);
     return seq;
 }
 

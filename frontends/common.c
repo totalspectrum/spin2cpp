@@ -2184,6 +2184,7 @@ static struct FeatureDef {
 } feature_defs[] = {
     { FEATURE_COMPLEXIO, "__FEATURE_COMPLEXIO__" },
     { FEATURE_FLOAT_USED, "__FEATURE_FLOATS__" },
+    { FEATURE_MULTICOG_USED, "__FEATURE_MULTICOG__" },
     { 0, NULL }
 };
 

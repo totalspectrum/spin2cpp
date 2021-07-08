@@ -884,6 +884,15 @@ typedef int (*VFS_CloseFunc)(vfs_file_t *);
 #ifdef SIMPLE_IO
 #define _gettxfunc(h) ((void *)1)
 #define _getrxfunc(h) ((void *)1)
+# ifdef __FEATURE_MULTICOG__
+static int __iolock;
+void __lockio(int h)   { _lockmem(&__iolock); }
+void __unlockio(int h) { _unlockmem(&__iolock); }
+# else
+void __lockio(int h)   { }
+void __unlockio(int h) { }
+# endif
+
 #else
 // we want the BASIC open function to work correctly with old Spin
 // interfaces which don't return sensible values from send, so we
@@ -907,6 +916,20 @@ RxFunc _getrxfunc(unsigned h) {
     if (!v || !v->state) return 0;
     return (RxFunc)&v->getchar;
 }
+static int *_getiolock(unsigned h) {
+    vfs_file_t *v;
+    static int dummy;
+    v = __getftab(h);
+    if (!v || !v->state) return &dummy;
+    return &v->lock;
+}
+void __lockio(unsigned h) {
+_lockmem(_getiolock(h));
+}
+void __unlockio(unsigned h) {
+_unlockmem(_getiolock(h));
+}
+
 #endif
 
 //

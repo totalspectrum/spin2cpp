@@ -2576,6 +2576,9 @@ MarkUsedBody(AST *body, const char *caller)
         break;
     case AST_COGINIT:
         UseInternal("_coginit");
+        if (IsSpinCoginit(body,NULL)) {
+            ActivateFeature(FEATURE_MULTICOG_USED);
+        }
         break;
     case AST_LOOKUP:
         UseInternal("_lookup");

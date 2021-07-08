@@ -48,6 +48,9 @@ AST *basic_print_char;
 AST *basic_print_nl;
 AST *basic_put;
 
+AST *basic_lock_io;
+AST *basic_unlock_io;
+
 static AST *float_add;
 static AST *float_sub;
 static AST *float_mul;
@@ -1815,7 +1818,9 @@ InitGlobalFuncs(void)
         basic_print_char = getBasicPrimitive("_basic_print_char");
         basic_print_nl = getBasicPrimitive("_basic_print_nl");
         basic_put = getBasicPrimitive("_basic_put");
-
+        basic_lock_io = getBasicPrimitive("__lockio");
+        basic_unlock_io = getBasicPrimitive("__unlockio");
+        
         struct_copy = getBasicPrimitive("bytemove");
 
         string_cmp = getBasicPrimitive("_string_cmp");

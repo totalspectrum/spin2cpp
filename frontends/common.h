@@ -935,5 +935,7 @@ extern AST *basic_print_nl;
 extern AST *basic_put;
 extern AST *basic_print_longinteger;
 extern AST *basic_print_longunsigned;
+extern AST *basic_lock_io;
+extern AST *basic_unlock_io;
 
 #endif
