@@ -808,6 +808,32 @@ Reads the next directory entry.
 
 For further information see the `File I/O` section of the general documentation.
 
+## Serial I/O functions
+
+### ioctl
+
+```
+#include <unistd.h>
+#include <sys/ioctl.h>
+...
+r = ioctl(fd, TTYIOCTLGETFLAGS, &flags); // get current flags
+r = ioctl(fd, TTYIOCTLSETFLAGS, &flags); // set current flags
+```
+These ioctls get and set flags controlling the operation of terminals (e.g. the default serial port). They may be used to turn on or off echoing of input characters, and/or to control mapping of carriage return to newline. The flags are made of a mask of the bits `TTY_FLAG_ECHO` (to turn echo on) and `TTY_FLAG_CRNL` (to turn on mapping of CR to LF).
+
+
+### _rxraw
+
+Reads a single character from the default serial port, with no processing (no echoing and no CR/LF conversion). Takes a single parameter giving a timeout in milliseconds (with 0 meaning "no timeout, wait forever"). If a timeout occurs before the character is read, returns -1, otherwise returns the ASCII character read.
+
+### _txraw
+
+Sends a single character out over the default serial port.
+
+### See Also
+
+See also the general compiler documentation for more details on serial I/O functions.
+
 ## Time Functions
 
 The standard C99 library functions like `asctime`, `localtime`, `mktime`, and `strftime` are all available. The `time_t` type is an unsigned 32 bit integer, counting the number of non-leap seconds since midnight Jan. 1, 1970. Note that most P2 boards do not have a real time clock built in, so the time returned will not be accurate unless it is first set by `settimeofday` (see below). Also note that all of the time functions make use of an internal counter which is based on the system frequency, and hence must be called at least once every 54 seconds or so (on P1) in order to avoid losing time.
