@@ -16,12 +16,20 @@ void __run(long *src, int size, void *arg) __attribute__((cog))
 {
     long *dst = (long *)0;
     long clkmode;
-    size = (size + 3) >> 2;
+    long origSize = (size + 3)>>2;
+    size = origSize;
     do {
         *dst++ = *src++;
         --size;
     } while (size != 0);
 #ifdef __P2__
+    size = (480*1024)/4-origSize;
+    if (size > 0) {
+        do {
+            *dst++ = 0;
+            --size;
+        } while (size != 0);
+    }
     // set the clock back to RCFAST
     clkmode = __clkmode_var & ~3;
     if (clkmode) {
@@ -29,6 +37,14 @@ void __run(long *src, int size, void *arg) __attribute__((cog))
             hubset clkmode
             waitx  ##20_000_000/100
         }
+    }
+#else    
+    size = (30*1024)/4-origSize;
+    if (size > 0) {
+        do {
+            *dst++ = 0;
+            --size;
+        } while (size != 0);
     }
 #endif    
     _coginit(_cogid(), (void *)0, arg);
