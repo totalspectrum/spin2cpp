@@ -74,11 +74,17 @@ Do not try to declare registers; the inline assembly probably will not be runnin
 
 Try to keep inline assembly as simple as possible. Use the high level language for loops and conditional control structures; the high level language is there for a reason!
 
+### Inline assembly in bytecode
+
+Inline assembly is not supported in Spin1 bytecode (`--interp=rom`). It will produce a compile time error.
+
 ## Functions in COG or LUT memory
 
 Normally functions are placed in HUB memory, because there is a lot more of that. However, it is possible to force some functions to be placed in the chip's internal memory, where they will execute much more quickly. This must be done with care, because internal memory is a very limited resource.
 
 Only small functions should be placed in internal memory, and these functions should not call any other function.
+
+Functions in COG or LUT memory are not supported in bytecode output (e.g. `--interp=rom`).
 
 ### Spin/Spin2
 
@@ -114,6 +120,8 @@ int add(int x, int y) __attribute__((cog))
 Similarly use `__attribute__((lut))` to place the function into LUT memory.
 
 ## Register Usage
+
+These comments on register usage apply only to the default assembler output. Bytecode output (such as the Spin1 bytecode output enabled by `--interp=rom`) generally use all of the COG memory for the interpreter.
 
 ### P1
 
