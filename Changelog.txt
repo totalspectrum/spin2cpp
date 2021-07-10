@@ -1,5 +1,6 @@
 Version 5.5.2
 - Added cpustop for BASIC
+- Cleaned up exec() and CHAIN to clear RAM before starting the new program
 - Fixed an optimizer bug where reads/writes could be incorrectly re-ordered
 
 Version 5.5.1
