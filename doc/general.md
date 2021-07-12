@@ -320,6 +320,15 @@ In C:
 
 The C version is a little unexpected; one would expect HEAPSIZE to be declared as `const int` or with `#define`. This is a technical limitation that I hope to fix someday.
 
+### Garbage collection
+
+The garbage collector works by scanning memory for tagged pointers into the heap area; these pointers are assumed to be in use, whereas memory in the heap that is allocated but has no pointers to it in RAM are assumed to be garbage and are automatically freed during collection.
+
+Garbage collection happens automatically when the `_gc_alloc()` function finds there is not enough memory to fulfil are request. This can take quite a bit of time, so it is best to avoid memory allocation requests (e.g. BASIC string operations) inside time critical code.
+
+It is also possible to manually trigger a garbage collection request by calling `_gc_collect()`. After this as much memory as possible is freed.
+
+
 ### Stack allocation
 
 Temporary memory may be allocated on the stack by means of the call `__builtin_alloca(siz)`, which allocates `siz` bytes of memory on the stack. This is like the C `alloca` function. Note that the pointer returned by `__builtin_alloca` will become invalid as soon as the current function returns, so it should not be placed in any global variable (and definitely should not be returned from the function!)
