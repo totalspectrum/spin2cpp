@@ -112,7 +112,7 @@ CFLAGS = -g -Wall $(INC) $(DEFS)
 LIBS = -lm
 RM = rm -rf
 
-VPATH=.:util:frontends:frontends/basic:frontends/spin:frontends/c:backends:backends/asm:backends/cpp:backends/bytecode:backends/dat:backends/objfile:mcpp
+VPATH=.:util:frontends:frontends/basic:frontends/spin:frontends/c:backends:backends/asm:backends/cpp:backends/bytecode:backends/dat:backends/nucode:backends/objfile:mcpp
 
 LEXHEADERS = $(BUILD)/spin.tab.h $(BUILD)/basic.tab.h $(BUILD)/cgram.tab.h ast.h frontends/common.h
 
@@ -125,8 +125,9 @@ MCPP = directive.c expand.c mbchar.c mcpp_eval.c mcpp_main.c mcpp_system.c mcpp_
 LEXSRCS = lexer.c symbol.c ast.c expr.c $(UTIL) preprocess.c
 PASMBACK = outasm.c assemble_ir.c optimize_ir.c inlineasm.c compress_ir.c
 BCBACK = outbc.c bcbuffers.c bcir.c bc_spin1.c
+NUBACK = outnu.c
 CPPBACK = outcpp.c cppfunc.c outgas.c cppexpr.c cppbuiltin.c
-SPINSRCS = common.c case.c spinc.c $(LEXSRCS) functions.c cse.c loops.c hloptimize.c types.c pasm.c outdat.c outlst.c outobj.c spinlang.c basiclang.c clang.c $(PASMBACK) $(BCBACK) $(CPPBACK) $(MCPP) version.c becommon.c
+SPINSRCS = common.c case.c spinc.c $(LEXSRCS) functions.c cse.c loops.c hloptimize.c types.c pasm.c outdat.c outlst.c outobj.c spinlang.c basiclang.c clang.c $(PASMBACK) $(BCBACK) $(NUBACK) $(CPPBACK) $(MCPP) version.c becommon.c
 
 LEXOBJS = $(LEXSRCS:%.c=$(BUILD)/%.o)
 SPINOBJS = $(SPINSRCS:%.c=$(BUILD)/%.o)
