@@ -2,7 +2,7 @@
 #define OUTNU_H
 
 #include "spinc.h"
-#include "../bytecode/bcbuffers.h"
+#include "bcbuffers.h"
 
 #define ModData(P) ((NuModData *)(P)->bedata)
 #define FunData(P) ((NuFunData *)(P)->bedata)
