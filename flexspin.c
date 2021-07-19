@@ -95,6 +95,7 @@ Usage(FILE *f, int bstcMode)
     //fprintf(f, "  [ -z ]             compress code\n");
     fprintf(f, "  [ --code=cog ]     compile for COG mode instead of LMM\n");
     fprintf(f, "  [ --interp=rom ]   compile bytecodes for P1 ROM interpreter (alpha feature!)\n");
+    fprintf(f, "  [ --interp=nu ]    compile bytecodes for NuCode interpreter (alpha feature!)\n");
     fprintf(f, "  [ --fcache=N ]     set FCACHE size to N (0 to disable)\n");
     fprintf(f, "  [ --fixedreal ]    use 16.16 fixed point in place of floats\n");
     fprintf(f, "  [ --lmm=xxx ]      use alternate LMM implementation for P1\n");
@@ -216,8 +217,11 @@ main(int argc, const char **argv)
             spinyydebug = 1;
             argv++; --argc;
         } else if (!strncmp(argv[0],"--interp=",9)) {
-            if (!strcmp(argv[0]+9,"rom")) gl_interp_kind = INTERP_KIND_P1ROM;
-            else {
+            if (!strcmp(argv[0]+9,"rom")) {
+                gl_interp_kind = INTERP_KIND_P1ROM;
+            } else if (!strcmp(argv[0]+9,"nu")) {
+                gl_interp_kind = INTERP_KIND_NUCODE;
+            } else {
                 fprintf(stderr, "Unknown --interp= choice: %s\n", argv[0]);
                 Usage(stderr, cmd->bstcMode);
             }

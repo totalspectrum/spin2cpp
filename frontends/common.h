@@ -207,7 +207,9 @@ extern int gl_lmm_kind;
 
 /* Bytecode kind selected */
 extern int gl_interp_kind;
-#define INTERP_KIND_P1ROM 0
+#define INTERP_KIND_P1ROM  0
+#define INTERP_KIND_P2SPIN 1
+#define INTERP_KIND_NUCODE 2
 // No other values yet
 
 
@@ -682,6 +684,7 @@ void OutputLstFile(const char *name, Module *P);
 void OutputAsmCode(const char *name, Module *P, int printMain);
 void OutputObjFile(const char *name, Module *P);
 void OutputByteCode(const char *name, Module *P);
+void OutputNuCode(const char *name, Module *P);
 
 /* detect coginit/cognew calls that are for spin methods, return pointer to method involved */
 bool IsSpinCoginit(AST *body, Function **thefunc);

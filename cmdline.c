@@ -135,6 +135,10 @@ int ProcessCommandLine(CmdLineOptions *cmd)
         pp_define(&gl_pp, "__OUTPUT_BYTECODE__", "1");
         if (gl_interp_kind == INTERP_KIND_P1ROM) {
             pp_define(&gl_pp, "__OUTPUT_BYTECODE_P1ROM__", "1");
+        } else if (gl_interp_kind == INTERP_KIND_P2SPIN) {
+            pp_define(&gl_pp, "__OUTPUT_BYTECODE_P2SPIN__", "1");
+        } else if (gl_interp_kind == INTERP_KIND_NUCODE) {
+            pp_define(&gl_pp, "__OUTPUT_BYTECODE_NUCODE__", "1");
         }
     }
     pp_define(&gl_pp, "__ILP32__", "1");
@@ -316,9 +320,12 @@ int ProcessCommandLine(CmdLineOptions *cmd)
                 }
             }
 
-            OutputByteCode(cmd->outname,P);
-            DoPropellerChecksum(cmd->outname,cmd->useEeprom ? cmd->eepromSize : 0);
-
+            if (gl_interp_kind == INTERP_KIND_NUCODE) {
+                OutputNuCode(cmd->outname, P);
+            } else {
+                OutputByteCode(cmd->outname,P);
+                DoPropellerChecksum(cmd->outname,cmd->useEeprom ? cmd->eepromSize : 0);
+            }
         } else {
             fprintf(stderr, "This front end cannot convert to C\n");
         }
