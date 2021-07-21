@@ -321,6 +321,9 @@ int ProcessCommandLine(CmdLineOptions *cmd)
             }
 
             if (gl_interp_kind == INTERP_KIND_NUCODE) {
+                if (!gl_p2) {
+                    ERROR(NULL, "Nucode only supported on P2");
+                }
                 OutputNuCode(cmd->outname, P);
             } else {
                 OutputByteCode(cmd->outname,P);

@@ -125,7 +125,7 @@ MCPP = directive.c expand.c mbchar.c mcpp_eval.c mcpp_main.c mcpp_system.c mcpp_
 LEXSRCS = lexer.c symbol.c ast.c expr.c $(UTIL) preprocess.c
 PASMBACK = outasm.c assemble_ir.c optimize_ir.c inlineasm.c compress_ir.c
 BCBACK = outbc.c bcbuffers.c bcir.c bc_spin1.c
-NUBACK = outnu.c
+NUBACK = outnu.c nuir.c
 CPPBACK = outcpp.c cppfunc.c outgas.c cppexpr.c cppbuiltin.c
 SPINSRCS = common.c case.c spinc.c $(LEXSRCS) functions.c cse.c loops.c hloptimize.c types.c pasm.c outdat.c outlst.c outobj.c spinlang.c basiclang.c clang.c $(PASMBACK) $(BCBACK) $(NUBACK) $(CPPBACK) $(MCPP) version.c becommon.c
 
@@ -133,7 +133,7 @@ LEXOBJS = $(LEXSRCS:%.c=$(BUILD)/%.o)
 SPINOBJS = $(SPINSRCS:%.c=$(BUILD)/%.o)
 OBJS = $(SPINOBJS) $(BUILD)/spin.tab.o $(BUILD)/basic.tab.o $(BUILD)/cgram.tab.o
 
-SPIN_CODE = sys/p1_code.spin.h sys/p2_code.spin.h sys/bytecode_rom.spin.h \
+SPIN_CODE = sys/p1_code.spin.h sys/p2_code.spin.h sys/bytecode_rom.spin.h sys/nucode_util.spin.h \
     sys/common.spin.h sys/common_pasm.spin.h sys/float.spin.h sys/gcalloc.spin.h sys/gc_bytecode.spin.h sys/gc_pasm.spin.h
 PASM_SUPPORT_CODE = sys/lmm_orig.spin.h sys/lmm_slow.spin.h sys/lmm_trace.spin.h sys/lmm_cache.spin.h sys/lmm_compress.spin.h
 

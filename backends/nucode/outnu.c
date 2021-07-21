@@ -70,21 +70,21 @@ NuProcessDatRelocs(Module *P, OutputSpan *span, Reloc *reloc, size_t numRelocs)
 }
 
 static void
-NuCompileStmtlist(ByteOutputBuffer *bob, AST *ast) {
+NuCompileStmtlist(NuIrList *irl, AST *ast) {
 }
 
 static void
-NuCompileFunction(ByteOutputBuffer *bob, Function *F) {
+NuCompileFunction(Function *F) {
+    NuIrList *irl;
+
     curfunc = F;
 
-    int func_addr = bob->total_size;
     if (F->bedata) {
         ERROR(NULL, "function %s already has back end data?", F->name);
         return;
     }
-    F->bedata = calloc(sizeof(*F->bedata),1);
-    FunData(F)->compiledAddress = func_addr;
-    BOB_Comment(bob, auto_printf(128, "--- Function %s", F->name));
+    F->bedata = calloc(sizeof(NuFunData),1);
+
     // I think there's other body types so let's leave this instead of using ASSERT_AST_KIND
     if (!F->body) {
         DEBUG(NULL,"compiling function %s with no body...",F->name);
@@ -119,17 +119,39 @@ NuCompileFunction(ByteOutputBuffer *bob, Function *F) {
             allocmem = AddToList(allocmem, args);
             F->body = allocmem;
         }
-    
-        NuCompileStmtlist(bob, F->body);
+        irl = &FunData(F)->irl;
+
+        FunData(F)->entryLabel = NuCreateLabel();
+        FunData(F)->exitLabel = NuCreateLabel();
+        
+        // emit function prologue
+        NuEmitLabel(irl, FunData(F)->entryLabel);
+        NuEmitOp(irl, NU_OP_ENTER);
+        NuCompileStmtlist(irl, F->body);
+        // emit function epilogue
+        NuEmitLabel(irl, FunData(F)->exitLabel);
+        NuEmitOp(irl, NU_OP_RET);
     }
 }
 
-static void NuCompileObject(ByteOutputBuffer *bob, Module *P) {
+static void NuConvertFunctions(Module *P) {
     Module *save = current;
     Function *pf;
     current = P;
 
     NuPrepareObject(P);
+    // Compile functions
+    for (pf = P->functions; pf; pf = pf->next) {
+        NuCompileFunction(pf);
+    }
+
+    current = save;
+}
+
+static void NuCompileObject(ByteOutputBuffer *bob, Module *P) {
+    Module *save = current;
+    current = P;
+
     if (ModData(P)->datAddress != -1) {
         ERROR(NULL, "Already compiled object %s", P->classname);
         return;
@@ -152,10 +174,6 @@ static void NuCompileObject(ByteOutputBuffer *bob, Module *P) {
         NuProcessDatRelocs(P, datSpan, (Reloc*)flexbuf_peek(&datRelocs), flexbuf_curlen(&datRelocs)/sizeof(Reloc));
         flexbuf_delete(&datRelocs);
         flexbuf_delete(&datBuf);
-    }
-    // Compile functions
-    for (pf = P->functions; pf; pf = pf->next) {
-        NuCompileFunction(bob, pf);
     }
     
     current = save;
@@ -193,14 +211,29 @@ void OutputNuCode(const char *fname, Module *P)
 {
     FILE *bin_file;
     FILE *lst_file = NULL;
+    Module *Q;
     ByteOutputBuffer bob = {0};
 
+    NuIrInit();
+    
     if (!P->functions) {
         ERROR(NULL, "Top level module has no functions");
         return;
     }
-    // FIXME: need to output interpreter here
-    NuCompileObject(&bob, P);
+    // convert functions to IR
+    for (Q = allparse; Q; Q = Q->next) {
+        NuConvertFunctions(Q);
+    }
+    
+    // assign opcodes to IR
+    NuAssignOpcodes();
+    
+    // create & prepend interpreter
+
+    // compile objects to binary
+    for (Q = allparse; Q; Q = Q->next) {
+        NuCompileObject(&bob, Q);
+    }
 
     // Align and append any needed heap
     BOB_Align(&bob,4);

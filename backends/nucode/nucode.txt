@@ -1,0 +1,110 @@
+Nucode is a new kind of bytecode for P2, designed to be particularly
+compact and fast. Since the P2 does not have a bytecode interpreter
+in ROM, we can customize the interpreter for the application (that is,
+each application can have an interpreter that is optimized for that
+particular application).
+
+Intermediate representation:
+===========================
+During compilation, nucode is represented by NuIR tokens. The
+following instructions are available:
+
+NU_PUSHI   - push immediate value (has an immediate value)
+NU_LDREG   - load tos from register (address is old tos)
+NU_STREG   - store tos to COG register (address is old tos)
+NU_LDB     - load tos from address on top of stack (byte); no sign extension
+NU_LDW
+NU_LDL
+NU_LDD     - load double (pushes two longs onto stack)
+NU_STB     - store byte (tos is address, next is data)
+NU_STW
+NU_STL
+NU_STD     - stores 2 longs
+
+NU_ADD_VBASE - add object base to tos
+NU_ADD_DBASE - add frame pointer to tos
+NU_ADD_SP    - add stack pointer to tos
+NU_ADD_PC    - add pc to tos
+
+NU_SIGNX   - sign extend (tos := nos SIGNX tos)
+NU_ZEROX   - zero extend (tos := nos ZEROX tos)
+NU_ADD     - add (tos := nos + tos)
+NU_SUB     - sub (tos := nos - tos)
+NU_MULS    - mul signed ( nos, tos := nos*tos, nos**tos )
+NU_MULU    - mul unsigned
+NU_DIVS    - div signed ( nos, tos := nos / tos, nos // tos )
+NU_DIVU    - div unsigned
+NU_SHL
+NU_SHR     - unsigned shift right
+NU_SAR     - signed shift right
+NU_AND     - bitwise AND
+NU_OR      - bitwise OR
+NU_XOR     - bitwise XOR
+
+NU_NEG
+NU_NOT     - bitwise NOT
+NU_ABS
+NU_ISQRT  - integer square root
+NU_REV    - reverse bits
+
+NU_DROP    - throws away tos
+NU_DUP     - duplicate top of stack
+NU_SWAP    - tos, nos := nos, tos
+
+NU_ENTER   - enter subroutine: stack has number of locals, number of parameters, number of return values
+NU_RET     - return: stack has values to return, followed by number of those values
+
+NU_CALLM   - call method: tos has new vbase, nos has address
+NU_JMP     - jump to new address (tos has address)
+NU_JMPZ    - jump if tos is equal 0 (throws away tos)
+NU_JMPNZ   - jump if tos is != 0
+
+NU_TEQ     - test for equality tos := (tos == nos) ? -1 : 0
+NU_TNE     - test for not equal
+NU_TLTS    - test for less than (signed)
+NU_TLTU    - test for less than (unsigned)
+NU_TGES    - test for greater than or equal to (signed)
+NU_TGEU    - test for greater than or equal to (unsigned)
+
+NU_FCACHE  - load data into COG for execution: tos = number of bytes to load, nos = hub address to load
+
+
+Internal model:
+
+The interpreter has several registers:
+
+SP:    current stack pointer
+DBASE: current frame pointer (set up by CALLM)
+VBASE: current object pointer (set up by CALLM)
+PC:    current program counter
+
+CALL does the following:
+
+old_vbase := vbase
+old_dbase := dbase
+old_pc    := pc
+pop vbase   // save new vbase
+pop pc      // save new pc
+
+ENTER does:
+pop m    // get number of locals
+pop n    // get number of parameters
+pop r    // get number of return variables
+sp -= n*4 // back up past parameters
+dbase := sp + 12
+longmove(dbase+r*4, sp, n) // copy parameters lower in stack to make room for saved data
+longfill(dbase, 0, r)      // zero out return values
+long[sp] := old_dbase
+long[sp+4] := old_vbase
+long[sp+8] := old_pc
+sp += 4*(n+r+m)
+
+RET does:
+pop r (number of return values)
+old_sp := sp - r*4
+sp := dbase
+pop pc
+pop vbase
+pop dbase
+longmove(sp, old_sp, r)
+sp += r*4

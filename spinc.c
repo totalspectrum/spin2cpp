@@ -93,6 +93,7 @@ makeClassNameSafe(Module *P)
 #include "sys/p1_code.spin.h"
 #include "sys/p2_code.spin.h"
 #include "sys/bytecode_rom.spin.h"
+#include "sys/nucode_util.spin.h"
 #include "sys/common_pasm.spin.h"
 #include "sys/common.spin.h"
 #include "sys/float.spin.h"
@@ -146,7 +147,17 @@ InitGlobalModule(void)
 
         // add in processor specific code
         if (gl_output == OUTPUT_BYTECODE) {
-            syscode = (const char *)sys_bytecode_rom_spin;
+            switch (gl_interp_kind) {
+            case INTERP_KIND_P1ROM:
+                syscode = (const char *)sys_bytecode_rom_spin;
+                break;
+            case INTERP_KIND_NUCODE:
+                syscode = (const char *)sys_nucode_util_spin;
+                break;
+            default:
+                ERROR(NULL, "No internal code for bytecode type\n");
+                break;
+            }
         } else {
             if (gl_p2) {
                 syscode = (const char *)sys_p2_code_spin;
