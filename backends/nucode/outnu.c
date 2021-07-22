@@ -150,6 +150,7 @@ static void NuConvertFunctions(Module *P) {
 
 static void NuCompileObject(ByteOutputBuffer *bob, Module *P) {
     Module *save = current;
+    Function *pf;
     current = P;
 
     if (ModData(P)->datAddress != -1) {
@@ -159,6 +160,9 @@ static void NuCompileObject(ByteOutputBuffer *bob, Module *P) {
     BOB_Align(bob, LONG_SIZE);
     BOB_Comment(bob, auto_printf(128, "--- Object: %s", P->classname));
 
+    ModData(P)->datAddress = bob->total_size;
+    
+    /* compile DAT block */
     if (P->datblock) {
         // Got DAT block
         // TODO pass through listing data

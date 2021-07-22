@@ -15,6 +15,8 @@
     X(STW)     /* store word */ \
     X(STL)     /* store long */ \
     X(STD)     /* store double */ \
+    X(LDREG)   /* load register (long) */ \
+    X(STREG)   /* store register (long) */ \
     \
     X(ADD_VBASE) /* add object base to tos */ \
     X(ADD_DBASE) /* add frame pointer to tos */ \
@@ -38,9 +40,22 @@
     X(DIVU)      /* unsigned divide: leaves quotient, remainder on stack */ \
     X(DIVS)      /* signed divide:   leaves quotient, remainder on stack */ \
     \
+    X(NEG)       /* negate tos */ \
+    X(NOT)       /* bit complement tos */ \
+    X(ABS)       /* abs value tos */ \
+    X(ISQRT)     /* find integer sqrt of tos */ \
+    X(REV)       /* bit reverse tos */ \
+    \
+    X(DROP)      /* drop element on top of stack */ \
+    X(DUP)       /* dup element on top of stack */ \
+    X(SWAP)      /* swap tos and nos */ \
+    \
     X(ENTER)     /* enter subroutine */ \
     X(RET)       /* return from subroutine */ \
     X(CALL)      /* call subroutine */ \
+    X(JMP)       /* jump to address at tos */ \
+    X(JMPZ)      /* jump to address to nos if tos is = 0 (discards tos, nos) */ \
+    X(JMPNZ)     /* jump to address to nos if tos is <> 0 (discards tos, nos) */ \
     \
     X(PINHI)     /* set pin high */ \
     X(PINLO)     /* set pin low */  \

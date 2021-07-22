@@ -10,8 +10,8 @@ During compilation, nucode is represented by NuIR tokens. The
 following instructions are available:
 
 NU_PUSHI   - push immediate value (has an immediate value)
-NU_LDREG   - load tos from register (address is old tos)
-NU_STREG   - store tos to COG register (address is old tos)
+NU_PUSHA   - push address (has an immediate value)
+
 NU_LDB     - load tos from address on top of stack (byte); no sign extension
 NU_LDW
 NU_LDL
@@ -20,6 +20,8 @@ NU_STB     - store byte (tos is address, next is data)
 NU_STW
 NU_STL
 NU_STD     - stores 2 longs
+NU_LDREG   - load tos from register (address is old tos)
+NU_STREG   - store tos to COG register (address is old tos)
 
 NU_ADD_VBASE - add object base to tos
 NU_ADD_DBASE - add frame pointer to tos
@@ -54,7 +56,7 @@ NU_SWAP    - tos, nos := nos, tos
 NU_ENTER   - enter subroutine: stack has number of locals, number of parameters, number of return values
 NU_RET     - return: stack has values to return, followed by number of those values
 
-NU_CALLM   - call method: tos has new vbase, nos has address
+NU_CALL    - call method: tos has new vbase, nos has address
 NU_JMP     - jump to new address (tos has address)
 NU_JMPZ    - jump if tos is equal 0 (throws away tos)
 NU_JMPNZ   - jump if tos is != 0
