@@ -1676,8 +1676,11 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
     declare = FindDeclaration(P->datblock, name);
     if (declare && declare->right) {
         if (declare->right->kind == AST_ASSIGN && initializer) {
-            ERROR(initializer, "Variable %s is initialized twice",
-                  user_name);
+            if (!AstBodyMatch(declare->right->right, initializer)) {
+                ERROR(initializer, "Variable %s is initialized twice",
+                      user_name);
+                WARNING(declare->right->right, "Previous initialization was here");
+            }
         } else if (initializer) {
             declare->right = AstAssign(DupAST(ident), initializer);
         }
