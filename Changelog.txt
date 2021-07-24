@@ -1,16 +1,22 @@
 Version 6.0.0
 - Added support for bool, false, and true to C++
 - Added automatic I/O locking for PRINT, __builtin_printf, and DEBUG
-- Allow relative branches between COG and LUT RAM
 - Added "ASM_CONST" keyword to Spin
 - Changed "ASM CONST" to "CONST ASM" in BASIC
-- Cleaned up exec() and CHAIN to clear RAM before starting the new program
 - Fixed multiple assignments in Spin (a:=b:=c) to have the same semantics as Spin
+- Improved --interp=rom (Spin1 bytecode output) to run more programs
+- New optimization: -Oremove-features removes advanced file I/O
+features if not needed by the program; this can save a lot of
+space. Enabled by default in -O1.
+
+Version 5.5.2
+- Added cpustop for BASIC
+- Allow relative branches between COG and LUT RAM
+- Cleaned up exec() and CHAIN to clear RAM before starting the new program
+- Fixed a bug which could cause duplicate struct definitions in C
 - Fixed an optimizer bug where reads/writes could be incorrectly re-ordered
 - Fixed an error parsing += in BASIC array operations
 - Fixed a bug in *s parsing in sscanf()
-- Improved --interp=rom (Spin1 bytecode output) to run more programs
-- New optimization: -Oremove-features removes advanced file I/O features if not needed by the program; this can save a lot of space. Enabled by default in -O1.
 
 Version 5.5.1
 - Added a warning for ignored second parameter to `org`
