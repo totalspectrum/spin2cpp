@@ -64,7 +64,15 @@ NuIr *NuEmitOp(NuIrList *irl, NuIrOpcode op) {
 }
 
 NuIr *NuEmitConst(NuIrList *irl, int32_t val) {
-    NuIr *r = NuEmitOp(irl, NU_OP_PUSHI);
+    NuIr *r;
+
+    if (val >= -128 && val <= 127) {
+        r = NuEmitOp(irl, NU_OP_PUSHI8);
+    } else if (val >= -32768 && val <= 32767) {
+        r = NuEmitOp(irl, NU_OP_PUSHI16);
+    } else {
+        r = NuEmitOp(irl, NU_OP_PUSHI32);
+    }
     r->val = val;
     return r;
 }

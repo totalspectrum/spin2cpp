@@ -7,6 +7,7 @@
 // Nu interpreter intermediate representation
 
 #define NU_OP_XMACRO \
+    X(ILLEGAL) /* illegal instruction */ \
     X(LDB)     /* load byte */ \
     X(LDW)     /* load word */ \
     X(LDL)     /* load long */ \
@@ -23,14 +24,14 @@
     X(ADD_SP)    /* add stack pointer to tos */ \
     X(ADD_PC)    /* add program counter to tos */ \
     \
-    X(SIGNX)     /* sign extend tos := nos SIGNX tos */ \
-    X(ZEROX)     /* zero extend tos := nos ZEROX tos */ \
-    \
     X(ADD)       /* tos := nos + tos */ \
     X(SUB)       /* tos := nos - tos */ \
     X(AND)       /* tos := nos & tos */ \
     X(OR)        /* tos := nos | tos */ \
     X(XOR)       /* tos := nos ^ tos */ \
+    \
+    X(SIGNX)     /* sign extend tos := nos SIGNX tos */ \
+    X(ZEROX)     /* zero extend tos := nos ZEROX tos */ \
     X(SHL)       /* tos := nos << tos */ \
     X(SHR)       /* tos := nos >> tos (unsigned right shift) */ \
     X(SAR)       /* tos := nos SAR tos (signed right shift) */ \
@@ -43,8 +44,6 @@
     X(NEG)       /* negate tos */ \
     X(NOT)       /* bit complement tos */ \
     X(ABS)       /* abs value tos */ \
-    X(ISQRT)     /* find integer sqrt of tos */ \
-    X(REV)       /* bit reverse tos */ \
     \
     X(DROP)      /* drop element on top of stack */ \
     X(DUP)       /* dup element on top of stack */ \
@@ -63,12 +62,12 @@
     X(PINRND)    /* set pin to random value */ \
     X(PINWR)     /* write value in nos to pin at tos */ \
     \
-    X(PUSHI)     /* push immediate */ \
+    X(PUSHI32)   /* push immediate 32 bit */ \
+    X(PUSHI16)   /* push immediate 16 bit */ \
+    X(PUSHI8)    /* push immediate 8 bit */ \
     X(PUSHA)     /* push address */ \
     \
-    X(UNDEF)     /* Error/undefined */ \
-    \
-    X(DUMMY)     /* this and everything above needs no code */ \
+    X(DUMMY)     /* this and everything following needs no code */ \
     X(LABEL)     /* label for jump target */ \
     X(ALIGN)     /* align data */ \
 
