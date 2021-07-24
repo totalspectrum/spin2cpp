@@ -279,6 +279,7 @@ countstr
 cpuchk
 cpuid
 cpustop
+cpuwait
 decuns$
 delete$
 dira
@@ -1438,6 +1439,14 @@ Checks to see if the CPU whose id is `n` is running. Returns `true` (-1) if runn
 i = cpuid()
 ```
 Finds the ID of the currently running CPU.
+
+### CPUSTOP
+
+```
+cpustop(id)
+```
+Stops a specific CPU. If the CPU is not currently running, then does nothing.
+
 ### CPUWAIT
 
 This builtin subroutine waits for a CPU started via `cpu` to finish. For example, to launch 4 helper programs and then wait for them you could do:
