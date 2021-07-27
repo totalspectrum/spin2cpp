@@ -7,7 +7,7 @@
 // Nu interpreter intermediate representation
 
 #define NU_OP_XMACRO \
-    X(ILLEGAL) /* illegal instruction */ \
+    X(ILLEGAL) /* illegal instruction: must always come first */ \
     X(LDB)     /* load byte */ \
     X(LDW)     /* load word */ \
     X(LDL)     /* load long */ \
@@ -56,11 +56,14 @@
     X(JMPZ)      /* jump to address to nos if tos is = 0 (discards tos, nos) */ \
     X(JMPNZ)     /* jump to address to nos if tos is <> 0 (discards tos, nos) */ \
     \
-    X(PINHI)     /* set pin high */ \
-    X(PINLO)     /* set pin low */  \
-    X(PINNOT)    /* toggle pin  */  \
-    X(PINRND)    /* set pin to random value */ \
-    X(PINWR)     /* write value in nos to pin at tos */ \
+    X(DRVH)      /* set pin high */ \
+    X(DRVL)      /* set pin low */  \
+    X(DRVNOT)    /* toggle pin  */  \
+    X(DRVRND)    /* set pin to random value */ \
+    X(DRVWR)     /* write value in nos to pin at tos */ \
+    X(FLTL)      /* float pin low */  \
+    \
+    X(WAITX)     /* delay for tos cycles */ \
     \
     X(PUSHI32)   /* push immediate 32 bit */ \
     X(PUSHI16)   /* push immediate 16 bit */ \
@@ -101,6 +104,7 @@ typedef struct {
 
 void NuIrInit();
 NuIr *NuEmitOp(NuIrList *irl, NuIrOpcode op);
+NuIr *NuEmitNamedOpcode(NuIrList *irl, const char *name);
 NuIr *NuEmitConst(NuIrList *irl, int32_t val);
 NuIr *NuEmitAddress(NuIrList *irl, NuIrLabel *label);
 NuIr *NuEmitLabel(NuIrList *irl, NuIrLabel *label);

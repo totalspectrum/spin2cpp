@@ -254,7 +254,7 @@ pri _drvnot(pin)
   endasm
 pri _drvrnd(pin)
   asm
-    drvnot pin
+    drvrnd pin
   endasm
 pri _drvw(pin, c)
   asm

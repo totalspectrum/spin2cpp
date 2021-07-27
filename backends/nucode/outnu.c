@@ -7,6 +7,11 @@
 #include "outnu.h"
 #include <stdlib.h>
 
+static void NuCompileStatement(NuIrList *irl, AST *ast); // forward declaration
+static void NuCompileStmtlist(NuIrList *irl, AST *ast); // forward declaration
+static int NuCompileExpression(NuIrList *irl, AST *ast); // returns number of items left on stack
+static int NuCompileExprList(NuIrList *irl, AST *ast); // returns number of items left on stack
+
 static void
 NuPrepareObject(Module *P) {
     // Init bedata
@@ -69,8 +74,107 @@ NuProcessDatRelocs(Module *P, OutputSpan *span, Reloc *reloc, size_t numRelocs)
     }
 }
 
+static int
+NuCompileFunCall(NuIrList *irl, AST *node) {
+    int pushed;
+    Function *func = NULL;
+    AST *functype = NULL;
+    AST *objref = NULL;
+    Symbol *sym;
+    AST *args = node->right;
+    
+    pushed = NuCompileExprList(irl, args);
+    sym = FindFuncSymbol(node, &objref, 1);
+    if (sym && sym->kind == SYM_FUNCTION) {
+        func = (Function *)sym->val;
+        if (func->body && func->body->kind == AST_BYTECODE) {
+            NuEmitNamedOpcode(irl, func->body->d.string);
+        } else {
+            ERROR(node, "Unable to compile function call");
+        }
+        pushed = func->numresults;
+    } else {
+        functype = ExprType(node->left);
+        ERROR(node, "Unable to compile indirect function calls");
+        return 0;
+    }
+    return pushed;
+}
+
+/* returns number of longs pushed on stack */
+static int
+NuCompileExpression(NuIrList *irl, AST *node) {
+    int pushed = 0; // number results pushed on stack
+    if(!node) {
+        ERROR(NULL,"Internal Error: Null expression!!");
+        return pushed;
+    }
+    if (IsConstExpr(node)) {
+        int32_t val = EvalConstExpr(node);
+        NuEmitConst(irl, val);
+        return 1;
+    }
+    switch(node->kind) {
+    case AST_FUNCCALL:
+    {
+        pushed = NuCompileFunCall(irl, node);
+    } break;
+    default:
+        ERROR(node, "Unknown expression node %d\n", node->kind);
+        return 0;
+    }
+    return pushed;
+}
+
+static int
+NuCompileExprList(NuIrList *irl, AST *node)
+{
+    int pushed = 0;
+    while (node && node->kind == AST_EXPRLIST) {
+        pushed += NuCompileExpression(irl, node->left);
+        node = node->right;
+    }
+    if (node) {
+        ERROR(node, "Expecting expression list");
+    }
+    return pushed;
+}
+
 static void
-NuCompileStmtlist(NuIrList *irl, AST *ast) {
+NuCompileStmtlist(NuIrList *irl, AST *list) {
+    for (AST *ast=list;ast&&ast->kind==AST_STMTLIST;ast=ast->right) {
+        AST *node = ast->left;
+        if (!node) {
+            //ERROR(ast,"empty node?!?"); ignore, this can happen
+            continue;
+        }
+        NuCompileStatement(irl,node);
+    }
+}
+
+static void
+NuCompileStatement(NuIrList *irl, AST *node) {
+    int n;
+    while (node && node->kind == AST_COMMENTEDNODE) {
+        node = node->left;
+    }
+    if (!node) return;
+    switch(node->kind) {
+    case AST_COMMENT:
+        // for now, do nothing
+        break;
+
+    case AST_FUNCCALL:
+        n = NuCompileExpression(irl, node);
+        while (n > 0) {
+            NuEmitOp(irl, NU_OP_DROP);
+            --n;
+        }
+        break;
+    default:
+        ERROR(node, "Unhandled node type %d in NuCompileStatement", node->kind);
+        break;
+    }
 }
 
 static void
@@ -90,6 +194,9 @@ NuCompileFunction(Function *F) {
         DEBUG(NULL,"compiling function %s with no body...",F->name);
     } else if (F->body->kind == AST_STRING) {
         WARNING(NULL,"compiling function %s which is just a reference",F->name);
+    } else if (F->body->kind == AST_BYTECODE) {
+        // do nothing
+        return;
     } else if (F->body->kind != AST_STMTLIST) {
         ERROR(F->body,"Internal Error: Expected AST_STMTLIST, got id %d",F->body->kind);
         return;

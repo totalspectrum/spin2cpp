@@ -2120,9 +2120,11 @@ ProcessOneFunc(Function *pf)
     
     if (pf->lang_processed)
         return;
-    if (pf->body && pf->body->kind == AST_STRING) {
-        // dummy declaration, return for now
-        return;
+    if (pf->body) {
+        if (pf->body->kind == AST_STRING || pf->body->kind == AST_BYTECODE) {
+            // dummy declaration, return for now
+            return;
+        }
     }
     savecurrent = current;
     savefunc = curfunc;
@@ -2195,7 +2197,7 @@ static int
 InferTypesStmtList(AST *list)
 {
   int changes = 0;
-  if (list && list->kind == AST_STRING) {
+  if (list && (list->kind == AST_STRING || list->kind == AST_BYTECODE)) {
       return 0;
   }
   while (list) {

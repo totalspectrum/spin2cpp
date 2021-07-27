@@ -1,3 +1,4 @@
+#include "common.h"
 #include "nuir.h"
 #include <stdio.h>
 
@@ -88,6 +89,21 @@ NuIr *NuEmitLabel(NuIrList *irl, NuIrLabel *label) {
     r->label = label;
     return r;
 }
+
+NuIr *NuEmitNamedOpcode(NuIrList *irl, const char *name) {
+    NuIrOpcode op;
+    for (op = NU_OP_ILLEGAL; op < NU_OP_DUMMY; op++) {
+        if (!strcasecmp(NuOpName[op], name)) {
+            break;
+        }
+    }
+    if (op == NU_OP_DUMMY) {
+        ERROR(NULL, "Unknown opcode %s", name);
+        return NULL;
+    }
+    return NuEmitOp(irl, op);
+}
+
 
 void NuAssignOpcodes()
 {

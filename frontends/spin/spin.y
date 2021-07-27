@@ -291,6 +291,7 @@ BuildDebugList(AST *exprlist)
 %}
 
 %token SP_IDENTIFIER "identifier"
+%token SP_BYTECODE   "__bytecode__"
 %token SP_NUM        "number"
 %token SP_STRING     "string"
 %token SP_BACKTICK_STRING "` string"
@@ -589,6 +590,12 @@ localvars:
 funcbody:
   /* empty */
   { $$ = NULL; }
+| SP_BYTECODE '(' SP_STRING ')' SP_EOLN
+  {
+      AST *str = $3;
+      str->kind = AST_BYTECODE;
+      $$ = str;
+  }
 | stmtlist
   { $$ = $1; }
 ;

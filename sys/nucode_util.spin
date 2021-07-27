@@ -21,16 +21,28 @@ pri _div64(n, nlo, dlo) : qlo, rlo | q, r, d
   return 0,0
 
 pri _waitx(tim)
-  tim += cnt
-  waitcnt(tim)
+  __bytecode__("WAITX")
 
 pri _getcnt : r = +long
-  r := cnt
+  __bytecode__("GETCT")
 
-pri _fltl(pin) | mask
-  mask := 1<<pin
-  dira &= !mask
-  outa &= !mask
+pri _cogid : r = long
+  __bytecode__("COGID")
+
+pri _cogstop
+  __bytecode__("COGSTOP")
+
+pri _drvl(pin)
+  __bytecode__("DRVL")
+pri _drvh(pin)
+  __bytecode__("DRVH")
+pri _drvnot(pin)
+  __bytecode__("DRVNOT")
+pri _drvrnd(pin)
+  __bytecode__("DRVRND")
+pri _fltl(pin)
+  __bytecode__("FLTL")
+
 
 '
 ' memset(): we may want to optimize this to use longfill in special cases?

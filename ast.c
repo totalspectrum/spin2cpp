@@ -728,7 +728,8 @@ static const char *astnames[] = {
     "gethigh",
 
     "func_name",
-    "caseexpr_variable"
+    "caseexpr_variable",
+    "bytecode",
 };
 
 //
@@ -780,6 +781,10 @@ static void doASTDump(AST *ast, int indent)
         break;
     case AST_STRING:
         sprintf(buf, "<string %s/>", ast->d.string);
+        leaf = 1;
+        break;        
+    case AST_BYTECODE:
+        sprintf(buf, "<bytecode %s/>", ast->d.string);
         leaf = 1;
         break;        
     case AST_HWREG:
