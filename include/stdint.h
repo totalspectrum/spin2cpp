@@ -78,6 +78,6 @@ typedef uint64_t uint_fast64_t;
 #define UINT8_C(x)  (x ## u)
 #define UINT16_C(x) (x ## u)
 #define UINT32_C(x) (x ## u)
-#define INT64_C(x)  (x ## ULL)
+#define UINT64_C(x)  (x ## ULL)
 
 #endif
