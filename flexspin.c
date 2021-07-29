@@ -79,6 +79,7 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "  [ -D <define> ]    add a define\n");
     fprintf(f, "  [ -u ]             ignore for openspin compatibility (unused method elimination always enabled)\n");
     fprintf(f, "  [ -2 ]             compile for Prop2\n");
+    fprintf(f, "  [ -2nu ]           compile for Prop2 with Nu interpreter\n");
     fprintf(f, "  [ -O# ]            set optimization level:\n");
     fprintf(f, "          -O0 = no optimization\n");
     fprintf(f, "          -O1 = basic optimization\n");
@@ -330,6 +331,13 @@ main(int argc, const char **argv)
             argv++; --argc;
         } else if (!strcmp(argv[0], "-u")) {
             // ignore -u, we always eliminate unused methods
+            argv++; --argc;
+        } else if (!strcmp(argv[0], "-2nu")) {
+            gl_p2 = DEFAULT_P2_VERSION;
+            gl_interp_kind = INTERP_KIND_NUCODE;
+            gl_output = OUTPUT_BYTECODE;
+            cmd->outputBytecode = 1;
+            cmd->outputAsm = 0;
             argv++; --argc;
         } else if (!strncmp(argv[0], "-2", 2)) {
             gl_p2 = DEFAULT_P2_VERSION;
