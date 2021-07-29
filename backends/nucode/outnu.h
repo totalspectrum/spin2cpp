@@ -14,7 +14,6 @@ typedef struct {
 } NuModData;
 
 typedef struct {
-    OutputSpan *headerEntry;
     int compiledAddress; // -1 if not yet compiled
     int localSize;
     NuIrList irl;

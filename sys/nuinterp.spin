@@ -4,7 +4,15 @@ dat
 '' This is the skeleton from which the actual interpreter is built
 '' (opcodes are assigned at compile time so as to minimize the size)
 ''
-
+'' special characters:
+''    ^L = end of initial interpreter
+''    ^A0 = clock frequency
+''    ^A1 = clock mode
+''    ^A2 = initial PC
+''    ^A3 = initial object pointer
+''    ^A4 = initial frame pointer
+''    ^A5 = initial stack pointer
+''
 	org 0
 	' dummy init code
 	nop
@@ -12,17 +20,19 @@ dat
 	coginit	pa, ##@real_init
 	orgh	$10
 	long	0	' reserved (crystal frequency on Taqoz)
+clock_freq
 	long	0	' clock frequency ($14)
+clock_mode
 	long	0	' clock mode	  ($18)
 	long	0	' reserved for baud ($1c)
 entry_pc
-	long	0	' initial pc
+	long	2	' initial pc
 entry_vbase
-	long	0	' initial object pointer
+	long	3	' initial object pointer
 entry_dbase
-	long	0	' initial frame pointer
+	long	4	' initial frame pointer
 entry_sp
-	long	0	' initial stack pointer
+	long	5	' initial stack pointer
 	
 	long	0[$10]	' more reserved words just in case
 	
@@ -33,11 +43,26 @@ real_init
   if_nz	jmp	#spininit
   
   	' first time run
+	' set clock if frequency is not known
+	rdlong	pb, #@clock_freq wz
+  if_nz	jmp	#skip_clock
+  	mov	pb, ##1	' clock mode
+	mov	tmp, pb
+	andn	tmp, #3
+	hubset	#0
+	hubset	tmp
+	waitx	##200000
+	hubset	pb
+	wrlong	pb, #@clock_mode
+	mov	pb, ##0	' clock frequency
+	wrlong	pb, #@clock_freq
+skip_clock
 	' set up initial registers
 	rdlong	ptrb, #@entry_pc	' ptrb serves as PC
 	rdlong	vbase, #@entry_vbase
 	rdlong	ptra, #@entry_sp
 	rdlong	dbase, #@entry_dbase
+
 	jmp	#continue_startup
 spininit
 	' for Spin startup, stack should contain args, pc, vbase in that order
@@ -45,9 +70,9 @@ spininit
 	rdlong	ptrb, --ptra		' ptrb serves as PC
 continue_startup
 	' load LUT code
-	loc    ptrb, #@start_lut
+	loc    pb, #@start_lut
 	setq2  #(end_lut - start_lut)
-	rdlong 0, ptrb
+	rdlong 0, pb
 	jmp    #start_lut
 
 	org    $1e8
@@ -75,7 +100,6 @@ main_loop
 	getword	tmp
 	call	tmp
 	jmp	#main_loop
-end_lut
 
 impl_DUP
 	wrlong	nos, ptra++
@@ -94,6 +118,14 @@ impl_SWAP
 	mov	tos, nos
  _ret_	mov	nos, tmp
 
+impl_ENTER
+	ret
+
+impl_RET
+	cogid pa
+	cogstop pa
+	
+end_lut
 '' end of main interpreter
 	' opcode table goes here
 	org    $140

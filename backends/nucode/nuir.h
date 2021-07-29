@@ -83,6 +83,7 @@ typedef enum NuIrOpcode {
 
 typedef struct {
     int addr;
+    int num;
 } NuIrLabel;
 
 typedef struct nuir {
@@ -102,7 +103,16 @@ typedef struct {
     NuIr *tail;
 } NuIrList;
 
-void NuIrInit();
+typedef struct {
+    unsigned  clockFreq;
+    unsigned  clockMode;
+    NuIrLabel *entryPt;
+    NuIrLabel *initObj;
+    NuIrLabel *initFrame;
+    NuIrLabel *initSp;
+} NuContext;
+
+void NuIrInit(NuContext *ctxt);
 NuIr *NuEmitOp(NuIrList *irl, NuIrOpcode op);
 NuIr *NuEmitNamedOpcode(NuIrList *irl, const char *name);
 NuIr *NuEmitConst(NuIrList *irl, int32_t val);
@@ -112,6 +122,7 @@ NuIr *NuEmitLabel(NuIrList *irl, NuIrLabel *label);
 NuIrLabel *NuCreateLabel();
 
 void NuAssignOpcodes();
-void NuOutputInterpreter(struct flexbuf *fb);
+void NuOutputInterpreter(struct flexbuf *fb, NuContext *ctxt);
+void NuOutputIrList(struct flexbuf *fb, NuIrList *irl);
 
 #endif

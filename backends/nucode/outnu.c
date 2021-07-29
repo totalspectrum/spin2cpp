@@ -45,6 +45,7 @@ NuCompileFunCall(NuIrList *irl, AST *node) {
         pushed = func->numresults;
     } else {
         functype = ExprType(node->left);
+        (void)functype;
         ERROR(node, "Unable to compile indirect function calls");
         return 0;
     }
@@ -232,7 +233,10 @@ static void NuCompileObject(struct flexbuf *fb, Module *P) {
         flexbuf_delete(&datRelocs);
         flexbuf_delete(&datBuf);
     }
-    
+    for (pf = P->functions; pf; pf = pf->next) {
+        flexbuf_printf(fb, "'--- Function: %s\n", pf->name);
+        NuOutputIrList(fb, &FunData(pf)->irl);
+    }
     current = save;
 }
 
@@ -269,12 +273,13 @@ static void NuAddHeap(ByteOutputBuffer *bob, Module*P) {
 void OutputNuCode(const char *fname, Module *P)
 {
     FILE *asm_file;
-    FILE *bin_file;
+    //FILE *bin_file;
     FILE *lst_file = NULL;
     Module *Q;
     struct flexbuf asmFb;
+    NuContext nuContext;
     
-    NuIrInit();
+    NuIrInit(&nuContext);
     
     if (!P->functions) {
         ERROR(NULL, "Top level module has no functions");
@@ -290,18 +295,7 @@ void OutputNuCode(const char *fname, Module *P)
 
     flexbuf_init(&asmFb, 512);
     
-    // create & prepend interpreter
-    NuOutputInterpreter(&asmFb);
-    
-    // compile objects to PASM
-    for (Q = allparse; Q; Q = Q->next) {
-        NuCompileObject(&asmFb, Q);
-    }
-
-    // Align and append any needed heap
-    //NuAddHeap(&bob,P);
-
-    // add main entry point
+    // find main entry point
     Function *mainFunc = GetMainFunction(P);
     if (!mainFunc) {
         ERROR(NULL,"No main function found!");
@@ -313,7 +307,29 @@ void OutputNuCode(const char *fname, Module *P)
         ERROR(NULL,"Main function uncompiled!");
         return;
     }
-    // FIXME: put entry point into BOB
+    uint32_t clkfreq, clkmode;
+    
+    // set entry point and other significant variables
+    if (!GetClkFreq(P, &clkfreq, &clkmode)) {
+        clkfreq = 160000000;
+        clkmode = 0x010007fb;
+    }
+    nuContext.clockFreq = clkfreq;
+    nuContext.clockMode = clkmode;
+    nuContext.entryPt = FunData(mainFunc)->entryLabel;
+    
+    // create & prepend interpreter
+    NuOutputInterpreter(&asmFb, &nuContext);
+    
+    // compile objects to PASM
+    for (Q = allparse; Q; Q = Q->next) {
+        NuCompileObject(&asmFb, Q);
+    }
+
+    // Align and append any needed heap
+    //NuAddHeap(&bob,P);
+
+    // output the data
     const char *asmFileName = ReplaceExtension(fname, ".p2asm");
     asm_file = fopen(asmFileName, "w");
     if (!asm_file) {

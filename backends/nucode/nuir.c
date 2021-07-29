@@ -24,8 +24,10 @@ static int usage_sortfunc(const void *Av, const void *Bv) {
     return B->used - A->used;
 }
 
-void NuIrInit() {
+void NuIrInit(NuContext *ctxt) {
     int i;
+
+    memset(ctxt, 0, sizeof(*ctxt));
     for (i = 0; i < NU_OP_DUMMY; i++) {
         opusage[i].used = 0;
         opusage[i].ircode = i;
@@ -35,7 +37,9 @@ void NuIrInit() {
 
 NuIrLabel *NuCreateLabel() {
     NuIrLabel *r;
+    static int labelnum = 0;
     r = calloc(sizeof(*r), 1);
+    r->num = labelnum++;
     return r;
 }
 
@@ -116,19 +120,60 @@ void NuAssignOpcodes()
     //printf("Least used opcode: %s\n", NuOpName[opusage[lastelem].ircode]);
 }
 
-void NuOutputInterpreter(Flexbuf *fb)
+void NuOutputLabel(Flexbuf *fb, NuIrLabel *label) {
+    if (!label) {
+        flexbuf_printf(fb, "0");
+        return;
+    }
+    flexbuf_printf(fb, "__Label_%05u", label->num);
+}
+
+void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
 {
     const char *ptr = (char *)sys_nuinterp_spin;
     const char *linestart;
     int c;
     int i;
-    
+
     // copy until ^L
     for(;;) {
         c = *ptr++;
         if (c == 0 || c == '\014') break;
-        flexbuf_addchar(fb, c);
+        if (c == '\001') {
+            c = *ptr++;
+            switch(c) {
+            case '0':
+                flexbuf_printf(fb, "%u", ctxt->clockFreq);
+                break;
+            case '1':
+                flexbuf_printf(fb, "$%x", ctxt->clockMode);
+                break;
+            case '2':
+                NuOutputLabel(fb, ctxt->entryPt);
+                break;
+            case '3':
+                NuOutputLabel(fb, ctxt->initObj);
+                break;
+            case '4':
+                NuOutputLabel(fb, ctxt->initFrame);
+                break;
+            case '5':
+                NuOutputLabel(fb, ctxt->initSp);
+                break;
+            default:
+                ERROR(NULL, "Unknown escape char %c", c);
+                break;
+            }
+        } else {
+            flexbuf_addchar(fb, c);
+        }
     }
+    // some functions are always built in to the interpreter
+    impl_ptrs[NU_OP_DROP] = "";
+    impl_ptrs[NU_OP_ENTER] = "";
+    impl_ptrs[NU_OP_RET] = "";
+
+    // find the other implementations that we may need
     while (c) {
         linestart = ptr;
         if (!strncmp(linestart, "impl_", 5)) {
@@ -152,12 +197,19 @@ void NuOutputInterpreter(Flexbuf *fb)
 
     // now add the jump table
     for (i = 0; opusage[i].used > 0 && i < (int)NU_OP_DUMMY; i++) {
-        flexbuf_printf(fb, "\tword\t@@@impl_%s\n", NuOpName[opusage[i].ircode]);
+        flexbuf_printf(fb, "\tword\timpl_%s\n", NuOpName[opusage[i].ircode]);
     }
     // end of jump table
-    flexbuf_printf(fb, "\talignl\nOPC_TABLE_END\n\norgh\n");
+    flexbuf_printf(fb, "\talignl\nOPC_TABLE_END\n");
 
+    // emit constants for everything
+    flexbuf_printf(fb, "\ncon\n");
+    for (i = 0; opusage[i].used > 0 && i < NU_OP_DUMMY; i++) {
+        flexbuf_printf(fb, "\tNU_OP_%s = %d\n", NuOpName[opusage[i].ircode], i);
+    }
+    
     // now emit opcode implementations
+    flexbuf_printf(fb, "dat\n\torgh ($ < $400) ? $400 : $\n");
     for (i = 0; opusage[i].used > 0 && i < (int)NU_OP_DUMMY; i++) {
         int op = opusage[i].ircode;
         const char *ptr = impl_ptrs[op];
@@ -174,6 +226,42 @@ void NuOutputInterpreter(Flexbuf *fb)
                 flexbuf_addchar(fb, c);
                 break;
             }
+        }
+    }
+}
+
+void
+NuOutputIrList(Flexbuf *fb, NuIrList *irl)
+{
+    NuIr *ir;
+    NuIrOpcode op;
+    if (!irl || !irl->head) {
+        return;
+    }
+    for (ir = irl->head; ir; ir = ir->next) {
+        op = ir->op;
+        switch(op) {
+        case NU_OP_LABEL:
+            NuOutputLabel(fb, ir->label);
+            flexbuf_addchar(fb, '\n');
+            break;
+        case NU_OP_ALIGN:
+            flexbuf_printf(fb, "\talignl\n");
+            break;
+        case NU_OP_PUSHI8:
+            flexbuf_printf(fb, "\tbyte\tNU_OP_%s, %d\n", NuOpName[op], ir->val);
+            break;
+        case NU_OP_PUSHI16:
+            flexbuf_printf(fb, "\tbyte\tNU_OP_%s, word %d\n", NuOpName[op], ir->val);
+            break;
+        case NU_OP_PUSHI32:
+            flexbuf_printf(fb, "\tbyte\tNU_OP_%s, long %d\n", NuOpName[op], ir->val);
+            break;
+        default:
+            if (op < NU_OP_DUMMY) {
+                flexbuf_printf(fb, "\tbyte\tNU_OP_%s\n", NuOpName[op]);
+            }
+            break;
         }
     }
 }
