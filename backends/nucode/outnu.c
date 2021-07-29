@@ -5,6 +5,7 @@
 // see the file COPYING for conditions of redistribution
 //
 #include "outnu.h"
+#include "becommon.h"
 #include <stdlib.h>
 
 static void NuCompileStatement(NuIrList *irl, AST *ast); // forward declaration
@@ -21,57 +22,6 @@ NuPrepareObject(Module *P) {
 
     P->bedata = calloc(sizeof(NuModData), 1);
     ModData(P)->datAddress = -1;
-}
-
-static void
-NuDatPutLong(uint8_t *ptr, uint32_t data) {
-#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-    data = __builtin_bswap32(data);
-#endif
-    memcpy(ptr, &data, 4);
-}
-
-static void
-NuProcessDatRelocs(Module *P, OutputSpan *span, Reloc *reloc, size_t numRelocs)
-{
-    size_t i;
-    int datbase = ModData(P)->datAddress;
-    uint8_t *spdata = span->data;
-    size_t maxsize = span->size;
-
-    if (datbase < 0) {
-        ERROR(NULL, "Unable to get DAT base for %s", P->classname);
-        return;
-    }
-    for (i = 0; i < numRelocs; i++, reloc++) {
-        switch (reloc->kind) {
-        case RELOC_KIND_I32: {
-            Symbol *sym = reloc->sym;
-            int off = reloc->addr;
-            uint32_t data;
-
-            if (off + 4 > maxsize) {
-                ERROR(NULL, "Relocation goes past end of span");
-                return;
-            }
-            if (!sym) {
-                // relocation relative to start of dat
-                data = reloc->symoff + datbase;
-                NuDatPutLong(&spdata[off], data);
-            } else {
-                ERROR(NULL, "Unable to handle relocation for %s", sym->user_name);
-            }
-        } break;
-        case RELOC_KIND_NONE:
-        case RELOC_KIND_DEBUG:
-            break; /* nothing to do */
-        case RELOC_KIND_AUGS:
-        case RELOC_KIND_AUGD:
-        default:
-            ERROR(NULL, "Unable to handle reloc %d in bytecode", reloc->kind);
-            break;
-        }
-    }
 }
 
 static int
@@ -255,7 +205,7 @@ static void NuConvertFunctions(Module *P) {
     current = save;
 }
 
-static void NuCompileObject(ByteOutputBuffer *bob, Module *P) {
+static void NuCompileObject(struct flexbuf *fb, Module *P) {
     Module *save = current;
     Function *pf;
     current = P;
@@ -264,10 +214,7 @@ static void NuCompileObject(ByteOutputBuffer *bob, Module *P) {
         ERROR(NULL, "Already compiled object %s", P->classname);
         return;
     }
-    BOB_Align(bob, LONG_SIZE);
-    BOB_Comment(bob, auto_printf(128, "--- Object: %s", P->classname));
-
-    ModData(P)->datAddress = bob->total_size;
+    flexbuf_printf(fb, "'--- Object: %s\n", P->classname);
     
     /* compile DAT block */
     if (P->datblock) {
@@ -275,14 +222,13 @@ static void NuCompileObject(ByteOutputBuffer *bob, Module *P) {
         // TODO pass through listing data
         Flexbuf datBuf;
         Flexbuf datRelocs;
-        OutputSpan *datSpan;
+
         flexbuf_init(&datBuf,2048);
         flexbuf_init(&datRelocs,1024);
-
+        const char *startLabel = NewTemporaryVariable("__Label", NULL);
         PrintDataBlock(&datBuf,P,NULL,&datRelocs);
-        BOB_Comment(bob,"--- DAT Block");
-        datSpan = BOB_Push(bob,(uint8_t*)flexbuf_peek(&datBuf),flexbuf_curlen(&datBuf),NULL);
-        NuProcessDatRelocs(P, datSpan, (Reloc*)flexbuf_peek(&datRelocs), flexbuf_curlen(&datRelocs)/sizeof(Reloc));
+        OutputDataBlob(fb, &datBuf, &datRelocs, startLabel);
+        
         flexbuf_delete(&datRelocs);
         flexbuf_delete(&datBuf);
     }
@@ -290,6 +236,7 @@ static void NuCompileObject(ByteOutputBuffer *bob, Module *P) {
     current = save;
 }
 
+#ifdef NEVER
 static void NuAddHeap(ByteOutputBuffer *bob, Module*P) {
     Symbol *sym = LookupSymbolInTable(&systemModule->objsyms, "__heap_base");
     Symbol *objsym = LookupSymbolInTable(&P->objsyms, "_system_");
@@ -317,14 +264,16 @@ static void NuAddHeap(ByteOutputBuffer *bob, Module*P) {
 
     BOB_FixupWord(bob, off, heapstart);
 }
+#endif
 
 void OutputNuCode(const char *fname, Module *P)
 {
+    FILE *asm_file;
     FILE *bin_file;
     FILE *lst_file = NULL;
     Module *Q;
-    ByteOutputBuffer bob = {0};
-
+    struct flexbuf asmFb;
+    
     NuIrInit();
     
     if (!P->functions) {
@@ -338,17 +287,19 @@ void OutputNuCode(const char *fname, Module *P)
     
     // assign opcodes to IR
     NuAssignOpcodes();
+
+    flexbuf_init(&asmFb, 512);
     
     // create & prepend interpreter
-
-    // compile objects to binary
+    NuOutputInterpreter(&asmFb);
+    
+    // compile objects to PASM
     for (Q = allparse; Q; Q = Q->next) {
-        NuCompileObject(&bob, Q);
+        NuCompileObject(&asmFb, Q);
     }
 
     // Align and append any needed heap
-    BOB_Align(&bob,4);
-    NuAddHeap(&bob,P);
+    //NuAddHeap(&bob,P);
 
     // add main entry point
     Function *mainFunc = GetMainFunction(P);
@@ -363,54 +314,22 @@ void OutputNuCode(const char *fname, Module *P)
         return;
     }
     // FIXME: put entry point into BOB
-
-    bin_file = fopen(fname, "wb");
-    if (!bin_file) {
-        ERROR(NULL, "Unable to open output file %s", fname);
+    const char *asmFileName = ReplaceExtension(fname, ".p2asm");
+    asm_file = fopen(asmFileName, "w");
+    if (!asm_file) {
+        ERROR(NULL, "Unable to open output file %s", asmFileName);
         return;
     }
     if (gl_listing) {
         lst_file = fopen(ReplaceExtension(fname, ".lst"), "w");
     }
 
-    // Walk through buffer and emit the stuff
-    int outPosition = 0;
-    const int maxBytesPerLine = 8;
-    const int listPadColumn = (gl_p2?5:4)+maxBytesPerLine*3+2;
-    for(OutputSpan *span=bob.head;span;span = span->next) {
-        if (span->size > 0) fwrite(span->data,span->size,1,bin_file);
 
-        // Handle listing output
-        if (lst_file) {
-            if (span->size == 0) {
-                if (span->comment) fprintf(lst_file,"'%s\n",span->comment);
-            } else {
-                int listPosition = 0;
-                while (listPosition < span->size) {
-                    int listPosition_curline = listPosition; // Position at beginning of line
-                    int list_linelen = fprintf(lst_file,gl_p2 ? "%05X: " : "%04X: ",outPosition+listPosition_curline);
-                    // Print up to 8 bytes per line
-                    for (;(listPosition-listPosition_curline) < maxBytesPerLine && listPosition<span->size;listPosition++) {
-                        list_linelen += fprintf(lst_file,"%02X ",span->data[listPosition]);
-                    }
-                    // Print comment, indented
-                    if (span->comment) {
-                        for(;list_linelen<listPadColumn;list_linelen++) fputc(' ',lst_file);
-                        if (listPosition_curline == 0) { // First line? (of potential multi-line span)
-                            fprintf(lst_file,"' %s",span->comment);
-                        } else {
-                            fprintf(lst_file,"' ...");
-                        }
-                    }
-                    fputc('\n',lst_file);
-                }
-                
-            }
-        }
+    // emit PASM code
+    flexbuf_addchar(&asmFb, 0);
+    char *asmcode = flexbuf_get(&asmFb);
+    fwrite(asmcode, 1, strlen(asmcode), asm_file);
+    fclose(asm_file);
 
-        outPosition += span->size;
-    }
-
-    fclose(bin_file);
     if (lst_file) fclose(lst_file);
 }

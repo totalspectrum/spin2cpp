@@ -112,5 +112,6 @@ NuIr *NuEmitLabel(NuIrList *irl, NuIrLabel *label);
 NuIrLabel *NuCreateLabel();
 
 void NuAssignOpcodes();
+void NuOutputInterpreter(struct flexbuf *fb);
 
 #endif

@@ -26,6 +26,7 @@
  * +--------------------------------------------------------------------
  */
 #include "spinc.h"
+#include "becommon.h"
 #include "outasm.h"
 #include <ctype.h>
 
@@ -416,11 +417,9 @@ fetchUint32(uint8_t *data)
 
 #define MAX_BYTES_ON_LINE 16
 
-static void
-OutputBlob(Flexbuf *fb, Operand *label, Operand *op, Module *P)
+void
+OutputDataBlob(Flexbuf *fb, Flexbuf *databuf, Flexbuf *relocbuf, const char *startLabel)
 {
-    Flexbuf *databuf;
-    Flexbuf *relocbuf;
     uint8_t *data;
     int len;
     int addr;
@@ -428,20 +427,15 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op, Module *P)
     int relocs;
     uint32_t runlen;
     int lastdata;
-    
-    if (op->kind != IMM_BINARY) {
-        ERROR(NULL, "Internal: bad binary blob");
-        return;
-    }
+
     if (gl_p2 || gl_compress) {
         flexbuf_printf(fb, "\talignl\n"); // ensure long alignment
     } else {
         flexbuf_printf(fb, "\tlong\n"); // ensure long alignment
     }
-    flexbuf_printf(fb, label->name);
+    flexbuf_printf(fb, startLabel);
     flexbuf_printf(fb, "\n");
-    databuf = (Flexbuf *)op->name;
-    relocbuf = (Flexbuf *)op->val;
+
     if (relocbuf) {
         relocs = flexbuf_curlen(relocbuf) / sizeof(Reloc);
         nextreloc = (Reloc *)flexbuf_peek(relocbuf);
@@ -504,9 +498,9 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op, Module *P)
                 sym = nextreloc->sym;
                 offset = nextreloc->symoff;
                 if (!sym) {
-                    symname = RemappedName(label->name);
+                    symname = startLabel;
                 } else {
-                    Module *Q = sym->module ? sym->module : P;
+                    Module *Q = sym->module ? sym->module : NULL;
                     symname = IdentifierModuleName(Q, sym->our_name);
                 }
                 switch(nextreloc->kind) {
@@ -589,6 +583,23 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op, Module *P)
         nextreloc++;
         --relocs;
     }
+}
+
+static void
+OutputBlob(Flexbuf *fb, Operand *label, Operand *op, Module *P)
+{
+    Flexbuf *databuf;
+    Flexbuf *relocbuf;
+    const char *baseLabel;
+    
+    if (op->kind != IMM_BINARY) {
+        ERROR(NULL, "Internal: bad binary blob");
+        return;
+    }
+    baseLabel = RemappedName(label->name);
+    databuf = (Flexbuf *)op->name;
+    relocbuf = (Flexbuf *)op->val;
+    OutputDataBlob(fb, databuf, relocbuf, baseLabel);
 }
 
 /* find string for opcode */
