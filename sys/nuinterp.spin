@@ -34,7 +34,7 @@ real_init
   
   	' first time run
 	' set up initial registers
-	rdlong	pc, #@entry_pc
+	rdlong	ptrb, #@entry_pc	' ptrb serves as PC
 	rdlong	vbase, #@entry_vbase
 	rdlong	ptra, #@entry_sp
 	rdlong	dbase, #@entry_dbase
@@ -42,7 +42,7 @@ real_init
 spininit
 	' for Spin startup, stack should contain args, pc, vbase in that order
 	rdlong	vbase, --ptra
-	rdlong	pc, --ptra
+	rdlong	ptrb, --ptra		' ptrb serves as PC
 continue_startup
 	' load LUT code
 	loc    ptrb, #@start_lut
@@ -55,174 +55,158 @@ tos	res    1
 nos	res    1
 tmp	res    1
 tmp2	res    1
-pc	res    1
 vbase	res    1
 dbase	res    1
 old_pc	res    1
 	
 	org    $200
 start_lut
-	drvnot	#56
-	waitx	##10_000_000
-	jmp	#start_lut
+	' initialization code
+	mov	old_pc, #0
+	' copy jump table to COG RAM
+	loc    pa, #@OPC_TABLE
+	setq   #(OPC_TABLE_END-OPC_TABLE)-1
+	rdlong OPC_TABLE, pa
+	
+	' interpreter loop
+main_loop
+	rdbyte	pa, ptrb++
+	altgw	pa, #OPC_TABLE
+	getword	tmp
+	call	tmp
+	jmp	#main_loop
 end_lut
 
-dup
+impl_DUP
 	wrlong	nos, ptra++
  _ret_	mov	nos, tos
 
-drop
+impl_DROP
 	mov	tos, nos
  _ret_	rdlong	nos, --ptra
 
-drop2
+impl_DROP2
 	rdlong	tos, --ptra
  _ret_	rdlong	nos, --ptra
 
-swap
+impl_SWAP
 	mov	tmp, tos
 	mov	tos, nos
  _ret_	mov	nos, tmp
- 
-	' jump table goes here
-	' this needs to be in the same order as the opcodes in nuir.h
-JUMP_TABLE
-	long   $abcdef01	' magic marker so we can find the opcodes; illegal instruction slot
-	jmp	#\ldb_impl
-	jmp	#\ldw_impl
-	jmp	#\ldl_impl
-	jmp	#\ldd_impl
-	jmp	#\stb_impl
-	jmp	#\stw_impl
-	jmp	#\stl_impl
-	jmp	#\std_impl
-	jmp	#\ldreg_impl
-	jmp	#\streg_impl
 
-	jmp	#\add_vbase_impl
-	jmp	#\add_dbase_impl
-	jmp	#\add_sp_impl
-	jmp	#\add_pc_impl
-
-	jmp	#\add_impl
-	jmp	#\sub_impl
-	jmp	#\and_impl
-	jmp	#\ior_impl
-	jmp	#\xor_impl
-	
-	jmp	#\signx_impl
-	jmp	#\zerox_impl
-	jmp	#\shl_impl
-	jmp	#\shr_impl
-	jmp	#\sar_impl
-
-	jmp	#\mulu_impl
-	jmp	#\muls_impl
-	jmp	#\divu_impl
-	jmp	#\divs_impl
-
-	jmp	#\neg_impl
-	jmp	#\not_impl
-	jmp	#\abs_impl
-
+'' end of main interpreter
+	' opcode table goes here
+	org    $140
+OPC_TABLE
+
 	orgh
-ldb_impl
+impl_LDB
   _ret_	rdbyte tos, tos
-ldw_impl
+  
+impl_LDW
   _ret_ rdword tos, tos
-ldl_impl
+  
+impl_LDL
   _ret_ rdlong tos, tos
-ldd_impl
-	call	#\dup
+  
+impl_LDD
+	call	#\impl_DUP
 	rdlong	nos, nos
 	add	tos, #4
   _ret_	rdbyte	tos, tos
 
-stb_impl
+impl_STB
 	wrbyte	nos, tos
-  _ret_	jmp	#\drop2
+  _ret_	jmp	#\impl_DROP2
   
-stw_impl
+impl_STW
 	wrword	nos, tos
-  _ret_	jmp	#\drop2
+	jmp	#\impl_DROP2
   
-stl_impl
+impl_STL
 	wrlong	nos, tos
-  _ret_	jmp	#\drop2
+	jmp	#\impl_DROP2
   
-std_impl
+impl_STD
 	mov	tmp, tos
-	call	#\drop
+	call	#\impl_DROP
 	wrlong	nos, tmp
 	add	tmp, #4
 	wrlong	tos, tmp
-  _ret_	jmp	#\drop2
+	jmp	#\impl_DROP2
 
-ldreg_impl
+impl_LDREG
 	alts	tos
   _ret_	mov	tos, 0-0
 
-streg_impl
+impl_STREG
 	altd	tos
   	mov	0-0, nos
-  _ret_	jmp	#\drop2
+	jmp	#\impl_DROP2
 	
-add_vbase_impl
+impl_ADD_VBASE
   _ret_	add	tos, vbase
-add_dbase_impl
-  _ret_	add	tos, dbase
-add_pc_impl
-  _ret_	add	tos, pc
-add_sp_impl
-  _ret_	add	tos, sp
 
-add_impl
+impl_ADD_DBASE
+  _ret_	add	tos, dbase
+
+impl_ADD_PC
+  _ret_	add	tos, ptrb
+  
+impl_ADD_SP
+  _ret_	add	tos, ptra
+
+impl_ADD
 	add	tos, nos
  _ret_	rdlong	nos, --ptra
 
-sub_impl
+impl_SUB
 	subr	tos, nos
  _ret_	rdlong	nos, --ptra
 
-and_impl
+impl_AND
 	and	tos, nos
  _ret_	rdlong	nos, --ptra
-ior_impl
+
+impl_IOR
 	or	tos, nos
  _ret_	rdlong	nos, --ptra
-xor_impl
+
+impl_XOR
 	xor	tos, nos
  _ret_	rdlong	nos, --ptra
 
-signx_impl
+impl_SIGNX
 	signx	nos, tos
 	mov	tos, nos
  _ret_	rdlong	nos, --ptra
 
-zerox_impl
+impl_ZEROX
 	zerox	nos, tos
 	mov	tos, nos
  _ret_	rdlong	nos, --ptra
 
-shl_impl
+impl_SHL
 	shl	nos, tos
 	mov	tos, nos
  _ret_	rdlong	nos, --ptra
-shr_impl
+
+impl_SHR
 	shr	nos, tos
 	mov	tos, nos
  _ret_	rdlong	nos, --ptra
-sar_impl
+ 
+impl_SAR
 	sar	nos, tos
 	mov	tos, nos
  _ret_	rdlong	nos, --ptra
 
-mulu_impl
+impl_MULU
 	qmul	nos, tos
 	getqx	nos
  _ret_	getqy	tos
 
-muls_impl
+impl_MULS
 	qmul	nos, tos
 	mov	tmp, #0
 	cmps	nos, #0 wc
@@ -233,12 +217,12 @@ muls_impl
 	getqy	tos
   _ret_	sub	tos, tmp
 	
-divu_impl
+impl_DIVU
 	qdiv	nos, tos
 	getqx	nos
  _ret_	getqy	tos
 
-divs_impl
+impl_DIVS
 	abs	nos, nos wc
 	muxc	tmp, #1
 	abs	tos, tos wc
@@ -248,27 +232,34 @@ divs_impl
   if_c	neg	tos, tos
   	test	tmp, #1 wc
   _ret_	negc	nos, nos
-  
-neg_impl
+
+impl_NEG
   _ret_	neg	tos, tos
-not_impl
+
+impl_NOT
   _ret_	not	tos, tos
-abs_impl
+
+impl_ABS
   _ret_	abs	tos, tos
 
-pushi32_impl
-	call	#\dup
-	rdlong	tos, pc
-  _ret_	add	pc, #4
+impl_PUSHI32
+	call	#\impl_DUP
+  _ret_	rdlong	tos, ptrb++
 
-pushi16_impl
-	call	#\dup
-	rdword	tos, pc
-	signx	tos, #15
-  _ret_	add	pc, #2
+impl_PUSHI16
+	call	#\impl_DUP
+	rdword	tos, ptrb++
+  _ret_	signx	tos, #15
 
-pushi8_impl
-	call	#\dup
-	rdbyte	tos, pc
-	signx	tos, #7
-  _ret_	add	pc, #1
+impl_PUSHI8
+	call	#\impl_DUP
+	rdbyte	tos, ptrb++
+  _ret_	signx	tos, #7
+
+impl_WAITX
+	waitx	tos
+	jmp	#\impl_DROP
+
+impl_DRVL
+	drvl	tos
+	jmp	#\impl_DROP
