@@ -70,6 +70,8 @@
     X(PUSHI8)    /* push immediate 8 bit */ \
     X(PUSHA)     /* push address */ \
     \
+    X(BRA)       /* branch always */ \
+    \
     X(DUMMY)     /* this and everything following needs no code */ \
     X(LABEL)     /* label for jump target */ \
     X(ALIGN)     /* align data */ \
@@ -118,6 +120,7 @@ NuIr *NuEmitNamedOpcode(NuIrList *irl, const char *name);
 NuIr *NuEmitConst(NuIrList *irl, int32_t val);
 NuIr *NuEmitAddress(NuIrList *irl, NuIrLabel *label);
 NuIr *NuEmitLabel(NuIrList *irl, NuIrLabel *label);
+NuIr *NuEmitBranch(NuIrList *irl, NuIrOpcode op, NuIrLabel *label);
 
 NuIrLabel *NuCreateLabel();
 

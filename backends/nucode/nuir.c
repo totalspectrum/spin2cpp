@@ -91,6 +91,12 @@ NuIr *NuEmitAddress(NuIrList *irl, NuIrLabel *label) {
     return r;
 }
 
+NuIr *NuEmitBranch(NuIrList *irl, NuIrOpcode op, NuIrLabel *label) {
+    NuIr *r = NuEmitOp(irl, op);
+    r->label = label;
+    return r;
+}
+
 NuIr *NuEmitLabel(NuIrList *irl, NuIrLabel *label) {
     NuIr *r = NuEmitOp(irl, NU_OP_LABEL);
     r->label = label;
@@ -256,6 +262,11 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
             break;
         case NU_OP_PUSHI32:
             flexbuf_printf(fb, "\tbyte\tNU_OP_%s, long %d\n", NuOpName[op], ir->val);
+            break;
+        case NU_OP_BRA:
+            flexbuf_printf(fb, "\tbyte\tNU_OP_%s, word (", NuOpName[op]);
+            NuOutputLabel(fb, ir->label);
+            flexbuf_printf(fb, " - ($+2))\n");
             break;
         default:
             if (op < NU_OP_DUMMY) {

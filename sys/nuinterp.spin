@@ -295,3 +295,16 @@ impl_WAITX
 impl_DRVL
 	drvl	tos
 	jmp	#\impl_DROP
+
+impl_DRVH
+	drvh	tos
+	jmp	#\impl_DROP
+
+impl_DRVNOT
+	drvnot	tos
+	jmp	#\impl_DROP
+
+impl_BRA
+	rdword	tmp, ptrb++
+	signx	tmp, #15
+  _ret_	add	ptrb, tmp

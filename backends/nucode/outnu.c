@@ -37,12 +37,15 @@ NuCompileFunCall(NuIrList *irl, AST *node) {
     sym = FindFuncSymbol(node, &objref, 1);
     if (sym && sym->kind == SYM_FUNCTION) {
         func = (Function *)sym->val;
+        pushed = func->numresults;
         if (func->body && func->body->kind == AST_BYTECODE) {
             NuEmitNamedOpcode(irl, func->body->d.string);
+            if (!func->result_declared) {
+                pushed = 0;
+            }
         } else {
             ERROR(node, "Unable to compile function call");
         }
-        pushed = func->numresults;
     } else {
         functype = ExprType(node->left);
         (void)functype;
@@ -104,26 +107,42 @@ NuCompileStmtlist(NuIrList *irl, AST *list) {
 }
 
 static void
-NuCompileStatement(NuIrList *irl, AST *node) {
+NuCompileStatement(NuIrList *irl, AST *ast) {
     int n;
-    while (node && node->kind == AST_COMMENTEDNODE) {
-        node = node->left;
+    NuIrLabel *toploop;
+    NuIrLabel *botloop;
+    
+    while (ast && ast->kind == AST_COMMENTEDNODE) {
+        ast = ast->left;
     }
-    if (!node) return;
-    switch(node->kind) {
+    if (!ast) return;
+    switch(ast->kind) {
     case AST_COMMENT:
         // for now, do nothing
         break;
 
+    case AST_WHILE:
+        toploop = NuCreateLabel();
+        botloop = NuCreateLabel();
+        NuEmitLabel(irl, toploop);
+        if (!IsConstExpr(ast->left)) {
+            ERROR(ast, "Unable to handle conditional while");
+        }
+        //NuCompileBoolBranches(irl, ast->left, NULL, botloop);
+        NuCompileStmtlist(irl, ast->right);
+        NuEmitBranch(irl, NU_OP_BRA, toploop);
+        NuEmitLabel(irl, botloop);
+        break;
+        
     case AST_FUNCCALL:
-        n = NuCompileExpression(irl, node);
+        n = NuCompileExpression(irl, ast);
         while (n > 0) {
             NuEmitOp(irl, NU_OP_DROP);
             --n;
         }
         break;
     default:
-        ERROR(node, "Unhandled node type %d in NuCompileStatement", node->kind);
+        ERROR(ast, "Unhandled node type %d in NuCompileStatement", ast->kind);
         break;
     }
 }
