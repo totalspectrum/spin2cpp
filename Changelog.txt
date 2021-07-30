@@ -2,6 +2,7 @@ Version 6.0.0
 - Added support for bool, false, and true to C++
 - Added some missing defines in stdint.h
 - Added automatic I/O locking for PRINT, __builtin_printf, and DEBUG
+- Added ability to have multiple items in BASIC CASE 
 - Added "ASM_CONST" keyword to Spin
 - Changed "ASM CONST" to "CONST ASM" in BASIC
 - Fixed multiple assignments in Spin (a:=b:=c) to have the same semantics as Spin

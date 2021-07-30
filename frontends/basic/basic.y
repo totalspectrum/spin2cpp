@@ -1195,12 +1195,24 @@ casematchitem:
 ;
 
 casematch:
-  BAS_CASE expr
-    {  $$ = NewAST(AST_EXPRLIST, $2, NULL); }
-  | BAS_CASE expr BAS_TO expr
-    {  $$ = NewAST(AST_EXPRLIST, NewAST(AST_RANGE, $2, $4), NULL); }
-  | BAS_CASE BAS_ELSE
+  BAS_CASE caselist
+    {  $$ = $2; }
+;
+
+caseitem:
+  expr
+    {  $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+  | expr BAS_TO expr
+    {  $$ = NewAST(AST_EXPRLIST, NewAST(AST_RANGE, $1, $3), NULL); }
+  | BAS_ELSE
     { $$ = NewAST(AST_OTHER, NULL, NULL); }
+;
+
+caselist:
+  caseitem
+    {  $$ = $1; }
+  | caselist ',' caseitem
+    {  $$ = AddToList($1, $3); }
 ;
 
 //

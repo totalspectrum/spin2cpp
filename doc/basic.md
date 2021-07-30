@@ -1174,15 +1174,15 @@ foo x
 
 ### CASE
 
-Used in a `select` statement to indicate a possible case to match. Only a subset of FreeBasic's `case` options are available. After the `case` can either be `else` (which always matches), a single  expression (which matches if the original expression equals the `case` one), or an inclusive range `a to b` which will match if the original expression is between between `a` and `b` (inclusive).
+Used in a `select` statement to indicate a possible case to match. Only a subset of FreeBasic's `case` options are available. After the `case` can be a list of items, seperated by commas. Each item is either `else` (which always matches), an expression (which matches if the original expression equals the `case` one), or an inclusive range `a to b` which will match if the original expression is between `a` and `b` (inclusive).
 
 Example:
 ```
 select case x
-case 1
-  print "it was 1"
-case 2 to 4
-  print "it was between 2 and 4"
+case 1, 9
+  print "it was 1 or 9"
+case 2 to 4, 12 to 16
+  print "it was between 2 and 4 or 12 and 16"
   print "sorry for being vague!"
 case 8
   print "it was 8"
