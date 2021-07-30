@@ -292,8 +292,6 @@ static void NuAddHeap(ByteOutputBuffer *bob, Module*P) {
 void OutputNuCode(const char *fname, Module *P)
 {
     FILE *asm_file;
-    //FILE *bin_file;
-    FILE *lst_file = NULL;
     Module *Q;
     struct flexbuf asmFb;
     NuContext nuContext;
@@ -355,16 +353,12 @@ void OutputNuCode(const char *fname, Module *P)
         ERROR(NULL, "Unable to open output file %s", asmFileName);
         return;
     }
-    if (gl_listing) {
-        lst_file = fopen(ReplaceExtension(fname, ".lst"), "w");
-    }
-
-
     // emit PASM code
     flexbuf_addchar(&asmFb, 0);
     char *asmcode = flexbuf_get(&asmFb);
     fwrite(asmcode, 1, strlen(asmcode), asm_file);
     fclose(asm_file);
 
-    if (lst_file) fclose(lst_file);
+    // now compile to binary
+    CompileAsmToBinary(fname, asmFileName);
 }

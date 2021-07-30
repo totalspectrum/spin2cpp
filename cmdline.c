@@ -36,6 +36,7 @@
 #include "preprocess.h"
 #include "version.h"
 #include "cmdline.h"
+#include "becommon.h"
 
 static int TrivialSpinFunction(Module *P);
 
@@ -67,6 +68,29 @@ PrintFileSize(const char *fname)
         len = ftell(f);
         fclose(f);
         printf("Program size is %u bytes\n", len);
+    }
+}
+
+void
+CompileAsmToBinary(const char *binname, const char *asmname)
+{
+    const char *listFile = gl_listing ? ReplaceExtension(binname, ".lst") : NULL;
+    if (gl_errors > 0) {
+        // no point in going all the way to compiling
+        // the final assembly, it isn't valid anyway
+        remove(binname);
+        if (listFile) {
+            remove(listFile);
+        }
+        exit(1);
+    }
+    gl_output = OUTPUT_DAT;
+    Module *Q = ParseTopFiles(&asmname, 1, 1);
+    if (gl_errors == 0) {
+        if (listFile) {
+            OutputLstFile(listFile, Q);
+        }
+        OutputDatFile(binname, Q, 1);
     }
 }
 
@@ -205,7 +229,6 @@ int ProcessCommandLine(CmdLineOptions *cmd)
     }
     
     if (P) {
-        Module *Q;
         int compile_original = 0;
         
         if (gl_errors >= gl_max_errors) {
@@ -284,26 +307,10 @@ int ProcessCommandLine(CmdLineOptions *cmd)
                 OutputAsmCode(asmname, P, cmd->outputMain);
             }
             if (cmd->compile)  {
-                if (gl_errors > 0) {
-                    // no point in going all the way to compiling
-                    // the final assembly, it isn't valid anyway
-                    remove(binname);
-                    if (listFile) {
-                        remove(listFile);
-                    }
-                    exit(1);
-                }
-                gl_output = OUTPUT_DAT;
                 gl_caseSensitive = !compile_original;
                 gl_warn_flags &= ~WARN_ASM_USAGE; // already issued warnings
-                Q = ParseTopFiles(&asmname, 1, 1);
-                if (gl_errors == 0) {
-                    if (listFile) {
-                        OutputLstFile(listFile, Q);
-                    }
-                    OutputDatFile(binname, Q, 1);
-                    DoPropellerChecksum(binname, cmd->useEeprom ? cmd->eepromSize : 0);
-                }
+                CompileAsmToBinary(binname, asmname);
+                DoPropellerChecksum(binname, cmd->useEeprom ? cmd->eepromSize : 0);
                 if (!cmd->quiet) {
                     printf("Done.\n");
                     if (gl_errors == 0) {
