@@ -8,6 +8,10 @@
 #include "becommon.h"
 #include <stdlib.h>
 
+#define NumRetLongs(F) FuncLongResults(F->overalltype)
+#define NumArgLongs(F) FuncLongParams(F->overalltype)
+#define NumLocalLongs(F) ((F)->numlocals)
+
 static void NuCompileStatement(NuIrList *irl, AST *ast); // forward declaration
 static void NuCompileStmtlist(NuIrList *irl, AST *ast); // forward declaration
 static int NuCompileExpression(NuIrList *irl, AST *ast); // returns number of items left on stack
@@ -22,6 +26,17 @@ NuPrepareObject(Module *P) {
 
     P->bedata = calloc(sizeof(NuModData), 1);
     ModData(P)->datAddress = -1;
+}
+
+static void
+NuPrepareFunctionBedata(Function *F) {
+    if (F->bedata) {
+        return;
+    }
+    F->bedata = calloc(sizeof(NuFunData),1);
+    
+    FunData(F)->entryLabel = NuCreateLabel();
+    FunData(F)->exitLabel = NuCreateLabel();    
 }
 
 static int
@@ -44,7 +59,15 @@ NuCompileFunCall(NuIrList *irl, AST *node) {
                 pushed = 0;
             }
         } else {
-            ERROR(node, "Unable to compile function call");
+            // output a CALL
+            if (func->is_static || func->module == current) {
+                // plain CALL is OK
+                NuPrepareFunctionBedata(func);
+                NuEmitAddress(irl, FunData(func)->entryLabel);
+                NuEmitOp(irl, NU_OP_CALL);
+            } else {
+                ERROR(node, "Unable to compile method calls");
+            }
         }
     } else {
         functype = ExprType(node->left);
@@ -53,6 +76,32 @@ NuCompileFunCall(NuIrList *irl, AST *node) {
         return 0;
     }
     return pushed;
+}
+
+/* push effective address of an identifier onto the stack */
+static void
+NuCompileIdentifierAddress(NuIrList *irl, AST *node) {
+    Symbol *sym = LookupAstSymbol(node,NULL);
+    NuIrOpcode offsetOp = NU_OP_ADD_DBASE;
+    int offset;
+    
+    if (!sym) {
+        ERROR(node, "identifier %s not found", GetUserIdentifierName(node));
+        return;
+    }
+    switch (sym->kind) {
+    case SYM_LOCALVAR:
+    case SYM_TEMPVAR:
+    case SYM_PARAMETER:
+    case SYM_RESULT:
+        offset = sym->offset;
+        break;
+    default:
+        ERROR(node, "Unhandled symbol type for %s", GetUserIdentifierName(node));
+        return;
+    }
+    NuEmitConst(irl, offset);
+    NuEmitOp(irl, offsetOp);
 }
 
 /* returns number of longs pushed on stack */
@@ -69,6 +118,39 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         return 1;
     }
     switch(node->kind) {
+    case AST_IDENTIFIER:
+    case AST_LOCAL_IDENTIFIER:
+    {
+        AST *typ;
+        int siz;
+        typ = ExprType(node);
+        if (!typ) {
+            typ = ast_type_long;
+        }
+        siz = TypeSize(typ);
+        NuCompileIdentifierAddress(irl, node);
+        pushed = (siz+3)/4; 
+        switch (siz) {
+        case 0:
+            ERROR(node, "Attempt to use void value");
+            return pushed;
+        case 1:
+            NuEmitOp(irl, NU_OP_LDB);
+            break;
+        case 2:
+            NuEmitOp(irl, NU_OP_LDW);
+            break;
+        case 4:
+            NuEmitOp(irl, NU_OP_LDL);
+            break;
+        case 8:
+            NuEmitOp(irl, NU_OP_LDD);
+            break;
+        default:
+            ERROR(node, "Unable to handle %d byte objects yet", siz);
+            break;
+        }            
+    } break;
     case AST_FUNCCALL:
     {
         pushed = NuCompileFunCall(irl, node);
@@ -153,11 +235,7 @@ NuCompileFunction(Function *F) {
 
     curfunc = F;
 
-    if (F->bedata) {
-        ERROR(NULL, "function %s already has back end data?", F->name);
-        return;
-    }
-    F->bedata = calloc(sizeof(NuFunData),1);
+    NuPrepareFunctionBedata(F);
 
     // I think there's other body types so let's leave this instead of using ASSERT_AST_KIND
     if (!F->body) {
@@ -198,15 +276,21 @@ NuCompileFunction(Function *F) {
         }
         irl = &FunData(F)->irl;
 
-        FunData(F)->entryLabel = NuCreateLabel();
-        FunData(F)->exitLabel = NuCreateLabel();
-        
         // emit function prologue
         NuEmitLabel(irl, FunData(F)->entryLabel);
+        // ENTER needs on stack:
+        //  number of return values
+        //  number of arguments
+        //  number of locals
+        NuEmitConst(irl, NumRetLongs(F));
+        NuEmitConst(irl, NumArgLongs(F));
+        NuEmitConst(irl, NumLocalLongs(F));
         NuEmitOp(irl, NU_OP_ENTER);
+        
         NuCompileStmtlist(irl, F->body);
         // emit function epilogue
         NuEmitLabel(irl, FunData(F)->exitLabel);
+        NuEmitConst(irl, NumRetLongs(F));
         NuEmitOp(irl, NU_OP_RET);
     }
 }

@@ -48,10 +48,12 @@
     X(DROP)      /* drop element on top of stack */ \
     X(DUP)       /* dup element on top of stack */ \
     X(SWAP)      /* swap tos and nos */ \
+    X(HALT)      /* halt processor */ \
     \
     X(ENTER)     /* enter subroutine */ \
     X(RET)       /* return from subroutine */ \
     X(CALL)      /* call subroutine */ \
+    X(CALLM)     /* call method (changes object pointer) */ \
     X(JMP)       /* jump to address at tos */ \
     X(JMPZ)      /* jump to address to nos if tos is = 0 (discards tos, nos) */ \
     X(JMPNZ)     /* jump to address to nos if tos is <> 0 (discards tos, nos) */ \

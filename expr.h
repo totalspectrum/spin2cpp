@@ -122,10 +122,16 @@ int ExprHasSideEffects(AST *);
 
 // number of results from a function
 int FuncNumResults(AST *functype);
+// number of longs coming back from a function (which may be more than FuncNumResults if
+// some results need multiple longs)
+int FuncLongResults(AST *functype);
 
 // number of parameters to a function (negative for varargs, in which
 // case the absolute value is the minimum number of parameters)
 int FuncNumParams(AST *functype);
+
+// number of longs passed as parameters
+int FuncLongParams(AST *functype);
 
 // clean up a type so it has no symbolic references; needed so that e.g. array
 // sizes that are symbolic constants can be found outside of the module they're

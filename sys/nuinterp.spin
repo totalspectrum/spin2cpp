@@ -83,7 +83,9 @@ tmp2	res    1
 vbase	res    1
 dbase	res    1
 old_pc	res    1
-	
+old_vbase res  1
+old_dbase res  1
+
 	org    $200
 start_lut
 	' initialization code
@@ -118,12 +120,85 @@ impl_SWAP
 	mov	tos, nos
  _ret_	mov	nos, tmp
 
-impl_ENTER
-	ret
+'
+' call/enter/ret
+' "call" saves the original pc in old_pc, the original vbase in old_vbase,
+' and jumps to the new code
+' normally this will start with an "enter" which saves old_pc and
+' old_vbase, then sets up the new stack frame
+' "callm" is like "call" but also pops a new vbase
+' "ret" undoes the "enter" and then sets pc back to old_pc
+'
+impl_CALL
+	mov	old_pc, ptrb
+	mov	old_vbase, vbase
+	mov	ptrb, tos
+	jmp	#impl_DROP
+	
+impl_CALLM
+	mov	old_pc, ptrb
+	mov	old_vbase, vbase
+	mov	ptrb, tos
+	mov	vbase, nos
+	jmp	#impl_DROP2
 
+' "enter" has to set up a new stack frame
+' when we enter a subroutine the arguments are sitting on the stack;
+' we need to copy them down to make room for the return values (Spin2
+' requires things to be at fixed addresses :( ) and also allocate space
+' for local variables
+' "enter" therefore takes three arguments:
+'    tos is the number of locals (longs)
+'    nos is the number of arguments (longs)
+'    nnos is the number of return values (again, longs)
+'
+impl_ENTER
+	mov	tmp, tos	' number of locals
+	call	#impl_DROP	' now tos is number of args, nos is # ret values
+	' find the "stack base" (where return values will go)
+	mov	old_dbase, dbase
+	shl	tos, #2		' multiply by 4
+	sub	ptra, tos	' roll back stack
+	shr	tos, #2
+	' copy the arguments to local memory
+	setq	tos
+	rdlong	0-0, ptra
+	' save old things onto stack
+	wrlong	old_dbase, ptra++
+	wrlong	old_pc, ptra++
+	wrlong	old_vbase, ptra++
+	mov	dbase, ptra	' set up dbase
+	shl	nos, #2		' # of bytes in ret values
+	add	ptra, nos	' skip over return values
+	setq	tos
+	wrlong	0-0, ptra	' write out the arguments
+	shl	tos, #2
+	add	ptra, tos	' skip over arguments
+	shl	tmp, #2
+_ret_	add	ptra, tmp	' skip over locals
+
+
+' RET gives number of items on stack to pop off
 impl_RET
-	cogid pa
-	cogstop pa
+	' make nos is in memory (tos is # items to pop, so not needed)
+	wrlong	nos, ptra
+	' save the return values
+	setq	tos
+	rdlong	0-0, dbase
+	' restore the stack
+	mov	ptra, dbase
+	rdlong	vbase, --ptra
+	rdlong	ptrb, --ptra
+	rdlong	dbase, --ptra wz
+  if_z	jmp	#impl_HALT		' if old dbase was NULL, nothing to return to
+  	setq	tos
+	wrlong	0-0, ptra++
+	' need to get tos and nos back into registers
+	jmp	#impl_DROP2
+	
+impl_HALT
+	cogid	pa
+	cogstop	pa
 	
 end_lut
 '' end of main interpreter
@@ -275,6 +350,10 @@ impl_ABS
   _ret_	abs	tos, tos
 
 impl_PUSHI32
+	call	#\impl_DUP
+  _ret_	rdlong	tos, ptrb++
+
+impl_PUSHA
 	call	#\impl_DUP
   _ret_	rdlong	tos, ptrb++
 

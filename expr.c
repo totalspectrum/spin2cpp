@@ -2994,6 +2994,12 @@ FuncNumResults(AST *functype)
 }
 
 int
+FuncLongResults(AST *functype)
+{
+    return FuncNumResults(functype);
+}
+
+int
 FuncNumParams(AST *functype)
 {
     AST *arglist = functype->right;
@@ -3007,6 +3013,24 @@ FuncNumParams(AST *functype)
             break;
         }
         n++;
+    }
+    return n;
+}
+
+int
+FuncLongParams(AST *functype)
+{
+    AST *arglist = functype->right;
+    AST *arg;
+    int n = 0;
+    while (arglist) {
+        arg = arglist->left;
+        arglist = arglist->right;
+        if (arg->kind == AST_VARARGS) {
+            n += 1;
+            break;
+        }
+        n += (TypeSize(ExprType(arg)) + 3) / 4;
     }
     return n;
 }

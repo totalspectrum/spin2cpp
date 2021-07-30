@@ -85,6 +85,9 @@ CompileAsmToBinary(const char *binname, const char *asmname)
         exit(1);
     }
     gl_output = OUTPUT_DAT;
+    gl_dat_offset = (gl_p2 ? 0 : DEFAULT_P1_DAT_OFFSET);
+    gl_interp_kind = 0;
+    
     Module *Q = ParseTopFiles(&asmname, 1, 1);
     if (gl_errors == 0) {
         if (listFile) {

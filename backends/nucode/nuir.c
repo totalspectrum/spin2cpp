@@ -176,6 +176,8 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     }
     // some functions are always built in to the interpreter
     impl_ptrs[NU_OP_DROP] = "";
+    impl_ptrs[NU_OP_CALL] = "";
+    impl_ptrs[NU_OP_CALLM] = "";
     impl_ptrs[NU_OP_ENTER] = "";
     impl_ptrs[NU_OP_RET] = "";
 
@@ -262,6 +264,12 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
             break;
         case NU_OP_PUSHI32:
             flexbuf_printf(fb, "\tbyte\tNU_OP_%s, long %d\n", NuOpName[op], ir->val);
+            break;
+        case NU_OP_PUSHA:
+            // FIXME: eventually want to push fewer bytes for this
+            flexbuf_printf(fb, "\tbyte\tNU_OP_%s, long @", NuOpName[op]);
+            NuOutputLabel(fb, ir->label);
+            flexbuf_addchar(fb, '\n');
             break;
         case NU_OP_BRA:
             flexbuf_printf(fb, "\tbyte\tNU_OP_%s, word (", NuOpName[op]);
