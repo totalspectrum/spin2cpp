@@ -373,10 +373,12 @@ static void NuAddHeap(ByteOutputBuffer *bob, Module*P) {
 }
 #endif
 
-void OutputNuCode(const char *fname, Module *P)
+void OutputNuCode(const char *asmFileName, Module *P)
 {
     FILE *asm_file;
     Module *Q;
+    Module *saveCurrent = current;
+    Function *saveFunc = curfunc;
     struct flexbuf asmFb;
     NuContext nuContext;
     
@@ -431,7 +433,6 @@ void OutputNuCode(const char *fname, Module *P)
     //NuAddHeap(&bob,P);
 
     // output the data
-    const char *asmFileName = ReplaceExtension(fname, ".p2asm");
     asm_file = fopen(asmFileName, "w");
     if (!asm_file) {
         ERROR(NULL, "Unable to open output file %s", asmFileName);
@@ -443,6 +444,6 @@ void OutputNuCode(const char *fname, Module *P)
     fwrite(asmcode, 1, strlen(asmcode), asm_file);
     fclose(asm_file);
 
-    // now compile to binary
-    CompileAsmToBinary(fname, asmFileName);
+    current = saveCurrent;
+    curfunc = saveFunc;
 }

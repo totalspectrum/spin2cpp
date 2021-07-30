@@ -278,7 +278,7 @@ int ProcessCommandLine(CmdLineOptions *cmd)
                     DoPropellerChecksum(cmd->outname, cmd->useEeprom ? cmd->eepromSize : 0);
                 }
             }
-        } else if (cmd->outputAsm) {
+        } else if (cmd->outputAsm || (cmd->outputBytecode && gl_interp_kind == INTERP_KIND_NUCODE) ) {
             const char *binname = NULL;
             const char *asmname = NULL;
             if (cmd->compile) {
@@ -306,6 +306,11 @@ int ProcessCommandLine(CmdLineOptions *cmd)
                 // we can just assemble the .spin file directly
                 asmname = strdup(P->fullname);
                 compile_original = 1;
+            } else if (gl_interp_kind == INTERP_KIND_NUCODE) {
+                if (!gl_p2) {
+                    ERROR(NULL, "Nucode only supported on P2");
+                }
+                OutputNuCode(asmname, P);
             } else {
                 OutputAsmCode(asmname, P, cmd->outputMain);
             }
@@ -331,10 +336,7 @@ int ProcessCommandLine(CmdLineOptions *cmd)
             }
 
             if (gl_interp_kind == INTERP_KIND_NUCODE) {
-                if (!gl_p2) {
-                    ERROR(NULL, "Nucode only supported on P2");
-                }
-                OutputNuCode(cmd->outname, P);
+                ERROR(NULL, "How did we get here?");
             } else {
                 OutputByteCode(cmd->outname,P);
                 DoPropellerChecksum(cmd->outname,cmd->useEeprom ? cmd->eepromSize : 0);
