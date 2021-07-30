@@ -4,8 +4,10 @@ Version 6.0.0
 - Added automatic I/O locking for PRINT, __builtin_printf, and DEBUG
 - Added ability to have multiple items in BASIC CASE 
 - Added "ASM_CONST" keyword to Spin
+- Added optimization for x==x in integer code
 - Changed "ASM CONST" to "CONST ASM" in BASIC
 - Fixed multiple assignments in Spin (a:=b:=c) to have the same semantics as Spin
+- Fixed template functions so BASIC "string" type is preserved
 - Improved --interp=rom (Spin1 bytecode output) to run more programs
 - New optimization: -Oremove-features removes advanced file I/O
 features if not needed by the program; this can save a lot of

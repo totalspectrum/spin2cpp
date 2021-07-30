@@ -1931,8 +1931,18 @@ OptimizeCompares(IRList *irl)
 	if (!ir) break;
         if ( (ir->opc == OPC_CMP||ir->opc == OPC_CMPS) && ir->cond == COND_TRUE
              && (FLAG_WZ == (ir->flags & (FLAG_WZ|FLAG_WC)))
-             && IsImmediateVal(ir->src, 0)
              && !InstrIsVolatile(ir)
+             && ir->src == ir->dst)
+        {
+            // this compare always sets Z
+            ApplyConditionAfter(ir, 0);
+            DeleteIR(irl, ir);
+            change |= 1;
+        }
+        else if ( (ir->opc == OPC_CMP||ir->opc == OPC_CMPS) && ir->cond == COND_TRUE
+             && (FLAG_WZ == (ir->flags & (FLAG_WZ|FLAG_WC)))
+             && !InstrIsVolatile(ir)
+             && IsImmediateVal(ir->src, 0)
             )
         {
             ir_prev = FindPrevSetterForCompare(ir, ir->dst);

@@ -250,6 +250,7 @@ AST *AddToListEx(AST *list, AST *newelement, AST **tail);
 AST *ListInsertBefore(AST *list, AST *member, AST *newelem);
 void RemoveFromList(AST **listptr, AST *newelement);
 AST *DupAST(AST *ast);
+AST *DupASTTypeSafe(AST *ast);
 AST *DupASTWithReplace(AST *ast, AST *orig, AST *replace);
 AST *AstInteger(long intval);
 AST *AstFloat(float f);

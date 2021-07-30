@@ -3363,8 +3363,8 @@ InstantiateTemplateFunction(Module *P, AST *templ, AST *call)
   if (!sym) {
     Function *fdef;
     current = P;
-    functype = fixupFunctype(pairs, DupAST(functype));
-    body = fixupFunctype(pairs, DupAST(body));
+    functype = fixupFunctype(pairs, DupASTTypeSafe(functype));
+    body = fixupFunctype(pairs, DupASTTypeSafe(body));
     funcblock = DeclareTypedFunction(P, functype, ident, 1, body, NULL, NULL);
     fdef = doDeclareFunction(funcblock);
     if (fdef) {

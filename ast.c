@@ -134,6 +134,25 @@ DupAST(AST *orig)
 }
 
 /*
+ * duplicate an AST, preserving BASIC string type
+ */
+AST *
+DupASTTypeSafe(AST *orig)
+{
+    AST *dup;
+
+    if (!orig)
+        return NULL;
+    if (orig == ast_type_string)
+        return orig;
+    dup = NewAST(orig->kind, NULL, NULL);
+    memcpy(dup, orig, sizeof(*dup));
+    dup->left = DupASTTypeSafe(orig->left);
+    dup->right = DupASTTypeSafe(orig->right);
+    return dup;
+}
+
+/*
  * duplicate an AST replacing "orig" with "replace"
  */
 AST *
