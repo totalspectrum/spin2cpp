@@ -46,7 +46,7 @@ do
 done
 fi  # end of C tests
 
-if true; then
+if false; then
 #
 # BASIC tests
 #
