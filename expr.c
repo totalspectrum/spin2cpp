@@ -3600,3 +3600,8 @@ const char *TypeName(AST *typ)
     }
     return strdup(buf);
 }
+
+bool IsConstZero(AST *ast) {
+    return IsConstExpr(ast) && EvalConstExpr(ast) == 0;
+}
+

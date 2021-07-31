@@ -269,10 +269,6 @@ Optoken2MathOpKind(int token,bool *unaryOut) {
     return mok;
 }
 
-static bool IsConstZero(AST *ast) {
-    return IsConstExpr(ast) && EvalConstExpr(ast) == 0;
-}
-
 // FIXME: less clunky name
 // Basically returns true if the value will be the same when interpreted signed or unsigned
 bool CanUseEitherSignedOrUnsigned(AST *node) {

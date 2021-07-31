@@ -411,6 +411,39 @@ impl_DRVNOT
 	drvnot	tos
 	jmp	#\impl_DROP
 
+impl_DRVRND
+	drvrnd	tos
+	jmp	#\impl_DROP
+
+impl_FLTL
+	fltl	tos
+	jmp	#\impl_DROP
+
+impl_DIRL
+	dirl	tos
+	jmp	#\impl_DROP
+
+impl_DIRH
+	dirh	tos
+	jmp	#\impl_DROP
+
+impl_PINR
+	testp	tos wc
+  _ret_	wrc	tos
+
+' NOTE: parameters are reversed from instruction for wrpin, wxpin, etc.
+impl_WRPIN
+	wrpin	tos, nos
+	jmp	#\impl_DROP2
+
+impl_WXPIN
+	wxpin	tos, nos
+	jmp	#\impl_DROP2
+
+impl_WYPIN
+	wypin	tos, nos
+	jmp	#\impl_DROP2
+
 impl_BRA
 	rdword	tmp, ptrb++
 	signx	tmp, #15

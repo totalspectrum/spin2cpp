@@ -81,9 +81,13 @@ NuCompileFunCall(NuIrList *irl, AST *node) {
 // find how to load a particular type, or return NU_OP_ILLEGAL if we don't know how
 static NuIrOpcode LoadStoreOp(AST *typ, int isLoad)
 {
-    int siz = TypeSize(typ);
+    int siz;
     NuIrOpcode op = NU_OP_ILLEGAL;
-    
+
+    if (IsArrayType(typ)) {
+        typ = BaseType(typ);
+    }
+    siz = TypeSize(typ);
     switch (siz) {
     case 0:
         ERROR(NULL, "Attempt to use void value");
@@ -128,13 +132,52 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
         offset = sym->offset;
         loadOp = LoadStoreOp(sym->val, isLoad);
         break;
+    case SYM_VARIABLE:
+        if (sym->flags & SYMF_GLOBAL) {
+            offset = sym->offset;
+            if (offset < 0) {
+                ERROR(node, "unhandled global %s", sym->user_name);
+            }
+            offsetOp = NU_OP_ILLEGAL;
+        } else {
+            offset = sym->offset;
+            offsetOp = NU_OP_ADD_VBASE;
+        }
+        loadOp = LoadStoreOp(sym->val, isLoad);
+        break;
+    case SYM_LABEL:
+    {
+        Label *lab = sym->val;
+        uint32_t labelval = lab->hubval;
+        offset = labelval;
+        offsetOp = NU_OP_ADD;
+        loadOp = LoadStoreOp(lab->type, isLoad);
+        WARNING(node, "Labels are not finished yet");
+        break;
+    }
     default:
         ERROR(node, "Unhandled symbol type for %s", GetUserIdentifierName(node));
         return loadOp;
     }
     NuEmitConst(irl, offset);
-    NuEmitOp(irl, offsetOp);
+    if (offsetOp != NU_OP_ILLEGAL) {
+        NuEmitOp(irl, offsetOp);
+    }
     return loadOp;
+}
+
+// figure out address of an array
+static NuIrOpcode
+NuCompileArrayAddress(NuIrList *irl, AST *node, int isLoad)
+{
+    NuIrOpcode op = NU_OP_ILLEGAL;
+    if (IsIdentifier(node->left)) {
+        op = NuCompileIdentifierAddress(irl, node->left, isLoad);
+        if (!IsConstZero(node->right)) {
+            ERROR(node, "Cannot handle array indices yet");
+        }
+    }
+    return op;
 }
 
 /* compile assignment */
@@ -157,6 +200,9 @@ NuCompileAssign(NuIrList *irl, AST *lhs, AST *rhs, int inExpression)
     case AST_LOCAL_IDENTIFIER:
         op = NuCompileIdentifierAddress(irl, lhs, 0);
         break;
+    case AST_ARRAYREF:
+        op = NuCompileArrayAddress(irl, lhs, 0);
+        break;
     default:
         ERROR(lhs, "Assignment type not handled yet");
         return 0;
@@ -167,6 +213,52 @@ NuCompileAssign(NuIrList *irl, AST *lhs, AST *rhs, int inExpression)
         NuEmitOp(irl, op);
     }
     return 0;
+}
+
+static void
+NuCompileMul(NuIrList *irl, AST *expr, int gethi)
+{
+    AST *lhs = expr->left;
+    AST *rhs = expr->right;
+    int isUnsigned = (gethi & 2);
+    int needHi = (gethi & 1);
+
+    // FIXME: should optimize here for shifts and such
+    NuCompileExpression(irl, lhs);
+    NuCompileExpression(irl, rhs);
+    if (isUnsigned) {
+        NuEmitOp(irl, NU_OP_MULU);
+    } else {
+        NuEmitOp(irl, NU_OP_MULS);
+    }
+    // lo, hi are placed on stack
+    if (needHi) {
+        NuEmitOp(irl, NU_OP_SWAP);
+    }
+    NuEmitOp(irl, NU_OP_DROP);
+}
+
+static void
+NuCompileDiv(NuIrList *irl, AST *expr, int gethi)
+{
+    AST *lhs = expr->left;
+    AST *rhs = expr->right;
+    int isUnsigned = (gethi & 2);
+    int needHi = (gethi & 1);
+
+    // FIXME: should optimize here for shifts and such
+    NuCompileExpression(irl, lhs);
+    NuCompileExpression(irl, rhs);
+    if (isUnsigned) {
+        NuEmitOp(irl, NU_OP_DIVU);
+    } else {
+        NuEmitOp(irl, NU_OP_DIVS);
+    }
+    // lo, hi are placed on stack
+    if (needHi) {
+        NuEmitOp(irl, NU_OP_SWAP);
+    }
+    NuEmitOp(irl, NU_OP_DROP);
 }
 
 /* returns number of longs pushed on stack */
@@ -189,9 +281,25 @@ NuCompileOperator(NuIrList *irl, AST *node) {
         if (rhs) {
             pushed += NuCompileExpression(irl, rhs);
         }
+        // could sanity check pushed here
+        // assume we will push just one item
+        pushed = 1;
         switch (optoken) {
-        case '+': NuEmitOp(irl, NU_OP_ADD); pushed = 1; break;
-        case '-': NuEmitOp(irl, NU_OP_SUB); pushed = 1; break;
+        case '+': NuEmitOp(irl, NU_OP_ADD); break;
+        case '-': NuEmitOp(irl, NU_OP_SUB); break;
+        case '*': NuCompileMul(irl, node, 0); break;
+        case K_HIGHMULT: NuCompileMul(irl, node, 1); break;
+        case K_UNS_HIGHMULT: NuCompileMul(irl, node, 3); break;
+        case '/': NuCompileDiv(irl, node, 0); break;
+        case K_MODULUS: NuCompileDiv(irl, node, 1); break;
+        case K_UNS_DIV: NuCompileDiv(irl, node, 2); break;
+        case K_UNS_MOD: NuCompileDiv(irl, node, 3); break;
+        case '&': NuEmitOp(irl, NU_OP_AND); break;
+        case '|': NuEmitOp(irl, NU_OP_IOR); break;
+        case '^': NuEmitOp(irl, NU_OP_XOR); break;
+        case K_SHL: NuEmitOp(irl, NU_OP_SHL); break;
+        case K_SHR: NuEmitOp(irl, NU_OP_SHR); break;
+        case K_SAR: NuEmitOp(irl, NU_OP_SAR); break;
         default:
             ERROR(node, "Unable to handle operator");
             break;

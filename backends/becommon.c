@@ -97,7 +97,7 @@ static int BCGetNumResults(Function *F) {
 // number of results for Spin2/Nu code bytecode purposes
 static int DefaultGetNumResults(Function *F) {
     int n = F->numresults;
-    return (F->result_declared) ? n : 0;
+    return n;
 }
 
 // find base for parameter variables

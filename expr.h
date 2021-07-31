@@ -16,6 +16,10 @@ int32_t EvalPasmExpr(AST *expr);
 /* note that strings, as pointers to memory, are not "constant"
    in that their value is not known until link time */
 int IsConstExpr(AST *expr);
+
+/* determine whether an expression is a constant zero */
+bool IsConstZero(AST *ast);
+
 /* determine whether an expression is a float constant */
 int IsFloatConst(AST *expr);
 /* determine whether an expression is a string constant

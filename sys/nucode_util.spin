@@ -2,10 +2,7 @@
 '' Nucode specific functions
 ''
 
-'' for now, dummies
-pri _txraw(c)
-  return 1
-
+'' FIXME: these are dummys
 pri _rxraw(timeout = 0)
   if timeout
     timeout *= __clkfreq_var >> 10
@@ -23,6 +20,9 @@ pri _div64(n, nlo, dlo) : qlo, rlo | q, r, d
 pri _waitx(tim)
   __bytecode__("WAITX")
 
+pri _pinr(pin) : val
+  __bytecode__("PINR")
+  
 pri _getcnt : r = +long
   __bytecode__("GETCT")
 
@@ -40,9 +40,59 @@ pri _drvnot(pin)
   __bytecode__("DRVNOT")
 pri _drvrnd(pin)
   __bytecode__("DRVRND")
+
+pri _dirl(pin)
+  __bytecode__("DIRL")
+pri _dirh(pin)
+  __bytecode__("DIRH")
+
 pri _fltl(pin)
   __bytecode__("FLTL")
 
+pri _wrpin(pin, val)
+  __bytecode__("WRPIN")
+pri _wxpin(pin, val)
+  __bytecode__("WXPIN")
+pri _wypin(pin, val)
+  __bytecode__("WYPIN")
+  
+pri _waitcnt(x)
+  __bytecode__("WAITCNT")
+  
+dat
+    orgh
+_bitcycles long 0
+_rx_temp   long 0
+
+con
+ _rxpin = 63
+ _txpin = 62
+
+  _txmode       = %0000_0000_000_0000000000000_01_11110_0 'async tx mode, output enabled for smart output
+  _rxmode       = %0000_0000_000_0000000000000_00_11111_0 'async rx mode, input  enabled for smart input
+
+pri _setbaud(baudrate) | bitperiod, bit_mode
+  bitperiod := (__clkfreq_var / baudrate)
+  _dirl(_txpin)
+  _dirl(_rxpin)
+  _bitcycles := bitperiod
+  bit_mode := 7 + (bitperiod << 16)
+  _wrpin(_txpin, _txmode)
+  _wxpin(_txpin, bit_mode)
+  _wrpin(_rxpin, _rxmode)
+  _wxpin(_rxpin, bit_mode + 20)  ' async using 28 bits instead of 8
+  _dirh(_txpin)
+  _dirh(_rxpin)
+  
+pri _txraw(c) | z
+  if _bitcycles == 0
+    _setbaud(__default_baud__)  ' set up in common.c
+  _wypin(_txpin, c)
+  _waitx(1)
+  repeat
+    z := _pinr(_txpin)
+  while z == 0
+  return 1
 
 '
 ' memset(): we may want to optimize this to use longfill in special cases?

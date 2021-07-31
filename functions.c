@@ -1598,7 +1598,7 @@ CheckForStatic(Function *fdef, AST *body)
             sym = LookupSymbol(body->d.string);
         }
         if (sym) {
-            if (sym->kind == SYM_VARIABLE) {
+            if (sym->kind == SYM_VARIABLE && !(sym->flags & SYMF_GLOBAL)) {
                 fdef->is_static = 0;
                 return;
             }

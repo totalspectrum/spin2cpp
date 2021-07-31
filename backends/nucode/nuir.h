@@ -27,7 +27,7 @@
     X(ADD)       /* tos := nos + tos */ \
     X(SUB)       /* tos := nos - tos */ \
     X(AND)       /* tos := nos & tos */ \
-    X(OR)        /* tos := nos | tos */ \
+    X(IOR)        /* tos := nos | tos */ \
     X(XOR)       /* tos := nos ^ tos */ \
     \
     X(SIGNX)     /* sign extend tos := nos SIGNX tos */ \
@@ -64,8 +64,17 @@
     X(DRVRND)    /* set pin to random value */ \
     X(DRVWR)     /* write value in nos to pin at tos */ \
     X(FLTL)      /* float pin low */  \
+    X(DIRL)      /* float pin low */  \
+    X(DIRH)      /* float pin low */  \
+    \
+    X(PINR)      /* read a pin */ \
+    \
+    X(WRPIN)     /* smart pin write */ \
+    X(WXPIN)     /* smart pin write */ \
+    X(WYPIN)     /* smart pin write */ \
     \
     X(WAITX)     /* delay for tos cycles */ \
+    X(WAITCNT)   /* wait for a particular cycle */ \
     \
     X(PUSHI32)   /* push immediate 32 bit */ \
     X(PUSHI16)   /* push immediate 16 bit */ \
