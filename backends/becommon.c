@@ -88,19 +88,26 @@ static int resultOffset(Function *F, int offset) {
     }
 }
 
+// number of results for Spin1 bytecode purposes
+static int BCGetNumResults(Function *F) {
+    int n = F->numresults;
+    return (n<=1) ? 1 : n;
+}
+
+// number of results for Spin2/Nu code bytecode purposes
+static int DefaultGetNumResults(Function *F) {
+    int n = F->numresults;
+    return (F->result_declared) ? n : 0;
+}
+
 // find base for parameter variables
 static int paramOffset(Function *F, int offset) {
     switch(gl_interp_kind) {
     case INTERP_KIND_P1ROM:
         return 4 + offset; // always one result pushed onto stack
     default:
-        return offset + F->numparams*4;
+        return offset + DefaultGetNumResults(F)*4;
     }
-}
-
-static int BCGetNumResults(Function *F) {
-    int n = F->numresults;
-    return (n<=1) ? 1 : n;
 }
 
 // find base for local variables
@@ -109,7 +116,7 @@ static int localOffset(Function *F, int offset) {
     case INTERP_KIND_P1ROM:
         return offset + (BCGetNumResults(F)+F->numparams)*4; // FIXME small variables
     default:
-        return offset + (F->numresults + F->numparams)*4;
+        return offset + (DefaultGetNumResults(F) + F->numparams)*4;
     }
 }
 
