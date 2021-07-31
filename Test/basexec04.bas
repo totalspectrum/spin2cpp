@@ -70,7 +70,7 @@ function slowtimes(a as integer, b as integer) as integer
 end function
 
 ' now some test code
-dim i,j as integer
+dim j as integer
 
 for i = 0 to 10
   j = 12-i
