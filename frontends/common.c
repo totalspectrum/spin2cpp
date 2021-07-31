@@ -1842,13 +1842,14 @@ MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ, int is_private, unsi
     if (!sub || sub->kind != AST_IDENTIFIER) {
         return 0;
     }
+    if (!typ) {
+        typ = InferTypeFromName(identifier);
+    }
     name = GetIdentifierName(sub);
     Symbol *sym = FindSymbol(&P->objsyms, name);
     if (sym && sym->kind == SYM_VARIABLE) {
+        // check for sensible re-definition
         return 0;
-    }
-    if (!typ) {
-        typ = InferTypeFromName(identifier);
     }
     if (!AstUses(P->pendingvarblock, identifier)) {
         AST *iddecl = NewAST(AST_LISTHOLDER, identifier, NULL);
@@ -1856,6 +1857,8 @@ MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ, int is_private, unsi
         newdecl->d.ival = is_private;
         ret = NewAST(AST_LISTHOLDER, newdecl, NULL);
         P->pendingvarblock = AddToList(P->pendingvarblock, ret);
+    } else {
+        ERROR(sub, "Re-defining member %s", name);
     }
     return ret;
 }
