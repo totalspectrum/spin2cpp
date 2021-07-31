@@ -1,0 +1,86 @@
+'
+' Utility for doing debug printfs from PASM programs
+' Requires use of 4 COG RAM memory locations:
+'   ser_debug_arg1
+'   ser_debug_arg2
+'   ser_debug_tmp
+'   ser_debug_tmp2
+
+#ifndef __P2__
+#error only works for P2
+#endif
+con
+  ser_debug_tx_mode       = %0000_0000_000_0000000000000_01_11110_0 'async tx mode, output enabled for smart output
+
+  ser_debug_tx_pin	   = 62
+
+dat
+	' registers
+	org	$1ec
+ser_debug_arg1 res 1
+ser_debug_arg2 res 1
+ser_debug_tmp  res 1
+
+	'
+	' put everything in HUB ram
+	'
+	orgh
+	alignl
+	
+	' init: ser_debug_arg1 == baud rate
+ser_debug_init
+	rdlong	ser_debug_tmp, #$14		' fetch clock frequency
+	qdiv	ser_debug_tmp, ser_debug_arg1
+	getqx	ser_debug_tmp			' now have bit_period in ser_debug_tmp
+	shl	ser_debug_tmp, #16
+	add	ser_debug_tmp, #7		' smartpin mode for 8 bits per character
+	fltl	#ser_debug_tx_pin
+	wrpin	##ser_debug_tx_mode, #ser_debug_tx_pin
+	wxpin	ser_debug_tmp, #ser_debug_tx_pin
+	drvl	#ser_debug_tx_pin
+	ret
+
+	' tx: transmits 8 bit value in ser_debug_arg1
+ser_debug_tx
+	wypin	ser_debug_arg1, #ser_debug_tx_pin
+	waitx	#4
+.loop
+	testp	#ser_debug_tx_pin wc
+  if_nc	jmp	#.loop
+  	ret
+
+	' str: prints string from ser_debug_arg1
+ser_debug_str
+	mov	ser_debug_arg2, ser_debug_arg1
+.loop
+	rdbyte	ser_debug_arg1, ser_debug_arg2 wz
+  if_z	jmp	#.endloop
+	add	ser_debug_arg2, #1
+	call	#ser_debug_tx
+	jmp	#.loop
+.endloop
+	ret
+	
+	' hex: prints hex number from ser_debug_arg1
+ser_debug_hex
+	mov	ser_debug_arg2, ser_debug_arg1
+	mov	ser_debug_arg1, #" "
+	call	#ser_debug_tx
+	mov	ser_debug_tmp, #8
+.loop
+	mov	ser_debug_arg1, ser_debug_arg2
+	shr	ser_debug_arg1, #28
+	cmp	ser_debug_arg1, #10 wcz
+  if_c	add	ser_debug_arg1, #"0"
+  if_nc	add	ser_debug_arg1, #"A"-10
+  	call	#ser_debug_tx
+	shl	ser_debug_arg2, #4
+	djnz	ser_debug_tmp, #.loop
+	ret
+
+ser_debug_nl
+	mov	ser_debug_arg1, #13
+	call	#ser_debug_tx
+	mov	ser_debug_arg1, #10
+	jmp	#ser_debug_tx
+
