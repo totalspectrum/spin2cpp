@@ -296,10 +296,9 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
             flexbuf_printf(fb, "\tbyte\tNU_OP_%s, long %d\n", NuOpName[op], ir->val);
             break;
         case NU_OP_PUSHA:
-            // FIXME: eventually want to push fewer bytes for this
-            flexbuf_printf(fb, "\tbyte\tNU_OP_%s, long @", NuOpName[op]);
+            flexbuf_printf(fb, "\tbyte\t long NU_OP_%s | (@", NuOpName[op]);
             NuOutputLabel(fb, ir->label);
-            flexbuf_addchar(fb, '\n');
+            flexbuf_printf(fb, " << 8)\n");
             break;
         case NU_OP_BRA:
             flexbuf_printf(fb, "\tbyte\tNU_OP_%s, word (", NuOpName[op]);

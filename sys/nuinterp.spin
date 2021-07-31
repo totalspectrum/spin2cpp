@@ -381,7 +381,9 @@ impl_PUSHI32
 
 impl_PUSHA
 	call	#\impl_DUP
-  _ret_	rdlong	tos, ptrb++
+	sub	ptrb, #1	' back up
+  	rdlong	tos, ptrb++
+  _ret_ shr	tos, #8		' remove opcode
 
 impl_PUSHI16
 	call	#\impl_DUP
