@@ -180,11 +180,15 @@ _ret_	add	ptra, tmp	' skip over locals
 
 ' RET gives number of items on stack to pop off
 impl_RET
+	djf	tos, #no_ret_values	' subtract 1 from tos, and if -1 then go to void case
 	' make nos is in memory (tos is # items to pop, so not needed)
 	wrlong	nos, ptra
+	shl	tos, #2		' # of bytes
+	sub	ptra, tos	' go back on stack
+	shr	tos, #2		' back to # longs
 	' save the return values
 	setq	tos
-	rdlong	0-0, dbase
+	rdlong	0-0, ptra
 	' restore the stack
 	mov	ptra, dbase
 	rdlong	vbase, --ptra
@@ -195,6 +199,13 @@ impl_RET
 	wrlong	0-0, ptra++
 	' need to get tos and nos back into registers
 	jmp	#impl_DROP2
+no_ret_values
+	mov	ptra, dbase
+	rdlong	vbase, --ptra
+	rdlong	ptrb, --ptra
+	rdlong	dbase, --ptra wz
+  if_z	jmp	#impl_HALT
+  	ret
 	
 impl_HALT
 	cogid	pa

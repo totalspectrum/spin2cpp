@@ -36,7 +36,7 @@ NuPrepareFunctionBedata(Function *F) {
     F->bedata = calloc(sizeof(NuFunData),1);
     
     FunData(F)->entryLabel = NuCreateLabel();
-    FunData(F)->exitLabel = NuCreateLabel();    
+    //FunData(F)->exitLabel = NuCreateLabel();    
 }
 
 static int
@@ -78,16 +78,47 @@ NuCompileFunCall(NuIrList *irl, AST *node) {
     return pushed;
 }
 
+// find how to load a particular type, or return NU_OP_ILLEGAL if we don't know how
+static NuIrOpcode LoadStoreOp(AST *typ, int isLoad)
+{
+    int siz = TypeSize(typ);
+    NuIrOpcode op = NU_OP_ILLEGAL;
+    
+    switch (siz) {
+    case 0:
+        ERROR(NULL, "Attempt to use void value");
+        return op;
+    case 1:
+        op = isLoad ? NU_OP_LDB : NU_OP_STB;
+        break;
+    case 2:
+        op = isLoad ? NU_OP_LDW : NU_OP_STW;
+        break;
+    case 4:
+        op = isLoad ? NU_OP_LDL : NU_OP_STL;
+        break;
+    case 8:
+        op = isLoad ? NU_OP_LDD : NU_OP_STD;
+        break;
+    default:
+        break;
+    }
+    return op;
+}
+
 /* push effective address of an identifier onto the stack */
-static void
-NuCompileIdentifierAddress(NuIrList *irl, AST *node) {
+/* returns an opcode for how to load this identifier, if we know */
+static NuIrOpcode
+NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
+{
     Symbol *sym = LookupAstSymbol(node,NULL);
     NuIrOpcode offsetOp = NU_OP_ADD_DBASE;
+    NuIrOpcode loadOp = NU_OP_ILLEGAL;
     int offset;
     
     if (!sym) {
         ERROR(node, "identifier %s not found", GetUserIdentifierName(node));
-        return;
+        return loadOp;
     }
     switch (sym->kind) {
     case SYM_LOCALVAR:
@@ -95,13 +126,78 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node) {
     case SYM_PARAMETER:
     case SYM_RESULT:
         offset = sym->offset;
+        loadOp = LoadStoreOp(sym->val, isLoad);
         break;
     default:
         ERROR(node, "Unhandled symbol type for %s", GetUserIdentifierName(node));
-        return;
+        return loadOp;
     }
     NuEmitConst(irl, offset);
     NuEmitOp(irl, offsetOp);
+    return loadOp;
+}
+
+/* compile assignment */
+static int
+NuCompileAssign(NuIrList *irl, AST *lhs, AST *rhs, int inExpression)
+{
+    int n;
+    NuIrOpcode op;
+    
+    n = NuCompileExpression(irl, rhs);
+    if (n != 1) {
+        ERROR(rhs, "multiple assignment not handled yet");
+    }
+    if (inExpression) {
+        ERROR(lhs, "assignment in expression not handled yet");
+        return 0;
+    }
+    switch (lhs->kind) {
+    case AST_IDENTIFIER:
+    case AST_LOCAL_IDENTIFIER:
+        op = NuCompileIdentifierAddress(irl, lhs, 0);
+        break;
+    default:
+        ERROR(lhs, "Assignment type not handled yet");
+        return 0;
+    }
+    if (op == NU_OP_ILLEGAL) {
+        ERROR(lhs, "Do not know how to store into this yet");
+    } else {
+        NuEmitOp(irl, op);
+    }
+    return 0;
+}
+
+/* returns number of longs pushed on stack */
+static int
+NuCompileOperator(NuIrList *irl, AST *node) {
+    AST *lhs, *rhs;
+    int optoken;
+    int pushed = 0;
+    
+    lhs = node->left;
+    rhs = node->right;
+    optoken = node->d.ival;
+
+    if (0) {
+        // handle some special case here
+    } else {
+        if (lhs) {
+            pushed += NuCompileExpression(irl, lhs);
+        }
+        if (rhs) {
+            pushed += NuCompileExpression(irl, rhs);
+        }
+        switch (optoken) {
+        case '+': NuEmitOp(irl, NU_OP_ADD); pushed = 1; break;
+        case '-': NuEmitOp(irl, NU_OP_SUB); pushed = 1; break;
+        default:
+            ERROR(node, "Unable to handle operator");
+            break;
+        }
+    }
+    return pushed;
 }
 
 /* returns number of longs pushed on stack */
@@ -109,7 +205,7 @@ static int
 NuCompileExpression(NuIrList *irl, AST *node) {
     int pushed = 0; // number results pushed on stack
     if(!node) {
-        ERROR(NULL,"Internal Error: Null expression!!");
+        // nothing to do here
         return pushed;
     }
     if (IsConstExpr(node)) {
@@ -123,37 +219,27 @@ NuCompileExpression(NuIrList *irl, AST *node) {
     {
         AST *typ;
         int siz;
+        NuIrOpcode op;
         typ = ExprType(node);
         if (!typ) {
             typ = ast_type_long;
         }
         siz = TypeSize(typ);
-        NuCompileIdentifierAddress(irl, node);
-        pushed = (siz+3)/4; 
-        switch (siz) {
-        case 0:
-            ERROR(node, "Attempt to use void value");
-            return pushed;
-        case 1:
-            NuEmitOp(irl, NU_OP_LDB);
-            break;
-        case 2:
-            NuEmitOp(irl, NU_OP_LDW);
-            break;
-        case 4:
-            NuEmitOp(irl, NU_OP_LDL);
-            break;
-        case 8:
-            NuEmitOp(irl, NU_OP_LDD);
-            break;
-        default:
-            ERROR(node, "Unable to handle %d byte objects yet", siz);
-            break;
-        }            
+        op = NuCompileIdentifierAddress(irl, node, 1);
+        pushed = (siz+3)/4;
+        if (op == NU_OP_ILLEGAL) {
+            ERROR(node, "Unable to evaluate expression");
+        } else {
+            NuEmitOp(irl, op);
+        }
     } break;
     case AST_FUNCCALL:
     {
         pushed = NuCompileFunCall(irl, node);
+    } break;
+    case AST_OPERATOR:
+    {
+        pushed = NuCompileOperator(irl, node);
     } break;
     default:
         ERROR(node, "Unknown expression node %d\n", node->kind);
@@ -203,6 +289,9 @@ NuCompileStatement(NuIrList *irl, AST *ast) {
         // for now, do nothing
         break;
 
+    case AST_ASSIGN:
+        NuCompileAssign(irl, ast->left, ast->right, 0);
+        break;
     case AST_WHILE:
         toploop = NuCreateLabel();
         botloop = NuCreateLabel();
@@ -223,6 +312,19 @@ NuCompileStatement(NuIrList *irl, AST *ast) {
             --n;
         }
         break;
+    case AST_RETURN:
+        if (ast->left) {
+            n = NuCompileExpression(irl, ast->left);
+        } else {
+            n = 0;
+        }
+        if (n != curfunc->numresults) {
+            ERROR(ast, "number of items returned does not match function signature");
+        }
+        NuEmitConst(irl, n);
+        NuEmitOp(irl, NU_OP_RET);
+        break;
+        
     default:
         ERROR(ast, "Unhandled node type %d in NuCompileStatement", ast->kind);
         break;
@@ -290,9 +392,18 @@ NuCompileFunction(Function *F) {
         
         NuCompileStmtlist(irl, F->body);
         // emit function epilogue
-        NuEmitLabel(irl, FunData(F)->exitLabel);
-        NuEmitConst(irl, NumRetLongs(F));
-        NuEmitOp(irl, NU_OP_RET);
+        //NuEmitLabel(irl, FunData(F)->exitLabel);
+
+        // verify that we ended with a RET
+        if (irl->tail && irl->tail->op != NU_OP_RET) {
+            if (NumRetLongs(F) == 0) {
+                // just insert RET
+                NuEmitConst(irl, 0);
+                NuEmitOp(irl, NU_OP_RET);
+            } else {
+                ERROR(F->body, "Internal error, function does not end with RET");
+            }
+        }
     }
 }
 

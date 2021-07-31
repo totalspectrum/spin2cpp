@@ -18,7 +18,7 @@ typedef struct {
     int localSize;
     NuIrList irl;
     NuIrLabel *entryLabel;
-    NuIrLabel *exitLabel;
+//    NuIrLabel *exitLabel;
 } NuFunData;
 
 void OutputNuCode(const char *fname, Module *P);
