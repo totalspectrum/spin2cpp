@@ -69,13 +69,19 @@ spininit
 	rdlong	vbase, --ptra
 	rdlong	ptrb, --ptra		' ptrb serves as PC
 continue_startup
+#ifdef SERIAL_DEBUG
+       mov	ser_debug_arg1, ##230_400
+       call	#ser_debug_init
+       mov	ser_debug_arg1, ##@init_msg
+       call	#ser_debug_str
+#endif       
 	' load LUT code
 	loc    pb, #@start_lut
 	setq2  #(end_lut - start_lut)
 	rdlong 0, pb
 	jmp    #start_lut
 
-	org    $1e8
+	org    $1e0
 tos	res    1
 nos	res    1
 tmp	res    1
@@ -86,7 +92,8 @@ old_pc	res    1
 old_vbase res  1
 old_dbase res  1
 
-	org    $200
+	fit	$1ec	' leave room for 4 debug registers
+	org	$200
 start_lut
 	' initialization code
 	mov	old_pc, #0
@@ -97,6 +104,9 @@ start_lut
 	
 	' interpreter loop
 main_loop
+#ifdef SERIAL_DEBUG
+	call	#dump_regs
+#endif	
 	rdbyte	pa, ptrb++
 	altgw	pa, #OPC_TABLE
 	getword	tmp
@@ -158,14 +168,14 @@ impl_ENTER
 	' find the "stack base" (where return values will go)
 	mov	old_dbase, dbase
 	shl	tos, #2		' multiply by 4
-	sub	ptra, tos	' roll back stack
+	sub	ptra, tos	' roll back stack by number of arguments
 	shr	tos, #2
 	' copy the arguments to local memory
 	setq	tos
 	rdlong	0-0, ptra
 	' save old things onto stack
 	wrlong	old_dbase, ptra++
-	wrlong	old_pc, ptra++
+	wrlong	old_pc, ptra++    ' don't really push these, they go in registers
 	wrlong	old_vbase, ptra++
 	mov	dbase, ptra	' set up dbase
 	shl	nos, #2		' # of bytes in ret values
@@ -175,13 +185,14 @@ impl_ENTER
 	shl	tos, #2
 	add	ptra, tos	' skip over arguments
 	shl	tmp, #2
-_ret_	add	ptra, tmp	' skip over locals
+  _ret_	add	ptra, tmp	' skip over locals
+
 
 
 ' RET gives number of items on stack to pop off
 impl_RET
 	djf	tos, #no_ret_values	' subtract 1 from tos, and if -1 then go to void case
-	' make nos is in memory (tos is # items to pop, so not needed)
+	' make sure nos in memory (tos is # items to pop, so not needed)
 	wrlong	nos, ptra
 	shl	tos, #2		' # of bytes
 	sub	ptra, tos	' go back on stack
@@ -197,6 +208,7 @@ impl_RET
   if_z	jmp	#impl_HALT		' if old dbase was NULL, nothing to return to
   	setq	tos
 	wrlong	0-0, ptra++
+	
 	' need to get tos and nos back into registers
 	jmp	#impl_DROP2
 no_ret_values
@@ -205,7 +217,10 @@ no_ret_values
 	rdlong	ptrb, --ptra
 	rdlong	dbase, --ptra wz
   if_z	jmp	#impl_HALT
-  	ret
+
+  	' need to restore tos and nos
+	jmp    #impl_DROP2
+
 	
 impl_HALT
 	cogid	pa
@@ -398,3 +413,52 @@ impl_BRA
 	rdword	tmp, ptrb++
 	signx	tmp, #15
   _ret_	add	ptrb, tmp
+
+
+' final tail stuff for interpreter
+
+#ifdef SERIAL_DEBUG
+' debug code
+#include "spin/ser_debug_p2.spin2"
+
+init_msg
+	byte	"Nucode interpreter", 13, 10, 0
+pc_msg
+	byte	" pc: ", 0
+sp_msg
+	byte	" sp: ", 0
+tos_msg
+	byte	" tos: ", 0
+nos_msg
+	byte	" nos: ", 0
+dbase_msg
+	byte	" dbase: ", 0
+	
+	alignl
+dump_regs
+	mov	ser_debug_arg1, ##pc_msg
+	call	#ser_debug_str
+	mov	ser_debug_arg1, ptrb
+	call	#ser_debug_hex
+	
+	mov	ser_debug_arg1, ##sp_msg
+	call	#ser_debug_str
+	mov	ser_debug_arg1, ptra
+	call	#ser_debug_hex
+
+	mov	ser_debug_arg1, ##tos_msg
+	call	#ser_debug_str
+	mov	ser_debug_arg1, tos
+	call	#ser_debug_hex
+
+	mov	ser_debug_arg1, ##dbase_msg
+	call	#ser_debug_str
+	mov	ser_debug_arg1, dbase
+	call	#ser_debug_hex
+
+	jmp	#ser_debug_nl
+#endif ' SERIAL_DEBUG
+
+' labels at and of code/data
+	alignl
+5	long	0	' stack

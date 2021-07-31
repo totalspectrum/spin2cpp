@@ -532,6 +532,7 @@ void OutputNuCode(const char *asmFileName, Module *P)
     nuContext.clockFreq = clkfreq;
     nuContext.clockMode = clkmode;
     nuContext.entryPt = FunData(mainFunc)->entryLabel;
+    nuContext.initSp = NuCreateLabel();
     
     // create & prepend interpreter
     NuOutputInterpreter(&asmFb, &nuContext);
@@ -541,8 +542,8 @@ void OutputNuCode(const char *asmFileName, Module *P)
         NuCompileObject(&asmFb, Q);
     }
 
-    // Align and append any needed heap
-    //NuAddHeap(&bob,P);
+    // finish -- heap could go here too
+    NuOutputFinish(&asmFb, &nuContext);
 
     // output the data
     asm_file = fopen(asmFileName, "w");

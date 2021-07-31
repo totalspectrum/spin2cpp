@@ -134,6 +134,34 @@ void NuOutputLabel(Flexbuf *fb, NuIrLabel *label) {
     flexbuf_printf(fb, "__Label_%05u", label->num);
 }
 
+static void
+OutputEscapedChar(Flexbuf *fb, int c, NuContext *ctxt)
+{
+    switch(c) {
+    case '0':
+        flexbuf_printf(fb, "%u", ctxt->clockFreq);
+        break;
+    case '1':
+        flexbuf_printf(fb, "$%x", ctxt->clockMode);
+        break;
+    case '2':
+        NuOutputLabel(fb, ctxt->entryPt);
+        break;
+    case '3':
+        NuOutputLabel(fb, ctxt->initObj);
+        break;
+    case '4':
+        NuOutputLabel(fb, ctxt->initFrame);
+        break;
+    case '5':
+        NuOutputLabel(fb, ctxt->initSp);
+        break;
+    default:
+        ERROR(NULL, "Unknown escape char %c", c);
+        break;
+    }
+}
+
 void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
 {
     const char *ptr = (char *)sys_nuinterp_spin;
@@ -147,29 +175,7 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
         if (c == 0 || c == '\014') break;
         if (c == '\001') {
             c = *ptr++;
-            switch(c) {
-            case '0':
-                flexbuf_printf(fb, "%u", ctxt->clockFreq);
-                break;
-            case '1':
-                flexbuf_printf(fb, "$%x", ctxt->clockMode);
-                break;
-            case '2':
-                NuOutputLabel(fb, ctxt->entryPt);
-                break;
-            case '3':
-                NuOutputLabel(fb, ctxt->initObj);
-                break;
-            case '4':
-                NuOutputLabel(fb, ctxt->initFrame);
-                break;
-            case '5':
-                NuOutputLabel(fb, ctxt->initSp);
-                break;
-            default:
-                ERROR(NULL, "Unknown escape char %c", c);
-                break;
-            }
+            OutputEscapedChar(fb, c, ctxt);
         } else {
             flexbuf_addchar(fb, c);
         }
@@ -234,6 +240,30 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
                 flexbuf_addchar(fb, c);
                 break;
             }
+        }
+    }
+}
+
+void NuOutputFinish(Flexbuf *fb, NuContext *ctxt)
+{
+    int c;
+    // find tail of interpreter
+    const char *ptr = (char *)sys_nuinterp_spin;
+    ptr += sys_nuinterp_spin_len-1;
+    // go back to last ^L
+    while (ptr && *ptr != '\014') {
+        --ptr;
+    }
+    // output tail
+    ptr++;
+    for(;;) {
+        c = *ptr++;
+        if (c == 0) break;
+        if (c == '\001') {
+            c = *ptr++;
+            OutputEscapedChar(fb, c, ctxt);
+        } else {
+            flexbuf_addchar(fb, c);
         }
     }
 }

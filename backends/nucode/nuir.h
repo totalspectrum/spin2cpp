@@ -128,6 +128,7 @@ NuIrLabel *NuCreateLabel();
 
 void NuAssignOpcodes();
 void NuOutputInterpreter(struct flexbuf *fb, NuContext *ctxt);
+void NuOutputFinish(struct flexbuf *fb, NuContext *ctxt);
 void NuOutputIrList(struct flexbuf *fb, NuIrList *irl);
 
 #endif
