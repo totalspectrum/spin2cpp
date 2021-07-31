@@ -76,3 +76,74 @@ BuildMethodPointer(AST *ast)
     result = NewAST(AST_FUNCCALL, make_methodptr, call);
     return result;
 }
+
+// find base for result variables
+static int resultOffset(Function *F, int offset) {
+    switch(gl_interp_kind) {
+    case INTERP_KIND_P1ROM:
+        if (offset == 0) return 0;
+        return 4+F->numparams*4 + (offset-1)*4;
+    default:
+        return offset;
+    }
+}
+
+// find base for parameter variables
+static int paramOffset(Function *F, int offset) {
+    switch(gl_interp_kind) {
+    case INTERP_KIND_P1ROM:
+        return 4 + offset; // always one result pushed onto stack
+    default:
+        return offset + F->numparams*4;
+    }
+}
+
+static int BCGetNumResults(Function *F) {
+    int n = F->numresults;
+    return (n<=1) ? 1 : n;
+}
+
+// find base for local variables
+static int localOffset(Function *F, int offset) {
+    switch(gl_interp_kind) {
+    case INTERP_KIND_P1ROM:
+        return offset + (BCGetNumResults(F)+F->numparams)*4; // FIXME small variables
+    default:
+        return offset + (F->numresults + F->numparams)*4;
+    }
+}
+
+//
+// normalize offsets for Spin compatibility
+// In Spin, function variables must be laid out with
+// results first, then parameters, then locals.
+// This function resets all variable offsets to give the
+// correct values.
+//
+static int resetOffsets(Symbol *sym, void *arg)
+{
+    Function *F = (Function *)arg;
+    
+    switch (sym->kind) {
+    case SYM_RESULT:
+        sym->offset = resultOffset(F, sym->offset);
+        break;
+    case SYM_PARAMETER:
+        sym->offset = paramOffset(F, sym->offset);
+        break;
+    case SYM_LOCALVAR:
+    case SYM_TEMPVAR:
+        sym->offset = localOffset(F, sym->offset);
+        break;
+    default:
+        /* nothing to do */
+        break;
+    }
+    return 1;
+}
+
+void
+NormalizeVarOffsets(Function *F)
+{
+    IterateOverSymbols(&F->localsyms, resetOffsets, (void *)F);
+}

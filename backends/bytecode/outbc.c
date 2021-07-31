@@ -9,6 +9,7 @@
 #include "bcbuffers.h"
 #include "bcir.h"
 #include <stdlib.h>
+#include "becommon.h"
 
 const BCContext nullcontext = {.hiddenVariables = 0};
 
@@ -62,36 +63,6 @@ static int BCGetNumResults(Function *F) {
 
 static int BCLocalSize(Function *F) {
     return FuncLocalSize(F); // F->numlocals*LONG_SIZE;
-}
-
-static int BCParameterBase() {
-    switch(gl_interp_kind) {
-    case INTERP_KIND_P1ROM: return 4; // RESULT is always there
-    default:
-        ERROR(NULL,"Unknown interpreter kind");
-        return 0;
-    }
-}
-
-static int BCResultOffset(int offset) {
-    switch(gl_interp_kind) {
-    case INTERP_KIND_P1ROM:
-        if (offset == 0) return 0;
-        return 4+curfunc->numparams*4 + (offset-1)*4;
-    default:
-        ERROR(NULL,"Unknown interpreter kind");
-        return 0;
-    }
-}
-
-static int BCLocalBase() {
-    switch(gl_interp_kind) {
-    case INTERP_KIND_P1ROM:
-        return (BCGetNumResults(curfunc)+curfunc->numparams)*4; // FIXME small variables
-    default:
-        ERROR(NULL,"Unknown interpreter kind");
-        return 0;
-    }
 }
 
 static int BCGetOBJSize(Module *P,AST *ast) {
@@ -959,17 +930,17 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         case SYM_LOCALVAR: {
             memOp.attr.memop.base = (curfunc->closure) ? MEMOP_BASE_VBASE : MEMOP_BASE_DBASE;
             targetKind = MOT_MEM;
-            memOp.data.int32 = sym->offset + BCLocalBase();
+            memOp.data.int32 = sym->offset;
         } break;
         case SYM_PARAMETER: {
             memOp.attr.memop.base = (curfunc->closure) ? MEMOP_BASE_VBASE : MEMOP_BASE_DBASE;
             targetKind = MOT_MEM;
-            memOp.data.int32 = sym->offset + BCParameterBase();
+            memOp.data.int32 = sym->offset;
         } break;
         case SYM_TEMPVAR: {
             memOp.attr.memop.base = MEMOP_BASE_DBASE;
             targetKind = MOT_MEM;
-            memOp.data.int32 = sym->offset + BCLocalBase();
+            memOp.data.int32 = sym->offset;
         } break;
         case SYM_RESERVED: {
             if (!strcmp(sym->our_name,"result")) {
@@ -982,7 +953,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         case SYM_RESULT: {
             memOp.attr.memop.base = MEMOP_BASE_DBASE;
             targetKind = MOT_MEM;
-            memOp.data.int32 = BCResultOffset(sym->offset);
+            memOp.data.int32 = sym->offset;
         } break;   
         case SYM_HWREG: {
             targetKind = MOT_REG;
@@ -2979,6 +2950,9 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
     DEBUG(NULL,"Compiling bytecode for function %s",F->name);
     curfunc = F; // Set this global, I guess;
 
+    // make sure function offsets are good
+    NormalizeVarOffsets(F);
+    
     // first up, we now know the function's address, so let's fix it up in the header
     int func_ptr = bob->total_size;
     int func_offset = 0;

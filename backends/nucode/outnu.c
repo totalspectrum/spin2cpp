@@ -236,7 +236,8 @@ NuCompileFunction(Function *F) {
     curfunc = F;
 
     NuPrepareFunctionBedata(F);
-
+    NormalizeVarOffsets(F);
+    
     // I think there's other body types so let's leave this instead of using ASSERT_AST_KIND
     if (!F->body) {
         DEBUG(NULL,"compiling function %s with no body...",F->name);

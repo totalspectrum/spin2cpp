@@ -8,6 +8,8 @@
 AST *BuildMethodPointer(AST *ast);
 void OutputDataBlob(Flexbuf *fb, Flexbuf *databuf, Flexbuf *relocbuf, const char *startLabel);
 
+void NormalizeVarOffsets(Function *f);
+
 void CompileAsmToBinary(const char *binname, const char *asmname); // in cmdline.c
 
 #endif /* BACKEND_COMMON_H */
