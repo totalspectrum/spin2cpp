@@ -456,6 +456,7 @@ AdjustParamForByVal(AST *param)
 %token BAS_READ       "read"
 %token BAS_RESTORE    "restore"
 %token BAS_RETURN     "return"
+%token BAS_SAMETYPES  "_sametypes"
 %token BAS_SELECT     "select"
 %token BAS_SELF       "self"
 %token BAS_SHARED     "shared"
@@ -1570,6 +1571,17 @@ pseudofunc_expr:
         elist = NewAST(AST_EXPRLIST, immval, NULL);
         elist = AddToList(elist, $3);
         $$ = NewAST(AST_COGINIT, elist, NULL);
+    }
+  | BAS_SAMETYPES '(' typename ',' typename ')'
+    {
+        AST *expr = $3;
+        AST *typnam = $5;
+        $$ = NewAST(AST_SAMETYPES, expr, typnam);
+    }
+  | BAS_SAMETYPES '(' expr ',' typename ')'
+    {
+        SYNTAX_ERROR("SameTypes requires two type names");
+        $$ = AstInteger(0);
     }
   | '@' unary_expr
     { $$ = NewAST(AST_ADDROF, $2, NULL); }

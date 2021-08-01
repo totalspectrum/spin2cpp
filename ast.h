@@ -221,6 +221,7 @@ enum astkind {
     AST_FUNC_NAME = 156,
     AST_CASEEXPR = 157, // Represents the hidden variable in a bytecode CASE. Very terrible hack.
     AST_BYTECODE = 158, // a raw bytecode opcode, used in sys/
+    AST_SAMETYPES = 159, // BASIC compile time type checking _sametypes(T, long)
 };
 
 /* forward reference */

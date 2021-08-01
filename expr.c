@@ -1393,7 +1393,10 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
         } else {
             return floatExpr(intAsFloat(expr->d.ival));
         }
-
+    case AST_SAMETYPES:
+    {
+        return intExpr(AstMatch(expr->left, expr->right));
+    }
     case AST_STRING:
     {
         const char *s = expr->d.string;

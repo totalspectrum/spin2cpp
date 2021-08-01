@@ -232,6 +232,7 @@ read
 rem
 restore
 return
+_sametypes
 select
 self
 shared
@@ -2716,6 +2717,25 @@ Returns a new string which is like the original string but padded on the right s
 y$ = rtrim$(x$)
 ```
 Returns a new string which is like the original string but with trailing spaces removed.
+
+### _SAMETYPES
+
+A special keyword which may be used to check whether two types are the same. This is especially useful for checking the types passed to template functions, e.g.:
+```
+any(T) function checkType(x as T) as string
+  if _SameTypes(T, long) or _SameTypes(T, short) then
+    return "integer"
+  else if _SameTypes(T, string) then
+    return "string"
+  else if _SameTypes(T, single) then
+    return "float"
+  else if _SameTypes(T, any) then
+    return "generic"
+  else
+    return "unknown type"
+  end if
+end function
+```
 
 ### SELECT CASE
 

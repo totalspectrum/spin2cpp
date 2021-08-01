@@ -1984,6 +1984,7 @@ struct reservedword basic_keywords[] = {
   { "read", BAS_READ },
   { "restore", BAS_RESTORE },
   { "return", BAS_RETURN },
+  { "_sametypes", BAS_SAMETYPES },
   { "select", BAS_SELECT },
   { "self", BAS_SELF },
   { "shared", BAS_SHARED },
