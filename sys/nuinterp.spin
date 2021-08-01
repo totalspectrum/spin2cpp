@@ -453,7 +453,7 @@ impl_CBEQ
 	rdword	tmp, ptrb++
 	signx	tmp, #15
 	cmp	nos, tos wcz
-  if_eq	add	ptrb, tmp
+  if_e	add	ptrb, tmp
   	jmp	#\impl_DROP2
 
 impl_CBNE
@@ -500,9 +500,9 @@ dump_regs
 	mov	ser_debug_arg1, tos
 	call	#ser_debug_hex
 
-	mov	ser_debug_arg1, ##dbase_msg
+	mov	ser_debug_arg1, ##nos_msg
 	call	#ser_debug_str
-	mov	ser_debug_arg1, dbase
+	mov	ser_debug_arg1, nos
 	call	#ser_debug_hex
 
 	jmp	#ser_debug_nl
