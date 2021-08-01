@@ -17,6 +17,17 @@ static void NuCompileStmtlist(NuIrList *irl, AST *ast); // forward declaration
 static int NuCompileExpression(NuIrList *irl, AST *ast); // returns number of items left on stack
 static int NuCompileExprList(NuIrList *irl, AST *ast); // returns number of items left on stack
 
+struct NuLabelList {
+    struct NuLabelList *next;
+    NuIrLabel *label;
+} quitstack;
+
+static void NuPushQuitNext(NuIrLabel *q, NuIrLabel *n) {
+    WARNING(NULL, "quit unfinished");
+}
+static void NuPopQuitNext() {
+}
+
 static void
 NuPrepareObject(Module *P) {
     // Init bedata
@@ -482,6 +493,7 @@ NuCompileExpression(NuIrList *irl, AST *node) {
     switch(node->kind) {
     case AST_IDENTIFIER:
     case AST_LOCAL_IDENTIFIER:
+    case AST_ARRAYREF:
     {
         AST *typ;
         int siz;
@@ -491,11 +503,12 @@ NuCompileExpression(NuIrList *irl, AST *node) {
             typ = ast_type_long;
         }
         siz = TypeSize(typ);
-        op = NuCompileIdentifierAddress(irl, node, 1);
+        op = NuCompileLhsAddress(irl, node);
         pushed = (siz+3)/4;
         if (op == NU_OP_ILLEGAL) {
             ERROR(node, "Unable to evaluate expression");
         } else {
+            op = NuLoadOpFor(op);
             NuEmitOp(irl, op);
         }
     } break;
@@ -543,9 +556,8 @@ NuCompileStmtlist(NuIrList *irl, AST *list) {
 static void
 NuCompileStatement(NuIrList *irl, AST *ast) {
     int n;
-    NuIrLabel *toploop;
-    NuIrLabel *botloop;
-    
+    NuIrLabel *toploop, *botloop, *exitloop;
+
     while (ast && ast->kind == AST_COMMENTEDNODE) {
         ast = ast->left;
     }
@@ -576,15 +588,30 @@ NuCompileStatement(NuIrList *irl, AST *ast) {
         }
         NuEmitLabel(irl, bottomlbl);
     } break;
+        
     case AST_WHILE:
         toploop = NuCreateLabel();
         botloop = NuCreateLabel();
+        NuPushQuitNext(botloop, toploop);
         NuEmitLabel(irl, toploop);
         NuCompileBoolBranches(irl, ast->left, NULL, botloop);
         NuCompileStmtlist(irl, ast->right);
         NuEmitBranch(irl, NU_OP_BRA, toploop);
         NuEmitLabel(irl, botloop);
+        NuPopQuitNext();
         break;
+    case AST_DOWHILE:
+        toploop = NuCreateLabel();
+	botloop = NuCreateLabel();
+	exitloop = NuCreateLabel();
+	NuPushQuitNext(exitloop, botloop);
+	NuEmitLabel(irl, toploop);
+        NuCompileStmtlist(irl, ast->right);
+	NuEmitLabel(irl, botloop);
+        NuCompileBoolBranches(irl, ast->left, toploop, NULL);
+	NuEmitLabel(irl, exitloop);
+	NuPopQuitNext();
+	break;
         
     case AST_FUNCCALL:
         n = NuCompileExpression(irl, ast);
