@@ -194,6 +194,26 @@ NuCompileArrayAddress(NuIrList *irl, AST *node, int isLoad)
     return op;
 }
 
+/* find opposite comparison for branch */
+static NuIrOpcode OppositeCond(NuIrOpcode op) {
+    switch (op) {
+    case NU_OP_BRA:   return NU_OP_DROP2;
+    case NU_OP_DROP2: return NU_OP_BRA;
+    case NU_OP_CBEQ:  return NU_OP_CBNE;
+    case NU_OP_CBNE:  return NU_OP_CBEQ;
+    case NU_OP_CBLTS: return NU_OP_CBGES;
+    case NU_OP_CBGES: return NU_OP_CBLTS;
+    case NU_OP_CBLES: return NU_OP_CBGTS;
+    case NU_OP_CBGTS: return NU_OP_CBLES;
+    case NU_OP_CBLTU: return NU_OP_CBGEU;
+    case NU_OP_CBGEU: return NU_OP_CBLTU;
+    case NU_OP_CBLEU: return NU_OP_CBGTU;
+    case NU_OP_CBGTU: return NU_OP_CBLEU;
+    default: ERROR(NULL, "Bad opcode to OppositeCond");
+    }
+    return NU_OP_ILLEGAL;
+}
+
 /* compile a boolean expression */
 /* returns the opcode to use for the test */
 static NuIrOpcode
@@ -202,53 +222,29 @@ NuCompileBasicBoolExpression(NuIrList *irl, AST *expr)
     NuIrOpcode opc = NU_OP_ILLEGAL;
     AST *left, *right;
     int n;
-    bool needSwap = false;
     
     int opkind = (expr->kind == AST_OPERATOR) ? expr->d.ival : -1;
+    left = expr->left;
+    right = expr->right;
     switch (opkind) {
     default:
         opc = NU_OP_CBNE; left = expr; right = AstInteger(0);
         break;
-    case K_EQ:
-        opc = NU_OP_CBEQ; left = expr->left; right = expr->right;
-        break;
-    case K_NE:
-        opc = NU_OP_CBNE; left = expr->left; right = expr->right;
-        break;
-    case '<':
-        opc = NU_OP_CBLTS; left = expr->left; right = expr->right;
-        break;
-    case K_LE:
-        opc = NU_OP_CBLES; left = expr->left; right = expr->right;
-        break;
-    case K_LTU:
-        opc = NU_OP_CBLTU; left = expr->left; right = expr->right;
-        break;
-    case K_LEU:
-        opc = NU_OP_CBLEU; left = expr->left; right = expr->right;
-        break;
-
-        // for greater than, swap operands
-    case '>':
-        opc = NU_OP_CBLES; left = expr->left; right = expr->right;
-        needSwap = true; break;
-    case K_GE:
-        opc = NU_OP_CBLTS; left = expr->left; right = expr->right;
-        needSwap = true; break;
-    case K_GTU:
-        opc = NU_OP_CBLEU; left = expr->left; right = expr->right;
-        needSwap = true; break;
-    case K_GEU:
-        opc = NU_OP_CBLTU; left = expr->left; right = expr->right;
-        needSwap = true; break;
+    case K_EQ: opc = NU_OP_CBEQ; break;
+    case K_NE: opc = NU_OP_CBNE; break;
+    case '<':  opc = NU_OP_CBLTS; break;
+    case K_LE: opc = NU_OP_CBLES; break;
+    case K_LTU: opc = NU_OP_CBLTU; break;
+    case K_LEU: opc = NU_OP_CBLEU; break;
+    case '>':   opc = NU_OP_CBGTS; break;
+    case K_GE:  opc = NU_OP_CBGES; break;
+    case K_GTU: opc = NU_OP_CBGTU; break;
+    case K_GEU: opc = NU_OP_CBGEU; break;
     }
     n = NuCompileExpression(irl, left);
     if (n != 1) { ERROR(left, "Expected single value in boolean expression"); }
     n = NuCompileExpression(irl, right);
     if (n != 1) { ERROR(left, "Expected single value in boolean expression"); }
-    if (needSwap) {
-        NuEmitOp(irl, NU_OP_SWAP);
-    }
     return opc;
 }
 
@@ -256,7 +252,7 @@ NuCompileBasicBoolExpression(NuIrList *irl, AST *expr)
 static void
 NuCompileBoolBranches(NuIrList *irl, AST *expr, NuIrLabel *truedest, NuIrLabel *falsedest)
 {
-    NuIrLabel *dummylabel;
+    NuIrLabel *dummylabel = NULL;
     int opkind;
     NuIrOpcode opc;
     
@@ -301,7 +297,9 @@ NuCompileBoolBranches(NuIrList *irl, AST *expr, NuIrLabel *truedest, NuIrLabel *
     default:
         opc = NuCompileBasicBoolExpression(irl, expr);
         if (!truedest) {
-            dummylabel = truedest = NuCreateLabel();
+            opc = OppositeCond(opc);
+            truedest = falsedest;
+            falsedest = NULL;
         }
         NuEmitBranch(irl, opc, truedest);
         if (falsedest && opc != NU_OP_BRA) {

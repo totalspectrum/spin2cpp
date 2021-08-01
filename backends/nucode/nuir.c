@@ -310,6 +310,10 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
         case NU_OP_CBLES:
         case NU_OP_CBLTU:
         case NU_OP_CBLEU:
+        case NU_OP_CBGTS:
+        case NU_OP_CBGES:
+        case NU_OP_CBGTU:
+        case NU_OP_CBGEU:
             flexbuf_printf(fb, "\tbyte\tNU_OP_%s, word (", NuOpName[op]);
             NuOutputLabel(fb, ir->label);
             flexbuf_printf(fb, " - ($+2))\n");
