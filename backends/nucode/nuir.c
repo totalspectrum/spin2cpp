@@ -131,7 +131,11 @@ void NuOutputLabel(Flexbuf *fb, NuIrLabel *label) {
         flexbuf_printf(fb, "0");
         return;
     }
-    flexbuf_printf(fb, "__Label_%05u", label->num);
+    if (label->offset) {
+        flexbuf_printf(fb, "(__Label_%05u + %d)", label->num, label->offset);
+    } else {
+        flexbuf_printf(fb, "__Label_%05u", label->num);
+    }
 }
 
 static void

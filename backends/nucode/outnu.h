@@ -9,8 +9,7 @@
 #define FunData(F) ((NuFunData *)(F)->bedata)
 
 typedef struct {
-    int32_t     datAddress; // -1 if not yet compiled
-    BCRelocList *relocList;  // relocations
+    NuIrLabel *datLabel;
 } NuModData;
 
 typedef struct {

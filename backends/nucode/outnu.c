@@ -28,6 +28,14 @@ static void NuPushQuitNext(NuIrLabel *q, NuIrLabel *n) {
 static void NuPopQuitNext() {
 }
 
+static NuIrLabel *
+NuIrOffsetLabel(NuIrLabel *base, int offset) {
+    NuIrLabel *r = malloc(sizeof(r));
+    *r = *base;
+    r->offset = offset;
+    return r;
+}
+
 static void
 NuPrepareObject(Module *P) {
     // Init bedata
@@ -36,7 +44,7 @@ NuPrepareObject(Module *P) {
     DEBUG(NULL,"Preparing object %s",P->fullname);
 
     P->bedata = calloc(sizeof(NuModData), 1);
-    ModData(P)->datAddress = -1;
+    ModData(P)->datLabel = NuCreateLabel();
 }
 
 static void
@@ -173,12 +181,18 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
     case SYM_LABEL:
     {
         Label *lab = sym->val;
+        NuIrLabel *nulabel = NULL;
         uint32_t labelval = lab->hubval;
+        Module *Q = sym->module;
         offset = labelval;
-        offsetOp = NU_OP_ADD;
         loadOp = LoadStoreOp(lab->type, isLoad);
-        WARNING(node, "Labels are not finished yet");
-        break;
+        if (!ModData(Q)) {
+            NuPrepareObject(Q);
+        }
+        nulabel = ModData(Q)->datLabel;
+        nulabel = NuIrOffsetLabel(nulabel, offset);
+        NuEmitAddress(irl, nulabel);
+        return loadOp;
     }
     default:
         ERROR(node, "Unhandled symbol type for %s", GetUserIdentifierName(node));
@@ -743,10 +757,6 @@ static void NuCompileObject(struct flexbuf *fb, Module *P) {
     Function *pf;
     current = P;
 
-    if (ModData(P)->datAddress != -1) {
-        ERROR(NULL, "Already compiled object %s", P->classname);
-        return;
-    }
     flexbuf_printf(fb, "'--- Object: %s\n", P->classname);
     
     /* compile DAT block */
@@ -760,6 +770,7 @@ static void NuCompileObject(struct flexbuf *fb, Module *P) {
         flexbuf_init(&datRelocs,1024);
         const char *startLabel = NewTemporaryVariable("__Label", NULL);
         PrintDataBlock(&datBuf,P,NULL,&datRelocs);
+        NuOutputLabel(fb, ModData(P)->datLabel);
         OutputDataBlob(fb, &datBuf, &datRelocs, startLabel);
         
         flexbuf_delete(&datRelocs);

@@ -224,6 +224,7 @@ EnterLabel(Module *P, AST *origLabel, long hubpc, long cogpc, AST *ltype, Symbol
 
     if (!sym) {
         sym=AddSymbolPlaced(&P->objsyms, name, SYM_LABEL, labelref, NULL, origLabel);
+        sym->module = current;
     }
 }
 
