@@ -82,6 +82,12 @@
     X(PUSHA)     /* push address */ \
     \
     X(BRA)       /* branch always */ \
+    X(CBEQ)      /* compare branch if equal */ \
+    X(CBNE)      /* compare branch if not equal */ \
+    X(CBLTS)     /* compare branch if < signed */ \
+    X(CBLES)     /* compare branch if <= signed */ \
+    X(CBLTU)     /* compare branch if < unsigned */ \
+    X(CBLEU)     /* compare branch if <= unsigned */ \
     \
     X(DUMMY)     /* this and everything following needs no code */ \
     X(LABEL)     /* label for jump target */ \

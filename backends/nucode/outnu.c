@@ -180,6 +180,126 @@ NuCompileArrayAddress(NuIrList *irl, AST *node, int isLoad)
     return op;
 }
 
+/* compile a boolean expression */
+/* returns the opcode to use for the test */
+static NuIrOpcode
+NuCompileBasicBoolExpression(NuIrList *irl, AST *expr)
+{
+    NuIrOpcode opc = NU_OP_ILLEGAL;
+    AST *left, *right;
+    int n;
+    bool needSwap = false;
+    
+    int opkind = (expr->kind == AST_OPERATOR) ? expr->d.ival : -1;
+    switch (opkind) {
+    default:
+        opc = NU_OP_CBNE; left = expr; right = AstInteger(0);
+        break;
+    case K_EQ:
+        opc = NU_OP_CBEQ; left = expr->left; right = expr->right;
+        break;
+    case K_NE:
+        opc = NU_OP_CBNE; left = expr->left; right = expr->right;
+        break;
+    case '<':
+        opc = NU_OP_CBLTS; left = expr->left; right = expr->right;
+        break;
+    case K_LE:
+        opc = NU_OP_CBLES; left = expr->left; right = expr->right;
+        break;
+    case K_LTU:
+        opc = NU_OP_CBLTU; left = expr->left; right = expr->right;
+        break;
+    case K_LEU:
+        opc = NU_OP_CBLEU; left = expr->left; right = expr->right;
+        break;
+
+        // for greater than, swap operands
+    case '>':
+        opc = NU_OP_CBLES; left = expr->left; right = expr->right;
+        needSwap = true; break;
+    case K_GE:
+        opc = NU_OP_CBLTS; left = expr->left; right = expr->right;
+        needSwap = true; break;
+    case K_GTU:
+        opc = NU_OP_CBLEU; left = expr->left; right = expr->right;
+        needSwap = true; break;
+    case K_GEU:
+        opc = NU_OP_CBLTU; left = expr->left; right = expr->right;
+        needSwap = true; break;
+    }
+    n = NuCompileExpression(irl, left);
+    if (n != 1) { ERROR(left, "Expected single value in boolean expression"); }
+    n = NuCompileExpression(irl, right);
+    if (n != 1) { ERROR(left, "Expected single value in boolean expression"); }
+    if (needSwap) {
+        NuEmitOp(irl, NU_OP_SWAP);
+    }
+    return opc;
+}
+
+/* compile a boolean branch */
+static void
+NuCompileBoolBranches(NuIrList *irl, AST *expr, NuIrLabel *truedest, NuIrLabel *falsedest)
+{
+    NuIrLabel *dummylabel;
+    int opkind;
+    NuIrOpcode opc;
+    
+    if (IsConstExpr(expr)) {
+        int x = EvalConstExpr(expr);
+        if (x && truedest) NuEmitBranch(irl, NU_OP_BRA, truedest);
+        if (!x && falsedest) NuEmitBranch(irl, NU_OP_BRA, falsedest);
+    }
+    if (expr->kind == AST_ISBETWEEN) {
+        ERROR(expr, "Cannot handle ISBETWEEN yet");
+        return;
+    }
+    if (expr->kind == AST_OPERATOR) {
+        opkind = expr->d.ival;
+    } else {
+        opkind = -1;
+    }
+    switch (opkind) {
+    case K_BOOL_NOT:
+        NuCompileBoolBranches(irl, expr, falsedest, truedest);
+        break;
+    case K_BOOL_AND:
+        if (!falsedest) {
+            falsedest = dummylabel = NuCreateLabel();
+        }
+        NuCompileBoolBranches(irl, expr->left, NULL, falsedest);
+        NuCompileBoolBranches(irl, expr->right, truedest, falsedest);
+        if (dummylabel) {
+            NuEmitLabel(irl, dummylabel);
+        }
+        break;
+    case K_BOOL_OR:
+        if (!truedest) {
+            truedest = dummylabel = NuCreateLabel();
+        }
+        NuCompileBoolBranches(irl, expr->left, truedest, NULL);
+        NuCompileBoolBranches(irl, expr->right, truedest, falsedest);
+        if (dummylabel) {
+            NuEmitLabel(irl, dummylabel);
+        }
+        break;
+    default:
+        opc = NuCompileBasicBoolExpression(irl, expr);
+        if (!truedest) {
+            dummylabel = truedest = NuCreateLabel();
+        }
+        NuEmitBranch(irl, opc, truedest);
+        if (falsedest && opc != NU_OP_BRA) {
+            NuEmitBranch(irl, NU_OP_BRA, falsedest);
+        }
+        if (dummylabel) {
+            NuEmitLabel(irl, dummylabel);
+        }
+        break;
+    }       
+}
+
 /* compile assignment */
 static int
 NuCompileAssign(NuIrList *irl, AST *lhs, AST *rhs, int inExpression)
@@ -400,6 +520,24 @@ NuCompileStatement(NuIrList *irl, AST *ast) {
     case AST_ASSIGN:
         NuCompileAssign(irl, ast->left, ast->right, 0);
         break;
+    case AST_IF: {
+        NuIrLabel *elselbl = NuCreateLabel();
+        NuIrLabel *bottomlbl;
+        AST *thenelse = ast->right;
+        if (thenelse && thenelse->kind == AST_COMMENTEDNODE) thenelse = thenelse->left;
+        ASSERT_AST_KIND(thenelse,AST_THENELSE,break;);
+        NuCompileBoolBranches(irl, ast->left, NULL, elselbl);
+        NuCompileStmtlist(irl, thenelse->left);
+        if (thenelse->right) {
+            bottomlbl = NuCreateLabel();
+            NuEmitBranch(irl, NU_OP_BRA, elselbl);
+            NuEmitLabel(irl, elselbl);
+            NuCompileStmtlist(irl, thenelse->right);
+        } else {
+            bottomlbl = elselbl;
+        }
+        NuEmitLabel(irl, bottomlbl);
+    } break;
     case AST_WHILE:
         toploop = NuCreateLabel();
         botloop = NuCreateLabel();

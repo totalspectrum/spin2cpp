@@ -449,6 +449,20 @@ impl_BRA
 	signx	tmp, #15
   _ret_	add	ptrb, tmp
 
+impl_CBEQ
+	rdword	tmp, ptrb++
+	signx	tmp, #15
+	cmp	nos, tos wcz
+  if_eq	add	ptrb, tmp
+  	jmp	#\impl_DROP2
+
+impl_CBNE
+	rdword	tmp, ptrb++
+	signx	tmp, #15
+	cmp	nos, tos wcz
+  if_ne	add	ptrb, tmp
+  	jmp	#\impl_DROP2
+	
 
 ' final tail stuff for interpreter
 
