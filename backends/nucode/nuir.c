@@ -182,6 +182,9 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     }
     // some functions are always built in to the interpreter
     impl_ptrs[NU_OP_DROP] = "";
+    impl_ptrs[NU_OP_DUP] = "";
+    impl_ptrs[NU_OP_SWAP] = "";
+    impl_ptrs[NU_OP_OVER] = "";
     impl_ptrs[NU_OP_CALL] = "";
     impl_ptrs[NU_OP_CALLM] = "";
     impl_ptrs[NU_OP_ENTER] = "";

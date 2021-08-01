@@ -78,6 +78,20 @@ NuCompileFunCall(NuIrList *irl, AST *node) {
     return pushed;
 }
 
+// find the load opcode corresponding to a store opcode
+static NuIrOpcode NuLoadOpFor(NuIrOpcode stOp) {
+    switch (stOp) {
+    case NU_OP_STB: return NU_OP_LDB;
+    case NU_OP_STW: return NU_OP_LDW;
+    case NU_OP_STL: return NU_OP_LDL;
+    case NU_OP_STD: return NU_OP_LDD;
+    case NU_OP_STREG: return NU_OP_LDREG;
+    default:
+        ERROR(NULL, "bad kind of store op");
+        return NU_OP_ILLEGAL;
+    }
+}
+
 // find how to load a particular type, or return NU_OP_ILLEGAL if we don't know how
 static NuIrOpcode LoadStoreOp(AST *typ, int isLoad)
 {
@@ -299,6 +313,25 @@ NuCompileBoolBranches(NuIrList *irl, AST *expr, NuIrLabel *truedest, NuIrLabel *
         break;
     }       
 }
+/* compile address for lhs of assignment, return store op (or NU_OP_ILLEGAL if fail) */
+static NuIrOpcode
+NuCompileLhsAddress(NuIrList *irl, AST *lhs)
+{
+    NuIrOpcode op = NU_OP_ILLEGAL;
+    switch (lhs->kind) {
+    case AST_IDENTIFIER:
+    case AST_LOCAL_IDENTIFIER:
+        op = NuCompileIdentifierAddress(irl, lhs, 0);
+        break;
+    case AST_ARRAYREF:
+        op = NuCompileArrayAddress(irl, lhs, 0);
+        break;
+    default:
+        ERROR(lhs, "Address type not handled yet");
+        break;
+    }
+    return op;
+}
 
 /* compile assignment */
 static int
@@ -315,18 +348,7 @@ NuCompileAssign(NuIrList *irl, AST *lhs, AST *rhs, int inExpression)
         ERROR(lhs, "assignment in expression not handled yet");
         return 0;
     }
-    switch (lhs->kind) {
-    case AST_IDENTIFIER:
-    case AST_LOCAL_IDENTIFIER:
-        op = NuCompileIdentifierAddress(irl, lhs, 0);
-        break;
-    case AST_ARRAYREF:
-        op = NuCompileArrayAddress(irl, lhs, 0);
-        break;
-    default:
-        ERROR(lhs, "Assignment type not handled yet");
-        return 0;
-    }
+    op = NuCompileLhsAddress(irl, lhs);
     if (op == NU_OP_ILLEGAL) {
         ERROR(lhs, "Do not know how to store into this yet");
     } else {
@@ -392,8 +414,26 @@ NuCompileOperator(NuIrList *irl, AST *node) {
     rhs = node->right;
     optoken = node->d.ival;
 
-    if (0) {
-        // handle some special case here
+    if (optoken == K_INCREMENT || optoken == K_DECREMENT) {
+        // handle some special cases here
+        NuIrOpcode math = (optoken == K_INCREMENT) ? NU_OP_ADD : NU_OP_SUB;
+        NuIrOpcode ldOp, stOp;
+        pushed = 1;
+        if (lhs) {
+            stOp = NuCompileLhsAddress(irl, lhs);
+            if (stOp == NU_OP_ILLEGAL) return pushed;
+            ldOp = NuLoadOpFor(stOp);
+            NuEmitOp(irl, NU_OP_DUP); // duplicate address : stack has A A
+            NuEmitOp(irl, ldOp);      // load: stack has A origV
+            NuEmitOp(irl, NU_OP_SWAP); // stack has origV A
+            NuEmitOp(irl, NU_OP_OVER); // stack has origV A origV
+            NuEmitConst(irl, 1);
+            NuEmitOp(irl, math);      // stack has origV A newV
+            NuEmitOp(irl, NU_OP_SWAP); // stack has origV newV A
+            NuEmitOp(irl, stOp);      // stack has origV
+        } else {
+            ERROR(node, "Cannot handle pre inc/dec yet");
+        }
     } else {
         if (lhs) {
             pushed += NuCompileExpression(irl, lhs);
@@ -542,10 +582,7 @@ NuCompileStatement(NuIrList *irl, AST *ast) {
         toploop = NuCreateLabel();
         botloop = NuCreateLabel();
         NuEmitLabel(irl, toploop);
-        if (!IsConstExpr(ast->left)) {
-            ERROR(ast, "Unable to handle conditional while");
-        }
-        //NuCompileBoolBranches(irl, ast->left, NULL, botloop);
+        NuCompileBoolBranches(irl, ast->left, NULL, botloop);
         NuCompileStmtlist(irl, ast->right);
         NuEmitBranch(irl, NU_OP_BRA, toploop);
         NuEmitLabel(irl, botloop);
@@ -570,7 +607,16 @@ NuCompileStatement(NuIrList *irl, AST *ast) {
         NuEmitConst(irl, n);
         NuEmitOp(irl, NU_OP_RET);
         break;
-        
+    case AST_OPERATOR:
+        n = NuCompileExpression(irl, ast);
+        while (n > 1) {
+            NuEmitOp(irl, NU_OP_DROP2);
+            n -= 2;
+        }
+        if (n) {
+            NuEmitOp(irl, NU_OP_DROP);
+        }
+        break;
     default:
         ERROR(ast, "Unhandled node type %d in NuCompileStatement", ast->kind);
         break;

@@ -114,8 +114,17 @@ main_loop
 	jmp	#main_loop
 
 impl_DUP
+	' A B -> A B B
 	wrlong	nos, ptra++
- _ret_	mov	nos, tos
+  _ret_	mov	nos, tos
+
+impl_OVER
+	' A B -> A B A
+	wrlong	nos, ptra++
+	mov	tmp, nos
+	mov	nos, tos
+  _ret_	mov	tos, tmp
+
 
 impl_DROP
 	mov	tos, nos
@@ -462,7 +471,63 @@ impl_CBNE
 	cmp	nos, tos wcz
   if_ne	add	ptrb, tmp
   	jmp	#\impl_DROP2
-	
+
+impl_CBLTS
+	rdword	tmp, ptrb++
+	signx	tmp, #15
+	cmps	nos, tos wcz
+  if_b	add	ptrb, tmp
+  	jmp	#\impl_DROP2
+
+impl_CBLES
+	rdword	tmp, ptrb++
+	signx	tmp, #15
+	cmps	nos, tos wcz
+  if_be	add	ptrb, tmp
+  	jmp	#\impl_DROP2
+
+impl_CBGTS
+	rdword	tmp, ptrb++
+	signx	tmp, #15
+	cmps	nos, tos wcz
+  if_a	add	ptrb, tmp
+  	jmp	#\impl_DROP2
+
+impl_CBGES
+	rdword	tmp, ptrb++
+	signx	tmp, #15
+	cmps	nos, tos wcz
+  if_ae	add	ptrb, tmp
+  	jmp	#\impl_DROP2
+
+impl_CBLTU
+	rdword	tmp, ptrb++
+	signx	tmp, #15
+	cmp	nos, tos wcz
+  if_b	add	ptrb, tmp
+  	jmp	#\impl_DROP2
+
+impl_CBLEU
+	rdword	tmp, ptrb++
+	signx	tmp, #15
+	cmp	nos, tos wcz
+  if_be	add	ptrb, tmp
+  	jmp	#\impl_DROP2
+
+impl_CBGTU
+	rdword	tmp, ptrb++
+	signx	tmp, #15
+	cmp	nos, tos wcz
+  if_a	add	ptrb, tmp
+  	jmp	#\impl_DROP2
+
+impl_CBGEU
+	rdword	tmp, ptrb++
+	signx	tmp, #15
+	cmp	nos, tos wcz
+  if_ae	add	ptrb, tmp
+  	jmp	#\impl_DROP2
+
 
 ' final tail stuff for interpreter
 

@@ -46,7 +46,9 @@
     X(ABS)       /* abs value tos */ \
     \
     X(DROP)      /* drop element on top of stack */ \
-    X(DUP)       /* dup element on top of stack */ \
+    X(DROP2)     /* drop two elements on top of stack */ \
+    X(DUP)       /* dup element on top of stack: A B -> A B B */ \
+    X(OVER)      /* changes stack from A B -> A B A */ \
     X(SWAP)      /* swap tos and nos */ \
     X(HALT)      /* halt processor */ \
     \
@@ -88,6 +90,10 @@
     X(CBLES)     /* compare branch if <= signed */ \
     X(CBLTU)     /* compare branch if < unsigned */ \
     X(CBLEU)     /* compare branch if <= unsigned */ \
+    X(CBGTS)     /* compare branch if > signed */ \
+    X(CBGES)     /* compare branch if >= signed */ \
+    X(CBGTU)     /* compare branch if > unsigned */ \
+    X(CBGEU)     /* compare branch if >= unsigned */ \
     \
     X(DUMMY)     /* this and everything following needs no code */ \
     X(LABEL)     /* label for jump target */ \
