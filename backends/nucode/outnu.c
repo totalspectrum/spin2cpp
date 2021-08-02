@@ -17,15 +17,39 @@ static void NuCompileStmtlist(NuIrList *irl, AST *ast); // forward declaration
 static int NuCompileExpression(NuIrList *irl, AST *ast); // returns number of items left on stack
 static int NuCompileExprList(NuIrList *irl, AST *ast); // returns number of items left on stack
 
-struct NuLabelList {
+typedef struct NuLabelList {
     struct NuLabelList *next;
     NuIrLabel *label;
-} quitstack;
+} NuLabelList;
+
+static NuLabelList quitstack;
+static NuIrLabel *nextlabel, *quitlabel;
 
 static void NuPushQuitNext(NuIrLabel *q, NuIrLabel *n) {
-    WARNING(NULL, "quit unfinished");
+    NuLabelList *qholder = (NuLabelList *)malloc(sizeof(NuLabelList));
+    NuLabelList *nholder = (NuLabelList *)malloc(sizeof(NuLabelList));
+    qholder->label = quitlabel;
+    nholder->label = nextlabel;
+    qholder->next = nholder;
+    nholder->next = quitstack.next;
+    quitstack.next = qholder;
+
+    quitlabel = q;
+    nextlabel = n;
 }
 static void NuPopQuitNext() {
+    NuLabelList *ql, *nl;
+    ql = quitstack.next;
+    if (!ql || !ql->next) {
+        ERROR(NULL, "Internal error: empty loop stack");
+        return;
+    }
+    nl = ql->next;
+    quitstack.next = nl->next;
+    quitlabel = ql->label;
+    nextlabel = nl->label;
+    free(nl);
+    free(ql);    
 }
 
 static NuIrLabel *
@@ -608,8 +632,55 @@ NuCompileStmtlist(NuIrList *irl, AST *list) {
     }
 }
 
-static void
-NuCompileStatement(NuIrList *irl, AST *ast) {
+static void NuCompileForLoop(NuIrList *irl, AST *ast, int atleastonce) {
+    AST *initstmt;
+    AST *loopcond;
+    AST *update;
+    AST *body = 0;
+    NuIrLabel *toplabel, *nextlabel, *exitlabel;
+    
+    initstmt = ast->left;
+    ast = ast->right;
+    if (!ast || ast->kind != AST_TO) {
+        ERROR(ast, "Internal Error: expected AST_TO in for loop");
+        return;
+    }
+    loopcond = ast->left;
+    ast = ast->right;
+    if (!ast || ast->kind != AST_STEP) {
+        ERROR(ast, "Internal Error: expected AST_TO in for loop");
+        return;
+    }
+    update = ast->left;
+    ast = ast->right;
+    body = ast;
+
+    NuCompileStatement(irl, initstmt);
+
+    toplabel = NuCreateLabel();
+    nextlabel = NuCreateLabel();
+    exitlabel = NuCreateLabel();
+    NuPushQuitNext(exitlabel, nextlabel);
+    if (!loopcond) {
+        loopcond = AstInteger(1);
+    }
+    NuEmitLabel(irl, toplabel);
+    if (!atleastonce) {
+        NuCompileBoolBranches(irl, loopcond, NULL, exitlabel);
+    }
+    NuCompileStatement(irl, body);
+    NuEmitLabel(irl, nextlabel);
+    NuCompileStatement(irl, update);
+    if (atleastonce) {
+        NuCompileBoolBranches(irl, loopcond, toplabel, NULL);
+    } else {
+        NuEmitBranch(irl, NU_OP_BRA, toplabel);
+    }
+    NuEmitLabel(irl, exitlabel);
+    NuPopQuitNext();   
+}
+
+static void NuCompileStatement(NuIrList *irl, AST *ast) {
     int n;
     NuIrLabel *toploop, *botloop, *exitloop;
 
@@ -670,7 +741,25 @@ NuCompileStatement(NuIrList *irl, AST *ast) {
 	NuEmitLabel(irl, exitloop);
 	NuPopQuitNext();
 	break;
-        
+    case AST_FOR:
+    case AST_FORATLEASTONCE:
+        NuCompileForLoop(irl, ast, ast->kind == AST_FORATLEASTONCE);
+        break;
+    case AST_QUITLOOP:
+    case AST_ENDCASE:  /* note: in C "break" gets translated as AST_ENDCASE */
+        if (!quitlabel) {
+	    ERROR(ast, "loop exit statement outside of loop");
+	} else {
+	    NuEmitBranch(irl, NU_OP_BRA, quitlabel);
+	}
+        break;
+    case AST_CONTINUE:
+        if (!nextlabel) {
+	    ERROR(ast, "loop continue statement outside of loop");
+	} else {
+	    NuEmitBranch(irl, NU_OP_BRA, nextlabel);
+	}
+	break;
     case AST_FUNCCALL:
         n = NuCompileExpression(irl, ast);
         while (n > 0) {
