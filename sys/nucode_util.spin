@@ -117,3 +117,35 @@ pri _unlockmem(addr) | oldlock
 
 pri __topofstack(ptr)
   return @ptr
+
+pri __builtin_strlen(str) : r=long
+  r := 0
+  repeat while byte[str] <> 0
+    r++
+    str++
+pri __builtin_strcpy(dst, src) : r=@byte | c
+  r := dst
+  repeat
+    c := byte[src++]
+    byte[dst++] := c
+  until c==0
+
+pri strcomp(s1, s2) | c1, c2
+  repeat
+    c1 := byte[s1++]
+    c2 := byte[s2++]
+    if (c1 <> c2)
+      return 0
+  until (c1 == 0)
+  return -1
+pri _lookup(x, b, arr, n) | i
+  i := x - b
+  if (i => 0 and i < n)
+    return long[arr][i]
+  return 0
+pri _lookdown(x, b, arr, n) | i
+  repeat i from 0 to n-1
+    if (long[arr] == x)
+      return i+b
+    arr += 4
+  return 0

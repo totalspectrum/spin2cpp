@@ -82,8 +82,18 @@ NuPrepareFunctionBedata(Function *F) {
     //FunData(F)->exitLabel = NuCreateLabel();    
 }
 
-static int
-NuCompileFunCall(NuIrList *irl, AST *node) {
+// drop n items from the stack
+static void NuCompileDrop(NuIrList *irl, int n) {
+    while (n > 1) {
+        NuEmitOp(irl, NU_OP_DROP2);
+        n -= 2;
+    }
+    if (n) {
+        NuEmitOp(irl, NU_OP_DROP);
+    }
+}
+
+static int NuCompileFunCall(NuIrList *irl, AST *node) {
     int pushed;
     Function *func = NULL;
     AST *functype = NULL;
@@ -96,16 +106,25 @@ NuCompileFunCall(NuIrList *irl, AST *node) {
     if (sym && sym->kind == SYM_FUNCTION) {
         func = (Function *)sym->val;
         pushed = func->numresults;
-        if (func->body && func->body->kind == AST_BYTECODE) {
-            NuEmitNamedOpcode(irl, func->body->d.string);
-            if (!func->result_declared) {
-                pushed = 0;
+        if (!func->body) {
+            if (pushed) {
+                ERROR(node, "empty function with results expected...");
             }
+            return 0;
+        }
+        if (func->body->kind == AST_BYTECODE) {
+            NuEmitNamedOpcode(irl, func->body->d.string);
         } else {
             // output a CALL
+            NuPrepareFunctionBedata(func);
             if (func->is_static || func->module == current) {
                 // plain CALL is OK
-                NuPrepareFunctionBedata(func);
+                NuEmitAddress(irl, FunData(func)->entryLabel);
+                NuEmitOp(irl, NU_OP_CALL);
+            } else if (func->module == systemModule) {
+                // system modules don't actually have non-static functions, we're just
+                WARNING(node, "non-static system module function called");
+                // plain CALL is OK
                 NuEmitAddress(irl, FunData(func)->entryLabel);
                 NuEmitOp(irl, NU_OP_CALL);
             } else {
@@ -398,7 +417,9 @@ NuCompileAssign(NuIrList *irl, AST *lhs, AST *rhs, int inExpression)
     NuIrOpcode op;
     
     n = NuCompileExpression(irl, rhs);
-    if (n != 1) {
+    if (n == 0) {
+        ERROR(rhs, "Assignment from void value");
+    } else if (n != 1) {
         ERROR(rhs, "multiple assignment not handled yet");
     }
     if (inExpression) {
@@ -612,6 +633,15 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         StringBuildBuffer(&fdata->dataBuf, node->left);
         NuEmitAddress(irl, tmpLabel);
     } break;
+    case AST_CAST:
+        return NuCompileExpression(irl, node->right);
+    case AST_DECLARE_VAR:
+        return NuCompileExpression(irl, node->right);
+    case AST_SEQUENCE: {
+        int n = NuCompileExpression(irl, node->left);
+        NuCompileDrop(irl, n);
+        return NuCompileExpression(irl, node->right);
+    } break;
     default:
         ERROR(node, "Unknown expression node %d\n", node->kind);
         return 0;
@@ -775,10 +805,7 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
 	break;
     case AST_FUNCCALL:
         n = NuCompileExpression(irl, ast);
-        while (n > 0) {
-            NuEmitOp(irl, NU_OP_DROP);
-            --n;
-        }
+        NuCompileDrop(irl, n);
         break;
     case AST_RETURN:
         if (ast->left) {
@@ -794,13 +821,7 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
         break;
     case AST_OPERATOR:
         n = NuCompileExpression(irl, ast);
-        while (n > 1) {
-            NuEmitOp(irl, NU_OP_DROP2);
-            n -= 2;
-        }
-        if (n) {
-            NuEmitOp(irl, NU_OP_DROP);
-        }
+        NuCompileDrop(irl, n);
         break;
     case AST_INTEGER:
         /* do nothing */
