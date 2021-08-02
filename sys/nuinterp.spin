@@ -264,15 +264,15 @@ impl_LDD
 impl_STB
 	wrbyte	nos, tos
   _ret_	jmp	#\impl_DROP2
-  
+
 impl_STW
 	wrword	nos, tos
 	jmp	#\impl_DROP2
-  
+
 impl_STL
 	wrlong	nos, tos
 	jmp	#\impl_DROP2
-  
+
 impl_STD
 	mov	tmp, tos
 	call	#\impl_DROP

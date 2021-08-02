@@ -538,12 +538,41 @@ NuCompileOperator(NuIrList *irl, AST *node) {
     AST *lhs, *rhs;
     int optoken;
     int pushed = 0;
+    int isBool;
     
     lhs = node->left;
     rhs = node->right;
     optoken = node->d.ival;
 
-    if (optoken == K_INCREMENT || optoken == K_DECREMENT) {
+    switch (optoken) {
+    case K_BOOL_NOT:
+    case K_BOOL_AND:
+    case K_BOOL_OR:
+    case K_EQ:
+    case K_NE:
+    case K_LE:
+    case K_GE:
+    case '<':
+    case '>':
+    case K_LTU:
+    case K_GTU:
+    case K_LEU:
+    case K_GEU:
+        isBool = 1;
+        break;            
+    default: isBool = 0; break;
+    }
+    if (isBool) {
+        NuIrLabel *skiplabel = NuCreateLabel();
+        int truevalue = LangBoolIsOne(curfunc->language) ? 1 : -1;
+
+        pushed = 1;
+        NuEmitConst(irl, 0);
+        NuCompileBoolBranches(irl, node, NULL, skiplabel);
+        NuEmitConst(irl, truevalue);
+        NuEmitOp(irl, NU_OP_XOR);
+        NuEmitLabel(irl, skiplabel);
+    } else if (optoken == K_INCREMENT || optoken == K_DECREMENT) {
         // handle some special cases here
         NuIrOpcode math = (optoken == K_INCREMENT) ? NU_OP_ADD : NU_OP_SUB;
         NuIrOpcode ldOp, stOp;
@@ -605,31 +634,6 @@ NuCompileOperator(NuIrList *irl, AST *node) {
         case K_SAR: NuEmitOp(irl, NU_OP_SAR); break;
         case K_ZEROEXTEND: NuEmitOp(irl, NU_OP_ZEROX); break;
         case K_SIGNEXTEND: NuEmitOp(irl, NU_OP_SIGNX); break;
-            
-        case K_BOOL_NOT:
-        case K_BOOL_AND:
-        case K_BOOL_OR:
-        case K_EQ:
-        case K_NE:
-        case K_LE:
-        case K_GE:
-        case '<':
-        case '>':
-        case K_LTU:
-        case K_GTU:
-        case K_LEU:
-        case K_GEU:
-        {
-            NuIrLabel *skiplabel = NuCreateLabel();
-            int truevalue = LangBoolIsOne(curfunc->language) ? 1 : -1;
-
-            NuEmitConst(irl, 0);
-            NuCompileBoolBranches(irl, node, NULL, skiplabel);
-            NuEmitConst(irl, truevalue);
-            NuEmitOp(irl, NU_OP_XOR);
-            NuEmitLabel(irl, skiplabel);
-        } break;
-            
         default:
             ERROR(node, "Unable to handle operator 0x%x", optoken);
             break;
