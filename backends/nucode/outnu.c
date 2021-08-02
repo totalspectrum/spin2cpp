@@ -16,6 +16,8 @@ static void NuCompileStatement(NuIrList *irl, AST *ast); // forward declaration
 static void NuCompileStmtlist(NuIrList *irl, AST *ast); // forward declaration
 static int NuCompileExpression(NuIrList *irl, AST *ast); // returns number of items left on stack
 static int NuCompileExprList(NuIrList *irl, AST *ast); // returns number of items left on stack
+static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs); // returns op used for loading
+static void NuCompileMul(NuIrList *irl, AST *lhs, AST *rhs, int gethi);
 
 typedef struct NuLabelList {
     struct NuLabelList *next;
@@ -253,22 +255,23 @@ static NuIrOpcode
 NuCompileArrayAddress(NuIrList *irl, AST *node, int isLoad)
 {
     NuIrOpcode op = NU_OP_ILLEGAL;
+    AST *base = node->left;
     AST *index = node->right;
-    if (IsIdentifier(node->left)) {
-        op = NuCompileIdentifierAddress(irl, node->left, isLoad);
-    }
-    if (node->left && node->left->kind == AST_MEMREF) {
-        node = node->left;
-        int n = NuCompileExpression(irl, node->right);
-        AST *typ = node->left;
-        op = LoadStoreOp(typ, isLoad);
-        if (n != 1) {
-            ERROR(node, "too many values pushed on stack");
-        }
-    }
+    AST *typ = ExprType(node);
+    (void)NuCompileLhsAddress(irl, base); // op doesn't matter yet
     if (!IsConstZero(index)) {
-        ERROR(node, "Cannot handle array indices yet");
+        int siz = TypeSize(typ);
+        if (siz > 1) {
+            NuCompileMul(irl, index, AstInteger(siz), 0);
+        } else {
+            int n = NuCompileExpression(irl, index);
+            if (n != 1) {
+                ERROR(node, "Bad array indexing");
+            }
+        }
+        NuEmitOp(irl, NU_OP_ADD);
     }
+    op = LoadStoreOp(typ, isLoad);
     return op;
 }
 
@@ -390,8 +393,7 @@ NuCompileBoolBranches(NuIrList *irl, AST *expr, NuIrLabel *truedest, NuIrLabel *
     }       
 }
 /* compile address for lhs of assignment, return store op (or NU_OP_ILLEGAL if fail) */
-static NuIrOpcode
-NuCompileLhsAddress(NuIrList *irl, AST *lhs)
+static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs)
 {
     NuIrOpcode op = NU_OP_ILLEGAL;
     switch (lhs->kind) {
@@ -402,6 +404,14 @@ NuCompileLhsAddress(NuIrList *irl, AST *lhs)
     case AST_ARRAYREF:
         op = NuCompileArrayAddress(irl, lhs, 0);
         break;
+    case AST_MEMREF: {
+        int n = NuCompileExpression(irl, lhs->right);
+        AST *typ = lhs->left;
+        op = LoadStoreOp(typ, 0);
+        if (n != 1) {
+            ERROR(lhs, "too many values pushed on stack");
+        }
+    } break;
     default:
         ERROR(lhs, "Address type not handled yet");
         break;
@@ -410,12 +420,17 @@ NuCompileLhsAddress(NuIrList *irl, AST *lhs)
 }
 
 /* compile assignment */
-static int
-NuCompileAssign(NuIrList *irl, AST *lhs, AST *rhs, int inExpression)
+/* returns number of longs left on stack */
+static int NuCompileAssign(NuIrList *irl, AST *ast, int inExpression)
 {
+    AST *lhs = ast->left;
+    AST *rhs = ast->right;
     int n;
     NuIrOpcode op;
-    
+
+    if (ast->d.ival != K_ASSIGN) {
+        ERROR(ast, "Cannot handle complex assignment");
+    }
     n = NuCompileExpression(irl, rhs);
     if (n == 0) {
         ERROR(rhs, "Assignment from void value");
@@ -423,8 +438,7 @@ NuCompileAssign(NuIrList *irl, AST *lhs, AST *rhs, int inExpression)
         ERROR(rhs, "multiple assignment not handled yet");
     }
     if (inExpression) {
-        ERROR(lhs, "assignment in expression not handled yet");
-        return 0;
+        NuEmitOp(irl, NU_OP_DUP); // leave last value on stack
     }
     op = NuCompileLhsAddress(irl, lhs);
     if (op == NU_OP_ILLEGAL) {
@@ -432,19 +446,56 @@ NuCompileAssign(NuIrList *irl, AST *lhs, AST *rhs, int inExpression)
     } else {
         NuEmitOp(irl, op);
     }
-    return 0;
+    return inExpression;
 }
 
 static void
-NuCompileMul(NuIrList *irl, AST *expr, int gethi)
+NuCompileMul(NuIrList *irl, AST *lhs, AST *rhs, int gethi)
 {
-    AST *lhs = expr->left;
-    AST *rhs = expr->right;
     int isUnsigned = (gethi & 2);
     int needHi = (gethi & 1);
+    AST *tmp;
 
-    // FIXME: should optimize here for shifts and such
+    // optimize some constant multiplies
+    // make sure constant is on the right
+    if (IsConstExpr(lhs)) {
+        if (IsConstExpr(rhs)) {
+            NuEmitConst(irl, EvalConstExpr(lhs) * EvalConstExpr(rhs));
+            return;
+        }
+        tmp = lhs; lhs = rhs; rhs = tmp;
+    }
     NuCompileExpression(irl, lhs);
+    if (IsConstExpr(rhs)) {
+        // do some simple optimizations
+        int r = EvalConstExpr(rhs);
+        switch (r) {
+        case 2:
+            NuEmitOp(irl, NU_OP_DUP);
+            NuEmitOp(irl, NU_OP_ADD);
+            return;
+        case 3:
+            NuEmitOp(irl, NU_OP_DUP);
+            NuEmitOp(irl, NU_OP_DUP);
+            NuEmitOp(irl, NU_OP_ADD);
+            NuEmitOp(irl, NU_OP_ADD);
+            return;
+        case 4:
+            NuEmitConst(irl, 2);
+            NuEmitOp(irl, NU_OP_SHL);
+            return;
+        case 8:
+            NuEmitConst(irl, 3);
+            NuEmitOp(irl, NU_OP_SHL);
+            return;
+        case 16:
+            NuEmitConst(irl, 4);
+            NuEmitOp(irl, NU_OP_SHL);
+            return;
+        default:
+            break;
+        }
+    }
     NuCompileExpression(irl, rhs);
     if (isUnsigned) {
         NuEmitOp(irl, NU_OP_MULU);
@@ -539,9 +590,9 @@ NuCompileOperator(NuIrList *irl, AST *node) {
         case K_ABS: NuEmitOp(irl, NU_OP_ABS); break;
         case '+': NuEmitOp(irl, NU_OP_ADD); break;
         case '-': NuEmitOp(irl, NU_OP_SUB); break;
-        case '*': NuCompileMul(irl, node, 0); break;
-        case K_HIGHMULT: NuCompileMul(irl, node, 1); break;
-        case K_UNS_HIGHMULT: NuCompileMul(irl, node, 3); break;
+        case '*': NuCompileMul(irl, node->left, node->right, 0); break;
+        case K_HIGHMULT: NuCompileMul(irl, node->left, node->right, 1); break;
+        case K_UNS_HIGHMULT: NuCompileMul(irl, node->left, node->right, 3); break;
         case '/': NuCompileDiv(irl, node, 0); break;
         case K_MODULUS: NuCompileDiv(irl, node, 1); break;
         case K_UNS_DIV: NuCompileDiv(irl, node, 2); break;
@@ -657,6 +708,9 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         NuCompileDrop(irl, n);
         return NuCompileExpression(irl, node->right);
     } break;
+    case AST_ASSIGN:
+        pushed = NuCompileAssign(irl, node, 1);
+        break;
     default:
         ERROR(node, "Unknown expression node %d\n", node->kind);
         return 0;
@@ -755,7 +809,7 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
         NuCompileStmtlist(irl, ast);
         break;
     case AST_ASSIGN:
-        NuCompileAssign(irl, ast->left, ast->right, 0);
+        NuCompileAssign(irl, ast, 0);
         break;
     case AST_IF: {
         NuIrLabel *elselbl = NuCreateLabel();
