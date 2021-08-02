@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <ctype.h>
 #include "spinc.h"
+#include "becommon.h"
 #include "outasm.h"
 
 #define MAX_COGSPIN_ARGS 8
@@ -3726,27 +3727,6 @@ validateArrayRef(AST *ast)
         return IsArrayType(ExprType(ast));
     default:
         return validateArrayRef(ast->left) || validateArrayRef(ast->right);
-    }
-}
-
-static AST *
-EvalStringConst(AST *expr)
-{
-    if (!expr) {
-        return expr;
-    }
-    switch (expr->kind) {
-    case AST_EXPRLIST:
-        return NewAST(AST_EXPRLIST, EvalStringConst(expr->left), EvalStringConst(expr->right));
-    case AST_STRING:
-    case AST_INTEGER:
-        return expr;
-    default:
-        if (IsConstExpr(expr)) {
-            return AstInteger(EvalConstExpr(expr));
-        } else {
-            return expr;
-        }
     }
 }
 

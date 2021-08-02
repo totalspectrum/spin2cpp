@@ -13,11 +13,11 @@ typedef struct {
 } NuModData;
 
 typedef struct {
-    int compiledAddress; // -1 if not yet compiled
     int localSize;
     NuIrList irl;
     NuIrLabel *entryLabel;
-//    NuIrLabel *exitLabel;
+    NuIrLabel *dataLabel;
+    Flexbuf dataBuf;  // inline data for the function
 } NuFunData;
 
 void OutputNuCode(const char *fname, Module *P);

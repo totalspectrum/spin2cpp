@@ -137,6 +137,10 @@ void NuOutputLabel(Flexbuf *fb, NuIrLabel *label) {
         flexbuf_printf(fb, "__Label_%05u", label->num);
     }
 }
+void NuOutputLabelNL(Flexbuf *fb, NuIrLabel *label) {
+    NuOutputLabel(fb, label);
+    flexbuf_addchar(fb, '\n');
+}
 
 static void
 OutputEscapedChar(Flexbuf *fb, int c, NuContext *ctxt)
@@ -287,8 +291,7 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
         op = ir->op;
         switch(op) {
         case NU_OP_LABEL:
-            NuOutputLabel(fb, ir->label);
-            flexbuf_addchar(fb, '\n');
+            NuOutputLabelNL(fb, ir->label);
             break;
         case NU_OP_ALIGN:
             flexbuf_printf(fb, "\talignl\n");

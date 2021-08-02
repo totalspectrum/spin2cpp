@@ -542,36 +542,14 @@ static bool OptimizeOperator(int *optoken, AST **left,AST **right) {
     return false;
 }
 
-static void StringAppend(Flexbuf *fb,AST *expr) {
-    if(!expr) return;
-    switch (expr->kind) {
-    case AST_INTEGER: {
-        int i = expr->d.ival;
-        if (i < 0 || i>255) ERROR(expr,"Character out of range!");
-        flexbuf_putc(i,fb);
-    } break;
-    case AST_STRING: {
-        flexbuf_addstr(fb,expr->d.string);
-    } break;
-    case AST_EXPRLIST: {
-        if (expr->left) StringAppend(fb,expr->left);
-        if (expr->right) StringAppend(fb,expr->right);
-    } break;
-    default: {
-        ERROR(expr,"Unhandled AST kind %d in string expression",expr->kind);
-    } break;
-    }
-}
-
 ByteOpIR BCBuildString(AST *expr) {
     ByteOpIR ir = {0};
     ir.kind = BOK_FUNDATA_STRING;
     Flexbuf fb;
-    flexbuf_init(&fb,20);
-    StringAppend(&fb,expr);
-    flexbuf_putc(0,&fb);
-    ir.data.stringPtr = flexbuf_peek(&fb);
+    flexbuf_init(&fb, 32);
+    StringBuildBuffer(&fb, expr);
     ir.attr.stringLength = flexbuf_curlen(&fb);
+    ir.data.stringPtr = flexbuf_get(&fb);
     return ir;
 }
 

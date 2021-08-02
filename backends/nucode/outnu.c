@@ -599,6 +599,19 @@ NuCompileExpression(NuIrList *irl, AST *node) {
     {
         pushed = NuCompileLhsAddress(irl, node->left);
     } break;
+    case AST_STRINGPTR:
+    {
+        NuIrLabel *tmpLabel;
+        NuFunData *fdata = FunData(curfunc);
+        
+        if (!fdata->dataLabel) {
+            fdata->dataLabel = NuCreateLabel();
+            flexbuf_init(&fdata->dataBuf, 32);
+        }
+        tmpLabel = NuIrOffsetLabel(fdata->dataLabel, flexbuf_curlen(&fdata->dataBuf));
+        StringBuildBuffer(&fdata->dataBuf, node->left);
+        NuEmitAddress(irl, tmpLabel);
+    } break;
     default:
         ERROR(node, "Unknown expression node %d\n", node->kind);
         return 0;
@@ -904,10 +917,10 @@ static void NuCompileObject(struct flexbuf *fb, Module *P) {
 
         flexbuf_init(&datBuf,2048);
         flexbuf_init(&datRelocs,1024);
-        const char *startLabel = NewTemporaryVariable("__Label", NULL);
         PrintDataBlock(&datBuf,P,NULL,&datRelocs);
-        NuOutputLabel(fb, ModData(P)->datLabel);
-        OutputDataBlob(fb, &datBuf, &datRelocs, startLabel);
+        OutputAlignLong(&datBuf);
+        NuOutputLabelNL(fb, ModData(P)->datLabel);
+        OutputDataBlob(fb, &datBuf, &datRelocs, NULL);
         
         flexbuf_delete(&datRelocs);
         flexbuf_delete(&datBuf);
@@ -915,6 +928,10 @@ static void NuCompileObject(struct flexbuf *fb, Module *P) {
     for (pf = P->functions; pf; pf = pf->next) {
         flexbuf_printf(fb, "'--- Function: %s\n", pf->name);
         NuOutputIrList(fb, &FunData(pf)->irl);
+        if (FunData(pf)->dataLabel) {
+            NuOutputLabelNL(fb, FunData(pf)->dataLabel);
+            OutputDataBlob(fb, &FunData(pf)->dataBuf, NULL, NULL);
+        }
     }
     current = save;
 }
@@ -982,7 +999,7 @@ void OutputNuCode(const char *asmFileName, Module *P)
     } else if (!mainFunc->bedata) {
         ERROR(NULL,"Main function uninitialized!");
         return;
-    } else if (FunData(mainFunc)->compiledAddress < 0) {
+    } else if (FunData(mainFunc)->entryLabel == NULL) {
         ERROR(NULL,"Main function uncompiled!");
         return;
     }

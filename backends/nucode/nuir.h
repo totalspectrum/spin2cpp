@@ -152,5 +152,6 @@ void NuOutputInterpreter(struct flexbuf *fb, NuContext *ctxt);
 void NuOutputFinish(struct flexbuf *fb, NuContext *ctxt);
 void NuOutputIrList(struct flexbuf *fb, NuIrList *irl);
 void NuOutputLabel(struct flexbuf *fb, NuIrLabel *label);
+void NuOutputLabelNL(struct flexbuf *fb, NuIrLabel *label);
 
 #endif

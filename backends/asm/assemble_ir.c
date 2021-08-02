@@ -418,6 +418,16 @@ fetchUint32(uint8_t *data)
 #define MAX_BYTES_ON_LINE 16
 
 void
+OutputAlignLong(Flexbuf *fb)
+{
+    if (gl_p2 || gl_compress) {
+        flexbuf_printf(fb, "\talignl\n"); // ensure long alignment
+    } else {
+        flexbuf_printf(fb, "\tlong\n"); // ensure long alignment
+    }
+}
+
+void
 OutputDataBlob(Flexbuf *fb, Flexbuf *databuf, Flexbuf *relocbuf, const char *startLabel)
 {
     uint8_t *data;
@@ -428,14 +438,11 @@ OutputDataBlob(Flexbuf *fb, Flexbuf *databuf, Flexbuf *relocbuf, const char *sta
     uint32_t runlen;
     int lastdata;
 
-    if (gl_p2 || gl_compress) {
-        flexbuf_printf(fb, "\talignl\n"); // ensure long alignment
-    } else {
-        flexbuf_printf(fb, "\tlong\n"); // ensure long alignment
+    if (startLabel) {
+        OutputAlignLong(fb);
+        flexbuf_printf(fb, startLabel);
+        flexbuf_printf(fb, "\n");
     }
-    flexbuf_printf(fb, startLabel);
-    flexbuf_printf(fb, "\n");
-
     if (relocbuf) {
         relocs = flexbuf_curlen(relocbuf) / sizeof(Reloc);
         nextreloc = (Reloc *)flexbuf_peek(relocbuf);

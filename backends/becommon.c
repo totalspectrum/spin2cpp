@@ -149,8 +149,61 @@ static int resetOffsets(Symbol *sym, void *arg)
     return 1;
 }
 
+/* convert offsets in local variables to their canonical values, depending on
+ * how the interpreter wants them laid out
+ */
 void
 NormalizeVarOffsets(Function *F)
 {
     IterateOverSymbols(&F->localsyms, resetOffsets, (void *)F);
+}
+
+/*
+ * evaluate any constant expressions within a string
+ */
+AST *
+EvalStringConst(AST *expr)
+{
+    if (!expr) {
+        return expr;
+    }
+    switch (expr->kind) {
+    case AST_EXPRLIST:
+        return NewAST(AST_EXPRLIST, EvalStringConst(expr->left), EvalStringConst(expr->right));
+    case AST_STRING:
+    case AST_INTEGER:
+        return expr;
+    default:
+        if (IsConstExpr(expr)) {
+            return AstInteger(EvalConstExpr(expr));
+        } else {
+            return expr;
+        }
+    }
+}
+
+static void StringAppend(Flexbuf *fb,AST *expr) {
+    if(!expr) return;
+    switch (expr->kind) {
+    case AST_INTEGER: {
+        int i = expr->d.ival;
+        if (i < 0 || i>255) ERROR(expr,"Character out of range!");
+        flexbuf_putc(i,fb);
+    } break;
+    case AST_STRING: {
+        flexbuf_addstr(fb,expr->d.string);
+    } break;
+    case AST_EXPRLIST: {
+        if (expr->left) StringAppend(fb,expr->left);
+        if (expr->right) StringAppend(fb,expr->right);
+    } break;
+    default: {
+        ERROR(expr,"Unhandled AST kind %d in string expression",expr->kind);
+    } break;
+    }
+}
+
+void StringBuildBuffer(Flexbuf *fb, AST *expr) {
+    StringAppend(fb, expr);
+    flexbuf_addchar(fb, 0);
 }
