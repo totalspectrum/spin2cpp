@@ -1334,7 +1334,7 @@ TransformCountRepeat(AST *ast)
         }
     }
 
-    if (gl_output == OUTPUT_BYTECODE) {
+    if (gl_output == OUTPUT_BYTECODE && gl_interp_kind != INTERP_KIND_NUCODE) {
         // Leave REPEAT N kinda loops alone for bytecode
         if (!loopvar && knownStepVal == 1 && fromval == NULL && isIntegerLoop) {
             AstReportDone(&saveinfo);

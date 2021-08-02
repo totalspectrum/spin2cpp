@@ -510,7 +510,18 @@ NuCompileOperator(NuIrList *irl, AST *node) {
             NuEmitOp(irl, NU_OP_SWAP); // stack has origV newV A
             NuEmitOp(irl, stOp);      // stack has origV
         } else {
-            ERROR(node, "Cannot handle pre inc/dec yet");
+            // inc/dec first
+            stOp = NuCompileLhsAddress(irl, rhs);
+            if (stOp == NU_OP_ILLEGAL) return pushed;
+            ldOp = NuLoadOpFor(stOp);
+            NuEmitOp(irl, NU_OP_DUP); // duplicate address : stack has A A
+            NuEmitOp(irl, ldOp);      // load: stack has A origV
+            NuEmitConst(irl, 1);
+            NuEmitOp(irl, math);       // stack has A (newV)
+            NuEmitOp(irl, NU_OP_SWAP); // stack has (newV) A
+            NuEmitOp(irl, NU_OP_OVER); // stack has (newV) A (newV)
+            NuEmitOp(irl, NU_OP_SWAP); // stack has (newV) (newV) A
+            NuEmitOp(irl, stOp);      // stack has newV
         }
     } else {
         if (lhs) {
@@ -523,6 +534,9 @@ NuCompileOperator(NuIrList *irl, AST *node) {
         // assume we will push just one item
         pushed = 1;
         switch (optoken) {
+        case K_NEGATE: NuEmitOp(irl, NU_OP_NEG); break;
+        case K_BIT_NOT: NuEmitOp(irl, NU_OP_NOT); break;
+        case K_ABS: NuEmitOp(irl, NU_OP_ABS); break;
         case '+': NuEmitOp(irl, NU_OP_ADD); break;
         case '-': NuEmitOp(irl, NU_OP_SUB); break;
         case '*': NuCompileMul(irl, node, 0); break;
@@ -618,7 +632,8 @@ NuCompileExpression(NuIrList *irl, AST *node) {
     } break;
     case AST_ABSADDROF:
     {
-        pushed = NuCompileLhsAddress(irl, node->left);
+        (void)NuCompileLhsAddress(irl, node->left); // don't care about load op, we will not use it
+        pushed = 1;
     } break;
     case AST_STRINGPTR:
     {
@@ -803,6 +818,9 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
 	    NuEmitBranch(irl, NU_OP_BRA, nextlabel);
 	}
 	break;
+    case AST_YIELD:
+        /* do nothing */
+        break;
     case AST_FUNCCALL:
         n = NuCompileExpression(irl, ast);
         NuCompileDrop(irl, n);
