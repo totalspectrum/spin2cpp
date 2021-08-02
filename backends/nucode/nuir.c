@@ -303,7 +303,7 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
             flexbuf_printf(fb, "\tbyte\tNU_OP_%s, long %d\n", NuOpName[op], ir->val);
             break;
         case NU_OP_PUSHA:
-            flexbuf_printf(fb, "\tbyte\t long NU_OP_%s | (@", NuOpName[op]);
+            flexbuf_printf(fb, "\tbyte\t long NU_OP_%s | (", NuOpName[op]);
             NuOutputLabel(fb, ir->label);
             flexbuf_printf(fb, " << 8)\n");
             break;

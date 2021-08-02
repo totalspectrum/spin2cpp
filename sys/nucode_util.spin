@@ -61,7 +61,6 @@ pri _waitcnt(x)
   
 dat
     orgh
-_bitcycles long 0
 _rx_temp   long 0
 
 con
@@ -75,7 +74,7 @@ pri _setbaud(baudrate) | bitperiod, bit_mode
   bitperiod := (__clkfreq_var / baudrate)
   _dirl(_txpin)
   _dirl(_rxpin)
-  _bitcycles := bitperiod
+  long[$1c] := baudrate
   bit_mode := 7 + (bitperiod << 16)
   _wrpin(_txpin, _txmode)
   _wxpin(_txpin, bit_mode)
@@ -85,7 +84,7 @@ pri _setbaud(baudrate) | bitperiod, bit_mode
   _dirh(_rxpin)
   
 pri _txraw(c) | z
-  if _bitcycles == 0
+  if long[$1c] == 0
     _setbaud(__default_baud__)  ' set up in common.c
   _wypin(_txpin, c)
   _waitx(1)

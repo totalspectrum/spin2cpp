@@ -37,7 +37,7 @@ NuIrOffsetLabel(NuIrLabel *base, int offset) {
 }
 
 static void
-NuPrepareObject(Module *P) {
+NuPrepareModuleBedata(Module *P) {
     // Init bedata
     if (P->bedata) return;
 
@@ -187,7 +187,7 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
         offset = labelval;
         loadOp = LoadStoreOp(lab->type, isLoad);
         if (!ModData(Q)) {
-            NuPrepareObject(Q);
+            NuPrepareModuleBedata(Q);
         }
         nulabel = ModData(Q)->datLabel;
         nulabel = NuIrOffsetLabel(nulabel, offset);
@@ -210,11 +210,21 @@ static NuIrOpcode
 NuCompileArrayAddress(NuIrList *irl, AST *node, int isLoad)
 {
     NuIrOpcode op = NU_OP_ILLEGAL;
+    AST *index = node->right;
     if (IsIdentifier(node->left)) {
         op = NuCompileIdentifierAddress(irl, node->left, isLoad);
-        if (!IsConstZero(node->right)) {
-            ERROR(node, "Cannot handle array indices yet");
+    }
+    if (node->left && node->left->kind == AST_MEMREF) {
+        node = node->left;
+        int n = NuCompileExpression(irl, node->right);
+        AST *typ = node->left;
+        op = LoadStoreOp(typ, isLoad);
+        if (n != 1) {
+            ERROR(node, "too many values pushed on stack");
         }
+    }
+    if (!IsConstZero(index)) {
+        ERROR(node, "Cannot handle array indices yet");
     }
     return op;
 }
@@ -297,7 +307,7 @@ NuCompileBoolBranches(NuIrList *irl, AST *expr, NuIrLabel *truedest, NuIrLabel *
     }
     switch (opkind) {
     case K_BOOL_NOT:
-        NuCompileBoolBranches(irl, expr, falsedest, truedest);
+        NuCompileBoolBranches(irl, expr->right, falsedest, truedest);
         break;
     case K_BOOL_AND:
         if (!falsedest) {
@@ -483,8 +493,35 @@ NuCompileOperator(NuIrList *irl, AST *node) {
         case K_SHL: NuEmitOp(irl, NU_OP_SHL); break;
         case K_SHR: NuEmitOp(irl, NU_OP_SHR); break;
         case K_SAR: NuEmitOp(irl, NU_OP_SAR); break;
+        case K_ZEROEXTEND: NuEmitOp(irl, NU_OP_ZEROX); break;
+        case K_SIGNEXTEND: NuEmitOp(irl, NU_OP_SIGNX); break;
+            
+        case K_BOOL_NOT:
+        case K_BOOL_AND:
+        case K_BOOL_OR:
+        case K_EQ:
+        case K_NE:
+        case K_LE:
+        case K_GE:
+        case '<':
+        case '>':
+        case K_LTU:
+        case K_GTU:
+        case K_LEU:
+        case K_GEU:
+        {
+            NuIrLabel *skiplabel = NuCreateLabel();
+            int truevalue = LangBoolIsOne(curfunc->language) ? 1 : -1;
+
+            NuEmitConst(irl, 0);
+            NuCompileBoolBranches(irl, node, NULL, skiplabel);
+            NuEmitConst(irl, truevalue);
+            NuEmitOp(irl, NU_OP_XOR);
+            NuEmitLabel(irl, skiplabel);
+        } break;
+            
         default:
-            ERROR(node, "Unable to handle operator");
+            ERROR(node, "Unable to handle operator 0x%x", optoken);
             break;
         }
     }
@@ -534,6 +571,10 @@ NuCompileExpression(NuIrList *irl, AST *node) {
     {
         pushed = NuCompileOperator(irl, node);
     } break;
+    case AST_ABSADDROF:
+    {
+        pushed = NuCompileLhsAddress(irl, node->left);
+    } break;
     default:
         ERROR(node, "Unknown expression node %d\n", node->kind);
         return 0;
@@ -557,7 +598,7 @@ NuCompileExprList(NuIrList *irl, AST *node)
 
 static void
 NuCompileStmtlist(NuIrList *irl, AST *list) {
-    for (AST *ast=list;ast&&ast->kind==AST_STMTLIST;ast=ast->right) {
+    for (AST *ast=list; ast; ast=ast->right) {
         AST *node = ast->left;
         if (!node) {
             //ERROR(ast,"empty node?!?"); ignore, this can happen
@@ -580,7 +621,10 @@ NuCompileStatement(NuIrList *irl, AST *ast) {
     case AST_COMMENT:
         // for now, do nothing
         break;
-
+    case AST_STMTLIST:
+    case AST_SEQUENCE:
+        NuCompileStmtlist(irl, ast);
+        break;
     case AST_ASSIGN:
         NuCompileAssign(irl, ast->left, ast->right, 0);
         break;
@@ -655,6 +699,9 @@ NuCompileStatement(NuIrList *irl, AST *ast) {
         if (n) {
             NuEmitOp(irl, NU_OP_DROP);
         }
+        break;
+    case AST_INTEGER:
+        /* do nothing */
         break;
     default:
         ERROR(ast, "Unhandled node type %d in NuCompileStatement", ast->kind);
@@ -743,7 +790,7 @@ static void NuConvertFunctions(Module *P) {
     Function *pf;
     current = P;
 
-    NuPrepareObject(P);
+    NuPrepareModuleBedata(P);
     // Compile functions
     for (pf = P->functions; pf; pf = pf->next) {
         NuCompileFunction(pf);

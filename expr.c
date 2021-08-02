@@ -1597,14 +1597,6 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
         */
         expr = expr->left;
         offset = 0;
-        if (expr->kind == AST_OPERATOR && expr->d.ival == '+' && IsConstExpr(expr->right)) {
-            rval = EvalExpr(expr->right, flags, valid, depth+1);
-            if (valid && !*valid) {
-                return rval;
-            }
-            offset += rval.val;
-            expr = expr->left;
-        }
         if (expr->kind == AST_ARRAYREF) {
             offsetExpr = expr->right;
             rval = EvalExpr(offsetExpr, flags, valid, depth+1);
@@ -1612,7 +1604,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
                 return rval;
             }
             expr = expr->left;
-            offset += rval.val;
+            offset = rval.val;
         }
         if (expr->kind != AST_IDENTIFIER && expr->kind != AST_SYMBOL && expr->kind != AST_LOCAL_IDENTIFIER) {
             if (reportError)

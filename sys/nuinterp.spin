@@ -24,7 +24,11 @@ clock_freq
 	long	0	' clock frequency ($14)
 clock_mode
 	long	0	' clock mode	  ($18)
+#ifdef SERIAL_DEBUG
+	long	230_400	' default baud rate for debug ($1c)
+#else
 	long	0	' reserved for baud ($1c)
+#endif	
 entry_pc
 	long	2	' initial pc
 entry_vbase
@@ -70,7 +74,7 @@ spininit
 	rdlong	ptrb, --ptra		' ptrb serves as PC
 continue_startup
 #ifdef SERIAL_DEBUG
-       mov	ser_debug_arg1, ##230_400
+       rdlong	ser_debug_arg1, #$1c
        call	#ser_debug_init
        mov	ser_debug_arg1, ##@init_msg
        call	#ser_debug_str
@@ -145,7 +149,7 @@ impl_SWAP
 ' and jumps to the new code
 ' normally this will start with an "enter" which saves old_pc and
 ' old_vbase, then sets up the new stack frame
-' "callm" is like "call" but also pops a new vbase
+' "callm" is like "call" but also pops a new vbase (expects nos==VBASE, tos==PC)
 ' "ret" undoes the "enter" and then sets pc back to old_pc
 '
 impl_CALL
@@ -244,13 +248,13 @@ OPC_TABLE
 	orgh
 impl_LDB
   _ret_	rdbyte tos, tos
-  
+
 impl_LDW
   _ret_ rdword tos, tos
-  
+
 impl_LDL
   _ret_ rdlong tos, tos
-  
+
 impl_LDD
 	call	#\impl_DUP
 	rdlong	nos, nos
