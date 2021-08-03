@@ -61,6 +61,9 @@ pri _wypin(pin, val)
   
 pri _waitcnt(x)
   __bytecode__("WAITCNT")
+
+pri waitcnt(x)
+  __bytecode__("WAITCNT")
   
 dat
     orgh

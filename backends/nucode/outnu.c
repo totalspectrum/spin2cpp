@@ -129,6 +129,9 @@ static int NuCompileFunCall(NuIrList *irl, AST *node) {
         }
         if (func->body->kind == AST_BYTECODE) {
             ir = NuEmitNamedOpcode(irl, func->body->d.string);
+            if (!func->result_declared) {
+                pushed = 0;
+            }
         } else {
             // output a CALL
             NuPrepareFunctionBedata(func);

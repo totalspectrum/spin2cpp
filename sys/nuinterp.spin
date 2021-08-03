@@ -468,6 +468,11 @@ impl_WAITX
 	waitx	tos
 	jmp	#\impl_DROP
 
+impl_WAITCNT
+	addct1	tos, #0
+	waitct1
+	jmp	#\impl_DROP
+
 impl_DRVL
 	drvl	tos
 	jmp	#\impl_DROP
