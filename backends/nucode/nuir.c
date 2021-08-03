@@ -74,7 +74,11 @@ NuIr *NuEmitOp(NuIrList *irl, NuIrOpcode op) {
 NuIr *NuEmitConst(NuIrList *irl, int32_t val) {
     NuIr *r;
 
-    if (val >= -128 && val <= 127) {
+    if (val == 0) {
+        r = NuEmitOp(irl, NU_OP_PUSH_0);
+    } else if (val == 1) {
+        r = NuEmitOp(irl, NU_OP_PUSH_1);
+    } else if (val >= -128 && val <= 127) {
         r = NuEmitOp(irl, NU_OP_PUSHI8);
     } else if (val >= -32768 && val <= 32767) {
         r = NuEmitOp(irl, NU_OP_PUSHI16);
@@ -197,7 +201,10 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     impl_ptrs[NU_OP_CALLM] = "";
     impl_ptrs[NU_OP_ENTER] = "";
     impl_ptrs[NU_OP_RET] = "";
-
+    impl_ptrs[NU_OP_PUSHI8] = "";
+    impl_ptrs[NU_OP_PUSH_0] = "";
+    impl_ptrs[NU_OP_PUSH_1] = "";
+    
     // find the other implementations that we may need
     while (c) {
         linestart = ptr;
@@ -230,7 +237,7 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     // emit constants for everything
     flexbuf_printf(fb, "\ncon\n");
     for (i = 0; opusage[i].used > 0 && i < NU_OP_DUMMY; i++) {
-        flexbuf_printf(fb, "\tNU_OP_%s = %d\n", NuOpName[opusage[i].ircode], i);
+        flexbuf_printf(fb, "\tNU_OP_%s = %d  ' (used %d times)\n", NuOpName[opusage[i].ircode], i, opusage[i].used);
     }
     
     // now emit opcode implementations

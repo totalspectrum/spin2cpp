@@ -234,6 +234,20 @@ no_ret_values
   	' need to restore tos and nos
 	jmp    #impl_DROP2
 
+impl_PUSHI8
+	call	#\impl_DUP
+	rdbyte	tos, ptrb++
+  _ret_	signx	tos, #7
+
+impl_PUSH_0
+	wrlong	nos, ptra++   ' save stack
+	mov	nos, tos
+  _ret_	mov	tos, #0
+
+impl_PUSH_1
+	wrlong	nos, ptra++   ' save stack
+	mov	nos, tos
+  _ret_	mov	tos, #1
 	
 impl_HALT
 	cogid	pa
@@ -430,11 +444,6 @@ impl_PUSHI16
 	call	#\impl_DUP
 	rdword	tos, ptrb++
   _ret_	signx	tos, #15
-
-impl_PUSHI8
-	call	#\impl_DUP
-	rdbyte	tos, ptrb++
-  _ret_	signx	tos, #7
 
 impl_GETCT
 	call	#\impl_DUP

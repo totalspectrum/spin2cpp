@@ -89,6 +89,8 @@
     X(PUSHI16)   /* push immediate 16 bit */ \
     X(PUSHI8)    /* push immediate 8 bit */ \
     X(PUSHA)     /* push address */ \
+    X(PUSH_0)    /* push zero */ \
+    X(PUSH_1)    /* push one */ \
     \
     X(BRA)       /* branch always */ \
     X(CBEQ)      /* compare branch if equal */ \
