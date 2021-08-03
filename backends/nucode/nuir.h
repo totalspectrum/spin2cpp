@@ -91,6 +91,9 @@
     X(PUSHA)     /* push address */ \
     X(PUSH_0)    /* push zero */ \
     X(PUSH_1)    /* push one */ \
+    X(PUSH_2)    /* push two */ \
+    X(PUSH_4)    /* push four */ \
+    X(PUSH_8)    /* push eight */ \
     \
     X(BRA)       /* branch always */ \
     X(CBEQ)      /* compare branch if equal */ \

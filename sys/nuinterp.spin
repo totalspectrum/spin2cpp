@@ -249,6 +249,21 @@ impl_PUSH_1
 	mov	nos, tos
   _ret_	mov	tos, #1
 	
+impl_PUSH_2
+	wrlong	nos, ptra++   ' save stack
+	mov	nos, tos
+  _ret_	mov	tos, #2
+	
+impl_PUSH_4
+	wrlong	nos, ptra++   ' save stack
+	mov	nos, tos
+  _ret_	mov	tos, #4
+
+impl_PUSH_8
+	wrlong	nos, ptra++   ' save stack
+	mov	nos, tos
+  _ret_	mov	tos, #8
+
 impl_HALT
 	cogid	pa
 	cogstop	pa

@@ -78,6 +78,12 @@ NuIr *NuEmitConst(NuIrList *irl, int32_t val) {
         r = NuEmitOp(irl, NU_OP_PUSH_0);
     } else if (val == 1) {
         r = NuEmitOp(irl, NU_OP_PUSH_1);
+    } else if (val == 2) {
+        r = NuEmitOp(irl, NU_OP_PUSH_2);
+    } else if (val == 4) {
+        r = NuEmitOp(irl, NU_OP_PUSH_4);
+    } else if (val == 8) {
+        r = NuEmitOp(irl, NU_OP_PUSH_8);
     } else if (val >= -128 && val <= 127) {
         r = NuEmitOp(irl, NU_OP_PUSHI8);
     } else if (val >= -32768 && val <= 32767) {
@@ -204,6 +210,9 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     impl_ptrs[NU_OP_PUSHI8] = "";
     impl_ptrs[NU_OP_PUSH_0] = "";
     impl_ptrs[NU_OP_PUSH_1] = "";
+    impl_ptrs[NU_OP_PUSH_2] = "";
+    impl_ptrs[NU_OP_PUSH_4] = "";
+    impl_ptrs[NU_OP_PUSH_8] = "";
     
     // find the other implementations that we may need
     while (c) {
