@@ -407,7 +407,7 @@ impl_MULS
 	getqx	nos
 	getqy	tos
   _ret_	sub	tos, tmp
-	
+
 impl_DIVU
 	qdiv	nos, tos
 	getqx	nos

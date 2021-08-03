@@ -538,6 +538,11 @@ NuCompileMul(NuIrList *irl, AST *lhs, AST *rhs, int gethi)
         // do some simple optimizations
         int r = EvalConstExpr(rhs);
         switch (r) {
+        case 1:
+            return; // nothing to do
+        case -1:
+            NuEmitOp(irl, NU_OP_NEG);
+            return;
         case 2:
             NuEmitOp(irl, NU_OP_DUP);
             NuEmitOp(irl, NU_OP_ADD);
@@ -921,7 +926,6 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
         // for now, do nothing
         break;
     case AST_STMTLIST:
-    case AST_SEQUENCE:
         NuCompileStmtlist(irl, ast);
         break;
     case AST_ASSIGN:
@@ -1003,10 +1007,6 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
     case AST_YIELD:
         /* do nothing */
         break;
-    case AST_FUNCCALL:
-        n = NuCompileExpression(irl, ast);
-        NuCompileDrop(irl, n);
-        break;
     case AST_RETURN:
         if (ast->left) {
             n = NuCompileExpression(irl, ast->left);
@@ -1024,11 +1024,18 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
         NuEmitConst(irl, n);
         NuEmitOp(irl, NU_OP_RET);
         break;
+    case AST_FUNCCALL:
     case AST_OPERATOR:
+    case AST_CAST:
+    case AST_ARRAYREF:
+    case AST_SEQUENCE:
         n = NuCompileExpression(irl, ast);
         NuCompileDrop(irl, n);
         break;
     case AST_INTEGER:
+    case AST_IDENTIFIER:
+    case AST_LOCAL_IDENTIFIER:
+    case AST_RESULT:
         /* do nothing */
         break;
     default:
