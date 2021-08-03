@@ -19,4 +19,7 @@ AST *EvalStringConst(AST *expr);
 // turn an AST stringptr into a flexbuf buffer
 void StringBuildBuffer(Flexbuf *fb, AST *expr);
 
+// print into a freshly allocated string
+char *auto_printf(size_t max,const char *format,...) __attribute__((format(printf,2,3)));
+
 #endif /* BACKEND_COMMON_H */

@@ -121,6 +121,7 @@ typedef struct nuir {
         NuIrLabel *label;
         void *ptr;
     };
+    const char *comment;
 } NuIr;
 
 typedef struct {

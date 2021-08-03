@@ -207,3 +207,13 @@ void StringBuildBuffer(Flexbuf *fb, AST *expr) {
     StringAppend(fb, expr);
     flexbuf_addchar(fb, 0);
 }
+
+// Printf that auto-allocates some space (and never frees it, lol)
+char *auto_printf(size_t max,const char *format,...) {
+    char *buffer = malloc(max);
+    va_list args;
+    va_start(args, format);
+    vsnprintf(buffer,max,format,args);
+    va_end(args);
+    return buffer;
+}

@@ -86,16 +86,6 @@ int BOB_Align(ByteOutputBuffer *buf,int alignment) {
     } else return 0;
 }
 
-// Printf that auto-allocates some space (and never frees it, lol)
-char *auto_printf(size_t max,const char *format,...) {
-    char *buffer = malloc(max);
-    va_list args;
-    va_start(args, format);
-    vsnprintf(buffer,max,format,args);
-    va_end(args);
-    return buffer;
-}
-
 // fixup bytes in an existing ByteOutputBuffer
 void BOB_FixupData(ByteOutputBuffer *bob, uint32_t fixaddr, uint8_t *data, size_t size)
 {

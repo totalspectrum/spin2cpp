@@ -7,6 +7,7 @@
 
 #include "outbc.h"
 #include "bc_spin1.h"
+#include "becommon.h"
 #include <stdlib.h>
 
 #pragma GCC diagnostic ignored "-Wmisleading-indentation" // GCC is very smart

@@ -291,24 +291,24 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
         op = ir->op;
         switch(op) {
         case NU_OP_LABEL:
-            NuOutputLabelNL(fb, ir->label);
+            NuOutputLabel(fb, ir->label);
             break;
         case NU_OP_ALIGN:
-            flexbuf_printf(fb, "\talignl\n");
+            flexbuf_printf(fb, "\talignl");
             break;
         case NU_OP_PUSHI8:
-            flexbuf_printf(fb, "\tbyte\tNU_OP_%s, %d\n", NuOpName[op], ir->val);
+            flexbuf_printf(fb, "\tbyte\tNU_OP_%s, %d", NuOpName[op], ir->val);
             break;
         case NU_OP_PUSHI16:
-            flexbuf_printf(fb, "\tbyte\tNU_OP_%s, word %d\n", NuOpName[op], ir->val);
+            flexbuf_printf(fb, "\tbyte\tNU_OP_%s, word %d", NuOpName[op], ir->val);
             break;
         case NU_OP_PUSHI32:
-            flexbuf_printf(fb, "\tbyte\tNU_OP_%s, long %d\n", NuOpName[op], ir->val);
+            flexbuf_printf(fb, "\tbyte\tNU_OP_%s, long %d", NuOpName[op], ir->val);
             break;
         case NU_OP_PUSHA:
             flexbuf_printf(fb, "\tbyte\t long NU_OP_%s | (", NuOpName[op]);
             NuOutputLabel(fb, ir->label);
-            flexbuf_printf(fb, " << 8)\n");
+            flexbuf_printf(fb, " << 8)");
             break;
         case NU_OP_BRA:
         case NU_OP_CBEQ:
@@ -323,13 +323,17 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
         case NU_OP_CBGEU:
             flexbuf_printf(fb, "\tbyte\tNU_OP_%s, word (", NuOpName[op]);
             NuOutputLabel(fb, ir->label);
-            flexbuf_printf(fb, " - ($+2))\n");
+            flexbuf_printf(fb, " - ($+2))");
             break;
         default:
             if (op < NU_OP_DUMMY) {
-                flexbuf_printf(fb, "\tbyte\tNU_OP_%s\n", NuOpName[op]);
+                flexbuf_printf(fb, "\tbyte\tNU_OP_%s", NuOpName[op]);
             }
             break;
         }
+        if (ir->comment) {
+            flexbuf_printf(fb, "\t' %s", ir->comment);
+        }
+        flexbuf_addchar(fb, '\n');
     }
 }

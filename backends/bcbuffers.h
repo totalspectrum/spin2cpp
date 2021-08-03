@@ -42,6 +42,4 @@ void BOB_FixupByte(ByteOutputBuffer *buf,uint32_t addr,uint8_t data);
 void BOB_FixupWord(ByteOutputBuffer *buf,uint32_t addr,uint16_t data);
 void BOB_FixupLong(ByteOutputBuffer *buf,uint32_t addr,uint32_t data);
 
-char *auto_printf(size_t max,const char *format,...) __attribute__((format(printf,2,3)));
-
 #endif

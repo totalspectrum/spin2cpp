@@ -102,6 +102,7 @@ static int NuCompileFunCall(NuIrList *irl, AST *node) {
     AST *objref = NULL;
     Symbol *sym;
     AST *args = node->right;
+    NuIr *ir;
     
     pushed = NuCompileExprList(irl, args);
     sym = FindFuncSymbol(node, &objref, 1);
@@ -115,20 +116,22 @@ static int NuCompileFunCall(NuIrList *irl, AST *node) {
             return 0;
         }
         if (func->body->kind == AST_BYTECODE) {
-            NuEmitNamedOpcode(irl, func->body->d.string);
+            ir = NuEmitNamedOpcode(irl, func->body->d.string);
         } else {
             // output a CALL
             NuPrepareFunctionBedata(func);
             if (func->is_static || func->module == current) {
                 // plain CALL is OK
                 NuEmitAddress(irl, FunData(func)->entryLabel);
-                NuEmitOp(irl, NU_OP_CALL);
+                ir = NuEmitOp(irl, NU_OP_CALL);
+                ir->comment = auto_printf(128, "call %s", func->name);
             } else if (func->module == systemModule) {
                 // system modules don't actually have non-static functions, we're just
                 WARNING(node, "non-static system module function called");
                 // plain CALL is OK
                 NuEmitAddress(irl, FunData(func)->entryLabel);
-                NuEmitOp(irl, NU_OP_CALL);
+                ir = NuEmitOp(irl, NU_OP_CALL);
+                ir->comment = auto_printf(128, "call %s", func->name);
             } else {
                 ERROR(node, "Unable to compile method calls");
             }
@@ -196,12 +199,15 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
     Symbol *sym = LookupAstSymbol(node,NULL);
     NuIrOpcode offsetOp = NU_OP_ADD_DBASE;
     NuIrOpcode loadOp = NU_OP_ILLEGAL;
+    NuIr *ir;
+    const char *name = NULL;
     int offset;
     
     if (!sym) {
         ERROR(node, "identifier %s not found", GetUserIdentifierName(node));
         return loadOp;
     }
+    name = sym->user_name;
     switch (sym->kind) {
     case SYM_LOCALVAR:
     case SYM_TEMPVAR:
@@ -236,7 +242,8 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
         }
         nulabel = ModData(Q)->datLabel;
         nulabel = NuIrOffsetLabel(nulabel, offset);
-        NuEmitAddress(irl, nulabel);
+        ir = NuEmitAddress(irl, nulabel);
+        ir->comment = auto_printf(128,"%s", name);
         return loadOp;
     }
     default:
@@ -245,7 +252,8 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
     }
     NuEmitConst(irl, offset);
     if (offsetOp != NU_OP_ILLEGAL) {
-        NuEmitOp(irl, offsetOp);
+        ir = NuEmitOp(irl, offsetOp);
+        ir->comment = auto_printf(128,"addr of %s", name);
     }
     return loadOp;
 }
@@ -825,7 +833,7 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
         NuCompileStmtlist(irl, thenelse->left);
         if (thenelse->right) {
             bottomlbl = NuCreateLabel();
-            NuEmitBranch(irl, NU_OP_BRA, elselbl);
+            NuEmitBranch(irl, NU_OP_BRA, bottomlbl);
             NuEmitLabel(irl, elselbl);
             NuCompileStmtlist(irl, thenelse->right);
         } else {
