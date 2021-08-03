@@ -454,6 +454,25 @@ static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs)
     return op;
 }
 
+/* pop multiple things off the stack, in reverse order */
+static int NuPopMultiple(NuIrList *irl, AST *lhs) {
+    int popped = 0;
+    NuIrOpcode op;
+    if (!lhs) return 0;
+    if (lhs->kind == AST_EXPRLIST) {
+        popped = NuPopMultiple(irl, lhs->right);
+        op = NuCompileLhsAddress(irl, lhs->left);
+        if (op == NU_OP_ILLEGAL) {
+            ERROR(lhs->left, "Do not know how to store into this yet");
+        } else {
+            NuEmitOp(irl, op);
+        }
+        return popped+1;
+    }
+    ERROR(lhs, "Cannot handle multiple assignment to single item yet");
+    return 0;
+}
+
 /* compile assignment */
 /* returns number of longs left on stack */
 static int NuCompileAssign(NuIrList *irl, AST *ast, int inExpression)
@@ -469,12 +488,23 @@ static int NuCompileAssign(NuIrList *irl, AST *ast, int inExpression)
     n = NuCompileExpression(irl, rhs);
     if (n == 0) {
         ERROR(rhs, "Assignment from void value");
-    } else if (n != 1) {
-        ERROR(rhs, "multiple assignment not handled yet");
+        return 1;
+    } else if (n != 1 && inExpression) {
+        ERROR(rhs, "multiple assignment inside expression not handled yet");
+        return n;
     }
     if (inExpression) {
         NuEmitOp(irl, NU_OP_DUP); // leave last value on stack
     }
+    if (n > 1) {
+        // handle multiple assignments
+        int got = NuPopMultiple(irl, lhs);
+        if (got != n) {
+            ERROR(rhs, "Expected to assign %d items but only did %d", n, got);
+        }
+        return got;
+    }
+    // single assignment
     op = NuCompileLhsAddress(irl, lhs);
     if (op == NU_OP_ILLEGAL) {
         ERROR(lhs, "Do not know how to store into this yet");
@@ -791,6 +821,9 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         NuEmitOp(irl, NU_OP_LDREG);
         pushed = 1;
     } break;
+    case AST_EXPRLIST: {
+        pushed = NuCompileExprList(irl, node);
+    } break;
     default:
         ERROR(node, "Unknown expression node %d\n", node->kind);
         return 0;
@@ -974,7 +1007,12 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
     case AST_RETURN:
         if (ast->left) {
             n = NuCompileExpression(irl, ast->left);
+        } else if (curfunc->numresults && curfunc->result_declared) {
+            // RETURN without arguments, in a function with declared results,
+            // gets changed to RETURN result
+            n = NuCompileExpression(irl, curfunc->resultexpr);
         } else {
+            // plain RETURN
             n = 0;
         }
         if (n != curfunc->numresults) {

@@ -96,12 +96,56 @@ pri _txraw(c) | z
   while z == 0
   return 1
 
-'
-' memset(): we may want to optimize this to use longfill in special cases?
-'
-pri __builtin_memset(ptr, val, count) : r
+''
+'' memset/memmove are here (in processor specific code)
+'' because on P2 we can optimize them (long operations do
+'' not have to be aligned)
+''
+pri __builtin_memset(ptr, val, count) : r | lval
   r := ptr
-  bytefill(ptr, val, count)
+  lval := (val << 8) | val
+  lval := (lval << 16) | lval
+  repeat while (count > 3)
+    long[ptr] := lval
+    ptr += 4
+    count -= 4
+  repeat count
+    byte[ptr] := val
+    ptr += 1
+    
+pri __builtin_memmove(dst, src, count) : origdst
+  origdst := dst
+  if (dst < src)
+    repeat while (count > 3)
+      long[dst] := long[src]
+      dst += 4
+      src += 4
+      count -= 4
+    repeat count
+      byte[dst] := byte[src]
+      dst += 1
+      src += 1
+  else
+    dst += count
+    src += count
+    repeat count
+      dst -= 1
+      src -= 1
+      byte[dst] := byte[src]
+
+'
+' should these be builtins for NuCode as well?
+'
+pri longfill(ptr, val, count)
+  repeat count
+    long[ptr] := val
+    ptr += 4
+pri wordfill(ptr, val, count)
+  repeat count
+    word[ptr] := val
+    ptr += 2
+pri bytefill(ptr, val, count)
+  __builtin_memset(ptr, val, count)
 
 pri _lockmem(addr) | oldlock, oldmem, lockreg
   lockreg := __getlockreg
