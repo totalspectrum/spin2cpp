@@ -19,6 +19,7 @@ static void BCAddStaticReference(Module *P, AST *obj);
 bool interp_can_multireturn() {
     switch(gl_interp_kind) {
     case INTERP_KIND_P1ROM: return false;
+    case INTERP_KIND_NUCODE: return true;
     default:
         ERROR(NULL,"Unknown interpreter kind");
         return false;
@@ -28,6 +29,7 @@ bool interp_can_multireturn() {
 bool interp_can_unsigned() {
     switch(gl_interp_kind) {
     case INTERP_KIND_P1ROM: return false;
+    case INTERP_KIND_NUCODE: return true;
     default:
         ERROR(NULL,"Unknown interpreter kind");
         return false;

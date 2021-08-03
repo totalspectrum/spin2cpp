@@ -75,6 +75,7 @@
     X(WXPIN)     /* smart pin write */ \
     X(WYPIN)     /* smart pin write */ \
     \
+    X(GETCT)     /* get current cycle counter */ \
     X(WAITX)     /* delay for tos cycles */ \
     X(WAITCNT)   /* wait for a particular cycle */ \
     \

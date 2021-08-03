@@ -408,6 +408,10 @@ impl_PUSHI8
 	rdbyte	tos, ptrb++
   _ret_	signx	tos, #7
 
+impl_GETCT
+	call	#\impl_DUP
+  _ret_ getct	tos
+
 impl_WAITX
 	waitx	tos
 	jmp	#\impl_DROP

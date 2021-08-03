@@ -127,7 +127,7 @@ static int NuCompileFunCall(NuIrList *irl, AST *node) {
                 ir->comment = auto_printf(128, "call %s", func->name);
             } else if (func->module == systemModule) {
                 // system modules don't actually have non-static functions, we're just
-                WARNING(node, "non-static system module function called");
+                //WARNING(node, "non-static system module function called");
                 // plain CALL is OK
                 NuEmitAddress(irl, FunData(func)->entryLabel);
                 ir = NuEmitOp(irl, NU_OP_CALL);
