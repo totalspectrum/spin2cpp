@@ -8,9 +8,6 @@ pri _rxraw(timeout = 0)
     timeout *= __clkfreq_var >> 10
   return -1
 
-pri _cogchk(id)
-  return -1
-  
 ''
 '' divide (n, nlo) by d, producing qlo and rlo (used in FRAC operation)
 ''
@@ -32,6 +29,12 @@ pri _cogid : r = long
 pri _cogstop
   __bytecode__("COGSTOP")
 
+pri _cogchk(id) : r
+  __bytecode__("COGCHK")
+
+pri _muldiv64(mult1, mult2, divisor) : r
+  __bytecode__("MULDIV64")
+  
 pri _drvl(pin)
   __bytecode__("DRVL")
 pri _drvh(pin)

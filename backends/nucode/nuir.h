@@ -36,10 +36,16 @@
     X(SHR)       /* tos := nos >> tos (unsigned right shift) */ \
     X(SAR)       /* tos := nos SAR tos (signed right shift) */ \
     \
+    X(MINS)      /* tos := min(nos, tos) (signed) */ \
+    X(MAXS)      /* tos := max(nos, tos) (signed) */ \
+    X(MINU)      /* tos := min(nos, tos) (unsigned) */ \
+    X(MAXU)      /* tos := max(nos, tos) (unsigned) */ \
+    \
     X(MULU)      /* unsigned multiply: leaves low, high on stack */ \
     X(MULS)      /* signed multiply:   leaves low, high on stack */ \
     X(DIVU)      /* unsigned divide: leaves quotient, remainder on stack */ \
     X(DIVS)      /* signed divide:   leaves quotient, remainder on stack */ \
+    X(MULDIV64)  /* calculate a*b/c with full precision */ \
     \
     X(NEG)       /* negate tos */ \
     X(NOT)       /* bit complement tos */ \

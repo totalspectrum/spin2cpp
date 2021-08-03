@@ -62,6 +62,18 @@ NuIrOffsetLabel(NuIrLabel *base, int offset) {
     return r;
 }
 
+static NuIrLabel *NuGetLabelFromSymbol(AST *where, const char *name) {
+    Symbol *sym = FindSymbol(&curfunc->localsyms, name);
+    if (!sym || sym->kind != SYM_LOCALLABEL) {
+        ERROR(where, "%s is not a label in this function", name);
+        return NULL;
+    }
+    if (!sym->val) {
+        sym->val = (void *)NuCreateLabel();
+    }
+    return (NuIrLabel *)sym->val;
+}
+
 static void
 NuPrepareModuleBedata(Module *P) {
     // Init bedata
@@ -132,14 +144,22 @@ static int NuCompileFunCall(NuIrList *irl, AST *node) {
                 NuEmitAddress(irl, FunData(func)->entryLabel);
                 ir = NuEmitOp(irl, NU_OP_CALL);
                 ir->comment = auto_printf(128, "call %s", func->name);
+            } else if (objref) {
+                // compile a method call
+                NuCompileLhsAddress(irl, objref);
+                NuEmitAddress(irl, FunData(func)->entryLabel);
+                ir = NuEmitOp(irl, NU_OP_CALLM);
+                ir->comment = auto_printf(128, "call method %s", func->name);                
             } else {
                 ERROR(node, "Unable to compile method calls");
             }
         }
+    } else if (node->left && IsIdentifier(node->left) && !LookupAstSymbol(node->left, NULL)) {
+            ERROR(node, "Unknown symbol %s", GetUserIdentifierName(node->left));
     } else {
         functype = ExprType(node->left);
         (void)functype;
-        ERROR(node, "Unable to compile indirect function calls");
+        ERROR(node, "Unable to compile indirect function call %s", GetUserIdentifierName(node->left));
         return 0;
     }
     return pushed;
@@ -409,6 +429,13 @@ static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs)
     case AST_LOCAL_IDENTIFIER:
         op = NuCompileIdentifierAddress(irl, lhs, 0);
         break;
+    case AST_RESULT:
+        if (LookupSymbolInTable(&curfunc->localsyms, "result")) {
+            op = NuCompileIdentifierAddress(irl, AstIdentifier("result"), 0);
+        } else {
+            ERROR(lhs, "cannot handle RESULT keyword yet");
+        }
+        break;
     case AST_ARRAYREF:
         op = NuCompileArrayAddress(irl, lhs, 0);
         break;
@@ -640,6 +667,10 @@ NuCompileOperator(NuIrList *irl, AST *node) {
         case K_SHL: NuEmitOp(irl, NU_OP_SHL); break;
         case K_SHR: NuEmitOp(irl, NU_OP_SHR); break;
         case K_SAR: NuEmitOp(irl, NU_OP_SAR); break;
+        case K_LIMITMIN: NuEmitOp(irl, NU_OP_MINS); break;
+        case K_LIMITMAX: NuEmitOp(irl, NU_OP_MAXS); break;
+        case K_LIMITMIN_UNS: NuEmitOp(irl, NU_OP_MINU); break;
+        case K_LIMITMAX_UNS: NuEmitOp(irl, NU_OP_MAXU); break;
         case K_ZEROEXTEND: NuEmitOp(irl, NU_OP_ZEROX); break;
         case K_SIGNEXTEND: NuEmitOp(irl, NU_OP_SIGNX); break;
         default:
@@ -648,6 +679,33 @@ NuCompileOperator(NuIrList *irl, AST *node) {
         }
     }
     return pushed;
+}
+
+/* returns number of longs pushed on stack */
+static int NuCompileCondResult(NuIrList *irl, AST *expr) {
+    AST *cond = expr->left;
+    AST *ifpart = expr->right->left;
+    AST *elsepart = expr->right->right;
+    NuIrLabel *label1 = NuCreateLabel();
+    NuIrLabel *label2 = NuCreateLabel();
+    int n_if, n_else;
+    
+    NuCompileBoolBranches(irl, cond, NULL, label1);
+
+    /* the default is the IF part */
+    n_if = NuCompileExpression(irl, ifpart);
+    NuEmitBranch(irl, NU_OP_BRA, label2);
+
+    /* here is the else part */
+    NuEmitLabel(irl, label1);
+    n_else = NuCompileExpression(irl, elsepart);
+    NuEmitLabel(irl, label2);
+
+    if (n_if != n_else) {
+        ERROR(expr, "different number of results in ?: sides");
+    }
+    
+    return n_if;
 }
 
 /* returns number of longs pushed on stack */
@@ -694,6 +752,7 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         pushed = NuCompileOperator(irl, node);
     } break;
     case AST_ABSADDROF:
+    case AST_ADDROF:
     {
         (void)NuCompileLhsAddress(irl, node->left); // don't care about load op, we will not use it
         pushed = 1;
@@ -723,6 +782,15 @@ NuCompileExpression(NuIrList *irl, AST *node) {
     case AST_ASSIGN:
         pushed = NuCompileAssign(irl, node, 1);
         break;
+    case AST_CONDRESULT:
+        pushed = NuCompileCondResult(irl, node);
+        break;
+    case AST_HWREG: {
+        HwReg *hw = (HwReg *)node->d.ptr;
+        NuEmitConst(irl, hw->addr);
+        NuEmitOp(irl, NU_OP_LDREG);
+        pushed = 1;
+    } break;
     default:
         ERROR(node, "Unknown expression node %d\n", node->kind);
         return 0;
@@ -823,6 +891,18 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
     case AST_ASSIGN:
         NuCompileAssign(irl, ast, 0);
         break;
+    case AST_GOTO: {
+        NuIrLabel *lab = NuGetLabelFromSymbol( ast, GetUserIdentifierName(ast->left) );
+        if (lab) {
+            NuEmitBranch(irl, NU_OP_BRA, lab);
+        }
+    } break;
+    case AST_LABEL: {
+        NuIrLabel *lab = NuGetLabelFromSymbol( ast, GetUserIdentifierName(ast->left) );
+        if (lab) {
+            NuEmitLabel(irl, lab);
+        }
+    } break;
     case AST_IF: {
         NuIrLabel *elselbl = NuCreateLabel();
         NuIrLabel *bottomlbl;

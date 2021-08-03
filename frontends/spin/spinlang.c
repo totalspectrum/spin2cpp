@@ -94,7 +94,7 @@ TransformLongMove(AST **astptr, AST *ast)
     if (ast || !count) return false;
     if (!IsConstExpr(count)) return false;
     n = EvalConstExpr(count);
-    if (n > (gl_output == OUTPUT_BYTECODE ? LONGMOVE_THRESHOLD_BYTECODE : LONGMOVE_THRESHOLD) || n <= 0) return false;
+    if (n > ( (gl_output == OUTPUT_BYTECODE && gl_interp_kind != INTERP_KIND_NUCODE) ? LONGMOVE_THRESHOLD_BYTECODE : LONGMOVE_THRESHOLD) || n <= 0) return false;
 
     // check src and dst
     if (src->kind != AST_ADDROF && src->kind != AST_ABSADDROF) return false;

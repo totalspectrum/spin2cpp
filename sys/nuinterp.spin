@@ -347,6 +347,22 @@ impl_SAR
 	mov	tos, nos
  _ret_	rdlong	nos, --ptra
 
+impl_MINS
+	mins	tos, nos
+ _ret_	rdlong	nos, --ptra
+
+impl_MAXS
+	maxs	tos, nos
+ _ret_	rdlong	nos, --ptra
+
+impl_MINU
+	min	tos, nos
+ _ret_	rdlong	nos, --ptra
+
+impl_MAXU
+	max	tos, nos
+ _ret_	rdlong	nos, --ptra
+
 impl_MULU
 	qmul	nos, tos
 	getqx	nos
@@ -378,6 +394,18 @@ impl_DIVS
   if_c	neg	tos, tos
   	test	tmp, #1 wc
   _ret_	negc	nos, nos
+
+impl_MULDIV64
+	' 3 things on stack: nnos=mult1, nos=mult2, tos=divisor
+	mov	tmp, tos
+	call	#\impl_DROP	' now nos=mult1, tos=mult2, tmp=divisor
+	qmul	nos, tos
+	getqy	nos
+	getqx	tos
+	setq	nos
+	qdiv	tos, tmp
+	call	#\impl_DROP
+  _ret_	getqx	tos
 
 impl_NEG
   _ret_	neg	tos, tos

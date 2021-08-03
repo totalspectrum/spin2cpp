@@ -223,6 +223,8 @@ extern int gl_interp_kind;
 #define OUTPUT_OBJ  5     /* outputs an object file */
 #define OUTPUT_BYTECODE 6
 
+#define OutputIsNucode() (gl_output == OUTPUT_BYTECODE && gl_interp_kind == INTERP_KIND_NUCODE)
+
 /* flags for output */
 #define OUTFLAG_COG_CODE 0x01
 #define OUTFLAG_COG_DATA 0x02

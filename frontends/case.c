@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2020 Total Spectrum Software Inc.
+ * Copyright 2011-2021 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -385,7 +385,7 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
     if (gl_output == OUTPUT_C || gl_output == OUTPUT_CPP) {
         return NULL;
     }
-    if (!force_reason && gl_output == OUTPUT_BYTECODE && !(curfunc->optimize_flags & OPT_CASETABLE)) {
+    if (!force_reason && gl_output == OUTPUT_BYTECODE && !(gl_interp_kind == INTERP_KIND_NUCODE) && !(curfunc->optimize_flags & OPT_CASETABLE)) {
         // Don't auto-convert normal CASEs in bytecode mode by default
         return NULL;
     }
@@ -562,7 +562,7 @@ CreateSwitch(AST *origast, const char *force_reason)
         use_expr = expr;
         tmpvar = NewAST(AST_EMPTY,NULL,NULL);
         filterCases = 1;
-    } else if (gl_output == OUTPUT_BYTECODE) {
+    } else if (gl_output == OUTPUT_BYTECODE && !(gl_interp_kind == INTERP_KIND_NUCODE)) {
         use_expr = NewAST(AST_CASEEXPR,AstTempIdentifier("_caseexpr"),NULL);
         tmpvar = use_expr; // Assigning to AST_CASEEXPR can't compile to anything meaningful and thus it should not leave this function...
         filterCases = 0;
