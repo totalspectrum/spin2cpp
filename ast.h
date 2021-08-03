@@ -222,6 +222,7 @@ enum astkind {
     AST_CASEEXPR = 157, // Represents the hidden variable in a bytecode CASE. Very terrible hack.
     AST_BYTECODE = 158, // a raw bytecode opcode, used in sys/
     AST_SAMETYPES = 159, // BASIC compile time type checking _sametypes(T, long)
+    AST_HASMETHOD = 160, // BASIC compile time checking, _hasmethod(T, identifier)
 };
 
 /* forward reference */

@@ -204,6 +204,7 @@ __function__
 get
 gosub
 goto
+_hasmethod
 if
 import
 input
@@ -874,6 +875,50 @@ This declares a family of functions `mymin__T`, where `T` can be any type. Whene
    print mymin(1.7, 2.4), mymin("zzz", "aaa")
 ```
 will create functions `mymin__single` and `mymin__string` which will be called and ultimately cause `1.7` and `aaa` to be printed.
+
+### Selecting code based on type properties
+
+Within a template the builtin functions `_SameTypes` and `_HasMethod` may be used to check properties of the types passed to the templates. For example, a templated function to concatenate values as strings might be written:
+```
+any(T) function concat(a as T, b as T) as string
+  if _SameTypes(T, string) then
+    return a+b
+  else if _SameTypes(T, integer) then
+    return strInt$(a)+strInt$(b)
+  else if _HasMethod(T, asString) then
+    return a.asString() + b.asString()
+  else
+    return "do not know how to concatenate these"
+  end if
+end function
+```
+We could use this like:
+```
+class point
+  dim x, y as single
+  function asString() as string
+    return "(" + str$(x) + ", " + str$(y) + ")"
+  end function
+  sub set(x0 as single, y0 as single)
+    x, y = x0, y0
+  end sub
+end class
+
+dim as point P, Q
+
+P.set(-9.1, +2.0)
+Q.set(0.5, 0.1)
+
+print concat(1, 2)
+print concat("hi ", "there")
+print concat(P, Q)
+```
+which will print:
+```
+12
+hi there
+(-9.1, 2)(-0.5, 0.1)
+```
 
 ## Libraries
 
@@ -2001,6 +2046,24 @@ whereas
    bar
 ```
 is a label `foo` followed by a statement `bar`.
+
+### _HASMETHOD
+
+A special keyword which may be used to check whether a types has a particular method. This is mainly useful for checking the types passed to template functions and selecting alternatives. For example, a template for showing data in a class might be written:
+```
+any(T) sub show(x as T)
+  if _SameTypes(T, long) or _SameTypes(T, short) then
+    print "integer: "; x
+  else if _HasMethod(T, asInt) then
+    print "object as integer: "; x.asInt()
+  else if _HasMethod(T, asString) then
+    print "object as string: "; x.asString()
+  else
+    print "do not know how to show values of this type"
+  end if
+end function
+```
+Then if `x` is a value of some class which contains either an `asInt` or `asString` method, then `show(x)` may be used to print `x` out. If the class has both methods, the first one chosen (in this case (`asInt`)) will be used.
 
 ### HEAPSIZE
 ```

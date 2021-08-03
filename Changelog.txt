@@ -6,14 +6,12 @@ Version 6.0.0
 - Added "ASM_CONST" keyword to Spin
 - Added optimization for x==x in integer code
 - Added check for re-defining member variables in classes
-- Added _SameTypes() function to BASIC to check data types
+- Added _SameTypes() and _HasMethod() functions to BASIC to check data types
 - Changed "ASM CONST" to "CONST ASM" in BASIC
 - Fixed multiple assignments in Spin (a:=b:=c) to have the same semantics as Spin
 - Fixed template functions so BASIC "string" type is preserved
 - Improved --interp=rom (Spin1 bytecode output) to run more programs
-- New optimization: -Oremove-features removes advanced file I/O
-features if not needed by the program; this can save a lot of
-space. Enabled by default in -O1.
+- New optimization: -Oremove-features removes advanced file I/O features if not needed by the program; this can a lot of space. Enabled by default in -O1.
 
 Version 5.5.2
 - Added cpustop for BASIC

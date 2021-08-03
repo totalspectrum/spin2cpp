@@ -1955,6 +1955,7 @@ struct reservedword basic_keywords[] = {
   { "get", BAS_GET },
   { "goto", BAS_GOTO },
   { "gosub", BAS_GOSUB },
+  { "_hasmethod", BAS_HASMETHOD },
   { "if", BAS_IF },
   { "import", BAS_IMPORT },
   { "input", BAS_INPUT },

@@ -2892,7 +2892,7 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
             offset = NULL; // no need to update object
         } else {
             if (abstract && objptr && funcptr) {
-                ERROR(expr, "function call requires real object");
+                ERROR(expr, "function call requires real object, not an abstract class");
             }
         }
     }

@@ -3324,7 +3324,40 @@ fixupFunctype(AST *pairs, AST *orig)
   }
 }
 
-  
+/* optimize template instantiations by evaluating constant "if" expressions */
+/* this is important for removing stuff protected by _SameTypes() and _HasMethod();
+ * we don't want later code to see syntax errors due to missing methods
+ */
+
+static AST *
+ReduceTemplateConstants(AST *body)
+{
+    AST *cond;
+    if (!body) return body;
+    switch (body->kind) {
+    case AST_IF:
+    case AST_CONDRESULT:
+        body->left = ReduceTemplateConstants(body->left);
+        body->right = ReduceTemplateConstants(body->right);
+        cond = body->left;
+        if (IsConstExpr(cond)) {
+            AST *ifpart = body->right->left;
+            AST *elsepart = body->right->right;
+            if (EvalConstExpr(cond)) {
+                return ifpart;
+            } else {
+                return elsepart;
+            }
+        }
+        break;
+    default:
+        body->left = ReduceTemplateConstants(body->left);
+        body->right = ReduceTemplateConstants(body->right);
+        break;
+    }
+    return body;
+}
+
 /*
  * instantiate a template function call
  * types are deduced from the types in the provided function call
@@ -3365,6 +3398,7 @@ InstantiateTemplateFunction(Module *P, AST *templ, AST *call)
     current = P;
     functype = fixupFunctype(pairs, DupASTTypeSafe(functype));
     body = fixupFunctype(pairs, DupASTTypeSafe(body));
+    body = ReduceTemplateConstants(body);
     funcblock = DeclareTypedFunction(P, functype, ident, 1, body, NULL, NULL);
     fdef = doDeclareFunction(funcblock);
     if (fdef) {

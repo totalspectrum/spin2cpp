@@ -427,6 +427,7 @@ AdjustParamForByVal(AST *param)
 %token BAS_GET        "get"
 %token BAS_GOTO       "goto"
 %token BAS_GOSUB      "gosub"
+%token BAS_HASMETHOD  "_hasmethod"
 %token BAS_IF         "if"
 %token BAS_IMPORT     "import"
 %token BAS_INPUT      "input"
@@ -1571,6 +1572,12 @@ pseudofunc_expr:
         elist = NewAST(AST_EXPRLIST, immval, NULL);
         elist = AddToList(elist, $3);
         $$ = NewAST(AST_COGINIT, elist, NULL);
+    }
+  | BAS_HASMETHOD '(' typename ',' BAS_IDENTIFIER ')'
+    {
+        AST *typnam = $3;
+        AST *ident = $5;
+        $$ = NewAST(AST_HASMETHOD, typnam, ident);
     }
   | BAS_SAMETYPES '(' typename ',' typename ')'
     {

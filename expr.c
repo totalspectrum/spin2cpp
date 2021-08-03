@@ -1393,6 +1393,21 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
         } else {
             return floatExpr(intAsFloat(expr->d.ival));
         }
+    case AST_HASMETHOD:
+    {
+        Symbol *sym;
+        AST *T = ExprType(expr->left);
+        if (!T || !IsClassType(T)) {
+            return intExpr(0);
+        }
+        Module *Q = GetClassPtr(T);
+        if (!Q) return intExpr(0);
+        sym = LookupSymbolInTable(&Q->objsyms, GetUserIdentifierName(expr->right));
+        if (!sym || sym->kind != SYM_FUNCTION) {
+            return intExpr(0);
+        }
+        return intExpr(1);
+    }
     case AST_SAMETYPES:
     {
         return intExpr(AstMatch(expr->left, expr->right));

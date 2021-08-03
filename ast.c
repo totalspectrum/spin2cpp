@@ -749,6 +749,9 @@ static const char *astnames[] = {
     "func_name",
     "caseexpr_variable",
     "bytecode",
+    "_sametypes",
+
+    "_hasmethod",
 };
 
 //
