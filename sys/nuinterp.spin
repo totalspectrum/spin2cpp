@@ -86,8 +86,8 @@ continue_startup
 	jmp    #start_lut
 
 	org    $1e0
-tos	res    1
 nos	res    1
+tos	res    1
 tmp	res    1
 tmp2	res    1
 vbase	res    1
@@ -348,19 +348,19 @@ impl_SAR
  _ret_	rdlong	nos, --ptra
 
 impl_MINS
-	mins	tos, nos
+	fges	tos, nos
  _ret_	rdlong	nos, --ptra
 
 impl_MAXS
-	maxs	tos, nos
+	fles	tos, nos
  _ret_	rdlong	nos, --ptra
 
 impl_MINU
-	min	tos, nos
+	fge	tos, nos
  _ret_	rdlong	nos, --ptra
 
 impl_MAXU
-	max	tos, nos
+	fle	tos, nos
  _ret_	rdlong	nos, --ptra
 
 impl_MULU
