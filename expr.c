@@ -1386,7 +1386,13 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
     case AST_BITVALUE:
         return intExpr(expr->d.ival);
     case AST_SIZEOF:
-        return intExpr(TypeSize(ExprType(expr->left)));
+    {
+        AST *typ = ExprType(expr->left);
+        if (!typ) {
+            ERROR(expr, "Unknown type for sizeof");
+        }
+        return intExpr(TypeSize(typ));
+    }
     case AST_FLOAT:
         if (gl_fixedreal) {
             return fixedExpr(expr->d.ival);

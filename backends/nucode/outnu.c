@@ -1047,7 +1047,8 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
 static void
 NuCompileFunction(Function *F) {
     NuIrList *irl;
-
+    Function *saveFunc = curfunc;
+    
     curfunc = F;
 
     NuPrepareFunctionBedata(F);
@@ -1060,9 +1061,11 @@ NuCompileFunction(Function *F) {
         WARNING(NULL,"compiling function %s which is just a reference",F->name);
     } else if (F->body->kind == AST_BYTECODE) {
         // do nothing
+        curfunc = saveFunc;
         return;
     } else if (F->body->kind != AST_STMTLIST) {
         ERROR(F->body,"Internal Error: Expected AST_STMTLIST, got id %d",F->body->kind);
+        curfunc = saveFunc;
         return;
     } else {
         if (F->closure) {
@@ -1118,6 +1121,7 @@ NuCompileFunction(Function *F) {
             }
         }
     }
+    curfunc = saveFunc;
 }
 
 static void NuConvertFunctions(Module *P) {
@@ -1145,8 +1149,8 @@ static void NuCompileObject(struct flexbuf *fb, Module *P) {
     if (P->datblock) {
         // Got DAT block
         // TODO pass through listing data
-        Flexbuf datBuf;
-        Flexbuf datRelocs;
+        Flexbuf datBuf = {0};
+        Flexbuf datRelocs = {0};
 
         flexbuf_init(&datBuf,2048);
         flexbuf_init(&datRelocs,1024);
