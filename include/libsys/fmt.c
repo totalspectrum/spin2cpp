@@ -950,7 +950,7 @@ int _basic_open(unsigned h, TxFunc sendf, RxFunc recvf, CloseFunc closef)
     }
 
     if (sendf) {
-        wrapper = _gc_alloc_managed(sizeof(_bas_wrap_sender));
+        wrapper = _gc_alloc_managed(sizeof(BasicWrapper));
         if (!wrapper) {
             THROW_RETURN(ENOMEM); /* out of memory */
         }
