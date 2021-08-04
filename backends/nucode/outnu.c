@@ -17,7 +17,7 @@ static void NuCompileStmtlist(NuIrList *irl, AST *ast); // forward declaration
 static int NuCompileExpression(NuIrList *irl, AST *ast); // returns number of items left on stack
 static int NuCompileExprList(NuIrList *irl, AST *ast); // returns number of items left on stack
 static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs); // returns op used for loading
-static void NuCompileMul(NuIrList *irl, AST *lhs, AST *rhs, int gethi);
+static int NuCompileMul(NuIrList *irl, AST *lhs, AST *rhs, int gethi);
 
 typedef struct NuLabelList {
     struct NuLabelList *next;
@@ -548,7 +548,7 @@ static int NuCompileAssign(NuIrList *irl, AST *ast, int inExpression)
     return inExpression;
 }
 
-static void
+static int
 NuCompileMul(NuIrList *irl, AST *lhs, AST *rhs, int gethi)
 {
     int isUnsigned = (gethi & 2);
@@ -560,7 +560,7 @@ NuCompileMul(NuIrList *irl, AST *lhs, AST *rhs, int gethi)
     if (IsConstExpr(lhs)) {
         if (IsConstExpr(rhs)) {
             NuEmitConst(irl, EvalConstExpr(lhs) * EvalConstExpr(rhs));
-            return;
+            return 1;
         }
         tmp = lhs; lhs = rhs; rhs = tmp;
     }
@@ -570,32 +570,32 @@ NuCompileMul(NuIrList *irl, AST *lhs, AST *rhs, int gethi)
         int r = EvalConstExpr(rhs);
         switch (r) {
         case 1:
-            return; // nothing to do
+            return 1; // nothing to do
         case -1:
             NuEmitOp(irl, NU_OP_NEG);
-            return;
+            return 1;
         case 2:
             NuEmitOp(irl, NU_OP_DUP);
             NuEmitOp(irl, NU_OP_ADD);
-            return;
+            return 1;
         case 3:
             NuEmitOp(irl, NU_OP_DUP);
             NuEmitOp(irl, NU_OP_DUP);
             NuEmitOp(irl, NU_OP_ADD);
             NuEmitOp(irl, NU_OP_ADD);
-            return;
+            return 1;
         case 4:
             NuEmitConst(irl, 2);
             NuEmitOp(irl, NU_OP_SHL);
-            return;
+            return 1;
         case 8:
             NuEmitConst(irl, 3);
             NuEmitOp(irl, NU_OP_SHL);
-            return;
+            return 1;
         case 16:
             NuEmitConst(irl, 4);
             NuEmitOp(irl, NU_OP_SHL);
-            return;
+            return 1;
         default:
             break;
         }
@@ -611,13 +611,12 @@ NuCompileMul(NuIrList *irl, AST *lhs, AST *rhs, int gethi)
         NuEmitOp(irl, NU_OP_SWAP);
     }
     NuEmitOp(irl, NU_OP_DROP);
+    return 1;
 }
 
-static void
-NuCompileDiv(NuIrList *irl, AST *expr, int gethi)
+static int
+NuCompileDiv(NuIrList *irl, AST *lhs, AST *rhs, int gethi)
 {
-    AST *lhs = expr->left;
-    AST *rhs = expr->right;
     int isUnsigned = (gethi & 2);
     int needHi = (gethi & 1);
 
@@ -634,6 +633,7 @@ NuCompileDiv(NuIrList *irl, AST *expr, int gethi)
         NuEmitOp(irl, NU_OP_SWAP);
     }
     NuEmitOp(irl, NU_OP_DROP);
+    return 1;
 }
 
 /* returns number of longs pushed on stack */
@@ -707,6 +707,13 @@ NuCompileOperator(NuIrList *irl, AST *node) {
             NuEmitOp(irl, NU_OP_SWAP); // stack has (newV) (newV) A
             NuEmitOp(irl, stOp);      // stack has newV
         }
+    } else if (optoken == '*') {            pushed = NuCompileMul(irl, node->left, node->right, 0);
+    } else if (optoken == K_HIGHMULT) {     pushed = NuCompileMul(irl, node->left, node->right, 1);
+    } else if (optoken == K_UNS_HIGHMULT) { pushed = NuCompileMul(irl, node->left, node->right, 3);
+    } else if (optoken == '/') {            pushed = NuCompileDiv(irl, node->left, node->right, 0);
+    } else if (optoken == K_MODULUS) {      pushed = NuCompileDiv(irl, node->left, node->right, 1);
+    } else if (optoken == K_UNS_DIV) {      pushed = NuCompileDiv(irl, node->left, node->right, 2);
+    } else if (optoken == K_UNS_MOD) {      pushed = NuCompileDiv(irl, node->left, node->right, 3);
     } else {
         if (lhs) {
             pushed += NuCompileExpression(irl, lhs);
@@ -723,13 +730,6 @@ NuCompileOperator(NuIrList *irl, AST *node) {
         case K_ABS: NuEmitOp(irl, NU_OP_ABS); break;
         case '+': NuEmitOp(irl, NU_OP_ADD); break;
         case '-': NuEmitOp(irl, NU_OP_SUB); break;
-        case '*': NuCompileMul(irl, node->left, node->right, 0); break;
-        case K_HIGHMULT: NuCompileMul(irl, node->left, node->right, 1); break;
-        case K_UNS_HIGHMULT: NuCompileMul(irl, node->left, node->right, 3); break;
-        case '/': NuCompileDiv(irl, node, 0); break;
-        case K_MODULUS: NuCompileDiv(irl, node, 1); break;
-        case K_UNS_DIV: NuCompileDiv(irl, node, 2); break;
-        case K_UNS_MOD: NuCompileDiv(irl, node, 3); break;
         case '&': NuEmitOp(irl, NU_OP_AND); break;
         case '|': NuEmitOp(irl, NU_OP_IOR); break;
         case '^': NuEmitOp(irl, NU_OP_XOR); break;
