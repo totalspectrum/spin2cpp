@@ -199,3 +199,13 @@ pri _lookdown(x, b, arr, n) | i
       return i+b
     arr += 4
   return 0
+
+'
+' random number generators
+'
+pri _lfsr_forward(x) : r
+  __bytecode__("LFSR_F")
+
+pri _lfsr_backward(x) : r
+  __bytecode__("LFSR_R")
+

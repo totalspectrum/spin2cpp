@@ -2522,62 +2522,12 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
   case K_ONES_COUNT:
   case K_SCAS:
   case K_FRAC64:
+  case K_QEXP:
+  case K_QLOG:
+  case '?':
   {
       ERROR(expr, "Internal error: Unexpected operator 0x%x found, should have been converted to function", op);
       return EmptyOperand();
-  }
-  case K_QLOG:
-  {
-      AST *fcall;
-      ASTReportInfo saveinfo;
-      
-      if (!gl_p2) {
-          ERROR(expr, "QLOG only supported on P2");
-          return EmptyOperand();
-      }
-      AstReportAs(expr, &saveinfo);
-      fcall = NewAST(AST_FUNCCALL, AstIdentifier("_qlog"),
-                     NewAST(AST_EXPRLIST, expr->right, NULL));
-      left = CompileFunccallFirstResult(irl, fcall);
-      AstReportDone(&saveinfo);
-      return left;
-  }
-  case K_QEXP:
-  {
-      AST *fcall;
-      ASTReportInfo saveinfo;
-      
-      if (!gl_p2) {
-          ERROR(expr, "QEXP only supported on P2");
-          return EmptyOperand();
-      }
-      AstReportAs(expr, &saveinfo);
-      fcall = NewAST(AST_FUNCCALL, AstIdentifier("_qexp"),
-                     NewAST(AST_EXPRLIST, expr->right, NULL));
-      left = CompileFunccallFirstResult(irl, fcall);
-      AstReportDone(&saveinfo);
-      return left;
-  }
-  case '?':
-  {
-      AST *fcall;
-      AST *var;
-      ASTReportInfo saveinfo;
-      const char *fname;
-      AstReportAs(expr, &saveinfo);
-      if (expr->left) {
-          fname = "_lfsr_forward";
-          var = expr->left;
-      } else {
-          fname = "_lfsr_backward";
-          var = expr->right;
-      }
-      fcall = NewAST(AST_FUNCCALL, AstIdentifier(fname),
-                     NewAST(AST_EXPRLIST, var, NULL));
-      fcall = AstAssign(var, fcall);
-      left = CompileExpression(irl, fcall, NULL);
-      AstReportDone(&saveinfo);
-      return left;
   }
   default:
     ERROR(lhs, "Unsupported operator %d", op);

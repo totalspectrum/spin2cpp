@@ -87,6 +87,9 @@
     X(COGSTOP)   /* stop a particular cog */ \
     X(COGID)     /* get current COG id */ \
     \
+    X(LFSR_F)    /* forward LFSR */ \
+    X(LFSR_R)    /* backward LFSR */ \
+    \
     X(PUSHI32)   /* push immediate 32 bit */ \
     X(PUSHI16)   /* push immediate 16 bit */ \
     X(PUSHI8)    /* push immediate 8 bit */ \

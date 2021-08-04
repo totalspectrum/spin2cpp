@@ -2600,19 +2600,29 @@ MarkUsedBody(AST *body, const char *caller)
             *body = *ConvertInternal(body, "_scas", body->left, body->right);
             break;
         case K_QEXP:
-            UseInternal("_qexp");
+            *body = *ConvertInternal(body, "_qexp", body->right, NULL);
             break;
         case K_QLOG:
-            UseInternal("_qlog");
+            *body = *ConvertInternal(body, "_qlog", body->right, NULL);
             break;
         case K_FRAC64:
             *body = *ConvertInternal(body, "_qfrac", body->left, body->right);
             break;
         case '?':
-            if (body->left) {
-                UseInternal("_lfsr_forward");
-            } else {
-                UseInternal("_lfsr_backward");
+            {
+                AST *var;
+                AST *fcall;
+                if (body->left) {
+                    var = body->left;
+                    fcall = ConvertInternal(body, "_lfsr_forward", var, NULL);
+                } else {
+                    var = body->right;
+                    fcall = ConvertInternal(body, "_lfsr_backward", var, NULL);
+                }
+                if (body != fcall) {
+                    // only do this if ConvertInternal actually changed us
+                    *body = *AstAssign(var, fcall);
+                }
             }
             break;
             /* on some platforms, some unsigned operations are done in software */
