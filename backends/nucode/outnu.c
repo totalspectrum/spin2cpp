@@ -138,15 +138,13 @@ static int NuCompileFunCall(NuIrList *irl, AST *node) {
             if (func->is_static || func->module == current) {
                 // plain CALL is OK
                 NuEmitAddress(irl, FunData(func)->entryLabel);
-                ir = NuEmitOp(irl, NU_OP_CALL);
-                ir->comment = auto_printf(128, "call %s", func->name);
+                NuEmitCommentedOp(irl, NU_OP_CALL, auto_printf(128, "call %s", func->name));
             } else if (func->module == systemModule) {
                 // system modules don't actually have non-static functions, we're just
                 //WARNING(node, "non-static system module function called");
                 // plain CALL is OK
                 NuEmitAddress(irl, FunData(func)->entryLabel);
-                ir = NuEmitOp(irl, NU_OP_CALL);
-                ir->comment = auto_printf(128, "call %s", func->name);
+                NuEmitCommentedOp(irl, NU_OP_CALL, auto_printf(128, "call %s", func->name));
             } else if (objref) {
                 // compile a method call
                 NuCompileLhsAddress(irl, objref);
@@ -161,9 +159,12 @@ static int NuCompileFunCall(NuIrList *irl, AST *node) {
             ERROR(node, "Unknown symbol %s", GetUserIdentifierName(node->left));
     } else {
         functype = ExprType(node->left);
-        (void)functype;
-        ERROR(node, "Unable to compile indirect function call %s", GetUserIdentifierName(node->left));
-        return 0;
+        pushed = NuCompileExpression(irl, node->left);
+        NuEmitCommentedOp(irl, NU_OP_CALL, "indirect call");
+        if (pushed != 1) {
+            ERROR(node, "Unable to compile indirect function call: %d items on stack", pushed);
+        }
+        pushed = FuncLongResults(functype);
     }
     return pushed;
 }
@@ -448,6 +449,36 @@ static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs)
         op = LoadStoreOp(typ, 0);
         if (n != 1) {
             ERROR(lhs, "too many values pushed on stack");
+        }
+    } break;
+    case AST_METHODREF: {
+        AST *objref = lhs->left;
+        AST *methodname = lhs->right;
+        AST *typ = ExprType(lhs->left);
+        Module *P;
+        Symbol *sym;
+        if (!IsIdentifier(methodname)) {
+            ERROR(lhs, "Expected identifier after .");
+        }
+        const char *memberName = GetUserIdentifierName(methodname);
+        if ( !IsClassType(typ) || NULL == (P=GetClassPtr(typ)) ) {
+            ERROR(lhs, "Request for member %s in something not an object", memberName);
+        }
+        (void)NuCompileLhsAddress(irl, objref);  // don't care about load op
+        sym = LookupSymbolInTable(&P->objsyms, memberName);
+        switch(sym->kind) {
+        case SYM_VARIABLE:
+            typ = sym->val;
+            NuEmitConst(irl, sym->offset);
+            NuEmitCommentedOp(irl, NU_OP_ADD, auto_printf(128, "lookup member %s", memberName));
+            op = LoadStoreOp(typ, 0);
+            break;
+        case SYM_FUNCTION:
+            ERROR(lhs, "Cannot take address of member functions yet");
+            return op;
+        default:
+            ERROR(lhs, "Wrong kind of symbol (%d) in method reference", sym->kind);
+            break;
         }
     } break;
     default:
@@ -763,6 +794,7 @@ NuCompileExpression(NuIrList *irl, AST *node) {
     case AST_IDENTIFIER:
     case AST_LOCAL_IDENTIFIER:
     case AST_ARRAYREF:
+    case AST_METHODREF:
     {
         AST *typ;
         int siz;
@@ -802,7 +834,7 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         
         if (!fdata->dataLabel) {
             fdata->dataLabel = NuCreateLabel();
-            flexbuf_init(&fdata->dataBuf, 32);
+            flexbuf_init(&fdata->dataBuf, 256);
         }
         tmpLabel = NuIrOffsetLabel(fdata->dataLabel, flexbuf_curlen(&fdata->dataBuf));
         StringBuildBuffer(&fdata->dataBuf, node->left);
@@ -1149,7 +1181,8 @@ static void NuCompileObject(struct flexbuf *fb, Module *P) {
     current = P;
 
     flexbuf_printf(fb, "'--- Object: %s\n", P->classname);
-    
+
+    NuPrepareModuleBedata(P);
     /* compile DAT block */
     if (P->datblock) {
         // Got DAT block
@@ -1161,8 +1194,8 @@ static void NuCompileObject(struct flexbuf *fb, Module *P) {
         flexbuf_init(&datRelocs,1024);
         PrintDataBlock(&datBuf,P,NULL,&datRelocs);
         OutputAlignLong(&datBuf);
-        NuOutputLabelNL(fb, ModData(P)->datLabel);
-        OutputDataBlob(fb, &datBuf, &datRelocs, NULL);
+        //NuOutputLabelNL(fb, ModData(P)->datLabel); // actually done by OutputDataBlob
+        OutputDataBlob(fb, &datBuf, &datRelocs, NuLabelName(ModData(P)->datLabel));
         
         flexbuf_delete(&datRelocs);
         flexbuf_delete(&datBuf);

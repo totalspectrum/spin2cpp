@@ -204,8 +204,8 @@ pri _lookdown(x, b, arr, n) | i
 ' random number generators
 '
 pri _lfsr_forward(x) : r
-  __bytecode__("LFSR_F")
+  __bytecode__("XORO")
 
 pri _lfsr_backward(x) : r
-  __bytecode__("LFSR_R")
+  __bytecode__("XORO")
 

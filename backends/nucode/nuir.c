@@ -40,6 +40,7 @@ NuIrLabel *NuCreateLabel() {
     static int labelnum = 0;
     r = calloc(sizeof(*r), 1);
     r->num = labelnum++;
+    snprintf(r->name, sizeof(r->name), "__Label_%05u", r->num);
     return r;
 }
 
@@ -67,6 +68,14 @@ NuIr *NuEmitOp(NuIrList *irl, NuIrOpcode op) {
 
     if (op < NU_OP_DUMMY) {
         opusage[op].used++;
+    }
+    return r;
+}
+
+NuIr *NuEmitCommentedOp(NuIrList *irl, NuIrOpcode op, const char *comment) {
+    NuIr *r = NuEmitOp(irl, op);
+    if (r) {
+        r->comment = comment;
     }
     return r;
 }
@@ -142,9 +151,9 @@ void NuOutputLabel(Flexbuf *fb, NuIrLabel *label) {
         return;
     }
     if (label->offset) {
-        flexbuf_printf(fb, "(__Label_%05u + %d)", label->num, label->offset);
+        flexbuf_printf(fb, "(%s + %d)", label->name, label->offset);
     } else {
-        flexbuf_printf(fb, "__Label_%05u", label->num);
+        flexbuf_printf(fb, "%s", label->name);
     }
 }
 void NuOutputLabelNL(Flexbuf *fb, NuIrLabel *label) {

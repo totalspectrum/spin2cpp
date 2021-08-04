@@ -87,8 +87,7 @@
     X(COGSTOP)   /* stop a particular cog */ \
     X(COGID)     /* get current COG id */ \
     \
-    X(LFSR_F)    /* forward LFSR */ \
-    X(LFSR_R)    /* backward LFSR */ \
+    X(XORO)    /* xoro32 random number generation */ \
     \
     X(PUSHI32)   /* push immediate 32 bit */ \
     X(PUSHI16)   /* push immediate 16 bit */ \
@@ -126,7 +125,10 @@ typedef enum NuIrOpcode {
 typedef struct {
     int offset;
     int num;
+    char name[16];
 } NuIrLabel;
+
+#define NuLabelName(L) ((L)->name)
 
 typedef struct nuir {
     struct nuir *next;
@@ -157,6 +159,7 @@ typedef struct {
 
 void NuIrInit(NuContext *ctxt);
 NuIr *NuEmitOp(NuIrList *irl, NuIrOpcode op);
+NuIr *NuEmitCommentedOp(NuIrList *irl, NuIrOpcode op, const char *comment);
 NuIr *NuEmitNamedOpcode(NuIrList *irl, const char *name);
 NuIr *NuEmitConst(NuIrList *irl, int32_t val);
 NuIr *NuEmitAddress(NuIrList *irl, NuIrLabel *label);
