@@ -928,6 +928,11 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
     case AST_STMTLIST:
         NuCompileStmtlist(irl, ast);
         break;
+    case AST_SCOPE: {
+        // TODO: When we implement __builtin_alloca(), we should restore the
+        // stack after compiling the contents of the scope.
+        NuCompileStmtlist(irl, ast->left);
+    } break;
     case AST_ASSIGN:
         NuCompileAssign(irl, ast, 0);
         break;

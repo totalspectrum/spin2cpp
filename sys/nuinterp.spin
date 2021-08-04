@@ -473,6 +473,14 @@ impl_WAITCNT
 	waitct1
 	jmp	#\impl_DROP
 
+impl_COGID
+	call	#\impl_DUP
+  _ret_	cogid	tos
+
+impl_COGSTOP
+	cogstop	tos
+  _ret_	jmp	#\impl_DROP
+
 impl_DRVL
 	drvl	tos
 	jmp	#\impl_DROP

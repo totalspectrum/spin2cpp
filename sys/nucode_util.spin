@@ -26,7 +26,7 @@ pri _getcnt : r = +long
 pri _cogid : r = long
   __bytecode__("COGID")
 
-pri _cogstop
+pri _cogstop(x)
   __bytecode__("COGSTOP")
 
 pri _cogchk(id) : r

@@ -39,7 +39,7 @@ void myexit(int n)
     waitcnt(getcnt() + 40000000);
 #ifdef __OUTPUT_BYTECODE__
     _cogstop(_cogid());
-#else        
+#else
     __asm {
         cogid n
         cogstop n

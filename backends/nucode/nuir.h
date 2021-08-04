@@ -84,6 +84,8 @@
     X(GETCT)     /* get current cycle counter */ \
     X(WAITX)     /* delay for tos cycles */ \
     X(WAITCNT)   /* wait for a particular cycle */ \
+    X(COGSTOP)   /* stop a particular cog */ \
+    X(COGID)     /* get current COG id */ \
     \
     X(PUSHI32)   /* push immediate 32 bit */ \
     X(PUSHI16)   /* push immediate 16 bit */ \
