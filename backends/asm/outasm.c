@@ -1892,7 +1892,7 @@ doCompileMul(IRList *irl, Operand *lhs, Operand *rhs, int gethi, Operand *dest)
     // check for multiply by constants
     if (rhs->kind == IMM_INT && rhs->val >= 0 && gethi == 0) {
         int shifts[4];
-        int val = rhs->val;
+        int32_t val = rhs->val;
 
         if (val == 0) {
             EmitMove(irl, temp, rhs); // rhs == 0
@@ -1920,6 +1920,10 @@ doCompileMul(IRList *irl, Operand *lhs, Operand *rhs, int gethi, Operand *dest)
             EmitOp2(irl, OPC_SHL, temp, NewImmediate(shifts[0]));
             return temp;
         }
+    }
+    if (rhs->kind == IMM_INT && rhs->val == -1 && gethi == 0) {
+        EmitOp2(irl, OPC_NEG, temp, lhs);
+        return temp;
     }
     if (gl_p2) {
         if (gethi == 0) {
