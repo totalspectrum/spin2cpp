@@ -93,7 +93,6 @@ pri _txraw(c) | z
   if long[$1c] == 0
     _setbaud(__default_baud__)  ' set up in common.c
   _wypin(_txpin, c)
-  _waitx(1)
   repeat
     z := _pinr(_txpin)
   while z == 0

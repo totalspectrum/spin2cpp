@@ -265,6 +265,7 @@ impl_PUSH_8
   _ret_	mov	tos, #8
 
 impl_HALT
+	waitx	##20000000
 	cogid	pa
 	cogstop	pa
 	
