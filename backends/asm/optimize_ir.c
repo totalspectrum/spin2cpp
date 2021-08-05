@@ -3545,10 +3545,20 @@ LoopCanBeFcached(IRList *irl, IR *root, int size_left)
             return 0;
         }
         if (ir->opc == OPC_CALL) {
-            // no calls to hub memory!
+            // no calls to hub memory
             if (MaybeHubDest(ir->dst)) {
                 return 0;
             }
+            // mul/div functions are definitely OK
+            if (ir->dst == mulfunc || ir->dst == unsmulfunc || ir->dst == divfunc || ir->dst == unsdivfunc) {
+                goto call_ok;
+            }
+            // otherwise we assume the function may call other
+            // things which will end up using FCACHE, so bad
+            // FIXME: if we did this at a higher level we might
+            // be able to detect leaf functions
+            return 0;
+        call_ok: ;
         }
         if (ir->opc == OPC_FCACHE) {
             return 0;

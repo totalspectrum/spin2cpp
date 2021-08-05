@@ -10,6 +10,7 @@ Version 6.0.0
 - Changed "ASM CONST" to "CONST ASM" in BASIC
 - Fixed multiple assignments in Spin (a:=b:=c) to have the same semantics as Spin
 - Fixed template functions so BASIC "string" type is preserved
+- Fixed an optimizer bug around non-leaf functions in COG and LUT
 - Improved --interp=rom (Spin1 bytecode output) to run more programs
 - New optimization: -Oremove-features removes advanced file I/O features if not needed by the program; this can a lot of space. Enabled by default in -O1.
 
