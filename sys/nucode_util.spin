@@ -149,6 +149,62 @@ pri wordfill(ptr, val, count)
 pri bytefill(ptr, val, count)
   __builtin_memset(ptr, val, count)
 
+pri longmove(dst, src, count) : origdst
+  origdst := dst
+  if dst < src
+    repeat count
+      long[dst] := long[src]
+      dst += 4
+      src += 4
+  else
+    dst += 4*count
+    src += 4*count
+    repeat count
+      dst -= 4
+      src -= 4
+      long[dst] := long[src]
+      
+pri wordmove(dst, src, count) : origdst
+  origdst := dst
+  if dst < src
+    repeat count
+      word[dst] := word[src]
+      dst += 2
+      src += 2
+  else
+    dst += 2*count
+    src += 2*count
+    repeat count
+      dst -= 2
+      src -= 2
+      word[dst] := word[src]
+
+pri bytemove(dst, src, count)
+  return __builtin_memmove(dst, src, count)
+
+pri __builtin_memcpy(dst, src, count)
+  return __builtin_memmove(dst, src, count)
+
+pri __builtin_strlen(str) : r=long
+  r := 0
+  repeat while byte[str] <> 0
+    r++
+    str++
+pri __builtin_strcpy(dst, src) : r=@byte | c
+  r := dst
+  repeat
+    c := byte[src++]
+    byte[dst++] := c
+  until c==0
+pri strcomp(s1, s2) | c1, c2
+  repeat
+    c1 := byte[s1++]
+    c2 := byte[s2++]
+    if (c1 <> c2)
+      return 0
+  until (c1 == 0)
+  return -1
+
 pri _lockmem(addr) | oldlock, oldmem, lockreg
   lockreg := __getlockreg
   repeat
@@ -167,26 +223,6 @@ pri _unlockmem(addr) | oldlock
 pri __topofstack(ptr)
   return @ptr
 
-pri __builtin_strlen(str) : r=long
-  r := 0
-  repeat while byte[str] <> 0
-    r++
-    str++
-pri __builtin_strcpy(dst, src) : r=@byte | c
-  r := dst
-  repeat
-    c := byte[src++]
-    byte[dst++] := c
-  until c==0
-
-pri strcomp(s1, s2) | c1, c2
-  repeat
-    c1 := byte[s1++]
-    c2 := byte[s2++]
-    if (c1 <> c2)
-      return 0
-  until (c1 == 0)
-  return -1
 pri _lookup(x, b, arr, n) | i
   i := x - b
   if (i => 0 and i < n)
