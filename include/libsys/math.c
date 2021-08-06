@@ -53,9 +53,10 @@ int32_t _isin(int32_t x)
     //__builtin_printf(" [x=%08x] ", x);
     x = x<<2;  // convert to 0.32 fixed point
     cx = (1<<30);
+
     __asm {
         qrotate cx, x
-        getqy ry
+        getqy ry   // get sin y
     }
     return ry;
 }
@@ -98,19 +99,27 @@ int32_t _isin(int32_t x)
 float __builtin_sinf(float x)
 {
     float s;
-    x = x * PI_SCALE;
+
+    // do some argument reduction
+        
+    // for small angles use the taylor series: sin(x) = x - x^3/6 (error bounded by x^5/120)
+    if (x < 0.1f && x > -0.1f) {
+        s = x - (x*x*x/6.0f);
+    } else {
+        x = x * PI_SCALE;
 #ifdef __fixedreal__
-    //__builtin_printf(" [f=%f] ", x);
-    s = __asfloat(_isin(__asuint(x)) >> 14);
+        //__builtin_printf(" [f=%f] ", x);
+        s = __asfloat(_isin(__asuint(x)) >> 14);
 #else    
-    s = _isin(x) / FIXPT_ONE;
-#endif    
+        s = _isin(x) / FIXPT_ONE;
+#endif
+    }
     return s;
 }
 
 float __builtin_cosf(float x)
 {
-    return __builtin_sinf(x + PI_2);
+    return __builtin_sinf(PI_2-x);
 }
 
 float __builtin_tanf(float x)
