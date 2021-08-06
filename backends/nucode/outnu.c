@@ -843,6 +843,7 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         tmpLabel = NuIrOffsetLabel(fdata->dataLabel, flexbuf_curlen(&fdata->dataBuf));
         StringBuildBuffer(&fdata->dataBuf, node->left);
         NuEmitAddress(irl, tmpLabel);
+        pushed = 1;
     } break;
     case AST_CAST:
         return NuCompileExpression(irl, node->right);
@@ -983,6 +984,24 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
         if (lab) {
             NuEmitLabel(irl, lab);
         }
+    } break;
+    case AST_JUMPTABLE: {
+        NuIrLabel *jumptab = NuCreateLabel();
+        NuIrLabel *op;
+        // put selector on stack
+        NuCompileExpression(irl, ast->left);
+        NuEmitOp(irl, NU_OP_JMPREL);
+        NuEmitLabel(irl, jumptab);
+        ast = ast->right;
+        while (ast && ast->kind == AST_LISTHOLDER) {
+            op = NuGetLabelFromSymbol( ast, GetUserIdentifierName(ast->left) );
+            if (op) { NuEmitBranch(irl, NU_OP_BRA, op); }
+            ast = ast->right;
+        }
+        if (!ast || ast->kind != AST_STMTLIST) {
+            ERROR(ast, "Expected statement list!"); break;
+        }
+        NuCompileStmtlist(irl, ast);
     } break;
     case AST_IF: {
         NuIrLabel *elselbl = NuCreateLabel();

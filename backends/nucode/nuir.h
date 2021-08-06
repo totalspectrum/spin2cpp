@@ -99,6 +99,7 @@
     X(PUSH_4)    /* push four */ \
     X(PUSH_8)    /* push eight */ \
     \
+    X(JMPREL)    /* jump forward relative 3*n bytes */ \
     X(BRA)       /* branch always */ \
     X(CBEQ)      /* compare branch if equal */ \
     X(CBNE)      /* compare branch if not equal */ \

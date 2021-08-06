@@ -536,6 +536,12 @@ impl_BRA
 	signx	tmp, #15
   _ret_	add	ptrb, tmp
 
+impl_JMPREL
+	add	ptrb, tos
+	add	ptrb, tos
+	add	ptrb, tos	' ptrb += 3*tos
+	jmp	#\impl_DROP
+
 impl_CBEQ
 	rdword	tmp, ptrb++
 	signx	tmp, #15
