@@ -495,11 +495,15 @@ static int NuPopMultiple(NuIrList *irl, AST *lhs) {
     if (!lhs) return 0;
     if (lhs->kind == AST_EXPRLIST) {
         popped = NuPopMultiple(irl, lhs->right);
-        op = NuCompileLhsAddress(irl, lhs->left);
-        if (op == NU_OP_ILLEGAL) {
-            ERROR(lhs->left, "Do not know how to store into this yet");
+        if (lhs->left && lhs->left->kind == AST_EMPTY) {
+            NuEmitOp(irl, NU_OP_DROP); // just drop the result
         } else {
-            NuEmitOp(irl, op);
+            op = NuCompileLhsAddress(irl, lhs->left);
+            if (op == NU_OP_ILLEGAL) {
+                ERROR(lhs->left, "Do not know how to store into this yet");
+            } else {
+                NuEmitOp(irl, op);
+            }
         }
         return popped+1;
     }
