@@ -81,7 +81,7 @@ static int _pin_do = 0;
 static
 void dly_us (UINT n)	/* Delay n microseconds (avr-gcc -Os) */
 {
-    _waitx( n * 160 );
+    _waitus( n );
 }
 
 
