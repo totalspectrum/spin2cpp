@@ -498,6 +498,13 @@ int _cogchk(int n);
 ```
 Checks to see if cog `n` is running. Returns nonzero if it is, 0 if it is not.
 
+#### _cogid
+
+```
+int _cogid();
+```
+Returns the ID of the currently running COG.
+
 #### _coginit
 
 ```
