@@ -9,7 +9,10 @@ con
 dat
 __rxtxflags
     long _rxtx_echo | _rxtx_crnl
-
+__clkfreq_ms
+    long 0
+__clkfreq_us
+    long 0
 
 ''
 '' Spin2 FRAC operator: divide (n<<32) by d producing q
@@ -190,18 +193,23 @@ pri _waitsec(m=long) | freq
     m--
     
 '' pause for m milliseconds
-pri _waitms(m=long) | freq
+pri _waitms(m=long) | freq, freqms
   freq := __clkfreq_var
   repeat while m > 1000
     _waitx(freq)
     m -= 1000
+  freqms := __clkfreq_ms
+  if freqms == 0
+    __clkfreq_ms := freqms := freq +/ 1000
   if m > 0
-    _waitx(m * (freq / 1000))
+    _waitx(m * freqms)
 
 '' pause for m microseconds
 pri _waitus(m=long) | freq
-  freq := __clkfreq_var
-  _waitx(m * (freq / 1000000))
+  freq := __clkfreq_us
+  if freq == 0
+    __clkfreq_us := freq := __clkfreq_var +/ 1000000
+  _waitx(m * freq)
 
 ' check to see if cnt > x
 pri _pollct(x) : flag

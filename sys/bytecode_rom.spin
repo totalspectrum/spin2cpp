@@ -274,6 +274,8 @@ __helper_done
 '' init helper code
 ''
 pri __init__ | cog
+  __clkfreq_ms := __clkfreq_var / 1000
+  __clkfreq_us := __clkfreq_var / 1000000
   cog := __helper_cog
   if cog <> $ff
     return
@@ -416,13 +418,13 @@ pri _getsec() : r = +long
   r := _getcnt()
   return r +/ __clkfreq_var
 
-pri _getms() : r = +long | freq
-  freq := __clkfreq_var +/ 1000
+pri {++needsinit} _getms() : r = +long | freq
+  freq := __clkfreq_ms
   r := _getcnt()
   return r +/ freq
 
-pri _getus() : r = +long | freq
-  freq := __clkfreq_var +/ 1000000
+pri {++needsinit} _getus() : r = +long | freq
+  freq := __clkfreq_us
   r := _getcnt()
   return r +/ freq
 

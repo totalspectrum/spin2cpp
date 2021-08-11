@@ -36,6 +36,8 @@ pri _cogstop(id)
 pri _clkset(mode, freq)
   __clkfreq_var := freq
   __clkmode_var := mode
+  __clkfreq_ms := freq / 1000
+  __clkfreq_us := freq / 1000000
   asm
     clkset mode
   endasm
@@ -263,12 +265,16 @@ pri _getsec() : r = +long
   return r +/ __clkfreq_var
 
 pri _getms() : r = +long | freq
-  freq := __clkfreq_var +/ 1000
+  freq := __clkfreq_ms
+  if freq == 0
+    __clkfreq_ms := freq := __clkfreq_var +/ 1000
   r := _getcnt()
   return r +/ freq
 
 pri _getus() : r = +long | freq
-  freq := __clkfreq_var +/ 1000000
+  freq := __clkfreq_us
+  if freq == 0
+    __clkfreq_us := freq := __clkfreq_var +/ 1000000
   r := _getcnt()
   return r +/ freq
 

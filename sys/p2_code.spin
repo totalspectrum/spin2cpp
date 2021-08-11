@@ -99,6 +99,9 @@ pri _clkset(mode, freq) | oldmode, xsel
     or  mode, xsel
     hubset mode         ' activate new mode
   endasm
+  __clkfreq_ms := freq / 1000
+  __clkfreq_us := freq / 1000000
+  
 pri _sqrt(a) | r
   if (a =< 0)
     return 0
@@ -499,10 +502,10 @@ pri _getsec() : freq = +long | hi, lo
 
 pri _getms() : freq = +long | lo, hi
   lo,hi := _getcnthl()
-  freq := __clkfreq_var
+  freq := __clkfreq_ms
+  if freq == 0
+    __clkfreq_ms := freq := __clkfreq_var +/ 1000
   asm
-    qdiv freq, ##1000
-    getqx freq
     setq hi
     qdiv lo, freq
     getqx freq
@@ -511,10 +514,12 @@ pri _getms() : freq = +long | lo, hi
 
 pri _getus() : freq = +long | lo, hi
   lo,hi := _getcnthl()
-  freq := __clkfreq_var
+  freq := __clkfreq_us
+  if freq == 0
+    __clkfreq_us := freq := __clkfreq_var +/ 1000000
   asm
-    qdiv freq, ##1000000
-    getqx freq
+    qdiv hi, freq
+    getqy hi
     setq hi
     qdiv lo, freq
     getqx freq
