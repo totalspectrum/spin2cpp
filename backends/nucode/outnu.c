@@ -270,8 +270,14 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
         ir->comment = auto_printf(128,"%s", name);
         return loadOp;
     }
+    case SYM_HWREG: {
+        HwReg *hwreg = (HwReg *)sym->val;
+        offset = hwreg->addr;
+        loadOp = isLoad ? NU_OP_LDREG : NU_OP_STREG;
+        break;
+    }
     default:
-        ERROR(node, "Unhandled symbol type for %s", GetUserIdentifierName(node));
+        ERROR(node, "Unhandled symbol type for %s", sym->user_name);
         return loadOp;
     }
     NuEmitConst(irl, offset);
@@ -429,6 +435,7 @@ static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs)
 {
     NuIrOpcode op = NU_OP_ILLEGAL;
     switch (lhs->kind) {
+    case AST_SYMBOL:
     case AST_IDENTIFIER:
     case AST_LOCAL_IDENTIFIER:
         op = NuCompileIdentifierAddress(irl, lhs, 0);
@@ -795,6 +802,7 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         return 1;
     }
     switch(node->kind) {
+    case AST_SYMBOL:
     case AST_IDENTIFIER:
     case AST_LOCAL_IDENTIFIER:
     case AST_ARRAYREF:
