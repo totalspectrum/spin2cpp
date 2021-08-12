@@ -20,8 +20,12 @@ pri _waitx(tim)
 pri _pinr(pin) : val
   __bytecode__("PINR")
   
-pri _getcnt : r = +long
-  __bytecode__("GETCT")
+pri _getcnthl : rl = +long, rh = +long
+  __bytecode__("GETCTHL")
+
+pri _getcnt : r = +long | rh
+  r, rh := _getcnthl()
+  return r
 
 pri _cogid : r = long
   __bytecode__("COGID")
@@ -205,17 +209,8 @@ pri strcomp(s1, s2) | c1, c2
   until (c1 == 0)
   return -1
 
-pri _lockmem(addr) | oldlock, oldmem, lockreg
-  lockreg := __getlockreg
-  repeat
-    repeat
-      oldlock := _lockset(lockreg)
-    while oldlock
-    oldmem := byte[addr]
-    if oldmem == 0
-      long[addr] := 1
-    _lockclr(lockreg)
-  while oldmem <> 0
+pri _lockmem(addr)
+  __bytecode__("LOCKMEM")
 
 pri _unlockmem(addr) | oldlock
   long[addr] := 0
@@ -244,3 +239,14 @@ pri _lfsr_forward(x) : r
 pri _lfsr_backward(x) : r
   __bytecode__("XORO")
 
+'
+' time stuff
+'
+pri _getus() : freq = +long | lo, hi
+  lo,hi := _getcnthl()
+  freq := __clkfreq_us
+  if freq == 0
+    __clkfreq_us := freq := __clkfreq_var +/ 1000000
+  hi := hi +// freq
+  lo, hi := _div64(lo, hi, freq)
+  

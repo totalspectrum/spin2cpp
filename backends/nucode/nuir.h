@@ -81,11 +81,12 @@
     X(WXPIN)     /* smart pin write */ \
     X(WYPIN)     /* smart pin write */ \
     \
-    X(GETCT)     /* get current cycle counter */ \
+    X(GETCTHL)   /* get current cycle counter */ \
     X(WAITX)     /* delay for tos cycles */ \
     X(WAITCNT)   /* wait for a particular cycle */ \
     X(COGSTOP)   /* stop a particular cog */ \
     X(COGID)     /* get current COG id */ \
+    X(LOCKMEM)   /* lock memory */ \
     \
     X(XORO)    /* xoro32 random number generation */ \
     \

@@ -461,9 +461,10 @@ impl_PUSHI16
 	rdword	tos, ptrb++
   _ret_	signx	tos, #15
 
-impl_GETCT
-	call	#\impl_DUP
-  _ret_ getct	tos
+impl_GETCTHL
+	call	#\impl_DUP2
+	getct	tos wc
+  _ret_ getct	nos
 
 impl_WAITX
 	waitx	tos
@@ -481,6 +482,18 @@ impl_COGID
 impl_COGSTOP
 	cogstop	tos
   _ret_	jmp	#\impl_DROP
+
+impl_LOCKMEM
+	cogid	tmp
+	or	tmp, #$100
+.chk
+	rdlong	tmp2, tos wz
+  if_z	wrlong	tmp, tos
+  if_z	rdlong	tmp2, tos
+  if_z	rdlong	tmp2, tos
+  	cmp	tmp2, tmp wcz
+  if_nz	jmp	#.chk
+  	ret
 
 impl_DRVL
 	drvl	tos

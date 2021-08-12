@@ -135,4 +135,4 @@ pri _lockmem(addr) | r, mask
 
 pri _unlockmem(addr) | oldlock
   long[addr] := 0
-    
+ 
