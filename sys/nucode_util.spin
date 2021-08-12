@@ -12,7 +12,7 @@ pri _rxraw(timeout = 0)
 '' divide (n, nlo) by d, producing qlo and rlo (used in FRAC operation)
 ''
 pri _div64(n, nlo, dlo) : qlo, rlo | q, r, d
-  return 0,0
+  __bytecode__("DIV64")
 
 pri _waitx(tim)
   __bytecode__("WAITX")
@@ -215,8 +215,11 @@ pri _lockmem(addr)
 pri _unlockmem(addr) | oldlock
   long[addr] := 0
 
-pri __topofstack(ptr)
+pri __topofstack(ptr) : r
   return @ptr
+
+pri __get_heap_base() : r
+  return long[$30]
 
 pri _lookup(x, b, arr, n) | i
   i := x - b
@@ -249,4 +252,4 @@ pri _getus() : freq = +long | lo, hi
     __clkfreq_us := freq := __clkfreq_var +/ 1000000
   hi := hi +// freq
   lo, hi := _div64(lo, hi, freq)
-  
+  return lo

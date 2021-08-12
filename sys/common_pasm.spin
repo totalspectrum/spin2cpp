@@ -90,6 +90,7 @@ pri _lfsr_forward(x) | a
       rcl  x, #1
     endasm
   return x
+  
 pri _lfsr_backward(x) | a
   if (x == 0)
     x := 1

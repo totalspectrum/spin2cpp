@@ -45,6 +45,7 @@
     X(MULS)      /* signed multiply:   leaves low, high on stack */ \
     X(DIVU)      /* unsigned divide: leaves quotient, remainder on stack */ \
     X(DIVS)      /* signed divide:   leaves quotient, remainder on stack */ \
+    X(DIV64)     /* calculate lo, hi / n, leaves quotient, remainder on stack */ \
     X(MULDIV64)  /* calculate a*b/c with full precision */ \
     \
     X(NEG)       /* negate tos */ \

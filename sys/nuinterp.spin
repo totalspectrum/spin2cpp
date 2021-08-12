@@ -12,6 +12,7 @@ dat
 ''    ^A3 = initial object pointer
 ''    ^A4 = initial frame pointer
 ''    ^A5 = initial stack pointer
+''    ^A6 = heap size
 ''
 	org 0
 	' dummy init code
@@ -30,15 +31,16 @@ clock_mode
 	long	0	' reserved for baud ($1c)
 #endif	
 entry_pc
-	long	2	' initial pc
+	long	2	' initial pc ($20)
 entry_vbase
 	long	3	' initial object pointer
 entry_dbase
 	long	4	' initial frame pointer
 entry_sp
 	long	5	' initial stack pointer
-	
-	long	0[$10]	' more reserved words just in case
+heap_base
+	long	@__heap_base	' heap base ($30)
+	long	0[$c]	' more reserved words just in case
 	
 	org	0
 real_init
@@ -116,6 +118,11 @@ main_loop
 	getword	tmp
 	call	tmp
 	jmp	#main_loop
+
+impl_DUP2
+	' A B -> A B A B
+	wrlong	nos, ptra++
+  _ret_	wrlong	tos, ptra++
 
 impl_DUP
 	' A B -> A B B
@@ -199,7 +206,6 @@ impl_ENTER
 	add	ptra, tos	' skip over arguments
 	shl	tmp, #2
   _ret_	add	ptra, tmp	' skip over locals
-
 
 
 ' RET gives number of items on stack to pop off
@@ -437,6 +443,15 @@ impl_MULDIV64
 	call	#\impl_DROP
   _ret_	getqx	tos
 
+impl_DIV64
+	' 3 things on stack: nnos=lo, nos=hi, tos=divisor
+	mov	tmp, tos
+	call	#\impl_DROP	' now nos=lo, tos=hi, tmp=divisor
+	setq	tos
+	qdiv	nos, tmp
+	getqx	nos
+ _ret_	getqy	tos
+
 impl_NEG
   _ret_	neg	tos, tos
 
@@ -672,4 +687,7 @@ dump_regs
 
 ' labels at and of code/data
 	alignl
+__heap_base
+	long	0[6]	' A6 replaced by heap size
+	
 5	long	0	' stack

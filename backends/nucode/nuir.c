@@ -161,6 +161,8 @@ void NuOutputLabelNL(Flexbuf *fb, NuIrLabel *label) {
     flexbuf_addchar(fb, '\n');
 }
 
+static uint32_t nu_heap_size;
+
 static void
 OutputEscapedChar(Flexbuf *fb, int c, NuContext *ctxt)
 {
@@ -183,10 +185,24 @@ OutputEscapedChar(Flexbuf *fb, int c, NuContext *ctxt)
     case '5':
         NuOutputLabel(fb, ctxt->initSp);
         break;
+    case '6':
+        flexbuf_printf(fb, "%u", nu_heap_size / 4);
+        break;
     default:
         ERROR(NULL, "Unknown escape char %c", c);
         break;
     }
+}
+
+static long GetHeapSize() {
+    Symbol *sym;
+    if (! (gl_features_used & FEATURE_NEED_HEAP)) return 0;
+    sym = LookupSymbolInTable(&systemModule->objsyms, "__real_heapsize__");
+    if (!sym || sym->kind != SYM_CONSTANT) return 0;
+    uint32_t heapsize = EvalPasmExpr((AST *)sym->val) * LONG_SIZE;
+
+    heapsize += 4*LONG_SIZE; // reserve a slot at the end
+    return heapsize;
 }
 
 void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
@@ -195,7 +211,11 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     const char *linestart;
     int c;
     int i;
-
+    uint32_t heapsize = GetHeapSize() + 4;
+    
+    heapsize = (heapsize+3)&~3; // long align
+    nu_heap_size = heapsize;
+    
     // copy until ^L
     for(;;) {
         c = *ptr++;
