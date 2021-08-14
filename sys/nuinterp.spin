@@ -87,7 +87,12 @@ continue_startup
 	rdlong	0, pb
 	jmp	#start_lut
 
-	org	$1e0
+	org	$140
+cogstack
+	res	64
+cogsp	res	1
+nlocals	res	1
+nargs	res	1
 nos	res    	1
 tos	res    	1
 popval	res	1
@@ -187,7 +192,7 @@ impl_CALLM
 '    nnos is the number of return values (again, longs)
 '
 impl_ENTER
-	mov	tmp, tos	' number of locals
+	mov	nlocals, tos	' number of locals
 	call	#\impl_DROP	' now tos is number of args, nos is # ret values
 	' find the "stack base" (where return values will go)
 	mov	old_dbase, dbase
@@ -208,8 +213,8 @@ impl_ENTER
 	wrlong	0-0, ptra	' write out the arguments
 	shl	tos, #2
 	add	ptra, tos	' skip over arguments
-	shl	tmp, #2
-  _ret_	add	ptra, tmp	' skip over locals
+	shl	nlocals, #2
+  _ret_	add	ptra, nlocals	' skip over locals
 
 
 ' RET gives number of items on stack to pop off
