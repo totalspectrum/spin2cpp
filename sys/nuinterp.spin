@@ -93,6 +93,7 @@ cogstack
 cogsp	res	1
 nlocals	res	1
 nargs	res	1
+nrets	res	1
 nos	res    	1
 tos	res    	1
 popval	res	1
@@ -194,25 +195,28 @@ impl_CALLM
 impl_ENTER
 	mov	nlocals, tos	' number of locals
 	call	#\impl_DROP	' now tos is number of args, nos is # ret values
+	mov	nargs, tos
+	mov	nrets, nos
+	
 	' find the "stack base" (where return values will go)
 	mov	old_dbase, dbase
-	shl	tos, #2		' multiply by 4
-	sub	ptra, tos	' roll back stack by number of arguments
-	shr	tos, #2
+	shl	nargs, #2		' multiply by 4
+	sub	ptra, nargs	' roll back stack by number of arguments
+	shr	nargs, #2
 	' copy the arguments to local memory
-	setq	tos
+	setq	nargs
 	rdlong	0-0, ptra
 	
 	' save old things onto stack
 	setq   #2  ' writes old_dbase, old_pc, old_vbase
 	wrlong	old_dbase, ptra++
 	mov	dbase, ptra	' set up dbase
-	shl	nos, #2		' # of bytes in ret values
-	add	ptra, nos	' skip over return values
-	setq	tos
+	shl	nrets, #2		' # of bytes in ret values
+	add	ptra, nrets	' skip over return values
+	setq	nargs
 	wrlong	0-0, ptra	' write out the arguments
-	shl	tos, #2
-	add	ptra, tos	' skip over arguments
+	shl	nargs, #2
+	add	ptra, nargs	' skip over arguments
 	shl	nlocals, #2
   _ret_	add	ptra, nlocals	' skip over locals
 
