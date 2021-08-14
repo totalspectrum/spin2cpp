@@ -82,21 +82,22 @@ continue_startup
        call	#ser_debug_str
 #endif       
 	' load LUT code
-	loc    pb, #@start_lut
-	setq2  #(end_lut - start_lut)
-	rdlong 0, pb
-	jmp    #start_lut
+	loc	pb, #@start_lut
+	setq2	#(end_lut - start_lut)
+	rdlong	0, pb
+	jmp	#start_lut
 
-	org    $1e0
-nos	res    1
-tos	res    1
-tmp	res    1
-tmp2	res    1
-vbase	res    1
-dbase	res    1
-old_pc	res    1
-old_vbase res  1
-old_dbase res  1
+	org	$1e0
+nos	res    	1
+tos	res    	1
+popval	res	1
+tmp	res    	1
+tmp2	res    	1
+vbase	res    	1
+dbase	res    	1
+old_dbase res  	1
+old_pc	res    	1
+old_vbase res  	1
 
 	fit	$1ec	' leave room for 4 debug registers
 	org	$200
@@ -137,8 +138,11 @@ impl_OVER
   _ret_	mov	tos, tmp
 
 
+impl_POP
+	mov	popval, tos
 impl_DROP
 	mov	tos, nos
+impl_DOWN
  _ret_	rdlong	nos, --ptra
 
 impl_DROP2
@@ -184,7 +188,7 @@ impl_CALLM
 '
 impl_ENTER
 	mov	tmp, tos	' number of locals
-	call	#impl_DROP	' now tos is number of args, nos is # ret values
+	call	#\impl_DROP	' now tos is number of args, nos is # ret values
 	' find the "stack base" (where return values will go)
 	mov	old_dbase, dbase
 	shl	tos, #2		' multiply by 4
@@ -193,10 +197,10 @@ impl_ENTER
 	' copy the arguments to local memory
 	setq	tos
 	rdlong	0-0, ptra
+	
 	' save old things onto stack
+	setq   #2  ' writes old_dbase, old_pc, old_vbase
 	wrlong	old_dbase, ptra++
-	wrlong	old_pc, ptra++    ' don't really push these, they go in registers
-	wrlong	old_vbase, ptra++
 	mov	dbase, ptra	' set up dbase
 	shl	nos, #2		' # of bytes in ret values
 	add	ptra, nos	' skip over return values
@@ -211,21 +215,27 @@ impl_ENTER
 ' RET gives number of items on stack to pop off
 impl_RET
 	djf	tos, #no_ret_values	' subtract 1 from tos, and if -1 then go to void case
-	' make sure nos in memory (tos is # items to pop, so not needed)
-	wrlong	nos, ptra
-	shl	tos, #2		' # of bytes
-	sub	ptra, tos	' go back on stack
-	shr	tos, #2		' back to # longs
-	' save the return values
-	setq	tos
-	rdlong	0-0, ptra
+
+	' save # return items to pop
+	mov	tmp2, tos
+	call	#\impl_DROP
+
+	' save the return values in 0..N
+	mov	tmp, #0
+	rep	#@.poprets_end, tmp2
+	call	#\impl_POP
+	altd	tmp, #0
+	mov	0-0, popval
+	add	tmp, #1
+.poprets_end
+
 	' restore the stack
 	mov	ptra, dbase
 	rdlong	vbase, --ptra
 	rdlong	ptrb, --ptra
 	rdlong	dbase, --ptra wz
   if_z	jmp	#impl_HALT		' if old dbase was NULL, nothing to return to
-  	setq	tos
+  	setq	tmp2
 	wrlong	0-0, ptra++
 	
 	' need to get tos and nos back into registers
@@ -340,64 +350,64 @@ impl_ADD_SP
 
 impl_ADD
 	add	tos, nos
- _ret_	rdlong	nos, --ptra
+	jmp	#\impl_DOWN
 
 impl_SUB
 	subr	tos, nos
- _ret_	rdlong	nos, --ptra
+	jmp	#\impl_DOWN
 
 impl_AND
 	and	tos, nos
- _ret_	rdlong	nos, --ptra
+	jmp	#\impl_DOWN
 
 impl_IOR
 	or	tos, nos
- _ret_	rdlong	nos, --ptra
+	jmp	#\impl_DOWN
 
 impl_XOR
 	xor	tos, nos
- _ret_	rdlong	nos, --ptra
+	jmp	#\impl_DOWN
 
 impl_SIGNX
 	signx	nos, tos
 	mov	tos, nos
- _ret_	rdlong	nos, --ptra
+	jmp	#\impl_DOWN
 
 impl_ZEROX
 	zerox	nos, tos
 	mov	tos, nos
- _ret_	rdlong	nos, --ptra
+	jmp	#\impl_DOWN
 
 impl_SHL
 	shl	nos, tos
 	mov	tos, nos
- _ret_	rdlong	nos, --ptra
+	jmp	#\impl_DOWN
 
 impl_SHR
 	shr	nos, tos
 	mov	tos, nos
- _ret_	rdlong	nos, --ptra
+	jmp	#\impl_DOWN
  
 impl_SAR
 	sar	nos, tos
 	mov	tos, nos
- _ret_	rdlong	nos, --ptra
+	jmp	#\impl_DOWN
 
 impl_MINS
 	fges	tos, nos
- _ret_	rdlong	nos, --ptra
+	jmp	#\impl_DOWN
 
 impl_MAXS
 	fles	tos, nos
- _ret_	rdlong	nos, --ptra
+	jmp	#\impl_DOWN
 
 impl_MINU
 	fge	tos, nos
- _ret_	rdlong	nos, --ptra
+	jmp	#\impl_DOWN
 
 impl_MAXU
 	fle	tos, nos
- _ret_	rdlong	nos, --ptra
+	jmp	#\impl_DOWN
 
 impl_MULU
 	qmul	nos, tos
