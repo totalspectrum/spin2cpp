@@ -237,12 +237,12 @@ impl_ENTER
   _ret_	add	ptra, nlocals	' skip over locals
 
 
-' RET gives number of items on stack to pop off
+' RET gives number of items on stack to pop off, and number of arguments initially
 impl_RET
-
 	' save # return items to pop
 	mov	nrets, tos
-	call	#\impl_DROP
+	mov	nargs, nos
+	call	#\impl_DROP2
 
 	' save the return values in 0..N
 	mov	tmp, nrets wz
@@ -260,7 +260,7 @@ impl_RET
 	rdlong	dbase, ptra wz
 	rdlong	ptrb, ptra[1]
 	rdlong	vbase, ptra[2]
-	rdlong	nargs, ptra[3]
+	'''rdlong	nargs, ptra[3]
   if_z	jmp	#impl_HALT		' if old dbase was NULL, nothing to return to
 
   	' remove arguments from stack

@@ -1089,6 +1089,7 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
         if (n != curfunc->numresults) {
             ERROR(ast, "number of items returned does not match function signature");
         }
+        NuEmitConst(irl, NumArgLongs(curfunc));
         NuEmitConst(irl, n);
         NuEmitOp(irl, NU_OP_RET);
         break;
