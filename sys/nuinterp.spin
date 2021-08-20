@@ -104,6 +104,7 @@ dbase	res    	1
 old_dbase res  	1
 old_pc	res    	1
 old_vbase res  	1
+save_nargs res	1
 
 	fit	$1ec	' leave room for 4 debug registers
 	org	$200
@@ -182,82 +183,80 @@ impl_CALLM
 	mov	vbase, nos
 	jmp	#impl_DROP2
 
-' "enter" has to set up a new stack frame
-' when we enter a subroutine the arguments are sitting on the stack;
-' we need to copy them down to make room for the return values (Spin2
-' requires things to be at fixed addresses :( ) and also allocate space
-' for local variables
-' "enter" therefore takes three arguments:
+' "enter" has to set up a new stack frame; it takes 3 arguments:
 '    tos is the number of locals (longs)
 '    nos is the number of arguments (longs)
 '    nnos is the number of return values (again, longs)
+'
+' when we enter a subroutine the arguments are sitting on the stack;
+' we need to save whatever things we need and make room for return values
+' and local variables
 '
 impl_ENTER
 	mov	nlocals, tos	' number of locals
 	call	#\impl_DROP	' now tos is number of args, nos is # ret values
 	mov	nargs, tos
 	mov	nrets, nos
-	
+
 	' find the "stack base" (where return values will go)
 	mov	old_dbase, dbase
-	shl	nargs, #2		' multiply by 4
-	sub	ptra, nargs	' roll back stack by number of arguments
-	shr	nargs, #2
-	' copy the arguments to local memory
-	setq	nargs
-	rdlong	0-0, ptra
-	
-	' save old things onto stack
-	setq   #2  ' writes old_dbase, old_pc, old_vbase
+	mov	save_nargs, nargs
+	mov	dbase, ptra
+
+	' save what we need to
+	setq	#3
 	wrlong	old_dbase, ptra++
-	mov	dbase, ptra	' set up dbase
-	shl	nrets, #2		' # of bytes in ret values
-	add	ptra, nrets	' skip over return values
-	setq	nargs
-	wrlong	0-0, ptra	' write out the arguments
-	shl	nargs, #2
-	add	ptra, nargs	' skip over arguments
+
+	' figure out total # of locals
+	add	nlocals, nrets
+	
+	' initialize return values to 0
+	djf	nrets, #.no_ret_vals
+	setq	nrets
+	wrlong	#0, ptra
+.no_ret_vals
 	shl	nlocals, #2
   _ret_	add	ptra, nlocals	' skip over locals
 
 
 ' RET gives number of items on stack to pop off
 impl_RET
-	djf	tos, #no_ret_values	' subtract 1 from tos, and if -1 then go to void case
 
 	' save # return items to pop
-	mov	tmp2, tos
+	mov	nrets, tos
 	call	#\impl_DROP
 
 	' save the return values in 0..N
-	mov	tmp, #0
-	rep	#@.poprets_end, tmp2
+	mov	tmp, nrets wz
+  if_z	jmp	#.poprets_end
+	sub	tmp, #1
+.poprets
 	call	#\impl_POP
 	altd	tmp, #0
 	mov	0-0, popval
-	add	tmp, #1
+	djf	tmp, #.poprets
 .poprets_end
 
 	' restore the stack
 	mov	ptra, dbase
-	rdlong	vbase, --ptra
-	rdlong	ptrb, --ptra
-	rdlong	dbase, --ptra wz
+	rdlong	dbase, ptra wz
+	rdlong	ptrb, ptra[1]
+	rdlong	vbase, ptra[2]
+	rdlong	nargs, ptra[3]
   if_z	jmp	#impl_HALT		' if old dbase was NULL, nothing to return to
-  	setq	tmp2
+
+  	' remove arguments from stack
+	shl	nargs, #2
+	sub	ptra, nargs
+
+	' push return values
+	djf	nrets, #.skip_pushrets
+  	setq	nrets
 	wrlong	0-0, ptra++
-	
+.skip_pushrets
+
 	' need to get tos and nos back into registers
 	jmp	#impl_DROP2
-no_ret_values
-	mov	ptra, dbase
-	rdlong	vbase, --ptra
-	rdlong	ptrb, --ptra
-	rdlong	dbase, --ptra wz
-  if_z	jmp	#impl_HALT
-
-  	' need to restore tos and nos
-	jmp    #impl_DROP2
 
 impl_PUSHI8
 	call	#\impl_DUP
