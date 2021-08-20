@@ -203,9 +203,13 @@ impl_ENTER
 	mov	save_nargs, nargs
 	mov	dbase, ptra
 
-	' save what we need to
-	setq	#3
-	wrlong	old_dbase, ptra++
+	' push some important things onto the stack
+	mov	nos, old_dbase
+	mov	tos, old_pc
+	call	#\impl_DUP2
+	mov	nos, old_vbase
+	mov	tos, save_nargs
+	call	#\impl_DUP2
 
 	' figure out total # of locals
 	add	nlocals, nrets
