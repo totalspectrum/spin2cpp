@@ -91,6 +91,12 @@ continue_startup
 cogstack
 	res	64
 cogsp	res	1
+cogstack_inc
+	res	1
+cogstack_dec
+	res	1
+zero_inc
+	res	1
 nlocals	res	1
 nargs	res	1
 nrets	res	1
@@ -111,6 +117,14 @@ save_nargs res	1
 start_lut
 	' initialization code
 	mov	old_pc, #0
+	mov	cogsp, #0
+	' cogstack_inc will act in alts/altd to increment the D field
+	mov	cogstack_inc, ##(cogstack) | (1<<9)
+	' cogstack_dec will act in alts/altd to decrement D, and act like it's  predecrement
+	mov	cogstack_dec, ##((cogstack-1) | ($fffffe00))
+	' similar for looping over 0 addresses
+	mov	zero_inc, ##(1<<9)
+	
 	' copy jump table to COG RAM
 	loc    pa, #@OPC_TABLE
 	setq   #(OPC_TABLE_END-OPC_TABLE)-1
@@ -253,14 +267,21 @@ impl_RET
 	shl	nargs, #2
 	sub	ptra, nargs
 
+	' need to get tos and nos back into registers
+	call	#\impl_DROP2
+	
 	' push return values
 	djf	nrets, #.skip_pushrets
-  	setq	nrets
-	wrlong	0-0, ptra++
+	mov	tmp2, ##1<<9
+.pushret_loop
+	call	#\impl_DUP
+	alts	tmp2, zero_inc
+	mov	tos, 0-0
+	djnf	nrets, #.pushret_loop
+	
 .skip_pushrets
 
-	' need to get tos and nos back into registers
-	jmp	#impl_DROP2
+	ret
 
 impl_PUSHI8
 	call	#\impl_DUP
