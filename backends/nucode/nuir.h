@@ -100,6 +100,8 @@
     X(PUSH_2)    /* push two */ \
     X(PUSH_4)    /* push four */ \
     X(PUSH_8)    /* push eight */ \
+    X(PUSH_M4)    /* push minus four */ \
+    X(PUSH_M8)    /* push minus eight */ \
     \
     X(JMPREL)    /* jump forward relative 3*n bytes */ \
     X(BRA)       /* branch always */ \

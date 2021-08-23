@@ -90,7 +90,6 @@ continue_startup
 	org	$100
 cogstack
 	res	64
-cogsp	res	1
 cogstack_inc
 	res	1
 cogstack_dec
@@ -105,8 +104,10 @@ tos	res    	1
 popval	res	1
 tmp	res    	1
 tmp2	res    	1
-vbase	res    	1
 dbase	res    	1
+new_pc	res	1
+vbase	res    	1
+cogsp	res	1
 old_dbase res  	1
 old_pc	res    	1
 old_vbase res  	1
@@ -272,10 +273,10 @@ impl_RET
 
 	' restore the stack
 	mov	ptra, dbase
-	rdlong	dbase, ptra wz
-	rdlong	ptrb, ptra[1]
-	rdlong	vbase, ptra[2]
-	rdlong	cogsp, ptra[3]
+	setq	#3
+	rdlong	dbase, ptra
+	mov	ptrb, new_pc
+	cmp	dbase, #0 wz
 	
   if_z	jmp	#impl_HALT		' if old dbase was NULL, nothing to return to
 
@@ -334,6 +335,14 @@ impl_PUSH_4
 impl_PUSH_8
 	call	#\impl_DUP
   _ret_	mov	tos, #8
+
+impl_PUSH_M4
+	call	#\impl_DUP
+  _ret_	neg	tos, #4
+
+impl_PUSH_M8
+	call	#\impl_DUP
+  _ret_	neg	tos, #8
 
 impl_HALT
 	waitx	##20000000
