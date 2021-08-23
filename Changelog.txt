@@ -1,4 +1,9 @@
-Version 6.0.0
+Version 5.9.2
+- Fixed some "backwards" repeat loops in Spin
+- Fixed wrap around of getus and getms
+- Fixed an optimizer bug around non-leaf functions in COG and LUT
+
+Version 5.9.1
 - Added support for bool, false, and true to C++
 - Added some missing defines in stdint.h
 - Added automatic I/O locking for PRINT, __builtin_printf, and DEBUG
@@ -10,8 +15,6 @@ Version 6.0.0
 - Changed "ASM CONST" to "CONST ASM" in BASIC
 - Fixed multiple assignments in Spin (a:=b:=c) to have the same semantics as Spin
 - Fixed template functions so BASIC "string" type is preserved
-- Fixed an optimizer bug around non-leaf functions in COG and LUT
-- Fixed some "backwards" repeat loops in Spin
 - Improved --interp=rom (Spin1 bytecode output) to run more programs
 - New optimization: -Oremove-features removes advanced file I/O features if not needed by the program; this can a lot of space. Enabled by default in -O1.
 
