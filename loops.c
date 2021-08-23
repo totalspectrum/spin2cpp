@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2020 Total Spectrum Software Inc.
+ * Copyright 2011-2021 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling loops
@@ -1438,8 +1438,16 @@ TransformCountRepeat(AST *ast)
     /* set the step variable */
     if (knownStepVal && knownStepDir) {
         if (knownStepDir < 0 && IsSpinLang(curfunc->language)) {
-            stepval = AstOperator(K_NEGATE, NULL, stepval);
-            knownStepVal = -knownStepVal;
+            if (knownStepVal < 0) {
+                // ugh, nasty
+                // Spin1 will just terminate the loop early
+                if (curfunc->language == LANG_SPIN_SPIN1) {
+                    toval = fromval;
+                }
+            } else {
+                stepval = AstOperator(K_NEGATE, NULL, stepval);
+                knownStepVal = -knownStepVal;
+            }
         }
     } else {
         AST *stepvar = AstTempLocalVariable("_step_", looptype);
