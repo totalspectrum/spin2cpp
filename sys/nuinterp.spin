@@ -87,7 +87,7 @@ continue_startup
 	rdlong	0, pb
 	jmp	#start_lut
 
-	org	$140
+	org	$100
 cogstack
 	res	64
 cogsp	res	1
@@ -110,9 +110,9 @@ dbase	res    	1
 old_dbase res  	1
 old_pc	res    	1
 old_vbase res  	1
-save_nargs res	1
+old_cogsp res	1
 
-	fit	$1ec	' leave room for 4 debug registers
+	fit	$160	' leave room for 4 debug registers
 	org	$200
 start_lut
 	' initialization code
@@ -143,32 +143,38 @@ main_loop
 
 impl_DUP2
 	' A B -> A B A B
-	wrlong	nos, ptra++
-  _ret_	wrlong	tos, ptra++
+	altd	cogsp, cogstack_inc
+	mov	0-0, nos
+	altd	cogsp, cogstack_inc
+  _ret_	mov	0-0, tos
 
 impl_DUP
 	' A B -> A B B
-	wrlong	nos, ptra++
+	altd	cogsp, cogstack_inc
+	mov	0-0, nos
   _ret_	mov	nos, tos
 
 impl_OVER
 	' A B -> A B A
-	wrlong	nos, ptra++
+	altd	cogsp, cogstack_inc
+	mov	0-0, nos
 	mov	tmp, nos
 	mov	nos, tos
   _ret_	mov	tos, tmp
-
 
 impl_POP
 	mov	popval, tos
 impl_DROP
 	mov	tos, nos
 impl_DOWN
- _ret_	rdlong	nos, --ptra
+	alts	cogsp, cogstack_dec
+ _ret_	mov	nos, 0-0
 
 impl_DROP2
-	rdlong	tos, --ptra
- _ret_	rdlong	nos, --ptra
+	alts	cogsp, cogstack_dec
+ 	mov	tos, 0-0
+	alts	cogsp, cogstack_dec
+ _ret_	mov	nos, 0-0
 
 impl_SWAP
 	mov	tmp, tos
@@ -214,16 +220,25 @@ impl_ENTER
 
 	' find the "stack base" (where return values will go)
 	mov	old_dbase, dbase
-	mov	save_nargs, nargs
-	mov	dbase, ptra
 
 	' push some important things onto the stack
 	mov	nos, old_dbase
 	mov	tos, old_pc
 	call	#\impl_DUP2
 	mov	nos, old_vbase
-	mov	tos, save_nargs
+	mov	tos, cogsp
+	add	tos, #2		' adjust for upcoming push
 	call	#\impl_DUP2
+
+	' write out stack
+	sub	cogsp, #1
+	setq	cogsp
+	wrlong	cogstack, ptra++
+	mov	dbase, ptra
+	sub	dbase, #16	' roll back over 4 reserved words
+
+	' reset local stack
+	mov	cogsp, #0
 
 	' figure out total # of locals
 	add	nlocals, nrets
@@ -260,13 +275,25 @@ impl_RET
 	rdlong	dbase, ptra wz
 	rdlong	ptrb, ptra[1]
 	rdlong	vbase, ptra[2]
-	'''rdlong	nargs, ptra[3]
+	rdlong	cogsp, ptra[3]
+	
   if_z	jmp	#impl_HALT		' if old dbase was NULL, nothing to return to
 
-  	' remove arguments from stack
-	shl	nargs, #2
-	sub	ptra, nargs
+  	' roll back stack
+	sub	cogsp, #4		' remove 4 items from stack
+	shl	cogsp, #2		' multiply by 4
+	sub	ptra, cogsp
+	shr	cogsp, #2
 
+	' drop arguments
+	sub	cogsp, nargs
+
+	' restore local stack
+	sub	cogsp, #1
+	setq	cogsp
+	rdlong	cogstack, ptra
+	add	cogsp, #1
+	
 	' need to get tos and nos back into registers
 	call	#\impl_DROP2
 	
@@ -289,28 +316,23 @@ impl_PUSHI8
   _ret_	signx	tos, #7
 
 impl_PUSH_0
-	wrlong	nos, ptra++   ' save stack
-	mov	nos, tos
+	call	#\impl_DUP
   _ret_	mov	tos, #0
 
 impl_PUSH_1
-	wrlong	nos, ptra++   ' save stack
-	mov	nos, tos
+	call	#\impl_DUP
   _ret_	mov	tos, #1
 	
 impl_PUSH_2
-	wrlong	nos, ptra++   ' save stack
-	mov	nos, tos
+	call	#\impl_DUP
   _ret_	mov	tos, #2
 	
 impl_PUSH_4
-	wrlong	nos, ptra++   ' save stack
-	mov	nos, tos
+	call	#\impl_DUP
   _ret_	mov	tos, #4
 
 impl_PUSH_8
-	wrlong	nos, ptra++   ' save stack
-	mov	nos, tos
+	call	#\impl_DUP
   _ret_	mov	tos, #8
 
 impl_HALT
@@ -321,9 +343,10 @@ impl_HALT
 end_lut
 '' end of main interpreter
 	' opcode table goes here
-	org    $140
+	org	$160
 OPC_TABLE
 
+	fit	$1ec
 	orgh
 impl_LDB
   _ret_	rdbyte tos, tos
@@ -702,7 +725,10 @@ nos_msg
 	byte	" nos: ", 0
 dbase_msg
 	byte	" dbase: ", 0
-	
+cogsp_msg
+	byte	" cogsp: ", 0
+stack_msg
+	byte    "   stack:", 0
 	alignl
 dump_regs
 	mov	ser_debug_arg1, ##pc_msg
@@ -715,6 +741,16 @@ dump_regs
 	mov	ser_debug_arg1, ptra
 	call	#ser_debug_hex
 
+	mov	ser_debug_arg1, ##dbase_msg
+	call	#ser_debug_str
+	mov	ser_debug_arg1, dbase
+	call	#ser_debug_hex
+
+	mov	ser_debug_arg1, ##cogsp_msg
+	call	#ser_debug_str
+	mov	ser_debug_arg1, cogsp
+	call	#ser_debug_hex
+
 	mov	ser_debug_arg1, ##tos_msg
 	call	#ser_debug_str
 	mov	ser_debug_arg1, tos
@@ -725,7 +761,43 @@ dump_regs
 	mov	ser_debug_arg1, nos
 	call	#ser_debug_hex
 
-	jmp	#ser_debug_nl
+	call	#ser_debug_nl
+
+	mov	ser_debug_arg1, ##stack_msg
+	call	#ser_debug_str
+	sub	dbase, #8
+	mov	ser_debug_arg1, dbase
+	call	#ser_debug_hex
+	mov	ser_debug_arg1, #":"
+	call	#ser_debug_tx
+	
+	rdlong	ser_debug_arg1, dbase
+	call	#ser_debug_hex
+
+	add	dbase, #4
+	rdlong	ser_debug_arg1, dbase
+	call	#ser_debug_hex
+	add	dbase, #4
+	rdlong	ser_debug_arg1, dbase
+	call	#ser_debug_hex
+	add	dbase, #4
+	rdlong	ser_debug_arg1, dbase
+	call	#ser_debug_hex
+	add	dbase, #4
+	rdlong	ser_debug_arg1, dbase
+	call	#ser_debug_hex
+	add	dbase, #4
+	rdlong	ser_debug_arg1, dbase
+	call	#ser_debug_hex
+	add	dbase, #4
+	rdlong	ser_debug_arg1, dbase
+	call	#ser_debug_hex
+	sub	dbase, #16
+
+	call	#ser_debug_nl
+	
+	waitx	##10_000_000
+	ret
 #endif ' SERIAL_DEBUG
 
 ' labels at and of code/data

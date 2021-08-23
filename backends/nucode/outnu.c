@@ -1183,6 +1183,7 @@ NuCompileFunction(Function *F) {
         if (irl->tail && irl->tail->op != NU_OP_RET) {
             if (NumRetLongs(F) == 0) {
                 // just insert RET
+                NuEmitConst(irl, NumArgLongs(curfunc));
                 NuEmitConst(irl, 0);
                 NuEmitOp(irl, NU_OP_RET);
             } else {
