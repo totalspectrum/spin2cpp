@@ -359,7 +359,7 @@ ProcessModule(Module *P)
     if (P->subclasses) {
         ProcessModule(P->subclasses);
     }
-    DeclareLabels(P);
+    DeclareModuleLabels(P);
     /* for all functions, do any language specific stuff */
     if (gl_errors < gl_max_errors) {
         Function *pf;

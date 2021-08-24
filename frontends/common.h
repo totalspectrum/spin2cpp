@@ -525,7 +525,10 @@ bool IsSystemModule(Module *P);
 AST *NewLookup(AST *expr, AST *table);
 
 /* declare labels in PASM */
-void DeclareLabels(Module *);
+unsigned AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags);
+void DeclareModuleLabels(Module *);
+#define ADDRESS_STARTFLAG_COG 0x0
+#define ADDRESS_STARTFLAG_HUB 0x1
 
 /* declare a function */
 /* "body" is the list of statements */
