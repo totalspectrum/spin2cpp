@@ -445,10 +445,6 @@ doParseFile(const char *name, Module *P, int *is_dup)
     SymbolTable *saveCurrentTypes = NULL;
     int new_module = 0;
 
-    if (gl_useFullPaths) {
-        name = MakeAbsolutePath(name);
-    }
-    
     // check language to process
     langptr = strrchr(name, '.');
     if (langptr) {
@@ -548,6 +544,9 @@ doParseFile(const char *name, Module *P, int *is_dup)
     }
     if (!fname) {
         fname = strdup(name);
+    }
+    if (gl_useFullPaths) {
+        fname = (char *)MakeAbsolutePath(fname);
     }
     // check for file already included
     if (P) {
