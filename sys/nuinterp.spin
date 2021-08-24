@@ -238,6 +238,9 @@ impl_ENTER
 	mov	dbase, ptra
 	sub	dbase, #16	' roll back over 4 reserved words
 
+	shl	nargs, #2
+	sub	dbase, nargs	' roll back over arguments
+	
 	' reset local stack
 	mov	cogsp, #0
 
@@ -273,6 +276,9 @@ impl_RET
 
 	' restore the stack
 	mov	ptra, dbase
+	shl	nargs, #2
+	add	ptra, nargs
+	shr	nargs, #2
 	setq	#3
 	rdlong	dbase, ptra
 	mov	ptrb, new_pc

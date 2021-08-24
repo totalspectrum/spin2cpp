@@ -84,7 +84,7 @@ static int resultOffset(Function *F, int offset) {
         if (offset == 0) return 0;
         return 4+F->numparams*4 + (offset-1)*4;
     case INTERP_KIND_NUCODE:
-        return offset + 4*LONG_SIZE;
+        return offset + (F->numparams+4)*LONG_SIZE ;
     default:
         return offset;
     }
@@ -108,7 +108,7 @@ static int paramOffset(Function *F, int offset) {
     case INTERP_KIND_P1ROM:
         return 4 + offset; // always one result pushed onto stack
     case INTERP_KIND_NUCODE:
-        return offset - (F->numparams*4);
+        return offset;
     default:
         return offset + DefaultGetNumResults(F)*4;
     }
@@ -120,7 +120,7 @@ static int localOffset(Function *F, int offset) {
     case INTERP_KIND_P1ROM:
         return offset + (BCGetNumResults(F)+F->numparams)*4; // FIXME small variables
     case INTERP_KIND_NUCODE:
-        return offset + (DefaultGetNumResults(F)+4)*4;
+        return offset + (DefaultGetNumResults(F)+F->numparams+4)*4;
     default:
         return offset + (DefaultGetNumResults(F) + F->numparams)*4;
     }
