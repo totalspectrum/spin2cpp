@@ -886,11 +886,11 @@ typedef int (*VFS_CloseFunc)(vfs_file_t *);
 #define _getrxfunc(h) ((void *)1)
 # ifdef __FEATURE_MULTICOG__
 static int __iolock;
-void __lockio(int h)   { _lockmem(&__iolock); }
-void __unlockio(int h) { _unlockmem(&__iolock); }
+int __lockio(int h)   { _lockmem(&__iolock); return 0; }
+int __unlockio(int h) { _unlockmem(&__iolock); return 0; }
 # else
-void __lockio(int h)   { }
-void __unlockio(int h) { }
+int __lockio(int h)   { return 0; }
+int __unlockio(int h) { return 0; }
 # endif
 
 #else
