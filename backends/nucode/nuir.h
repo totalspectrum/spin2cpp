@@ -89,6 +89,7 @@
     X(GETCTHL)   /* get current cycle counter */ \
     X(WAITX)     /* delay for tos cycles */ \
     X(WAITCNT)   /* wait for a particular cycle */ \
+    X(HUBSET)    /* hubset instruction */ \
     X(COGSTOP)   /* stop a particular cog */ \
     X(COGID)     /* get current COG id */ \
     X(LOCKMEM)   /* lock memory */ \

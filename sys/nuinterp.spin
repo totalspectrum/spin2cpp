@@ -615,6 +615,10 @@ impl_WAITCNT
 	waitct1
 	jmp	#\impl_DROP
 
+impl_HUBSET
+	hubset	tos
+	jmp	#\impl_DROP
+
 impl_COGID
 	call	#\impl_DUP
   _ret_	cogid	tos

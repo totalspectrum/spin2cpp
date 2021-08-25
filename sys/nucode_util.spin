@@ -2,12 +2,6 @@
 '' Nucode specific functions
 ''
 
-'' FIXME: these are dummys
-pri _rxraw(timeout = 0)
-  if timeout
-    timeout *= __clkfreq_var >> 10
-  return -1
-
 ''
 '' divide (n, nlo) by d, producing qlo and rlo (used in FRAC operation)
 ''
@@ -62,7 +56,9 @@ pri _wxpin(pin, val)
   __bytecode__("WXPIN")
 pri _wypin(pin, val)
   __bytecode__("WYPIN")
-  
+pri _rdpin(pin) : r
+  __bytecode__("RDPIN")
+
 pri _waitcnt(x)
   __bytecode__("WAITCNT")
 
@@ -101,6 +97,21 @@ pri _txraw(c) | z
     z := _pinr(_txpin)
   while z == 0
   return 1
+
+' timeout is approximately in milliseconds (actually in 1024ths of a second)
+pri _rxraw(timeout = 0) : rxbyte = long | z, endtime, temp2, rxpin
+  if _bitcycles == 0
+    _setbaud(__default_baud__)
+  if timeout
+    endtime := _getcnt() + timeout * (__clkfreq_var >> 10)
+  rxbyte := -1
+  rxpin := _rxpin
+  z := 0
+  repeat
+    z := _pinr(rxpin)
+    if z
+      rxbyte := _rdpin(rxpin)>>24
+  until z or (timeout and (_getcnt() - endtime < 0))
 
 ''
 '' memset/memmove are here (in processor specific code)
@@ -261,3 +272,26 @@ pri _getus() : freq = +long | lo, hi
   hi := hi +// freq
   lo, hi := _div64(lo, hi, freq)
   return lo
+
+pri _hubset(x)
+  __bytecode__("HUBSET")
+  
+pri _clkset(mode, freq) | oldmode, xsel
+  xsel := mode & 3
+  if xsel == 0 and mode > 1
+    xsel := 3
+  oldmode := __clkmode_var & !3  ' remove low bits, if any
+  __clkfreq_var := freq
+  __clkmode_var := mode
+  mode := mode & !3
+  _hubset(oldmode)  ' go to RCFAST using known prior mode
+  _hubset(mode)     ' setup for new mode, still RCFAST
+  _waitx(20_000_000/100)
+  mode |= xsel
+  _hubset(mode)     ' activate new mode
+  __clkfreq_ms := freq / 1000
+  __clkfreq_us := freq / 1000000
+
+pri _reboot
+  _clkset(0, 0)
+  _hubset(%0001 << 28)
