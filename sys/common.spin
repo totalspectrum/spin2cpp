@@ -268,8 +268,8 @@ pri file "libsys/fmt.c" _basic_print_longunsigned(h, x= >+long, fmt = 0, base=10
 pri file "libsys/fmt.c" _basic_get_char(h)
 pri file "libsys/fmt.c" _basic_put(h=long, pos=+long, ptr, elemnts=+long, size=+long)
 pri file "libsys/fmt.c" _basic_get(h=long, pos=+long, ptr, elements=+long, size=+long)
-pri file "libsys/fmt.c" __lockio(h=long)
-pri file "libsys/fmt.c" __unlockio(h=long)
+pri file "libsys/fmt.c" __lockio(h=long) : r
+pri file "libsys/fmt.c" __unlockio(h=long) : r
 
 '' format functions
 pri file "libsys/fmt.c" _fmtchar(fn, fmt, c)
