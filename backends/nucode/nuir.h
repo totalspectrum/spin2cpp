@@ -35,6 +35,8 @@
     X(SHL)       /* tos := nos << tos */ \
     X(SHR)       /* tos := nos >> tos (unsigned right shift) */ \
     X(SAR)       /* tos := nos SAR tos (signed right shift) */ \
+    X(ENCODE)    /* tos := nos ENCODE tos (0-32) */ \
+    X(ENCODE2)   /* tos := nos ENCODE tos (0-31) */ \
     \
     X(MINS)      /* tos := min(nos, tos) (signed) */ \
     X(MAXS)      /* tos := max(nos, tos) (signed) */ \
@@ -47,6 +49,7 @@
     X(DIVS)      /* signed divide:   leaves quotient, remainder on stack */ \
     X(DIV64)     /* calculate lo, hi / n, leaves quotient, remainder on stack */ \
     X(MULDIV64)  /* calculate a*b/c with full precision */ \
+    X(SQRT64)    /* calculate sqrt(nos, tos) with full precision */ \
     \
     X(NEG)       /* negate tos */ \
     X(NOT)       /* bit complement tos */ \
@@ -63,6 +66,7 @@
     X(RET)       /* return from subroutine */ \
     X(CALL)      /* call subroutine */ \
     X(CALLM)     /* call method (changes object pointer) */ \
+    X(GOSUB)     /* combo CALL+ENTER */ \
     X(JMP)       /* jump to address at tos */ \
     X(JMPZ)      /* jump to address to nos if tos is = 0 (discards tos, nos) */ \
     X(JMPNZ)     /* jump to address to nos if tos is <> 0 (discards tos, nos) */ \

@@ -209,6 +209,14 @@ pri strcomp(s1, s2) | c1, c2
   until (c1 == 0)
   return -1
 
+pri _sqrt64(lo, hi) : r
+  __bytecode__("SQRT64")
+
+pri _sqrt(a) : r
+  if (a =< 0)
+    return 0
+  return _sqrt64(a, 0)
+
 pri _lockmem(addr)
   __bytecode__("LOCKMEM")
 

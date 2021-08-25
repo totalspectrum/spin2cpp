@@ -218,7 +218,7 @@ impl_ENTER
 	call	#\impl_DROP	' now tos is number of args, nos is # ret values
 	mov	nargs, tos
 	mov	nrets, nos
-
+do_enter
 	' find the "stack base" (where return values will go)
 	mov	old_dbase, dbase
 
@@ -255,7 +255,22 @@ impl_ENTER
 	shl	nlocals, #2
   _ret_	add	ptra, nlocals	' skip over locals
 
-
+'
+' GOSUB:
+' similar to CALL + ENTER, sets up stack so RET gets us back to here
+' nos is number of locals... this is awkward, strictly we'd like to
+' copy these, but for now punt and assume it does not matter
+' tos is address for GOSUB
+'
+impl_GOSUB
+	mov	old_pc, ptrb
+	mov	old_vbase, vbase
+	mov	ptrb, tos
+	mov	nlocals, nos
+	mov	nargs, #0		' nargs
+	mov	nrets, #0		' nrets
+	jmp	#do_enter
+	
 ' RET gives number of items on stack to pop off, and number of arguments initially
 impl_RET
 	' save # return items to pop
@@ -460,6 +475,19 @@ impl_ZEROX
 	mov	tos, nos
 	jmp	#\impl_DOWN
 
+impl_ENCODE
+	' ENCODE should return 0-32, but note Spin2 returns 0-31 with
+	' ENCOD(0) == 0
+	encod	nos, tos wc
+  if_c	add	nos, #1		' if src nonzero, add 1
+	mov	tos, nos
+	jmp	#\impl_DOWN
+
+impl_ENCODE2
+	encod	nos, tos
+	mov	tos, nos
+	jmp	#\impl_DOWN
+
 impl_SHL
 	shl	nos, tos
 	mov	tos, nos
@@ -469,7 +497,7 @@ impl_SHR
 	shr	nos, tos
 	mov	tos, nos
 	jmp	#\impl_DOWN
- 
+
 impl_SAR
 	sar	nos, tos
 	mov	tos, nos
@@ -490,6 +518,11 @@ impl_MINU
 impl_MAXU
 	fle	tos, nos
 	jmp	#\impl_DOWN
+
+impl_SQRT64
+	qsqrt	nos, tos
+	call	#\impl_DROP
+  _ret_	getqx	tos
 
 impl_MULU
 	qmul	nos, tos

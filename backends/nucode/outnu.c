@@ -232,6 +232,13 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
         return loadOp;
     }
     name = sym->user_name;
+    if (sym->kind == SYM_RESERVED && !strcasecmp(name, "result")) {
+        sym = LookupAstSymbol(curfunc->resultexpr, NULL);
+        if (!sym) {
+            ERROR(node, "internal error, unable to find RESULT");
+            return loadOp;
+        }
+    }
     switch (sym->kind) {
     case SYM_LOCALVAR:
     case SYM_TEMPVAR:
@@ -496,12 +503,17 @@ static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs)
 }
 
 /* pop multiple things off the stack, in reverse order */
-static int NuPopMultiple(NuIrList *irl, AST *lhs) {
+static int NuPopMultiple(NuIrList *irl, AST *lhs, int numRhs) {
     int popped = 0;
     NuIrOpcode op;
-    if (!lhs) return 0;
+    if (!lhs) {
+        if (numRhs > 0) {
+            NuCompileDrop(irl, numRhs);
+        }
+        return 0;
+    }
     if (lhs->kind == AST_EXPRLIST) {
-        popped = NuPopMultiple(irl, lhs->right);
+        popped = NuPopMultiple(irl, lhs->right, numRhs-1);
         if (lhs->left && lhs->left->kind == AST_EMPTY) {
             NuEmitOp(irl, NU_OP_DROP); // just drop the result
         } else {
@@ -514,8 +526,18 @@ static int NuPopMultiple(NuIrList *irl, AST *lhs) {
         }
         return popped+1;
     }
-    ERROR(lhs, "Cannot handle multiple assignment to single item yet");
-    return 0;
+    // hmmm, just one item; treat it like all other items were AST_EMPTY
+    popped = numRhs - 1;
+    if (popped > 0) {
+        NuCompileDrop(irl, popped);
+    }
+    op = NuCompileLhsAddress(irl, lhs);
+    if (op == NU_OP_ILLEGAL) {
+        ERROR(lhs->left, "Do not know how to store into this yet");
+    } else {
+        NuEmitOp(irl, op);
+    }
+    return popped+1;
 }
 
 /* compile assignment */
@@ -535,15 +557,16 @@ static int NuCompileAssign(NuIrList *irl, AST *ast, int inExpression)
         ERROR(rhs, "Assignment from void value");
         return 1;
     } else if (n != 1 && inExpression) {
-        ERROR(rhs, "multiple assignment inside expression not handled yet");
-        return n;
+        // we will leave nothing on the stack in this case
+        inExpression = 0;
     }
     if (inExpression) {
         NuEmitOp(irl, NU_OP_DUP); // leave last value on stack
     }
     if (n > 1) {
         // handle multiple assignments
-        int got = NuPopMultiple(irl, lhs);
+        // if insufficient items given, just drop the rest
+        int got = NuPopMultiple(irl, lhs, n);
         if (got != n) {
             ERROR(rhs, "Expected to assign %d items but only did %d", n, got);
         }
@@ -747,6 +770,8 @@ NuCompileOperator(NuIrList *irl, AST *node) {
         case K_SHL: NuEmitOp(irl, NU_OP_SHL); break;
         case K_SHR: NuEmitOp(irl, NU_OP_SHR); break;
         case K_SAR: NuEmitOp(irl, NU_OP_SAR); break;
+        case K_ENCODE: NuEmitOp(irl, NU_OP_ENCODE); break;
+        case K_ENCODE2: NuEmitOp(irl, NU_OP_ENCODE2); break;
         case K_LIMITMIN: NuEmitOp(irl, NU_OP_MINS); break;
         case K_LIMITMAX: NuEmitOp(irl, NU_OP_MAXS); break;
         case K_LIMITMIN_UNS: NuEmitOp(irl, NU_OP_MINU); break;
@@ -876,6 +901,9 @@ NuCompileExpression(NuIrList *irl, AST *node) {
     } break;
     case AST_EXPRLIST: {
         pushed = NuCompileExprList(irl, node);
+    } break;
+    case AST_RESULT: {
+        pushed = NuCompileExpression(irl, curfunc->resultexpr);
     } break;
     default:
         ERROR(node, "Unknown expression node %d\n", node->kind);
@@ -1013,6 +1041,16 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
     case AST_ASSIGN:
         NuCompileAssign(irl, ast, 0);
         break;
+    case AST_GOSUB: {
+        NuIrLabel *lab = NuGetLabelFromSymbol( ast, GetUserIdentifierName(ast->left) );
+        if (curfunc->numparams != 0 || curfunc->numresults != 0) {
+            WARNING(ast, "GOSUB in a function with parameters or results will probably not work correctly");
+        }
+        if (lab) {
+            NuEmitAddress(irl, lab);
+            NuEmitOp(irl, NU_OP_GOSUB);
+        }
+    } break;
     case AST_GOTO: {
         NuIrLabel *lab = NuGetLabelFromSymbol( ast, GetUserIdentifierName(ast->left) );
         if (lab) {
@@ -1222,7 +1260,12 @@ NuCompileFunction(Function *F) {
                 NuEmitConst(irl, 0);
                 NuEmitOp(irl, NU_OP_RET);
             } else {
-                ERROR(F->body, "Internal error, function does not end with RET");
+                // FIXME: maybe we don't actually need to do this?
+                // it's possible there are already returns before this
+                int n = NuCompileExpression(irl, F->resultexpr);
+                NuEmitConst(irl, NumArgLongs(curfunc));
+                NuEmitConst(irl, n);
+                NuEmitOp(irl, NU_OP_RET);
             }
         }
     }

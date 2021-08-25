@@ -1858,7 +1858,8 @@ MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ, int is_private, unsi
         ret = NewAST(AST_LISTHOLDER, newdecl, NULL);
         P->pendingvarblock = AddToList(P->pendingvarblock, ret);
     } else {
-        ERROR(sub, "Re-defining member %s", name);
+        // this can happen harmlessly, so do not warn
+        //ERROR(sub, "Re-defining member %s", name);
     }
     return ret;
 }
