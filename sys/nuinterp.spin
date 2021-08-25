@@ -258,9 +258,9 @@ do_enter
 '
 ' GOSUB:
 ' similar to CALL + ENTER, sets up stack so RET gets us back to here
+' tos is address for GOSUB
 ' nos is number of locals... this is awkward, strictly we'd like to
 ' copy these, but for now punt and assume it does not matter
-' tos is address for GOSUB
 '
 impl_GOSUB
 	mov	old_pc, ptrb

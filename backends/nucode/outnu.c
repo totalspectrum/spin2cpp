@@ -1047,6 +1047,7 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
             WARNING(ast, "GOSUB in a function with parameters or results will probably not work correctly");
         }
         if (lab) {
+            NuEmitConst(irl, NumLocalLongs(curfunc));
             NuEmitAddress(irl, lab);
             NuEmitOp(irl, NU_OP_GOSUB);
         }
