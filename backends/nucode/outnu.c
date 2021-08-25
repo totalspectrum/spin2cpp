@@ -281,6 +281,7 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
         HwReg *hwreg = (HwReg *)sym->val;
         offset = hwreg->addr;
         loadOp = isLoad ? NU_OP_LDREG : NU_OP_STREG;
+        offsetOp = NU_OP_ILLEGAL;
         break;
     }
     default:
