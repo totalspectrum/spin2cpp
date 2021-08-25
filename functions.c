@@ -3094,7 +3094,7 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
         case K_LOGIC_OR:
         case K_LOGIC_XOR:
             if (ExprHasSideEffects(ast->right)) {
-                if (gl_output != OUTPUT_BYTECODE || op == K_LOGIC_XOR) {
+                if ( gl_output != OUTPUT_BYTECODE || (op == K_LOGIC_XOR || gl_interp_kind == INTERP_KIND_NUCODE) ) {
                     // bytecode has native support for logic AND/OR,
                     // but transform them for other backends
                     ASTReportInfo saveinfo;
