@@ -256,6 +256,23 @@ main(int argc, const char **argv)
         } else if (!strcmp(argv[0], "-v")) {
             cmd->quiet = 0;
             argv++; --argc;
+        } else if (!strcmp(argv[0], "-1")) {
+            gl_p2 = 0;
+            argv++; --argc;
+        } else if (!strcmp(argv[0], "-1bc")) {
+            gl_p2 = 0;
+            gl_output = OUTPUT_BYTECODE;
+            gl_interp_kind = INTERP_KIND_P1ROM;
+            cmd->outputBytecode = 1;
+            cmd->outputAsm = 0;
+            argv++; --argc;
+        } else if (!strcmp(argv[0], "-2nu")) {
+            gl_p2 = DEFAULT_P2_VERSION;
+            gl_output = OUTPUT_BYTECODE;
+            gl_interp_kind = INTERP_KIND_NUCODE;
+            cmd->outputBytecode = 1;
+            cmd->outputAsm = 0;
+            argv++; --argc;
         } else if (!strncmp(argv[0], "-2", 2)) {
             gl_p2 = DEFAULT_P2_VERSION;
             if (argv[0][2] >= 'a' && argv[0][2] <= 'z') {

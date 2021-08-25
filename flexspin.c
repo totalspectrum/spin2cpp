@@ -332,6 +332,16 @@ main(int argc, const char **argv)
         } else if (!strcmp(argv[0], "-u")) {
             // ignore -u, we always eliminate unused methods
             argv++; --argc;
+        } else if (!strcmp(argv[0], "-1")) {
+            gl_p2 = 0;
+            argv++; --argc;
+        } else if (!strcmp(argv[0], "-1bc")) {
+            gl_p2 = 0;
+            gl_interp_kind = INTERP_KIND_P1ROM;
+            gl_output = OUTPUT_BYTECODE;
+            cmd->outputBytecode = 1;
+            cmd->outputAsm = 0;
+            argv++; --argc;
         } else if (!strcmp(argv[0], "-2nu")) {
             gl_p2 = DEFAULT_P2_VERSION;
             gl_interp_kind = INTERP_KIND_NUCODE;
