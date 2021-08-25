@@ -1,7 +1,7 @@
 //
 // binary data output for spin2cpp
 //
-// Copyright 2012-2019 Total Spectrum Software Inc.
+// Copyright 2012-2021 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -11,6 +11,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include "spinc.h"
+#include "becommon.h"
 #include "outcpp.h"
 
 void

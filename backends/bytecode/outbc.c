@@ -3343,7 +3343,7 @@ BCCompileObject(ByteOutputBuffer *bob, Module *P) {
         flexbuf_init(&datBuf,2048);
         flexbuf_init(&datRelocs,1024);
         // FIXME for some reason, this sometimes(??) prints empty DAT blocks for subobjects ???
-        PrintDataBlock(&datBuf,P,NULL,&datRelocs);
+        PrintDataBlock(&datBuf,P->datblock,NULL,&datRelocs);
         BOB_Comment(bob,"--- DAT Block");
         datSpan = BOB_Push(bob,(uint8_t*)flexbuf_peek(&datBuf),flexbuf_curlen(&datBuf),NULL);
         BCProcessDatRelocs(P,datSpan,(Reloc*)flexbuf_peek(&datRelocs),flexbuf_curlen(&datRelocs)/sizeof(Reloc));

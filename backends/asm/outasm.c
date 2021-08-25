@@ -5829,7 +5829,7 @@ EmitDatSection(IRList *irl, Module *P)
   relocs = (Flexbuf *)calloc(1, sizeof(*relocs));
   flexbuf_init(fb, 32768);
   flexbuf_init(relocs, 512);
-  PrintDataBlock(fb, P, NULL,relocs);
+  PrintDataBlock(fb, P->datblock, NULL,relocs);
   op = NewOperand(IMM_BINARY, (const char *)fb, (intptr_t)relocs);
   ir = EmitOp2(irl, OPC_LABELED_BLOB, ModData(P)->datlabel, op);
   ir->src2 = (Operand *)P;

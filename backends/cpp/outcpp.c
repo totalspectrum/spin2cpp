@@ -12,6 +12,7 @@
 #include <ctype.h>
 #include "spinc.h"
 #include "outcpp.h"
+#include "becommon.h"
 
 /*
  * print out a declaration for the dat[] array
@@ -877,7 +878,7 @@ PrintCppFile(Flexbuf *f, Module *parse)
                 PrintDatArrayName(f, parse, " = {\n", true);
             }
             datacount = 0;
-            PrintDataBlock(&datb, parse, NULL, &relocbuf);
+            PrintDataBlock(&datb, parse->datblock, NULL, &relocbuf);
             siz = flexbuf_curlen(&datb);
             datbytes = (unsigned char *)flexbuf_get(&datb);
             while (siz > 0) {

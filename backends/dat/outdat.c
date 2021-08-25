@@ -11,6 +11,7 @@
 #include <math.h>
 #include <errno.h>
 #include "spinc.h"
+#include "becommon.h"
 
 bool IsRelativeHubAddress(AST *);
 
@@ -150,7 +151,7 @@ OutputDatFile(const char *fname, Module *P, int prefixBin)
         /* output a binary header */
         OutputSpinDummyHeader(&fb, P);
     }
-    PrintDataBlock(&fb, P, NULL, NULL);
+    PrintDataBlock(&fb, P->datblock, NULL, NULL);
     if (prefixBin && !gl_p2) {
         // output the actual Spin program
         OutputSpinDummyFooter(&fb);
@@ -1853,7 +1854,7 @@ outputVarDeclare(Flexbuf *f, AST *ast, Flexbuf *relocs)
  * print out a data block
  */
 void
-PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs)
+PrintDataBlock(Flexbuf *f, AST *list, DataBlockOutFuncs *funcs, Flexbuf *relocs)
 {
     AST *ast;
     AST *top;
@@ -1870,7 +1871,7 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs)
     
     if (gl_errors != 0)
         return;
-    top = P->datblock;
+    top = list;
     while (top) {
         ast = top;
         if (top->kind == AST_COMMENTEDNODE) {

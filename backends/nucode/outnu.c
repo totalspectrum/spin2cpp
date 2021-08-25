@@ -1225,7 +1225,7 @@ static void NuCompileObject(struct flexbuf *fb, Module *P) {
 
         flexbuf_init(&datBuf,2048);
         flexbuf_init(&datRelocs,1024);
-        PrintDataBlock(&datBuf,P,NULL,&datRelocs);
+        PrintDataBlock(&datBuf,P->datblock,NULL,&datRelocs);
         OutputAlignLong(&datBuf);
         //NuOutputLabelNL(fb, ModData(P)->datLabel); // actually done by OutputDataBlob
         OutputDataBlob(fb, &datBuf, &datRelocs, NuLabelName(ModData(P)->datLabel));
