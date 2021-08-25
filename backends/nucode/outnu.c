@@ -910,6 +910,38 @@ NuCompileStmtlist(NuIrList *irl, AST *list) {
     }
 }
 
+static void NuCompileInlineAsm(NuIrList *irl, AST *ast) {
+    AST *list = ast->left;
+    NuIrLabel *startLabel;
+    NuFunData *fdata = FunData(curfunc);
+    unsigned startPos, endPos;
+    
+    if (!fdata->dataLabel) {
+        fdata->dataLabel = NuCreateLabel();
+        flexbuf_init(&fdata->dataBuf, 1024);
+    }
+    startPos = flexbuf_curlen(&fdata->dataBuf);
+    startLabel = NuIrOffsetLabel(fdata->dataLabel, startPos);
+    PrintDataBlock(&fdata->dataBuf,list,NULL,NULL);
+    // append a RET instruction
+    // which is $FD64002D
+    flexbuf_addchar(&fdata->dataBuf, 0x2d);
+    flexbuf_addchar(&fdata->dataBuf, 0x00);
+    flexbuf_addchar(&fdata->dataBuf, 0x64);
+    flexbuf_addchar(&fdata->dataBuf, 0xfd);
+    endPos = flexbuf_curlen(&fdata->dataBuf);
+
+    // adjust to number of longs
+    endPos = ((endPos - startPos) + 3) / 4;
+    // sanity check size
+    if (endPos > 0xff) {
+        ERROR(ast, "Inline assembly is too long (%d longs)\n", endPos);
+    }
+    NuEmitAddress(irl, startLabel);
+    NuEmitConst(irl, endPos - 1);
+    NuEmitOp(irl, NU_OP_INLINEASM);
+}
+
 static void NuCompileForLoop(NuIrList *irl, AST *ast, int atleastonce) {
     AST *initstmt;
     AST *loopcond;
@@ -1106,6 +1138,9 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
     case AST_LOCAL_IDENTIFIER:
     case AST_RESULT:
         /* do nothing */
+        break;
+    case AST_INLINEASM:
+        NuCompileInlineAsm(irl, ast);
         break;
     default:
         ERROR(ast, "Unhandled node type %d in NuCompileStatement", ast->kind);

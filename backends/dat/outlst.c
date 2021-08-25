@@ -376,7 +376,7 @@ OutputLstFile(const char *fname, Module *P)
     flexbuf_init(&fb, BUFSIZ);
     initOutput(P);
     
-    PrintDataBlock(&fb, P, &lstOutputFuncs, NULL);
+    PrintDataBlock(&fb, P->datblock, &lstOutputFuncs, NULL);
 
     // finish up any pending source code
     if (current_lex) {

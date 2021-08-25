@@ -745,6 +745,9 @@ extern unsigned int gl_hub_base;
    0x20 - 0x30 (VGA settings (not used by fastspin)
 */
 
+/* base address for inline variables in COG memory */
+#define PASM_INLINE_ASM_VAR_BASE 0x1d0
+
 /*
  * functions to initialize lexers
  */

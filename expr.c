@@ -1529,6 +1529,27 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
                     return floatExpr(intAsFloat(e.val));
                 }
             }
+            case SYM_PARAMETER:
+            case SYM_RESULT:
+            case SYM_LOCALVAR:
+            case SYM_TEMPVAR:
+            {
+                if ((flags & PASM_FLAG) && curfunc) {
+                    // we must be in inline assembly
+                    offset = (sym->offset + 3) / 4;
+                    if (offset > 16) {
+                        ERROR(expr, "Only the first 8 variables in a function may be accessed in inline assembly");
+                    }
+                    offset += PASM_INLINE_ASM_VAR_BASE;
+                    return intExpr(offset);
+                }
+                if (reportError) {
+                    ERROR(expr, "Symbol %s may not be accessed in inline assembly", sym->user_name);
+                } else {
+                    *valid = 0;
+                }
+                return intExpr(0);
+            } break;
             case SYM_LABEL:
                 if (flags & PASM_FLAG) {
                     Label *lref = (Label *)sym->val;

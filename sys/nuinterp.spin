@@ -342,14 +342,25 @@ impl_PUSH_8
 	call	#\impl_DUP
   _ret_	mov	tos, #8
 
-impl_PUSH_M4
-	call	#\impl_DUP
-  _ret_	neg	tos, #4
-
-impl_PUSH_M8
-	call	#\impl_DUP
-  _ret_	neg	tos, #8
-
+' load inline assembly and jump to it
+impl_INLINEASM
+	' load local variables
+	setq	#15
+	rdlong	$1d0, dbase
+	' load code to $0
+	setq	tos
+	rdlong	$0, nos
+	' drop from stack
+	call	#\impl_DROP2
+	
+	' call inline code
+	call	#\0-0
+	
+	' save local variables
+	setq	#15
+	wrlong	$1d0, dbase
+	ret
+	
 impl_HALT
 	waitx	##20000000
 	cogid	pa
@@ -361,7 +372,7 @@ end_lut
 	org	$160
 OPC_TABLE
 
-	fit	$1ec
+	fit	$1d0 ' inline assembly variables start here
 	orgh
 impl_LDB
   _ret_	rdbyte tos, tos
