@@ -85,7 +85,7 @@ pri _setbaud(baudrate) | bitperiod, bit_mode
   _wrpin(_txpin, _txmode)
   _wxpin(_txpin, bit_mode)
   _wrpin(_rxpin, _rxmode)
-  _wxpin(_rxpin, bit_mode + 20)  ' async using 28 bits instead of 8
+  _wxpin(_rxpin, bit_mode)
   _dirh(_txpin)
   _dirh(_rxpin)
   
@@ -100,7 +100,7 @@ pri _txraw(c) | z
 
 ' timeout is approximately in milliseconds (actually in 1024ths of a second)
 pri _rxraw(timeout = 0) : rxbyte = long | z, endtime, temp2, rxpin
-  if _bitcycles == 0
+  if long[$1c] == 0
     _setbaud(__default_baud__)
   if timeout
     endtime := _getcnt() + timeout * (__clkfreq_var >> 10)

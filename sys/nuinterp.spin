@@ -684,6 +684,9 @@ impl_WYPIN
 	wypin	tos, nos
 	jmp	#\impl_DROP2
 
+impl_RDPIN
+  _ret_	rdpin	tos, tos
+	
 impl_XORO
 	xoro32	tos
   _ret_	mov	tos, tos

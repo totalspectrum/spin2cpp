@@ -85,6 +85,7 @@
     X(WRPIN)     /* smart pin write */ \
     X(WXPIN)     /* smart pin write */ \
     X(WYPIN)     /* smart pin write */ \
+    X(RDPIN)     /* smart pin read */ \
     \
     X(GETCTHL)   /* get current cycle counter */ \
     X(WAITX)     /* delay for tos cycles */ \
