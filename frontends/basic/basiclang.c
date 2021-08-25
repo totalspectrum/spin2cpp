@@ -775,7 +775,7 @@ ParsePrintStatement(AST *ast)
             if (IsConstExpr(expr) && EvalConstExpr(expr) == 10) {
                 seq = addPrintCall(seq, handle, basic_print_nl, NULL, NULL);
             } else {
-                seq = addPrintCall(seq, handle, basic_print_char, expr, NULL);
+                seq = addPrintCall(seq, handle, basic_print_char, expr, fmtAst);
             }
             continue;
         }
