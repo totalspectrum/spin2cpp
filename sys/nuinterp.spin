@@ -25,11 +25,7 @@ clock_freq
 	long	0	' clock frequency ($14)
 clock_mode
 	long	0	' clock mode	  ($18)
-#ifdef SERIAL_DEBUG
-	long	230_400	' default baud rate for debug ($1c)
-#else
 	long	0	' reserved for baud ($1c)
-#endif	
 entry_pc
 	long	2	' initial pc ($20)
 entry_vbase
@@ -76,7 +72,7 @@ spininit
 	rdlong	ptrb, --ptra		' ptrb serves as PC
 continue_startup
 #ifdef SERIAL_DEBUG
-       rdlong	ser_debug_arg1, #$1c
+       mov	ser_debug_arg1, ##230_400
        call	#ser_debug_init
        mov	ser_debug_arg1, ##@init_msg
        call	#ser_debug_str
@@ -112,6 +108,9 @@ old_dbase res  	1
 old_pc	res    	1
 old_vbase res  	1
 old_cogsp res	1
+#ifdef SERIAL_DEBUG
+dbg_flag res	1
+#endif
 
 	fit	$160	' leave room for 4 debug registers
 	org	$200
@@ -119,6 +118,9 @@ start_lut
 	' initialization code
 	mov	old_pc, #0
 	mov	cogsp, #0
+#ifdef SERIAL_DEBUG
+       mov	dbg_flag, #0
+#endif
 	' cogstack_inc will act in alts/altd to increment the D field
 	mov	cogstack_inc, ##(cogstack) | (1<<9)
 	' cogstack_dec will act in alts/altd to decrement D, and act like it's  predecrement
@@ -134,9 +136,15 @@ start_lut
 	' interpreter loop
 main_loop
 #ifdef SERIAL_DEBUG
-	call	#dump_regs
+	cmp	dbg_flag, #0 wz
+  if_nz	call	#dump_regs
 #endif	
 	rdbyte	pa, ptrb++
+#ifdef SERIAL_DEBUG
+	cmp	pa, #$ff wz
+  if_z	xor	dbg_flag, #1
+  if_z	jmp	#main_loop
+#endif  
 	altgw	pa, #OPC_TABLE
 	getword	tmp
 	call	tmp
@@ -829,6 +837,7 @@ dump_regs
 
 	call	#ser_debug_nl
 
+#ifdef NEVER
 	mov	ser_debug_arg1, ##stack_msg
 	call	#ser_debug_str
 	sub	dbase, #8
@@ -861,8 +870,7 @@ dump_regs
 	sub	dbase, #16
 
 	call	#ser_debug_nl
-	
-	waitx	##10_000_000
+#endif	
 	ret
 #endif ' SERIAL_DEBUG
 
