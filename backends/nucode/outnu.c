@@ -571,7 +571,7 @@ static int NuCompileAssign(NuIrList *irl, AST *ast, int inExpression)
         if (got != n) {
             ERROR(rhs, "Expected to assign %d items but only did %d", n, got);
         }
-        return got;
+        return 0; // everything has been popped
     }
     // single assignment
     op = NuCompileLhsAddress(irl, lhs);
