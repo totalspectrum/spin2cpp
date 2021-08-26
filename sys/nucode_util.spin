@@ -78,16 +78,16 @@ con
 
 pri _setbaud(baudrate) | bitperiod, bit_mode
   bitperiod := (__clkfreq_var / baudrate)
-  _dirl(_txpin)
-  _dirl(_rxpin)
+  _fltl(_txpin)
+  _fltl(_rxpin)
   long[$1c] := baudrate
   bit_mode := 7 + (bitperiod << 16)
   _wrpin(_txpin, _txmode)
   _wxpin(_txpin, bit_mode)
   _wrpin(_rxpin, _rxmode)
   _wxpin(_rxpin, bit_mode)
-  _dirh(_txpin)
-  _dirh(_rxpin)
+  _drvl(_txpin)
+  _drvl(_rxpin)
   
 pri _txraw(c) | z
   if long[$1c] == 0
@@ -111,7 +111,10 @@ pri _rxraw(timeout = 0) : rxbyte = long | z, endtime, temp2, rxpin
     z := _pinr(rxpin)
     if z
       rxbyte := _rdpin(rxpin)>>24
-  until z or (timeout and (_getcnt() - endtime < 0))
+      quit
+    if timeout
+      if _getcnt() - endtime < 0
+        quit
 
 ''
 '' memset/memmove are here (in processor specific code)
