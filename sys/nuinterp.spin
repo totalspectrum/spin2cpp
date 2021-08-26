@@ -294,7 +294,7 @@ impl_RET
 	call	#\impl_POP
 	altd	tmp, #0
 	mov	0-0, popval
-	djf	tmp, #.poprets
+	djnf	tmp, #.poprets
 .poprets_end
 
 	' restore the stack
@@ -486,30 +486,25 @@ impl_ZEROX
 impl_ENCODE
 	' ENCODE should return 0-32, but note Spin2 returns 0-31 with
 	' ENCOD(0) == 0
-	encod	nos, tos wc
-  if_c	add	nos, #1		' if src nonzero, add 1
-	mov	tos, nos
-	jmp	#\impl_DOWN
+	encod	tos, tos wc
+  if_c	add	tos, #1		' if src nonzero, add 1
+	ret
 
 impl_ENCODE2
-	encod	nos, tos
-	mov	tos, nos
-	jmp	#\impl_DOWN
+  _ret_	encod	tos, tos
+
 
 impl_SHL
 	shl	nos, tos
-	mov	tos, nos
-	jmp	#\impl_DOWN
+	jmp	#\impl_DROP
 
 impl_SHR
 	shr	nos, tos
-	mov	tos, nos
-	jmp	#\impl_DOWN
+	jmp	#\impl_DROP
 
 impl_SAR
 	sar	nos, tos
-	mov	tos, nos
-	jmp	#\impl_DOWN
+	jmp	#\impl_DROP
 
 impl_MINS
 	fges	tos, nos
