@@ -340,30 +340,15 @@ impl_RET
 
 	ret
 
-impl_PUSHI8
+impl_PUSHI
 	call	#\impl_DUP
-	rdbyte	tos, ptrb++
-  _ret_	signx	tos, #7
+  _ret_	rdlong	tos, ptrb++
 
-impl_PUSH_0
+impl_PUSHA
 	call	#\impl_DUP
-  _ret_	mov	tos, #0
-
-impl_PUSH_1
-	call	#\impl_DUP
-  _ret_	mov	tos, #1
-	
-impl_PUSH_2
-	call	#\impl_DUP
-  _ret_	mov	tos, #2
-	
-impl_PUSH_4
-	call	#\impl_DUP
-  _ret_	mov	tos, #4
-
-impl_PUSH_8
-	call	#\impl_DUP
-  _ret_	mov	tos, #8
+	sub	ptrb, #1	' back up
+  	rdlong	tos, ptrb++
+  _ret_ shr	tos, #8		' remove opcode
 
 ' load inline assembly and jump to it
 impl_INLINEASM
@@ -588,21 +573,6 @@ impl_NOT
 
 impl_ABS
   _ret_	abs	tos, tos
-
-impl_PUSHI32
-	call	#\impl_DUP
-  _ret_	rdlong	tos, ptrb++
-
-impl_PUSHA
-	call	#\impl_DUP
-	sub	ptrb, #1	' back up
-  	rdlong	tos, ptrb++
-  _ret_ shr	tos, #8		' remove opcode
-
-impl_PUSHI16
-	call	#\impl_DUP
-	rdword	tos, ptrb++
-  _ret_	signx	tos, #15
 
 impl_GETCTHL
 	call	#\impl_DUP2

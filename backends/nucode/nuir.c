@@ -83,23 +83,7 @@ NuIr *NuEmitCommentedOp(NuIrList *irl, NuIrOpcode op, const char *comment) {
 NuIr *NuEmitConst(NuIrList *irl, int32_t val) {
     NuIr *r;
 
-    if (val == 0) {
-        r = NuEmitOp(irl, NU_OP_PUSH_0);
-    } else if (val == 1) {
-        r = NuEmitOp(irl, NU_OP_PUSH_1);
-    } else if (val == 2) {
-        r = NuEmitOp(irl, NU_OP_PUSH_2);
-    } else if (val == 4) {
-        r = NuEmitOp(irl, NU_OP_PUSH_4);
-    } else if (val == 8) {
-        r = NuEmitOp(irl, NU_OP_PUSH_8);
-    } else if (val >= -128 && val <= 127) {
-        r = NuEmitOp(irl, NU_OP_PUSHI8);
-    } else if (val >= -32768 && val <= 32767) {
-        r = NuEmitOp(irl, NU_OP_PUSHI16);
-    } else {
-        r = NuEmitOp(irl, NU_OP_PUSHI32);
-    }
+    r = NuEmitOp(irl, NU_OP_PUSHI);
     r->val = val;
     return r;
 }
@@ -239,12 +223,8 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     impl_ptrs[NU_OP_ENTER] = "";
     impl_ptrs[NU_OP_RET] = "";
     impl_ptrs[NU_OP_INLINEASM] = "";
-    impl_ptrs[NU_OP_PUSHI8] = "";
-    impl_ptrs[NU_OP_PUSH_0] = "";
-    impl_ptrs[NU_OP_PUSH_1] = "";
-    impl_ptrs[NU_OP_PUSH_2] = "";
-    impl_ptrs[NU_OP_PUSH_4] = "";
-    impl_ptrs[NU_OP_PUSH_8] = "";
+    impl_ptrs[NU_OP_PUSHI] = "";
+    impl_ptrs[NU_OP_PUSHA] = "";
     
     // find the other implementations that we may need
     while (c) {
@@ -344,13 +324,7 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
         case NU_OP_ALIGN:
             flexbuf_printf(fb, "\talignl");
             break;
-        case NU_OP_PUSHI8:
-            flexbuf_printf(fb, "\tbyte\tNU_OP_%s, %d", NuOpName[op], ir->val);
-            break;
-        case NU_OP_PUSHI16:
-            flexbuf_printf(fb, "\tbyte\tNU_OP_%s, word %d", NuOpName[op], ir->val);
-            break;
-        case NU_OP_PUSHI32:
+        case NU_OP_PUSHI:
             flexbuf_printf(fb, "\tbyte\tNU_OP_%s, long %d", NuOpName[op], ir->val);
             break;
         case NU_OP_PUSHA:

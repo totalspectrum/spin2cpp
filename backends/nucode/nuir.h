@@ -97,15 +97,8 @@
     \
     X(XORO)    /* xoro32 random number generation */ \
     \
-    X(PUSHI32)   /* push immediate 32 bit */ \
-    X(PUSHI16)   /* push immediate 16 bit */ \
-    X(PUSHI8)    /* push immediate 8 bit */ \
+    X(PUSHI)     /* push immediate 32 bit */ \
     X(PUSHA)     /* push address */ \
-    X(PUSH_0)    /* push zero */ \
-    X(PUSH_1)    /* push one */ \
-    X(PUSH_2)    /* push two */ \
-    X(PUSH_4)    /* push four */ \
-    X(PUSH_8)    /* push eight */ \
     \
     X(INLINEASM)  /* load inline assembly */ \
     \
