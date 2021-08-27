@@ -4,9 +4,9 @@
 #include "sys/nuinterp.spin.h"
 
 #define DIRECT_BYTECODE 0
-#define PUSHI_BYTECODE  1
-#define PUSHA_BYTECODE  2
-#define FIRST_BYTECODE  3
+//#define PUSHI_BYTECODE  1
+//#define PUSHA_BYTECODE  2
+#define FIRST_BYTECODE  1
 
 static const char *NuOpName[] = {
     #define X(m) #m,
@@ -14,29 +14,64 @@ static const char *NuOpName[] = {
     #undef X
 };
 
-static struct NuOpUsage {
-    int used;
-    int ircode;
-    int bytecode;
-} opusage[NU_OP_DUMMY];
-
 static const char *impl_ptrs[NU_OP_DUMMY];
 
 static int usage_sortfunc(const void *Av, const void *Bv) {
-    const struct NuOpUsage *A = Av;
-    const struct NuOpUsage *B = Bv;
+    NuBytecode **A = (NuBytecode **)Av;
+    NuBytecode **B = (NuBytecode **)Bv;
     /* sort with larger used coming first */
-    return B->used - A->used;
+    return B[0]->usage - A[0]->usage;
 }
 
 void NuIrInit(NuContext *ctxt) {
+    const char *ptr = (char *)sys_nuinterp_spin;
+    const char *linestart;
+    int c;
     int i;
-
+    
     memset(ctxt, 0, sizeof(*ctxt));
-    for (i = 0; i < NU_OP_DUMMY; i++) {
-        opusage[i].used = 0;
-        opusage[i].ircode = i;
-        opusage[i].bytecode = -1;
+
+    // scan for implementation of primitives
+    // first, skip the initial interpreter
+    for(;;) {
+        c = *ptr++;
+        if (!c || c == '\014') break;
+    }
+    // some functions are always built in to the interpreter
+    impl_ptrs[NU_OP_DROP] = "";
+    impl_ptrs[NU_OP_DROP2] = "";
+    impl_ptrs[NU_OP_DUP] = "";
+    impl_ptrs[NU_OP_SWAP] = "";
+    impl_ptrs[NU_OP_OVER] = "";
+    impl_ptrs[NU_OP_CALL] = "";
+    impl_ptrs[NU_OP_CALLM] = "";
+    impl_ptrs[NU_OP_GOSUB] = "";
+    impl_ptrs[NU_OP_ENTER] = "";
+    impl_ptrs[NU_OP_RET] = "";
+    impl_ptrs[NU_OP_INLINEASM] = "";
+    impl_ptrs[NU_OP_PUSHI] = "";
+    impl_ptrs[NU_OP_PUSHA] = "";
+    
+    // find the other implementations that we may need
+    while (c) {
+        linestart = ptr;
+        if (!strncmp(linestart, "impl_", 5)) {
+            // find the opcode this is an implementation of
+            ptr = linestart + 5;
+            for (i = 0; i < NU_OP_DUMMY; i++) {
+                int n = strlen(NuOpName[i]);
+                if (!strncmp(ptr, NuOpName[i], n) && ptr[n] == '\n') {
+                    if (impl_ptrs[i]) {
+                        ERROR(NULL, "Duplicate definition for %s\n", NuOpName[i]);
+                    }
+                    impl_ptrs[i] = linestart;
+                    break;
+                }
+            }
+        }
+        do {
+            c = *ptr++;
+        } while (c != '\n' && c != 0);
     }
 }
 
@@ -69,10 +104,6 @@ NuIr *NuEmitOp(NuIrList *irl, NuIrOpcode op) {
     }
     if (!irl->head) {
         irl->head = r;
-    }
-
-    if (op < NU_OP_DUMMY) {
-        opusage[op].used++;
     }
     return r;
 }
@@ -126,21 +157,21 @@ NuIr *NuEmitNamedOpcode(NuIrList *irl, const char *name) {
 }
 
 #define MAX_BYTECODE 0x4000
-static int cur_bytecode = 0;
-static NuBytecode *globalOps[MAX_BYTECODE];
+static int num_bytecodes = 0;
+static NuBytecode *globalBytecodes[MAX_BYTECODE];
 static NuBytecode *staticOps[NU_OP_DUMMY];
 
 static NuBytecode *
 AllocBytecode()
 {
     NuBytecode *b;
-    if (cur_bytecode == MAX_BYTECODE) {
+    if (num_bytecodes == MAX_BYTECODE) {
         return NULL;
     }
     b = calloc(sizeof(*b), 1);
     b->usage = 1;
-    globalOps[cur_bytecode] = b;
-    cur_bytecode++;
+    globalBytecodes[num_bytecodes] = b;
+    num_bytecodes++;
     return b;
 }
 
@@ -170,7 +201,9 @@ GetBytecodeFor(NuIr *ir)
 void NuCreateBytecodes(NuIrList *irl)
 {
     NuIr *ir;
-
+    int i;
+    int code;
+    
     // create an initial set of bytecodes
     while (irl) {
         for (ir = irl->head; ir; ir = ir->next) {
@@ -178,11 +211,20 @@ void NuCreateBytecodes(NuIrList *irl)
         }
         irl = irl->nextList;
     }
-    
-    size_t elemsize = sizeof(opusage[0]);
-    qsort(&opusage, sizeof(opusage) / elemsize, elemsize, usage_sortfunc);
-    //printf("Most used opcode: %s\n", NuOpName[opusage[0].ircode]);
-    //printf("Least used opcode: %s\n", NuOpName[opusage[lastelem].ircode]);
+
+    // sort the bytecodes in order of usage
+    size_t elemsize = sizeof(NuBytecode *);
+    qsort(&globalBytecodes, num_bytecodes, elemsize, usage_sortfunc);
+
+    // assign bytecodes based on order of usage
+    code = FIRST_BYTECODE;
+    for (i = 0; i < num_bytecodes; i++) {
+        if (code < 0xff && globalBytecodes[i]->usage > 0) {
+            globalBytecodes[i]->code = code++;
+        } else {
+            globalBytecodes[i]->code = DIRECT_BYTECODE;
+        }
+    }
 }
 
 void NuOutputLabel(Flexbuf *fb, NuIrLabel *label) {
@@ -248,11 +290,9 @@ static long GetHeapSize() {
 void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
 {
     const char *ptr = (char *)sys_nuinterp_spin;
-    const char *linestart;
     int c;
     int i;
     uint32_t heapsize = GetHeapSize() + 4;
-    int bytecode;
     
     heapsize = (heapsize+3)&~3; // long align
     nu_heap_size = heapsize;
@@ -268,61 +308,15 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
             flexbuf_addchar(fb, c);
         }
     }
-    // some functions are always built in to the interpreter
-    impl_ptrs[NU_OP_DROP] = "";
-    impl_ptrs[NU_OP_DROP2] = "";
-    impl_ptrs[NU_OP_DUP] = "";
-    impl_ptrs[NU_OP_SWAP] = "";
-    impl_ptrs[NU_OP_OVER] = "";
-    impl_ptrs[NU_OP_CALL] = "";
-    impl_ptrs[NU_OP_CALLM] = "";
-    impl_ptrs[NU_OP_GOSUB] = "";
-    impl_ptrs[NU_OP_ENTER] = "";
-    impl_ptrs[NU_OP_RET] = "";
-    impl_ptrs[NU_OP_INLINEASM] = "";
-    impl_ptrs[NU_OP_PUSHI] = "";
-    impl_ptrs[NU_OP_PUSHA] = "";
-    
-    // find the other implementations that we may need
-    while (c) {
-        linestart = ptr;
-        if (!strncmp(linestart, "impl_", 5)) {
-            // find the opcode this is an implementation of
-            ptr = linestart + 5;
-            for (i = 0; i < NU_OP_DUMMY; i++) {
-                int n = strlen(NuOpName[i]);
-                if (!strncmp(ptr, NuOpName[i], n) && ptr[n] == '\n') {
-                    if (impl_ptrs[i]) {
-                        ERROR(NULL, "Duplicate definition for %s\n", NuOpName[i]);
-                    }
-                    impl_ptrs[i] = linestart;
-                    break;
-                }
-            }
-        }
-        do {
-            c = *ptr++;
-        } while (c != '\n' && c != 0);
-    }
 
     // add the predefined entries
     flexbuf_printf(fb, "\tword\timpl_DIRECT\n");
-    flexbuf_printf(fb, "\tword\timpl_PUSHI\n");
-    flexbuf_printf(fb, "\tword\timpl_PUSHA\n");
+    //flexbuf_printf(fb, "\tword\timpl_PUSHI\n");
+    //flexbuf_printf(fb, "\tword\timpl_PUSHA\n");
     
     // now add the jump table
-    bytecode = FIRST_BYTECODE;
-    for (i = 0; opusage[i].used > 0 && i < (int)NU_OP_DUMMY; i++) {
-        if (opusage[i].ircode == NU_OP_PUSHI) {
-            opusage[i].bytecode = PUSHI_BYTECODE;
-            continue;
-        }
-        if (opusage[i].ircode == NU_OP_PUSHA) {
-            opusage[i].bytecode = PUSHA_BYTECODE;
-            continue;
-        }
-        flexbuf_printf(fb, "\tword\timpl_%s\n", NuOpName[opusage[i].ircode]);
-        opusage[i].bytecode = bytecode++;
+    for (i = 0; i < num_bytecodes; i++) {
+        flexbuf_printf(fb, "\tword\timpl_%s\n", globalBytecodes[i]->name);
     }
     // end of jump table
     flexbuf_printf(fb, "\talignl\nOPC_TABLE_END\n");
@@ -331,23 +325,22 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     flexbuf_printf(fb, "\ncon\n");
     // predefined
     flexbuf_printf(fb, "\tNU_OP_DIRECT = %d\n", DIRECT_BYTECODE);
-    flexbuf_printf(fb, "\tNU_OP_PUSHI = %d\n", PUSHI_BYTECODE);
-    flexbuf_printf(fb, "\tNU_OP_PUSHA = %d\n", PUSHA_BYTECODE);
     // others
-    for (i = 0; opusage[i].used > 0 && i < NU_OP_DUMMY; i++) {
-        int bc = opusage[i].bytecode;
-        if (bc >= FIRST_BYTECODE) {
-            flexbuf_printf(fb, "\tNU_OP_%s = %d  ' (used %d times)\n", NuOpName[opusage[i].ircode], opusage[i].bytecode, opusage[i].used);
+    for (i = 0; i < num_bytecodes; i++) {
+        NuBytecode *bc = globalBytecodes[i];
+        int code = bc->code;
+        if (code >= FIRST_BYTECODE) {
+            flexbuf_printf(fb, "\tNU_OP_%s = %d  ' (used %d times)\n", bc->name, code, bc->usage);
         }
     }
     
     // now emit opcode implementations
     flexbuf_printf(fb, "dat\n\torgh ($ < $400) ? $400 : $\n");
-    for (i = 0; opusage[i].used > 0 && i < (int)NU_OP_DUMMY; i++) {
-        int op = opusage[i].ircode;
-        const char *ptr = impl_ptrs[op];
+    for (i = 0; i < num_bytecodes; i++) {
+        NuBytecode *bc = globalBytecodes[i];
+        const char *ptr = bc->impl_ptr;
         if (!ptr) {
-            WARNING(NULL, "no implementation for %s", NuOpName[op]);
+            WARNING(NULL, "no implementation for %s", bc->name);
             continue;
         }
         for(;;) {
