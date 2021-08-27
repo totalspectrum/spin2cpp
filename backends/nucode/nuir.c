@@ -4,9 +4,9 @@
 #include "sys/nuinterp.spin.h"
 
 #define DIRECT_BYTECODE 0
-//#define PUSHI_BYTECODE  1
+#define PUSHI_BYTECODE  1
 //#define PUSHA_BYTECODE  2
-#define FIRST_BYTECODE  1
+#define FIRST_BYTECODE  2
 
 static const char *NuOpName[] = {
     #define X(m) #m,
@@ -156,10 +156,12 @@ NuIr *NuEmitNamedOpcode(NuIrList *irl, const char *name) {
     return NuEmitOp(irl, op);
 }
 
-#define MAX_BYTECODE 0x4000
+#define MAX_BYTECODE 0x8000
 static int num_bytecodes = 0;
 static NuBytecode *globalBytecodes[MAX_BYTECODE];
 static NuBytecode *staticOps[NU_OP_DUMMY];
+#define MAX_CONST_OPS 0xffff
+static NuBytecode *constOps[MAX_CONST_OPS+1];
 
 static NuBytecode *
 AllocBytecode()
@@ -176,11 +178,39 @@ AllocBytecode()
 }
 
 static NuBytecode *
+GetBytecodeForConst(intptr_t val)
+{
+    int hash;
+    NuBytecode *b;
+    
+    hash = val & MAX_CONST_OPS;
+    for (b = constOps[hash]; b; b = b->link) {
+        if (b->value == val) {
+            b->usage++;
+            return b;
+        }
+    }
+    b = AllocBytecode();
+    if (!b) {
+        ERROR(NULL, "ran out of bytecode space");
+        return NULL;
+    }
+    b->value = val;
+    b->link = constOps[hash];
+    b->is_const = 1;
+    constOps[hash] = b;
+    return b;
+}
+
+static NuBytecode *
 GetBytecodeFor(NuIr *ir)
 {
     NuBytecode *b;
     if (ir->op >= NU_OP_DUMMY) {
         return NULL;
+    }
+    if (ir->op == NU_OP_PUSHI) {
+        return GetBytecodeForConst(ir->val);
     }
     b = staticOps[ir->op];
     if (b) {
@@ -209,6 +239,7 @@ void NuCreateBytecodes(NuIrList *irl)
     NuIr *ir;
     int i;
     int code;
+    NuBytecode *bc;
     
     // create an initial set of bytecodes
     while (irl) {
@@ -225,10 +256,16 @@ void NuCreateBytecodes(NuIrList *irl)
     // assign bytecodes based on order of usage
     code = FIRST_BYTECODE;
     for (i = 0; i < num_bytecodes; i++) {
-        if (code < 0xf0 && (globalBytecodes[i]->usage > 1 || NuBcIsBranch(globalBytecodes[i]))) {
+        bc = globalBytecodes[i];
+        if (bc->is_const) {
+            globalBytecodes[i]->code = PUSHI_BYTECODE;
+        } else if (NuBcIsBranch(globalBytecodes[i])) {
             globalBytecodes[i]->code = code++;
-        } else {
+        } else if (code >= 0xf8 || globalBytecodes[i]->usage <= 1) {
+            // out of bytecode space, or we don't care about compressing
             globalBytecodes[i]->code = DIRECT_BYTECODE;
+        } else {
+            globalBytecodes[i]->code = code++;
         }
     }
 }
@@ -317,7 +354,7 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
 
     // add the predefined entries
     flexbuf_printf(fb, "\tword\timpl_DIRECT\n");
-    //flexbuf_printf(fb, "\tword\timpl_PUSHI\n");
+    flexbuf_printf(fb, "\tword\timpl_PUSHI\n");
     //flexbuf_printf(fb, "\tword\timpl_PUSHA\n");
     
     // now add the jump table
@@ -335,6 +372,7 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     flexbuf_printf(fb, "\ncon\n");
     // predefined
     flexbuf_printf(fb, "\tNU_OP_DIRECT = %d\n", DIRECT_BYTECODE);
+    flexbuf_printf(fb, "\tNU_OP_PUSHI = %d\n", PUSHI_BYTECODE);
     // others
     for (i = 0; i < num_bytecodes; i++) {
         NuBytecode *bc = globalBytecodes[i];
@@ -350,7 +388,9 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
         NuBytecode *bc = globalBytecodes[i];
         const char *ptr = bc->impl_ptr;
         if (!ptr) {
-            WARNING(NULL, "no implementation for %s", bc->name);
+            if ( ! (bc->is_const) ) {
+                WARNING(NULL, "no implementation for %s", bc->name);
+            }
             continue;
         }
         for(;;) {
@@ -420,9 +460,6 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
         case NU_OP_ALIGN:
             flexbuf_printf(fb, "\talignl");
             break;
-        case NU_OP_PUSHI:
-            flexbuf_printf(fb, "\tbyte\tNU_OP_PUSHI, long %d", ir->val);
-            break;
         case NU_OP_PUSHA:
             flexbuf_printf(fb, "\tbyte\t long NU_OP_PUSHA | (");
             NuOutputLabel(fb, ir->label);
@@ -445,7 +482,11 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
             break;
         default:
             if (bc) {
-                flexbuf_printf(fb, "\tbyte\t%s", NuBytecodeString(bc));
+                if (bc->is_const) {
+                    flexbuf_printf(fb, "\tbyte\tNU_OP_PUSHI, long %d", ir->val);
+                } else {
+                    flexbuf_printf(fb, "\tbyte\t%s", NuBytecodeString(bc));
+                }
             }
             break;
         }

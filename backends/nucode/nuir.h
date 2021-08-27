@@ -137,11 +137,14 @@ typedef struct {
 #define NuLabelName(L) ((L)->name)
 
 typedef struct NuBytecode {
+    struct NuBytecode *link;
     int	code;
     int usage;
+    intptr_t value;
     const char *name;
     const char *impl_ptr;
     unsigned is_branch:1;
+    unsigned is_const:1;
 } NuBytecode;
 
 typedef struct nuir {
