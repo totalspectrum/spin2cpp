@@ -102,8 +102,10 @@
     \
     X(INLINEASM)  /* load inline assembly */ \
     \
-    X(JMPREL)    /* jump forward relative 3*n bytes */ \
+    /* put all branches together here at the end */ \
+    \
     X(BRA)       /* branch always */ \
+    X(JMPREL)    /* jump forward relative 3*n bytes */ \
     X(CBEQ)      /* compare branch if equal */ \
     X(CBNE)      /* compare branch if not equal */ \
     X(CBLTS)     /* compare branch if < signed */ \
