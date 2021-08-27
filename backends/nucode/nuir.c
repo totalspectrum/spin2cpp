@@ -125,9 +125,60 @@ NuIr *NuEmitNamedOpcode(NuIrList *irl, const char *name) {
     return NuEmitOp(irl, op);
 }
 
+#define MAX_BYTECODE 0x4000
+static int cur_bytecode = 0;
+static NuBytecode *globalOps[MAX_BYTECODE];
+static NuBytecode *staticOps[NU_OP_DUMMY];
 
+static NuBytecode *
+AllocBytecode()
+{
+    NuBytecode *b;
+    if (cur_bytecode == MAX_BYTECODE) {
+        return NULL;
+    }
+    b = calloc(sizeof(*b), 1);
+    b->usage = 1;
+    globalOps[cur_bytecode] = b;
+    cur_bytecode++;
+    return b;
+}
+
+static NuBytecode *
+GetBytecodeFor(NuIr *ir)
+{
+    NuBytecode *b;
+    if (ir->op >= NU_OP_DUMMY) {
+        return NULL;
+    }
+    b = staticOps[ir->op];
+    if (b) {
+        b->usage++;
+        return b;
+    }
+    b = AllocBytecode();
+    if (b) {
+        b->name = NuOpName[ir->op];
+        b->impl_ptr = impl_ptrs[ir->op];
+        staticOps[ir->op] = b;
+    } else {
+        ERROR(NULL, "Internal error, too many bytecodes\n");
+        return NULL;
+    }
+    return b;
+}
 void NuCreateBytecodes(NuIrList *irl)
 {
+    NuIr *ir;
+
+    // create an initial set of bytecodes
+    while (irl) {
+        for (ir = irl->head; ir; ir = ir->next) {
+            ir->bytecode = GetBytecodeFor(ir);
+        }
+        irl = irl->nextList;
+    }
+    
     size_t elemsize = sizeof(opusage[0]);
     qsort(&opusage, sizeof(opusage) / elemsize, elemsize, usage_sortfunc);
     //printf("Most used opcode: %s\n", NuOpName[opusage[0].ircode]);
@@ -341,11 +392,13 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
 {
     NuIr *ir;
     NuIrOpcode op;
+    NuBytecode *bc;
     if (!irl || !irl->head) {
         return;
     }
     for (ir = irl->head; ir; ir = ir->next) {
         op = ir->op;
+        bc = ir->bytecode;
         switch(op) {
         case NU_OP_LABEL:
             NuOutputLabel(fb, ir->label);
@@ -354,10 +407,10 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
             flexbuf_printf(fb, "\talignl");
             break;
         case NU_OP_PUSHI:
-            flexbuf_printf(fb, "\tbyte\tNU_OP_%s, long %d", NuOpName[op], ir->val);
+            flexbuf_printf(fb, "\tbyte\tNU_OP_%s, long %d", bc->name, ir->val);
             break;
         case NU_OP_PUSHA:
-            flexbuf_printf(fb, "\tbyte\t long NU_OP_%s | (", NuOpName[op]);
+            flexbuf_printf(fb, "\tbyte\t long NU_OP_%s | (", bc->name);
             NuOutputLabel(fb, ir->label);
             flexbuf_printf(fb, " << 8)");
             break;
@@ -372,13 +425,13 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
         case NU_OP_CBGES:
         case NU_OP_CBGTU:
         case NU_OP_CBGEU:
-            flexbuf_printf(fb, "\tbyte\tNU_OP_%s, word (", NuOpName[op]);
+            flexbuf_printf(fb, "\tbyte\tNU_OP_%s, word (", bc->name);
             NuOutputLabel(fb, ir->label);
             flexbuf_printf(fb, " - ($+2))");
             break;
         default:
-            if (op < NU_OP_DUMMY) {
-                flexbuf_printf(fb, "\tbyte\tNU_OP_%s", NuOpName[op]);
+            if (bc) {
+                flexbuf_printf(fb, "\tbyte\tNU_OP_%s", bc->name);
             }
             break;
         }

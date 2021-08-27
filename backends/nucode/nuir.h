@@ -136,10 +136,9 @@ typedef struct {
 
 typedef struct NuBytecode {
     int	code;
+    int usage;
     const char *name;
     const char *impl_ptr;
-    struct nuir *first;
-    int len;
 } NuBytecode;
 
 typedef struct nuir {
