@@ -2,11 +2,13 @@
 #include "nuir.h"
 #include <stdio.h>
 #include "sys/nuinterp.spin.h"
+#include "becommon.h"
 
 #define DIRECT_BYTECODE 0
 #define PUSHI_BYTECODE  1
 //#define PUSHA_BYTECODE  2
 #define FIRST_BYTECODE  2
+#define MAX_BYTECODE 0xf8
 
 static const char *NuOpName[] = {
     #define X(m) #m,
@@ -21,6 +23,13 @@ static int usage_sortfunc(const void *Av, const void *Bv) {
     NuBytecode **B = (NuBytecode **)Bv;
     /* sort with larger used coming first */
     return B[0]->usage - A[0]->usage;
+}
+
+static int codenum_sortfunc(const void *Av, const void *Bv) {
+    NuBytecode **A = (NuBytecode **)Av;
+    NuBytecode **B = (NuBytecode **)Bv;
+    /* sort with smaller codes coming first */
+    return A[0]->code - B[0]->code;
 }
 
 void NuIrInit(NuContext *ctxt) {
@@ -156,9 +165,9 @@ NuIr *NuEmitNamedOpcode(NuIrList *irl, const char *name) {
     return NuEmitOp(irl, op);
 }
 
-#define MAX_BYTECODE 0x8000
+#define MAX_NUM_BYTECODE 0x8000
 static int num_bytecodes = 0;
-static NuBytecode *globalBytecodes[MAX_BYTECODE];
+static NuBytecode *globalBytecodes[MAX_NUM_BYTECODE];
 static NuBytecode *staticOps[NU_OP_DUMMY];
 #define MAX_CONST_OPS 0xffff
 static NuBytecode *constOps[MAX_CONST_OPS+1];
@@ -167,7 +176,7 @@ static NuBytecode *
 AllocBytecode()
 {
     NuBytecode *b;
-    if (num_bytecodes == MAX_BYTECODE) {
+    if (num_bytecodes == MAX_NUM_BYTECODE) {
         return NULL;
     }
     b = calloc(sizeof(*b), 1);
@@ -232,6 +241,19 @@ GetBytecodeFor(NuIr *ir)
     return b;
 }
 
+static NuBytecode *NuFindCompressBytecode() {
+    int i;
+    NuBytecode *bc;
+    
+    for (i = 0; i < num_bytecodes; i++) {
+        bc = globalBytecodes[i];
+        if (bc->is_const && bc->usage > 2) {
+            return bc;
+        }
+    }
+    return 0;
+}
+
 #define NuBcIsBranch(bc) ((bc)->is_branch)
 
 void NuCreateBytecodes(NuIrList *irl)
@@ -261,13 +283,47 @@ void NuCreateBytecodes(NuIrList *irl)
             globalBytecodes[i]->code = PUSHI_BYTECODE;
         } else if (NuBcIsBranch(globalBytecodes[i])) {
             globalBytecodes[i]->code = code++;
-        } else if (code >= 0xf8 || globalBytecodes[i]->usage <= 1) {
+        } else if (code >= MAX_BYTECODE || globalBytecodes[i]->usage <= 1) {
             // out of bytecode space, or we don't care about compressing
             globalBytecodes[i]->code = DIRECT_BYTECODE;
         } else {
             globalBytecodes[i]->code = code++;
         }
     }
+
+    // while there's room for more bytecodes, find ways to compress the code
+    while (code < (MAX_BYTECODE-1)) {
+        int32_t val;
+        const char *instr = "mov";
+        const char *opname;
+        bc = NuFindCompressBytecode();
+        if (!bc) break;
+        bc->code = code++;
+        if (bc->is_const) {
+            const char *immflag = "#";
+            opname = "PUSH_";
+            val = (int32_t)bc->value;
+            if (val < 0) {
+                val = -val;
+                instr = "neg";
+                opname = "PUSH_M";
+            }
+            bc->name = auto_printf(32, "%s%x", opname, val);
+            if (val < 512) {
+                immflag = "";
+            }
+            // impl_PUSH_0
+            //       call #\impl_DUP
+            // _ret_ mov  tos, #0
+            bc->impl_ptr = auto_printf(128, "impl_%s\n\tcall\t#\\impl_DUP\n _ret_\t%s\ttos, #%s%d\n\n", bc->name, instr, immflag, val);
+            bc->is_const = 0; // don't need to emit PUSHI for this one
+        } else {
+            ERROR(NULL, "internal error");
+            break;
+        }
+    }
+    // finally, sort byte bytecode
+    qsort(&globalBytecodes, num_bytecodes, elemsize, codenum_sortfunc);
 }
 
 void NuOutputLabel(Flexbuf *fb, NuIrLabel *label) {
