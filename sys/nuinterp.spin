@@ -340,6 +340,10 @@ impl_RET
 
 	ret
 
+impl_DIRECT
+	rdword	tmp, ptrb++
+	jmp	tmp
+
 impl_PUSHI
 	call	#\impl_DUP
   _ret_	rdlong	tos, ptrb++

@@ -134,10 +134,17 @@ typedef struct {
 
 #define NuLabelName(L) ((L)->name)
 
+typedef struct NuBytecode {
+    int	code;
+    const char *name;
+    const char *impl_ptr;
+    struct nuir *first;
+    int len;
+} NuBytecode;
+
 typedef struct nuir {
     struct nuir *next;
     struct nuir *prev;
-    int addr;
     NuIrOpcode op;
     union {
         int32_t val;
@@ -145,6 +152,7 @@ typedef struct nuir {
         void *ptr;
     };
     const char *comment;
+    NuBytecode *bytecode;
 } NuIr;
 
 typedef struct NuIrList {

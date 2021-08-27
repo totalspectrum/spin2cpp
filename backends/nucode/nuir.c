@@ -3,6 +3,11 @@
 #include <stdio.h>
 #include "sys/nuinterp.spin.h"
 
+#define DIRECT_BYTECODE 0
+#define PUSHI_BYTECODE  1
+#define PUSHA_BYTECODE  2
+#define FIRST_BYTECODE  3
+
 static const char *NuOpName[] = {
     #define X(m) #m,
     NU_OP_XMACRO
@@ -196,6 +201,7 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     int c;
     int i;
     uint32_t heapsize = GetHeapSize() + 4;
+    int bytecode;
     
     heapsize = (heapsize+3)&~3; // long align
     nu_heap_size = heapsize;
@@ -248,17 +254,40 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
         } while (c != '\n' && c != 0);
     }
 
+    // add the predefined entries
+    flexbuf_printf(fb, "\tword\timpl_DIRECT\n");
+    flexbuf_printf(fb, "\tword\timpl_PUSHI\n");
+    flexbuf_printf(fb, "\tword\timpl_PUSHA\n");
+    
     // now add the jump table
+    bytecode = FIRST_BYTECODE;
     for (i = 0; opusage[i].used > 0 && i < (int)NU_OP_DUMMY; i++) {
+        if (opusage[i].ircode == NU_OP_PUSHI) {
+            opusage[i].bytecode = PUSHI_BYTECODE;
+            continue;
+        }
+        if (opusage[i].ircode == NU_OP_PUSHA) {
+            opusage[i].bytecode = PUSHA_BYTECODE;
+            continue;
+        }
         flexbuf_printf(fb, "\tword\timpl_%s\n", NuOpName[opusage[i].ircode]);
+        opusage[i].bytecode = bytecode++;
     }
     // end of jump table
     flexbuf_printf(fb, "\talignl\nOPC_TABLE_END\n");
 
     // emit constants for everything
     flexbuf_printf(fb, "\ncon\n");
+    // predefined
+    flexbuf_printf(fb, "\tNU_OP_DIRECT = %d\n", DIRECT_BYTECODE);
+    flexbuf_printf(fb, "\tNU_OP_PUSHI = %d\n", PUSHI_BYTECODE);
+    flexbuf_printf(fb, "\tNU_OP_PUSHA = %d\n", PUSHA_BYTECODE);
+    // others
     for (i = 0; opusage[i].used > 0 && i < NU_OP_DUMMY; i++) {
-        flexbuf_printf(fb, "\tNU_OP_%s = %d  ' (used %d times)\n", NuOpName[opusage[i].ircode], i, opusage[i].used);
+        int bc = opusage[i].bytecode;
+        if (bc >= FIRST_BYTECODE) {
+            flexbuf_printf(fb, "\tNU_OP_%s = %d  ' (used %d times)\n", NuOpName[opusage[i].ircode], opusage[i].bytecode, opusage[i].used);
+        }
     }
     
     // now emit opcode implementations
