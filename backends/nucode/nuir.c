@@ -192,12 +192,18 @@ GetBytecodeFor(NuIr *ir)
         b->name = NuOpName[ir->op];
         b->impl_ptr = impl_ptrs[ir->op];
         staticOps[ir->op] = b;
+        if (ir->op >= NU_OP_BRA && ir->op < NU_OP_DUMMY) {
+            b->is_branch = 1;
+        }
     } else {
         ERROR(NULL, "Internal error, too many bytecodes\n");
         return NULL;
     }
     return b;
 }
+
+#define NuBcIsBranch(bc) ((bc)->is_branch)
+
 void NuCreateBytecodes(NuIrList *irl)
 {
     NuIr *ir;
@@ -219,7 +225,7 @@ void NuCreateBytecodes(NuIrList *irl)
     // assign bytecodes based on order of usage
     code = FIRST_BYTECODE;
     for (i = 0; i < num_bytecodes; i++) {
-        if (code < 0xff && globalBytecodes[i]->usage > 0) {
+        if (code < 0xf0 && (globalBytecodes[i]->usage > 1 || NuBcIsBranch(globalBytecodes[i]))) {
             globalBytecodes[i]->code = code++;
         } else {
             globalBytecodes[i]->code = DIRECT_BYTECODE;
@@ -316,7 +322,11 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     
     // now add the jump table
     for (i = 0; i < num_bytecodes; i++) {
-        flexbuf_printf(fb, "\tword\timpl_%s\n", globalBytecodes[i]->name);
+        NuBytecode *bc = globalBytecodes[i];
+        int code = bc->code;
+        if (code >= FIRST_BYTECODE) {
+            flexbuf_printf(fb, "\tword\timpl_%s\n", bc->name);
+        }
     }
     // end of jump table
     flexbuf_printf(fb, "\talignl\nOPC_TABLE_END\n");
@@ -380,6 +390,17 @@ void NuOutputFinish(Flexbuf *fb, NuContext *ctxt)
     }
 }
 
+static const char *
+NuBytecodeString(NuBytecode *bc) {
+    static char dummy[1024];
+    if (bc->code == DIRECT_BYTECODE) {
+        sprintf(dummy, "NU_OP_DIRECT, word impl_%s", bc->name);
+    } else {
+        sprintf(dummy, "NU_OP_%s", bc->name);
+    }
+    return dummy;
+}
+
 void
 NuOutputIrList(Flexbuf *fb, NuIrList *irl)
 {
@@ -400,10 +421,10 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
             flexbuf_printf(fb, "\talignl");
             break;
         case NU_OP_PUSHI:
-            flexbuf_printf(fb, "\tbyte\tNU_OP_%s, long %d", bc->name, ir->val);
+            flexbuf_printf(fb, "\tbyte\tNU_OP_PUSHI, long %d", ir->val);
             break;
         case NU_OP_PUSHA:
-            flexbuf_printf(fb, "\tbyte\t long NU_OP_%s | (", bc->name);
+            flexbuf_printf(fb, "\tbyte\t long NU_OP_PUSHA | (");
             NuOutputLabel(fb, ir->label);
             flexbuf_printf(fb, " << 8)");
             break;
@@ -418,13 +439,13 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
         case NU_OP_CBGES:
         case NU_OP_CBGTU:
         case NU_OP_CBGEU:
-            flexbuf_printf(fb, "\tbyte\tNU_OP_%s, word (", bc->name);
+            flexbuf_printf(fb, "\tbyte\t%s, word (", NuBytecodeString(bc));
             NuOutputLabel(fb, ir->label);
             flexbuf_printf(fb, " - ($+2))");
             break;
         default:
             if (bc) {
-                flexbuf_printf(fb, "\tbyte\tNU_OP_%s", bc->name);
+                flexbuf_printf(fb, "\tbyte\t%s", NuBytecodeString(bc));
             }
             break;
         }

@@ -139,6 +139,7 @@ typedef struct NuBytecode {
     int usage;
     const char *name;
     const char *impl_ptr;
+    unsigned is_branch:1;
 } NuBytecode;
 
 typedef struct nuir {
