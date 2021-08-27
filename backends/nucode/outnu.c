@@ -1280,12 +1280,36 @@ static void NuConvertFunctions(Module *P) {
     current = P;
 
     NuPrepareModuleBedata(P);
+
     // Compile functions
     for (pf = P->functions; pf; pf = pf->next) {
         NuCompileFunction(pf);
     }
 
     current = save;
+}
+
+static void NuOptimizeFunction(Function *pf, NuIrList *irl) {
+    // for now, do nothing
+}
+
+static NuIrList *NuRevisitFunctions(Module *P, NuIrList *globalList) {
+    Module *save = current;
+    NuIrList *irl;
+    Function *pf;
+    current = P;
+
+    for (pf = P->functions; pf; pf = pf->next) {
+        // optimize function
+        irl = &FunData(pf)->irl;
+        NuOptimizeFunction(pf, irl);
+        // thread into global list
+        irl->nextList = globalList;
+        globalList = irl;
+    }
+
+    current = save;
+    return globalList;
 }
 
 static void NuCompileObject(struct flexbuf *fb, Module *P) {
@@ -1362,6 +1386,7 @@ void OutputNuCode(const char *asmFileName, Module *P)
     Function *saveFunc = curfunc;
     struct flexbuf asmFb;
     NuContext nuContext;
+    NuIrList *globalList = 0;
     
     NuIrInit(&nuContext);
     
@@ -1374,8 +1399,13 @@ void OutputNuCode(const char *asmFileName, Module *P)
         NuConvertFunctions(Q);
     }
     
-    // assign opcodes to IR
-    NuAssignOpcodes();
+    // optimize and prepare for bytecode assignment
+    for (Q = allparse; Q; Q = Q->next) {
+        globalList = NuRevisitFunctions(Q, globalList);
+    }
+    
+    // create bytecodes
+    NuCreateBytecodes(globalList);
 
     flexbuf_init(&asmFb, 512);
     

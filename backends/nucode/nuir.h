@@ -147,9 +147,10 @@ typedef struct nuir {
     const char *comment;
 } NuIr;
 
-typedef struct {
+typedef struct NuIrList {
     NuIr *head;
     NuIr *tail;
+    struct NuIrList *nextList;
 } NuIrList;
 
 typedef struct {
@@ -172,7 +173,7 @@ NuIr *NuEmitBranch(NuIrList *irl, NuIrOpcode op, NuIrLabel *label);
 
 NuIrLabel *NuCreateLabel();
 
-void NuAssignOpcodes();
+void NuCreateBytecodes(NuIrList *irl);
 void NuOutputInterpreter(struct flexbuf *fb, NuContext *ctxt);
 void NuOutputFinish(struct flexbuf *fb, NuContext *ctxt);
 void NuOutputIrList(struct flexbuf *fb, NuIrList *irl);

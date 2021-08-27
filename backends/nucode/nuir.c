@@ -121,7 +121,7 @@ NuIr *NuEmitNamedOpcode(NuIrList *irl, const char *name) {
 }
 
 
-void NuAssignOpcodes()
+void NuCreateBytecodes(NuIrList *irl)
 {
     size_t elemsize = sizeof(opusage[0]);
     qsort(&opusage, sizeof(opusage) / elemsize, elemsize, usage_sortfunc);
