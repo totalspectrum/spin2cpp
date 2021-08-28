@@ -17,6 +17,7 @@ static const char *NuOpName[] = {
 };
 
 static const char *impl_ptrs[NU_OP_DUMMY];
+static int impl_sizes[NU_OP_DUMMY];
 
 static int usage_sortfunc(const void *Av, const void *Bv) {
     NuBytecode **A = (NuBytecode **)Av;
@@ -30,6 +31,26 @@ static int codenum_sortfunc(const void *Av, const void *Bv) {
     NuBytecode **B = (NuBytecode **)Bv;
     /* sort with smaller codes coming first */
     return A[0]->code - B[0]->code;
+}
+
+static int NuImplSize(const char *lineptr) {
+    int c;
+    int size = 0;
+    if (!strncmp(lineptr, "impl_", 5)) {
+        --size; // ignore label
+    }
+    for(;;) {
+        c = *lineptr++;
+        if (c == 0) break;
+        if (c == '\n') {
+            size++;
+            if (*lineptr == '\n') break;
+        }
+        if (c == '#' && lineptr[0] == '#') {
+            size++;
+        }
+    }
+    return size;
 }
 
 void NuIrInit(NuContext *ctxt) {
@@ -74,6 +95,7 @@ void NuIrInit(NuContext *ctxt) {
                         ERROR(NULL, "Duplicate definition for %s\n", NuOpName[i]);
                     }
                     impl_ptrs[i] = linestart;
+                    impl_sizes[i] = NuImplSize(impl_ptrs[i]);
                     break;
                 }
             }
@@ -234,6 +256,13 @@ GetBytecodeFor(NuIr *ir)
     if (b) {
         b->name = NuOpName[ir->op];
         b->impl_ptr = impl_ptrs[ir->op];
+        if (!b->impl_ptr[0]) {
+            // builtin: access it via jumping to it
+            b->impl_ptr = auto_printf(64, "\tjmp\t#\\impl_%s\n\n", b->name);
+            b->impl_size = 1;
+        } else {
+            b->impl_size = impl_sizes[ir->op];
+        }
         staticOps[ir->op] = b;
         if (ir->op >= NU_OP_JMP && ir->op < NU_OP_DUMMY) {
             b->is_any_branch = 1;
@@ -358,6 +387,58 @@ static NuBytecode *NuFindCompressBytecode(NuIrList *irl, int *savings) {
     return NULL;
 }
 
+static void
+NuCopyImpl(Flexbuf *fb, const char *lineptr, int skipRet) {
+    int c;
+    if (!strncmp(lineptr, "impl_", 5)) {
+        // skip label
+        while (*lineptr && *lineptr != '\n') lineptr++;
+        if (*lineptr) lineptr++;
+    }
+    for(;;) {
+        c = *lineptr++;
+        if (!c) break;
+        flexbuf_addchar(fb, c);
+        if (c == '\n' && (lineptr[0] == 0 || lineptr[0] == '\n')) {
+            break;
+        }
+        if (c == ' ' || c == '\t') {
+            if (skipRet) {
+                if (!strncmp(lineptr, "_ret_\t", 6) || !strncmp(lineptr, "_ret_ ", 6)) {
+                    flexbuf_addstr(fb, "     ");
+                    lineptr += 5;
+                } else if (!strncmp(lineptr, "jmp\t", 4) || !strncmp(lineptr, "jmp ", 4)) {
+                    flexbuf_addstr(fb, "call");
+                    lineptr += 3;
+                }
+            }
+        }
+    }
+}
+
+static
+const char *NuMergeBytecodes(const char *bcname, NuBytecode *first, NuBytecode *second) {
+    Flexbuf *fb;
+    Flexbuf fb_s;
+
+    fb = &fb_s;
+    flexbuf_init(fb, 256);
+    flexbuf_printf(fb, "impl_%s\n", bcname);
+    if (first->impl_size < 3) {
+        NuCopyImpl(fb, first->impl_ptr, 1);
+    } else {
+        flexbuf_printf(fb, "\tcall\t#\\impl_%s\n", first->name);
+    }
+    if (second->impl_size < 2) {
+        NuCopyImpl(fb, second->impl_ptr, 0);
+    } else {
+        flexbuf_printf(fb, "\tjmp\t#\\impl_%s\n", second->name);
+    }
+    flexbuf_addchar(fb, '\n');
+    flexbuf_addchar(fb, 0);
+    return flexbuf_get(fb);
+}
+
 static NuBytecode *NuReplaceMacro(NuIrList *lists, NuMacro *macro) {
     NuIrList *irl = lists;
     NuIr *ir;
@@ -373,8 +454,8 @@ static NuBytecode *NuReplaceMacro(NuIrList *lists, NuMacro *macro) {
     second = macro->secondCode;
     bc->is_any_branch = first->is_any_branch | second->is_any_branch;
     bc->name = auto_printf(128, "%s_%s", first->name, second->name);
-    bc->impl_ptr = auto_printf(256, "impl_%s\n\tcall\t#\\impl_%s\n\tjmp\t#\\impl_%s\n\n", bc->name,
-                               first->name, second->name);
+    bc->impl_ptr = NuMergeBytecodes(bc->name, first, second);
+    bc->impl_size = NuImplSize(bc->impl_ptr);
     while (irl) {
         for (ir = irl->head; ir; ir = ir->next) {
             NuIr *delir = ir->next;

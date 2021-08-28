@@ -143,6 +143,7 @@ typedef struct NuBytecode {
     intptr_t value;
     const char *name;
     const char *impl_ptr;
+    int impl_size;
     unsigned char macro_depth;
     unsigned is_rel_branch:1;
     unsigned is_any_branch:1;
