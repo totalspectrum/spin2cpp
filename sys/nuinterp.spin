@@ -92,6 +92,8 @@ cogstack_dec
 	res	1
 zero_inc
 	res	1
+main_loop_addr
+	res	1
 nlocals	res	1
 nargs	res	1
 nrets	res	1
@@ -127,6 +129,7 @@ start_lut
 	mov	cogstack_dec, ##((cogstack-1) | ($fffffe00))
 	' similar for looping over 0 addresses
 	mov	zero_inc, ##(1<<9)
+	mov	main_loop_addr, ##main_loop
 	
 	' copy jump table to COG RAM
 	loc    pa, #@OPC_TABLE
@@ -147,8 +150,8 @@ main_loop
 #endif  
 	altgw	pa, #OPC_TABLE
 	getword	tmp
-	call	tmp
-	jmp	#main_loop
+	push	main_loop_addr
+	jmp	tmp
 
 impl_DUP2
 	' A B -> A B A B
