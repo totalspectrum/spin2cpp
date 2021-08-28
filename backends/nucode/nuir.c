@@ -258,9 +258,12 @@ typedef struct NuMacro {
     NuBytecode *firstCode;
     NuBytecode *secondCode;
     int count;
+    int depth;
 } NuMacro;
 
 static NuMacro macros[256][256];
+
+#define MAX_MACRO_DEPTH 4
 
 // scan for potential macro pairs
 static NuMacro *NuScanForMacros(NuIrList *lists, int *savings) {
@@ -284,7 +287,7 @@ static NuMacro *NuScanForMacros(NuIrList *lists, int *savings) {
                 // no macros involving inline asm or relative branches
                 curCode = NULL;
             }
-            if (curCode && prevCode && !(curCode->is_macro || prevCode->is_macro)) {
+            if (curCode && prevCode && curCode->macro_depth < MAX_MACRO_DEPTH && prevCode->macro_depth < MAX_MACRO_DEPTH) {
                 int bc1, bc2;
                 bc1 = prevCode->code;
                 bc2 = curCode->code;
@@ -315,6 +318,11 @@ static NuMacro *NuScanForMacros(NuIrList *lists, int *savings) {
     }
     *savings = savedBytes;
     found_macro++;
+    where->depth = where->firstCode->macro_depth;
+    if (where->secondCode->macro_depth > where->depth) {
+        where->depth = where->secondCode->macro_depth;
+    }
+    where->depth += 1;
     return where;
 }
 
@@ -360,7 +368,7 @@ static NuBytecode *NuReplaceMacro(NuIrList *lists, NuMacro *macro) {
         return NULL;
     }
     bc->usage = 0;
-    bc->is_macro = 1;
+    bc->macro_depth = macro->depth;
     first = macro->firstCode;
     second = macro->secondCode;
     bc->name = auto_printf(128, "%s_%s", first->name, second->name);

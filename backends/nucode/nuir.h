@@ -143,12 +143,12 @@ typedef struct NuBytecode {
     intptr_t value;
     const char *name;
     const char *impl_ptr;
+    unsigned char macro_depth;
     unsigned is_rel_branch:1;
     unsigned is_any_branch:1;
     unsigned is_inline_asm:1;
     unsigned is_const:1;
     unsigned is_label:1;
-    unsigned is_macro:1;
 } NuBytecode;
 
 typedef struct nuir {
