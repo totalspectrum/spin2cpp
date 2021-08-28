@@ -371,6 +371,7 @@ static NuBytecode *NuReplaceMacro(NuIrList *lists, NuMacro *macro) {
     bc->macro_depth = macro->depth;
     first = macro->firstCode;
     second = macro->secondCode;
+    bc->is_any_branch = first->is_any_branch | second->is_any_branch;
     bc->name = auto_printf(128, "%s_%s", first->name, second->name);
     bc->impl_ptr = auto_printf(256, "impl_%s\n\tcall\t#\\impl_%s\n\tjmp\t#\\impl_%s\n\n", bc->name,
                                first->name, second->name);
@@ -465,8 +466,8 @@ void NuCreateBytecodes(NuIrList *lists)
             if (bc->is_label) {
                 label = (NuIrLabel *)bc->value;
                 if (label->offset) {
-                    valstr = auto_printf(128, "(%s+%d)", label->name, label->offset);
-                    namestr = auto_printf(128, "%s_%d", label->name, label->offset);
+                    valstr = auto_printf(128, "(%s+%u)", label->name, label->offset);
+                    namestr = auto_printf(128, "%s_%u", label->name, label->offset);
                 } else {
                     valstr = namestr = label->name;
                 }
@@ -477,10 +478,10 @@ void NuCreateBytecodes(NuIrList *lists)
                     instr = "neg";
                     opname = "PUSH_M";
                 }
-                if (val < 512) {
+                if (val >= 0 && val < 512) {
                     immflag = "";
                 }
-                valstr = namestr = auto_printf(32, "%d", val);
+                valstr = namestr = auto_printf(32, "%u", val);
             }
             bc->name = auto_printf(32, "%s%s", opname, namestr);
             // impl_PUSH_0
