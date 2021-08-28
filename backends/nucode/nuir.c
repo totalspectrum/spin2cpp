@@ -705,6 +705,10 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
             }
             continue;
         }
+        if (strncmp(ptr, "impl_", 5) != 0) {
+            // does not start with impl_, so not really needed
+            continue;
+        }
         for(;;) {
             c = *ptr++;
             if (!c) break;
