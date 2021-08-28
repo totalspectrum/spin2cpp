@@ -6,8 +6,8 @@
 
 #define DIRECT_BYTECODE 0
 #define PUSHI_BYTECODE  1
-//#define PUSHA_BYTECODE  2
-#define FIRST_BYTECODE  2
+#define PUSHA_BYTECODE  2
+#define FIRST_BYTECODE  3
 #define MAX_BYTECODE 0xf8
 
 static const char *NuOpName[] = {
@@ -187,7 +187,7 @@ AllocBytecode()
 }
 
 static NuBytecode *
-GetBytecodeForConst(intptr_t val)
+GetBytecodeForConst(intptr_t val, int is_label)
 {
     int hash;
     NuBytecode *b;
@@ -207,6 +207,7 @@ GetBytecodeForConst(intptr_t val)
     b->value = val;
     b->link = constOps[hash];
     b->is_const = 1;
+    b->is_label = is_label;
     constOps[hash] = b;
     return b;
 }
@@ -219,7 +220,10 @@ GetBytecodeFor(NuIr *ir)
         return NULL;
     }
     if (ir->op == NU_OP_PUSHI) {
-        return GetBytecodeForConst(ir->val);
+        return GetBytecodeForConst(ir->val, 0);
+    }
+    if (ir->op == NU_OP_PUSHA) {
+        return GetBytecodeForConst( (intptr_t)(ir->label), 1);
     }
     b = staticOps[ir->op];
     if (b) {
@@ -231,8 +235,14 @@ GetBytecodeFor(NuIr *ir)
         b->name = NuOpName[ir->op];
         b->impl_ptr = impl_ptrs[ir->op];
         staticOps[ir->op] = b;
-        if (ir->op >= NU_OP_BRA && ir->op < NU_OP_DUMMY) {
-            b->is_branch = 1;
+        if (ir->op >= NU_OP_JMP && ir->op < NU_OP_DUMMY) {
+            b->is_any_branch = 1;
+            if (ir->op >= NU_OP_BRA) {
+                b->is_rel_branch = 1;
+            }
+        }
+        if (ir->op == NU_OP_INLINEASM) {
+            b->is_inline_asm = 1;
         }
     } else {
         ERROR(NULL, "Internal error, too many bytecodes\n");
@@ -240,30 +250,154 @@ GetBytecodeFor(NuIr *ir)
     }
     return b;
 }
+//
+// scan list of instructions for pairs that may be combined into a macro
+// only opcodes that have been assigned single bytecodes may be merged
+//
+typedef struct NuMacro {
+    NuBytecode *firstCode;
+    NuBytecode *secondCode;
+    int count;
+} NuMacro;
 
-static NuBytecode *NuFindCompressBytecode() {
+static NuMacro macros[256][256];
+
+// scan for potential macro pairs
+static NuMacro *NuScanForMacros(NuIrList *lists, int *savings) {
+    NuIrList *irl = lists;
+    NuIr *ir;
+    int maxCount = 0;
+    NuBytecode *prevCode, *curCode;
+    NuMacro *where = 0;
+    int savedBytes;
+    static int found_macro = 0;
+
+//    if (found_macro > 48) {
+//        return NULL;
+//    }
+    memset(macros, 0, sizeof(macros));
+    while (irl) {
+        prevCode = NULL;
+        for (ir = irl->head; ir; ir = ir->next) {
+            curCode = ir->bytecode;
+            if (curCode && (curCode->is_inline_asm || curCode->is_rel_branch)) {
+                // no macros involving inline asm or relative branches
+                curCode = NULL;
+            }
+            if (curCode && prevCode && !(curCode->is_macro || prevCode->is_macro)) {
+                int bc1, bc2;
+                bc1 = prevCode->code;
+                bc2 = curCode->code;
+                if (bc1 >= FIRST_BYTECODE && bc2 >= FIRST_BYTECODE) {
+                    macros[bc1][bc2].count++;
+                    if (macros[bc1][bc2].count > maxCount) {
+                        maxCount = macros[bc1][bc2].count;
+                        where = &macros[bc1][bc2];
+                        where->firstCode = prevCode;
+                        where->secondCode = curCode;
+                    }
+                }
+            }
+            if (curCode && !curCode->is_any_branch) {
+                prevCode = curCode;
+            } else {
+                prevCode = NULL;
+            }
+        }
+        irl = irl->nextList;
+    }
+    // figure out the benefit of doing this replacement
+    // the new macro requires at least 10 bytes implementation
+    // it will save 1 byte per invocation
+    savedBytes = maxCount - 10;
+    if (savedBytes < 0) {
+        return NULL;
+    }
+    *savings = savedBytes;
+    found_macro++;
+    return where;
+}
+
+// find bytecode to compress
+// this may be either a single PUSHI/PUSHA (which is compressed by creating a single opcode immediate version)
+// or a macro pair (which is compressed by creating a new bytecode which does both macros)
+
+static NuBytecode *NuFindCompressBytecode(NuIrList *irl, int *savings) {
     int i;
     NuBytecode *bc;
-    
+    int savedBytes;
+
+    // globalBytecodes are assumed sorted by usage...
     for (i = 0; i < num_bytecodes; i++) {
         bc = globalBytecodes[i];
-        if (bc->is_const && bc->usage > 2) {
+        if (bc->is_const && bc->usage > 1) {
+            // cost of implementation is 8 bytes for small, 12 for large
+            int impl_cost = 12;
+            // cost of each invocation is 5 bytes normally (PUSHI + data)
+            // so we save 4 bytes by replacing with a singleton
+            int invoke_cost = 4;
+            if (bc->value >= -511 && bc->value <= 511) {
+                impl_cost = 8;
+            }
+            savedBytes = (invoke_cost * bc->usage) - impl_cost;
+            if (savedBytes < 1) {
+                return NULL;
+            }
+            *savings = savedBytes;
             return bc;
         }
     }
-    return 0;
+    return NULL;
 }
 
-#define NuBcIsBranch(bc) ((bc)->is_branch)
+static NuBytecode *NuReplaceMacro(NuIrList *lists, NuMacro *macro) {
+    NuIrList *irl = lists;
+    NuIr *ir;
+    NuBytecode *bc, *first, *second;
 
-void NuCreateBytecodes(NuIrList *irl)
+    bc = AllocBytecode();
+    if (!bc) {
+        return NULL;
+    }
+    bc->usage = 0;
+    bc->is_macro = 1;
+    first = macro->firstCode;
+    second = macro->secondCode;
+    bc->name = auto_printf(128, "%s_%s", first->name, second->name);
+    bc->impl_ptr = auto_printf(256, "impl_%s\n\tcall\t#\\impl_%s\n\tjmp\t#\\impl_%s\n\n", bc->name,
+                               first->name, second->name);
+    while (irl) {
+        for (ir = irl->head; ir; ir = ir->next) {
+            NuIr *delir = ir->next;
+            if (ir->bytecode == first && delir && delir->bytecode == second) {
+                ir->bytecode = bc;
+                bc->usage++;
+                ir->next = delir->next;
+                if (ir->next) {
+                    ir->next->prev = ir;
+                } else {
+                    irl->tail = ir;
+                }
+            }
+        }
+        
+        irl = irl->nextList;
+    }
+    return bc;
+}
+
+#define NuBcIsRelBranch(bc) ((bc)->is_rel_branch)
+
+void NuCreateBytecodes(NuIrList *lists)
 {
     NuIr *ir;
+    NuIrList *irl;
     int i;
     int code;
     NuBytecode *bc;
     
     // create an initial set of bytecodes
+    irl = lists;
     while (irl) {
         for (ir = irl->head; ir; ir = ir->next) {
             ir->bytecode = GetBytecodeFor(ir);
@@ -280,8 +414,12 @@ void NuCreateBytecodes(NuIrList *irl)
     for (i = 0; i < num_bytecodes; i++) {
         bc = globalBytecodes[i];
         if (bc->is_const) {
-            globalBytecodes[i]->code = PUSHI_BYTECODE;
-        } else if (NuBcIsBranch(globalBytecodes[i])) {
+            if (bc->is_label) {
+                globalBytecodes[i]->code = PUSHA_BYTECODE;
+            } else {
+                globalBytecodes[i]->code = PUSHI_BYTECODE;
+            }
+        } else if (NuBcIsRelBranch(globalBytecodes[i])) {
             globalBytecodes[i]->code = code++;
         } else if (code >= MAX_BYTECODE || globalBytecodes[i]->usage <= 1) {
             // out of bytecode space, or we don't care about compressing
@@ -294,33 +432,60 @@ void NuCreateBytecodes(NuIrList *irl)
     // while there's room for more bytecodes, find ways to compress the code
     while (code < (MAX_BYTECODE-1)) {
         int32_t val;
+        int compressValue, macroValue;
         const char *instr = "mov";
         const char *opname;
-        bc = NuFindCompressBytecode();
-        if (!bc) break;
-        bc->code = code++;
-        if (bc->is_const) {
+        NuMacro *macro;
+        
+        bc = NuFindCompressBytecode(lists, &compressValue);
+        macro = NuScanForMacros(lists, &macroValue);
+        if (bc && macro) {
+            // pick which is better
+            if (compressValue >= macroValue) {
+                macro = NULL;
+            } else {
+                bc = NULL;
+            }
+        }
+        if (bc) {
             const char *immflag = "#";
+            const char *valstr;
+            const char *namestr;
+            NuIrLabel *label = NULL;
+
             opname = "PUSH_";
-            val = (int32_t)bc->value;
-            if (val < 0) {
-                val = -val;
-                instr = "neg";
-                opname = "PUSH_M";
+            if (bc->is_label) {
+                label = (NuIrLabel *)bc->value;
+                if (label->offset) {
+                    valstr = auto_printf(128, "(%s+%d)", label->name, label->offset);
+                    namestr = auto_printf(128, "%s_%d", label->name, label->offset);
+                } else {
+                    valstr = namestr = label->name;
+                }
+            } else {
+                val = (int32_t)bc->value;
+                if (val < 0) {
+                    val = -val;
+                    instr = "neg";
+                    opname = "PUSH_M";
+                }
+                if (val < 512) {
+                    immflag = "";
+                }
+                valstr = namestr = auto_printf(32, "%d", val);
             }
-            bc->name = auto_printf(32, "%s%x", opname, val);
-            if (val < 512) {
-                immflag = "";
-            }
+            bc->name = auto_printf(32, "%s%s", opname, namestr);
             // impl_PUSH_0
             //       call #\impl_DUP
             // _ret_ mov  tos, #0
-            bc->impl_ptr = auto_printf(128, "impl_%s\n\tcall\t#\\impl_DUP\n _ret_\t%s\ttos, #%s%d\n\n", bc->name, instr, immflag, val);
+            bc->impl_ptr = auto_printf(128, "impl_%s\n\tcall\t#\\impl_DUP\n _ret_\t%s\ttos, #%s%s\n\n", bc->name, instr, immflag, valstr);
             bc->is_const = 0; // don't need to emit PUSHI for this one
+        } else if (macro) {
+            bc = NuReplaceMacro(lists, macro);
         } else {
-            ERROR(NULL, "internal error");
             break;
         }
+        bc->code = code++;
     }
     // finally, sort byte bytecode
     qsort(&globalBytecodes, num_bytecodes, elemsize, codenum_sortfunc);
@@ -411,7 +576,7 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     // add the predefined entries
     flexbuf_printf(fb, "\tword\timpl_DIRECT\n");
     flexbuf_printf(fb, "\tword\timpl_PUSHI\n");
-    //flexbuf_printf(fb, "\tword\timpl_PUSHA\n");
+    flexbuf_printf(fb, "\tword\timpl_PUSHA\n");
     
     // now add the jump table
     for (i = 0; i < num_bytecodes; i++) {
@@ -429,6 +594,7 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     // predefined
     flexbuf_printf(fb, "\tNU_OP_DIRECT = %d\n", DIRECT_BYTECODE);
     flexbuf_printf(fb, "\tNU_OP_PUSHI = %d\n", PUSHI_BYTECODE);
+    flexbuf_printf(fb, "\tNU_OP_PUSHA = %d\n", PUSHA_BYTECODE);
     // others
     for (i = 0; i < num_bytecodes; i++) {
         NuBytecode *bc = globalBytecodes[i];
@@ -516,11 +682,6 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
         case NU_OP_ALIGN:
             flexbuf_printf(fb, "\talignl");
             break;
-        case NU_OP_PUSHA:
-            flexbuf_printf(fb, "\tbyte\t long NU_OP_PUSHA | (");
-            NuOutputLabel(fb, ir->label);
-            flexbuf_printf(fb, " << 8)");
-            break;
         case NU_OP_BRA:
         case NU_OP_CBEQ:
         case NU_OP_CBNE:
@@ -539,7 +700,13 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
         default:
             if (bc) {
                 if (bc->is_const) {
-                    flexbuf_printf(fb, "\tbyte\tNU_OP_PUSHI, long %d", ir->val);
+                    if (bc->is_label) {
+                        flexbuf_printf(fb, "\tbyte\t long NU_OP_PUSHA | (");
+                        NuOutputLabel(fb, ir->label);
+                        flexbuf_printf(fb, " << 8)");
+                    } else {
+                        flexbuf_printf(fb, "\tbyte\tNU_OP_PUSHI, long %d", ir->val);
+                    }
                 } else {
                     flexbuf_printf(fb, "\tbyte\t%s", NuBytecodeString(bc));
                 }

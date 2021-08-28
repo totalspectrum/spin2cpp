@@ -63,13 +63,6 @@
     X(HALT)      /* halt processor */ \
     \
     X(ENTER)     /* enter subroutine */ \
-    X(RET)       /* return from subroutine */ \
-    X(CALL)      /* call subroutine */ \
-    X(CALLM)     /* call method (changes object pointer) */ \
-    X(GOSUB)     /* combo CALL+ENTER */ \
-    X(JMP)       /* jump to address at tos */ \
-    X(JMPZ)      /* jump to address to nos if tos is = 0 (discards tos, nos) */ \
-    X(JMPNZ)     /* jump to address to nos if tos is <> 0 (discards tos, nos) */ \
     \
     X(DRVH)      /* set pin high */ \
     X(DRVL)      /* set pin low */  \
@@ -103,6 +96,13 @@
     X(INLINEASM)  /* load inline assembly */ \
     \
     /* put all branches together here at the end */ \
+    X(JMP)       /* jump to address at tos */ \
+    X(JMPZ)      /* jump to address to nos if tos is = 0 (discards tos, nos) */ \
+    X(JMPNZ)     /* jump to address to nos if tos is <> 0 (discards tos, nos) */ \
+    X(RET)       /* return from subroutine */ \
+    X(CALL)      /* call subroutine */ \
+    X(CALLM)     /* call method (changes object pointer) */ \
+    X(GOSUB)     /* combo CALL+ENTER */ \
     \
     X(BRA)       /* branch always */ \
     X(JMPREL)    /* jump forward relative 3*n bytes */ \
@@ -143,8 +143,12 @@ typedef struct NuBytecode {
     intptr_t value;
     const char *name;
     const char *impl_ptr;
-    unsigned is_branch:1;
+    unsigned is_rel_branch:1;
+    unsigned is_any_branch:1;
+    unsigned is_inline_asm:1;
     unsigned is_const:1;
+    unsigned is_label:1;
+    unsigned is_macro:1;
 } NuBytecode;
 
 typedef struct nuir {
