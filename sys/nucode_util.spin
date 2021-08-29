@@ -298,3 +298,10 @@ pri _clkset(mode, freq) | oldmode, xsel
 pri _reboot
   _clkset(0, 0)
   _hubset(%0001 << 28)
+
+pri _make_methodptr(o, func) | ptr
+  ptr := _gc_alloc_managed(8)
+  if (ptr)
+    long[ptr] := o
+    long[ptr+4] := func
+  return ptr
