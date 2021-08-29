@@ -488,10 +488,14 @@ static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs)
         if ( !IsClassType(typ) || NULL == (P=GetClassPtr(typ)) ) {
             ERROR(lhs, "Request for member %s in something not an object", memberName);
         }
-        (void)NuCompileLhsAddress(irl, objref);  // don't care about load op
         sym = LookupSymbolInTable(&P->objsyms, memberName);
+        if (!sym) {
+            ERROR(lhs, "unknown symbol %s", memberName);
+            return op;
+        }
         switch(sym->kind) {
         case SYM_VARIABLE:
+            (void)NuCompileLhsAddress(irl, objref);  // don't care about load op
             typ = sym->val;
             NuEmitConst(irl, sym->offset);
             NuEmitCommentedOp(irl, NU_OP_ADD, auto_printf(128, "lookup member %s", memberName));
@@ -925,7 +929,7 @@ NuCompileExpression(NuIrList *irl, AST *node) {
     } break;
     case AST_SELF: {
         NuEmitConst(irl, 0);
-        NuEmitOp(irl, NU_OP_ADD_VBASE);
+        NuEmitCommentedOp(irl, NU_OP_ADD_VBASE, "self");
         pushed = 1;
     } break;
     default:

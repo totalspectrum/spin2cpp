@@ -520,7 +520,7 @@ void NuCreateBytecodes(NuIrList *lists)
     }
 
     // while there's room for more bytecodes, find ways to compress the code
-    while (code < (MAX_BYTECODE-1)) {
+    while (code < (MAX_BYTECODE-1) && (gl_optimize_flags & OPT_MAKE_MACROS)) {
         int32_t val;
         int compressValue, macroValue;
         const char *instr = "mov";

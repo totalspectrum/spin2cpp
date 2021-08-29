@@ -159,13 +159,14 @@ extern int gl_optimize_flags; /* flags for optimization */
 #define OPT_CASETABLE           0x004000  /* convert CASE to CASE_FAST (only for bytecode mode) */
 #define OPT_EXTRASMALL          0x008000  /* Use smaller-but-slower constructs */
 #define OPT_REMOVE_FEATURES     0x010000  /* remove unused features in libraries */
+#define OPT_MAKE_MACROS         0x020000  /* combine multiple bytecodes */
 #define OPT_FLAGS_ALL           0xffffff
-#define OPT_ASM_BASIC  (OPT_BASIC_REGS|OPT_BRANCHES|OPT_PEEPHOLE|OPT_CONST_PROPAGATE|OPT_REMOVE_FEATURES)                        
+#define OPT_ASM_BASIC  (OPT_BASIC_REGS|OPT_BRANCHES|OPT_PEEPHOLE|OPT_CONST_PROPAGATE|OPT_REMOVE_FEATURES|OPT_MAKE_MACROS)                        
 #define DEFAULT_ASM_OPTS        (OPT_DEADCODE|OPT_REMOVE_UNUSED_FUNCS|OPT_INLINE_SMALLFUNCS|OPT_ASM_BASIC|OPT_AUTO_FCACHE|OPT_LOOP_BASIC|OPT_TAIL_CALLS)
 #define EXTRA_ASM_OPTS          (OPT_INLINE_SINGLEUSE|OPT_PERFORM_CSE|OPT_PERFORM_LOOPREDUCE|OPT_REMOVE_HUB_BSS) /* extras added with -O2 */
 
 // bytecode defaults to no optimization except unused method removal
-#define DEFAULT_BYTECODE_OPTS   (OPT_REMOVE_UNUSED_FUNCS|OPT_REMOVE_FEATURES|OPT_DEADCODE)
+#define DEFAULT_BYTECODE_OPTS   (OPT_REMOVE_UNUSED_FUNCS|OPT_REMOVE_FEATURES|OPT_DEADCODE|OPT_MAKE_MACROS)
 
 extern int gl_warn_flags;     /* flags for warnings */
 #define WARN_LANG_EXTENSIONS    0x01

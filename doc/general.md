@@ -220,6 +220,10 @@ In some circumstances the optimizer can re-arrange counting loops so that the `d
 
 Small loops are copied to internal memory (COG) to be executed there. These loops cannot have any non-inlined calls in them.
 
+### Bytecode Macro creation (-O1, -Obcmacro)
+
+Some bytecode backends (e.g. the nucode one) are able to combine bytecodes to create macros. This saves considerable space in the generated code. Note that this option applies globally, and cannot be turned on/off per function.
+
 ### Single Use Method inlining (-O2, -Oinline-single)
 
 If a method is called only once in a whole program, it is expanded inline at the call site.
