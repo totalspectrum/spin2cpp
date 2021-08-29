@@ -507,6 +507,7 @@ static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs)
 static int NuPopMultiple(NuIrList *irl, AST *lhs, int numRhs) {
     int popped = 0;
     NuIrOpcode op;
+    int siz;
     if (!lhs) {
         if (numRhs > 0) {
             NuCompileDrop(irl, numRhs);
@@ -514,7 +515,8 @@ static int NuPopMultiple(NuIrList *irl, AST *lhs, int numRhs) {
         return 0;
     }
     if (lhs->kind == AST_EXPRLIST) {
-        popped = NuPopMultiple(irl, lhs->right, numRhs-1);
+        siz = (TypeSize(ExprType(lhs->left)) + 3) / 4;
+        popped = NuPopMultiple(irl, lhs->right, numRhs-siz);
         if (lhs->left && lhs->left->kind == AST_EMPTY) {
             NuEmitOp(irl, NU_OP_DROP); // just drop the result
         } else {
@@ -525,10 +527,11 @@ static int NuPopMultiple(NuIrList *irl, AST *lhs, int numRhs) {
                 NuEmitOp(irl, op);
             }
         }
-        return popped+1;
+        return popped+siz;
     }
     // hmmm, just one item; treat it like all other items were AST_EMPTY
-    popped = numRhs - 1;
+    siz = (TypeSize(ExprType(lhs)) + 3) / 4;
+    popped = numRhs - siz;
     if (popped > 0) {
         NuCompileDrop(irl, popped);
     }
@@ -538,7 +541,7 @@ static int NuPopMultiple(NuIrList *irl, AST *lhs, int numRhs) {
     } else {
         NuEmitOp(irl, op);
     }
-    return popped+1;
+    return popped+siz;
 }
 
 /* compile assignment */

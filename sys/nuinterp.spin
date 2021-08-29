@@ -564,11 +564,11 @@ impl_MULDIV64
   _ret_	getqx	tos
 
 impl_DIV64
-	' 3 things on stack: nnos=lo, nos=hi, tos=divisor
+	' 3 things on stack: nnos=hi, nos=lo, tos=divisor
 	mov	tmp, tos
-	call	#\impl_DROP	' now nos=lo, tos=hi, tmp=divisor
-	setq	tos
-	qdiv	nos, tmp
+	call	#\impl_DROP	' now nos=hi, tos=lo, tmp=divisor
+	setq	nos
+	qdiv	tos, tmp
 	getqx	nos
  _ret_	getqy	tos
 

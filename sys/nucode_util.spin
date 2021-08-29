@@ -5,7 +5,7 @@
 ''
 '' divide (n, nlo) by d, producing qlo and rlo (used in FRAC operation)
 ''
-pri _div64(n, nlo, dlo) : qlo, rlo | q, r, d
+pri _div64(n, nlo, dlo) : qlo, rlo
   __bytecode__("DIV64")
 
 pri _waitx(tim)
