@@ -833,6 +833,7 @@ NuCompileExpression(NuIrList *irl, AST *node) {
     case AST_LOCAL_IDENTIFIER:
     case AST_ARRAYREF:
     case AST_METHODREF:
+    case AST_MEMREF:
     {
         AST *typ;
         int siz;
