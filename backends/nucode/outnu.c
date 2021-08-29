@@ -226,7 +226,7 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
     NuIr *ir;
     const char *name = NULL;
     int offset;
-    
+    bool offsetValid = true;
     if (!sym) {
         ERROR(node, "identifier %s not found", GetUserIdentifierName(node));
         return loadOp;
@@ -282,13 +282,22 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
         offset = hwreg->addr;
         loadOp = isLoad ? NU_OP_LDREG : NU_OP_STREG;
         offsetOp = NU_OP_ILLEGAL;
-        break;
-    }
+    } break;
+    case SYM_FUNCTION: {
+        Function *F = (Function *)sym->val;
+        NuPrepareFunctionBedata(F);
+        NuEmitAddress(irl, FunData(F)->entryLabel);
+        loadOp = isLoad ? NU_OP_LDL : NU_OP_STL;
+        offsetOp = NU_OP_ILLEGAL;
+        offsetValid = false;
+    } break;
     default:
         ERROR(node, "Unhandled symbol type for %s", sym->user_name);
         return loadOp;
     }
-    NuEmitConst(irl, offset);
+    if (offsetValid) {
+        NuEmitConst(irl, offset);
+    }
     if (offsetOp != NU_OP_ILLEGAL) {
         ir = NuEmitOp(irl, offsetOp);
         ir->comment = auto_printf(128,"addr of %s", name);
@@ -488,9 +497,13 @@ static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs)
             NuEmitCommentedOp(irl, NU_OP_ADD, auto_printf(128, "lookup member %s", memberName));
             op = LoadStoreOp(typ, 0);
             break;
-        case SYM_FUNCTION:
-            ERROR(lhs, "Cannot take address of member functions yet");
+        case SYM_FUNCTION: {
+            Function *F = (Function *)sym->val;
+            NuPrepareFunctionBedata(F);
+            NuEmitAddress(irl, FunData(F)->entryLabel);
+            op = LoadStoreOp(ast_type_long, 0);
             return op;
+        }
         default:
             ERROR(lhs, "Wrong kind of symbol (%d) in method reference", sym->kind);
             break;
