@@ -2,6 +2,7 @@
 #define _STDIO_H_
 
 #include <compiler.h>
+#include <sys/size_t.h>
 #include <sys/types.h>
 #include <sys/limits.h>
 #include <unistd.h>

@@ -25,7 +25,7 @@ int printf(const char *fmt, ...)
     return r;
 }
 
-int _COMPLEXIO fprintf(FILE *f, const char *fmt, ...)
+int fprintf(FILE *f, const char *fmt, ...)
 {
     va_list args;
     int r;
@@ -49,7 +49,7 @@ int vprintf(const char *fmt, va_list ap)
     return r;
 }
 
-int _COMPLEXIO vfprintf(FILE *f, const char *fmt, va_list ap)
+int vfprintf(FILE *f, const char *fmt, va_list ap)
 {
     int r;
     _FmtFile ff;

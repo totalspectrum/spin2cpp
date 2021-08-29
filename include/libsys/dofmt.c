@@ -1,5 +1,6 @@
 #include <stdarg.h>
 #include <compiler.h>
+#include <sys/types.h>
 #include "sys/fmt.h"
 
 #ifdef __FLEXC__
