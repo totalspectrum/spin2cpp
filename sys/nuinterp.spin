@@ -36,7 +36,7 @@ entry_sp
 	long	5	' initial stack pointer
 heap_base
 	long	@__heap_base	' heap base ($30)
-	long	0[$c]	' more reserved words just in case
+	orgh	$80	' $40-$80 reserved
 	
 	org	0
 real_init
@@ -388,6 +388,11 @@ end_lut
 OPC_TABLE
 
 	fit	$1d0 ' inline assembly variables start here
+
+	' reserved:
+	' $1e8 = __sendptr
+	' $1e9 = __recvptr
+	' $1ec-$1f0 for debug
 	orgh
 impl_LDB
   _ret_	rdbyte tos, tos
@@ -402,7 +407,7 @@ impl_LDD
 	call	#\impl_DUP
 	rdlong	nos, nos
 	add	tos, #4
-  _ret_	rdbyte	tos, tos
+  _ret_	rdlong	tos, tos
 
 impl_STB
 	wrbyte	nos, tos
@@ -432,7 +437,7 @@ impl_STREG
 	altd	tos
   	mov	0-0, nos
 	jmp	#\impl_DROP2
-	
+
 impl_ADD_VBASE
   _ret_	add	tos, vbase
 

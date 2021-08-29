@@ -1818,8 +1818,7 @@ ExpandArguments(AST *sendptr, AST *args)
                 }
                 arg = NewAST(AST_EXPRLIST, arg, NULL);
                 arg = NewAST(AST_STRINGPTR, arg, NULL);
-                arg = NewAST(AST_EXPRLIST, sendptr,
-                             NewAST(AST_EXPRLIST, arg, NULL));
+                arg = NewAST(AST_EXPRLIST, arg, NULL);
                 call = NewAST(AST_FUNCCALL, sendstring, arg);
                 break;
             case AST_FUNCCALL:

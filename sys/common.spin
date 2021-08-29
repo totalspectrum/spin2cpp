@@ -122,11 +122,11 @@ pri _rx : r
     else
       _tx(r)
 
-pri __sendstring(func, str) | c
+pri __sendstring(str) | c
   repeat
     c := byte[str++]
     if c
-      func(c)
+      __sendptr(c)
   until c == 0
 
 pri __builtin_clkfreq : r=+long

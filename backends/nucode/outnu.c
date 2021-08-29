@@ -160,10 +160,12 @@ static int NuCompileFunCall(NuIrList *irl, AST *node) {
     } else {
         functype = ExprType(node->left);
         pushed = NuCompileExpression(irl, node->left);
-        NuEmitCommentedOp(irl, NU_OP_CALL, "indirect call");
         if (pushed != 1) {
             ERROR(node, "Unable to compile indirect function call: %d items on stack", pushed);
         }
+        // at this point the method pointer address is on the stack; need to load both words
+        NuEmitCommentedOp(irl, NU_OP_LDD, "load method data");
+        NuEmitCommentedOp(irl, NU_OP_CALLM, "indirect call");
         pushed = FuncLongResults(functype);
     }
     return pushed;
@@ -227,6 +229,9 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
     const char *name = NULL;
     int offset;
     bool offsetValid = true;
+    if (sym && sym->kind == SYM_WEAK_ALIAS) {
+        sym = LookupSymbol((const char *)sym->val);
+    }
     if (!sym) {
         ERROR(node, "identifier %s not found", GetUserIdentifierName(node));
         return loadOp;
@@ -248,17 +253,29 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
         loadOp = LoadStoreOp(sym->val, isLoad);
         break;
     case SYM_VARIABLE:
+        loadOp = LoadStoreOp(sym->val, isLoad);
         if (sym->flags & SYMF_GLOBAL) {
             offset = sym->offset;
             if (offset < 0) {
-                ERROR(node, "unhandled global %s", sym->user_name);
+                switch (offset) {
+                case -1: // sendptr
+                    offset = 0x1e8;
+                    loadOp = (isLoad) ? NU_OP_LDREG : NU_OP_STREG;
+                    break;
+                case -2: // recvptr
+                    offset = 0x1e9;
+                    loadOp = (isLoad) ? NU_OP_LDREG : NU_OP_STREG;
+                    break;
+                default:
+                    ERROR(node, "unhandled global %s", sym->user_name);
+                    break;
+                }
             }
             offsetOp = NU_OP_ILLEGAL;
         } else {
             offset = sym->offset;
             offsetOp = NU_OP_ADD_VBASE;
         }
-        loadOp = LoadStoreOp(sym->val, isLoad);
         break;
     case SYM_LABEL:
     {

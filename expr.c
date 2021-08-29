@@ -3012,6 +3012,10 @@ IsStringConst(AST *expr)
 int
 FuncNumResults(AST *functype)
 {
+    functype = RemoveTypeModifiers(functype);
+    while (functype && functype->kind == AST_PTRTYPE) {
+        functype = functype->left;
+    }
     if (!functype) {
         return 1; // unknown return type
     }
