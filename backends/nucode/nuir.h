@@ -174,6 +174,7 @@ typedef struct NuIrList {
 typedef struct {
     unsigned  clockFreq;
     unsigned  clockMode;
+    unsigned  varSize;
     NuIrLabel *entryPt;
     NuIrLabel *initObj;
     NuIrLabel *initFrame;

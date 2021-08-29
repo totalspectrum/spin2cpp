@@ -12,8 +12,9 @@ dat
 ''    ^A3 = initial object pointer
 ''    ^A4 = initial frame pointer
 ''    ^A5 = initial stack pointer
-''    ^A6 = heap size
-''
+''    ^A6 = heap size in longs
+''    ^A7 = variable size in longs
+
 	org 0
 	' dummy init code
 	nop
@@ -853,7 +854,12 @@ dump_regs
 
 ' labels at and of code/data
 	alignl
+' variable space
+3	long	0[7]
+
 __heap_base
 	long	0[6]	' A6 replaced by heap size
-	
+
+
+' stack space
 5	long	0	' stack

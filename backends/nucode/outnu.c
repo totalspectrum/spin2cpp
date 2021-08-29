@@ -1480,6 +1480,8 @@ void OutputNuCode(const char *asmFileName, Module *P)
     nuContext.clockMode = clkmode;
     nuContext.entryPt = FunData(mainFunc)->entryLabel;
     nuContext.initSp = NuCreateLabel();
+    nuContext.initObj = NuCreateLabel();
+    nuContext.varSize = (P->varsize + 3) & ~3;
     
     // create & prepend interpreter
     NuOutputInterpreter(&asmFb, &nuContext);

@@ -624,6 +624,9 @@ OutputEscapedChar(Flexbuf *fb, int c, NuContext *ctxt)
     case '6':
         flexbuf_printf(fb, "%u", nu_heap_size / 4);
         break;
+    case '7':
+        flexbuf_printf(fb, "%u", ctxt->varSize / 4);
+        break;
     default:
         ERROR(NULL, "Unknown escape char %c", c);
         break;
