@@ -910,6 +910,11 @@ NuCompileExpression(NuIrList *irl, AST *node) {
     case AST_RESULT: {
         pushed = NuCompileExpression(irl, curfunc->resultexpr);
     } break;
+    case AST_SELF: {
+        NuEmitConst(irl, 0);
+        NuEmitOp(irl, NU_OP_ADD_VBASE);
+        pushed = 1;
+    } break;
     default:
         ERROR(node, "Unknown expression node %d\n", node->kind);
         return 0;
