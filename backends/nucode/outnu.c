@@ -234,11 +234,15 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
     }
     if (!sym) {
         ERROR(node, "identifier %s not found", GetUserIdentifierName(node));
-        return loadOp;
+        return isLoad ? NU_OP_LDL : NU_OP_STL;
     }
     name = sym->user_name;
     if (sym->kind == SYM_RESERVED && !strcasecmp(name, "result")) {
-        sym = LookupAstSymbol(curfunc->resultexpr, NULL);
+        if (curfunc->resultexpr) {
+            sym = LookupAstSymbol(curfunc->resultexpr, NULL);
+        } else {
+            sym = 0;
+        }
         if (!sym) {
             ERROR(node, "internal error, unable to find RESULT");
             return loadOp;
@@ -1262,19 +1266,20 @@ NuCompileFunction(Function *F) {
             AST *copymem;
             AST *args;
             int framesize = FuncLocalSize(F);
+            AST *tempvar = AstIdentifier("__interp_temp");
             // result = _gc_alloc_managed(framesize)
             args = NewAST(AST_EXPRLIST, AstInteger(framesize), NULL);
             allocmem = NewAST(AST_FUNCCALL, AstIdentifier("_gc_alloc_managed"), args);
-            allocmem = AstAssign(AstIdentifier("result"), allocmem);
+            allocmem = AstAssign(tempvar, allocmem);
             allocmem = NewAST(AST_STMTLIST, allocmem, NULL);
             // longcopy(result, dbase, framesize)
             args = NewAST(AST_EXPRLIST, AstInteger(framesize), NULL);
             args = NewAST(AST_EXPRLIST, AstIdentifier("__interp_dbase"), args);
-            args = NewAST(AST_EXPRLIST, AstIdentifier("result"), args);
+            args = NewAST(AST_EXPRLIST, tempvar, args);
             copymem = NewAST(AST_FUNCCALL, AstIdentifier("bytemove"), args);
             copymem = NewAST(AST_STMTLIST, copymem, NULL);
-            // dbase := result
-            args = AstAssign(AstIdentifier("__interp_vbase"), AstIdentifier("result"));
+            // vbase := result
+            args = AstAssign(AstIdentifier("__interp_vbase"), tempvar);
             args = NewAST(AST_STMTLIST, args, F->body);
             allocmem = AddToList(allocmem, copymem);
             allocmem = AddToList(allocmem, args);
