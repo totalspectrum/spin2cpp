@@ -178,8 +178,10 @@ addPrintDec(AST *seq, AST *handle, AST *func, AST *expr, AST *fmtAst)
 #define FMTPARAM_LEFTJUSTIFY (0)
 #define FMTPARAM_RIGHTJUSTIFY (2<<JUSTIFY_BIT)
 #define FMTPARAM_CENTER (3<<JUSTIFY_BIT)
+#define FMTPARAM_NOSIGN    (0<<SIGNCHAR_BIT)
 #define FMTPARAM_SIGNPLUS  (1<<SIGNCHAR_BIT)
 #define FMTPARAM_SIGNSPACE (2<<SIGNCHAR_BIT)
+#define FMTPARAM_UNSIGNED  (3<<SIGNCHAR_BIT)
 
 static AST *
 AddExprToList(AST *list, AST *x)
@@ -394,6 +396,7 @@ genPrintf(AST *ast)
     int zeropad;
     int justify;
     int longflag;
+    int signchar;
     ASTReportInfo saveinfo;
     
     if (gl_output == OUTPUT_CPP || gl_output == OUTPUT_C) {
@@ -458,6 +461,7 @@ genPrintf(AST *ast)
                 thisarg = args->left;
                 args = args->right;
                 longflag = 0;
+                signchar = FMTPARAM_NOSIGN;
                 if (c == '-') {
                     justify = FMTPARAM_LEFTJUSTIFY;
                     c = *fmtstring++;
@@ -472,6 +476,10 @@ genPrintf(AST *ast)
                      minwidth = minwidth * 10 + (c - '0');
                     c = *fmtstring++;
                }
+                if ( (c == '+' || c == ' ') && *fmtstring) {
+                    signchar = (c == '+') ? FMTPARAM_SIGNPLUS : FMTPARAM_SIGNSPACE;
+                    c = *fmtstring++;
+                }
                 if (c == 'l' && *fmtstring) {
                     c = *fmtstring++;
                     longflag++;
@@ -483,6 +491,7 @@ genPrintf(AST *ast)
                         fmt = FMTPARAM_MINWIDTH(minwidth) | justify;
                     }
                 }
+                fmt |= signchar;
                 switch (c) {
                 case 'd':
                     if (longflag > 1) {
