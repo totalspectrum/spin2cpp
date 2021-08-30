@@ -82,11 +82,58 @@ continue_startup
 	loc	pb, #@start_lut
 	setq2	#(end_lut - start_lut)
 	rdlong	0, pb
-	jmp	#start_lut
 
+	' load COG code
+	loc	pb, #@start_cog
+	setq	#(end_cog - start_cog)
+	rdlong	$100, pb
+	
+	' copy jump table to COG RAM
+	loc    pa, #@OPC_TABLE
+	setq   #(OPC_TABLE_END-OPC_TABLE)-1
+	rdlong OPCODES, pa
+	
+	' more initialization code
+	mov	old_pc, #0
+	mov	cogsp, #0
+#ifdef SERIAL_DEBUG
+       mov	dbg_flag, #0
+#endif
+	' cogstack_inc will act in alts/altd to increment the D field
+	mov	cogstack_inc, ##(cogstack) | (1<<9)
+	' cogstack_dec will act in alts/altd to decrement D, and act like it's  predecrement
+	mov	cogstack_dec, ##((cogstack-1) | ($fffffe00))
+	' similar for looping over 0 addresses
+	mov	zero_inc, ##(1<<9)
+	mov	main_loop_addr, ##main_loop
+
+	jmp	#start_cog
+	fit	$100
+	
 	org	$100
+start_cog
+	
+	' interpreter loop
+main_loop
+#ifdef SERIAL_DEBUG
+	cmp	dbg_flag, #0 wz
+  if_nz	call	#dump_regs
+#endif	
+	rdbyte	pa, ptrb++
+#ifdef SERIAL_DEBUG
+	cmp	pa, #$ff wz
+  if_z	xor	dbg_flag, #1
+  if_z	jmp	#main_loop
+#endif  
+	altgw	pa, #OPCODES
+	getword	tmp
+	push	main_loop_addr
+	jmp	tmp
+
+end_cog
+
 cogstack
-	res	64
+	res	48
 cogstack_inc
 	res	1
 cogstack_dec
@@ -111,49 +158,12 @@ old_dbase res  	1
 old_pc	res    	1
 old_vbase res  	1
 old_cogsp res	1
-#ifdef SERIAL_DEBUG
-dbg_flag res	1
-#endif
-
-	fit	$160	' leave room for 4 debug registers
+dbg_flag res	1  ' for serial debug
+OPCODES res   128
+	fit	$1d0  ' inline assembly variables start here
+	
 	org	$200
 start_lut
-	' initialization code
-	mov	old_pc, #0
-	mov	cogsp, #0
-#ifdef SERIAL_DEBUG
-       mov	dbg_flag, #0
-#endif
-	' cogstack_inc will act in alts/altd to increment the D field
-	mov	cogstack_inc, ##(cogstack) | (1<<9)
-	' cogstack_dec will act in alts/altd to decrement D, and act like it's  predecrement
-	mov	cogstack_dec, ##((cogstack-1) | ($fffffe00))
-	' similar for looping over 0 addresses
-	mov	zero_inc, ##(1<<9)
-	mov	main_loop_addr, ##main_loop
-	
-	' copy jump table to COG RAM
-	loc    pa, #@OPC_TABLE
-	setq   #(OPC_TABLE_END-OPC_TABLE)-1
-	rdlong OPC_TABLE, pa
-	
-	' interpreter loop
-main_loop
-#ifdef SERIAL_DEBUG
-	cmp	dbg_flag, #0 wz
-  if_nz	call	#dump_regs
-#endif	
-	rdbyte	pa, ptrb++
-#ifdef SERIAL_DEBUG
-	cmp	pa, #$ff wz
-  if_z	xor	dbg_flag, #1
-  if_z	jmp	#main_loop
-#endif  
-	altgw	pa, #OPC_TABLE
-	getword	tmp
-	push	main_loop_addr
-	jmp	tmp
-
 impl_DUP2
 	' A B -> A B A B
 	altd	cogsp, cogstack_inc
@@ -390,15 +400,14 @@ impl_HALT
 	waitx	##20000000
 	cogid	pa
 	cogstop	pa
-	
+
+	fit	$300
 end_lut
 '' end of main interpreter
 	' opcode table goes here
-	org	$160
+	orgh
 OPC_TABLE
 
-	fit	$1d0 ' inline assembly variables start here
-
 	' reserved:
 	' $1e8 = __sendptr
 	' $1e9 = __recvptr
