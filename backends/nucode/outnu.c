@@ -934,6 +934,12 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         (void)NuCompileLhsAddress(irl, node->left); // don't care about load op, we will not use it
         pushed = 1;
     } break;
+    case AST_DATADDROF:
+    {
+        pushed = NuCompileExpression(irl, node->left); // don't care about load op, we will not use it
+        NuEmitAddress(irl, ModData(current)->datLabel);
+        NuEmitCommentedOp(irl, NU_OP_ADD, "compute @@");
+    } break;
     case AST_STRINGPTR:
     {
         NuIrLabel *tmpLabel;
@@ -981,7 +987,7 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         pushed = 1;
     } break;
     default:
-        ERROR(node, "Unknown expression node %d\n", node->kind);
+        ERROR(node, "Unknown expression node %d", node->kind);
         return 0;
     }
     return pushed;

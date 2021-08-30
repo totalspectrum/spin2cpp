@@ -1678,7 +1678,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
                 }
             }
             
-            if (gl_output == OUTPUT_BYTECODE) {
+            if (gl_output == OUTPUT_BYTECODE && gl_interp_kind != INTERP_KIND_NUCODE) {
                 int datoffset = BCgetDAToffset(current,kind == AST_ABSADDROF,expr,reportError);
                 if (datoffset < 0) {if (valid) *valid = 0;} // Error (BCgetDAToffset will have already printed it if needed)
                 else offset += datoffset;
