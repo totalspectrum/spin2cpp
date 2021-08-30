@@ -256,7 +256,7 @@ GetBytecodeFor(NuIr *ir)
     if (b) {
         b->name = NuOpName[ir->op];
         b->impl_ptr = impl_ptrs[ir->op];
-        if (!b->impl_ptr[0]) {
+        if (b->impl_ptr && !b->impl_ptr[0]) {
             // builtin: access it via jumping to it
             b->impl_ptr = auto_printf(64, "\tjmp\t#\\impl_%s\n\n", b->name);
             b->impl_size = 1;

@@ -2,12 +2,6 @@
 '' Nucode specific functions
 ''
 
-''
-'' divide (n, nlo) by d, producing qlo and rlo (used in FRAC operation)
-''
-pri _div64(n, nlo, dlo) : qlo, rlo
-  __bytecode__("DIV64")
-
 pri _waitx(tim)
   __bytecode__("WAITX")
 
@@ -30,9 +24,6 @@ pri _cogstop(x)
 pri _cogchk(id) : r
   __bytecode__("COGCHK")
 
-pri _muldiv64(mult1, mult2, divisor) : r
-  __bytecode__("MULDIV64")
-  
 pri _drvl(pin)
   __bytecode__("DRVL")
 pri _drvh(pin)
@@ -305,3 +296,56 @@ pri _make_methodptr(o, func) | ptr
     long[ptr] := o
     long[ptr+4] := func
   return ptr
+
+''
+'' divide (n, nlo) by d, producing qlo and rlo (used in FRAC operation)
+''
+pri _div64(n, nlo, dlo) : qlo, rlo
+  __bytecode__("DIV64")
+
+' signed version
+pri _sdiv64(ahi, alo, b) : q,r | shi, slo, sign
+  sign := 0
+  if ahi < 0
+    shi := 0
+    slo := 0
+    asm
+      sub slo, alo wc
+      subx shi, ahi
+    endasm
+    sign := 1
+ else
+   shi, slo := ahi, alo
+ if b < 0
+   sign ^= 1
+   b := -b
+   
+ q,r := _div64(shi, slo, b)
+ if sign
+   q := -q
+
+pri _muldiv64(mult1, mult2, divisor) : r
+  __bytecode__("MULDIV64")
+  
+pri _qexp(v) : r
+  __bytecode__("QEXP")
+
+pri _qlog(v) : r
+  __bytecode__("QLOG")
+
+pri _ones(v) : r
+  __bytecode__("ONES")
+
+pri _rotxy(x, y, angle) : nx, ny
+  __bytecode__("ROTXY")
+
+pri _qsin(len, angle, twopi) : y | x
+  if twopi
+    angle, x := _sdiv64(angle, 0, twopi)
+  x, y := _rotxy(len, 0, angle)
+
+pri _qcos(len, angle, twopi) : x | y
+  if twopi
+    angle, x := _sdiv64(angle, 0, twopi)
+  x, y := _rotxy(len, 0, angle)
+  

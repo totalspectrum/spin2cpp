@@ -50,10 +50,13 @@
     X(DIV64)     /* calculate lo, hi / n, leaves quotient, remainder on stack */ \
     X(MULDIV64)  /* calculate a*b/c with full precision */ \
     X(SQRT64)    /* calculate sqrt(nos, tos) with full precision */ \
+    X(ROTXY)     /* rotate x, y */ \
     \
     X(NEG)       /* negate tos */ \
     X(NOT)       /* bit complement tos */ \
     X(ABS)       /* abs value tos */ \
+    X(QEXP)      /* exp2 */ \
+    X(QLOG)      /* log2 */ \
     \
     X(DROP)      /* drop element on top of stack */ \
     X(DROP2)     /* drop two elements on top of stack */ \

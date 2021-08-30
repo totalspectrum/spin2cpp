@@ -587,6 +587,14 @@ impl_NOT
 impl_ABS
   _ret_	abs	tos, tos
 
+impl_QEXP
+	qexp	tos
+  _ret_	getqx	tos
+
+impl_QLOG
+	qlog	tos
+  _ret_	getqx	tos
+
 impl_GETCTHL
 	call	#\impl_DUP2
 	getct	tos wc
@@ -676,6 +684,19 @@ impl_RDPIN
 impl_XORO
 	xoro32	tos
   _ret_	mov	tos, tos
+
+impl_XYPOL
+	qvector	nos, tos
+	getqx	nos
+  _ret_	getqy	tos
+
+impl_ROTXY
+	mov	tmp, tos	' tmp = angle
+	call	#\impl_DROP	' tos = y, nos = x
+	setq	tos
+	qrotate	nos, tmp
+	getqx	nos
+  _ret_	getqy	tos
 
 impl_BRA
 	rdword	tmp, ptrb++
