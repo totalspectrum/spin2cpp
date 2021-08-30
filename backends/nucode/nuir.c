@@ -72,6 +72,8 @@ void NuIrInit(NuContext *ctxt) {
     impl_ptrs[NU_OP_DROP2] = "";
     impl_ptrs[NU_OP_DUP] = "";
     impl_ptrs[NU_OP_SWAP] = "";
+    impl_ptrs[NU_OP_DUP2] = "";
+    impl_ptrs[NU_OP_SWAP2] = "";
     impl_ptrs[NU_OP_OVER] = "";
     impl_ptrs[NU_OP_CALL] = "";
     impl_ptrs[NU_OP_CALLM] = "";

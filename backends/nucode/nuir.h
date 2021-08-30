@@ -61,8 +61,10 @@
     X(DROP)      /* drop element on top of stack */ \
     X(DROP2)     /* drop two elements on top of stack */ \
     X(DUP)       /* dup element on top of stack: A B -> A B B */ \
+    X(DUP2)      /* dup 2 elements on top of stack: A B -> A B A B */ \
     X(OVER)      /* changes stack from A B -> A B A */ \
-    X(SWAP)      /* swap tos and nos */ \
+    X(SWAP)      /* swap tos and nos: A B -> B A */ \
+    X(SWAP2)     /* swap 2 elements: A B C -> C A B */ \
     X(HALT)      /* halt processor */ \
     \
     X(ENTER)     /* enter subroutine */ \
@@ -97,6 +99,7 @@
     X(PUSHA)     /* push address */ \
     \
     X(INLINEASM)  /* load inline assembly */ \
+    X(CATCH)      /* catch a result */ \
     \
     /* put all branches together here at the end */ \
     X(JMP)       /* jump to address at tos */ \
@@ -106,6 +109,7 @@
     X(CALL)      /* call subroutine */ \
     X(CALLM)     /* call method (changes object pointer) */ \
     X(GOSUB)     /* combo CALL+ENTER */ \
+    X(THROW)     /* throws a result */ \
     \
     X(BRA)       /* branch always */ \
     X(JMPREL)    /* jump forward relative 3*n bytes */ \

@@ -419,7 +419,34 @@ NuCompileBoolBranches(NuIrList *irl, AST *expr, NuIrLabel *truedest, NuIrLabel *
         if (!x && falsedest) NuEmitBranch(irl, NU_OP_BRA, falsedest);
     }
     if (expr->kind == AST_ISBETWEEN) {
-        ERROR(expr, "Cannot handle ISBETWEEN yet");
+        int n;
+        bool needNewFalsedest = false;
+        n = NuCompileExpression(irl, expr->right->left);
+        if (n != 1) ERROR(expr, "Unexpected size of expression in ISBETWEEN");
+        n = NuCompileExpression(irl, expr->right->right);
+        if (n != 1) ERROR(expr, "Unexpected size of expression in ISBETWEEN");
+        NuEmitOp(irl, NU_OP_DUP2);  // stack now looks like A B A B
+        // make stack look like MIN(A, B) MAX(A, B)
+        NuEmitOp(irl, NU_OP_MINS);  // A B MIN(A, B)
+        NuEmitOp(irl, NU_OP_SWAP2);  // MIN(A, B) A B
+        NuEmitOp(irl, NU_OP_MAXS);   // MIN(A, B) MAX(A, B)
+        n = NuCompileExpression(irl, expr->left); // MIN MAX v
+        if (n != 1) ERROR(expr, "Unexpected size of expression in ISBETWEEN");
+        NuEmitOp(irl, NU_OP_DUP);    // MIN MAX v v
+        NuEmitOp(irl, NU_OP_SWAP2);  // MIN v MAX v
+        // want to verify x <= MAX and x >= MIN
+        if (!falsedest) {
+            falsedest = NuCreateLabel();
+            needNewFalsedest = true;
+        }
+        NuEmitBranch(irl, NU_OP_CBGTS, falsedest);
+        NuEmitBranch(irl, NU_OP_CBLTS, falsedest);
+        if (truedest) {
+            NuEmitBranch(irl, NU_OP_BRA, truedest);
+        }
+        if (needNewFalsedest) {
+            NuEmitLabel(irl, falsedest);
+        }
         return;
     }
     if (expr->kind == AST_OPERATOR) {
@@ -1229,6 +1256,27 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
     case AST_INLINEASM:
         NuCompileInlineAsm(irl, ast);
         break;
+    case AST_THROW: {
+        AST *retval = ast->left;
+        int pushed;
+        AST *buffer = ast->right ? ast->right : AstInteger(0);
+        int flag = ast->d.ival;
+        if (!retval) {
+            retval = curfunc->resultexpr;
+        }
+        if (!retval) {
+            retval = AstInteger(0);
+        }
+        // want to compile to __longjmp(buffer, retval, flag)
+        NuCompileExpression(irl, buffer);
+        pushed = NuCompileExpression(irl, retval);
+        if (pushed > 1) {
+            // cannot abort back multiple values!
+            NuCompileDrop(irl, pushed-1);
+        }
+        NuEmitConst(irl, flag);
+        NuEmitCommentedOp(irl, NU_OP_THROW, "throw");
+    } break;
     default:
         ERROR(ast, "Unhandled node type %d in NuCompileStatement", ast->kind);
         break;

@@ -161,6 +161,15 @@ impl_DUP2
 	altd	cogsp, cogstack_inc
   _ret_	mov	0-0, tos
 
+impl_SWAP2
+	' A B C -> C A B
+	alts	cogsp, #cogstack-1
+	mov	tmp, 0-0            ' tmp = A
+	altd	cogsp, #cogstack-1
+  	mov	0-0, tos	    ' save C on stack
+	mov	tos, nos            ' tos = B
+  _ret_	mov	nos, tmp	    ' nos = A
+
 impl_DUP
 	' A B -> A B B
 	altd	cogsp, cogstack_inc

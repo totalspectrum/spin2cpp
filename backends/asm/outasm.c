@@ -4537,6 +4537,7 @@ static void CompileStatement(IRList *irl, AST *ast)
         }
         if (!retval || retval->kind == AST_EXPRLIST) {
             // cannot abort back multiple values!
+            WARNING(ast, "cannot throw multiple or no values");
             retval = AstInteger(0);
         }
         ValidateAbortFuncs();
