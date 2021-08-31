@@ -213,18 +213,11 @@ OPCODES res   128
 start_lut
 
 impl_PUSHI
-	pop	tmp
-	push	#restart_loop
-	call	#\impl_DUP
-  _ret_	rdlong	tos, ptrb++
-
 impl_PUSHA
 	pop	tmp
 	push	#restart_loop
 	call	#\impl_DUP
-	sub	ptrb, #1	' back up
-  	rdlong	tos, ptrb++
-  _ret_ shr	tos, #8		' remove opcode
+  _ret_	rdlong	tos, ptrb++
 
 impl_DUP2
 	' A B -> A B A B

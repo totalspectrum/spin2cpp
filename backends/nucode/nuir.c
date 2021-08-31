@@ -814,9 +814,8 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
             if (bc) {
                 if (bc->is_const) {
                     if (bc->is_label) {
-                        flexbuf_printf(fb, "\tbyte\t long NU_OP_PUSHA | (");
+                        flexbuf_printf(fb, "\tbyte\tNU_OP_PUSHA, long ");
                         NuOutputLabel(fb, ir->label);
-                        flexbuf_printf(fb, " << 8)");
                     } else {
                         flexbuf_printf(fb, "\tbyte\tNU_OP_PUSHI, long %d", ir->val);
                     }
