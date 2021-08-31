@@ -79,18 +79,23 @@ continue_startup
        call	#ser_debug_str
 #endif       
 	' load LUT code
+	' main LUT code
 	loc	pb, #@start_lut
 	setq2	#(end_lut - start_lut)
 	rdlong	0, pb
-
+	' user LUT code (various impl_XXX)
+	loc	pb, #@IMPL_LUT
+	setq2	#$17f  ' fill the rest of LUT
+	rdlong	$80, pb
+	
 	' load COG code
 	loc	pb, #@start_cog
 	setq	#(end_cog - start_cog)
 	rdlong	$100, pb
 	
-	' copy jump table to COG RAM
+	' copy jump table to final location
 	loc    pa, #@OPC_TABLE
-	setq   #(OPC_TABLE_END-OPC_TABLE)-1
+	setq   #((OPC_TABLE_END-OPC_TABLE)/4)-1
 	rdlong OPCODES, pa
 	
 	' more initialization code
@@ -161,6 +166,11 @@ old_cogsp res	1
 dbg_flag res	1  ' for serial debug
 OPCODES res   128
 	fit	$1d0  ' inline assembly variables start here
+
+	' reserved:
+	' $1e8 = __sendptr
+	' $1e9 = __recvptr
+	' $1ec-$1f0 for debug
 	
 	org	$200
 start_lut
@@ -286,22 +296,6 @@ do_enter
 	shl	nlocals, #2
   _ret_	add	ptra, nlocals	' skip over locals
 
-'
-' GOSUB:
-' similar to CALL + ENTER, sets up stack so RET gets us back to here
-' tos is address for GOSUB
-' nos is number of locals... this is awkward, strictly we'd like to
-' copy these, but for now punt and assume it does not matter
-'
-impl_GOSUB
-	mov	old_pc, ptrb
-	mov	old_vbase, vbase
-	mov	ptrb, tos
-	mov	nlocals, nos
-	mov	nargs, #0		' nargs
-	mov	nrets, #0		' nrets
-	jmp	#do_enter
-	
 ' RET gives number of items on stack to pop off, and number of arguments initially
 impl_RET
 	' save # return items to pop
@@ -401,17 +395,13 @@ impl_HALT
 	cogid	pa
 	cogstop	pa
 
-	fit	$300
+	fit	$280
 end_lut
 '' end of main interpreter
 	' opcode table goes here
 	orgh
 OPC_TABLE
 
-	' reserved:
-	' $1e8 = __sendptr
-	' $1e9 = __recvptr
-	' $1ec-$1f0 for debug
 	orgh
 impl_LDB
   _ret_	rdbyte tos, tos
@@ -797,9 +787,24 @@ impl_CBGEU
   if_ae	add	ptrb, tmp
   	jmp	#\impl_DROP2
 
+'
+' GOSUB:
+' similar to CALL + ENTER, sets up stack so RET gets us back to here
+' tos is address for GOSUB
+' nos is number of locals... this is awkward, strictly we'd like to
+' copy these, but for now punt and assume it does not matter
+'
+impl_GOSUB
+	mov	old_pc, ptrb
+	mov	old_vbase, vbase
+	mov	ptrb, tos
+	mov	nlocals, nos
+	mov	nargs, #0		' nargs
+	mov	nrets, #0		' nrets
+	jmp	#\do_enter
 
 ' final tail stuff for interpreter
-
+	orgh
 #ifdef SERIAL_DEBUG
 ' debug code
 #include "spin/ser_debug_p2.spin2"

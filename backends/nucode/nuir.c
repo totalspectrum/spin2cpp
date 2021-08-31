@@ -77,7 +77,6 @@ void NuIrInit(NuContext *ctxt) {
     impl_ptrs[NU_OP_OVER] = "";
     impl_ptrs[NU_OP_CALL] = "";
     impl_ptrs[NU_OP_CALLM] = "";
-    impl_ptrs[NU_OP_GOSUB] = "";
     impl_ptrs[NU_OP_ENTER] = "";
     impl_ptrs[NU_OP_RET] = "";
     impl_ptrs[NU_OP_INLINEASM] = "";
@@ -571,6 +570,7 @@ void NuCreateBytecodes(NuIrList *lists)
             //       call #\impl_DUP
             // _ret_ mov  tos, #0
             bc->impl_ptr = auto_printf(128, "impl_%s\n\tcall\t#\\impl_DUP\n _ret_\t%s\ttos, #%s%s\n\n", bc->name, instr, immflag, valstr);
+            bc->impl_size = (immflag[0]) ? 3 : 2;
             bc->is_const = 0; // don't need to emit PUSHI for this one
         } else if (macro) {
             bc = NuReplaceMacro(lists, macro);
@@ -652,7 +652,9 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     int c;
     int i;
     uint32_t heapsize = GetHeapSize() + 4;
-    
+    int impl_size = 0;
+    int impl_max = 0x160; // really 0x180, but give a bit of slop just in case
+    int saw_orgh = 0;
     heapsize = (heapsize+3)&~3; // long align
     nu_heap_size = heapsize;
     
@@ -700,7 +702,9 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     }
     
     // now emit opcode implementations
-    flexbuf_printf(fb, "dat\n\torgh ($ < $400) ? $400 : $\n");
+    // these start in LUT and go up to $180 bytes
+    flexbuf_printf(fb, "\ndat\n\torg\t$280\n");
+    flexbuf_printf(fb, "IMPL_LUT\n");
     for (i = 0; i < num_bytecodes; i++) {
         NuBytecode *bc = globalBytecodes[i];
         const char *ptr = bc->impl_ptr;
@@ -714,6 +718,11 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
             // does not start with impl_, so not really needed
             continue;
         }
+        impl_size += bc->impl_size;
+        if (impl_size >= impl_max && !saw_orgh) {
+            saw_orgh = 1;
+            flexbuf_printf(fb, "\torgh\n");
+        }
         for(;;) {
             c = *ptr++;
             if (!c) break;
@@ -724,6 +733,12 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
                 break;
             }
         }
+        if (!saw_orgh) {
+            flexbuf_printf(fb, "' pc= 0x%x\n", impl_size + 0x280);
+        }
+    }
+    if (!saw_orgh) {
+        flexbuf_printf(fb, "\n\torgh ($ < $400) ? $400 : $\n");
     }
 }
 
