@@ -163,6 +163,13 @@ NuIr *NuEmitAddress(NuIrList *irl, NuIrLabel *label) {
     return r;
 }
 
+NuIr *NuEmitCall(NuIrList *irl, NuIrOpcode op, NuIrLabel *label, const char *comment) {
+    NuIr *r = NuEmitOp(irl, op);
+    r->label = label;
+    r->comment = comment;
+    return r;
+}
+
 NuIr *NuEmitBranch(NuIrList *irl, NuIrOpcode op, NuIrLabel *label) {
     NuIr *r = NuEmitOp(irl, op);
     r->label = label;
@@ -374,7 +381,7 @@ static NuBytecode *NuFindCompressBytecode(NuIrList *irl, int *savings) {
     // globalBytecodes are assumed sorted by usage...
     for (i = 0; i < num_bytecodes; i++) {
         bc = globalBytecodes[i];
-        if (bc->is_const && bc->usage > 1) {
+        if ( (bc->code == PUSHI_BYTECODE || bc->code == PUSHA_BYTECODE) && bc->usage > 1) {
             // cost of implementation is 8 bytes for small, 12 for large
             int impl_cost = 12;
             // cost of each invocation is 5 bytes normally (PUSHI + data)
@@ -800,7 +807,7 @@ NuBytecodeString(NuBytecode *bc) {
         strcpy(dummy, "NU_OP_PUSHA");
         break;
     case CALLA_BYTECODE:
-        strcpy(dummy, "NU_OP_PUSHA");
+        strcpy(dummy, "NU_OP_CALLA");
         break;
     default:
         sprintf(dummy, "NU_OP_%s", bc->name);
