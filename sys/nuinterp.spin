@@ -135,12 +135,9 @@ main_loop
 #else
 restart_loop
 	rdfast	#0, pb
-main_loop
-	rfbyte	pa
-	getptr	pb
-	rdlut	tmp, pa
-	push	#main_loop
-	execf	tmp
+	push	#$1ff		' start xbyte loop
+  _ret_	setq	#0		' use table at start of LUT
+  	jmp	#restart_loop
 #endif
 
 	' hook for jumping into HUB
