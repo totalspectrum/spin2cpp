@@ -108,6 +108,7 @@
     X(RET)       /* return from subroutine */ \
     X(CALL)      /* call subroutine */ \
     X(CALLM)     /* call method (changes object pointer) */ \
+    X(CALLA)     /* call subroutine direct */ \
     X(GOSUB)     /* combo CALL+ENTER */ \
     X(THROW)     /* throws a result */ \
     \

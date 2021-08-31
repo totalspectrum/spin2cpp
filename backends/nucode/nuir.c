@@ -7,7 +7,8 @@
 #define DIRECT_BYTECODE 0
 #define PUSHI_BYTECODE  1
 #define PUSHA_BYTECODE  2
-#define FIRST_BYTECODE  3
+#define CALLA_BYTECODE  3
+#define FIRST_BYTECODE  4
 #define MAX_BYTECODE 0xf8
 
 static const char *NuOpName[] = {
@@ -81,6 +82,7 @@ void NuIrInit(NuContext *ctxt) {
     impl_ptrs[NU_OP_RET] = "";
     impl_ptrs[NU_OP_PUSHI] = "";
     impl_ptrs[NU_OP_PUSHA] = "";
+    impl_ptrs[NU_OP_CALLA] = "";
     
     // find the other implementations that we may need
     while (c) {
@@ -209,7 +211,7 @@ AllocBytecode()
 }
 
 static NuBytecode *
-GetBytecodeForConst(intptr_t val, int is_label)
+GetBytecodeForConst(intptr_t val, int is_label, int bytecode)
 {
     int hash;
     NuBytecode *b;
@@ -226,6 +228,7 @@ GetBytecodeForConst(intptr_t val, int is_label)
         ERROR(NULL, "ran out of bytecode space");
         return NULL;
     }
+    b->code = bytecode;
     b->value = val;
     b->link = constOps[hash];
     b->is_const = 1;
@@ -242,10 +245,14 @@ GetBytecodeFor(NuIr *ir)
         return NULL;
     }
     if (ir->op == NU_OP_PUSHI) {
-        return GetBytecodeForConst(ir->val, 0);
+        return GetBytecodeForConst(ir->val, 0, PUSHI_BYTECODE);
     }
     if (ir->op == NU_OP_PUSHA) {
-        return GetBytecodeForConst( (intptr_t)(ir->label), 1);
+        return GetBytecodeForConst( (intptr_t)(ir->label), 1, PUSHA_BYTECODE);
+    }
+    if (ir->op == NU_OP_CALLA) {
+        b = GetBytecodeForConst( (intptr_t)(ir->label), 1, CALLA_BYTECODE);
+        return b;
     }
     b = staticOps[ir->op];
     if (b) {
@@ -504,11 +511,12 @@ void NuCreateBytecodes(NuIrList *lists)
     for (i = 0; i < num_bytecodes; i++) {
         bc = globalBytecodes[i];
         if (bc->is_const) {
-            if (bc->is_label) {
-                globalBytecodes[i]->code = PUSHA_BYTECODE;
-            } else {
-                globalBytecodes[i]->code = PUSHI_BYTECODE;
-            }
+            // already assigned bytecode
+            //if (bc->is_label) {
+            //    globalBytecodes[i]->code = PUSHA_BYTECODE;
+            //} else {
+            //    globalBytecodes[i]->code = PUSHI_BYTECODE;
+            //}
         } else if (NuBcIsRelBranch(globalBytecodes[i])) {
             globalBytecodes[i]->code = code++;
         } else if (code >= MAX_BYTECODE || globalBytecodes[i]->usage <= 1) {
@@ -718,6 +726,7 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     flexbuf_printf(fb, "\tlong\timpl_DIRECT\n");
     flexbuf_printf(fb, "\tlong\timpl_PUSHI\n");
     flexbuf_printf(fb, "\tlong\timpl_PUSHA\n");
+    flexbuf_printf(fb, "\tlong\timpl_CALLA\n");
     
     for (i = 0; i < num_bytecodes; i++) {
         NuBytecode *bc = globalBytecodes[i];
@@ -739,6 +748,7 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     flexbuf_printf(fb, "\tNU_OP_DIRECT = %d\n", DIRECT_BYTECODE);
     flexbuf_printf(fb, "\tNU_OP_PUSHI = %d\n", PUSHI_BYTECODE);
     flexbuf_printf(fb, "\tNU_OP_PUSHA = %d\n", PUSHA_BYTECODE);
+    flexbuf_printf(fb, "\tNU_OP_CALLA = %d\n", CALLA_BYTECODE);
     // others
     for (i = 0; i < num_bytecodes; i++) {
         NuBytecode *bc = globalBytecodes[i];
@@ -779,10 +789,22 @@ void NuOutputFinish(Flexbuf *fb, NuContext *ctxt)
 static const char *
 NuBytecodeString(NuBytecode *bc) {
     static char dummy[1024];
-    if (bc->code == DIRECT_BYTECODE) {
+    switch (bc->code) {
+    case DIRECT_BYTECODE:
         sprintf(dummy, "NU_OP_DIRECT, word impl_%s", bc->name);
-    } else {
+        break;
+    case PUSHI_BYTECODE:
+        strcpy(dummy, "NU_OP_PUSHI");
+        break;
+    case PUSHA_BYTECODE:
+        strcpy(dummy, "NU_OP_PUSHA");
+        break;
+    case CALLA_BYTECODE:
+        strcpy(dummy, "NU_OP_PUSHA");
+        break;
+    default:
         sprintf(dummy, "NU_OP_%s", bc->name);
+        break;
     }
     return dummy;
 }
@@ -824,11 +846,13 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
         default:
             if (bc) {
                 if (bc->is_const) {
+                    const char *name = NuBytecodeString(bc);
                     if (bc->is_label) {
-                        flexbuf_printf(fb, "\tbyte\tNU_OP_PUSHA, long ");
+                        flexbuf_printf(fb, "\tbyte\tlong %s | (", name);
                         NuOutputLabel(fb, ir->label);
+                        flexbuf_printf(fb, "<< 8)");
                     } else {
-                        flexbuf_printf(fb, "\tbyte\tNU_OP_PUSHI, long %d", ir->val);
+                        flexbuf_printf(fb, "\tbyte\t%s, long %d", name, ir->val);
                     }
                 } else {
                     flexbuf_printf(fb, "\tbyte\t%s", NuBytecodeString(bc));

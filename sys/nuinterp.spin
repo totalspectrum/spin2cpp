@@ -155,10 +155,25 @@ impl_DIRECT
 	jmp	tmp
 
 impl_PUSHI
+	call	#\impl_DUP
+#ifdef SERIAL_DEBUG	
+       rflong	tos
+ _ret_ getptr	pb
+#else
+  _ret_	rflong	tos
+#endif
+  
 impl_PUSHA
 	call	#\impl_DUP
-	rflong	tos
-  _ret_ getptr pb
+	rfword	tos
+	rfbyte	tmp
+	shl	tmp, #16
+#ifdef SERIAL_DEBUG
+	or	tos, tmp
+  _ret_ getptr	pb
+#else  
+  _ret_	or	tos, tmp
+#endif
 
 impl_DUP2
 	' A B -> A B A B
@@ -218,22 +233,28 @@ impl_SWAP
 ' "callm" is like "call" but also pops a new vbase (expects nos==VBASE, tos==PC)
 ' "ret" undoes the "enter" and then sets pc back to old_pc
 '
-impl_CALL
+impl_CALLA
+	or	dbg_flag, #1
+	rfword	pb
+	rfbyte	tmp
+	shl	tmp, #16
+	or	pb, tmp
+do_call
 	pop	tmp
 	push	#restart_loop
-	mov	old_pc, pb
-	mov	old_vbase, vbase
+  _ret_	getptr	old_pc
+	
+impl_CALL
 	mov	pb, tos
-	jmp	#impl_DROP
+	call	#impl_DROP
+	jmp	#do_call
 	
 impl_CALLM
-	pop	tmp
-	push	#restart_loop
-	mov	old_pc, pb
 	mov	old_vbase, vbase
 	mov	pb, tos
 	mov	vbase, nos
-	jmp	#impl_DROP2
+	call	#impl_DROP2
+	jmp	#do_call
 
 ' "enter" has to set up a new stack frame; it takes 3 arguments:
 '    tos is the number of locals (longs)
