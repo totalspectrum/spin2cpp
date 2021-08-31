@@ -131,7 +131,7 @@ main_loop
   	rdlut	tmp, pa
 
 	push	#restart_loop
-	jmp	tmp
+	execf	tmp
 #else
 restart_loop
 	rdfast	#0, pb
@@ -140,9 +140,18 @@ main_loop
 	getptr	pb
 	rdlut	tmp, pa
 	push	#main_loop
-	jmp	tmp
+	execf	tmp
 #endif
 
+	' hook for jumping into HUB
+trampoline
+	skipf	#0
+	pop	tmp		' reset rdfast (hubexec uses the streamer)
+	push	#restart_loop
+	rdlut	tmp, pa		' retrieve original word
+	shr	tmp, #10
+	jmp	tmp		' jump to HUB address
+	
 impl_DIRECT
 	rfword	tmp
 	getptr	pb
