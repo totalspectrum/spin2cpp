@@ -157,6 +157,7 @@ typedef struct NuBytecode {
     unsigned is_inline_asm:1;
     unsigned is_const:1;
     unsigned is_label:1;
+    unsigned in_hub:1;
 } NuBytecode;
 
 typedef struct nuir {

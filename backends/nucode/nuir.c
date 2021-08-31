@@ -651,8 +651,8 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     int c;
     int i;
     uint32_t heapsize = GetHeapSize() + 4;
-    int impl_size = 0;
-    int impl_max = 0x160; // really 0x180, but give a bit of slop just in case
+    int impl_pc = 0x300;
+    int impl_max = 0x3f8; // really 0x3ff, but give a bit of slop just in case
     int saw_orgh = 0;
     heapsize = (heapsize+3)&~3; // long align
     nu_heap_size = heapsize;
@@ -670,8 +670,8 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     }
 
     // emit opcode implementations
-    // these start in LUT and go up to $180 bytes
-    flexbuf_printf(fb, "\ndat\n\torg\t$280\n");
+    // these start in LUT from $300 - $400
+    flexbuf_printf(fb, "\ndat\n\torg\t$300\n");
     flexbuf_printf(fb, "IMPL_LUT\n");
     for (i = 0; i < num_bytecodes; i++) {
         NuBytecode *bc = globalBytecodes[i];
@@ -686,10 +686,13 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
             // does not start with impl_, so not really needed
             continue;
         }
-        impl_size += bc->impl_size;
-        if (impl_size >= impl_max && !saw_orgh) {
+        impl_pc += bc->impl_size;
+        if (impl_pc >= impl_max && !saw_orgh) {
             saw_orgh = 1;
             flexbuf_printf(fb, "\torgh\n");
+        }
+        if (saw_orgh) {
+            bc->in_hub = 1;
         }
         for(;;) {
             c = *ptr++;
@@ -702,7 +705,7 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
             }
         }
         if (!saw_orgh) {
-            flexbuf_printf(fb, "' pc= 0x%x\n", impl_size + 0x280);
+            flexbuf_printf(fb, "' pc= 0x%x\n", impl_pc);
         }
     }
     
@@ -712,15 +715,19 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     // now add the jump table
     flexbuf_printf(fb, "\nOPC_TABLE\n");
     // add the predefined entries
-    flexbuf_printf(fb, "\tword\timpl_DIRECT\n");
-    flexbuf_printf(fb, "\tword\timpl_PUSHI\n");
-    flexbuf_printf(fb, "\tword\timpl_PUSHA\n");
+    flexbuf_printf(fb, "\tlong\timpl_DIRECT\n");
+    flexbuf_printf(fb, "\tlong\timpl_PUSHI\n");
+    flexbuf_printf(fb, "\tlong\timpl_PUSHA\n");
     
     for (i = 0; i < num_bytecodes; i++) {
         NuBytecode *bc = globalBytecodes[i];
         int code = bc->code;
         if (code >= FIRST_BYTECODE) {
-            flexbuf_printf(fb, "\tword\timpl_%s\n", bc->name);
+            if (bc->in_hub) {
+                flexbuf_printf(fb, "\tlong\timpl_%s  ' in HUB\n", bc->name);
+            } else {
+                flexbuf_printf(fb, "\tlong\timpl_%s\n", bc->name);
+            }
         }
     }
     // end of jump table

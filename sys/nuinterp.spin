@@ -79,24 +79,20 @@ continue_startup
        call	#ser_debug_str
 #endif       
 	' load LUT code
-	' main LUT code
-	loc	pa, #@start_lut
-	setq2	#(end_lut - start_lut)
-	rdlong	0, pa
 	' user LUT code (various impl_XXX)
 	loc	pa, #@IMPL_LUT
-	setq2	#$17f  ' fill the rest of LUT
-	rdlong	$80, pa
+	setq2	#$ff  ' fill the rest of LUT
+	rdlong	$100, pa
 	
 	' load COG code
 	loc	pa, #@start_cog
 	setq	#(end_cog - start_cog)
 	rdlong	start_cog, pa
 	
-	' copy jump table to final location
+	' copy jump table to final location at start of LUT
 	loc    pa, #@OPC_TABLE
-	setq   #((OPC_TABLE_END-OPC_TABLE)/4)-1
-	rdlong OPCODES, pa
+	setq2   #((OPC_TABLE_END-OPC_TABLE)/4)-1
+	rdlong 0, pa
 	
 	' more initialization code
 	mov	old_pc, #0
@@ -132,8 +128,7 @@ main_loop
 	cmp	pa, #$ff wz
   if_z	xor	dbg_flag, #1
   if_z	jmp	#restart_loop
-	altgw	pa, #OPCODES
-	getword	tmp
+  	rdlut	tmp, pa
 
 	push	#restart_loop
 	jmp	tmp
@@ -143,8 +138,7 @@ restart_loop
 main_loop
 	rfbyte	pa
 	getptr	pb
-	altgw	pa, #OPCODES
-	getword	tmp
+	rdlut	tmp, pa
 	push	#main_loop
 	jmp	tmp
 #endif
@@ -153,45 +147,6 @@ impl_DIRECT
 	rfword	tmp
 	getptr	pb
 	jmp	tmp
-
-end_cog
-
-cogstack
-	res	32
-cogstack_inc
-	res	1
-cogstack_dec
-	res	1
-zero_inc
-	res	1
-nlocals	res	1
-nargs	res	1
-nrets	res	1
-nos	res    	1
-tos	res    	1
-popval	res	1
-tmp	res    	1
-tmp2	res    	1
-dbase	res    	1
-new_pc	res	1
-vbase	res    	1
-cogsp	res	1
-old_dbase res  	1
-old_pc	res    	1
-old_vbase res  	1
-old_cogsp res	1
-icache	  res	1
-dbg_flag res	1  ' for serial debug
-OPCODES res   128
-	fit	$1d0  ' inline assembly variables start here
-
-	' reserved:
-	' $1e8 = __sendptr
-	' $1e9 = __recvptr
-	' $1ec-$1f0 for debug
-	
-	org	$200
-start_lut
 
 impl_PUSHI
 impl_PUSHA
@@ -392,9 +347,46 @@ impl_HALT
 	waitx	##20000000
 	cogid	pa
 	cogstop	pa
+end_cog
 
-	fit	$280
-end_lut
+cogstack
+	res	32
+cogstack_inc
+	res	1
+cogstack_dec
+	res	1
+zero_inc
+	res	1
+nlocals	res	1
+nargs	res	1
+nrets	res	1
+nos	res    	1
+tos	res    	1
+popval	res	1
+tmp	res    	1
+tmp2	res    	1
+dbase	res    	1
+new_pc	res	1
+vbase	res    	1
+cogsp	res	1
+old_dbase res  	1
+old_pc	res    	1
+old_vbase res  	1
+old_cogsp res	1
+icache	  res	1
+dbg_flag res	1  ' for serial debug
+
+
+	 fit	$1d0  ' inline assembly variables start here
+	' reserved:
+	' $1e8 = __sendptr
+	' $1e9 = __recvptr
+	' $1ec-$1f0 for debug
+	
+	org	$200
+OPCODES
+	res	256
+
 '' end of main interpreter
 
 	orgh
