@@ -815,6 +815,12 @@ NuCompileOperator(NuIrList *irl, AST *node) {
     } else if (optoken == K_MODULUS) {      pushed = NuCompileDiv(irl, node->left, node->right, 1);
     } else if (optoken == K_UNS_DIV) {      pushed = NuCompileDiv(irl, node->left, node->right, 2);
     } else if (optoken == K_UNS_MOD) {      pushed = NuCompileDiv(irl, node->left, node->right, 3);
+    } else if (optoken == K_REV) {
+        NuCompileExpression(irl, lhs);
+        NuCompileExpression(irl, rhs);
+        NuEmitOp(irl, NU_OP_REV);
+        NuEmitOp(irl, NU_OP_SHR);
+        pushed = 1;
     } else {
         if (lhs) {
             pushed += NuCompileExpression(irl, lhs);
