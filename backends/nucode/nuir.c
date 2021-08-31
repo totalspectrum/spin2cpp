@@ -424,7 +424,7 @@ const char *NuMergeBytecodes(const char *bcname, NuBytecode *first, NuBytecode *
     fb = &fb_s;
     flexbuf_init(fb, 256);
     flexbuf_printf(fb, "impl_%s\n", bcname);
-    if (first->impl_size < 3) {
+    if (first->impl_size < 2) {
         NuCopyImpl(fb, first->impl_ptr, 1);
     } else {
         flexbuf_printf(fb, "\tcall\t#\\impl_%s\n", first->name);
