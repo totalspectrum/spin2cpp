@@ -234,7 +234,6 @@ impl_SWAP
 ' "ret" undoes the "enter" and then sets pc back to old_pc
 '
 impl_CALLA
-	or	dbg_flag, #1
 	rfword	pb
 	rfbyte	tmp
 	shl	tmp, #16
@@ -608,6 +607,9 @@ impl_NOT
 
 impl_ABS
   _ret_	abs	tos, tos
+
+impl_REV
+  _ret_	rev	tos
 
 impl_QEXP
 	qexp	tos

@@ -225,7 +225,7 @@ GetBytecodeForConst(intptr_t val, int is_label, int bytecode)
     
     hash = val & MAX_CONST_OPS;
     for (b = constOps[hash]; b; b = b->link) {
-        if (b->value == val) {
+        if (b->value == val && b->code == bytecode) {
             b->usage++;
             return b;
         }

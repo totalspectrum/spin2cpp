@@ -55,6 +55,7 @@
     X(NEG)       /* negate tos */ \
     X(NOT)       /* bit complement tos */ \
     X(ABS)       /* abs value tos */ \
+    X(REV)       /* reverse bits of tos */ \
     X(QEXP)      /* exp2 */ \
     X(QLOG)      /* log2 */ \
     \
