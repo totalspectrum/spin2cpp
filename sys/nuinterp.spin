@@ -47,21 +47,21 @@ real_init
   
   	' first time run
 	' set clock if frequency is not known
-	rdlong	pb, #@clock_freq wz
+	rdlong	pa, #@clock_freq wz
   if_nz	jmp	#skip_clock
-  	mov	pb, ##1	' clock mode
-	mov	tmp, pb
+  	mov	pa, ##1	' clock mode
+	mov	tmp, pa
 	andn	tmp, #3
 	hubset	#0
 	hubset	tmp
 	waitx	##200000
-	hubset	pb
-	wrlong	pb, #@clock_mode
-	mov	pb, ##0	' clock frequency
-	wrlong	pb, #@clock_freq
+	hubset	pa
+	wrlong	pa, #@clock_mode
+	mov	pa, ##0	' clock frequency
+	wrlong	pa, #@clock_freq
 skip_clock
 	' set up initial registers
-	rdlong	ptrb, #@entry_pc	' ptrb serves as PC
+	rdlong	pb, #@entry_pc	' pb serves as PC
 	rdlong	vbase, #@entry_vbase
 	rdlong	ptra, #@entry_sp
 	rdlong	dbase, #@entry_dbase
@@ -70,7 +70,7 @@ skip_clock
 spininit
 	' for Spin startup, stack should contain args, pc, vbase in that order
 	rdlong	vbase, --ptra
-	rdlong	ptrb, --ptra		' ptrb serves as PC
+	rdlong	pb, --ptra		' pb serves as PC
 continue_startup
 #ifdef SERIAL_DEBUG
        mov	ser_debug_arg1, ##230_400
@@ -80,18 +80,18 @@ continue_startup
 #endif       
 	' load LUT code
 	' main LUT code
-	loc	pb, #@start_lut
+	loc	pa, #@start_lut
 	setq2	#(end_lut - start_lut)
-	rdlong	0, pb
+	rdlong	0, pa
 	' user LUT code (various impl_XXX)
-	loc	pb, #@IMPL_LUT
+	loc	pa, #@IMPL_LUT
 	setq2	#$17f  ' fill the rest of LUT
-	rdlong	$80, pb
+	rdlong	$80, pa
 	
 	' load COG code
-	loc	pb, #@start_cog
+	loc	pa, #@start_cog
 	setq	#(end_cog - start_cog)
-	rdlong	start_cog, pb
+	rdlong	start_cog, pa
 	
 	' copy jump table to final location
 	loc    pa, #@OPC_TABLE
@@ -120,57 +120,38 @@ start_cog
 	' interpreter loop
 #ifdef SERIAL_DEBUG
 restart_loop
-	rdlong	icache, ptrb
+	rdfast	#0, pb
 main_loop
 	cmp	dbg_flag, #0 wz
-  if_nz	call	#dump_regs
-
-	getbyte	pa, icache, #0
-	add	ptrb, #1
+  if_z	jmp	#.skipdbg
+  	call	#dump_regs
+	rdfast	#0, pb
+.skipdbg
+	rfbyte	pa
+	getptr	pb
 	cmp	pa, #$ff wz
   if_z	xor	dbg_flag, #1
   if_z	jmp	#restart_loop
 	altgw	pa, #OPCODES
 	getword	tmp
 
-
 	push	#restart_loop
 	jmp	tmp
 #else
 restart_loop
-	rdlong	icache, ptrb
+	rdfast	#0, pb
 main_loop
-	getbyte	pa, icache, #0
-	add	ptrb, #1
+	rfbyte	pa
+	getptr	pb
 	altgw	pa, #OPCODES
 	getword	tmp
-	call	tmp
-
-	getbyte	pa, icache, #1
-	add	ptrb, #1
-	altgw	pa, #OPCODES
-	getword	tmp
-	call	tmp
-
-	getbyte	pa, icache, #2
-	add	ptrb, #1
-	altgw	pa, #OPCODES
-	getword	tmp
-	call	tmp
-
-	getbyte	pa, icache, #3
-	add	ptrb, #1
-	altgw	pa, #OPCODES
-	getword	tmp
-
-	push	#restart_loop
+	push	#main_loop
 	jmp	tmp
 #endif
 
 impl_DIRECT
-	pop	tmp
-	push	#restart_loop
-	rdword	tmp, ptrb++
+	rfword	tmp
+	getptr	pb
 	jmp	tmp
 
 end_cog
@@ -214,10 +195,9 @@ start_lut
 
 impl_PUSHI
 impl_PUSHA
-	pop	tmp
-	push	#restart_loop
 	call	#\impl_DUP
-  _ret_	rdlong	tos, ptrb++
+	rflong	tos
+  _ret_ getptr pb
 
 impl_DUP2
 	' A B -> A B A B
@@ -280,17 +260,17 @@ impl_SWAP
 impl_CALL
 	pop	tmp
 	push	#restart_loop
-	mov	old_pc, ptrb
+	mov	old_pc, pb
 	mov	old_vbase, vbase
-	mov	ptrb, tos
+	mov	pb, tos
 	jmp	#impl_DROP
 	
 impl_CALLM
 	pop	tmp
 	push	#restart_loop
-	mov	old_pc, ptrb
+	mov	old_pc, pb
 	mov	old_vbase, vbase
-	mov	ptrb, tos
+	mov	pb, tos
 	mov	vbase, nos
 	jmp	#impl_DROP2
 
@@ -372,7 +352,7 @@ impl_RET
 	shr	nargs, #2
 	setq	#3
 	rdlong	dbase, ptra
-	mov	ptrb, new_pc
+	mov	pb, new_pc
 	cmp	dbase, #0 wz
 	
   if_z	jmp	#impl_HALT		' if old dbase was NULL, nothing to return to
@@ -472,7 +452,7 @@ impl_ADD_DBASE
   _ret_	add	tos, dbase
 
 impl_ADD_PC
-  _ret_	add	tos, ptrb
+  _ret_	add	tos, pb
   
 impl_ADD_SP
   _ret_	add	tos, ptra
@@ -727,106 +707,117 @@ impl_ROTXY
 impl_BRA
 	pop	tmp
 	push	#restart_loop
-	rdword	tmp, ptrb++
+	rfword	tmp
+	getptr	pb
 	signx	tmp, #15
-  _ret_	add	ptrb, tmp
+  _ret_	add	pb, tmp
 
 impl_JMPREL
 	pop	tmp
 	push	#restart_loop
-	add	ptrb, tos
-	add	ptrb, tos
-	add	ptrb, tos	' ptrb += 3*tos
+	add	pb, tos
+	add	pb, tos
+	add	pb, tos		' PC += 3*tos
 	jmp	#\impl_DROP
 
 impl_CBEQ
 	pop	tmp
 	push	#restart_loop
-	rdword	tmp, ptrb++
+	rfword	tmp
+	getptr	pb
 	signx	tmp, #15
 	cmp	nos, tos wcz
-  if_e	add	ptrb, tmp
+  if_e	add	pb, tmp
   	jmp	#\impl_DROP2
 
 impl_CBNE
 	pop	tmp
 	push	#restart_loop
-	rdword	tmp, ptrb++
+	rfword	tmp
+	getptr	pb
 	signx	tmp, #15
 	cmp	nos, tos wcz
-  if_ne	add	ptrb, tmp
+  if_ne	add	pb, tmp
   	jmp	#\impl_DROP2
 
 impl_CBLTS
 	pop	tmp
 	push	#restart_loop
-	rdword	tmp, ptrb++
+	rfword	tmp
+	getptr	pb
 	signx	tmp, #15
 	cmps	nos, tos wcz
-  if_b	add	ptrb, tmp
+  if_b	add	pb, tmp
   	jmp	#\impl_DROP2
 
 impl_CBLES
 	pop	tmp
 	push	#restart_loop
-	rdword	tmp, ptrb++
+	rfword	tmp
+	getptr	pb
 	signx	tmp, #15
 	cmps	nos, tos wcz
-  if_be	add	ptrb, tmp
+  if_be	add	pb, tmp
   	jmp	#\impl_DROP2
 
 impl_CBGTS
 	pop	tmp
 	push	#restart_loop
-	rdword	tmp, ptrb++
+	rfword	tmp
+	getptr	pb
 	signx	tmp, #15
 	cmps	nos, tos wcz
-  if_a	add	ptrb, tmp
+  if_a	add	pb, tmp
   	jmp	#\impl_DROP2
 
 impl_CBGES
 	pop	tmp
 	push	#restart_loop
-	rdword	tmp, ptrb++
+	rfword	tmp
+	getptr	pb
 	signx	tmp, #15
 	cmps	nos, tos wcz
-  if_ae	add	ptrb, tmp
+  if_ae	add	pb, tmp
   	jmp	#\impl_DROP2
 
 impl_CBLTU
 	pop	tmp
 	push	#restart_loop
-	rdword	tmp, ptrb++
+	rfword	tmp
+	getptr	pb
 	signx	tmp, #15
 	cmp	nos, tos wcz
-  if_b	add	ptrb, tmp
+  if_b	add	pb, tmp
   	jmp	#\impl_DROP2
 
 impl_CBLEU
 	pop	tmp
 	push	#restart_loop
-	rdword	tmp, ptrb++
+	rfword	tmp
+	getptr	pb
 	signx	tmp, #15
 	cmp	nos, tos wcz
-  if_be	add	ptrb, tmp
+  if_be	add	pb, tmp
   	jmp	#\impl_DROP2
 
 impl_CBGTU
 	pop	tmp
 	push	#restart_loop
-	rdword	tmp, ptrb++
+	rfword	tmp
+	getptr	pb
 	signx	tmp, #15
 	cmp	nos, tos wcz
-  if_a	add	ptrb, tmp
+  if_a	add	pb, tmp
   	jmp	#\impl_DROP2
 
 impl_CBGEU
 	pop	tmp
 	push	#restart_loop
-	rdword	tmp, ptrb++
+	rfword	tmp
+	getptr	pb
 	signx	tmp, #15
 	cmp	nos, tos wcz
-  if_ae	add	ptrb, tmp
+  if_ae	add	pb, tmp
   	jmp	#\impl_DROP2
 
 '
@@ -839,9 +830,9 @@ impl_CBGEU
 impl_GOSUB
 	pop	tmp
 	push	#restart_loop
-	mov	old_pc, ptrb
+	mov	old_pc, pb
 	mov	old_vbase, vbase
-	mov	ptrb, tos
+	mov	pb, tos
 	mov	nlocals, nos
 	mov	nargs, #0		' nargs
 	mov	nrets, #0		' nrets
@@ -895,7 +886,7 @@ stack_msg
 dump_regs
 	mov	ser_debug_arg1, ##pc_msg
 	call	#ser_debug_str
-	mov	ser_debug_arg1, ptrb
+	mov	ser_debug_arg1, pb
 	call	#ser_debug_hex
 	
 	mov	ser_debug_arg1, ##sp_msg
