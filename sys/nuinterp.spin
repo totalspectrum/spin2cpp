@@ -91,7 +91,7 @@ continue_startup
 	' load COG code
 	loc	pb, #@start_cog
 	setq	#(end_cog - start_cog)
-	rdlong	$100, pb
+	rdlong	start_cog, pb
 	
 	' copy jump table to final location
 	loc    pa, #@OPC_TABLE
@@ -110,7 +110,6 @@ continue_startup
 	mov	cogstack_dec, ##((cogstack-1) | ($fffffe00))
 	' similar for looping over 0 addresses
 	mov	zero_inc, ##(1<<9)
-	mov	main_loop_addr, ##main_loop
 
 	jmp	#start_cog
 	fit	$100
@@ -119,33 +118,70 @@ continue_startup
 start_cog
 	
 	' interpreter loop
-main_loop
 #ifdef SERIAL_DEBUG
+restart_loop
+	rdlong	icache, ptrb
+main_loop
 	cmp	dbg_flag, #0 wz
   if_nz	call	#dump_regs
-#endif	
-	rdbyte	pa, ptrb++
-#ifdef SERIAL_DEBUG
+
+	getbyte	pa, icache, #0
+	add	ptrb, #1
 	cmp	pa, #$ff wz
   if_z	xor	dbg_flag, #1
-  if_z	jmp	#main_loop
-#endif  
+  if_z	jmp	#restart_loop
 	altgw	pa, #OPCODES
 	getword	tmp
-	push	main_loop_addr
+
+
+	push	#restart_loop
+	jmp	tmp
+#else
+restart_loop
+	rdlong	icache, ptrb
+main_loop
+	getbyte	pa, icache, #0
+	add	ptrb, #1
+	altgw	pa, #OPCODES
+	getword	tmp
+	call	tmp
+
+	getbyte	pa, icache, #1
+	add	ptrb, #1
+	altgw	pa, #OPCODES
+	getword	tmp
+	call	tmp
+
+	getbyte	pa, icache, #2
+	add	ptrb, #1
+	altgw	pa, #OPCODES
+	getword	tmp
+	call	tmp
+
+	getbyte	pa, icache, #3
+	add	ptrb, #1
+	altgw	pa, #OPCODES
+	getword	tmp
+
+	push	#restart_loop
+	jmp	tmp
+#endif
+
+impl_DIRECT
+	pop	tmp
+	push	#restart_loop
+	rdword	tmp, ptrb++
 	jmp	tmp
 
 end_cog
 
 cogstack
-	res	48
+	res	32
 cogstack_inc
 	res	1
 cogstack_dec
 	res	1
 zero_inc
-	res	1
-main_loop_addr
 	res	1
 nlocals	res	1
 nargs	res	1
@@ -163,6 +199,7 @@ old_dbase res  	1
 old_pc	res    	1
 old_vbase res  	1
 old_cogsp res	1
+icache	  res	1
 dbg_flag res	1  ' for serial debug
 OPCODES res   128
 	fit	$1d0  ' inline assembly variables start here
@@ -174,6 +211,21 @@ OPCODES res   128
 	
 	org	$200
 start_lut
+
+impl_PUSHI
+	pop	tmp
+	push	#restart_loop
+	call	#\impl_DUP
+  _ret_	rdlong	tos, ptrb++
+
+impl_PUSHA
+	pop	tmp
+	push	#restart_loop
+	call	#\impl_DUP
+	sub	ptrb, #1	' back up
+  	rdlong	tos, ptrb++
+  _ret_ shr	tos, #8		' remove opcode
+
 impl_DUP2
 	' A B -> A B A B
 	altd	cogsp, cogstack_inc
@@ -233,12 +285,16 @@ impl_SWAP
 ' "ret" undoes the "enter" and then sets pc back to old_pc
 '
 impl_CALL
+	pop	tmp
+	push	#restart_loop
 	mov	old_pc, ptrb
 	mov	old_vbase, vbase
 	mov	ptrb, tos
 	jmp	#impl_DROP
 	
 impl_CALLM
+	pop	tmp
+	push	#restart_loop
 	mov	old_pc, ptrb
 	mov	old_vbase, vbase
 	mov	ptrb, tos
@@ -298,6 +354,8 @@ do_enter
 
 ' RET gives number of items on stack to pop off, and number of arguments initially
 impl_RET
+	pop	tmp
+	push	#restart_loop
 	' save # return items to pop
 	mov	nrets, tos
 	mov	nargs, nos
@@ -357,39 +415,6 @@ impl_RET
 
 	ret
 
-impl_DIRECT
-	rdword	tmp, ptrb++
-	jmp	tmp
-
-impl_PUSHI
-	call	#\impl_DUP
-  _ret_	rdlong	tos, ptrb++
-
-impl_PUSHA
-	call	#\impl_DUP
-	sub	ptrb, #1	' back up
-  	rdlong	tos, ptrb++
-  _ret_ shr	tos, #8		' remove opcode
-
-' load inline assembly and jump to it
-impl_INLINEASM
-	' load local variables
-	setq	#15
-	rdlong	$1d0, dbase
-	' load code to $0
-	setq	tos
-	rdlong	$0, nos
-	' drop from stack
-	call	#\impl_DROP2
-	
-	' call inline code
-	call	#\0-0
-	
-	' save local variables
-	setq	#15
-	wrlong	$1d0, dbase
-	ret
-	
 impl_HALT
 	waitx	##20000000
 	cogid	pa
@@ -707,17 +732,23 @@ impl_ROTXY
   _ret_	getqy	tos
 
 impl_BRA
+	pop	tmp
+	push	#restart_loop
 	rdword	tmp, ptrb++
 	signx	tmp, #15
   _ret_	add	ptrb, tmp
 
 impl_JMPREL
+	pop	tmp
+	push	#restart_loop
 	add	ptrb, tos
 	add	ptrb, tos
 	add	ptrb, tos	' ptrb += 3*tos
 	jmp	#\impl_DROP
 
 impl_CBEQ
+	pop	tmp
+	push	#restart_loop
 	rdword	tmp, ptrb++
 	signx	tmp, #15
 	cmp	nos, tos wcz
@@ -725,6 +756,8 @@ impl_CBEQ
   	jmp	#\impl_DROP2
 
 impl_CBNE
+	pop	tmp
+	push	#restart_loop
 	rdword	tmp, ptrb++
 	signx	tmp, #15
 	cmp	nos, tos wcz
@@ -732,6 +765,8 @@ impl_CBNE
   	jmp	#\impl_DROP2
 
 impl_CBLTS
+	pop	tmp
+	push	#restart_loop
 	rdword	tmp, ptrb++
 	signx	tmp, #15
 	cmps	nos, tos wcz
@@ -739,6 +774,8 @@ impl_CBLTS
   	jmp	#\impl_DROP2
 
 impl_CBLES
+	pop	tmp
+	push	#restart_loop
 	rdword	tmp, ptrb++
 	signx	tmp, #15
 	cmps	nos, tos wcz
@@ -746,6 +783,8 @@ impl_CBLES
   	jmp	#\impl_DROP2
 
 impl_CBGTS
+	pop	tmp
+	push	#restart_loop
 	rdword	tmp, ptrb++
 	signx	tmp, #15
 	cmps	nos, tos wcz
@@ -753,6 +792,8 @@ impl_CBGTS
   	jmp	#\impl_DROP2
 
 impl_CBGES
+	pop	tmp
+	push	#restart_loop
 	rdword	tmp, ptrb++
 	signx	tmp, #15
 	cmps	nos, tos wcz
@@ -760,6 +801,8 @@ impl_CBGES
   	jmp	#\impl_DROP2
 
 impl_CBLTU
+	pop	tmp
+	push	#restart_loop
 	rdword	tmp, ptrb++
 	signx	tmp, #15
 	cmp	nos, tos wcz
@@ -767,6 +810,8 @@ impl_CBLTU
   	jmp	#\impl_DROP2
 
 impl_CBLEU
+	pop	tmp
+	push	#restart_loop
 	rdword	tmp, ptrb++
 	signx	tmp, #15
 	cmp	nos, tos wcz
@@ -774,6 +819,8 @@ impl_CBLEU
   	jmp	#\impl_DROP2
 
 impl_CBGTU
+	pop	tmp
+	push	#restart_loop
 	rdword	tmp, ptrb++
 	signx	tmp, #15
 	cmp	nos, tos wcz
@@ -781,6 +828,8 @@ impl_CBGTU
   	jmp	#\impl_DROP2
 
 impl_CBGEU
+	pop	tmp
+	push	#restart_loop
 	rdword	tmp, ptrb++
 	signx	tmp, #15
 	cmp	nos, tos wcz
@@ -795,6 +844,8 @@ impl_CBGEU
 ' copy these, but for now punt and assume it does not matter
 '
 impl_GOSUB
+	pop	tmp
+	push	#restart_loop
 	mov	old_pc, ptrb
 	mov	old_vbase, vbase
 	mov	ptrb, tos
@@ -802,6 +853,28 @@ impl_GOSUB
 	mov	nargs, #0		' nargs
 	mov	nrets, #0		' nrets
 	jmp	#\do_enter
+
+' load inline assembly and jump to it
+impl_INLINEASM
+	pop	tmp
+	push	#restart_loop
+	' load local variables
+	setq	#15
+	rdlong	$1d0, dbase
+	' load code to $0
+	setq	tos
+	rdlong	$0, nos
+	' drop from stack
+	call	#\impl_DROP2
+	
+	' call inline code
+	call	#\0-0
+	
+	' save local variables
+	setq	#15
+	wrlong	$1d0, dbase
+	ret
+
 
 ' final tail stuff for interpreter
 	orgh
