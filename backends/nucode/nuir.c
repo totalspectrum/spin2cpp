@@ -669,38 +669,7 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
         }
     }
 
-    // add the predefined entries
-    flexbuf_printf(fb, "\tword\timpl_DIRECT\n");
-    flexbuf_printf(fb, "\tword\timpl_PUSHI\n");
-    flexbuf_printf(fb, "\tword\timpl_PUSHA\n");
-    
-    // now add the jump table
-    for (i = 0; i < num_bytecodes; i++) {
-        NuBytecode *bc = globalBytecodes[i];
-        int code = bc->code;
-        if (code >= FIRST_BYTECODE) {
-            flexbuf_printf(fb, "\tword\timpl_%s\n", bc->name);
-        }
-    }
-    // end of jump table
-    flexbuf_printf(fb, "\talignl\nOPC_TABLE_END\n");
-
-    // emit constants for everything
-    flexbuf_printf(fb, "\ncon\n");
-    // predefined
-    flexbuf_printf(fb, "\tNU_OP_DIRECT = %d\n", DIRECT_BYTECODE);
-    flexbuf_printf(fb, "\tNU_OP_PUSHI = %d\n", PUSHI_BYTECODE);
-    flexbuf_printf(fb, "\tNU_OP_PUSHA = %d\n", PUSHA_BYTECODE);
-    // others
-    for (i = 0; i < num_bytecodes; i++) {
-        NuBytecode *bc = globalBytecodes[i];
-        int code = bc->code;
-        if (code >= FIRST_BYTECODE) {
-            flexbuf_printf(fb, "\tNU_OP_%s = %d  ' (used %d times)\n", bc->name, code, bc->usage);
-        }
-    }
-    
-    // now emit opcode implementations
+    // emit opcode implementations
     // these start in LUT and go up to $180 bytes
     flexbuf_printf(fb, "\ndat\n\torg\t$280\n");
     flexbuf_printf(fb, "IMPL_LUT\n");
@@ -736,9 +705,44 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
             flexbuf_printf(fb, "' pc= 0x%x\n", impl_size + 0x280);
         }
     }
+    
     if (!saw_orgh) {
         flexbuf_printf(fb, "\n\torgh ($ < $400) ? $400 : $\n");
     }
+    // now add the jump table
+    flexbuf_printf(fb, "\nOPC_TABLE\n");
+    // add the predefined entries
+    flexbuf_printf(fb, "\tword\timpl_DIRECT\n");
+    flexbuf_printf(fb, "\tword\timpl_PUSHI\n");
+    flexbuf_printf(fb, "\tword\timpl_PUSHA\n");
+    
+    for (i = 0; i < num_bytecodes; i++) {
+        NuBytecode *bc = globalBytecodes[i];
+        int code = bc->code;
+        if (code >= FIRST_BYTECODE) {
+            flexbuf_printf(fb, "\tword\timpl_%s\n", bc->name);
+        }
+    }
+    // end of jump table
+    flexbuf_printf(fb, "\talignl\nOPC_TABLE_END\n");
+
+    // emit constants for everything
+    flexbuf_printf(fb, "\ncon\n");
+    // predefined
+    flexbuf_printf(fb, "\tNU_OP_DIRECT = %d\n", DIRECT_BYTECODE);
+    flexbuf_printf(fb, "\tNU_OP_PUSHI = %d\n", PUSHI_BYTECODE);
+    flexbuf_printf(fb, "\tNU_OP_PUSHA = %d\n", PUSHA_BYTECODE);
+    // others
+    for (i = 0; i < num_bytecodes; i++) {
+        NuBytecode *bc = globalBytecodes[i];
+        int code = bc->code;
+        if (code >= FIRST_BYTECODE) {
+            flexbuf_printf(fb, "\tNU_OP_%s = %d  ' (used %d times)\n", bc->name, code, bc->usage);
+        }
+    }
+
+    // after this comes the actual bytecode
+    flexbuf_printf(fb, "\ndat\n\torgh\n");
 }
 
 void NuOutputFinish(Flexbuf *fb, NuContext *ctxt)

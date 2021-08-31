@@ -396,9 +396,6 @@ impl_HALT
 	fit	$280
 end_lut
 '' end of main interpreter
-	' opcode table goes here
-	orgh
-OPC_TABLE
 
 	orgh
 impl_LDB
