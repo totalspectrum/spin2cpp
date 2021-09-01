@@ -234,28 +234,31 @@ impl_SWAP
 ' "ret" undoes the "enter" and then sets pc back to old_pc
 '
 impl_CALLA
+	mov	old_vbase, vbase
 	rfword	pb
 	rfbyte	tmp
+	getptr	old_pc
 	shl	tmp, #16
 	or	pb, tmp
-	mov	old_vbase, vbase
-do_call
 	pop	tmp
-	push	#restart_loop
-  _ret_	getptr	old_pc
+	jmp	#restart_loop
 	
 impl_CALL
+	mov	old_pc, pb
+	mov	old_vbase, vbase
 	mov	pb, tos
 	call	#impl_DROP
-	mov	old_vbase, vbase
-	jmp	#do_call
+	pop	tmp
+	jmp	#restart_loop
 	
 impl_CALLM
+	mov	old_pc, pb
 	mov	old_vbase, vbase
 	mov	pb, tos
 	mov	vbase, nos
 	call	#impl_DROP2
-	jmp	#do_call
+	pop	tmp
+	jmp	#restart_loop
 
 ' "enter" has to set up a new stack frame; it takes 3 arguments:
 '    tos is the number of locals (longs)
