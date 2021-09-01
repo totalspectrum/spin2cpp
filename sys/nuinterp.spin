@@ -238,6 +238,7 @@ impl_CALLA
 	rfbyte	tmp
 	shl	tmp, #16
 	or	pb, tmp
+	mov	old_vbase, vbase
 do_call
 	pop	tmp
 	push	#restart_loop
@@ -246,6 +247,7 @@ do_call
 impl_CALL
 	mov	pb, tos
 	call	#impl_DROP
+	mov	old_vbase, vbase
 	jmp	#do_call
 	
 impl_CALLM
