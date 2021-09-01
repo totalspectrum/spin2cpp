@@ -1173,7 +1173,7 @@ PerformLoopOptimization(Module *Q)
     for (func = Q->functions; func; func = func->next) {
         curfunc = func;
         if (func->optimize_flags & OPT_PERFORM_LOOPREDUCE) {
-            if (func->body && func->body->kind != AST_STRING) {
+            if (func->body && func->body->kind != AST_STRING && func->body->kind != AST_BYTECODE) {
                 InitLoopValueSet(&lv);
                 doLoopOptimizeList(&lv, func->body);
                 FreeLoopValueSet(&lv);
