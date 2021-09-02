@@ -225,6 +225,19 @@ impl_SWAP
  _ret_	mov	nos, tmp
 
 '
+' perform relative branch
+' tmp contains offset to add to pb
+'
+do_relbranch_drop2
+	call	#\impl_DROP2
+do_relbranch
+	cmp	tmp, #0 wcz
+  if_z	ret
+  	getptr	pb
+	add	pb, tmp
+	pop	tmp2
+	jmp	#\restart_loop
+'
 ' call/enter/ret
 ' "call" saves the original pc in old_pc, the original vbase in old_vbase,
 ' and jumps to the new code
@@ -728,120 +741,85 @@ impl_ROTXY
   _ret_	getqy	tos
 
 impl_BRA
-	pop	tmp
-	push	#restart_loop
 	rfword	tmp
-	getptr	pb
 	signx	tmp, #15
-  _ret_	add	pb, tmp
+	jmp	#\do_relbranch
 
 impl_JMPREL
-	pop	tmp
-	push	#restart_loop
-	add	pb, tos
-	add	pb, tos
-	add	pb, tos		' PC += 3*tos
-	jmp	#\impl_DROP
+	mov	tmp, tos
+	add	tmp, tos
+	add	tmp, tos
+	jmp	#\do_relbranch
 
 impl_CBEQ
-	pop	tmp
-	push	#restart_loop
 	rfword	tmp
-	getptr	pb
 	signx	tmp, #15
 	cmp	nos, tos wcz
-  if_e	add	pb, tmp
-  	jmp	#\impl_DROP2
+  if_ne	mov	tmp, #0
+	jmp	#\do_relbranch_drop2
 
 impl_CBNE
-	pop	tmp
-	push	#restart_loop
 	rfword	tmp
-	getptr	pb
 	signx	tmp, #15
 	cmp	nos, tos wcz
-  if_ne	add	pb, tmp
-  	jmp	#\impl_DROP2
+  if_e	mov	tmp, #0
+  	jmp	#\do_relbranch_drop2
 
 impl_CBLTS
-	pop	tmp
-	push	#restart_loop
 	rfword	tmp
-	getptr	pb
 	signx	tmp, #15
 	cmps	nos, tos wcz
-  if_b	add	pb, tmp
-  	jmp	#\impl_DROP2
+  if_ae	mov	tmp, #0
+  	jmp	#\do_relbranch_drop2
 
 impl_CBLES
-	pop	tmp
-	push	#restart_loop
 	rfword	tmp
-	getptr	pb
 	signx	tmp, #15
 	cmps	nos, tos wcz
-  if_be	add	pb, tmp
-  	jmp	#\impl_DROP2
+  if_a	mov	tmp, #0
+  	jmp	#\do_relbranch_drop2
 
 impl_CBGTS
-	pop	tmp
-	push	#restart_loop
 	rfword	tmp
-	getptr	pb
 	signx	tmp, #15
 	cmps	nos, tos wcz
-  if_a	add	pb, tmp
-  	jmp	#\impl_DROP2
+  if_be	mov	tmp, #0
+  	jmp	#\do_relbranch_drop2
 
 impl_CBGES
-	pop	tmp
-	push	#restart_loop
 	rfword	tmp
-	getptr	pb
 	signx	tmp, #15
 	cmps	nos, tos wcz
-  if_ae	add	pb, tmp
-  	jmp	#\impl_DROP2
+  if_b	mov	tmp, #0
+  	jmp	#\do_relbranch_drop2
 
 impl_CBLTU
-	pop	tmp
-	push	#restart_loop
 	rfword	tmp
-	getptr	pb
 	signx	tmp, #15
 	cmp	nos, tos wcz
-  if_b	add	pb, tmp
-  	jmp	#\impl_DROP2
+  if_ae	mov	tmp, #0
+  	jmp	#\do_relbranch_drop2
 
 impl_CBLEU
-	pop	tmp
-	push	#restart_loop
 	rfword	tmp
-	getptr	pb
 	signx	tmp, #15
 	cmp	nos, tos wcz
-  if_be	add	pb, tmp
-  	jmp	#\impl_DROP2
+  if_a	mov	tmp, #0
+  	jmp	#\do_relbranch_drop2
 
 impl_CBGTU
-	pop	tmp
-	push	#restart_loop
 	rfword	tmp
-	getptr	pb
 	signx	tmp, #15
 	cmp	nos, tos wcz
-  if_a	add	pb, tmp
-  	jmp	#\impl_DROP2
+  if_be	mov	tmp, #0
+  	jmp	#\do_relbranch_drop2
 
 impl_CBGEU
-	pop	tmp
-	push	#restart_loop
 	rfword	tmp
-	getptr	pb
 	signx	tmp, #15
 	cmp	nos, tos wcz
-  if_ae	add	pb, tmp
-  	jmp	#\impl_DROP2
+  if_b	mov	tmp, #0
+  	jmp	#\do_relbranch_drop2
 
 '
 ' GOSUB:
