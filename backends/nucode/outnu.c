@@ -269,7 +269,8 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
                     loadOp = (isLoad) ? NU_OP_LDREG : NU_OP_STREG;
                     break;
                 default:
-                    ERROR(node, "unhandled global %s", sym->user_name);
+                    offset = -offset;
+                    loadOp = (isLoad) ? NU_OP_LDREG : NU_OP_STREG;
                     break;
                 }
             }
@@ -886,6 +887,88 @@ static int NuCompileCondResult(NuIrList *irl, AST *expr) {
     return n_if;
 }
 
+//
+// compile a lookup/lookdown
+//
+static int
+NuCompileLookupDown(NuIrList *irl, AST *expr)
+{
+    AST *funccall;
+    AST *idx, *base;
+    AST *params;
+    AST *ev, *table;
+    AST *len;
+    AST *arrid;
+    AST *tmpreg1 = NULL;
+    AST *tmpreg2 = NULL;
+    int pushed;
+    int popsize = 0;
+    if (expr->kind == AST_LOOKDOWN) {
+        funccall = AstIdentifier("_lookdown");
+    } else {
+        funccall = AstIdentifier("_lookup");
+    }
+    ev = expr->left;
+    if (ev->kind != AST_LOOKEXPR) {
+        ERROR(ev, "Internal error in lookup");
+        return 1;
+    }
+    base = ev->left;
+    idx = ev->right;
+    table = expr->right;
+
+    if (table->kind == AST_TEMPARRAYUSE) {
+        len = table->right;
+        arrid = NewAST(AST_ADDROF, table->left, NULL);
+    } else if (table->kind == AST_EXPRLIST) {
+        // FIXME?? ASSUMES STACK GROWS UP!!!
+        tmpreg1 = AstIdentifier("__interp_temp1");
+        tmpreg2 = AstIdentifier("__interp_temp2");
+        
+        /* NOTE!
+           we have to evaluate the index before evaluating array elements
+        */
+        /* fixme: will nested lookup work?? */
+        pushed = NuCompileExpression(irl, idx);
+        NuCompileLhsAddress(irl, tmpreg1);
+        NuEmitOp(irl, NU_OP_STREG);
+
+        /* get the stack pointer */
+        NuEmitConst(irl, 0);
+        NuEmitOp(irl, NU_OP_ADD_SP);
+        NuCompileLhsAddress(irl, tmpreg2);
+        NuEmitOp(irl, NU_OP_STREG);
+        
+        idx = tmpreg1;
+        arrid = tmpreg2;
+        
+        // push the arguments onto the stack
+        popsize = NuCompileExpression(irl, table);
+        len = AstInteger(popsize);
+    } else {
+        ERROR(table, "Internal error in lookup code");
+        return 1;
+    }
+
+    params = NewAST(AST_EXPRLIST, idx,
+                    NewAST(AST_EXPRLIST, base,
+                           NewAST(AST_EXPRLIST, arrid,
+                                  NewAST(AST_EXPRLIST, len, NULL))));
+    funccall = NewAST(AST_FUNCCALL, funccall, params);
+    pushed = NuCompileFunCall(irl, funccall);
+    if (pushed != 1) {
+        ERROR(table, "Internal error, pushed too many results for lookup/down");
+    }
+    if (popsize) {
+        NuCompileLhsAddress(irl, tmpreg1);
+        NuEmitOp(irl, NU_OP_STREG);  // save final value
+        NuCompileDrop(irl, popsize);         // drop the lookup/down
+        NuCompileLhsAddress(irl, tmpreg1);
+        NuEmitOp(irl, NU_OP_LDREG);
+    }
+    return pushed;
+}
+
 /* returns number of longs pushed on stack */
 static int
 NuCompileExpression(NuIrList *irl, AST *node) {
@@ -990,6 +1073,10 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         NuEmitCommentedOp(irl, NU_OP_ADD_VBASE, "self");
         pushed = 1;
     } break;
+    case AST_LOOKUP:
+    case AST_LOOKDOWN:
+        pushed = NuCompileLookupDown(irl, node);
+        break;
     default:
         ERROR(node, "Unknown expression node %d", node->kind);
         return 0;

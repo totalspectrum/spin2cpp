@@ -429,6 +429,8 @@ cogsp	res	1
 	' reserved:
 	' $1e8 = __sendptr
 	' $1e9 = __recvptr
+	' $1ea = __temp_reg1
+	' $1eb = __temp_reg2
 	' $1ec-$1f0 for debug
 	
 	org	$200
@@ -492,6 +494,7 @@ impl_ADD_PC
   _ret_	add	tos, pb
   
 impl_ADD_SP
+	add	tos, #8	  ' leave room for nos and tos
   _ret_	add	tos, ptra
 
 impl_ADD
