@@ -63,6 +63,7 @@ int gl_nospin;
 int gl_gas_dat;
 int gl_normalizeIdents;
 int gl_debug;
+int gl_brkdebug;
 int gl_expand_constants;
 int gl_optimize_flags;
 int gl_dat_offset;

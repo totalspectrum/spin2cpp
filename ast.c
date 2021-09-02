@@ -752,6 +752,8 @@ static const char *astnames[] = {
     "_sametypes",
 
     "_hasmethod",
+
+    "brk_debug",
 };
 
 //

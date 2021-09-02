@@ -61,6 +61,11 @@ typedef struct Reloc {
 #define RELOC_KIND_AUGS  3  // relocation for AUGS
 #define RELOC_KIND_AUGD  4  // relocation for AUGD
 
+/* for PASM debug */
+#define MAX_BRK 256
+extern unsigned brkAssigned; // Currently assigned BRK codes
+int AsmDebug_CodeGen(AST *ast);
+
 void PrintDataBlock(Flexbuf *f, AST *list, DataBlockOutFuncs *funcs, Flexbuf *relocs);
 void PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm);
 

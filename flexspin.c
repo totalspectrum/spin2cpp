@@ -393,6 +393,10 @@ main(int argc, const char **argv)
                 opt += 2;
             }
 	    gl_outname = cmd->outname = strdup(opt);
+        } else if (!strcmp(argv[0], "-gbrk")) {
+            argv++; --argc;
+            gl_debug = 1;
+            gl_brkdebug = 1;
         } else if (!strncmp(argv[0], "-g", 2)) {
             argv++; --argc;
             gl_debug = 1;

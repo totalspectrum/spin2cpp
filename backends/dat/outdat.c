@@ -1783,6 +1783,18 @@ assembleFile(Flexbuf *f, AST *ast)
     fclose(inf);
 }
 
+
+void AssembleAsmDebug(Flexbuf *f,AST *ast) {
+    if (!gl_p2) ERROR(ast,"ASM DEBUG is only supported on P2!");
+    int brkCode = AsmDebug_CodeGen(ast);
+    if (brkCode>=0) {
+        // Opcode for P2 BRK....
+        outputInstrLong(f,0b11111101011001000000000000110110 + (brkCode<<9));
+    } else {
+        outputInstrLong(f,0);
+    }
+}
+
 /*
  * output padding bytes
  */
@@ -1916,6 +1928,16 @@ PrintDataBlock(Flexbuf *f, AST *list, DataBlockOutFuncs *funcs, Flexbuf *relocs)
                 }
             }
             AssembleInstruction(f, ast, relocs);
+            break;
+        case AST_BRKDEBUG:
+            if (!gl_brkdebug) WARNING(ast,"Internal error: Got AST_BRKDEBUG, but BRK debugger is not enabled?");
+            if (NEED_ALIGNMENT || (!inHub) ) {
+                while ((datacount % 4) != 0) {
+                    outputByte(f, 0);
+                }
+            }
+            AssembleAsmDebug(f,ast);
+
             break;
         case AST_IDENTIFIER:
             /* just skip labels */

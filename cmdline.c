@@ -251,12 +251,12 @@ int ProcessCommandLine(CmdLineOptions *cmd)
         } else if (cmd->outputDat) {
             cmd->outname = gl_outname;
             if (gl_gas_dat) {
-	        if (!cmd->outname) {
+	            if (!cmd->outname) {
                     cmd->outname = ReplaceExtension(P->fullname, ".S");
                 }
                 OutputGasFile(cmd->outname, P);
             } else {
-	        if (!cmd->outname) {
+	            if (!cmd->outname) {
                     if (cmd->outputBin) {
                         if (cmd->useEeprom) {
                             cmd->outname = ReplaceExtension(P->fullname, ".eeprom");

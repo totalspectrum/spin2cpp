@@ -43,6 +43,7 @@ int gl_dat_offset = 0;
 int gl_infer_ctypes = 0;
 int gl_fixedreal = 0;
 int gl_debug = 1;
+int gl_brkdebug = 1;
 const char *gl_intstring = "int32_t";
 int gl_warn_flags = 0;
 

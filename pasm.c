@@ -673,6 +673,21 @@ AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags)
             lasttype = ast_type_long;
             current->datHasCode = 1;
             break;
+        case AST_BRKDEBUG:
+            if (!gl_brkdebug) WARNING(ast,"Internal error: Got AST_BRKDEBUG, but BRK debugger is not enabled?");
+            MARK_CODE(label_flags);
+            // Kinda similiar the instruction code above ..
+            if (inHub) {
+                MAYBEALIGNPC(4);
+            } else {
+                ALIGNPC(4);
+            }
+            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub, label_flags);
+            replaceHeres(ast->left, HEREPC, lastOrg);
+            INCPC(4); // BRK is always 4 byte
+            lasttype = ast_type_long;
+            current->datHasCode = 1;
+            break;
         case AST_IDENTIFIER:
             pendingLabels = AddToList(pendingLabels, NewAST(AST_LISTHOLDER, ast, NULL));
             break;
