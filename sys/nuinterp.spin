@@ -231,12 +231,20 @@ impl_SWAP
 do_relbranch_drop2
 	call	#\impl_DROP2
 do_relbranch
-	cmp	tmp, #0 wcz
-  if_z	ret
+	cmp	tmp, #16 wcz	' short forward branch?
+  if_be	jmp	#\.doskip
   	getptr	pb
 	add	pb, tmp
 	pop	tmp2
 	jmp	#\restart_loop
+.doskip
+	cmp	tmp, #0 wz
+  if_z	ret
+	rep	@.skipbytes, tmp
+	rfbyte	tmp2
+.skipbytes
+  _ret_	getptr	pb
+
 '
 ' call/enter/ret
 ' "call" saves the original pc in old_pc, the original vbase in old_vbase,
@@ -409,10 +417,6 @@ tos	res    	1
 popval	res	1
 tmp	res    	1
 tmp2	res    	1
-dbase	res    	1
-new_pc	res	1
-vbase	res    	1
-cogsp	res	1
 old_dbase res  	1
 old_pc	res    	1
 old_vbase res  	1
@@ -422,6 +426,12 @@ dbg_flag res	1  ' for serial debug
 
 
 	 fit	$1d0  ' inline assembly variables start here
+	 org	$1e0  ' special locals here
+dbase	res    	1
+new_pc	res	1
+vbase	res    	1
+cogsp	res	1
+	res	4	' 4 more available
 	' reserved:
 	' $1e8 = __sendptr
 	' $1e9 = __recvptr
