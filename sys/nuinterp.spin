@@ -143,8 +143,7 @@ restart_loop
 	' hook for jumping into HUB
 trampoline
 	skipf	#0
-	pop	tmp		' reset rdfast (hubexec uses the streamer)
-	push	#restart_loop
+	push	#restart_loop	' return to restart (hubexec uses the streamer)
 	rdlut	tmp, pa		' retrieve original word
 	shr	tmp, #10
 	jmp	tmp		' jump to HUB address
@@ -235,7 +234,6 @@ do_relbranch
   if_be	jmp	#\.doskip
   	getptr	pb
 	add	pb, tmp
-	pop	tmp2
 	jmp	#\restart_loop
 .doskip
 	cmp	tmp, #0 wz
@@ -261,25 +259,22 @@ impl_CALLA
 	getptr	old_pc
 	shl	tmp, #16
 	or	pb, tmp
-	pop	tmp
 	jmp	#restart_loop
 	
 impl_CALL
 	mov	old_pc, pb
 	mov	old_vbase, vbase
 	mov	pb, tos
-	call	#impl_DROP
-	pop	tmp
-	jmp	#restart_loop
+	push	#restart_loop
+	jmp	#impl_DROP
 	
 impl_CALLM
 	mov	old_pc, pb
 	mov	old_vbase, vbase
 	mov	pb, tos
 	mov	vbase, nos
-	call	#impl_DROP2
-	pop	tmp
-	jmp	#restart_loop
+	push	#restart_loop
+	jmp	#impl_DROP2
 
 ' "enter" has to set up a new stack frame; it takes 3 arguments:
 '    tos is the number of locals (longs)
@@ -334,7 +329,6 @@ do_enter
 
 ' RET gives number of items on stack to pop off, and number of arguments initially
 impl_RET
-	pop	tmp
 	push	#restart_loop
 	' save # return items to pop
 	mov	nrets, tos
