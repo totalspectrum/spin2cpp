@@ -230,9 +230,9 @@ impl_SWAP
 do_relbranch_drop2
 	call	#\impl_DROP2
 do_relbranch
+  	getptr	pb
 	cmp	tmp, #16 wcz	' short forward branch?
   if_be	jmp	#\.doskip
-  	getptr	pb
 	add	pb, tmp
 	jmp	#\restart_loop
 .doskip
