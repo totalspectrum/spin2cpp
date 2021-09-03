@@ -5,6 +5,8 @@ Version 5.9.2
 - Fixed a problem finding extensions in -Wabs-paths
 - Fixed definitions of if_x1 and if_1x condition codes
 - Handled '+' and ' ' format characters in builtin printf
+- Improved output of expressions in DEBUG()
+- New flag -gbrk for using Chip's BRK based debug output (Thanks Ada!)
 
 Version 5.9.1
 - Added support for bool, false, and true to C++
