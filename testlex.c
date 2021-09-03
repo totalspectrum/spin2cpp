@@ -355,3 +355,8 @@ void memBuiltin() { }
 void memFillBuiltin() { }
 void waitpeqBuiltin() { }
 void rebootBuiltin() { }
+
+// and another dummy for testing
+void PrintExpr(Flexbuf *f, AST *expr, int flags) {
+    flexbuf_addstr(f, "expression");
+}

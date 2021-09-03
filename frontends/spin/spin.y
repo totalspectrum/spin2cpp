@@ -204,7 +204,7 @@ static AST *GetFormatForDebug(struct flexbuf *fb, const char *itemname_orig, AST
             flexbuf_addstr(fb, ", ");
         }
         if (output_name) {
-            idname = GetUserIdentifierName(arg);
+            idname = GetExprString(arg);
             flexbuf_printf(fb, "%s = %s", idname, ptr->cfmt);
         } else {
             flexbuf_addstr(fb, ptr->cfmt);

@@ -935,7 +935,9 @@ PrintLHS(Flexbuf *f, AST *expr, int flags)
     case AST_IDENTIFIER:
     case AST_LOCAL_IDENTIFIER:
         sym = LookupAstSymbol(expr, NULL);
-        if (!sym) {
+        if (flags & PRINTEXPR_DEBUG) {
+            flexbuf_addstr(f, GetUserIdentifierName(expr));
+        } else if (!sym) {
             ERROR_UNKNOWN_SYMBOL(expr);
         } else {
             if (sym->kind == SYM_FUNCTION || sym->kind == SYM_BUILTIN) {

@@ -8,6 +8,7 @@
 
 #include "spinc.h"
 #include "backends/bytecode/bc_bedata.h"
+#include "becommon.h" // for PrintExpr
 #include <ctype.h>
 #include <string.h>
 #include <math.h>
@@ -41,8 +42,19 @@ GetUserIdentifierName(AST *expr)
     return name;
 }
 
-/* get an identifier name, or find the root name if an array reference */
+/* get a user-printable string for an expression */
+const char *GetExprString(AST *expr) {
+    if (IsIdentifier(expr)) {
+        return GetUserIdentifierName(expr);
+    } else {
+        Flexbuf f;
+        flexbuf_init(&f, 256);
+        PrintExpr(&f, expr, PRINTEXPR_DEBUG);
+        return flexbuf_get(&f);
+    }
+}
 
+/* get an identifier name, or find the root name if an array reference */
 const char *
 GetVarNameForError(AST *expr)
 {

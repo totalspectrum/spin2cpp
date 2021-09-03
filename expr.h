@@ -95,6 +95,8 @@ int CompatibleTypes(AST *A, AST *B);
 const char *GetIdentifierName(AST *ident);
 // get the user visible name from an AST_IDENTIFIER or AST_SYMBOL
 const char *GetUserIdentifierName(AST *ident);
+// get a user-printable string for an expression; similar to GetUserIdentifierName
+const char *GetExprString(AST *expr);
 
 // get the name to use for printing error messages about assignments and such
 const char *GetVarNameForError(AST *expr);
