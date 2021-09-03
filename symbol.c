@@ -32,13 +32,15 @@ SymbolHash(const char *str)
 }
 
 /* find a symbol in the table */
+extern inline Symbol *FindSymbol(SymbolTable *table, const char *name);
 
 Symbol *
-FindSymbol(SymbolTable *table, const char *name)
+FindSymbolEx(SymbolTable *table, const char *name,int forceCaseSens)
 {
     unsigned hash;
     Symbol *sym;
     int nocase = ((table->flags & SYMTAB_FLAG_NOCASE) != 0) && !gl_caseSensitive;
+    if (forceCaseSens) nocase = forceCaseSens < 0; // 1 forces case sensitive, -1 forces case insensitive
     hash = SymbolHash(name);
     sym = table->hash[hash];
 

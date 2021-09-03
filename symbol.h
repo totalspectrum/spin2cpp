@@ -83,9 +83,13 @@ typedef struct symtab {
 unsigned RawSymbolHash(const char *str);
 unsigned SymbolHash(const char *str);
 Symbol *AddSymbol(SymbolTable *table, const char *name, int type, void *val, const char *user_name);
-Symbol *FindSymbol(SymbolTable *table, const char *name);
+Symbol *FindSymbolEx(SymbolTable *table, const char *name,int forceCaseSens);
 Symbol *FindSymbolByOffsetAndKind(SymbolTable *table, int offset, int kind);
 Symbol *LookupSymbolInTable(SymbolTable *table, const char *name);
+
+inline Symbol *FindSymbol(SymbolTable *table, const char *name) {
+    return FindSymbolEx(table,name,0);
+}
 
 /* like AddSymbol, but sets the SYMF_INTERNAL flag */
 Symbol *AddInternalSymbol(SymbolTable *table, const char *name, int type, void *val, const char *user_name);

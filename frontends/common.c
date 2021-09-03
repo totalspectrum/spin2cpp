@@ -2038,11 +2038,11 @@ static int
 CalcClkFreqP2(Module *P)
 {
     // look up in P->objsyms
-    Symbol *clkmodesym = P ? FindSymbol(&P->objsyms, "_clkmode") : NULL;
-    Symbol *clkfreqsym = P ? FindSymbol(&P->objsyms, "_clkfreq") : NULL;
-    Symbol *xtlfreqsym = P ? FindSymbol(&P->objsyms, "_xtlfreq") : NULL;
-    Symbol *xinfreqsym = P ? FindSymbol(&P->objsyms, "_xinfreq") : NULL;
-    Symbol *errfreqsym = P ? FindSymbol(&P->objsyms, "_errfreq") : NULL;
+    Symbol *clkmodesym = P ? FindSymbolEx(&P->objsyms, "_clkmode",-1) : NULL;
+    Symbol *clkfreqsym = P ? FindSymbolEx(&P->objsyms, "_clkfreq",-1) : NULL;
+    Symbol *xtlfreqsym = P ? FindSymbolEx(&P->objsyms, "_xtlfreq",-1) : NULL;
+    Symbol *xinfreqsym = P ? FindSymbolEx(&P->objsyms, "_xinfreq",-1) : NULL;
+    Symbol *errfreqsym = P ? FindSymbolEx(&P->objsyms, "_errfreq",-1) : NULL;
 
     double clkfreq;
     double xinfreq = 20000000.0;  // default crystal frequency
