@@ -203,18 +203,25 @@ int AsmDebug_CodeGen(AST *ast) {
             flexbuf_putc(opcode,f);
             DEBUG(item,"Emitting DEBUG opcode %02X",opcode);
 
-            if (!simple && !noExpr) {
-                // TODO get actual expression string???
-                flexbuf_addstr(f,"expr");
-                flexbuf_putc(0,f);
-            }
-
             int expectedArgs = (func->opcode & DBC_FLAG_ARRAY) ? 2 : 1;
             int gotArgs = 0;
             ASSERT_AST_KIND(item->right,AST_EXPRLIST,break;);
             for (AST *arglist=item->right;arglist;arglist=arglist->right) {
                 gotArgs++;
                 AST *arg = arglist->left;
+
+                if (gotArgs==1 && !simple && !noExpr) {
+                    // TOOD: Yoink expression string from source buffer
+                    AST *exprAst = arg;
+                    if (exprAst->kind==AST_IMMHOLDER) {
+                        flexbuf_putc('#',f);
+                        exprAst = exprAst->left;
+                    }
+                    const char *expr = GetUserIdentifierName(exprAst);
+                    flexbuf_addstr(f,expr);
+                    flexbuf_putc(0,f);
+                }
+
                 if (arg->kind == AST_IMMHOLDER) {
                     emitAsmConstant(f,EvalPasmExpr(arg->left));
                 } else {
