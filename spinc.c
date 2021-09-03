@@ -47,9 +47,6 @@ extern int cgramyydebug;
 
 int gl_useFullPaths = 0;
 
-// process a module after parsing it
-static void ProcessModule(Module *P);
-
 static int
 FindSymbolExact(SymbolTable *S, const char *name)
 {
@@ -340,7 +337,7 @@ InitBasicData(Module *P)
 /*
  * process a parsed module
  */
-static void
+void
 ProcessModule(Module *P)
 {
     Module *lastcurrent = current;

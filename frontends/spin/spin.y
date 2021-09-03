@@ -695,12 +695,57 @@ debug_expritem_first:
         $$ = NewAST(AST_EXPRLIST, note, list);
     }
   ;
-
 debug_expritem:
   SP_BACKTICK_STRING
     { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
   | expritem
     { $$ = $1; }
+  ;
+
+asmdebug_func:
+  identifier '(' operandlist ')'
+    { $$ = MakeFunccall($1,$3,NULL);}
+  | SP_IF '(' operandlist ')'
+    { $$ = MakeFunccall(AstIdentifier("if"),$3,NULL);}
+  | SP_IFNOT '(' operandlist ')'
+    { $$ = MakeFunccall(AstIdentifier("ifnot"),$3,NULL);}
+;
+
+asmdebug_exprlist:
+  asmdebug_expritem_first
+  | asmdebug_expritem_first ',' asmdebug_exprlist_continue
+     { $$ = AddToList($1, $3); }
+;
+
+asmdebug_exprlist_continue:
+   asmdebug_expritem
+   | asmdebug_exprlist_continue ',' asmdebug_expritem
+     { $$ = AddToList($1, $3); }
+   ;
+
+asmdebug_expritem_first:
+  SP_BACKTICK_STRING
+    {
+        $$ = NewAST(AST_EXPRLIST, $1, NULL);
+    }
+  | asmdebug_expritem
+    {
+        AST *list = $1;
+        AST *note = NewAST(AST_LABEL, NULL, NULL);
+
+        $$ = NewAST(AST_EXPRLIST, note, list);
+    }
+  ;
+
+asmdebug_expritem:
+  SP_BACKTICK_STRING
+    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+  | string
+    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+  | integer // Becomes a char...
+    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+  | asmdebug_func
+    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
   ;
 
 multiassign:
@@ -1022,13 +1067,24 @@ basedatline:
     { $$ = NewCommentedAST(AST_FILE, GetFullFileName($2), NULL, $1); }
   | SP_DEBUG '(' ')' SP_EOLN
     {
-        // for now just ignore DEBUG in PASM
-        $$ = NULL;
+        if (!gl_brkdebug) {
+          // for now just ignore DEBUG in PASM
+          $$ = NULL;
+        } else {
+          // TODO: What does empty debug do??
+          $$ = NULL;
+        }
     }
-  | SP_DEBUG '(' debug_exprlist ')' SP_EOLN
+  | SP_DEBUG '(' asmdebug_exprlist ')' SP_EOLN
     {
-        // for now just ignore DEBUG in PASM
-        $$ = NULL;
+        AST *ast = NULL;
+        if (gl_brkdebug) {
+          ast = NewAST(AST_BRKDEBUG,$3,NULL);
+        }
+        if ($1) {
+            ast = NewAST(AST_COMMENTEDNODE, ast, $1);
+        }
+        $$ = ast;
     }
   | SP_ASMCLK
   {

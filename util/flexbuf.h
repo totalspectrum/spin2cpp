@@ -33,6 +33,9 @@ char *flexbuf_addmem(struct flexbuf *fb, const char *buf, size_t N);
 /* add a string to a buffer */
 char *flexbuf_addstr(struct flexbuf *fb, const char *str);
 
+/* concat one flexbuf onto another */
+char *flexbuf_concat(struct flexbuf *dest, struct flexbuf *src);
+
 /* reset the buffer to empty */
 void flexbuf_clear(struct flexbuf *fb);
 

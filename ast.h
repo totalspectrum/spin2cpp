@@ -223,6 +223,8 @@ enum astkind {
     AST_BYTECODE = 158, // a raw bytecode opcode, used in sys/
     AST_SAMETYPES = 159, // BASIC compile time type checking _sametypes(T, long)
     AST_HASMETHOD = 160, // BASIC compile time checking, _hasmethod(T, identifier)
+
+    AST_BRKDEBUG = 161, // Opaque debug break.
 };
 
 /* forward reference */

@@ -251,12 +251,12 @@ int ProcessCommandLine(CmdLineOptions *cmd)
         } else if (cmd->outputDat) {
             cmd->outname = gl_outname;
             if (gl_gas_dat) {
-	        if (!cmd->outname) {
+	            if (!cmd->outname) {
                     cmd->outname = ReplaceExtension(P->fullname, ".S");
                 }
                 OutputGasFile(cmd->outname, P);
             } else {
-	        if (!cmd->outname) {
+	            if (!cmd->outname) {
                     if (cmd->outputBin) {
                         if (cmd->useEeprom) {
                             cmd->outname = ReplaceExtension(P->fullname, ".eeprom");
@@ -275,7 +275,7 @@ int ProcessCommandLine(CmdLineOptions *cmd)
                 }
                 OutputDatFile(cmd->outname, P, cmd->outputBin);
                 if (cmd->outputBin) {
-                    DoPropellerChecksum(cmd->outname, cmd->useEeprom ? cmd->eepromSize : 0);
+                    DoPropellerPostprocess(cmd->outname, cmd->useEeprom ? cmd->eepromSize : 0);
                 }
             }
         } else if (cmd->outputAsm || (cmd->outputBytecode && gl_interp_kind == INTERP_KIND_NUCODE) ) {
@@ -318,7 +318,7 @@ int ProcessCommandLine(CmdLineOptions *cmd)
                 gl_caseSensitive = !compile_original;
                 gl_warn_flags &= ~WARN_ASM_USAGE; // already issued warnings
                 CompileAsmToBinary(binname, asmname);
-                DoPropellerChecksum(binname, cmd->useEeprom ? cmd->eepromSize : 0);
+                DoPropellerPostprocess(binname, cmd->useEeprom ? cmd->eepromSize : 0);
                 if (!cmd->quiet) {
                     printf("Done.\n");
                     if (gl_errors == 0) {
@@ -339,7 +339,7 @@ int ProcessCommandLine(CmdLineOptions *cmd)
                 ERROR(NULL, "How did we get here?");
             } else {
                 OutputByteCode(cmd->outname,P);
-                DoPropellerChecksum(cmd->outname,cmd->useEeprom ? cmd->eepromSize : 0);
+                DoPropellerPostprocess(cmd->outname,cmd->useEeprom ? cmd->eepromSize : 0);
             }
         } else {
             fprintf(stderr, "This front end cannot convert to C\n");

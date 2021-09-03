@@ -411,6 +411,10 @@ main(int argc, const char **argv)
                 opt += 2;
             }
 	    gl_outname = outname = strdup(opt);
+        } else if (!strcmp(argv[0], "-gbrk")) {
+            argv++; --argc;
+            gl_debug = 1;
+            gl_brkdebug = 1;
         } else if (!strncmp(argv[0], "-g", 2)) {
             if (compile) {
                 appendToCmd(argv[0]);
@@ -617,7 +621,7 @@ main(int argc, const char **argv)
                 }
                 OutputDatFile(outname, P, outputBin);
                 if (outputBin) {
-                    DoPropellerChecksum(outname, eepromSize);
+                    DoPropellerPostprocess(outname, eepromSize);
                 }
             }
         } else if (outputAsm) {
@@ -660,7 +664,7 @@ main(int argc, const char **argv)
                         OutputLstFile(listFile, Q);
                     }
                     OutputDatFile(binname, Q, 1);
-                    DoPropellerChecksum(binname, eepromSize);
+                    DoPropellerPostprocess(binname, eepromSize);
                 }
                 if (gl_errors > 0) {
                     remove(binname);
@@ -728,7 +732,7 @@ main(int argc, const char **argv)
                     retval = system(cmdline);
                     remove(elfname);
                     if (retval == 0) {
-                        retval = DoPropellerChecksum(binname, eepromSize);
+                        retval = DoPropellerPostprocess(binname, eepromSize);
                     }
 		}
 		if (retval != 0)

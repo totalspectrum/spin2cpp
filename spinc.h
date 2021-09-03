@@ -45,6 +45,9 @@ void InitGlobalFuncs(void);
 /* do some optimizations on a counting repeat loop */
 AST *TransformCountRepeat(AST *);
 
+// process a module after parsing it
+void ProcessModule(Module *P);
+
 // top level functions
 // parse a spin file
 Module *ParseFile(const char *name);
