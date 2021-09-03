@@ -218,7 +218,7 @@ int AsmDebug_CodeGen(AST *ast) {
                 if (arg->kind == AST_IMMHOLDER) {
                     emitAsmConstant(f,EvalPasmExpr(arg->left));
                 } else {
-                    emitAsmRegref(f,EvalPasmExpr(arg->left));
+                    emitAsmRegref(f,EvalPasmExpr(arg));
                 }
             }
             if (gotArgs!=expectedArgs) ERROR(item,"%s expects %d args, got %d",name,expectedArgs,gotArgs);
