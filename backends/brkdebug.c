@@ -114,15 +114,17 @@ static struct DebugFunc debug_func_table[] = {
     {NULL,0}
 };
 
-unsigned brkAssigned = 0; // Currently assigned BRK codes (TODO: Is there a place to properly zero this on startup?)
+unsigned brkAssigned = 1; // Currently assigned BRK codes (zero is internally reserved)
 static Flexbuf brkExpr[MAX_BRK];
 
 static void
 emitAsmConstant(Flexbuf *f,uint32_t val) {
     if (val < 0x4000) {
+        DEBUG(NULL,"Emitting short constant arg %d",val);
         flexbuf_putc(val>>8,f);
         flexbuf_putc(val&255,f);
     } else {
+        DEBUG(NULL,"Emitting long constant arg %d",val);
         flexbuf_putc(0b01000000,f);
         flexbuf_putc((val>>0)&255,f);
         flexbuf_putc((val>>8)&255,f);
@@ -134,6 +136,7 @@ emitAsmConstant(Flexbuf *f,uint32_t val) {
 static void
 emitAsmRegref(Flexbuf *f,unsigned reg) {
     if (reg >= 1024) ERROR(NULL,"Debug regref out of range!");
+    DEBUG(NULL,"Emitting register arg %d",reg);
     flexbuf_putc(128|(reg>>8),f);
     flexbuf_putc(reg&255,f);
 }
@@ -196,6 +199,10 @@ int AsmDebug_CodeGen(AST *ast) {
             }
             if (!simple && !needcomma) opcode |= DBC_FLAG_NOCOMMA;
             if (!simple && noExpr) opcode |= DBC_FLAG_NOEXPR;
+
+            flexbuf_putc(opcode,f);
+            DEBUG(item,"Emitting DEBUG opcode %02X",opcode);
+
             if (!simple && !noExpr) {
                 // TODO get actual expression string???
                 flexbuf_addstr(f,"expr");
@@ -249,7 +256,9 @@ static int32_t const_or_default(Module *M,const char *name,int32_t defaultval) {
     }
 }
 
-Flexbuf CompileBrkDebugger(unsigned appsize) {
+
+
+Flexbuf CompileBrkDebugger(size_t appsize) {
     Flexbuf f;
     flexbuf_init(&f,16*1024);
 
@@ -257,14 +266,15 @@ Flexbuf CompileBrkDebugger(unsigned appsize) {
 
     // Get stuff
     Module *T = GetTopLevelModule();
-    uint32_t clkfreq = const_or_default(T,"_clkfreq_con",10000000);
-    uint32_t clkmode = const_or_default(T,"_clkmode_con",0);
+    uint32_t clkfreq = const_or_default(T,"__clkfreq_con",10000000);
+    uint32_t clkmode = const_or_default(T,"__clkmode_con",0);
+    DEBUG(NULL,"Debugger gets CLKMODE %08X and CLKFREQ %d",clkmode,clkfreq);
     uint32_t millisecond = (clkfreq/1000)-6; // This is how PNut calculates it...
+    uint32_t txmode = ((clkfreq/(const_or_default(T,"DEBUG_BAUD",2000000)>>6))<<(16-6))|(8-1); // Also from PNut
 
     // Compile debugger blob
     Module *D = NewModule("__brkdebug__",LANG_SPIN_SPIN2);
     current = D;
-
     D->Lptr = (LexStream *)calloc(sizeof(*systemModule->Lptr), 1);
     D->Lptr->flags |= LEXSTREAM_FLAG_NOSRC;
     strToLex(D->Lptr, (const char *)sys_p2_brkdebug_spin, "__brkdebug__", LANG_SPIN_SPIN2);
@@ -273,30 +283,35 @@ Flexbuf CompileBrkDebugger(unsigned appsize) {
     // We good now?
     PrintDataBlock(&f,D->datblock,NULL,NULL);
     // Patch parameters (ugly hardcoded offsets!)
-    char *buf = flexbuf_peek(&f);
-    patch_long(buf+0xA0,clkmode&~3); // Clock mode with RCFAST
-    patch_long(buf+0xA4,clkmode); // Clock mode
-    patch_long(buf+0xA8,const_or_default(T,"DEBUG_DELAY",0)*millisecond); // Debug delay
-    patch_long(buf+0xAC,appsize); // Application size
-    patch_long(buf+0xB0,(const_or_default(T,"DEBUG_COGS",0xFF)&255)|0x20030000); // Enabled cogs (and something idk)
+    {
+        char *buf = flexbuf_peek(&f);
+        patch_long(buf+0x0A0,clkmode&~3); // Clock mode with RCFAST
+        patch_long(buf+0x0A4,clkmode); // Clock mode
+        patch_long(buf+0x0A8,const_or_default(T,"DEBUG_DELAY",0)*millisecond); // Debug delay
+        patch_long(buf+0x0AC,appsize); // Application size
+        patch_long(buf+0x0B0,(const_or_default(T,"DEBUG_COGS",0xFF)&255)|0x20030000); // Enabled cogs (and something idk)
+        patch_long(buf+0x118,const_or_default(T,"DEBUG_PIN",62)|(FindSymbol(&T->objsyms,"DEBUG_TIMESTAMP") ? 1u<<31 : 0)); // Pin and timestamp flag
+        patch_long(buf+0x11C,txmode);
+        patch_long(buf+0x120,millisecond);
+    }
 
     // Build the actual data table
     Flexbuf tab;
     flexbuf_init(&tab,16*1024);
     // Build offsets first
-    unsigned pos = brkAssigned*2;
-    for (unsigned i=0;i<brkAssigned;i++) {
+    unsigned pos = (brkAssigned)*2;
+    for (unsigned i=1;i<brkAssigned;i++) {
         flexbuf_putc((pos>>0)&255,&tab);
         flexbuf_putc((pos>>8)&255,&tab);
         pos += flexbuf_curlen(&brkExpr[i]);
     }
     // Now copy the bytecode
-    for (unsigned i=0;i<brkAssigned;i++) {
+    for (unsigned i=1;i<brkAssigned;i++) {
         flexbuf_concat(&tab,&brkExpr[i]);
     }
 
     // Append table
-    size_t dataLen = flexbuf_curlen(&tab);
+    size_t dataLen = flexbuf_curlen(&tab) + 2;
     if (dataLen+0xFC000 > 0xFEC00) ERROR(NULL,"BRK debug data too big!");
     flexbuf_putc((dataLen>>0)&255,&f);
     flexbuf_putc((dataLen>>8)&255,&f);
