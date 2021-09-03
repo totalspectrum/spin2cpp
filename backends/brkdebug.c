@@ -219,8 +219,12 @@ int AsmDebug_CodeGen(AST *ast) {
                         flexbuf_putc('#',f);
                         exprAst = exprAst->left;
                     }
-                    const char *expr = GetUserIdentifierName(exprAst);
-                    flexbuf_addstr(f,expr);
+                    if (IsIdentifier(exprAst)) {
+                        const char *expr = GetUserIdentifierName(exprAst);
+                        flexbuf_addstr(f,expr);
+                    } else {
+                        PrintExpr(f, exprAst, PRINTEXPR_DEBUG);
+                    }
                     flexbuf_putc(0,f);
                 }
 

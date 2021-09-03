@@ -73,7 +73,7 @@ PrintLabel(Flexbuf *f, Symbol *sym, int flags)
         } else {
             flexbuf_printf(f, "_lbl_(%s)", sym->user_name);
         }
-    } else if (current->gasPasm) {
+    } else if (current->gasPasm || (flags & PRINTEXPR_DEBUG)) {
         flexbuf_printf(f, "%s", sym->user_name);
     } else {
         flexbuf_printf(f, "(%s(", ref ? "" : "*");
