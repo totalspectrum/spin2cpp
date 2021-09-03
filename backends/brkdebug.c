@@ -9,6 +9,7 @@
 
 #include "spinc.h"
 #include "becommon.h"
+#include <stdlib.h>
 
 enum DebugBytecode {
 
@@ -223,5 +224,80 @@ int AsmDebug_CodeGen(AST *ast) {
     return brkCode;
 }
 
+#include "sys/p2_brkdebug.spin.h"
 
+extern int spinyyparse(void); // Very cool
+
+static void patch_long(char *where,int32_t val) {
+    *where++ = (val>>0)&255;
+    *where++ = (val>>8)&255;
+    *where++ = (val>>16)&255;
+    *where++ = (val>>24)&255;
+}
+
+static int32_t const_or_default(Module *M,const char *name,int32_t defaultval) {
+    Symbol *sym = FindSymbol(&M->objsyms,name);
+    if (sym && sym->kind == SYM_CONSTANT) {
+        return EvalConstExpr((AST *)sym->val);
+    } else {
+        return defaultval;
+    }
+}
+
+Flexbuf CompileBrkDebugger(unsigned appsize) {
+    Flexbuf f;
+    flexbuf_init(&f,16*1024);
+
+    if (!gl_p2) ERROR(NULL,"BRK debug is only available on P2");
+
+    // Get stuff
+    Module *T = GetTopLevelModule();
+    uint32_t clkfreq = const_or_default(T,"_clkfreq_con",10000000);
+    uint32_t clkmode = const_or_default(T,"_clkmode_con",0);
+    uint32_t millisecond = (clkfreq/1000)-6; // This is how PNut calculates it...
+
+    // Compile debugger blob
+    Module *D = NewModule("__brkdebug__",LANG_SPIN_SPIN2);
+    current = D;
+
+    D->Lptr = (LexStream *)calloc(sizeof(*systemModule->Lptr), 1);
+    D->Lptr->flags |= LEXSTREAM_FLAG_NOSRC;
+    strToLex(D->Lptr, (const char *)sys_p2_brkdebug_spin, "__brkdebug__", LANG_SPIN_SPIN2);
+    spinyyparse();
+    ProcessModule(D);
+    // We good now?
+    PrintDataBlock(&f,D->datblock,NULL,NULL);
+    // Patch parameters (ugly hardcoded offsets!)
+    char *buf = flexbuf_peek(&f);
+    patch_long(buf+0xA0,clkmode&~3); // Clock mode with RCFAST
+    patch_long(buf+0xA4,clkmode); // Clock mode
+    patch_long(buf+0xA8,const_or_default(T,"DEBUG_DELAY",0)*millisecond); // Debug delay
+    patch_long(buf+0xAC,appsize); // Application size
+    patch_long(buf+0xB0,(const_or_default(T,"DEBUG_COGS",0xFF)&255)|0x20030000); // Enabled cogs (and something idk)
+
+    // Build the actual data table
+    Flexbuf tab;
+    flexbuf_init(&tab,16*1024);
+    // Build offsets first
+    unsigned pos = brkAssigned*2;
+    for (unsigned i=0;i<brkAssigned;i++) {
+        flexbuf_putc((pos>>0)&255,&tab);
+        flexbuf_putc((pos>>8)&255,&tab);
+        pos += flexbuf_curlen(&brkExpr[i]);
+    }
+    // Now copy the bytecode
+    for (unsigned i=0;i<brkAssigned;i++) {
+        flexbuf_concat(&tab,&brkExpr[i]);
+    }
+
+    // Append table
+    size_t dataLen = flexbuf_curlen(&tab);
+    if (dataLen+0xFC000 > 0xFEC00) ERROR(NULL,"BRK debug data too big!");
+    flexbuf_putc((dataLen>>0)&255,&f);
+    flexbuf_putc((dataLen>>8)&255,&f);
+    flexbuf_concat(&f,&tab);
+    flexbuf_delete(&tab);
+
+    return f;
+}
 

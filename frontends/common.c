@@ -39,6 +39,7 @@
 #include <ctype.h>
 #include <math.h>
 #include "common.h"
+#include "becommon.h"
 #include "preprocess.h"
 #include "version.h"
 
@@ -1040,7 +1041,7 @@ AddExtension(const char *basename, const char *extension)
 // image, if eepromSize is non-zero
 //
 int
-DoPropellerChecksum(const char *fname, size_t eepromSize)
+DoPropellerPostprocess(const char *fname, size_t eepromSize)
 {
     FILE *f = fopen(fname, "r+b");
     unsigned char checksum = 0;
@@ -1103,56 +1104,59 @@ DoPropellerChecksum(const char *fname, size_t eepromSize)
             WARNING(NULL, "final output size of %d bytes exceeds maximum of %d by %d bytes", len, maxlen, len - maxlen);
         }
     }
+
+    uint32_t extralen = 0;
+    if (gl_brkdebug) {
+        char buffer[len]; // allocate VLA
+        fseek(f,0,SEEK_SET);
+        fread(buffer,len,1,f);
+        Flexbuf debugger = CompileBrkDebugger(len);
+        extralen += flexbuf_curlen(&debugger);
+        fseek(f,0,SEEK_SET);
+        fwrite(flexbuf_peek(&debugger),flexbuf_curlen(&debugger),1,f);
+        fwrite(buffer,len,1,f);
+        flexbuf_delete(&debugger);
+        fflush(f);
+    }
+
+    if (len+extralen > maxlen) {
+        WARNING(NULL,"output size with debugger (%d + %d = %d) exceeps maximum of %d by %d bytes", len, extralen, len+extralen, maxlen, (len+extralen)-maxlen);
+    }
+
     // if P2, no checksum needed
-    if (gl_p2) {
-        fclose(f);
-        return 0;
+    if (!gl_p2) {
+        fseek(f, 0L, SEEK_SET);
+        for(;;) {
+            c = fgetc(f);
+            if (c < 0) break;
+            checksum += (unsigned char)c;
+        }
+        fflush(f);
+        checksum = 0x14 - checksum;
+        r = fseek(f, 5L, SEEK_SET);
+        if (r != 0) {
+            perror("fseek");
+            return -1;
+        }
+        //printf("writing checksum 0x%x\n", checksum);
+        r = fputc(checksum, f);
+        if (r < 0) {
+            perror("fputc");
+            return -1;
+        }
     }
-#ifdef NEVER
-    // this part is obsolete now, the OutputSpinDummyFooter function
-    // does it
-    // update header fields
-    fseek(f, 8L, SEEK_SET); // seek to 16 bit vbase field
-    fputc(len & 0xff, f);
-    fputc( (len >> 8) & 0xff, f);
-    // update dbase = vbase + 2 * sizeof(int)
-    fputc( (len+8) & 0xff, f);
-    fputc( ((len+8)>>8) & 0xff, f);
-    // update initial program counter
-    fputc( 0x18, f );
-    fputc( 0x00, f );
-    // update dcurr = dbase + 2 * sizeof(int)
-    fputc( (len+16) & 0xff, f);
-    fputc( ((len+16)>>8) & 0xff, f);
-#endif
-    
-    fseek(f, 0L, SEEK_SET);
-    for(;;) {
-        c = fgetc(f);
-        if (c < 0) break;
-        checksum += (unsigned char)c;
-    }
-    fflush(f);
-    checksum = 0x14 - checksum;
-    r = fseek(f, 5L, SEEK_SET);
-    if (r != 0) {
-        perror("fseek");
-        return -1;
-    }
-    //printf("writing checksum 0x%x\n", checksum);
-    r = fputc(checksum, f);
-    if (r < 0) {
-        perror("fputc");
-        return -1;
-    }
+
     fflush(f);
     if (eepromSize && eepromSize >= len + 8) {
         fseek(f, 0L, SEEK_END);
-        fputc(0xff, f); fputc(0xff, f);
-        fputc(0xf9, f); fputc(0xff, f);
-        fputc(0xff, f); fputc(0xff, f);
-        fputc(0xf9, f); fputc(0xff, f);
-        len += 8;
+        if (!gl_p2) {
+            // I think this is only needed on P1
+            fputc(0xff, f); fputc(0xff, f);
+            fputc(0xf9, f); fputc(0xff, f);
+            fputc(0xff, f); fputc(0xff, f);
+            fputc(0xf9, f); fputc(0xff, f);
+            len += 8;
+        }
         while (len < eepromSize) {
             fputc(0, f);
             len++;

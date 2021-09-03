@@ -621,7 +621,7 @@ main(int argc, const char **argv)
                 }
                 OutputDatFile(outname, P, outputBin);
                 if (outputBin) {
-                    DoPropellerChecksum(outname, eepromSize);
+                    DoPropellerPostprocess(outname, eepromSize);
                 }
             }
         } else if (outputAsm) {
@@ -664,7 +664,7 @@ main(int argc, const char **argv)
                         OutputLstFile(listFile, Q);
                     }
                     OutputDatFile(binname, Q, 1);
-                    DoPropellerChecksum(binname, eepromSize);
+                    DoPropellerPostprocess(binname, eepromSize);
                 }
                 if (gl_errors > 0) {
                     remove(binname);
@@ -732,7 +732,7 @@ main(int argc, const char **argv)
                     retval = system(cmdline);
                     remove(elfname);
                     if (retval == 0) {
-                        retval = DoPropellerChecksum(binname, eepromSize);
+                        retval = DoPropellerPostprocess(binname, eepromSize);
                     }
 		}
 		if (retval != 0)

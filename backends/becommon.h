@@ -65,6 +65,7 @@ typedef struct Reloc {
 #define MAX_BRK 256
 extern unsigned brkAssigned; // Currently assigned BRK codes
 int AsmDebug_CodeGen(AST *ast);
+Flexbuf CompileBrkDebugger(unsigned appsize);
 
 void PrintDataBlock(Flexbuf *f, AST *list, DataBlockOutFuncs *funcs, Flexbuf *relocs);
 void PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm);

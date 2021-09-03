@@ -74,6 +74,12 @@ char *flexbuf_addstr(struct flexbuf *fb, const char *str)
     return flexbuf_addmem(fb, str, strlen(str));
 }
 
+/* concat one flexbuf onto another */
+char *flexbuf_concat(struct flexbuf *dest, struct flexbuf *src)
+{
+    return flexbuf_addmem(dest,flexbuf_peek(src),flexbuf_curlen(src));
+}
+
 /* retrieve the pointer for a flexbuf */
 /* "peek" gets it but keeps it reserved;
  * "get" gets it and releases it from the flexbuf

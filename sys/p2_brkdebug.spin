@@ -313,7 +313,7 @@ debug_byte	callpa	#z,#getdeb	'get DEBUG bytecode
 '
 		altgb	z,#.table	'end/chr/str/asm
 		getbyte	w
-		jmp	w
+		jmp	w-0
 
 .table		byte	debug_done	'end of DEBUG commands
 		byte	.asm		'set asm mode
@@ -409,7 +409,7 @@ value_cmd	testb	z,#3	wc	'determine msb
   if_x1		mov	w,#decout
   if_10		mov	w,#hexout
   if_11		mov	w,#binout
-		call	w
+		call	w-0
 
 		testb	z,#4	wz	'if value command then done, else continue array
   if_nz		jmp	#debug_byte	'(followed by array_ret)
