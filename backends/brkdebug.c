@@ -196,6 +196,11 @@ int AsmDebug_CodeGen(AST *ast) {
             }
             if (!simple && !needcomma) opcode |= DBC_FLAG_NOCOMMA;
             if (!simple && noExpr) opcode |= DBC_FLAG_NOEXPR;
+            if (!simple && !noExpr) {
+                // TODO get actual expression string???
+                flexbuf_addstr(f,"expr");
+                flexbuf_putc(0,f);
+            }
 
             int expectedArgs = (func->opcode & DBC_FLAG_ARRAY) ? 2 : 1;
             int gotArgs = 0;
