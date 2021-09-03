@@ -3,6 +3,7 @@ Version 5.9.2
 - Fixed wrap around of getus and getms
 - Fixed an optimizer bug around non-leaf functions in COG and LUT
 - Fixed a problem finding extensions in -Wabs-paths
+- Fixed definitions of if_x1 and if_1x condition codes
 - Handled '+' and ' ' format characters in builtin printf
 
 Version 5.9.1
