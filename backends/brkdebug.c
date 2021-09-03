@@ -280,6 +280,7 @@ Flexbuf CompileBrkDebugger(size_t appsize) {
     uint32_t txmode = ((clkfreq/(const_or_default(T,"DEBUG_BAUD",2000000)>>6))<<(16-6))|(8-1); // Also from PNut
 
     // Compile debugger blob
+    gl_caseSensitive = false;
     Module *D = NewModule("__brkdebug__",LANG_SPIN_SPIN2);
     current = D;
     D->Lptr = (LexStream *)calloc(sizeof(*systemModule->Lptr), 1);
