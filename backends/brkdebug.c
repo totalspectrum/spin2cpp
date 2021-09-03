@@ -163,6 +163,8 @@ int AsmDebug_CodeGen(AST *ast) {
 
     bool needcomma = false;
 
+    DEBUG(ast,"Building DEBUG code for BRK #%d",brkCode);
+
     for (AST *exprlist = ast->left->right;exprlist;exprlist=exprlist->right) {
         AST *item = exprlist->left;
         switch (item->kind) {
