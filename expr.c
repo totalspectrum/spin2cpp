@@ -50,6 +50,7 @@ const char *GetExprString(AST *expr) {
         Flexbuf f;
         flexbuf_init(&f, 256);
         PrintExpr(&f, expr, PRINTEXPR_DEBUG);
+        flexbuf_addchar(&f, 0);
         return flexbuf_get(&f);
     }
 }

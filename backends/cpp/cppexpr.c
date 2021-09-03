@@ -924,7 +924,9 @@ PrintLHS(Flexbuf *f, AST *expr, int flags)
     //flags &= ~PRINTEXPR_ISREF;
     switch (expr->kind) {
     case AST_RESULT:
-        if (!curfunc) {
+        if (flags & PRINTEXPR_DEBUG) {
+            flexbuf_addstr(f, "RESULT");
+        } else if (!curfunc) {
             ERROR(expr, "RESULT keyword outside of function");
         } else if (curfunc->result_in_parmarray) {
             flexbuf_printf(f, "%s[0]", curfunc->parmarray);
@@ -974,7 +976,9 @@ PrintLHS(Flexbuf *f, AST *expr, int flags)
         } else {
             sym = NULL;
         }
-        if (sym && sym->kind == SYM_LOCALVAR && curfunc && curfunc->localarray) {
+        if (flags & PRINTEXPR_DEBUG) {
+            PrintLHS(f, expr->left, flags);
+        } else if (sym && sym->kind == SYM_LOCALVAR && curfunc && curfunc->localarray) {
             flexbuf_printf(f, "%s[%d + ", curfunc->localarray, sym->offset/4);
             PrintExpr(f, expr->right, flags);
             flexbuf_printf(f, "]");
@@ -994,7 +998,7 @@ PrintLHS(Flexbuf *f, AST *expr, int flags)
         break;
     case AST_HWREG:
         hw = (HwReg *)expr->d.ptr;
-        if (flags & PRINTEXPR_GAS) {
+        if (flags & (PRINTEXPR_GAS|PRINTEXPR_DEBUG)) {
             flexbuf_printf(f, "%s", hw->name);
         } else {
             flexbuf_printf(f, "%s", hw->cname);
