@@ -92,12 +92,15 @@
     X(HUBSET)    /* hubset instruction */ \
     X(COGSTOP)   /* stop a particular cog */ \
     X(COGID)     /* get current COG id */ \
+    X(COGINIT)   /* launch new COG */ \
     X(LOCKMEM)   /* lock memory */ \
     \
     X(XORO)    /* xoro32 random number generation */ \
     \
     X(PUSHI)     /* push immediate 32 bit */ \
     X(PUSHA)     /* push address */ \
+    \
+    X(BYTECOPY)   /* does memmove(a, b, n) */ \
     \
     X(INLINEASM)  /* load inline assembly */ \
     X(CATCH)      /* catch a result */ \

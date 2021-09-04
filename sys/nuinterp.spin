@@ -34,7 +34,7 @@ entry_vbase
 entry_dbase
 	long	4	' initial frame pointer
 entry_sp
-	long	5	' initial stack pointer
+	long	5 + 8	' initial stack pointer (plus pop space)
 heap_base
 	long	@__heap_base	' heap base ($30)
 	orgh	$80	' $40-$80 reserved
@@ -71,13 +71,18 @@ spininit
 	' for Spin startup, stack should contain args, pc, vbase in that order
 	rdlong	vbase, --ptra
 	rdlong	pb, --ptra		' pb serves as PC
+	mov	dbase, #0
 continue_startup
 #ifdef SERIAL_DEBUG
        mov	ser_debug_arg1, ##230_400
        call	#ser_debug_init
        mov	ser_debug_arg1, ##@init_msg
        call	#ser_debug_str
-#endif       
+#endif
+	' set up tos and nos
+	rdlong	 tos, --ptra
+	rdlong	 nos, --ptra
+
 	' load LUT code
 	' user LUT code (various impl_XXX)
 	loc	pa, #@IMPL_LUT
@@ -668,6 +673,13 @@ impl_COGID
 
 impl_COGSTOP
 	cogstop	tos
+  _ret_	jmp	#\impl_DROP
+
+impl_COGINIT
+	call	#\impl_POP	' popval == param
+	setq	popval
+	coginit	nos, tos wc
+  if_c	neg	nos, #1
   _ret_	jmp	#\impl_DROP
 
 impl_LOCKMEM

@@ -16,7 +16,7 @@ static void NuCompileStatement(NuIrList *irl, AST *ast); // forward declaration
 static void NuCompileStmtlist(NuIrList *irl, AST *ast); // forward declaration
 static int NuCompileExpression(NuIrList *irl, AST *ast); // returns number of items left on stack
 static int NuCompileExprList(NuIrList *irl, AST *ast); // returns number of items left on stack
-static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs); // returns op used for loading
+static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs); // returns op used for storing
 static int NuCompileMul(NuIrList *irl, AST *lhs, AST *rhs, int gethi);
 
 typedef struct NuLabelList {
@@ -150,7 +150,7 @@ static int NuCompileFunCall(NuIrList *irl, AST *node) {
                 ir = NuEmitOp(irl, NU_OP_CALLM);
                 ir->comment = auto_printf(128, "call method %s", func->name);                
             } else {
-                ERROR(node, "Unable to compile method calls");
+                ERROR(node, "Unable to compile this method calls");
             }
         }
     } else if (node->left && IsIdentifier(node->left) && !LookupAstSymbol(node->left, NULL)) {
@@ -887,6 +887,137 @@ static int NuCompileCondResult(NuIrList *irl, AST *expr) {
 }
 
 //
+// compile val += n
+//
+static void
+NuCompileIncrement(NuIrList *irl, AST *val, int n) {
+    NuIrOpcode stOp;
+    
+    if (n == 0) return;
+    NuCompileExpression(irl, val);
+    NuEmitConst(irl, n);
+    NuEmitCommentedOp(irl, NU_OP_ADD, "increment pointer");
+    stOp = NuCompileLhsAddress(irl, val);
+    NuEmitOp(irl, stOp);
+}
+
+//
+// compile a coginit expression
+// if we have a spin function call inside it then this
+// is mildly complicated
+//
+#define NU_INTERP_START 0x80
+
+static int
+NuCompileCoginit(NuIrList *irl, AST *expr)
+{
+    AST *funccall;
+    AST *params = expr->left;
+    int n;
+    
+    if ( IsSpinCoginit(expr, NULL) ) {
+        AST *exprlist;
+        AST *funccall;
+        AST *objref;
+        AST *stack;
+        AST *cogid;
+        AST *tmpreg = AstIdentifier("__interp_temp1");
+        NuIrOpcode stOp;
+        Symbol *sym;
+        
+        // need to push some stuff onto the new stack, namely:
+        //   the arguments
+        //   initial PC
+        //   initial object base
+        exprlist = expr->left;
+        if (!exprlist) {
+            ERROR(expr, "Missing cog parameter for coginit/cognew"); return 1;
+        }
+        cogid = exprlist->left;
+        exprlist = exprlist->right;
+        if (!exprlist) {
+            ERROR(expr, "Missing function parameter for coginit/cognew"); return 1;
+        }
+        funccall = exprlist->left;
+        exprlist = exprlist->right;
+        if (!exprlist) {
+            ERROR(expr, "Missing stack parameter for coginit/cognew"); return 1;
+        }
+        stack = exprlist->left;
+        if (exprlist->right != NULL) {
+            ERROR(expr, "Too many parameters to coginit/cognew");
+        }
+        // get initial stack pointer into tmpreg
+        n = NuCompileExpression(irl, stack);
+        if (n != 1) { ERROR(expr, "Bad stack value"); return 1; }
+        stOp = NuCompileLhsAddress(irl, tmpreg);
+        NuEmitCommentedOp(irl, stOp, "get copy of stack value");
+        // compile arguments
+        params = funccall->right;
+        // make sure we push at least 2 items onto the stack (2 will be popped by the caller)
+        n = AstListLen(params);
+        while (n < 2) {
+            params = NewAST(AST_EXPRLIST, AstInteger(0), params);
+            ++n;
+        }
+        while (params) {
+            AST *arg = params->left;
+            params = params->right;
+            n = NuCompileExpression(irl, arg);  // n is number of longs pushed
+            NuCompileExpression(irl, tmpreg);
+            switch (n) {
+            case 1: NuEmitCommentedOp(irl, NU_OP_STL, "pop long arg"); break;
+            case 2: NuEmitCommentedOp(irl, NU_OP_STD, "pop double arg"); break;
+            default:
+                ERROR(arg, "argument too long for coginit"); return 1;
+            }
+            // increment tmpreg pointer
+            NuCompileIncrement(irl, tmpreg, n*LONG_SIZE);
+        }
+        // now compile initial PC
+        sym = FindFuncSymbol(funccall, &objref, 1);
+        if (!sym || sym->kind != SYM_FUNCTION) {
+            ERROR(funccall, "Not a regular function, bailing");
+            return 1;
+        }
+        Function *F = (Function *)sym->val;
+        if (F->body->kind == AST_BYTECODE) {
+            ERROR(funccall, "Internal error, function is actually a single bytecode op");
+            return 1;
+        }
+        // push new PC
+        NuPrepareFunctionBedata(F);
+        NuEmitAddress(irl, FunData(F)->entryLabel);
+        // copy to final stack
+        NuCompileExpression(irl, tmpreg);
+        NuEmitCommentedOp(irl, NU_OP_STL, "save pc");
+        NuCompileIncrement(irl, tmpreg, LONG_SIZE);
+        
+        // push new VBASE
+        if (!objref) {
+            NuEmitConst(irl, 0);
+            NuEmitCommentedOp(irl, NU_OP_ADD_VBASE, "push self");
+        } else {
+            NuCompileExpression(irl, objref);
+        }
+        // copy to final stack
+        NuCompileExpression(irl, tmpreg);
+        NuEmitCommentedOp(irl, NU_OP_STL, "save vbase");
+        NuCompileIncrement(irl, tmpreg, LONG_SIZE);
+
+        // OK, new stack is all set up
+        // now we need to call coginit(cogid, @entry, stack)
+        params = NewAST( AST_EXPRLIST, cogid,
+                         NewAST(AST_EXPRLIST, AstInteger(NU_INTERP_START),
+                                NewAST(AST_EXPRLIST, tmpreg, NULL)) );
+
+    }
+    funccall = AstIdentifier("_coginit");
+    funccall = NewAST(AST_FUNCCALL, funccall, params);
+    return NuCompileFunCall(irl, funccall);
+}
+
+//
 // compile a lookup/lookdown
 //
 static int
@@ -1075,6 +1206,9 @@ NuCompileExpression(NuIrList *irl, AST *node) {
     case AST_LOOKUP:
     case AST_LOOKDOWN:
         pushed = NuCompileLookupDown(irl, node);
+        break;
+    case AST_COGINIT:
+        pushed = NuCompileCoginit(irl, node);
         break;
     default:
         ERROR(node, "Unknown expression node %d", node->kind);

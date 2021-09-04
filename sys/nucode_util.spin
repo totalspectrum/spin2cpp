@@ -21,6 +21,9 @@ pri _cogid : r = long
 pri _cogstop(x)
   __bytecode__("COGSTOP")
 
+pri _coginit(id, code, param): r
+  __bytecode__("COGINIT")
+  
 pri _cogchk(id) : r
   __bytecode__("COGCHK")
 
