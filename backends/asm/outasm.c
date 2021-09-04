@@ -4286,7 +4286,7 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
         }
         if (off) {
             EmitAddSub(irl, dst, -off);
-        }            
+        }
     } else {
         if (dst != src) {
             if (dst->kind == IMM_INT) {

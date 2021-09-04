@@ -840,6 +840,13 @@ NuCompileOperator(NuIrList *irl, AST *node) {
         NuEmitOp(irl, NU_OP_REV);
         NuEmitOp(irl, NU_OP_SHR);
         pushed = 1;
+    } else if (optoken == K_SIGNEXTEND || optoken == K_ZEROEXTEND) {
+        AST *rhs_temp = AstOperator('-', rhs, AstInteger(1));
+        rhs_temp = FoldIfConst(rhs_temp);
+        if (NuCompileExpression(irl, lhs) != 1) { ERROR(lhs, "too many values"); };
+        NuCompileExpression(irl, rhs_temp);
+        NuEmitOp(irl, (optoken == K_SIGNEXTEND) ? NU_OP_SIGNX : NU_OP_ZEROX);
+        pushed = 1;
     } else {
         if (lhs) {
             pushed += NuCompileExpression(irl, lhs);
@@ -868,8 +875,6 @@ NuCompileOperator(NuIrList *irl, AST *node) {
         case K_LIMITMAX: NuEmitOp(irl, NU_OP_MAXS); break;
         case K_LIMITMIN_UNS: NuEmitOp(irl, NU_OP_MINU); break;
         case K_LIMITMAX_UNS: NuEmitOp(irl, NU_OP_MAXU); break;
-        case K_ZEROEXTEND: NuEmitOp(irl, NU_OP_ZEROX); break;
-        case K_SIGNEXTEND: NuEmitOp(irl, NU_OP_SIGNX); break;
         default:
             ERROR(node, "Unable to handle operator 0x%x", optoken);
             break;
