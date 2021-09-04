@@ -1499,6 +1499,7 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
     case AST_ARRAYREF:
     case AST_SEQUENCE:
     case AST_COGINIT:
+    case AST_SETJMP:
         n = NuCompileExpression(irl, ast);
         NuCompileDrop(irl, n);
         break;
@@ -1530,7 +1531,7 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
             NuCompileDrop(irl, pushed-1);
         }
         NuEmitConst(irl, flag);
-        NuEmitCommentedOp(irl, NU_OP_THROW, "throw");
+        NuEmitCommentedOp(irl, NU_OP_LONGJMP, "throw");
     } break;
     default:
         ERROR(ast, "Unhandled node type %d in NuCompileStatement", ast->kind);
@@ -1569,7 +1570,7 @@ NuCompileFunction(Function *F) {
             AST *copymem;
             AST *args;
             int framesize = FuncLocalSize(F);
-            AST *tempvar = AstIdentifier("__interp_temp");
+            AST *tempvar = AstIdentifier("__interp_temp1");
             // result = _gc_alloc_managed(framesize)
             args = NewAST(AST_EXPRLIST, AstInteger(framesize), NULL);
             allocmem = NewAST(AST_FUNCCALL, AstIdentifier("_gc_alloc_managed"), args);

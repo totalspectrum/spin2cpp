@@ -126,10 +126,19 @@ InitGlobalModule(void)
         sym->offset = -2; // special flag for COG internal memory
 
         if (gl_interp_kind == INTERP_KIND_NUCODE) {
-            sym = AddSymbol(table, "__interp_temp1", SYM_VARIABLE, ast_type_recvptr, NULL);
+            sym = AddSymbol(table, "__interp_dbase", SYM_VARIABLE, ast_type_ptr_long, NULL);
+            sym->flags |= SYMF_GLOBAL;
+            sym->offset = -0x1e0; // gives COG address
+            sym = AddSymbol(table, "__interp_vbase", SYM_VARIABLE, ast_type_ptr_byte, NULL);
+            sym->flags |= SYMF_GLOBAL;
+            sym->offset = -0x1e2; // gives COG address
+            sym = AddSymbol(table, "__interp_abortchain", SYM_VARIABLE, ast_type_ptr_long, NULL);
+            sym->flags |= SYMF_GLOBAL;
+            sym->offset = -0x1e4; // gives COG address
+            sym = AddSymbol(table, "__interp_temp1", SYM_VARIABLE, ast_type_generic, NULL);
             sym->flags |= SYMF_GLOBAL;
             sym->offset = -0x1ea; // special flag for COG internal memory
-            sym = AddSymbol(table, "__interp_temp2", SYM_VARIABLE, ast_type_recvptr, NULL);
+            sym = AddSymbol(table, "__interp_temp2", SYM_VARIABLE, ast_type_generic, NULL);
             sym->flags |= SYMF_GLOBAL;
             sym->offset = -0x1eb; // special flag for COG internal memory
         } else {

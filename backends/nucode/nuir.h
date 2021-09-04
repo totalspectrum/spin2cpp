@@ -103,18 +103,16 @@
     X(BYTECOPY)   /* does memmove(a, b, n) */ \
     \
     X(INLINEASM)  /* load inline assembly */ \
-    X(CATCH)      /* catch a result */ \
+    X(SETJMP)    /* setjmp(buf) -> r,s  r is result, s is 0 for original, 1 for longjmp */ \
     \
     /* put all branches together here at the end */ \
     X(JMP)       /* jump to address at tos */ \
-    X(JMPZ)      /* jump to address to nos if tos is = 0 (discards tos, nos) */ \
-    X(JMPNZ)     /* jump to address to nos if tos is <> 0 (discards tos, nos) */ \
     X(RET)       /* return from subroutine */ \
     X(CALL)      /* call subroutine */ \
     X(CALLM)     /* call method (changes object pointer) */ \
     X(CALLA)     /* call subroutine direct */ \
     X(GOSUB)     /* combo CALL+ENTER */ \
-    X(THROW)     /* throws a result */ \
+    X(LONGJMP)   /* longjmp(buf, n, nocatch_flag): sets n as return value from setjmp */ \
     \
     X(BRA)       /* branch always */ \
     X(JMPREL)    /* jump forward relative 3*n bytes */ \

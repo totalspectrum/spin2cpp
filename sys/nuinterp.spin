@@ -426,18 +426,20 @@ dbg_flag res	1  ' for serial debug
 
 	 fit	$1d0  ' inline assembly variables start here
 	 org	$1e0  ' special locals here
-dbase	res    	1
-new_pc	res	1
-vbase	res    	1
-cogsp	res	1
-	res	4	' 4 more available
+dbase	res    	1     ' $1e0
+new_pc	res	1     ' $1e1
+vbase	res    	1     ' $1e2
+cogsp	res	1     ' $1e3
+abortchain	      ' $1e4
+	res	1
+	res	3	' 3 more available
 	' reserved:
 	' $1e8 = __sendptr
 	' $1e9 = __recvptr
 	' $1ea = __temp_reg1
 	' $1eb = __temp_reg2
 	' $1ec-$1f0 for debug
-	
+
 	org	$200
 OPCODES
 	res	256
