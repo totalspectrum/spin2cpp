@@ -579,6 +579,11 @@ static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs)
             break;
         }
     } break;
+    case AST_HWREG: {
+        HwReg *hwreg = (HwReg *)lhs->d.ptr;
+        NuEmitConst(irl, hwreg->addr);
+        op = NU_OP_STREG;
+    } break;
     default:
         ERROR(lhs, "Address type not handled yet");
         break;
