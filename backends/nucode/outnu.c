@@ -780,35 +780,34 @@ NuCompileOperator(NuIrList *irl, AST *node) {
         NuEmitLabel(irl, skiplabel);
     } else if (optoken == K_INCREMENT || optoken == K_DECREMENT) {
         // handle some special cases here
+        AST *dest = (node->left) ? node->left : node->right;
+        AST *desttype = ExprType(dest);
         NuIrOpcode math = (optoken == K_INCREMENT) ? NU_OP_ADD : NU_OP_SUB;
         NuIrOpcode ldOp, stOp;
-        pushed = 1;
-        if (lhs) {
-            stOp = NuCompileLhsAddress(irl, lhs);
-            if (stOp == NU_OP_ILLEGAL) return pushed;
-            ldOp = NuLoadOpFor(stOp);
-            NuEmitOp(irl, NU_OP_DUP); // duplicate address : stack has A A
-            NuEmitOp(irl, ldOp);      // load: stack has A origV
-            NuEmitOp(irl, NU_OP_SWAP); // stack has origV A
-            NuEmitOp(irl, NU_OP_OVER); // stack has origV A origV
-            NuEmitConst(irl, 1);
-            NuEmitOp(irl, math);      // stack has origV A newV
-            NuEmitOp(irl, NU_OP_SWAP); // stack has origV newV A
-            NuEmitOp(irl, stOp);      // stack has origV
-        } else {
-            // inc/dec first
-            stOp = NuCompileLhsAddress(irl, rhs);
-            if (stOp == NU_OP_ILLEGAL) return pushed;
-            ldOp = NuLoadOpFor(stOp);
-            NuEmitOp(irl, NU_OP_DUP); // duplicate address : stack has A A
-            NuEmitOp(irl, ldOp);      // load: stack has A origV
-            NuEmitConst(irl, 1);
-            NuEmitOp(irl, math);       // stack has A (newV)
-            NuEmitOp(irl, NU_OP_SWAP); // stack has (newV) A
-            NuEmitOp(irl, NU_OP_OVER); // stack has (newV) A (newV)
-            NuEmitOp(irl, NU_OP_SWAP); // stack has (newV) (newV) A
-            NuEmitOp(irl, stOp);      // stack has newV
+        int stepSize = 1;
+        int postIncDec = node->left != 0;
+        
+        if (IsPointerType(desttype)) {
+            stepSize = TypeSize(BaseType(desttype));
+        } else if (IsFloatType(desttype)) {
+            ERROR(node, "Cannot handle ++ or -- for floats yet");
         }
+        pushed = 1;
+        stOp = NuCompileLhsAddress(irl, dest);
+        if (stOp == NU_OP_ILLEGAL) return 1;
+        ldOp = NuLoadOpFor(stOp);
+        NuEmitOp(irl, ldOp);
+        if (postIncDec) {
+            NuEmitOp(irl, NU_OP_DUP);
+        }
+        NuEmitConst(irl, stepSize);
+        NuEmitOp(irl, math);
+        if (!postIncDec) {
+            NuEmitOp(irl, NU_OP_DUP);
+        }
+        NuCompileLhsAddress(irl, dest);
+        NuEmitOp(irl, stOp);
+        pushed = 1;
     } else if (optoken == '*') {            pushed = NuCompileMul(irl, node->left, node->right, 0);
     } else if (optoken == K_HIGHMULT) {     pushed = NuCompileMul(irl, node->left, node->right, 1);
     } else if (optoken == K_UNS_HIGHMULT) { pushed = NuCompileMul(irl, node->left, node->right, 3);
