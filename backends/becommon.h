@@ -61,11 +61,12 @@ typedef struct Reloc {
 #define RELOC_KIND_AUGS  3  // relocation for AUGS
 #define RELOC_KIND_AUGD  4  // relocation for AUGD
 
-/* for PASM debug */
-#define MAX_BRK 256
-extern unsigned brkAssigned; // Currently assigned BRK codes
-int AsmDebug_CodeGen(AST *ast);
-Flexbuf CompileBrkDebugger(size_t appsize);
+/* find the backend name for a symbol */
+const char *BackendNameForSymbol(Symbol *sym);
+/* utility for PASM names */
+const char *IdentifierModuleName(Module *P, const char *basename);
+/* utility for Nucode names */
+const char *NuCodeSymbolName(Symbol *sym);
 
 void PrintDataBlock(Flexbuf *f, AST *list, DataBlockOutFuncs *funcs, Flexbuf *relocs);
 void PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm);
@@ -102,5 +103,11 @@ void PrintGasExpr(Flexbuf *f, AST *expr, bool useFloat);
 void PrintSymbol(Flexbuf *f, Symbol *sym, int flags);
 void PrintObjConstName(Flexbuf *f, Module *P, const char* name);
 void PrintStatementList(Flexbuf *f, AST *ast, int indent);
+
+/* for PASM debug */
+#define MAX_BRK 256
+extern unsigned brkAssigned; // Currently assigned BRK codes
+int AsmDebug_CodeGen(AST *ast);
+Flexbuf CompileBrkDebugger(size_t appsize);
 
 #endif /* BACKEND_COMMON_H */

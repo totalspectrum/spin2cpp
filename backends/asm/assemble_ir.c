@@ -507,8 +507,7 @@ OutputDataBlob(Flexbuf *fb, Flexbuf *databuf, Flexbuf *relocbuf, const char *sta
                 if (!sym) {
                     symname = startLabel;
                 } else {
-                    Module *Q = sym->module ? sym->module : NULL;
-                    symname = IdentifierModuleName(Q, sym->our_name);
+                    symname = BackendNameForSymbol(sym);
                 }
                 switch(nextreloc->kind) {
                 case RELOC_KIND_I32:

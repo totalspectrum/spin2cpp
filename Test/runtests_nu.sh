@@ -5,7 +5,7 @@ if [ "$1" != "" ]; then
     FASTSPIN="$1 --asm --binary --code=hub"
 else
     SPIN2CPP=../build/spin2cpp
-    FASTSPIN="../build/flexspin -2 -O2 -g -q"
+    FASTSPIN="../build/flexspin -2nu -q"
 fi
 
 PROG_C="$SPIN2CPP -I../Lib"
@@ -48,7 +48,11 @@ do
 
   # now compile with asm
   if $PROG_ASM -o $j.binary $i; then
-    $LOADP2 $j.binary -t -q > $j.out
+      $LOADP2 $j.binary -t -q > $j.out
+  else
+      echo $j failed
+      cp Expect/$j.txt $j.txt
+      endmsg="TEST FAILURES"
   fi
   # the --lines=+6 skips the first 6 lines that propeller-load printed
   #tail --lines=+6 $j.out >$j.txt
@@ -73,6 +77,10 @@ do
   # now compile with asm
   if $PROG_ASM -o $j.binary $i; then
     $LOADP2 $j.binary -t -q > $j.out
+  else
+      echo $j failed
+      cp Expect/$j.txt $j.txt
+      endmsg="TEST FAILURES"
   fi
   # the --lines=+6 skips the first 6 lines that propeller-load printed
   #tail --lines=+6 $j.out >$j.txt
@@ -97,6 +105,10 @@ do
   # now compile with asm
   if $PROG_ASM -o $j.binary $i; then
     $LOADP2 $j.binary -t -q > $j.out
+  else
+      echo $j failed
+      cp Expect/$j.txt $j.txt
+      endmsg="TEST FAILURES"
   fi
   # the --lines=+6 skips the first 6 lines that propeller-load printed
   #tail --lines=+6 $j.out >$j.txt

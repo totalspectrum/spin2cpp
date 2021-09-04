@@ -223,3 +223,12 @@ char *auto_printf(size_t max,const char *format,...) {
     va_end(args);
     return buffer;
 }
+
+/* find the backend name for a symbol */
+const char *BackendNameForSymbol(Symbol *sym) {
+    Module *Q = sym->module ? sym->module : NULL;
+    if (OutputIsNucode()) {
+        return NuCodeSymbolName(sym);
+    }
+    return IdentifierModuleName(Q, sym->our_name);
+}

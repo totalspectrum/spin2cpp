@@ -96,6 +96,16 @@ NuPrepareFunctionBedata(Function *F) {
     //FunData(F)->exitLabel = NuCreateLabel();    
 }
 
+const char *NuCodeSymbolName(Symbol *sym) {
+    if (sym->kind == SYM_FUNCTION) {
+        Function *F = (Function *)sym->val;
+        NuPrepareFunctionBedata(F);
+        return NuLabelName(FunData(F)->entryLabel);
+    }
+    ERROR(NULL, "cannot handle symbol type");
+    return "???";
+}
+
 // drop n items from the stack
 static void NuCompileDrop(NuIrList *irl, int n) {
     while (n > 1) {
@@ -156,13 +166,22 @@ static int NuCompileFunCall(NuIrList *irl, AST *node) {
     } else if (node->left && IsIdentifier(node->left) && !LookupAstSymbol(node->left, NULL)) {
             ERROR(node, "Unknown symbol %s", GetUserIdentifierName(node->left));
     } else {
-        functype = ExprType(node->left);
-        pushed = NuCompileExpression(irl, node->left);
+        AST *funcNode = node->left;
+        functype = ExprType(funcNode);
+        // FIXME: handle weird problem with (*f)() vs f(), which should
+        // mean the same thing
+        if (funcNode->kind == AST_ARRAYREF && IsConstZero(funcNode->right)) {
+            AST *arr = funcNode->left;
+            if (arr->kind ==  AST_MEMREF && IsFunctionType(arr->left)) {
+                funcNode = arr->right;
+            }
+        }
+        pushed = NuCompileExpression(irl, funcNode);
         if (pushed != 1) {
             ERROR(node, "Unable to compile indirect function call: %d items on stack", pushed);
         }
-        // at this point the method pointer address is on the stack; need to load both words
-        NuEmitCommentedOp(irl, NU_OP_LDD, "load method data");
+        // at this point the method pointer words are on the stack; need to load both words
+        NuEmitCommentedOp(irl, NU_OP_LDD, "fetch pc and objptr");
         NuEmitCommentedOp(irl, NU_OP_CALLM, "indirect call");
         pushed = FuncLongResults(functype);
     }
@@ -191,7 +210,7 @@ static NuIrOpcode LoadStoreOp(AST *typ, int isLoad)
 
     if (IsArrayType(typ)) {
         typ = BaseType(typ);
-    }
+    }    
     siz = TypeSize(typ);
     switch (siz) {
     case 0:
