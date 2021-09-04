@@ -601,13 +601,15 @@ impl_DIVU
 
 impl_DIVS
 	abs	nos, nos wc
-	muxc	tmp, #1
-	abs	tos, tos wc
+	muxc	tmp, #3
+	abs	tos, tos wcz
+  if_c	xor	tmp, #2
 	qdiv	nos, tos
 	getqx	nos
 	getqy	tos
+	test	tmp, #1 wc
   if_c	neg	tos, tos
-  	test	tmp, #1 wc
+  	test	tmp, #2 wc
   _ret_	negc	nos, nos
 
 impl_MULDIV64
