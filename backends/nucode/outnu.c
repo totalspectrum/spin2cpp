@@ -1474,6 +1474,7 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
     case AST_CAST:
     case AST_ARRAYREF:
     case AST_SEQUENCE:
+    case AST_COGINIT:
         n = NuCompileExpression(irl, ast);
         NuCompileDrop(irl, n);
         break;
