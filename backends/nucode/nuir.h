@@ -198,6 +198,7 @@ NuIr *NuEmitCommentedOp(NuIrList *irl, NuIrOpcode op, const char *comment);
 NuIr *NuEmitNamedOpcode(NuIrList *irl, const char *name);
 NuIr *NuEmitConst(NuIrList *irl, int32_t val);
 NuIr *NuEmitAddress(NuIrList *irl, NuIrLabel *label);
+NuIr *NuEmitCommentedAddress(NuIrList *irl, NuIrLabel *label, const char *comment);
 NuIr *NuEmitCall(NuIrList *irl, NuIrOpcode op, NuIrLabel *label, const char *comment);
 NuIr *NuEmitLabel(NuIrList *irl, NuIrLabel *label);
 NuIr *NuEmitBranch(NuIrList *irl, NuIrOpcode op, NuIrLabel *label);

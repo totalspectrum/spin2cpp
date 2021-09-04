@@ -156,7 +156,7 @@ static int NuCompileFunCall(NuIrList *irl, AST *node) {
             } else if (objref) {
                 // compile a method call
                 NuCompileLhsAddress(irl, objref);
-                NuEmitAddress(irl, FunData(func)->entryLabel);
+                NuEmitCommentedAddress(irl, FunData(func)->entryLabel, func->name);
                 ir = NuEmitOp(irl, NU_OP_CALLM);
                 ir->comment = auto_printf(128, "call method %s", func->name);                
             } else {
@@ -312,8 +312,7 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
         }
         nulabel = ModData(Q)->datLabel;
         nulabel = NuIrOffsetLabel(nulabel, offset);
-        ir = NuEmitAddress(irl, nulabel);
-        ir->comment = auto_printf(128,"%s", name);
+        ir = NuEmitCommentedAddress(irl, nulabel, name);
         return loadOp;
     }
     case SYM_HWREG: {
@@ -325,7 +324,7 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
     case SYM_FUNCTION: {
         Function *F = (Function *)sym->val;
         NuPrepareFunctionBedata(F);
-        NuEmitAddress(irl, FunData(F)->entryLabel);
+        NuEmitCommentedAddress(irl, FunData(F)->entryLabel, F->name);
         loadOp = isLoad ? NU_OP_LDL : NU_OP_STL;
         offsetOp = NU_OP_ILLEGAL;
         offsetValid = false;
@@ -570,7 +569,7 @@ static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs)
         case SYM_FUNCTION: {
             Function *F = (Function *)sym->val;
             NuPrepareFunctionBedata(F);
-            NuEmitAddress(irl, FunData(F)->entryLabel);
+            NuEmitCommentedAddress(irl, FunData(F)->entryLabel, F->name);
             op = LoadStoreOp(ast_type_long, 0);
             return op;
         }
@@ -1016,7 +1015,7 @@ NuCompileCoginit(NuIrList *irl, AST *expr)
         }
         // push new PC
         NuPrepareFunctionBedata(F);
-        NuEmitAddress(irl, FunData(F)->entryLabel);
+        NuEmitCommentedAddress(irl, FunData(F)->entryLabel, F->name);
         // copy to final stack
         NuCompileExpression(irl, tmpreg);
         NuEmitCommentedOp(irl, NU_OP_STL, "save pc");
@@ -1183,7 +1182,7 @@ NuCompileExpression(NuIrList *irl, AST *node) {
     case AST_DATADDROF:
     {
         pushed = NuCompileExpression(irl, node->left); // don't care about load op, we will not use it
-        NuEmitAddress(irl, ModData(current)->datLabel);
+        NuEmitCommentedAddress(irl, ModData(current)->datLabel, "DAT address");
         NuEmitCommentedOp(irl, NU_OP_ADD, "compute @@");
     } break;
     case AST_STRINGPTR:

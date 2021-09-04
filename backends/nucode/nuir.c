@@ -163,6 +163,13 @@ NuIr *NuEmitAddress(NuIrList *irl, NuIrLabel *label) {
     return r;
 }
 
+NuIr *NuEmitCommentedAddress(NuIrList *irl, NuIrLabel *label, const char *comment) {
+    NuIr *r = NuEmitOp(irl, NU_OP_PUSHA);
+    r->label = label;
+    r->comment = comment;
+    return r;
+}
+
 NuIr *NuEmitCall(NuIrList *irl, NuIrOpcode op, NuIrLabel *label, const char *comment) {
     NuIr *r = NuEmitOp(irl, op);
     r->label = label;
