@@ -577,7 +577,7 @@ doSpinTransform(AST **astptr, int level, AST *parent)
         // Interpreter's exception system is too simplistic for this,
         // in that you can only set up a catch on a call
         // and can't differentiate a normal return from an abort.
-        if (gl_output != OUTPUT_BYTECODE) {
+        if (gl_output != OUTPUT_BYTECODE || gl_interp_kind == INTERP_KIND_NUCODE) {
             curfunc->local_address_taken = 1; // if we do a catch we will want data on stack
             AstReportAs(ast, &saveinfo); // any newly created AST nodes should reflect debug info from this one
             *astptr = ast = NewAST(AST_TRYENV,

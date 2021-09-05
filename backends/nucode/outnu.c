@@ -1238,6 +1238,24 @@ NuCompileExpression(NuIrList *irl, AST *node) {
     case AST_COGINIT:
         pushed = NuCompileCoginit(irl, node);
         break;
+    case AST_CATCH: {
+        ERROR(node, "Should not get raw AST_CATCH");
+        pushed = 2;
+        break;
+    } break;
+    case AST_TRYENV: {
+        //  allocate space on stack
+        ERROR(node, "Cannot handle tryenv yet");
+        pushed = 1;
+    } break;
+    case AST_SETJMP: {
+        ERROR(node, "cannot handle setjmp yet");
+        pushed = 2;
+    } break;
+    case AST_CATCHRESULT: {
+        ERROR(node, "cannot handle catchresult yet");
+        pushed = 1;
+    } break;
     default:
         ERROR(node, "Unknown expression node %d", node->kind);
         return 0;
@@ -1504,6 +1522,7 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
     case AST_SEQUENCE:
     case AST_COGINIT:
     case AST_SETJMP:
+    case AST_CATCH:
         n = NuCompileExpression(irl, ast);
         NuCompileDrop(irl, n);
         break;

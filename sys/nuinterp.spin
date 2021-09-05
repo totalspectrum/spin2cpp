@@ -430,7 +430,7 @@ dbase	res    	1     ' $1e0
 new_pc	res	1     ' $1e1
 vbase	res    	1     ' $1e2
 cogsp	res	1     ' $1e3
-abortchain	      ' $1e4
+__abortchain	      ' $1e4
 	res	1
 	res	3	' 3 more available
 	' reserved:
@@ -763,6 +763,62 @@ impl_ROTXY
 	getqx	nos
   _ret_	getqy	tos
 
+
+' setjmp/longjmp
+' these are called like:
+'   pub setjmp(jmpbuf) : rval, wasjmp
+'   pub longjmp(jmpbuf, newrval, ignore_if_not_caught)
+'
+impl_SETJMP
+	' tos points to the jump buffer
+	call	#\impl_DUP  	 ' flush nos into cogstack
+	wrlong	__abortchain, nos	' save link
+	add	nos, #4
+	wrlong	ptra, nos		' save stack pointer
+	add	nos, #4
+	mov	new_pc, pb		' save PC
+	setq	#4-1
+	wrlong	dbase, nos	' save main interpreter state
+	' save COG stack onto RAM stack
+	mov	tmp, cogsp
+  	djf	tmp, #.nocogstack
+	setq	tmp
+	wrlong	cogstack, ptra++
+.nocogstack
+	mov	tos, #0
+  _ret_	mov	nos, #0
+
+impl_LONGJMP
+	call	#\impl_POP	' popval is ignore_if_not_caught flag
+	cmp	nos, #0 wz	' nos contains jmpbuf, tos contains new rval
+  if_z	jmp	#.nocatch
+	'
+	' restore interpreter state
+	'
+	rdlong	__abortchain, nos
+	add	nos, #4
+	rdlong	ptra, nos
+	add	nos, #4
+	setq	#4-1
+	rdlong	dbase, nos
+	' restore COG stack
+	mov	tmp, cogsp
+  	djf	tmp, #.nocogstack
+	setq	tmp
+	rdlong	cogstack, ptra
+.nocogstack
+	mov	nos, tos	' set new return value
+  _ret_	mov	tos, #1		' indicate we jumped
+	
+  	'
+	' come to .nocatch if the jmpbuf is <null>
+	'
+.nocatch
+	cmp	popval, #0 wz	' OK to ignore the missing jmpbuf
+  if_z	jmp	#\impl_HALT	' no - halt
+  	jmp	#\impl_DROP2	' yes - just throw away the args and return
+
+' relative branches
 impl_BRA
 	rfword	tmp
 	signx	tmp, #15
