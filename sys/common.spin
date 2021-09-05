@@ -288,6 +288,7 @@ pri file "libsys/strings.bas" bin`$(x, n=0): r=string
 pri file "libsys/strings.bas" decuns`$(x, n=0): r=string
 pri file "libsys/strings.bas" hex`$(x, n=0): r=string
 pri file "libsys/strings.bas" oct`$(x, n=0): r=string
+pri file "libsys/strings.bas" number`$(x, n=0, base=10): r=string
 
 pri file "libsys/strings.bas" countstr(x=string,s=string): r=long
 pri file "libsys/strings.bas" delete`$(t=string,o,n): r=string
