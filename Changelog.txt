@@ -1,4 +1,5 @@
 Version 5.9.2
+- Added internal definition for the BASIC number$ function
 - Fixed some "backwards" repeat loops in Spin
 - Fixed wrap around of getus and getms
 - Fixed an optimizer bug around non-leaf functions in COG and LUT
