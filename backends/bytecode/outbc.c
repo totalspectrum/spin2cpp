@@ -3041,6 +3041,9 @@ BCAddStaticReference(Module *P, AST *obj) {
     for (int i=0;i<ModData(P)->obj_cnt;i++) {
         if (AstMatch(obj,ModData(P)->objs[i])) return;
     }
+    if (ModData(P)->obj_cnt == BC_MAX_POINTERS) {
+        ERROR(obj, "Too many objects in class"); return;
+    }
     ModData(P)->objs[ModData(P)->obj_cnt++] = obj;
     BCPrepareObject(GetClassPtr(obj));
     DEBUG(obj,"Added static OBJ reference for %s",GetClassPtr(obj)->classname);
