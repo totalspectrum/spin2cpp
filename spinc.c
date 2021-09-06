@@ -141,6 +141,10 @@ InitGlobalModule(void)
             sym = AddSymbol(table, "__interp_temp2", SYM_VARIABLE, ast_type_generic, NULL);
             sym->flags |= SYMF_GLOBAL;
             sym->offset = -0x1eb; // special flag for COG internal memory
+
+            sym = AddSymbol(table, "__interp_sp", SYM_VARIABLE, ast_type_generic, NULL);
+            sym->flags |= SYMF_GLOBAL;
+            sym->offset = -0x1f8; // special flag for COG internal memory
         } else {
             sym = AddSymbol(table, "__lockreg", SYM_VARIABLE, ast_type_long, NULL);
             sym->flags |= SYMF_GLOBAL;

@@ -395,6 +395,10 @@ impl_RET
 	ret
 
 impl_HALT
+#ifdef SERIAL_DEBUG
+	mov	ser_debug_arg1, ##@halt_msg
+	call	#ser_debug_str
+#endif	
 	waitx	##20000000
 	cogid	pa
 	cogstop	pa
@@ -786,7 +790,7 @@ impl_SETJMP
 	wrlong	cogstack, ptra++
 .nocogstack
 	mov	tos, #0
-  _ret_	mov	nos, #0
+  _ret_	mov	nos, __abortchain
 
 impl_LONGJMP
 	call	#\impl_POP	' popval is ignore_if_not_caught flag
@@ -808,7 +812,9 @@ impl_LONGJMP
 	rdlong	cogstack, ptra
 .nocogstack
 	mov	nos, tos	' set new return value
-  _ret_	mov	tos, #1		' indicate we jumped
+	mov	tos, #1		' indicate we jumped
+	mov	pb, new_pc
+	jmp	#\restart_loop
 	
   	'
 	' come to .nocatch if the jmpbuf is <null>
@@ -948,6 +954,8 @@ impl_INLINEASM
 
 init_msg
 	byte	"Nucode interpreter", 13, 10, 0
+halt_msg
+	byte	"Interpreter halt", 13, 10, 0
 pc_msg
 	byte	" pc: ", 0
 sp_msg

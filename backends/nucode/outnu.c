@@ -8,6 +8,9 @@
 #include "becommon.h"
 #include <stdlib.h>
 
+/* size of jump buffer for Nu code */
+#define NU_JMP_BUF_SIZ (9*LONG_SIZE)
+
 #define NumRetLongs(F) FuncLongResults(F->overalltype)
 #define NumArgLongs(F) FuncLongParams(F->overalltype)
 #define NumLocalLongs(F) ((F)->numlocals)
@@ -18,6 +21,9 @@ static int NuCompileExpression(NuIrList *irl, AST *ast); // returns number of it
 static int NuCompileExprList(NuIrList *irl, AST *ast); // returns number of items left on stack
 static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs); // returns op used for storing
 static int NuCompileMul(NuIrList *irl, AST *lhs, AST *rhs, int gethi);
+
+static AST *nu_stack_ptr = 0;
+static AST *nu_abortchain_ptr = 0;
 
 typedef struct NuLabelList {
     struct NuLabelList *next;
@@ -1128,6 +1134,26 @@ NuCompileLookupDown(NuIrList *irl, AST *expr)
     return pushed;
 }
 
+/* compile alloca(N) */
+static void
+NuCompileAlloca(NuIrList *irl, AST *siz) {
+    int n;
+    NuEmitConst(irl, 0);
+    NuEmitCommentedOp(irl, NU_OP_ADD_SP, "alloca base");
+    n = NuCompileExpression(irl, siz);
+    if (n != 1) ERROR(siz, "too many values passed to alloca");
+    NuEmitCommentedOp(irl, NU_OP_ADD_SP, "allocate stack space");
+    NuCompileLhsAddress(irl, nu_stack_ptr);
+    NuEmitCommentedOp(irl, NU_OP_STREG, "update stack pointer"); 
+}
+
+/* compile freea(ptr): ptr is already on stack */
+static void
+NuCompileFreea(NuIrList *irl) {
+    NuCompileLhsAddress(irl, nu_stack_ptr);
+    NuEmitOp(irl, NU_OP_STREG);
+}
+
 /* returns number of longs pushed on stack */
 static int
 NuCompileExpression(NuIrList *irl, AST *node) {
@@ -1240,8 +1266,30 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         pushed = NuCompileCoginit(irl, node);
         break;
     case AST_CATCH: {
-        ERROR(node, "Should not get raw AST_CATCH");
-        pushed = 2;
+        // rhs is a function call
+        // compile to something like:
+        // if (setjmp(tmpbuf) != 0) goto retjmp; func();
+        NuIrLabel *retJmpVal = NuCreateLabel();
+        NuCompileAlloca(irl, AstInteger(NU_JMP_BUF_SIZ));
+        NuEmitCommentedOp(irl, NU_OP_DUP, "save alloca base");
+        NuEmitCommentedOp(irl, NU_OP_SETJMP, "setjmp");
+        NuEmitConst(irl, 0);
+        NuEmitBranch(irl, NU_OP_CBNE, retJmpVal);
+        // save initial setjmp return value (the jump buffer) into abortchain
+        NuCompileLhsAddress(irl, nu_abortchain_ptr);
+        NuEmitCommentedOp(irl, NU_OP_STREG, "save into abortchain");
+        pushed = NuCompileExpression(irl, node->left);
+        if (pushed == 0) {
+            NuEmitConst(irl, 0);
+            pushed = 1;
+        }
+        if (pushed != 1) {
+            ERROR(node, "too many return values from \\ protected call");
+        }
+        NuEmitLabel(irl, retJmpVal);
+        // stack now has ALLOCA value and func return value, in that order
+        NuEmitCommentedOp(irl, NU_OP_SWAP, "get alloca base on top");
+        NuCompileFreea(irl);
         break;
     } break;
     case AST_TRYENV: {
@@ -1539,7 +1587,7 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
     case AST_THROW: {
         AST *retval = ast->left;
         int pushed;
-        AST *buffer = ast->right ? ast->right : AstInteger(0);
+        AST *buffer = ast->right ? ast->right : nu_abortchain_ptr;
         int flag = ast->d.ival;
         if (!retval) {
             retval = curfunc->resultexpr;
@@ -1764,7 +1812,9 @@ void OutputNuCode(const char *asmFileName, Module *P)
     struct flexbuf asmFb;
     NuContext nuContext;
     NuIrList *globalList = 0;
-    
+
+    nu_stack_ptr = AstIdentifier("__interp_sp");
+    nu_abortchain_ptr = AstIdentifier("__interp_abortchain");
     NuIrInit(&nuContext);
     
     if (!P->functions) {
