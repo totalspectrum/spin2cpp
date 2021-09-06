@@ -1650,10 +1650,8 @@ NuCompileFunction(Function *F) {
     curfunc = saveFunc;
 }
 
-static void NuConvertFunctions(Module *P) {
-    Module *save = current;
+static int NuConvertFunctions(void *vptr, Module *P) {
     Function *pf;
-    current = P;
 
     NuPrepareModuleBedata(P);
 
@@ -1661,18 +1659,20 @@ static void NuConvertFunctions(Module *P) {
     for (pf = P->functions; pf; pf = pf->next) {
         NuCompileFunction(pf);
     }
-
-    current = save;
+    return 1;
 }
 
-static void NuOptimizeFunction(Function *pf, NuIrList *irl) {
+static int NuOptimizeFunction(Function *pf, NuIrList *irl) {
     // for now, do nothing
+    return 0;
 }
 
-static NuIrList *NuRevisitFunctions(Module *P, NuIrList *globalList) {
+static int NuRevisitFunctions(void *vptr, Module *P) {
     Module *save = current;
     NuIrList *irl;
     Function *pf;
+    NuIrList **global_ptr = (NuIrList **)vptr;
+    NuIrList *globalList = *global_ptr;
     current = P;
 
     for (pf = P->functions; pf; pf = pf->next) {
@@ -1685,16 +1685,16 @@ static NuIrList *NuRevisitFunctions(Module *P, NuIrList *globalList) {
     }
 
     current = save;
-    return globalList;
+    *global_ptr = globalList;
+    return 1;
 }
 
-static void NuCompileObject(struct flexbuf *fb, Module *P) {
-    Module *save = current;
+static int NuCompileObject(void *vptr, Module *P) {
+    struct flexbuf *fb = (struct flexbuf *)vptr;
     Function *pf;
-    current = P;
 
     NuPrepareModuleBedata(P);
-    if (ModData(P)->isCompiled) return; // already done
+    if (ModData(P)->isCompiled) return 0; // already done
     
     flexbuf_printf(fb, "'--- Object: %s\n", P->classname);
 
@@ -1723,7 +1723,7 @@ static void NuCompileObject(struct flexbuf *fb, Module *P) {
             OutputDataBlob(fb, &FunData(pf)->dataBuf, NULL, NULL);
         }
     }
-    current = save;
+    return 1;
 }
 
 #ifdef NEVER
@@ -1759,7 +1759,6 @@ static void NuAddHeap(ByteOutputBuffer *bob, Module*P) {
 void OutputNuCode(const char *asmFileName, Module *P)
 {
     FILE *asm_file;
-    Module *Q;
     Module *saveCurrent = current;
     Function *saveFunc = curfunc;
     struct flexbuf asmFb;
@@ -1773,14 +1772,12 @@ void OutputNuCode(const char *asmFileName, Module *P)
         return;
     }
     // convert functions to IR
-    for (Q = allparse; Q; Q = Q->next) {
-        NuConvertFunctions(Q);
-    }
-    
+    VisitRecursive(NULL, P, NuConvertFunctions, VISITFLAG_COMPILEFUNCS);
+    VisitRecursive(NULL, systemModule, NuConvertFunctions, VISITFLAG_COMPILEFUNCS);
+
     // optimize and prepare for bytecode assignment
-    for (Q = allparse; Q; Q = Q->next) {
-        globalList = NuRevisitFunctions(Q, globalList);
-    }
+    VisitRecursive(&globalList, P, NuRevisitFunctions, VISITFLAG_BC_OPTIMIZE);
+    VisitRecursive(&globalList, systemModule, NuRevisitFunctions, VISITFLAG_BC_OPTIMIZE);
     
     // create bytecodes
     NuCreateBytecodes(globalList);
@@ -1817,10 +1814,9 @@ void OutputNuCode(const char *asmFileName, Module *P)
     NuOutputInterpreter(&asmFb, &nuContext);
     
     // compile objects to PASM
-    for (Q = allparse; Q; Q = Q->next) {
-        NuCompileObject(&asmFb, Q);
-    }
-
+    VisitRecursive(&asmFb, P, NuCompileObject, VISITFLAG_EMITDAT);
+    VisitRecursive(&asmFb, systemModule, NuCompileObject, VISITFLAG_EMITDAT);
+    
     // finish -- heap could go here too
     NuOutputFinish(&asmFb, &nuContext);
 

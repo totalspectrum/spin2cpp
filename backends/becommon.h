@@ -110,4 +110,18 @@ extern unsigned brkAssigned; // Currently assigned BRK codes
 int AsmDebug_CodeGen(AST *ast);
 Flexbuf CompileBrkDebugger(size_t appsize);
 
+/* utility for visiting modules */
+typedef int (*VisitorFunc)(void *irl, Module *P);
+int VisitRecursive(void *irl, Module *P, VisitorFunc func, unsigned visitval);
+
+#define VISITFLAG_COMPILEIR_COG 0x00000001
+#define VISITFLAG_COMPILEIR_HUB 0x00000002
+#define VISITFLAG_COMPILEIR_LUT 0x00000004
+#define VISITFLAG_FUNCNAMES     0x00000008
+#define VISITFLAG_COMPILEFUNCS  0x00000010
+#define VISITFLAG_EXPANDINLINE  0x00000020
+#define VISITFLAG_EMITDAT       0x00000040
+#define VISITFLAG_BC_OPTIMIZE   0x00000080
+
+
 #endif /* BACKEND_COMMON_H */

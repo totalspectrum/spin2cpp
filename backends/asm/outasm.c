@@ -4933,52 +4933,6 @@ static void EmitGlobals(IRList *cogdata, IRList *cogbss, IRList *hubdata)
     EmitAsmVars(&hubGlobalVars, hubdata, NULL, NO_SORT);
 }
 
-#define VISITFLAG_COMPILEIR_COG 0x00000001
-#define VISITFLAG_COMPILEIR_HUB 0x00000002
-#define VISITFLAG_COMPILEIR_LUT 0x00000004
-#define VISITFLAG_FUNCNAMES     0x00000008
-#define VISITFLAG_COMPILEFUNCS  0x00000010
-#define VISITFLAG_EXPANDINLINE  0x00000020
-#define VISITFLAG_EMITDAT       0x00000040
-
-typedef int (*VisitorFunc)(IRList *irl, Module *P);
-
-static int
-VisitRecursive(IRList *irl, Module *P, VisitorFunc func, unsigned visitval)
-{
-    Module *Q;
-    AST *subobj;
-    Module *save = current;
-    Function *savecurf = curfunc;
-    int change = 0;
-    
-    if (P->all_visitflags & visitval)
-        return change;
-
-    current = P;
-
-    P->all_visitflags |= visitval;
-    P->visitFlag = visitval;
-    change |= (*func)(irl, P);
-
-    // compile intermediate code for submodules
-    for (subobj = P->objblock; subobj; subobj = subobj->right) {
-        if (subobj->kind != AST_OBJECT) {
-            ERROR(subobj, "Internal Error: Expecting object AST");
-            break;
-        }
-        Q = (Module *)subobj->d.ptr;
-        change |= VisitRecursive(irl, Q, func, visitval);
-    }
-    // and for sub-submodules
-    for (Q = P->subclasses; Q; Q = Q->subclasses) {
-        change |= VisitRecursive(irl, Q, func, visitval);
-    }
-    current = save;
-    curfunc = savecurf;
-    return change;
-}
-
 //
 // return true if a function will be removed if inlined
 //
@@ -5124,12 +5078,10 @@ static int FixupTypes(Symbol *sym, void *arg)
 
 // we also resolve type sizes here
 static int
-AssignFuncNames(IRList *irl, Module *P)
+AssignFuncNames(void *vptr, Module *P)
 {
     Function *f;
     
-    (void)irl; // not used
-
     for(f = P->functions; f; f = f->next) {
         if (ShouldSkipFunction(f))
             continue;
@@ -5141,11 +5093,10 @@ AssignFuncNames(IRList *irl, Module *P)
 }
 
 static int
-CompileFunc_internal(IRList *irl, Module *P)
+CompileFunc_internal(void *vptr, Module *P)
 {
     Function *savecurf = curfunc;
     Function *f;
-    (void)irl; // not used
     
     for(f = P->functions; f; f = f->next) {
       if (ShouldSkipFunction(f))
@@ -5159,7 +5110,7 @@ CompileFunc_internal(IRList *irl, Module *P)
 }
 
 static int
-ExpandInline_internal(IRList *irl, Module *P)
+ExpandInline_internal(void *vptr, Module *P)
 {
     Function *f;
     int change;
@@ -5209,8 +5160,9 @@ CompileIntermediate(Module *P)
 }
 
 static int
-CompileToIR_internal(IRList *irl, Module *P)
+CompileToIR_internal(void *vptr, Module *P)
 {
+    IRList *irl = (IRList *)vptr;
     Function *f;
     Function *save = curfunc;
     int docog;
@@ -5817,8 +5769,9 @@ CompileConsts(IRList *irl, AST *conblock)
 }
 
 int
-EmitDatSection(IRList *irl, Module *P)
+EmitDatSection(void *vptr, Module *P)
 {
+  IRList *irl = (IRList *)vptr;
   Flexbuf *fb;
   Flexbuf *relocs;
   Operand *op;
