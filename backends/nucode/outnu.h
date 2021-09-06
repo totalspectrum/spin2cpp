@@ -9,7 +9,8 @@
 #define FunData(F) ((NuFunData *)(F)->bedata)
 
 typedef struct {
-    NuIrLabel *datLabel;
+    NuIrLabel  *datLabel;
+    bool        isCompiled;
 } NuModData;
 
 typedef struct {

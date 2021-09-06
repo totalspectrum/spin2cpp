@@ -83,6 +83,7 @@ NuPrepareModuleBedata(Module *P) {
 
     P->bedata = calloc(sizeof(NuModData), 1);
     ModData(P)->datLabel = NuCreateLabel();
+    ModData(P)->isCompiled = false;
 }
 
 static void
@@ -1692,10 +1693,12 @@ static void NuCompileObject(struct flexbuf *fb, Module *P) {
     Function *pf;
     current = P;
 
+    NuPrepareModuleBedata(P);
+    if (ModData(P)->isCompiled) return; // already done
+    
     flexbuf_printf(fb, "'--- Object: %s\n", P->classname);
 
-    NuPrepareModuleBedata(P);
-    /* compile DAT block */
+        /* compile DAT block */
     if (P->datblock) {
         // Got DAT block
         // TODO pass through listing data
