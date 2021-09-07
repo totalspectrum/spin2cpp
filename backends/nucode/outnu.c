@@ -317,6 +317,9 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
         NuIrLabel *nulabel = NULL;
         uint32_t labelval = lab->hubval;
         Module *Q = sym->module;
+        if (!Q) {
+            Q = current;
+        }
         offset = labelval;
         loadOp = LoadStoreOp(lab->type, isLoad);
         if (!ModData(Q)) {
