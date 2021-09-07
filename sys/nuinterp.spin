@@ -420,11 +420,11 @@ tos	res    	1
 popval	res	1
 tmp	res    	1
 tmp2	res    	1
+tmpcnt	res	1
 old_dbase res  	1
 old_pc	res    	1
 old_vbase res  	1
 old_cogsp res	1
-icache	  res	1
 dbg_flag res	1  ' for serial debug
 
 
@@ -507,6 +507,10 @@ impl_ADD_PC
 impl_ADD_SP
 	add	tos, #8	  ' leave room for nos and tos
   _ret_	add	tos, ptra
+
+impl_SET_SP
+	mov	ptra, tos
+	jmp	#\impl_DROP
 
 impl_ADD
 	add	tos, nos
@@ -689,6 +693,47 @@ impl_COGINIT
 	coginit	nos, tos wc
   if_c	neg	nos, #1
   _ret_	jmp	#\impl_DROP
+
+impl_BYTEMOVE
+	call	#\impl_POP	' nos == dst, tos == src, popval == count
+	cmp	popval, #0 wz
+  if_z	jmp	#\impl_DROP	' return if 0 count
+	cmp	nos, tos wcz	' cmp dst, src wcz
+  if_b	jmp	#.forwards
+  	add	tos, popval
+	cmp	nos, tos wcz
+  if_be	jmp	#.backwards
+  	sub	tos, popval
+.forwards
+	' copy forward by longs as much as possible
+	mov	tmpcnt, popval
+	shr	tmpcnt, #2 wz
+  if_z	jmp	#.tail
+  	rep	@.fwd_lp_long, tmpcnt
+	rdlong	tmp2, tos
+	wrlong	tmp2, nos
+	add	tos, #4
+	add	nos, #4
+.fwd_lp_long
+.tail
+	and	popval, #3 wz
+  if_z	jmp	#\impl_DROP2		' return if no tail
+  	rep	@.fwd_lp_tail, popval
+	rdbyte	tmp2, tos
+	wrbyte	tmp2, nos
+	add	tos, #1
+	add	nos, #1
+.fwd_lp_tail
+	jmp	#\impl_DROP2
+.backwards
+	add	nos, popval
+	rep	@.back_lp, popval
+	sub	tos, #1
+	sub	nos, #1
+	rdbyte	tmp2, tos
+	wrbyte	tmp2, nos
+.back_lp
+	jmp	#\impl_DROP2
 
 impl_LOCKMEM
 	cogid	tmp
