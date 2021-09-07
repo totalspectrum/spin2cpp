@@ -1276,6 +1276,7 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         NuEmitConst(irl, 0);
         NuEmitBranch(irl, NU_OP_CBNE, retJmpVal);
         // save initial setjmp return value (the jump buffer) into abortchain
+        NuEmitOp(irl, NU_OP_DUP);
         NuCompileLhsAddress(irl, nu_abortchain_ptr);
         NuEmitCommentedOp(irl, NU_OP_STREG, "save into abortchain");
         pushed = NuCompileExpression(irl, node->left);

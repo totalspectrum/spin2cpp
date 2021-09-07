@@ -789,8 +789,8 @@ impl_SETJMP
 	setq	tmp
 	wrlong	cogstack, ptra++
 .nocogstack
-	mov	tos, #0
-  _ret_	mov	nos, __abortchain
+	mov	nos, tos	' return original buffer
+  _ret_	mov	tos, #0
 
 impl_LONGJMP
 	call	#\impl_POP	' popval is ignore_if_not_caught flag
@@ -1039,6 +1039,29 @@ dump_regs
 	call	#ser_debug_nl
 #endif	
 	ret
+
+	' dump buffer pointed to by tmp2 (4 longs)
+dump_buf
+	mov	ser_debug_arg1, tmp2
+	call	#ser_debug_hex
+	mov	ser_debug_arg1, #":"
+	call	#ser_debug_tx
+	
+	rdlong	ser_debug_arg1, tmp2
+	add	tmp2, #4
+	call	#ser_debug_hex
+	rdlong	ser_debug_arg1, tmp2
+	add	tmp2, #4
+	call	#ser_debug_hex
+	rdlong	ser_debug_arg1, tmp2
+	add	tmp2, #4
+	call	#ser_debug_hex
+	rdlong	ser_debug_arg1, tmp2
+	add	tmp2, #4
+	call	#ser_debug_hex
+	
+	jmp	#ser_debug_nl
+
 #endif ' SERIAL_DEBUG
 
 ' labels at and of code/data
