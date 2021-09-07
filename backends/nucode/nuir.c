@@ -45,6 +45,12 @@ static int NuImplSize(const char *lineptr) {
         if (c == 0) break;
         if (c == '\n') {
             size++;
+            while (*lineptr == ' ' || *lineptr == '\t')
+                lineptr++;
+            if (*lineptr == '\'') {
+                // commented line, ignore
+                --size;
+            }
             if (*lineptr == '\n') break;
         }
         if (c == '#' && lineptr[0] == '#') {
