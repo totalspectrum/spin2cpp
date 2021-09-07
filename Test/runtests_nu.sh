@@ -23,7 +23,7 @@ endmsg=$ok
 
 echo "running tests on propeller..."
 
-
+if false; then
 #
 # BASIC tests; C++ support is still incomplete
 #
@@ -66,7 +66,9 @@ do
     endmsg="TEST FAILURES"
   fi  
 done
+fi
 
+if true; then
 #
 # C tests; obviously no need to test conversion to C
 #
@@ -94,7 +96,9 @@ do
     endmsg="TEST FAILURES"
   fi  
 done
+fi
 
+if true; then
 #
 # Spin tests
 #
@@ -122,6 +126,7 @@ do
     endmsg="TEST FAILURES"
   fi  
 done
+fi
 
 # clean up
 rm -f FullDuplexSerial.cpp FullDuplexSerial.h
