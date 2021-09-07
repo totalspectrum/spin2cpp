@@ -23,6 +23,7 @@
     X(ADD_DBASE) /* add frame pointer to tos */ \
     X(ADD_SP)    /* add stack pointer to tos */ \
     X(ADD_PC)    /* add program counter to tos */ \
+    X(SET_SP)    /* set stack pointer to tos */ \
     \
     X(ADD)       /* tos := nos + tos */ \
     X(SUB)       /* tos := nos - tos */ \

@@ -280,6 +280,11 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
         offset = sym->offset;
         loadOp = LoadStoreOp(sym->val, isLoad);
         break;
+    case SYM_CLOSURE:
+        offset = sym->offset;
+        offsetOp = NU_OP_ADD_VBASE;
+        loadOp = LoadStoreOp(sym->val, isLoad);
+        break;
     case SYM_VARIABLE:
         loadOp = LoadStoreOp(sym->val, isLoad);
         if (sym->flags & SYMF_GLOBAL) {
@@ -1150,8 +1155,7 @@ NuCompileAlloca(NuIrList *irl, AST *siz) {
 /* compile freea(ptr): ptr is already on stack */
 static void
 NuCompileFreea(NuIrList *irl) {
-    NuCompileLhsAddress(irl, nu_stack_ptr);
-    NuEmitOp(irl, NU_OP_STREG);
+    NuEmitOp(irl, NU_OP_SET_SP);
 }
 
 /* returns number of longs pushed on stack */
@@ -1304,6 +1308,10 @@ NuCompileExpression(NuIrList *irl, AST *node) {
     } break;
     case AST_CATCHRESULT: {
         ERROR(node, "cannot handle catchresult yet");
+        pushed = 1;
+    } break;
+    case AST_ALLOCA: {
+        NuCompileAlloca(irl, node->right);
         pushed = 1;
     } break;
     default:

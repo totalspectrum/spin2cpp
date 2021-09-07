@@ -680,7 +680,7 @@ TransformRangeAssign(AST *dst, AST *src, int optoken, int toplevel)
     }
 
     // Bytecode can do it natively
-    if (gl_output == OUTPUT_BYTECODE && dst->left->kind == AST_HWREG) {
+    if (TraditionalBytecodeOutput() && dst->left->kind == AST_HWREG) {
         AST *assign_again = AstAssign(dst,src);
         assign_again->d.ival = optoken;
         AstReportDone(&saveinfo);
@@ -915,7 +915,7 @@ TransformRangeUse(AST *src)
     }
 
     // Bytecode can do it natively
-    if (gl_output == OUTPUT_BYTECODE && src->left->kind == AST_HWREG) {
+    if (TraditionalBytecodeOutput() && src->left->kind == AST_HWREG) {
         AstReportDone(&saveinfo);
         return src;
     }

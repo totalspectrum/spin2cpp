@@ -227,7 +227,7 @@ char *auto_printf(size_t max,const char *format,...) {
 /* find the backend name for a symbol */
 const char *BackendNameForSymbol(Symbol *sym) {
     Module *Q = sym->module ? sym->module : NULL;
-    if (OutputIsNucode()) {
+    if (NuBytecodeOutput()) {
         return NuCodeSymbolName(sym);
     }
     return IdentifierModuleName(Q, sym->our_name);

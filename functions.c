@@ -703,7 +703,7 @@ findLocalsAndDeclare(Function *func, AST *ast)
             // we have to mark the global bytemove and _gc_alloc_managed functions
             // as in used
             MarkSystemFuncUsed("_gc_alloc_managed");
-            if (gl_output != OUTPUT_BYTECODE) {
+            if (!TraditionalBytecodeOutput()) {
                 MarkSystemFuncUsed("bytemove");
             }
         }
@@ -1262,7 +1262,7 @@ ModifyLookup(AST *top)
     }
 
     // Bytecode has native lookup/lookdown
-    if (gl_output == OUTPUT_BYTECODE) return NULL;
+    if (TraditionalBytecodeOutput()) return NULL;
 
     /* see if the table is constant, and count the number of elements */
     ast = table;
@@ -2859,7 +2859,7 @@ ExtractSideEffects(AST *expr, AST **preseq)
 AST *
 CheckSimpleArrayref(AST *ast)
 {
-    if (gl_output == OUTPUT_BYTECODE) return NULL; // This optimization is pointless in bytecode mode
+    if (TraditionalBytecodeOutput()) return NULL; // This optimization is pointless in bytecode mode
     AST *newexpr = NULL;
     if (ast->left && ast->left->kind == AST_MEMREF && IsConstExpr(ast->right)) {
         AST *left = ast->left;
@@ -3022,13 +3022,13 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
             // into tmp = B, A op= tmp
             // then if A has side effects, further decompose
             // those so eventually we can get A = A' op tmp
-            if (rhs && ExprHasSideEffects(rhs) && gl_output != OUTPUT_BYTECODE) {
+            if (rhs && ExprHasSideEffects(rhs) && !TraditionalBytecodeOutput()) {
                 AST *typ = ExprType(rhs);
                 AST *temp = AstTempLocalVariable("_temp_", typ);
                 preseq = AstAssign(temp, rhs);
                 rhs = temp;
             }
-            if ((ExprHasSideEffects(lhs) || IsBoolOp(op)) && gl_output != OUTPUT_BYTECODE) {
+            if ((ExprHasSideEffects(lhs) || IsBoolOp(op)) && !TraditionalBytecodeOutput()) {
                 if (curfunc && IsSpinLang(curfunc->language) && rhs && !IsConstExpr(rhs)) {
                     // Spin must maintain a strict evaluation order
                     AST *temp = AstTempLocalVariable("_temp_", NULL);
