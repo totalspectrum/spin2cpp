@@ -119,12 +119,12 @@ pri _gc_ptrs : base, end | size
 { return a pointer to page i in the heap }
 pri _gc_pageptr(heapbase, i)
   if (i == 0)
-    return 0
+    return
   return heapbase + (i << pagesizeshift)
 
 pri _gc_pageindex(heapbase, ptr)
   if (ptr == 0)
-    return 0
+    return
   return (ptr - heapbase) >> pagesizeshift
   
 pri _gc_isFree(ptr)
@@ -137,7 +137,7 @@ pri _gc_nextBlockPtr(ptr) | t
     return _gc_errmsg(string(" !!! corrupted heap??? !!! "))
   return ptr + (t << pagesizeshift)
   
-pri _gc_tryalloc(size, reserveflag) | ptr, availsize, lastptr, nextptr, heap_base, heap_end, saveptr, linkindex
+pri _gc_tryalloc(size, reserveflag) : ptr | availsize, lastptr, nextptr, heap_base, heap_end, saveptr, linkindex
   (heap_base, heap_end) := _gc_ptrs()
   ptr := heap_base
   availsize := 0
@@ -181,8 +181,7 @@ pri _gc_tryalloc(size, reserveflag) | ptr, availsize, lastptr, nextptr, heap_bas
   word[heap_base + OFF_USED_LINK] := _gc_pageindex(heap_base, ptr)
   
   '' and return
-  ptr += headersize
-  return ptr | POINTER_MAGIC
+  return (ptr + headersize) | POINTER_MAGIC
 
 pri _gc_errmsg(s) | c
   repeat while ((c:=byte[s++]) <> 0)
@@ -206,9 +205,9 @@ pri _gc_alloc_managed(size) : r
     return _gc_errmsg(string(" !!! out of heap memory !!! "))
   return r
 
-pri _gc_doalloc(size, reserveflag) | ptr, zptr
+pri _gc_doalloc(size, reserveflag) : ptr | zptr
   if (size == 0)
-    return 0
+    return
 
   ' increase size request to include the header
   size += headersize
@@ -246,21 +245,21 @@ pri _gc_doalloc(size, reserveflag) | ptr, zptr
 pri _gc_isvalidptr(base, heap_end, ptr) | t
   ' make sure the poiter came from alloc
   if (ptr & POINTER_MAGIC_MASK) <> POINTER_MAGIC
-    return 0
+    return
   ' step back to the header
   ptr := (ptr - headersize) & (!POINTER_MAGIC_MASK)
   ' make sure it is in the heap
   if (ptr < base) or (ptr => heap_end)
-    return 0
+    return
 
   ' and appropriately aligned (same as _gc_heap_base)
   if ( (ptr ^ base) & pagemask) <> 0
-    return 0
+    return
 
   ' and make sure the GC_MAGIC bits are set in flags
   t := word[ptr + OFF_FLAGS]
   if (t & GC_MAGIC_MASK) <> GC_MAGIC
-    return 0
+    return
   return ptr
 
 '
