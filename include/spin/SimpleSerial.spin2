@@ -51,7 +51,7 @@ pub startx(rxpin, txpin, mode, baudrate) | bitperiod, bit_mode
   pinf(txpin)
   wrpin(txpin, _txmode)
   wxpin(txpin, bit_mode)
-  pinl(txpin)	' turn smartpin on by making the pin an output
+  pinl(txpin)   ' turn smartpin on by making the pin an output
 
   ' set up the receive pin
   pinf(rxpin)

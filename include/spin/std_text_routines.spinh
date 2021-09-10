@@ -49,8 +49,8 @@ pub num(val, base, signflag, digitsNeeded) | i, digit, r1, q1
   if (signflag)
       if (val < 0)
         signflag := "-"
-	val := -val
-	
+        val := -val
+        
   '' make sure we will not overflow our buffer
   if (digitsNeeded > 32)
     digitsNeeded := 32
@@ -69,7 +69,7 @@ pub num(val, base, signflag, digitsNeeded) | i, digit, r1, q1
       val := 2*(q1 / base)
       if (digit => base)
         val++
-	digit -= base
+        digit -= base
     else
       digit := val // base
       val := val / base
@@ -136,10 +136,10 @@ pub printf(fmt = string(""), an=0, bn=0, cn=0, dn=0, en=0, fn=0) | c, valptr, va
       val := long[valptr]
       valptr += 4
       case c
-	"d": dec(val)
-	"u": decuns(val)
-	"x": hex(val)
-	"s": str(val)
+        "d": dec(val)
+        "u": decuns(val)
+        "x": hex(val)
+        "s": str(val)
         "c": tx(val)
     elseif c == "\"
       c := byte[fmt++]
