@@ -54,12 +54,12 @@ struct tm {
 #define localtime_r _localtime_r
 #define gmtime_r    _gmtime_r
     
-    __SIZE_TYPE__ strftime(char *s, __SIZE_TYPE__ max, const char *format, const struct tm *stm) _IMPL("libc/time/strftime.c");
+    __SIZE_TYPE__ strftime(char *s, __SIZE_TYPE__ max, const char *format, const struct tm *stm) _STRINGIO _IMPL("libc/time/strftime.c");
 
-    char *asctime(const struct tm *stm) _IMPL("libc/time/asctime.c");
-    char *asctime_r(const struct tm *stm, char *buf) _IMPL("libc/time/asctime.c");
-    char *ctime(const time_t *timep) _IMPL("libc/time/asctime.c");
-    char *ctime_r(const time_t *timep, char *buf) _IMPL("libc/time/asctime.c");
+    char *asctime(const struct tm *stm) _STRINGIO _IMPL("libc/time/asctime.c");
+    char *asctime_r(const struct tm *stm, char *buf) _STRINGIO _IMPL("libc/time/asctime.c");
+    char *ctime(const time_t *timep) _STRINGIO _IMPL("libc/time/asctime.c");
+    char *ctime_r(const time_t *timep, char *buf) _STRINGIO _IMPL("libc/time/asctime.c");
 
 #if defined(_POSIX_SOURCE) || defined(_GNU_SOURCE)
     struct tm *gmtime_r(const time_t *t, struct tm *stm) _IMPL("libc/time/localtim.c");
