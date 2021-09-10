@@ -901,7 +901,7 @@ int __unlockio(int h) { return 0; }
 
 typedef struct _bas_wrap_sender {
     TxFunc f;
-    int tx(int c) { f(c); return 1; }
+    int tx(int c, void *arg) { f(c); return 1; }
 } BasicWrapper;
 
 TxFunc _gettxfunc(unsigned h) {

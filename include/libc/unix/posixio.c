@@ -32,6 +32,15 @@ static int __dummy_flush(vfs_file_t *f)
 extern int _tx(int c);
 extern int _rx(void);
 
+#ifdef __OUTPUT_BYTECODE__
+// need to exactly match up arguments for putc
+static int _txputc(int c, void *arg) { _tx(c); return 1; }
+static int _rxgetc(void *arg) { return _rx(); }
+#else
+#define _txputc _tx
+#define _rxgetc _rx
+#endif
+
 static vfs_file_t __filetab[_MAX_FILES] = {
     /* stdin */
     {
@@ -41,8 +50,8 @@ static vfs_file_t __filetab[_MAX_FILES] = {
         0, /* lock */
         0, /* read */
         0, /* write */
-        (putcfunc_t)&_tx, /* putc */
-        (getcfunc_t)&_rx, /* getc */
+        (putcfunc_t)&_txputc, /* putc */
+        (getcfunc_t)&_rxgetc, /* getc */
         0, /* close function */
         &_rxtxioctl,
         &__dummy_flush, /* flush function */
@@ -55,8 +64,8 @@ static vfs_file_t __filetab[_MAX_FILES] = {
         0, /* lock */
         0, /* read */
         0, /* write */
-        (putcfunc_t)&_tx, /* putchar */
-        (getcfunc_t)&_rx, /* getchar */
+        (putcfunc_t)&_txputc, /* putchar */
+        (getcfunc_t)&_rxgetc, /* getchar */
         0, /* close function */
         &_rxtxioctl,
         &__dummy_flush, /* flush function */
@@ -69,8 +78,8 @@ static vfs_file_t __filetab[_MAX_FILES] = {
         0, /* lock */
         0, /* read */
         0, /* write */
-        (putcfunc_t)&_tx, /* putchar */
-        (getcfunc_t)&_rx, /* getchar */
+        (putcfunc_t)&_txputc, /* putchar */
+        (getcfunc_t)&_rxgetc, /* getchar */
         0, /* close function */
         &_rxtxioctl,
         &__dummy_flush, /* flush function */
