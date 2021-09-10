@@ -961,7 +961,7 @@ NuCompileCoginit(NuIrList *irl, AST *expr)
     if ( IsSpinCoginit(expr, NULL) ) {
         AST *exprlist;
         AST *funccall;
-        AST *objref;
+        AST *objref = 0;
         AST *stack;
         AST *cogid;
         AST *tmpreg = AstIdentifier("__interp_temp1");
