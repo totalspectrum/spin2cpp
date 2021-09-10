@@ -923,11 +923,11 @@ static int *_getiolock(unsigned h) {
     if (!v || !v->state) return &dummy;
     return &v->lock;
 }
-void __lockio(unsigned h) {
-_lockmem(_getiolock(h));
+int __lockio(unsigned h) {
+    _lockmem(_getiolock(h)); return 0;
 }
-void __unlockio(unsigned h) {
-_unlockmem(_getiolock(h));
+int __unlockio(unsigned h) {
+    _unlockmem(_getiolock(h)); return 0;
 }
 
 #endif
