@@ -2293,6 +2293,12 @@ IsInt64Type(AST *type)
 }
 
 int
+NumArgsForType(AST *functype) {
+    functype = BaseType(functype);
+    return AstListLen(functype->right);
+}
+
+int
 IsBoolCompatibleType(AST *type)
 {
     type = RemoveTypeModifiers(type);
@@ -3556,7 +3562,8 @@ const char *TypeName(AST *typ)
             strcat(buf, "volatile ");
             break;
         case AST_FUNCTYPE:
-            strcat(buf, "function returning ");
+            size = NumArgsForType(typ);
+            sprintf(buf, "function of %d args returning ", size);
             needMore = 1;
             break;
         case AST_ARRAYTYPE:

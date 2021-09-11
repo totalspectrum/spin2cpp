@@ -1250,6 +1250,13 @@ doCast(AST *desttype, AST *srctype, AST *src)
         if (IsArrayType(srctype)) {
             return ArrayAddress(src);
         }
+        if (IsFunctionType(srctype) && IsFunctionType(desttype)) {
+            int n1 = NumArgsForType(srctype);
+            int n2 = NumArgsForType(desttype);
+            if (n1 != n2) {
+                WARNING(src, "Casting function with %d arguments to one with %d arguments may not work", n1, n2);
+            }
+        }
         if (IsPointerType(srctype)) {
             if (IsPointerType(desttype)) {
                 /* check for casting away "const" */

@@ -86,6 +86,9 @@ int IsClassType(AST *typ);
 
 int IsConstType(AST *typ);
 
+// number of arguments to a function of this type
+int NumArgsForType(AST *functyp);
+
 // note that this function isn't symmetric; for pointer types,
 // it allows A to have a stricter type than B (so for example
 // it's OK to pass a "char *" to a "const char *" but not vice-versa)
