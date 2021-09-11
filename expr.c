@@ -1124,17 +1124,6 @@ EvalFixedOperator(int op, int32_t lval, int32_t rval, int *valid)
 }
 
 static int32_t
-CountOnes(uint32_t v)
-{
-    int r = 0;
-    while (v != 0) {
-        if (v & 1) r++;
-        v = v>>1;
-    }
-    return r;
-}
-
-static int32_t
 BoolValue(int v)
 {
     if (!v) return 0;
@@ -1156,12 +1145,10 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
     case '-':
         return lval - rval;
     case '/':
-        if (rval == 0)
-	    return rval;
+        if (rval == 0) return rval;
         return lval / rval;
     case K_MODULUS:
-        if (rval == 0)
-	    return rval;
+        if (rval == 0) return rval;
         return lval % rval;
     case K_UNS_DIV:
         if (rval == 0) return rval;
@@ -1181,11 +1168,11 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
     case '&':
         return lval & rval;
     case K_HIGHMULT:
-        return (int)(((long long)lval * (long long)rval) >> 32LL);
+        return (int32_t)(((int_fast64_t)lval * (int_fast64_t)rval) >> 32LL);
     case K_UNS_HIGHMULT:
-        return (int)(((unsigned long long)lval * (unsigned long long)rval) >> 32ULL);
+        return (int32_t)(((uint_fast64_t)lval * (uint_fast64_t)rval) >> 32ULL);
     case K_SCAS:
-        return (int)(((long long)lval * (long long)rval) >> 30LL);
+        return (int32_t)(((int_fast64_t)lval * (int_fast64_t)rval) >> 30LL);
     case K_SHL:
         return lval << (rval & 0x1f);
     case K_SHR:
@@ -1237,9 +1224,9 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
     case K_ABS:
         return (rval < 0) ? -rval : rval;
     case K_SQRT:
-        return (unsigned int)sqrtf((float)(unsigned int)rval);
+        return (uint32_t)sqrtf((float)(uint32_t)rval);
     case K_DECODE:
-        return (1L << rval);
+        return 1L << (rval&0x1f);
     case K_ENCODE:
         return 32 - __builtin_clz(rval);
     case K_ENCODE2:
@@ -1275,10 +1262,7 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
         }
         return 0;
     case K_ONES_COUNT:
-        {
-            return CountOnes(rval);
-        }
-        break;
+        return __builtin_popcount(rval);
     case K_QLOG:
         {
             double e = log2((double)(uint32_t)rval);

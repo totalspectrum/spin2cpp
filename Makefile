@@ -106,9 +106,9 @@ endif
 #check:
 #	echo YACC="$(RUNYACC)" YACCVER="$(YACCVER)" YACC_CHECK="$(YACC_CHECK)"
 
-CFLAGS = -g -Wall $(INC) $(DEFS)
-#CFLAGS = -no-pie -pg -Wall $(INC) $(DEFS)
-#CFLAGS = -g -Og -Wall -Wc++-compat -Werror $(INC) $(DEFS)
+CFLAGS = -g -Wall -fwrapv $(INC) $(DEFS)
+#CFLAGS = -no-pie -pg -Wall -fwrapv $(INC) $(DEFS)
+#CFLAGS = -g -Og -Wall -fwrapv -Wc++-compat -Werror $(INC) $(DEFS)
 LIBS = -lm
 RM = rm -rf
 
