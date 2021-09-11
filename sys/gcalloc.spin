@@ -137,7 +137,7 @@ pri _gc_nextBlockPtr(ptr) | t
     return _gc_errmsg(string(" !!! corrupted heap??? !!! "))
   return ptr + (t << pagesizeshift)
   
-pri _gc_tryalloc(size, reserveflag) | ptr, availsize, lastptr, nextptr, heap_base, heap_end, saveptr, linkindex
+pri _gc_tryalloc(size, reserveflag) : ptr | availsize, lastptr, nextptr, heap_base, heap_end, saveptr, linkindex
   (heap_base, heap_end) := _gc_ptrs()
   ptr := heap_base
   availsize := 0
@@ -181,8 +181,7 @@ pri _gc_tryalloc(size, reserveflag) | ptr, availsize, lastptr, nextptr, heap_bas
   word[heap_base + OFF_USED_LINK] := _gc_pageindex(heap_base, ptr)
   
   '' and return
-  ptr += headersize
-  return ptr | POINTER_MAGIC
+  return (ptr + headersize) | POINTER_MAGIC
 
 pri _gc_errmsg(s) | c
   repeat while ((c:=byte[s++]) <> 0)
@@ -206,9 +205,9 @@ pri _gc_alloc_managed(size) : r
     return _gc_errmsg(string(" !!! out of heap memory !!! "))
   return r
 
-pri _gc_doalloc(size, reserveflag) | ptr, zptr
+pri _gc_doalloc(size, reserveflag) : ptr | zptr
   if (size == 0)
-    return 0
+    return ptr  ' defaults to 0
 
   ' increase size request to include the header
   size += headersize
