@@ -2858,8 +2858,12 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         bool isAbort = node->kind == AST_THROW;
         AST *retval = node->left;
         ByteOpIR returnOp = {0};
-        returnOp.kind = isAbort ? (retval ? BOK_ABORT_POP : BOK_ABORT_PLAIN) : (retval ? BOK_RETURN_POP : BOK_RETURN_PLAIN);
         returnOp.attr.returninfo.numResults = BCGetNumResults(curfunc);
+
+        if (retval && returnOp.attr.returninfo.numResults == 1 && AstMatch(curfunc->resultexpr, retval)) {
+            retval = NULL; // return RESULT => return
+        }
+        returnOp.kind = isAbort ? (retval ? BOK_ABORT_POP : BOK_ABORT_PLAIN) : (retval ? BOK_RETURN_POP : BOK_RETURN_PLAIN);
         if (retval) {
             if (retval->kind == AST_DECLARE_VAR) { // handle declared types in return values
                 retval = retval->right;
