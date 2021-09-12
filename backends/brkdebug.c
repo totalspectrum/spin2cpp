@@ -307,7 +307,9 @@ Flexbuf CompileBrkDebugger(size_t appsize) {
     uint32_t clkmode = const_or_default(T,"__clkmode_con",0);
     DEBUG(NULL,"Debugger gets CLKMODE %08X and CLKFREQ %d",clkmode,clkfreq);
     uint32_t millisecond = (clkfreq/1000)-6; // This is how PNut calculates it...
-    uint32_t txmode = ((clkfreq/(const_or_default(T,"DEBUG_BAUD",2000000)>>6))<<(16-6))|(8-1); // Also from PNut
+    //uint32_t txmode = ((clkfreq/(const_or_default(T,"DEBUG_BAUD",2000000)>>6))<<(16-6))|(8-1); // Also from PNut
+    if (!gl_default_baud) gl_default_baud = 2000000;
+    uint32_t txmode = ((clkfreq/(const_or_default(T,"DEBUG_BAUD",gl_default_baud)>>6))<<(16-6))|(8-1); // Also from PNut
 
     // Compile debugger blob
     int old_errors = gl_errors;
