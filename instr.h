@@ -82,6 +82,7 @@ typedef enum IROpcode {
     OPC_BITL,
     OPC_BITNOT,
     OPC_BMASK,
+    OPC_BREAK,
     OPC_DECOD,
     OPC_DRVC,
     OPC_DRVH,

@@ -66,8 +66,10 @@ static Operand *abortchain;
 Operand *resultreg[MAX_TUPLE];
 Operand *argreg[MAX_ARG_REGISTER];
 Operand *localreg[MAX_LOCAL_REGISTER];
-Operand *leafreg[MAX_LOCAL_REGISTER];
-Operand *sendreg, *recvreg;
+static Operand *leafreg[MAX_LOCAL_REGISTER];
+static Operand *debugreg[MAX_LOCAL_REGISTER];
+static int debugaddr[MAX_LOCAL_REGISTER];
+static Operand *sendreg, *recvreg;
 Operand *lockreg, *lockreg_addr_ptr;
 
 static Operand *nextlabel;
@@ -446,6 +448,20 @@ Operand *GetArgReg(int n)
         argreg[n] = GetOneGlobal(REG_ARG, strdup(rvalname), 0);
     }
     return argreg[n];
+}
+
+Operand *GetDebugReg(int n) {
+    static char rvalname[32];
+    if (n < 0 || n >= MAX_LOCAL_REGISTER) {
+        ERROR(NULL, "Internal error exceeded arg register limit; too many debug registers needed");
+        return NULL;
+    }
+    if (!debugreg[n]) {
+        sprintf(rvalname, "%d-0", n);
+        debugreg[n] = GetOneGlobal(REG_HW, strdup(rvalname), 0);
+        debugaddr[n] = n;
+    }
+    return debugreg[n];
 }
 
 static Operand *GetGeneralLocalReg(int n)
@@ -4438,6 +4454,21 @@ static void MarkUsedLabel(IRList *irl, Operand *label)
     label->used = 9999; // make sure label is not removed
 }
 
+static int OutAsm_DebugEval(AST *ast, int regNum, int *addr, void *arg) {
+    IRList *irl = (IRList *)arg;
+    Operand *srcop;
+    Operand *dstop;
+    if (IsConstExpr(ast)) {
+        *addr = EvalConstExpr(ast);
+        return PASM_EVAL_ISCONST;
+    }
+    srcop = CompileExpression(irl, ast, NULL);
+    dstop = GetDebugReg(regNum);
+    EmitMove(irl, dstop, srcop);
+    *addr = debugaddr[regNum];
+    return PASM_EVAL_ISREG;
+}
+
 static void CompileStatement(IRList *irl, AST *ast)
 {
     AST *retval;
@@ -4740,6 +4771,15 @@ static void CompileStatement(IRList *irl, AST *ast)
         CompileStatementList(irl, ast);
         break;
     }
+    case AST_BRKDEBUG: {
+        if (!gl_p2) ERROR(ast, "BRK debug is only supported on P2");
+        int brkCode = AsmDebug_CodeGen(ast, OutAsm_DebugEval, (void *)irl);
+        if (brkCode >= 0) {
+            Operand *op = NewImmediate(brkCode);
+            IR *ir = EmitOp1(irl, OPC_BREAK, op);
+            ir->flags |= FLAG_KEEP_INSTR;
+        }
+    } break;
     case AST_ASSIGN:
         /* fall through */
     default:

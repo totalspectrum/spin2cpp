@@ -3325,7 +3325,7 @@ instr_p2[] = {
 
     { "getptr", 0x0d600034, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
     { "getbrk", 0x0d600035, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
-    { "brk",    0x0d600036, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "brk",    0x0d600036, P2_DST_CONST_OK, OPC_BREAK, 0 },
     { "setluts",0x0d600037, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
     { "lutsoff",0x0d640037, NO_OPERANDS, OPC_GENERIC_NR, 0 },
     { "lutson", 0x0d640237, NO_OPERANDS, OPC_GENERIC_NR, 0 },

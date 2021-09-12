@@ -141,9 +141,20 @@ emitAsmRegref(Flexbuf *f,unsigned reg) {
     flexbuf_putc(reg&255,f);
 }
 
+int Pasm_DebugEval(AST *arg, int argNum, int *addr, void *ignored) {
+    if (arg->kind == AST_IMMHOLDER) {
+        *addr = EvalPasmExpr(arg->left);
+        return PASM_EVAL_ISCONST;
+    }
+    *addr = EvalPasmExpr(arg);
+    return PASM_EVAL_ISREG;
+}
 
-int AsmDebug_CodeGen(AST *ast) {
+int AsmDebug_CodeGen(AST *ast, BackendDebugEval evalFunc, void *evalArg) {
     unsigned brkCode = brkAssigned++;
+    AST *exprbase;
+    int regNum = 0;
+    
     if (brkCode >= MAX_BRK) {
         ERROR(ast,"MAX_BRK exceeded!");
         return -1;
@@ -154,8 +165,12 @@ int AsmDebug_CodeGen(AST *ast) {
 
     ASSERT_AST_KIND(ast,AST_BRKDEBUG,return -1;);
     ASSERT_AST_KIND(ast->left,AST_EXPRLIST,return -1;);
-    ASSERT_AST_KIND(ast->left->left,AST_LABEL,return -1;); // What is the point of this empty label?
-    ASSERT_AST_KIND(ast->left->right,AST_EXPRLIST,return -1;);
+    if (ast->left->left->kind == AST_LABEL) {
+        exprbase = ast->left->right;
+    } else {
+        exprbase = ast->left;
+    }
+    ASSERT_AST_KIND(exprbase,AST_EXPRLIST,return -1;);
 
     // Add default stuff
     flexbuf_putc(DBC_ASMMODE,f);
@@ -165,7 +180,7 @@ int AsmDebug_CodeGen(AST *ast) {
 
     DEBUG(ast,"Building DEBUG code for BRK #%d",brkCode);
 
-    for (AST *exprlist = ast->left->right;exprlist;exprlist=exprlist->right) {
+    for (AST *exprlist = exprbase;exprlist;exprlist=exprlist->right) {
         AST *item = exprlist->left;
         switch (item->kind) {
         case AST_STRING: {
@@ -211,7 +226,8 @@ int AsmDebug_CodeGen(AST *ast) {
             for (AST *arglist=item->right;arglist;arglist=arglist->right) {
                 gotArgs++;
                 AST *arg = arglist->left;
-
+                int addrKind, addr;
+                
                 if (gotArgs==1 && !simple && !noExpr) {
                     // TOOD: Yoink expression string from source buffer
                     AST *exprAst = arg;
@@ -228,10 +244,18 @@ int AsmDebug_CodeGen(AST *ast) {
                     flexbuf_putc(0,f);
                 }
 
-                if (arg->kind == AST_IMMHOLDER) {
-                    emitAsmConstant(f,EvalPasmExpr(arg->left));
-                } else {
-                    emitAsmRegref(f,EvalPasmExpr(arg));
+                addrKind = (*evalFunc)(arg, regNum, &addr, evalArg);
+                switch (addrKind) {
+                case PASM_EVAL_ISCONST:
+                    emitAsmConstant(f, addr);
+                    break;
+                case PASM_EVAL_ISREG:
+                    emitAsmRegref(f, addr);
+                    regNum++;
+                    break;
+                default:
+                    ERROR(arg, "Unknown address kind returned by back end");
+                    break;
                 }
             }
             if (gotArgs!=expectedArgs) ERROR(item,"%s expects %d args, got %d",name,expectedArgs,gotArgs);

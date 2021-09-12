@@ -1786,7 +1786,7 @@ assembleFile(Flexbuf *f, AST *ast)
 
 void AssembleAsmDebug(Flexbuf *f,AST *ast) {
     if (!gl_p2) ERROR(ast,"ASM DEBUG is only supported on P2!");
-    int brkCode = AsmDebug_CodeGen(ast);
+    int brkCode = AsmDebug_CodeGen(ast, Pasm_DebugEval, NULL);
     if (brkCode>=0) {
         // Opcode for P2 BRK....
         outputInstrLong(f,0b11111101011001000000000000110110 + (brkCode<<9));

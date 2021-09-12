@@ -105,9 +105,23 @@ void PrintObjConstName(Flexbuf *f, Module *P, const char* name);
 void PrintStatementList(Flexbuf *f, AST *ast, int indent);
 
 /* for PASM debug */
+
+/* function to evaluate an expression and put its address into "addr"
+ * returns PASM_EVAL_ISCONST for a constant, PASM_EVAL_ISREG if
+ * addr points to a register; otherwise we can't handle it (yet)
+ * but eventually could save result on stack or in hub
+ * regNum counts how many register arguments have been seen so far
+ * in this DEBUG
+ */
+typedef int (*BackendDebugEval)(AST *ast, int regNum, int *addr, void *beArg);
+#define PASM_EVAL_ISCONST 0
+#define PASM_EVAL_ISREG   1
+
 #define MAX_BRK 256
 extern unsigned brkAssigned; // Currently assigned BRK codes
-int AsmDebug_CodeGen(AST *ast);
+
+int Pasm_DebugEval(AST *ast, int regNum, int *addr, void *arg);
+int AsmDebug_CodeGen(AST *ast, BackendDebugEval evalFunc, void *evalArg);
 Flexbuf CompileBrkDebugger(size_t appsize);
 
 /* utility for visiting modules */

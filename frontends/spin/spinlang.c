@@ -523,6 +523,10 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
             }
         }
         break;
+    case AST_BRKDEBUG:
+        // FIXME: probably should properly scan expressions, but this is awkward because there
+        // are pseudo-function calls like uhex(n) inside them
+        return;
     default:
         break;
     }

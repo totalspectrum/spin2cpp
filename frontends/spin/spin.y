@@ -240,6 +240,10 @@ BuildDebugList(AST *exprlist)
     if (!gl_debug) {
         return NULL;
     }
+    if (gl_brkdebug) {
+        AST *debug = NewAST(AST_BRKDEBUG, exprlist, NULL);
+        return debug;
+    }
     flexbuf_init(&fb, 1024);
 
     if (exprlist && exprlist->left && exprlist->left->kind == AST_LABEL) {   
