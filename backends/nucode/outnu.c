@@ -1430,6 +1430,23 @@ static void NuCompileForLoop(NuIrList *irl, AST *ast, int atleastonce) {
     NuPopQuitNext();   
 }
 
+static int NuDebugEval(AST *ast, int regNum, int *addr, void *ourArg) {
+    NuIrList *irl = (NuIrList *)ourArg;
+    int n;
+    if (IsConstExpr(ast)) {
+        *addr = EvalConstExpr(ast);
+        return PASM_EVAL_ISCONST;
+    }
+    n = NuCompileExpression(irl, ast);
+    if (n != 1) {
+        ERROR(ast, "DEBUG expression has %d return values", n);
+    }
+    NuEmitConst(irl, regNum);
+    NuEmitOp(irl, NU_OP_STREG);
+    *addr = regNum;
+    return PASM_EVAL_ISREG;
+}
+
 static void NuCompileStatement(NuIrList *irl, AST *ast) {
     int n;
     NuIrLabel *toploop, *botloop, *exitloop;
@@ -1616,6 +1633,13 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
         }
         NuEmitConst(irl, flag);
         NuEmitCommentedOp(irl, NU_OP_LONGJMP, "throw");
+    } break;
+    case AST_BRKDEBUG: {
+        int brkCode = AsmDebug_CodeGen(ast, NuDebugEval, (void *)irl);
+        if (brkCode >= 0) {
+            NuEmitConst(irl, brkCode);
+            NuEmitOp(irl, NU_OP_BREAK);
+        }
     } break;
     default:
         ERROR(ast, "Unhandled node type %d in NuCompileStatement", ast->kind);

@@ -105,6 +105,7 @@
     \
     X(INLINEASM)  /* load inline assembly */ \
     X(SETJMP)    /* setjmp(buf) -> r,s  r is result, s is 0 for original, 1 for longjmp */ \
+    X(BREAK)     /* debug break instruction */ \
     \
     /* put all branches together here at the end */ \
     X(JMP)       /* jump to address at tos */ \

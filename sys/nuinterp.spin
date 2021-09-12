@@ -394,6 +394,13 @@ impl_RET
 
 	ret
 
+impl_BREAK
+	getptr	pb
+	setd	.brkinst, tos
+	call	#\impl_DROP
+.brkinst brk	#0
+	jmp	#restart_loop
+	
 impl_HALT
 #ifdef SERIAL_DEBUG
 	mov	ser_debug_arg1, ##@halt_msg
