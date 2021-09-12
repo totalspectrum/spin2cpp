@@ -310,6 +310,8 @@ Flexbuf CompileBrkDebugger(size_t appsize) {
     uint32_t txmode = ((clkfreq/(const_or_default(T,"DEBUG_BAUD",2000000)>>6))<<(16-6))|(8-1); // Also from PNut
 
     // Compile debugger blob
+    int old_errors = gl_errors;
+    gl_errors = 0; // Have to do this to not segfault when there've been errors
     gl_caseSensitive = false;
     Module *D = NewModule("__brkdebug__",LANG_SPIN_SPIN2);
     current = D;
@@ -320,6 +322,7 @@ Flexbuf CompileBrkDebugger(size_t appsize) {
     ProcessModule(D);
     // We good now?
     PrintDataBlock(&f,D->datblock,NULL,NULL);
+    gl_errors = old_errors;
     // Patch parameters (ugly hardcoded offsets!)
     {
         char *buf = flexbuf_peek(&f);
