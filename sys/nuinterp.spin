@@ -1,3 +1,6 @@
+con
+  _clkfreq = 0
+
 dat
 ''
 '' Nu code interpreter
