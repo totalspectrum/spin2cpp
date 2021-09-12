@@ -707,7 +707,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                 } else if (InDatBlock(L)) {
                     /* for ORG, nothing special to do */
                     /* for ASM, check for identifier */
-                    if ( (c == SP_ASM || c == SP_ASM_CONST) && L->colCounter - L->firstNonBlank > 4) {
+                    if ( (c == SP_ASM || c == SP_ASM_CONST)) {
                         goto is_identifier;
                     }
                     L->sawInstruction = 1;
