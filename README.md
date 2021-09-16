@@ -27,5 +27,5 @@ If you name your executable something that ends in "spin2" (like "fastspin2.exe"
 
 ## Credits
 
-Most of spin2cpp was written by Eric R. Smith. The bytecode back end was contributed by Ada Gottensträter. The C preprocessor was written by Kiyoshi Matsui. Many people have contributed bug fixes, suggestions, and library files; see the COPYING and COPYING.LIB files for the full list of contributors.
+Most of spin2cpp was written by Eric R. Smith. The bytecode back end and many other improvements and bug fixes were contributed by Ada Gottensträter. The C preprocessor was written by Kiyoshi Matsui. Many people have contributed bug fixes, suggestions, and library files; see the COPYING and COPYING.LIB files for the full list of contributors.
 
