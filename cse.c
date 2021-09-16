@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2020 Total Spectrum Software Inc.
+ * Copyright 2011-2021 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for Common Subexpression Elimination
@@ -74,7 +74,7 @@ InitCSESet(CSESet *cse)
 static void
 DestroyCSEEntry(CSEEntry *old)
 {
-    if (old->uses == 0) {
+    if (old->uses == 0 || (old->uses == 1 && gl_output == OUTPUT_BYTECODE) ) {
         // this turns out to have been a redundant CSE
         if (old->cseAssign != NULL && old->cseFirstUse != NULL) {
             AstNullify(old->cseAssign); // make the assignment a no-op

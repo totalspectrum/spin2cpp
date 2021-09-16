@@ -215,7 +215,6 @@ extern int gl_interp_kind;
 // No other values yet
 
 
-
 /* types of output */
 #define OUTPUT_CPP  0
 #define OUTPUT_C    1
