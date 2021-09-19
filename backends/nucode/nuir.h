@@ -24,12 +24,17 @@
     X(ADD_SP)    /* add stack pointer to tos */ \
     X(ADD_PC)    /* add program counter to tos */ \
     X(SET_SP)    /* set stack pointer to tos */ \
-    \
+    /* BINARY math operations start here */     \
     X(ADD)       /* tos := nos + tos */ \
     X(SUB)       /* tos := nos - tos */ \
     X(AND)       /* tos := nos & tos */ \
     X(IOR)        /* tos := nos | tos */ \
     X(XOR)       /* tos := nos ^ tos */ \
+    \
+    X(MINS)      /* tos := min(nos, tos) (signed) */ \
+    X(MAXS)      /* tos := max(nos, tos) (signed) */ \
+    X(MINU)      /* tos := min(nos, tos) (unsigned) */ \
+    X(MAXU)      /* tos := max(nos, tos) (unsigned) */ \
     \
     X(SIGNX)     /* sign extend tos := nos SIGNX tos */ \
     X(ZEROX)     /* zero extend tos := nos ZEROX tos */ \
@@ -38,11 +43,7 @@
     X(SAR)       /* tos := nos SAR tos (signed right shift) */ \
     X(ENCODE)    /* tos := nos ENCODE tos (0-32) */ \
     X(ENCODE2)   /* tos := nos ENCODE tos (0-31) */ \
-    \
-    X(MINS)      /* tos := min(nos, tos) (signed) */ \
-    X(MAXS)      /* tos := max(nos, tos) (signed) */ \
-    X(MINU)      /* tos := min(nos, tos) (unsigned) */ \
-    X(MAXU)      /* tos := max(nos, tos) (unsigned) */ \
+    /* BINARY math operations end here (ones below leave 2 items on stack */ \
     \
     X(MULU)      /* unsigned multiply: leaves low, high on stack */ \
     X(MULS)      /* signed multiply:   leaves low, high on stack */ \
@@ -53,12 +54,14 @@
     X(SQRT64)    /* calculate sqrt(nos, tos) with full precision */ \
     X(ROTXY)     /* rotate x, y */ \
     \
+    /* UNARY math operations start here */ \
     X(NEG)       /* negate tos */ \
     X(NOT)       /* bit complement tos */ \
     X(ABS)       /* abs value tos */ \
     X(REV)       /* reverse bits of tos */ \
     X(QEXP)      /* exp2 */ \
     X(QLOG)      /* log2 */ \
+    /* UNARY math operations end here */ \
     \
     X(DROP)      /* drop element on top of stack */ \
     X(DROP2)     /* drop two elements on top of stack */ \
@@ -130,9 +133,15 @@
     X(CBGEU)     /* compare branch if >= unsigned */ \
     \
     X(DUMMY)     /* this and everything following needs no code */ \
-    X(LABEL)     /* label for jump target */ \
     X(ALIGN)     /* align data */ \
+    X(LABEL)     /* label for jump target */ \
+    X(CBxx)      /* matches any CBxx instruction */ \
+    X(MathBinary) /* matches any binary math operations */ \
+    X(MathUnary)  /* matches any unary math operations */ \
+    X(ANY)        /* matches any opcode */ \
 
+
+#define NuIsDummy(ir) ((ir)->op == NU_OP_DUMMY || ((ir)->op == NU_OP_ALIGN))
 
 typedef enum NuIrOpcode {
     #define X(m) NU_OP_ ## m,
@@ -170,7 +179,7 @@ typedef struct nuir {
     struct nuir *prev;
     NuIrOpcode op;
     union {
-        int32_t val;
+        intptr_t   val;
         NuIrLabel *label;
         void *ptr;
     };
@@ -195,6 +204,7 @@ typedef struct {
 } NuContext;
 
 void NuIrInit(NuContext *ctxt);
+NuIr *NuCreateIrOp(NuIrOpcode op);
 NuIr *NuEmitOp(NuIrList *irl, NuIrOpcode op);
 NuIr *NuEmitCommentedOp(NuIrList *irl, NuIrOpcode op, const char *comment);
 NuIr *NuEmitNamedOpcode(NuIrList *irl, const char *name);

@@ -1,3 +1,6 @@
+Version 5.9.3
+- Started to add some optimizations for Nu
+
 Version 5.9.2
 - Added internal definition for the BASIC number$ function
 - Added experimental flag -2nu for P2 interpreter (not working much yet)

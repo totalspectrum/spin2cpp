@@ -21,6 +21,16 @@ typedef struct {
     Flexbuf dataBuf;  // inline data for the function
 } NuFunData;
 
+/* optimization functions */
+int NuOptimizePeephole(NuIrList *irl);
+int NuRemoveDupDrop(NuIrList *irl);
+
+/* utility functions */
+NuIrOpcode NuFlipCondition(NuIrOpcode op);
+void NuDeleteIr(NuIrList *irl, NuIr *ir);
+void NuIrInsertBefore(NuIrList *irl, NuIr *anchor, NuIr *newitem);
+
+/* ultimate output function */
 void OutputNuCode(const char *fname, Module *P);
 
 #endif

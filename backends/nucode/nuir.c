@@ -130,12 +130,17 @@ static NuIr *NuCreateIr() {
     return r;
 }
 
+NuIr *NuCreateIrOp(NuIrOpcode op) {
+    NuIr *r = NuCreateIr();
+    r->op = op;
+    return r;
+}
+
 NuIr *NuEmitOp(NuIrList *irl, NuIrOpcode op) {
     NuIr *r;
     NuIr *last;
     
-    r = NuCreateIr();
-    r->op = op;
+    r = NuCreateIrOp(op);
     last = irl->tail;
     irl->tail = r;
     r->prev = last;

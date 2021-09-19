@@ -8,6 +8,42 @@
 #include "becommon.h"
 #include <stdlib.h>
 
+/* some utility functions */
+void NuDeleteIr(NuIrList *irl, NuIr *ir) {
+    NuIr *prev = ir->prev;
+    NuIr *next = ir->next;
+    
+    if (prev) {
+        prev->next = next;
+    } else {
+        irl->head = next;
+    }
+    if (next) {
+        next->prev = prev;
+    } else {
+        irl->tail = prev;
+    }
+}
+
+void NuIrInsertBefore(NuIrList *irl, NuIr *anchor, NuIr *newitem) {
+    NuIr *prev = anchor ? anchor->prev : NULL;
+    if (anchor == NULL) {
+        // append to end of list
+        newitem->prev = irl->tail;
+        newitem->next = NULL;
+        irl->tail = newitem;
+    } else {
+        newitem->prev = prev;
+        newitem->next = anchor;
+        anchor->prev = newitem;
+        if (prev) {
+            prev->next = newitem;
+        } else {
+            irl->head = newitem;
+        }
+    }
+}
+
 /* size of jump buffer for Nu code */
 #define NU_JMP_BUF_SIZ (9*LONG_SIZE)
 
@@ -384,7 +420,7 @@ NuCompileArrayAddress(NuIrList *irl, AST *node, int isLoad)
 }
 
 /* find opposite comparison for branch */
-static NuIrOpcode OppositeCond(NuIrOpcode op) {
+NuIrOpcode NuFlipCondition(NuIrOpcode op) {
     switch (op) {
     case NU_OP_BRA:   return NU_OP_DROP2;
     case NU_OP_DROP2: return NU_OP_BRA;
@@ -398,7 +434,7 @@ static NuIrOpcode OppositeCond(NuIrOpcode op) {
     case NU_OP_CBGEU: return NU_OP_CBLTU;
     case NU_OP_CBLEU: return NU_OP_CBGTU;
     case NU_OP_CBGTU: return NU_OP_CBLEU;
-    default: ERROR(NULL, "Bad opcode to OppositeCond");
+    default: ERROR(NULL, "Bad opcode to NuFlipCondition");
     }
     return NU_OP_ILLEGAL;
 }
@@ -513,7 +549,7 @@ NuCompileBoolBranches(NuIrList *irl, AST *expr, NuIrLabel *truedest, NuIrLabel *
     default:
         opc = NuCompileBasicBoolExpression(irl, expr);
         if (!truedest) {
-            opc = OppositeCond(opc);
+            opc = NuFlipCondition(opc);
             truedest = falsedest;
             falsedest = NULL;
         }
@@ -1748,7 +1784,15 @@ static int NuConvertFunctions(void *vptr, Module *P) {
 
 static int NuOptimizeFunction(Function *pf, NuIrList *irl) {
     // for now, do nothing
-    return 0;
+    int change;
+    int all_changes = 0;
+    
+    do {
+        change = NuOptimizePeephole(irl);
+        change += NuRemoveDupDrop(irl);
+        all_changes += change;
+    } while (change > 0);
+    return all_changes;
 }
 
 static int NuRevisitFunctions(void *vptr, Module *P) {
