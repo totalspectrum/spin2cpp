@@ -154,6 +154,7 @@ int AsmDebug_CodeGen(AST *ast, BackendDebugEval evalFunc, void *evalArg) {
     unsigned brkCode = brkAssigned++;
     AST *exprbase;
     int regNum = 0;
+    bool do_cogn = false;
     
     if (brkCode >= MAX_BRK) {
         ERROR(ast,"MAX_BRK exceeded!");
@@ -167,6 +168,7 @@ int AsmDebug_CodeGen(AST *ast, BackendDebugEval evalFunc, void *evalArg) {
     ASSERT_AST_KIND(ast->left,AST_EXPRLIST,return -1;);
     if (ast->left->left->kind == AST_LABEL) {
         exprbase = ast->left->right;
+        do_cogn = true;
     } else {
         exprbase = ast->left;
     }
@@ -174,7 +176,7 @@ int AsmDebug_CodeGen(AST *ast, BackendDebugEval evalFunc, void *evalArg) {
 
     // Add default stuff
     flexbuf_putc(DBC_ASMMODE,f);
-    flexbuf_putc(DBC_COGN,f);
+    if (do_cogn) flexbuf_putc(DBC_COGN,f);
 
     bool needcomma = false;
 
@@ -182,6 +184,10 @@ int AsmDebug_CodeGen(AST *ast, BackendDebugEval evalFunc, void *evalArg) {
 
     for (AST *exprlist = exprbase;exprlist;exprlist=exprlist->right) {
         AST *item = exprlist->left;
+        if(!item) {
+            WARNING(exprlist,"NULL item in debug exprlist?!?!");
+            continue;
+        }
         switch (item->kind) {
         case AST_STRING: {
             flexbuf_putc(DBC_STRING,f);
