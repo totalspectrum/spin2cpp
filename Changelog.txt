@@ -1,4 +1,5 @@
 Version 5.9.3
+- Prevent loops containing BRK from being optimized to REP
 - Started to add some optimizations for Nu
 
 Version 5.9.2

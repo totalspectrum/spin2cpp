@@ -3026,7 +3026,7 @@ OptimizeP2(IRList *irl)
                             canRepeat = false;
                         }
                         break;
-                    } else if (IsBranch(pir)) {
+                    } else if (IsBranch(pir) || pir->opc == OPC_BREAK) {
                         canRepeat = false;
                         break;
                     } else if (var && (pir->src == var || pir->dst == var)) {
