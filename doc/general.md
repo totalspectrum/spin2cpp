@@ -68,7 +68,7 @@ It is also not legal to return from inside inline assembly. For Spin2, returns a
 
 #### No register declarations
 
-Do not try to declare registers; the inline assembly probably will not be running from COG memory. If you need some scratch registers in inline assembly, declare them as local variables in the function.
+Do not try to declare registers; the inline assembly probably will not be running from COG memory. If you need some scratch registers in inline assembly, declare them as local variables in the function. The only exception to this is `ORG` in Spin2, or the similar constructs like `cpu asm` or `asm volatile` in C, where the inline assembly is guaranteed to be placed in COG memory. It's still probably better to declare local variables instead of placing register declarations in the inline assembly, though.
 
 #### General Guidelines
 
@@ -76,7 +76,7 @@ Try to keep inline assembly as simple as possible. Use the high level language f
 
 ### Inline assembly in bytecode
 
-Inline assembly is not supported in Spin1 bytecode (`--interp=rom`). It will produce a compile time error.
+Inline assembly is not supported in Spin1 bytecode (`--interp=rom`). It will produce a compile time error. It is supported in Nu bytecode (`-2nu`) but hasn't been thoroughly tested in that mode.
 
 ## Functions in COG or LUT memory
 
