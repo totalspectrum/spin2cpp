@@ -2543,7 +2543,7 @@ MarkUsedBody(AST *body, const char *caller)
     if (!body) return;
     switch(body->kind) {
     case AST_FLOAT:
-        gl_features_used |= FEATURE_FLOAT_USED;
+        ActivateFeature(FEATURE_FLOAT_USED);
         break;
     case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER:

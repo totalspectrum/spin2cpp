@@ -1745,7 +1745,7 @@ AST *CheckTypes(AST *ast)
         break;
     }
     if (IsFloatType(ltype)) {
-       gl_features_used |= FEATURE_FLOAT_USED;
+        ActivateFeature(FEATURE_FLOAT_USED);
     }
     return ltype;
 }

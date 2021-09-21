@@ -4,7 +4,7 @@
 #include "sys/fmt.h"
 
 #ifdef __FLEXC__
-# ifdef __FEATURE_FLOAT__
+# ifdef __FEATURE_FLOATS__
 #  define INCLUDE_FLOATS
 # endif
 #else
