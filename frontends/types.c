@@ -1340,7 +1340,8 @@ AST *CheckTypes(AST *ast)
 {
     AST *ltype, *rtype;
     if (!ast) return NULL;
-
+    if (ast->kind == AST_INLINEASM) return NULL;
+    
     if (ast->kind == AST_CAST) {
         AST *cast;
         ltype = ast->left;

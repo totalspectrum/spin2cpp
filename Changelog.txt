@@ -1,4 +1,6 @@
 Version 5.9.3
+- Fixed optimizer errors on SCA, XORO32, and similar instructions
+- Fixed a spurious warning about 0-0 in inline assembly
 - Prevent loops containing BRK from being optimized to REP
 - Started to add some optimizations for Nu
 
