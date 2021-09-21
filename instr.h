@@ -120,6 +120,7 @@ typedef enum IROpcode {
     OPC_WRNZ,
     OPC_WRZ,
     OPC_ZEROX,
+    OPC_XORO32,
     OPC_REPEAT,
     OPC_REPEAT_END,  // dummy instruction to mark end of repeat loop
     
@@ -130,12 +131,15 @@ typedef enum IROpcode {
     /* like OPC_GENERIC, but is guaranteed not to write its destination */
     OPC_GENERIC_NR,
 
+    /* like OPC_GENERIC, but affects the next instruction too */
+    OPC_GENERIC_DELAY,
+    
     /* a branch that the optimizer does not know about */
     OPC_GENERIC_BRANCH,
 
     /* a branch with condition (like "tjz") where jmp destination is in src field */
     OPC_GENERIC_BRCOND,
-    
+
     /* place non-instructions below here */
     OPC_PUSH_REGS,   /* pseudo-instruction to save registers on stack */
     OPC_POP_REGS,    /* pseudo-instruction to pop registers off stack */

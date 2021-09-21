@@ -306,6 +306,7 @@ InstrUsesFlags(IR *ir, unsigned flags)
     }
     switch (ir->opc) {
     case OPC_GENERIC:
+    case OPC_GENERIC_DELAY:
     case OPC_GENERIC_NR:
     case OPC_GENERIC_BRANCH:
     case OPC_GENERIC_BRCOND:
@@ -1447,6 +1448,7 @@ HasSideEffectsOtherThanReg(IR *ir)
     switch (ir->opc) {
     case OPC_GENERIC:
     case OPC_GENERIC_NR:
+    case OPC_GENERIC_DELAY:
     case OPC_LOCKCLR:
     case OPC_LOCKNEW:
     case OPC_LOCKRET:
@@ -1569,7 +1571,7 @@ int EliminateDeadCode(IRList *irl)
     while (ir) {
       ir_next = ir->next;
 
-      if (ir->opc == OPC_SETQ || ir->opc == OPC_SETQ2) {
+      if (ir->opc == OPC_SETQ || ir->opc == OPC_SETQ2 || ir->opc == OPC_GENERIC_DELAY) {
           ir->flags |= FLAG_KEEP_INSTR;
           ir->next->flags |= FLAG_KEEP_INSTR;
       }
@@ -2247,6 +2249,7 @@ ReplaceZWithNC(IR *ir)
     case OPC_MUXC:
     case OPC_MUXNC:
     case OPC_GENERIC:
+    case OPC_GENERIC_DELAY:
     case OPC_GENERIC_NR:
     case OPC_LOCKNEW:
     case OPC_LOCKSET:

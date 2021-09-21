@@ -1,0 +1,35 @@
+dat
+	nop
+	cogid	pa
+	coginit	pa,##$404
+	orgh	$10
+	long	0	'reserved
+	long	0 ' clock frequency: will default to 20000000
+	long	0 ' clock mode: will default to $100094b
+	orgh	$400
+ _ret_	mov	result1, #0
+	org	0
+entry
+
+_xoro_test
+	rdlong	_var01, arg01
+	xoro32	_var01
+	mov	_var02, 0
+	wrlong	_var01, arg01
+	mov	result1, _var02
+_xoro_test_ret
+	ret
+
+result1
+	long	0
+COG_BSS_START
+	fit	480
+	orgh
+	org	COG_BSS_START
+_var01
+	res	1
+_var02
+	res	1
+arg01
+	res	1
+	fit	480

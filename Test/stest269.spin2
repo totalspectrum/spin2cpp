@@ -1,0 +1,9 @@
+pub xoro_test(stateptr) : r | s
+  s := long[stateptr]
+  asm
+    xoro32 s
+    mov    r, 0-0
+  endasm
+  long[stateptr] := s
+  return r
+    
