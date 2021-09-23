@@ -1574,17 +1574,17 @@ getSpinToken(LexStream *L, AST **ast_ptr)
         c = lexgetc(L);
         switch (L->backtick_state) {
         case BACKTICK_STATE_ESCAPE_PREFIX:
-            *ast_ptr = last_ast = ast;
             lexungetc(L, c);
             L->backtick_state = BACKTICK_STATE_PREFIX_COMMA_DONE;
+            *ast_ptr = last_ast = NULL;
             return ',';
         case BACKTICK_STATE_PREFIX_COMMA_DONE:
             // looking for first identifier after `
             lexungetc(L, c);
             parseBacktickInBacktick(L, &ast);
             c = SP_IDENTIFIER;
-            *ast_ptr = last_ast = ast;
             L->backtick_state = BACKTICK_STATE_ESCAPE_PARAMS;
+            *ast_ptr = last_ast = ast;
             return c;
         case BACKTICK_STATE_ESCAPE_PARAMS:
             if (c == ')') {
