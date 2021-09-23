@@ -87,7 +87,7 @@ struct lexstream {
     char sawInstruction;
 
     /* another Spin2 flag for backtick */
-    char backtick_escape;
+    char backtick_state;
 
     /* current expression state stack */
 #define MAX_EXPR_STACK 64

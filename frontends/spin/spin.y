@@ -676,12 +676,14 @@ basicstmt:
 
 debug_exprlist:
   debug_expritem_first
+     { $$ = $1; }
   | debug_expritem_first ',' debug_exprlist_continue
      { $$ = AddToList($1, $3); }
 ;
 
 debug_exprlist_continue:
    debug_expritem
+     { $$ = $1; }
    | debug_exprlist_continue ',' debug_expritem
      { $$ = AddToList($1, $3); }
    ;

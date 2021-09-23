@@ -295,7 +295,7 @@ lexgetc(LexStream *L)
         L->pendingLine = 0;
         L->colCounter = 0;
         L->sawInstruction = 0;
-        L->backtick_escape = 0;
+        L->backtick_state = 0;
     }
     c = (L->getcf(L));
     if (c == '\n') {
@@ -870,8 +870,25 @@ parseString(LexStream *L, AST **ast_ptr)
     *ast_ptr = ast;
 }
 
-/* parse a backtick string */
-/* this is found only in DEBUG statements in Spin2 */
+// parse a backtick string
+// this is found only in DEBUG statements in Spin2
+// we want to translate something like:
+//   DEBUG(`Stuff i=`(i) j=`$(j) end)
+// into
+//   DEBUG("Stuff i=", sdec_(i), " j=", uhex_(j), " end")
+// 2 -> 5 -> 3 -> 3 -> 4 -> 1 -> 2 -> 5 -> 3 -> 3 -> 3 -> 4 -> 1
+//
+#define BACKTICK_STATE_NONE          0
+#define BACKTICK_STATE_STRING        1  // in a backtick string
+#define BACKTICK_STATE_ESCAPE_PREFIX 2  // saw a ` to start an escape
+#define BACKTICK_STATE_ESCAPE_PARAMS 3  // saw a ( to start parameters
+#define BACKTICK_STATE_INSERT_COMMA  4
+#define BACKTICK_STATE_PREFIX_COMMA_DONE 5
+
+// read a backtick escaped string
+// leaves the LexStream in the appropriate backtick state if
+// we see an escape code
+
 static int
 parseBacktickString(LexStream *L, AST **ast_ptr, int first)
 {
@@ -894,7 +911,7 @@ parseBacktickString(LexStream *L, AST **ast_ptr, int first)
             break;
         } else if (c == '`') {
             /* we're escaping out of the string now */
-            L->backtick_escape = 3;
+            L->backtick_state = BACKTICK_STATE_ESCAPE_PREFIX;
             break;
         } else if (c == '(') {
             ++paren_count;
@@ -902,6 +919,7 @@ parseBacktickString(LexStream *L, AST **ast_ptr, int first)
             --paren_count;
             if (paren_count <= 0) {
                 lexungetc(L, c);
+                L->backtick_state = BACKTICK_STATE_NONE;
                 break;
             }
         }
@@ -1551,51 +1569,64 @@ getSpinToken(LexStream *L, AST **ast_ptr)
     AST *ast = NULL;
     int at_startofline = (L->eoln == 1);
     int peekc;
-    
-    if (L->backtick_escape == -1) {
-        L->backtick_escape = -2;
-        c = lexpeekc(L);
-        if (c != ')') {
-            *ast_ptr = NULL;
-            return ',';
-        }
-    }
-    if (L->backtick_escape == -2) {
-        // going back into backtick string
-        L->backtick_escape = 0;
-        c = parseBacktickString(L, &ast, 0);
-        return c;
-    }
-    
-    c = skipSpace(L, &ast, LANG_SPIN_SPIN1);
 
-    if (c == EOF) {
-      c = SP_EOF;
-    }
-    if (L->backtick_escape) {
-        if (L->backtick_escape == 3) {
-            --L->backtick_escape;
+    if (L->backtick_state) {
+        c = lexgetc(L);
+        switch (L->backtick_state) {
+        case BACKTICK_STATE_ESCAPE_PREFIX:
             *ast_ptr = last_ast = ast;
             lexungetc(L, c);
+            L->backtick_state = BACKTICK_STATE_PREFIX_COMMA_DONE;
             return ',';
-        }
-        if (L->backtick_escape == 2) {
+        case BACKTICK_STATE_PREFIX_COMMA_DONE:
             // looking for first identifier after `
             lexungetc(L, c);
-            L->backtick_escape = 1;
             parseBacktickInBacktick(L, &ast);
             c = SP_IDENTIFIER;
             *ast_ptr = last_ast = ast;
+            L->backtick_state = BACKTICK_STATE_ESCAPE_PARAMS;
             return c;
-        }
-        if (c == ')') {
-            // done with the backtick_escape
-            L->backtick_escape = -1;
+        case BACKTICK_STATE_ESCAPE_PARAMS:
+            if (c == ')') {
+                // done with the backtick escape
+                L->backtick_state = BACKTICK_STATE_INSERT_COMMA;
+                *ast_ptr = last_ast = NULL;
+                return c;
+            }
+            break;
+        case BACKTICK_STATE_INSERT_COMMA:
+            if (c == ')') {
+                L->backtick_state = BACKTICK_STATE_NONE;
+                *ast_ptr = last_ast = NULL;
+                return c;
+            }
+            lexungetc(L, c);
             *ast_ptr = last_ast = NULL;
+            L->backtick_state = BACKTICK_STATE_STRING;
+            return ',';
+        case BACKTICK_STATE_STRING:
+            if (c == ')') {
+                L->backtick_state = BACKTICK_STATE_NONE;
+                *ast_ptr = last_ast = NULL;
+                return c;
+            }
+            lexungetc(L, c);
+            c = parseBacktickString(L, &ast, 0);
+            *ast_ptr = last_ast = ast;
             return c;
+        default:
+            ERROR(NULL, "bad backtick state");
+            L->backtick_state = BACKTICK_STATE_NONE;
+            break;
         }
+        lexungetc(L, c);
     }
     
+    c = skipSpace(L, &ast, LANG_SPIN_SPIN1);
+    if (c == EOF) {
+      c = SP_EOF;
+    }
+
 //    printf("L->linecounter=%d\n", L->lineCounter);
     if (c >= 127) {
         *ast_ptr = last_ast = ast;
@@ -1696,7 +1727,8 @@ getSpinToken(LexStream *L, AST **ast_ptr)
         parseString(L, &ast);
         c = SP_STRING;
     } else if (c == '`' && L->language == LANG_SPIN_SPIN2) {
-        c = parseBacktickString(L, &ast, 1); /* first backtick seen */
+        L->backtick_state = BACKTICK_STATE_STRING;
+        c = parseBacktickString(L, &ast, 1);
     }
     if (c == '?' && L->language == LANG_SPIN_SPIN2) {
         c = SP_CONDITIONAL;

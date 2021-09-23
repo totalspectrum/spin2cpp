@@ -296,6 +296,25 @@ static int tokens10[] =
   SP_EOF
 };
 
+static const char *token11test = 
+"pub f\n"
+"  repeat\n"
+"    debug(`MyTerm 1 'j=`(j): Temp = `(i)')\n"
+;
+
+static int tokens11[] = 
+{ 
+  SP_PUB, SP_IDENTIFIER, SP_EOLN,
+  SP_REPEAT, SP_EOLN,
+  SP_INDENT,
+  SP_DEBUG, '(', SP_BACKTICK_STRING, ',',
+  SP_IDENTIFIER, '(', SP_IDENTIFIER, ')', ',',
+  SP_BACKTICK_STRING, ',',
+  SP_IDENTIFIER, '(', SP_IDENTIFIER, ')', ',' ,
+  SP_BACKTICK_STRING, ')', SP_EOLN,
+  SP_EOF
+};
+
 int
 main()
 {
@@ -317,6 +336,7 @@ main()
 
     testTokenStream2(token9test, tokens9, N_ELEM(tokens9));
     testTokenStream2(token10test, tokens10, N_ELEM(tokens9));
+    testTokenStream2(token11test, tokens11, N_ELEM(tokens9));
     
     testNumber("0", 0);
     testNumber("00", 0);
