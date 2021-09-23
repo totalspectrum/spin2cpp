@@ -244,15 +244,15 @@ z		drvl	_txpin_
 '
 ' If COGINIT then show message
 '
-		testb	brkcz,#23  wc	'cog started or BRK-instruction interrupt?
-	if_nc	jmp	#debug_id
+ma		testb	brkcz,#23  wc	'cog started or BRK-instruction interrupt?
+xa	if_nc	jmp	#debug_id
 
-		call	#cognout	'output "CogN  " with possible timestamp (msb = 31)
+mb		call	#cognout	'output "CogN  " with possible timestamp (msb = 31)
 
-		callpb	#_ini,#rstrout	'output "INIT "
+xb		callpb	#_ini,#rstrout	'output "INIT "
 
-		mov	x,ptrb_		'output ptrb
-		call	#hexout
+expa		mov	x,ptrb_		'output ptrb
+expb		call	#hexout
 
 		callpa	#" ",#txout	'output " "
 
@@ -350,22 +350,25 @@ debug_byte	callpa	#z,#getdeb	'get DEBUG bytecode
 ' Argument command
 '
 arg_cmd		testb	z,#0	wz	'if %x0, output ", "
-	if_nz	callpb	#_com,#rstrout
+  if_nz		callpb	#_com,#rstrout
 
 		testb	z,#1	wz	'if %0x, output expression_string + " = "
-	if_nz	call	#dstrout
-	if_nz	callpb	#_equ,#rstrout
+  if_nz		call	#dstrout
+  if_nz		callpb	#_equ,#rstrout
 
 		call	#getval		'get ptr/val argument
 		mov	ptrb,x
 
 		testb	z,#4	wz	'get len argument?
-	if_z	call	#getval
-	if_z	mov	y,x
+  if_z		call	#getval
+  if_z		mov	y,x
 
-		cmp	z,#$40	wc	'val or array command?
-	if_00	jmp	#value_cmd
-	if_01	jmp	#array_cmd
+		mov	pa,z		'ZSTR/LSTR command?
+		and	pa,#$EC
+		cmp	pa,#$24	wz
+		testb	z,#4	wc	'value or array command?
+  if_nz_and_nc	jmp	#value_cmd
+  if_nz_and_c	jmp	#array_cmd
 '
 '
 ' ZSTR(ptr)
@@ -395,18 +398,20 @@ value_cmd	testb	z,#3	wc	'determine msb
   if_10		mov	msb,#15		'word
   if_01		mov	msb,#7		'byte
 
-		testb	z,#5	wz	'signed?
-  if_nz		zerox	x,msb		'if not, zero-extend from msb
-  if_z		signx	x,msb		'if so, sign-extend from msb
-  if_z		abs	x	wc	'..make absolute
-  if_z_and_c	callpa	#"-",#txout	'..if was negative then output "-"
+		test	z,#$C0	wz	'if fp, don't make absolute
+  if_nz		testbn	z,#5	wz	'non-fp signed?
+  if_z		zerox	x,msb		'if not, zero-extend from msb (no effect on fp)
+  if_nz		signx	x,msb		'if so, sign-extend from msb
+  if_nz		abs	x	wc	'..make absolute
+  if_nz_and_c	callpa	#"-",#txout	'..if was negative then output "-"
 
 		test	z,#$1C	wz	'minimum-sized?
   if_z		encod	msb,x
 
-		testb	z,#7	wc	'output dec/hex/bin
+		testb	z,#7	wc	'output fp/dec/hex/bin
 		testb	z,#6	wz
-  if_x1		mov	w,#decout
+  if_00		mov	w,#fpout
+  if_01		mov	w,#decout
   if_10		mov	w,#hexout
   if_11		mov	w,#binout
 		call	w-0
@@ -513,31 +518,33 @@ getreg		signx	x,#9	wc	'lut register? (signx simplifies comparisons)
 '
 ' Decimal output x
 '
-decout		mov	pb,#9*4	wz	'start with billions, z = 0
-		mov	dig,#2		'preset underscore counter
+decout		mov	pb,#9*4	wz	'start with billions, z=0
+		mov	dig,#2		'set initial underscore trip
+		sets	doutn,#2	'underscore every 3 digits
+		setd	doutc,#"_"	'set underscore character
 
-.digit		loc	pa,#dbg_addr+(@tens-@debugger)
+doutdig		loc	pa,#dbg_addr+(@teni-@debugger)
 		add	pa,pb
 		rdlong	w,pa
 
 		mov	pa,#0		'determine decimal digit
-.sub		cmpsub	x,w	wc
-	if_c	cmp	pa,pa	wz	'on first non-zero digit, z = 1
-	if_c	ijnz	pa,#.sub
+doutsub		cmpsub	x,w	wc
+  if_c		cmp	pa,pa	wz	'on first non-zero digit, z=1
+  if_c		ijnz	pa,#doutsub
 
-		incmod	dig,#2	wc	'if underscore after digit, c = 1
+doutn		incmod	dig,#2	wc	'if underscore after digit, c=1
 
-	if_nz	cmp	pb,#0	wz	'always output lowest digit
-	if_nz	jmp	#.skip		'don't output leading zeros
+  if_nz		cmp	pb,#0	wz	'always output lowest digit, but not leading zeros
 
-		add	pa,#"0"		'output a digit
-		call	#txout
+  if_z		add	pa,#"0"		'output a digit
+  if_z		call	#txout
 
-		tjz	pb,#.skip	'output an underscore?
-	if_c	callpa	#"_",#txout
+  if_z		tjz	pb,#doutnext	'output an underscore?
+doutc
+  if_z_and_c	callpa	#"_",#txout
 
-.skip		sub	pb,#4		'next digit
-	_ret_	tjns	pb,#.digit
+doutnext	sub	pb,#4		'next digit
+  _ret_		tjns	pb,#doutdig
 '
 '
 ' Hex output x
@@ -636,11 +643,106 @@ _jmp		byte	" jump",0,0,0
 _com		byte	", ",0,0	'bit 31 of _com is used as a flag
 _equ		byte	" = ",0
 _nil		byte	"nil",0
+_nan		byte	"NaN",0
+'
+'
+' Floating-point output x
+'
+fpout		mov	ma,x			'get float
+		bitl	ma,#31	wcz		'make positive, negative flag in z
+
+		cmpr	ma,##$7F800000	wc	'if NaN, output "NaN" and exit
+	if_c	callpb	#_nan,#rstrout
+	if_c	ret
+
+	if_z	callpa	#"-",#txout		'if negative, output "-"
+
+		call	#.unpack		'unpack float
+		mov	xb,xa
+		mov	mb,ma	wz
+
+	if_z	callpa	#"0",#txout		'if zero, output "0" and exit
+	if_z	ret
+
+		mov	expa,xb			'estimate base-10 exponent
+		muls	expa,#77		'77/256 = 0.301 = log(2)
+		sar	expa,#8
+
+		mov	expb,#0			'if base-10 exponent < -32, bias up by 13
+		cmps	expa,##-32  wc
+	if_nc	jmp	#.notsmall
+		mov	ma,.ten13
+		call	#.unpack
+		call	#.mul
+		mov	xb,xa
+		mov	mb,ma
+		mov	expb,#13
+		add	expa,expb
+.notsmall
+		shl	expa,#2			'determine exact base-10 exponent
+.reduce		loc	pa,#dbg_addr+(@tenf-@debugger-6*4)
+		add	pa,expa
+		rdlong	ma,pa			'look up power-of-ten and multiply
+		call	#.unpack
+		call	#.mul
+		subr	xa,#29			'round result
+		shr	ma,xa	wc
+		addx	ma,#0
+		cmp	ma,##10_000_000	wc	'if over seven digits, reduce power-of-ten
+	if_nc	add	expa,#4
+	if_nc	jmp	#.reduce
+		sar	expa,#2
+		sub	expa,expb		'get final base-10 exponent
+
+		mov	x,ma			'output 7-digit mantissa
+		mov	pb,#6*4	wz		'start with millions, z=0
+		mov	dig,#7			'set period to trip after first digit
+		sets	doutn,#7
+		setd	doutc,#"."
+		call	#doutdig
+		callpa	#"e",#txout		'output "e"
+		abs	expa	wc		'make base-10 exponent absolute
+	if_nc	callpa	#"+",#txout		'output "+" or "-"
+	if_c	callpa	#"-",#txout
+		mov	x,expa			'ready base-10 exponent
+		cmp	x,x	wz		'z=1 to output leading 0's
+		mov	pb,#1*4			'start with tens
+		jmp	#doutdig		'output 2-digit base-10 exponent and exit
+
+
+.unpack		mov	xa,ma			'unpack floating-point number
+		shr	xa,#32-1-8  wz		'get exponent
+
+		zerox	ma,#22			'get mantissa
+
+	if_nz	bith	ma,#23			'if exponent <> 0 then insert leading one
+	if_nz	shl	ma,#29-23		'...bit29-justify mantissa
+
+	if_z	encod	xa,ma			'if exponent = 0 then get magnitude of mantissa
+	if_z	ror	ma,xa			'...bit29-justify mantissa
+	if_z	ror	ma,#32-29
+	if_z	sub	xa,#22			'...adjust exponent to -22..0
+
+	_ret_	sub	xa,#127			'unbias exponent
+
+
+.mul		mov	pa,ma			'multiply floating-point numbers
+		mov	ma,#0
+
+		rep	#3,#30			'multiply mantissas
+		shr	pa,#1	wc
+		shr	ma,#1
+	if_c	add	ma,mb
+
+	_ret_	add	xa,xb			'add exponents
+
+
+.ten13		long	1e+13
 '
 '
 ' Powers of ten accessed via rdlong
 '
-tens		long	            1
+teni		long	            1
 		long	           10
 		long	          100
 		long	        1_000
@@ -650,6 +752,16 @@ tens		long	            1
 		long	   10_000_000
 		long	  100_000_000
 		long	1_000_000_000
+
+	        long    	      1e+38, 1e+37, 1e+36, 1e+35, 1e+34, 1e+33, 1e+32, 1e+31
+        	long	1e+30, 1e+29, 1e+28, 1e+27, 1e+26, 1e+25, 1e+24, 1e+23, 1e+22, 1e+21
+        	long	1e+20, 1e+19, 1e+18, 1e+17, 1e+16, 1e+15, 1e+14, 1e+13, 1e+12, 1e+11
+        	long	1e+10, 1e+09, 1e+08, 1e+07, 1e+06, 1e+05, 1e+04, 1e+03, 1e+02, 1e+01
+tenf    	long	1e+00, 1e-01, 1e-02, 1e-03, 1e-04, 1e-05, 1e-06, 1e-07, 1e-08, 1e-09
+        	long	1e-10, 1e-11, 1e-12, 1e-13, 1e-14, 1e-15, 1e-16, 1e-17, 1e-18, 1e-19
+        	long	1e-20, 1e-21, 1e-22, 1e-23, 1e-24, 1e-25, 1e-26, 1e-27, 1e-28, 1e-29
+        	long	1e-30, 1e-31, 1e-32, 1e-33, 1e-34, 1e-35, 1e-36, 1e-37, 1e-38
+
 
 debugger_end
 '
@@ -674,8 +786,14 @@ debugger_end
 '	______10	               ', ' + data
 '	______11	                      data
 '
-'	001000__	ZSTR(ptr)			z-string, in quotes for show
-'	001100__	LSTR(ptr,len)			length-string, in quotes for show
+'	001000__
+'	001001__	ZSTR(ptr)			z-string
+'	001010__
+'	001011__	FDEC(val)			floating point
+'	001100__	FDEC_REG_ARRAY(ptr,len)		floating point
+'	001101__	LSTR(ptr,len)			length-string
+'	001110__
+'	001111__	FDEC_ARRAY(ptr,len)		floating point
 '
 '	010000__	UDEC(val)			unsigned decimal
 '	010001__	UDEC_BYTE(val)

@@ -33,7 +33,8 @@ enum DebugBytecode {
     DBC_SIZE_WORD = 0x08,
     DBC_SIZE_LONG = 0x0C,
     // Output type
-    DBC_TYPE_STR = 0x20, // Note the overlap with the signed flag
+    DBC_TYPE_STR = 0x20 | DBC_SIZE_BYTE, 
+    DBC_TYPE_FLP = 0x20, // Note the overlap with the signed flag and the string type
     DBC_TYPE_DEC = 0x40,
     DBC_TYPE_HEX = 0x80,
     DBC_TYPE_BIN = 0xC0,
@@ -53,6 +54,10 @@ static struct DebugFunc debug_func_table[] = {
 
     {"zstr"             ,DBC_TYPE_STR},
     {"lstr"             ,DBC_TYPE_STR|DBC_FLAG_ARRAY},
+
+    {"fdec"             ,DBC_TYPE_FLP|DBC_SIZE_LONG},
+    {"fdec_reg_array"   ,DBC_TYPE_FLP              |DBC_FLAG_ARRAY},
+    {"fdec_array"       ,DBC_TYPE_FLP|DBC_SIZE_LONG|DBC_FLAG_ARRAY},
 
     {"udec"             ,                DBC_TYPE_DEC              },
     {"udec_byte"        ,                DBC_TYPE_DEC|DBC_SIZE_BYTE},
