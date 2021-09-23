@@ -154,6 +154,7 @@ int AsmDebug_CodeGen(AST *ast, BackendDebugEval evalFunc, void *evalArg) {
     unsigned brkCode = brkAssigned++;
     AST *exprbase;
     int regNum = 0;
+    int printCog = 0;
     
     if (brkCode >= MAX_BRK) {
         ERROR(ast,"MAX_BRK exceeded!");
@@ -166,7 +167,10 @@ int AsmDebug_CodeGen(AST *ast, BackendDebugEval evalFunc, void *evalArg) {
     ASSERT_AST_KIND(ast,AST_BRKDEBUG,return -1;);
     ASSERT_AST_KIND(ast->left,AST_EXPRLIST,return -1;);
     if (ast->left->left->kind == AST_LABEL) {
+        // the parser inserts a LABEL token if a COGn label is
+        // required
         exprbase = ast->left->right;
+        printCog = 1;
     } else {
         exprbase = ast->left;
     }
@@ -174,7 +178,9 @@ int AsmDebug_CodeGen(AST *ast, BackendDebugEval evalFunc, void *evalArg) {
 
     // Add default stuff
     flexbuf_putc(DBC_ASMMODE,f);
-    flexbuf_putc(DBC_COGN,f);
+    if (printCog) {
+        flexbuf_putc(DBC_COGN,f);
+    }
 
     bool needcomma = false;
 
