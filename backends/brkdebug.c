@@ -154,7 +154,7 @@ int AsmDebug_CodeGen(AST *ast, BackendDebugEval evalFunc, void *evalArg) {
     unsigned brkCode = brkAssigned++;
     AST *exprbase;
     int regNum = 0;
-    int printCog = 0;
+    bool do_cogn = false;
     
     if (brkCode >= MAX_BRK) {
         ERROR(ast,"MAX_BRK exceeded!");
@@ -170,7 +170,7 @@ int AsmDebug_CodeGen(AST *ast, BackendDebugEval evalFunc, void *evalArg) {
         // the parser inserts a LABEL token if a COGn label is
         // required
         exprbase = ast->left->right;
-        printCog = 1;
+        do_cogn = true;
     } else {
         exprbase = ast->left;
     }
@@ -178,9 +178,7 @@ int AsmDebug_CodeGen(AST *ast, BackendDebugEval evalFunc, void *evalArg) {
 
     // Add default stuff
     flexbuf_putc(DBC_ASMMODE,f);
-    if (printCog) {
-        flexbuf_putc(DBC_COGN,f);
-    }
+    if (do_cogn) flexbuf_putc(DBC_COGN,f);
 
     bool needcomma = false;
 
