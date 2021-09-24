@@ -2530,6 +2530,20 @@ NonUnsignedOp(int val)
     default: return val;
     }
 }
+
+static int
+NonFloatOp(int val)
+{
+    switch(val) {
+    case K_FEQ: return K_EQ;
+    case K_FNE: return K_NE;
+    case K_FLE: return K_LE;
+    case K_FGE: return K_GE;
+    case K_FLT: return '<';
+    case K_FGT: return '>';
+    default: return val;
+    }
+}
         
 static void
 MarkUsedBody(AST *body, const char *caller)
@@ -2592,6 +2606,9 @@ MarkUsedBody(AST *body, const char *caller)
         case K_SQRT:
             *body = *ConvertInternal(body, "_sqrt", body->right, NULL);
             break;
+        case K_FSQRT:
+            *body = *ConvertInternal(body, "_float_sqrt", body->right, NULL);
+            break;
         case K_ONES_COUNT:
             *body = *ConvertInternal(body, "_ones", body->right, NULL);
             break;
@@ -2649,6 +2666,34 @@ MarkUsedBody(AST *body, const char *caller)
                     body->right = AstInteger(0);
                 }
             }
+            break;
+        case K_FLT:
+        case K_FGT:
+        case K_FLE:
+        case K_FGE:
+        case K_FEQ:
+        case K_FNE:
+            if (1) {
+                // convert to e.g. _float_cmp(left, right) < 0
+                AST *replace = ConvertInternal(body, "_float_cmp", body->left, body->right);
+                if (replace != body) {
+                    body->d.ival = NonFloatOp(body->d.ival);
+                    body->left = replace;
+                    body->right = AstInteger(0);
+                }
+            }
+            break;
+        case K_FADD:
+            *body = *ConvertInternal(body, "_float_add", body->left, body->right);
+            break;
+        case K_FSUB:
+            *body = *ConvertInternal(body, "_float_sub", body->left, body->right);
+            break;
+        case K_FMUL:
+            *body = *ConvertInternal(body, "_float_mul", body->left, body->right);
+            break;
+        case K_FDIV:
+            *body = *ConvertInternal(body, "_float_div", body->left, body->right);
             break;
         default:
             break;

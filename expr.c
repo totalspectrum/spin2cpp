@@ -1003,12 +1003,16 @@ EvalFloatOperator(int op, float lval, float rval, int *valid)
     
     switch (op) {
     case '+':
+    case K_FADD:
         return lval + rval;
     case '-':
+    case K_FSUB:
         return lval - rval;
     case '/':
+    case K_FDIV:
         return lval / rval;
     case '*':
+    case K_FMUL:
         return lval * rval;
     case '|':
         return intAsFloat(floatAsInt(lval) | floatAsInt(rval));
@@ -1027,25 +1031,34 @@ EvalFloatOperator(int op, float lval, float rval, int *valid)
         return intAsFloat(((int32_t)floatAsInt(lval)) >> floatAsInt(rval));
     case '<':
     case K_LTU:
+    case K_FLT:
         return intAsFloat(-(lval < rval));
     case '>':
     case K_GTU:
+    case K_FGT:
         return intAsFloat(-(lval > rval));
     case K_LE:
     case K_LEU:
+    case K_FLE:
         return intAsFloat(-(lval <= rval));
     case K_GE:
     case K_GEU:
+    case K_FGE:
         return intAsFloat(-(lval >= rval));
     case K_NE:
+    case K_FNE:
         return intAsFloat(-(lval != rval));
     case K_EQ:
+    case K_FEQ:
         return intAsFloat(-(lval == rval));
     case K_NEGATE:
+    case K_FNEGATE:
         return -rval;
     case K_ABS:
+    case K_FABS:
         return (rval < 0) ? -rval : rval;
     case K_SQRT:
+    case K_FSQRT:
         return sqrtf(rval);
     case K_POWER:
         return powf(lval, rval);
@@ -1278,6 +1291,18 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
             return (uint32_t)round(e);
         }
         break;
+    case K_FADD:
+        return floatAsInt(intAsFloat(lval) + intAsFloat(rval));
+    case K_FSUB:
+        return floatAsInt(intAsFloat(lval) - intAsFloat(rval));
+    case K_FMUL:
+        return floatAsInt(intAsFloat(lval) * intAsFloat(rval));
+    case K_FDIV:
+        return floatAsInt(intAsFloat(lval) / intAsFloat(rval));
+    case K_FABS:
+        return floatAsInt(fabsf(intAsFloat(rval)));
+    case K_FSQRT:
+        return floatAsInt(sqrtf(intAsFloat(rval)));
     default:
         if (valid)
             *valid = 0;

@@ -56,4 +56,20 @@
 #define K_LOGIC_OR  0x130
 #define K_LOGIC_XOR 0x131
 
+/* floating point */
+/* these get turned into function calls */
+#define K_FEQ       0x132
+#define K_FNE       0x133
+#define K_FLT       0x134
+#define K_FGT       0x135
+#define K_FLE       0x136
+#define K_FGE       0x137
+#define K_FADD      0x138
+#define K_FSUB      0x139
+#define K_FMUL      0x13a
+#define K_FDIV      0x13b
+#define K_FNEGATE   0x13c
+#define K_FABS      0x13d
+#define K_FSQRT     0x13e
+
 #endif

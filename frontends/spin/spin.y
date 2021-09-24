@@ -150,6 +150,7 @@ static struct s_dbgfmt {
 } dbgfmt[] = {
     { "zstr", "%s", 0 },
     { "udec", "%u", 0 },
+    { "fdec", "%g", 0 },
     { "udec_byte", "%03u", 8 },
     { "udec_word", "%05u", 16 },
     { "udec_long", "%09u", 0 },
@@ -421,6 +422,8 @@ BuildDebugList(AST *exprlist)
 %token SP_BIT_NOT    "!"
 %token SP_SQRT       "SQRT (^^)"
 %token SP_ABS        "ABS (||)"
+%token SP_FSQRT      "FSQRT"
+%token SP_FABS       "FABS"
 %token SP_DECODE     "DECOD (|<)"
 %token SP_ENCODE     ">|"
 %token SP_ENCODE2    "ENCOD"
@@ -447,6 +450,18 @@ BuildDebugList(AST *exprlist)
 %token SP_CONDITIONAL  "?"
 %token SP_CONDITIONAL_SEP ": after ?"
 
+%token SP_FADD   "+."
+%token SP_FSUB   "-."
+%token SP_FMUL   "*."
+%token SP_FDIV   "%."
+%token SP_FLT    "<."
+%token SP_FGT    ">."
+%token SP_FNE    "<>."
+%token SP_FEQ    "==."
+%token SP_FLE    "<=."
+%token SP_FGE    ">=."
+%token SP_FNEGATE "float negate"
+
 /* operator precedence */
 %right SP_ASSIGN
 %left '\\'
@@ -457,16 +472,16 @@ BuildDebugList(AST *exprlist)
 %left SP_XOR            /* priority 14 */
 %left SP_AND SP_ANDTHEN /* priority 13 */
 %left SP_NOT /* priority 12 */
-%left '<' '>' SP_GE SP_LE SP_NE SP_EQ SP_SGNCOMP SP_GEU SP_LEU SP_GTU SP_LTU /*priority 11 */
+%left '<' '>' SP_GE SP_LE SP_NE SP_EQ SP_SGNCOMP SP_GEU SP_LEU SP_GTU SP_LTU SP_FGT SP_FLT SP_FGE SP_FLE SP_FNE SP_FEQ /*priority 11 */
 %left SP_ADDBITS SP_ADDPINS   /* priority 10 */
 %left SP_LIMITMIN SP_LIMITMAX /* priority 9 */
-%left '-' '+' /* priority 8 */
-%left '*' '/' SP_REMAINDER SP_HIGHMULT SP_UNSHIGHMULT SP_SCAS SP_UNSDIV SP_UNSMOD SP_FRAC /* priority 7 */
+%left '-' '+' SP_FADD SP_FSUB /* priority 8 */
+%left '*' '/' SP_FMUL SP_FDIV SP_REMAINDER SP_HIGHMULT SP_UNSHIGHMULT SP_SCAS SP_UNSDIV SP_UNSMOD SP_FRAC /* priority 7 */
 %left '|' /* priority 6 */
 %left '^' /* priority 5 */
 %left '&' /* priority 4 */
 %left SP_ROTL SP_ROTR SP_SHL SP_SHR SP_SAR SP_REV SP_REV2 SP_SIGNX SP_ZEROX /* priority 3 */
-%left SP_NEGATE SP_BIT_NOT SP_ABS SP_SQRT SP_DECODE SP_ENCODE SP_ENCODE2 SP_ALLOCA SP_ONES SP_BMASK SP_QLOG SP_QEXP /* priority 2 in Spin2 */
+%left SP_NEGATE SP_FNEGATE SP_BIT_NOT SP_ABS SP_SQRT SP_DECODE SP_ENCODE SP_ENCODE2 SP_ALLOCA SP_ONES SP_BMASK SP_QLOG SP_QEXP /* priority 2 in Spin2 */
 %left '@' '~' '?' SP_RANDOM SP_DOUBLETILDE SP_INCREMENT SP_DECREMENT SP_DOUBLEAT SP_TRIPLEAT  /* priority 1 in Spin2 */
 %left SP_CONSTANT SP_FLOAT SP_TRUNC SP_ROUND
 
@@ -1326,6 +1341,18 @@ expr:
     { $$ = AstOperator(K_EQ, $1, $3); }
   | expr SP_SGNCOMP expr
     { $$ = AstOperator(K_SGNCOMP, $1, $3); }
+  | expr SP_FEQ expr
+    { $$ = AstOperator(K_FEQ, $1, $3); }
+  | expr SP_FNE expr
+    { $$ = AstOperator(K_FNE, $1, $3); }
+  | expr SP_FGT expr
+    { $$ = AstOperator(K_FGT, $1, $3); }
+  | expr SP_FLT expr
+    { $$ = AstOperator(K_FLT, $1, $3); }
+  | expr SP_FGE expr
+    { $$ = AstOperator(K_FGE, $1, $3); }
+  | expr SP_FLE expr
+    { $$ = AstOperator(K_FLE, $1, $3); }
   | expr '<' SP_GE expr
     // lexer quirk, <=> gets parsed as <  => in Spin1
     { $$ = AstOperator(K_SGNCOMP, $1, $4); }
@@ -1379,6 +1406,14 @@ expr:
     { $$ = AstOperator(K_LOGIC_OR, $1, $3); }
   | expr SP_XOR expr
     { $$ = AstOperator(K_LOGIC_XOR, $1, $3); }
+  | expr SP_FADD expr
+    { $$ = AstOperator(K_FADD, $1, $3); }
+  | expr SP_FSUB expr
+    { $$ = AstOperator(K_FSUB, $1, $3); }
+  | expr SP_FMUL expr
+    { $$ = AstOperator(K_FMUL, $1, $3); }
+  | expr SP_FDIV expr
+    { $$ = AstOperator(K_FDIV, $1, $3); }
   | expr '+' '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign('+', $1, $4); }
   | expr '-' '=' expr %prec SP_ASSIGN
@@ -1498,10 +1533,14 @@ expr:
     { $$ = AstOperator(K_BOOL_NOT, NULL, $2); }
   | SP_NOT '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign(K_BOOL_NOT, $3, NULL); }
+  | SP_FABS expr
+    { $$ = AstOperator(K_FABS, NULL, $2); }
   | SP_ABS expr
     { $$ = AstOperator(K_ABS, NULL, $2); }
   | SP_ABS '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign(K_ABS, $3, NULL); }
+  | SP_FSQRT expr
+    { $$ = AstOperator(K_FSQRT, NULL, $2); }
   | SP_SQRT expr
     { $$ = AstOperator(K_SQRT, NULL, $2); }
   | SP_SQRT '=' expr %prec SP_ASSIGN
