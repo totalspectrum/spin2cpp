@@ -228,6 +228,21 @@ pri _sqrt(a) : r
 pri _lockmem(addr)
   __bytecode__("LOCKMEM")
 
+pri _locknew : rval
+  __bytecode__("LOCKNEW")
+
+pri _lockret(id)
+  __bytecode__("LOCKRET")
+
+pri _lockclr(id) : rval
+  __bytecode__("LOCKCLR")
+
+pri _lockset(id) : rval
+  __bytecode__("LOCKSET")
+
+pri _locktry(id) : rval
+  __bytecode__("LOCKTRY")
+
 pri _unlockmem(addr) | oldlock
   long[addr] := 0
 

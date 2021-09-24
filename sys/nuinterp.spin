@@ -757,6 +757,30 @@ impl_LOCKMEM
   if_nz	jmp	#.chk
   	ret
 
+impl_LOCKNEW
+	call	#\impl_DUP
+  _ret_	locknew	tos
+
+impl_LOCKRET
+	lockret	tos
+	jmp	#\impl_DROP
+
+impl_LOCKTRY
+	locktry tos wc
+	neg	tmp, #1
+  _ret_	muxc	tos, tmp
+
+' LOCKSET is the same as LOCKTRY but with opposite return value
+impl_LOCKSET
+	locktry	tos wc
+	neg	tmp, #1
+  _ret_	muxnc	tos, tmp
+
+impl_LOCKCLR
+	lockrel	tos wc
+	neg	tmp, #1
+  _ret_	muxc	tos, tmp
+
 impl_DRVL
 	drvl	tos
 	jmp	#\impl_DROP

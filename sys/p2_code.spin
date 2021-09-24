@@ -39,14 +39,14 @@ pri _cogstop(id)
     cogstop id
   endasm
   return 0
-pri _lockclr(id) | mask, rval
+pri _lockclr(id) : rval | mask
   mask := -1
   asm
     lockrel id wc
     muxc   rval,mask
   endasm
   return rval
-pri _lockset(id) | mask, rval
+pri _lockset(id) : rval | mask
   mask := -1
   asm
     locktry id wc
@@ -55,7 +55,7 @@ pri _lockset(id) | mask, rval
   return rval
 
 ' locktry is like lockset but with opposite return value
-pri _locktry(id) | mask, rval
+pri _locktry(id) : rval |  mask
   mask := -1
   asm
     locktry id wc

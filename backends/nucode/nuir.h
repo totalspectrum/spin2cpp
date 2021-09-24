@@ -97,7 +97,12 @@
     X(COGSTOP)   /* stop a particular cog */ \
     X(COGID)     /* get current COG id */ \
     X(COGINIT)   /* launch new COG */ \
-    X(LOCKMEM)   /* lock memory */ \
+    X(LOCKMEM)   /* lock using a memory location instead of hw lock */ \
+    X(LOCKNEW)   /* allocate a new hw lock */ \
+    X(LOCKRET)   /* free a hw lock */ \
+    X(LOCKTRY)   /* try to get a hw lock */ \
+    X(LOCKSET)   /* try to get a hw lock (P1 style return value) */ \
+    X(LOCKCLR)   /* try to free a hw lock */ \
     \
     X(XORO)    /* xoro32 random number generation */ \
     \
