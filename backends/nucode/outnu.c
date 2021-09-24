@@ -1294,7 +1294,15 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         pushed = NuCompileExprList(irl, node);
     } break;
     case AST_RESULT: {
-        pushed = NuCompileExpression(irl, curfunc->resultexpr);
+        if (!curfunc->resultexpr) {
+            pushed = 1; NuEmitConst(irl, 0);
+        } else if (curfunc->resultexpr->kind != AST_RESULT) {
+            pushed = NuCompileExpression(irl, curfunc->resultexpr);
+        } else {
+            NuCompileLhsAddress(irl, node);
+            NuEmitOp(irl, NU_OP_LDL);
+            pushed = 1;
+        }
     } break;
     case AST_SELF: {
         NuEmitConst(irl, 0);
