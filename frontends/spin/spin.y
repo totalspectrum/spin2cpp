@@ -441,6 +441,7 @@ BuildDebugList(AST *exprlist)
 %token SP_EMPTY      "empty assignment marker _"
 %token SP_SIGNX      "SIGNX"
 %token SP_ZEROX      "ZEROX"
+%token SP_NAN        "NAN"
 %token SP_ONES       "ONES"
 %token SP_BMASK      "BMASK"
 %token SP_QLOG       "QLOG"
@@ -1517,8 +1518,13 @@ expr:
             op->d.ival ^= 0x80000000U;
             $$ = op;
         } else {
-            $$ = AstOperator(K_NEGATE, NULL, $2);
+            $$ = AstOperator(K_NEGATE, NULL, op);
         }
+    }
+  | SP_FSUB expr %prec SP_NEGATE
+    {
+        AST *op = $2;
+        $$ = AstOperator(K_FNEGATE, NULL, op);
     }
   | '+' expr %prec SP_NEGATE
     {

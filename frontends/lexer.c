@@ -1931,6 +1931,7 @@ struct reservedword init_spin2_words[] = {
     { "fsqrt", SP_FSQRT },
     { "fvar", SP_FVAR },
     { "fvars", SP_FVARS },
+    { "nan", SP_NAN },
     { "ones", SP_ONES },
     { "pinh", SP_PINH },
     { "pinhigh", SP_PINH },
