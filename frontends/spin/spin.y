@@ -1567,6 +1567,10 @@ expr:
     { $$ = AstOperator(K_QLOG, NULL, $2); }
   | SP_QEXP expr
     { $$ = AstOperator(K_QEXP, NULL, $2); }
+  | SP_NAN expr
+    {   AST *op = $2;
+        $$ = AstOperator(K_FNE, op, op);
+    }
   | SP_ONES expr
     { $$ = AstOperator(K_ONES_COUNT, NULL, $2); }
   | SP_ONES '=' expr %prec SP_ASSIGN

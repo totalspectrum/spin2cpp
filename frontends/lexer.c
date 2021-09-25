@@ -1918,6 +1918,8 @@ struct reservedword init_spin2_words[] = {
     { ">.", SP_FGT },
     { "<=.", SP_FLE },
     { ">=.", SP_FGE },
+    { "==.", SP_FEQ },
+    { "<>.", SP_FNE },
     { "addbits", SP_ADDBITS },
     { "addpins", SP_ADDPINS },
     { "asmclk", SP_ASMCLK },
