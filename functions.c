@@ -2499,7 +2499,7 @@ UseInternal(const char *name)
 }
 
 static AST *
-ConvertInternal(AST *body, const char *fname, AST *arg1, AST *arg2)
+ConvertInternal(AST *body, const char *fname, AST *arg1, AST *arg2, AST *arg3)
 {
     AST *fcall;
     AST *ident;
@@ -2508,8 +2508,11 @@ ConvertInternal(AST *body, const char *fname, AST *arg1, AST *arg2)
 
         AstReportAs(body, &saveinfo);
         ident = AstIdentifier(fname);
+        if (arg3) {
+            arg3 = NewAST(AST_EXPRLIST, arg3, NULL);
+        }
         if (arg2) {
-            arg2 = NewAST(AST_EXPRLIST, arg2, NULL);
+            arg2 = NewAST(AST_EXPRLIST, arg2, arg3);
         }
         arg1 = NewAST(AST_EXPRLIST, arg1, arg2);
         fcall = NewAST(AST_FUNCCALL, ident, arg1);
@@ -2604,28 +2607,28 @@ MarkUsedBody(AST *body, const char *caller)
     case AST_OPERATOR:
         switch (body->d.ival) {
         case K_SQRT:
-            *body = *ConvertInternal(body, "_sqrt", body->right, NULL);
+            *body = *ConvertInternal(body, "_sqrt", body->right, NULL, NULL);
             break;
         case K_FSQRT:
-            *body = *ConvertInternal(body, "_float_sqrt", body->right, NULL);
+            *body = *ConvertInternal(body, "_float_sqrt", body->right, NULL, NULL);
             break;
         case K_FABS:
-            *body = *ConvertInternal(body, "_float_abs", body->right, NULL);
+            *body = *ConvertInternal(body, "_float_abs", body->right, NULL, NULL);
             break;
         case K_ONES_COUNT:
-            *body = *ConvertInternal(body, "_ones", body->right, NULL);
+            *body = *ConvertInternal(body, "_ones", body->right, NULL, NULL);
             break;
         case K_SCAS:
-            *body = *ConvertInternal(body, "_scas", body->left, body->right);
+            *body = *ConvertInternal(body, "_scas", body->left, body->right, NULL);
             break;
         case K_QEXP:
-            *body = *ConvertInternal(body, "_qexp", body->right, NULL);
+            *body = *ConvertInternal(body, "_qexp", body->right, NULL, NULL);
             break;
         case K_QLOG:
-            *body = *ConvertInternal(body, "_qlog", body->right, NULL);
+            *body = *ConvertInternal(body, "_qlog", body->right, NULL, NULL);
             break;
         case K_FRAC64:
-            *body = *ConvertInternal(body, "_qfrac", body->left, body->right);
+            *body = *ConvertInternal(body, "_qfrac", body->left, body->right, NULL);
             break;
         case '?':
             {
@@ -2633,10 +2636,10 @@ MarkUsedBody(AST *body, const char *caller)
                 AST *fcall;
                 if (body->left) {
                     var = body->left;
-                    fcall = ConvertInternal(body, "_lfsr_forward", var, NULL);
+                    fcall = ConvertInternal(body, "_lfsr_forward", var, NULL, NULL);
                 } else {
                     var = body->right;
-                    fcall = ConvertInternal(body, "_lfsr_backward", var, NULL);
+                    fcall = ConvertInternal(body, "_lfsr_backward", var, NULL, NULL);
                 }
                 if (body != fcall) {
                     // only do this if ConvertInternal actually changed us
@@ -2648,13 +2651,13 @@ MarkUsedBody(AST *body, const char *caller)
             /* NOTE: ConvertInternal will return the original AST if the specified function is not found,
                so we can easily disable these conversions by deleting them from the appropriate file in sys/ */
         case K_UNS_DIV:
-            *body = *ConvertInternal(body, "_unsigned_div", body->left, body->right);
+            *body = *ConvertInternal(body, "_unsigned_div", body->left, body->right, NULL);
             break;
         case K_UNS_MOD:
-            *body = *ConvertInternal(body, "_unsigned_mod", body->left, body->right);
+            *body = *ConvertInternal(body, "_unsigned_mod", body->left, body->right, NULL);
             break;
         case K_UNS_HIGHMULT:
-            *body = *ConvertInternal(body, "_unsigned_himul", body->left, body->right);
+            *body = *ConvertInternal(body, "_unsigned_himul", body->left, body->right, NULL);
             break;
         case K_LTU:
         case K_GTU:
@@ -2662,7 +2665,7 @@ MarkUsedBody(AST *body, const char *caller)
         case K_GEU:
             if (gl_output == OUTPUT_BYTECODE && gl_interp_kind == INTERP_KIND_P1ROM) {
                 // convert to e.g. _unsigned_cmp(left, right) < 0
-                AST *replace = ConvertInternal(body, "_unsigned_cmp", body->left, body->right);
+                AST *replace = ConvertInternal(body, "_unsigned_cmp", body->left, body->right, NULL);
                 if (replace != body) {
                     body->d.ival = NonUnsignedOp(body->d.ival);
                     body->left = replace;
@@ -2677,8 +2680,17 @@ MarkUsedBody(AST *body, const char *caller)
         case K_FEQ:
         case K_FNE:
             if (1) {
-                // convert to e.g. _float_cmp(left, right) < 0
-                AST *replace = ConvertInternal(body, "_float_cmp", body->left, body->right);
+                // convert to e.g. _float_cmp(left, right, 1) < 0
+                AST *defaultval, *replace;
+                int op = body->d.ival;
+                if (op == K_FGE || op == K_FGT) {
+                    defaultval = AstInteger(-1);
+                } else if (op == K_FNE && curfunc->language == LANG_SPIN_SPIN2) {
+                    defaultval = AstInteger(0);
+                } else {
+                    defaultval = AstInteger(1);
+                }
+                replace = ConvertInternal(body, "_float_cmp", body->left, body->right, defaultval);
                 if (replace != body) {
                     body->d.ival = NonFloatOp(body->d.ival);
                     body->left = replace;
@@ -2687,16 +2699,16 @@ MarkUsedBody(AST *body, const char *caller)
             }
             break;
         case K_FADD:
-            *body = *ConvertInternal(body, "_float_add", body->left, body->right);
+            *body = *ConvertInternal(body, "_float_add", body->left, body->right, NULL);
             break;
         case K_FSUB:
-            *body = *ConvertInternal(body, "_float_sub", body->left, body->right);
+            *body = *ConvertInternal(body, "_float_sub", body->left, body->right, NULL);
             break;
         case K_FMUL:
-            *body = *ConvertInternal(body, "_float_mul", body->left, body->right);
+            *body = *ConvertInternal(body, "_float_mul", body->left, body->right, NULL);
             break;
         case K_FDIV:
-            *body = *ConvertInternal(body, "_float_div", body->left, body->right);
+            *body = *ConvertInternal(body, "_float_div", body->left, body->right, NULL);
             break;
         default:
             break;
