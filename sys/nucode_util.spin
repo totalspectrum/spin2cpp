@@ -53,6 +53,17 @@ pri _wypin(pin, val)
 pri _rdpin(pin) : r
   __bytecode__("RDPIN")
 
+' synthetic smartpin instruction for setting up smartpin parameters
+pri _pinsetup(pin, mode, xval, yval)
+  _dirl(pin)
+  _wrpin(pin, mode)
+  _wxpin(pin, xval)
+  _wypin(pin, yval)
+
+pri _pinstart(pin, mode, xval, yval)
+  _pinsetup(pin, mode, xval, yval)
+  _dirh(pin)
+
 pri _waitcnt(x)
   __bytecode__("WAITCNT")
 
