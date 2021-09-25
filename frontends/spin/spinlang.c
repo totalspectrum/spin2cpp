@@ -94,7 +94,7 @@ TransformLongMove(AST **astptr, AST *ast)
     if (ast || !count) return false;
     if (!IsConstExpr(count)) return false;
     n = EvalConstExpr(count);
-    if (n > ( (gl_output == OUTPUT_BYTECODE && gl_interp_kind != INTERP_KIND_NUCODE) ? LONGMOVE_THRESHOLD_BYTECODE : LONGMOVE_THRESHOLD) || n <= 0) return false;
+    if (n > ( (TraditionalBytecodeOutput()) ? LONGMOVE_THRESHOLD_BYTECODE : LONGMOVE_THRESHOLD) || n <= 0) return false;
 
     // check src and dst
     if (src->kind != AST_ADDROF && src->kind != AST_ABSADDROF) return false;
@@ -690,7 +690,7 @@ doSpinTransform(AST **astptr, int level, AST *parent)
             // Do this even if we could do it natively, 
             // since normal assignment is generally faster
             *astptr = AstAssign(ast->left, target);
-        } else if (gl_output == OUTPUT_BYTECODE) {
+        } else if (TraditionalBytecodeOutput()) {
             // Do nothing except transform the children
             doSpinTransform(&ast->left, 0, ast);
             doSpinTransform(&ast->right, 0, ast);
@@ -843,7 +843,7 @@ doSpinTransform(AST **astptr, int level, AST *parent)
             case K_BOOL_NOT:
             case K_DECODE:
             case K_ENCODE:
-                if (gl_output == OUTPUT_BYTECODE && gl_interp_kind != INTERP_KIND_NUCODE) {
+                if (TraditionalBytecodeOutput()) {
                     lhsast = AstAssign(ast->right, NULL);
                     lhsast->d.ival = ast->d.ival;
                     *astptr = ast = lhsast;
