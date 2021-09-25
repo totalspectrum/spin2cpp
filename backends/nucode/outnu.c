@@ -257,7 +257,7 @@ static NuIrOpcode LoadStoreOp(AST *typ, int isLoad)
     siz = TypeSize(typ);
     switch (siz) {
     case 0:
-        ERROR(NULL, "Attempt to use void value");
+        //ERROR(NULL, "Attempt to use void value"); // this is OK if "typ" is an empty object
         return op;
     case 1:
         op = isLoad ? NU_OP_LDB : NU_OP_STB;
@@ -1217,22 +1217,43 @@ NuCompileExpression(NuIrList *irl, AST *node) {
     case AST_ARRAYREF:
     case AST_METHODREF:
     case AST_MEMREF:
+    case AST_POSTSET:
     {
         AST *typ;
         int siz;
-        NuIrOpcode op;
-        typ = ExprType(node);
+        NuIrOpcode storeOp, loadOp;
+        bool isPostSet = (node->kind == AST_POSTSET);
+        AST *ref = isPostSet ? node->left : node;
+        
+        typ = ExprType(ref);
         if (!typ) {
             typ = ast_type_long;
         }
         siz = TypeSize(typ);
-        op = NuCompileLhsAddress(irl, node);
+        storeOp = NuCompileLhsAddress(irl, ref);
         pushed = (siz+3)/4;
-        if (op == NU_OP_ILLEGAL) {
+        if (isPostSet) {
+            if (pushed != 1) {
+                ERROR(node, "\\ operator only valid for single values");
+                pushed = 1;
+            }
+            NuEmitOp(irl, NU_OP_DUP);  // stack looks like A A
+        }
+        if (storeOp == NU_OP_ILLEGAL) {
             ERROR(node, "Unable to evaluate expression");
         } else {
-            op = NuLoadOpFor(op);
-            NuEmitOp(irl, op);
+            loadOp = NuLoadOpFor(storeOp);
+            NuEmitOp(irl, loadOp);
+            if (isPostSet) {
+                NuEmitOp(irl, NU_OP_SWAP); // stack looks like origV A
+                pushed = NuCompileExpression(irl, node->right); // origV A newV
+                if (pushed != 1) {
+                    ERROR(node, "\\ requires a single value on right hand side");
+                    pushed = 1;
+                }
+                NuEmitOp(irl, NU_OP_SWAP); // stack looks like origV newV A
+                NuEmitOp(irl, storeOp);
+            }
         }
     } break;
     case AST_FUNCCALL:
