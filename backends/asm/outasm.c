@@ -2341,7 +2341,7 @@ OpcFromOp(int op)
   case K_LIMITMAX_UNS:
       return OPC_MAXU;
   default:
-    ERROR(NULL, "Unsupported operator %d", op);
+    ERROR(NULL, "Unsupported operator 0x%x", op);
     return OPC_UNKNOWN;
   }
 }
@@ -2458,6 +2458,12 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
       right = Dereference(irl, right);
       EmitOp2(irl, OpcFromOp(op), temp, right);
       return temp;
+  case K_FNEGATE:
+      right = CompileExpression(irl, rhs, temp);
+      right = Dereference(irl, right);
+      EmitMove(irl, temp, NewImmediate(0x80000000));
+      EmitOp2(irl, OPC_XOR, temp, right);
+      return temp;
   case K_BIT_NOT:
       right = CompileExpression(irl, rhs, temp);
       if (gl_p2) {
@@ -2546,7 +2552,7 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
       return EmptyOperand();
   }
   default:
-    ERROR(lhs, "Unsupported operator %d", op);
+    ERROR(lhs, "Unsupported operator 0x%x", op);
     return EmptyOperand();
   }
 }

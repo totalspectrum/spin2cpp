@@ -2609,6 +2609,9 @@ MarkUsedBody(AST *body, const char *caller)
         case K_FSQRT:
             *body = *ConvertInternal(body, "_float_sqrt", body->right, NULL);
             break;
+        case K_FABS:
+            *body = *ConvertInternal(body, "_float_abs", body->right, NULL);
+            break;
         case K_ONES_COUNT:
             *body = *ConvertInternal(body, "_ones", body->right, NULL);
             break;
