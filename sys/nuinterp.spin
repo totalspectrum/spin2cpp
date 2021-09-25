@@ -170,15 +170,6 @@ impl_PUSHI
   _ret_	rflong	tos
 #endif
   
-impl_PUSHI16
-	call	#\impl_DUP
-#ifdef SERIAL_DEBUG	
-       rfword	tos
- _ret_ getptr	pb
-#else
-  _ret_	rfword	tos
-#endif
-
 impl_PUSHA
 	call	#\impl_DUP
 	rfword	tos
