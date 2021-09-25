@@ -2684,11 +2684,9 @@ MarkUsedBody(AST *body, const char *caller)
                 AST *defaultval, *replace;
                 int op = body->d.ival;
                 if (op == K_FGE || op == K_FGT) {
-                    defaultval = AstInteger(-1);
-                } else if (op == K_FNE && curfunc->language == LANG_SPIN_SPIN2) {
-                    defaultval = AstInteger(0);
+                    defaultval = AstInteger(-1); // return -1 for unordered
                 } else {
-                    defaultval = AstInteger(1);
+                    defaultval = AstInteger(1); // return +1 for unordered
                 }
                 replace = ConvertInternal(body, "_float_cmp", body->left, body->right, defaultval);
                 if (replace != body) {

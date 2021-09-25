@@ -1570,10 +1570,8 @@ expr:
   | SP_NAN expr
     {   AST *op = $2;
         AST *cmp;
-        // NOTE: in Spin2, NaN <>. NaN is false, just like all comparisons involving NaN
-        // so we have to use !(x == x)
-        cmp = AstOperator(K_FEQ, op, op);
-        $$ = AstOperator(K_BOOL_NOT, NULL, cmp);
+        cmp = AstOperator(K_FNE, op, op);
+        $$ = cmp;
     }
   | SP_ONES expr
     { $$ = AstOperator(K_ONES_COUNT, NULL, $2); }
