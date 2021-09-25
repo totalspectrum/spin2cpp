@@ -1361,9 +1361,15 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         NuCompileAlloca(irl, node->right);
         pushed = 1;
     } break;
+    case AST_CONSTANT: {
+      if (!IsConstExpr(node->left)) {
+          WARNING(node, "CONSTANT expression is not actually constant and will be evaluated at run time");
+      }
+      pushed = NuCompileExpression(irl, node->left);
+    } break;
     default:
         ERROR(node, "Unknown expression node %d", node->kind);
-        return 0;
+        return 1;
     }
     return pushed;
 }

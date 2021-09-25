@@ -4050,6 +4050,9 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   }
   case AST_CONSTANT:
   {
+      if (!IsConstExpr(expr->left)) {
+          WARNING(expr, "CONSTANT expression is not actually constant and will be evaluated at run time");
+      }
       return CompileExpression(irl, expr->left, dest);
   }
   case AST_GETHIGH:
