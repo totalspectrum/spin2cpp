@@ -682,6 +682,31 @@ static int NuPopMultiple(NuIrList *irl, AST *lhs, int numRhs) {
     return popped+siz;
 }
 
+// compile a masked fetch (a & mask) | val
+// here a is expr->left, mask = expr->right->left, val = expr->right->right
+// useful for manipulating groups of bits in OUTA and DIRA
+static int NuCompileMaskMove(NuIrList *irl, AST *expr)
+{
+    AST *destast = expr->left;
+    AST *maskast;
+    AST *valast;
+    
+    if (expr->right->kind == AST_SEQUENCE) {
+        maskast = expr->right->left;
+        valast = expr->right->right;
+    } else {
+        ERROR(expr, "Internal format error");
+        return 1;
+    }
+    // push A
+    if (1 != NuCompileExpression(irl, destast)) ERROR(destast, "too many values in expression");
+    if (1 != NuCompileExpression(irl, maskast)) ERROR(maskast, "too many values in expression");
+    NuEmitOp(irl, NU_OP_AND);
+    if (1 != NuCompileExpression(irl, valast))  ERROR(valast, "too many values in expression");
+    NuEmitOp(irl, NU_OP_IOR);
+    return 1;
+}
+
 /* compile assignment */
 /* returns number of longs left on stack */
 static int NuCompileAssign(NuIrList *irl, AST *ast, int inExpression)
@@ -1263,6 +1288,10 @@ NuCompileExpression(NuIrList *irl, AST *node) {
     case AST_OPERATOR:
     {
         pushed = NuCompileOperator(irl, node);
+    } break;
+    case AST_MASKMOVE:
+    {
+        pushed = NuCompileMaskMove(irl, node);
     } break;
     case AST_ABSADDROF:
     case AST_ADDROF:
