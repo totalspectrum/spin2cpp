@@ -838,6 +838,7 @@ static void doASTDump(AST *ast, int indent)
         break;
     }
     case AST_OPERATOR:
+        astname = "operator";
         if (ast->d.ival >= 32 && ast->d.ival <= 126) {
             sprintf(buf, "<operator '%c'>", ast->d.ival);
         } else {
@@ -918,7 +919,6 @@ static void doASTDump(AST *ast, int indent)
                 break;
             }
         }
-        astname = "operator";
         break;
     case AST_ANNOTATION:
         sprintf(buf, "<annotation %s>", ast->d.string);
