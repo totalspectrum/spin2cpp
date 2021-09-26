@@ -23,7 +23,7 @@ On Windows it should be possible to build using msys or a similar gcc based buil
 
 If you name your executable "bstc.exe", it will try to act like the BSTC compiler (so it can be used in build scripts and IDEs that use bstc style command lines). For example, flexspin will work this way as the back-end assembler for PropBasic.
 
-If you name your executable something that ends in "spin2" (like "fastspin2.exe") it will compile for P2 by default.
+If you name your executable something that ends in "spin2" (like "flexspin2.exe") it will compile for P2 by default.
 
 ## Credits
 
