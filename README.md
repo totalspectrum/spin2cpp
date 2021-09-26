@@ -1,4 +1,4 @@
-Spin2cpp is a program for converting Spin, BASIC, or C code to binary, PASM (Parallax Propeller 1 assembly), P2ASM (Parallax P2 assembly), C, or C++.
+Spin2cpp is a program for converting Spin, BASIC, or C code to binary, PASM (Parallax Propeller 1 assembly), P2ASM (Parallax P2 assembly), Spin1 bytecode, C, or C++.
 
 flexspin is a slightly different front end to the same functionality, designed to be compatible with other spin compilers.
 
