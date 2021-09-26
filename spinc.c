@@ -829,28 +829,29 @@ MarkStaticFunctionPointers(AST *list)
 {
     AST *sub;
     Symbol *sym;
-    if (!list) {
-        return;
-    }
-    switch (list->kind) {
-    case AST_SIMPLEFUNCPTR:
-        sub = list->left;
-        sym = LookupAstSymbol(sub, NULL);
-        if (sym) {
-            Function *f;
-            if (sym->kind != SYM_FUNCTION) {
-                ERROR(list, "%s is not a function", sym->user_name);
-                return;
+
+    while (list) {
+        switch (list->kind) {
+        case AST_SIMPLEFUNCPTR:
+            sub = list->left;
+            sym = LookupAstSymbol(sub, NULL);
+            if (sym) {
+                Function *f;
+                if (sym->kind != SYM_FUNCTION) {
+                    ERROR(list, "%s is not a function", sym->user_name);
+                    return;
+                }
+                f = (Function *)sym->val;
+                f->used_as_ptr = 1;
+                MarkUsed(f, "static func");
+                MarkSystemFuncUsed("__call_methodptr");
             }
-            f = (Function *)sym->val;
-            f->used_as_ptr = 1;
-            MarkUsed(f, "static func");
-            MarkSystemFuncUsed("__call_methodptr");
+            break;
+        default:
+            MarkStaticFunctionPointers(list->left);
+            break;
         }
-        return;
-    default:
-        MarkStaticFunctionPointers(list->left);
-        MarkStaticFunctionPointers(list->right);
+        list = list->right;
     }
 }
 
