@@ -306,7 +306,7 @@ ArrayBaseType(AST *var)
 static CSEEntry *
 AddToCSESet(AST *name, CSESet *cse, AST *expr, unsigned exprHash, AST **replaceptr)
 {
-    CSEEntry *entry = calloc(1, sizeof(*entry));
+    CSEEntry *entry = (CSEEntry *)calloc(1, sizeof(*entry));
     unsigned idx = exprHash & (CSE_HASH_SIZE-1);
     ASTReportInfo saveinfo;
     

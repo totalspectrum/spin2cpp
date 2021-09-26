@@ -17,7 +17,7 @@ NewOrgName()
     static int counter;
     char *buf;
     ++counter;
-    buf = calloc(1, 32);
+    buf = (char *)calloc(1, 32);
     if (!buf) return buf;
     sprintf(buf, "..org%04x", counter);
     return buf;

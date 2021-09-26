@@ -197,7 +197,7 @@ AddAssignment(LoopValueSet *lvs, AST *name, AST *value, unsigned flags, AST *par
         }
         return entry;
     }
-    entry = calloc(sizeof(*entry), 1);
+    entry = (LoopValueEntry*)calloc(sizeof(*entry), 1);
     entry->hits = value ? 1 : 0;
     entry->name = name;
     entry->value = value;

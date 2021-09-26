@@ -189,7 +189,7 @@ char *
 OffsetName(const char *basename, unsigned long offset)
 {
     size_t len = strlen(basename) + 5;
-    char *tempname = calloc(1, len);
+    char *tempname = (char *)calloc(1, len);
     sprintf(tempname, "%s_%02lu", basename, offset);
     return tempname;
 }
@@ -255,7 +255,7 @@ PutVarOnStack(Function *func, Symbol *sym, int size)
     if (!ANY_VARS_ON_STACK(func)) {
         return false;
     }
-    if (sym->kind == SYM_LOCALVAR && TypeGoesOnStack(sym->val)) {
+    if (sym->kind == SYM_LOCALVAR && TypeGoesOnStack((AST *)sym->val)) {
         return true;
     }
     return false;
@@ -1067,7 +1067,7 @@ TypedHubMemRef(AST *type, Operand *addr, int offset)
     } else if (type->kind == AST_PTRTYPE || type->kind == AST_REFTYPE || type->kind == AST_COPYREFTYPE ) {
         size = 4;
     } else if (type->kind == AST_OBJECT) {
-        Module *Q = type->d.ptr;
+        Module *Q = (Module *)type->d.ptr;
         size = Q->varsize;
     } else if (type->kind == AST_FUNCTYPE) {
         size = 4;
@@ -1188,7 +1188,7 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func, AST *ast)
       }
       case SYM_HWREG:
       {
-          HwReg *hw = sym->val;
+          HwReg *hw = (HwReg *)sym->val;
           return GetOneGlobal(REG_HW, hw->name, 0);
       }
       case  SYM_CLOSURE:
@@ -1215,7 +1215,7 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func, AST *ast)
           if (PutVarOnStack(func, sym, size)) {
               int offset = sym_offset(func, sym);
               if (offset >= 0) {
-                  AST *typ = sym->val;
+                  AST *typ = (AST *)sym->val;
                   if (IsArrayType(typ)) {
                       size = TypeSize(BaseType(typ));
                   }
@@ -4113,7 +4113,7 @@ static Operand *EmitAddSub(IRList *irl, Operand *dst, int off)
 
 static Operand *ImmCogRef(Operand *addr)
 {
-    char *immname = calloc(1, 16);
+    char *immname = (char *)calloc(1, 16);
     sprintf(immname, "%lu + 0", (unsigned long)addr->val);
     return NewOperand(REG_REG, immname, 0);
 }

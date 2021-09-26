@@ -222,7 +222,7 @@ static AST *
 TransformUsing(const char *usestr, AST *params)
 {
     AST *exprlist = NULL;
-    AST *using = NULL;
+    AST *usingAst = NULL;
     AST *lastFormat = AstInteger(0);
     Flexbuf fb;
     int c;
@@ -259,16 +259,16 @@ TransformUsing(const char *usestr, AST *params)
             
             // reset format to default
             lastFormat = AstInteger(0);
-            using = NewAST(AST_USING, lastFormat, NextParam(&params)); 
-            exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, using, NULL));
+            usingAst = NewAST(AST_USING, lastFormat, NextParam(&params)); 
+            exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, usingAst, NULL));
             signchar = 0;
             break;
         case '!':
             exprlist = harvest(exprlist, &fb);
             // reset format to width 1
             lastFormat = AstInteger(1);
-            using = NewAST(AST_USING, lastFormat, NextParam(&params));
-            exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, using, NULL));
+            usingAst = NewAST(AST_USING, lastFormat, NextParam(&params));
+            exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, usingAst, NULL));
             break;
 
         case '+':
@@ -317,8 +317,8 @@ TransformUsing(const char *usestr, AST *params)
             }
             fmtparam = FMTPARAM_ALLWIDTH(width) | FMTPARAM_MINDIGITS(minwidth) | signchar | FMTPARAM_RIGHTJUSTIFY | padchar | altbit;
             lastFormat = AstInteger(fmtparam);
-            using = NewAST(AST_USING, lastFormat, NextParam(&params));
-            exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, using, NULL));
+            usingAst = NewAST(AST_USING, lastFormat, NextParam(&params));
+            exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, usingAst, NULL));
             break;
         case '\\':
             exprlist = harvest(exprlist, &fb);
@@ -341,8 +341,8 @@ TransformUsing(const char *usestr, AST *params)
             }
             fmtparam |= FMTPARAM_ALLWIDTH(width);
             lastFormat = AstInteger(fmtparam);
-            using = NewAST(AST_USING, lastFormat, NextParam(&params));
-            exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, using, NULL));
+            usingAst = NewAST(AST_USING, lastFormat, NextParam(&params));
+            exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, usingAst, NULL));
             break;
         case '.':
             signchar = 0;

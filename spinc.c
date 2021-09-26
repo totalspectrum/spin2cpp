@@ -104,7 +104,7 @@ InitGlobalModule(void)
     SymbolTable *table;
     Symbol *sym;
     int oldtmpnum;
-    const char *syscode;
+    const char *syscode = "";
     
     current = systemModule = NewModule("_system_", LANG_SPIN_SPIN1);
     table = &systemModule->objsyms;

@@ -387,7 +387,7 @@ static bool OptimizeOperator(int *optoken, AST **left,AST **right) {
 
     int shiftOptOp = 0;
     bool canNopOpt = false;
-    int32_t nopOptVal;
+    int32_t nopOptVal = 0;
     bool canZeroOpt = false;
     int32_t zeroOptVal;
     bool canCommute = false;

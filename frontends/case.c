@@ -111,7 +111,7 @@ SelectActiveCase(AST *switchstmt, AST *stmts, AST *endlabel, AST *defaultlabel)
     AST *ifstmt;
     AST *block;
     AST *tryblock;
-    AST *blockast;
+    AST *blockast = NULL;
     
     for (ast = switchstmt; ast; ast = ast->right) {
         if (ast->kind != AST_STMTLIST) {

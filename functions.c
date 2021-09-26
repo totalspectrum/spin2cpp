@@ -160,7 +160,7 @@ EnterVariable(int kind, SymbolTable *stab, AST *astname, AST *type, unsigned sym
                         default:
                             WARNING(astname, "definition of %s hides a member variable", username);
                             if (sym2->def) {
-                                NOTE(sym2->def, "previous definition of %s is here", username);
+                                NOTE((AST *)sym2->def, "previous definition of %s is here", username);
                             }
                             break;
                         }
@@ -263,7 +263,7 @@ EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offse
                 AST *arraytype;
                 AST *indices = ast->right;
 
-                arraytype = ArrayDeclType(indices, actualtype, ast->d.ptr, ast->left);
+                arraytype = ArrayDeclType(indices, actualtype, (AST *)ast->d.ptr, ast->left);
 
                 sym = EnterVariable(kind, stab, ast->left, arraytype, sym_flags);
                 if (sym) sym->offset = offset;
@@ -413,7 +413,7 @@ GuessLambdaReturnType(AST *params, AST *body)
     }
     // HACK: temporarily declare the parameters as symbols
     {
-        SymbolTable *table = calloc(1, sizeof(SymbolTable));
+        SymbolTable *table = (SymbolTable *)calloc(1, sizeof(SymbolTable));
         table->next = &curfunc->localsyms;
         EnterVars(SYM_PARAMETER, table, NULL, params, 0, 0, 0);
         
@@ -664,7 +664,7 @@ findLocalsAndDeclare(Function *func, AST *ast)
                     datatype = InferTypeFromName(name);
                 }
                 if (arrayinfo) {
-                    datatype = ArrayDeclType(arrayinfo->right, datatype, arrayinfo->d.ptr, ident);
+                    datatype = ArrayDeclType(arrayinfo->right, datatype, (AST *)arrayinfo->d.ptr, ident);
                 }
                 if (datatype && datatype->kind == AST_TYPEDEF) {
                     datatype = datatype->left;
@@ -1508,7 +1508,7 @@ TransformCaseExprList(AST *var, AST *ast)
             const char *sptr = ast->left->d.string;
             int c;
             while ( (c = *sptr++) != 0) {
-                char *newStr = malloc(2);
+                char *newStr = (char *)malloc(2);
                 AST *strNode;
                 newStr[0] = c; newStr[1] = 0;
                 strNode = NewAST(AST_STRING, NULL, NULL);
@@ -3512,7 +3512,7 @@ static int AddSize(Symbol *sym, void *arg)
     case SYM_LOCALVAR:
     case SYM_TEMPVAR:
     case SYM_PARAMETER:
-        size = TypeSize(sym->val);
+        size = TypeSize((AST *)sym->val);
         size = (size + LONG_SIZE - 1) & ~(LONG_SIZE - 1);
         *ptr += size;
         break;

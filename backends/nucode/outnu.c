@@ -599,10 +599,12 @@ static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs)
         Symbol *sym;
         if (!IsIdentifier(methodname)) {
             ERROR(lhs, "Expected identifier after .");
+            return op;
         }
         const char *memberName = GetUserIdentifierName(methodname);
         if ( !IsClassType(typ) || NULL == (P=GetClassPtr(typ)) ) {
             ERROR(lhs, "Request for member %s in something not an object", memberName);
+            return op;
         }
         sym = LookupSymbolInTable(&P->objsyms, memberName);
         if (!sym) {

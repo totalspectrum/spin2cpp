@@ -976,7 +976,7 @@ parseBacktickInBacktick(LexStream *L, AST **ast_ptr)
         lexungetc(L, c);
     }
     // give room for trailing 0 and for name mangling later
-    dup = malloc(strlen(identName)+3);
+    dup = (char *)malloc(strlen(identName)+3);
     strcpy(dup, identName);
     ast = NewAST(AST_IDENTIFIER, NULL, NULL);
     ast->d.string = dup;

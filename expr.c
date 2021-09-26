@@ -3373,7 +3373,7 @@ FixupInitList(AST *type, AST *initval)
                 numelems = AstListLen(initval);
             }
         }
-        astarr = calloc( numelems, sizeof(AST *) );
+        astarr = (AST **) calloc( numelems, sizeof(AST *) );
         if (!astarr) {
             ERROR(NULL, "out of memory");
             return 0;
@@ -3420,7 +3420,7 @@ FixupInitList(AST *type, AST *initval)
             return NULL;
         }
         numelems = AggregateCount(type);
-        astarr = calloc( numelems, sizeof(AST *) );
+        astarr = (AST **) calloc( numelems, sizeof(AST *) );
         if (!astarr) {
             ERROR(NULL, "out of memory");
             return 0;

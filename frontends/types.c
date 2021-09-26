@@ -142,7 +142,7 @@ MakeOperatorCall(AST *func, AST *left, AST *right, AST *extraArg)
 }
 
 // do a promotion when we already know the size of the original type
-static AST *dopromote(AST *expr, int srcbytes, int destbytes, int operator)
+static AST *dopromote(AST *expr, int srcbytes, int destbytes, int operatr)
 {
     int shiftbits = srcbytes * 8;
     AST *promote;
@@ -150,13 +150,13 @@ static AST *dopromote(AST *expr, int srcbytes, int destbytes, int operator)
     if (shiftbits == 32 && destbytes < 8) {
         return expr; // nothing to do
     }
-    promote = AstOperator(operator, expr, AstInteger(shiftbits));
+    promote = AstOperator(operatr, expr, AstInteger(shiftbits));
     if (destbytes == 8) {
         // at this point "promote" will contain a 4 byte value
         // now we need to convert it to an 8 byte value
         AST *convfunc;
         
-        if (operator == K_ZEROEXTEND) {
+        if (operatr == K_ZEROEXTEND) {
             convfunc = int64_zerox;
         } else {
             convfunc = int64_signx;
@@ -188,9 +188,9 @@ static AST *donarrow(AST *expr, int A, int B, int isSigned)
     promote = dopromote(expr, A, LONG_SIZE, isSigned ? K_ZEROEXTEND : K_SIGNEXTEND);
 #if 0    
     if (shiftbits > 0) {
-        int operator = isSigned ? K_SAR : K_SHR;
+        int operatr = isSigned ? K_SAR : K_SHR;
         narrow = AstOperator(K_SHL, promote, AstInteger(shiftbits));
-        narrow = AstOperator(operator, narrow, AstInteger(shiftbits));
+        narrow = AstOperator(operatr, narrow, AstInteger(shiftbits));
     } else {
         narrow = promote;
     }
@@ -469,20 +469,20 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
         }
         // in C we need to promote both sides to  long
         else if (curfunc && IsCLang(curfunc->language)) {
-            int operator;
+            int operatr;
             if (lefttype) {
                 int leftsize = TypeSize(lefttype);
                 if (leftsize < 4) {
-                    operator = IsUnsignedType(lefttype) ? K_ZEROEXTEND : K_SIGNEXTEND;
-                    ast->left = dopromote(ast->left, leftsize, LONG_SIZE, operator);
+                    operatr = IsUnsignedType(lefttype) ? K_ZEROEXTEND : K_SIGNEXTEND;
+                    ast->left = dopromote(ast->left, leftsize, LONG_SIZE, operatr);
                     lefttype = ast_type_long;
                 }
             }
             if (righttype) {
                 int rightsize = TypeSize(righttype);
                 if (rightsize < 4) {
-                    operator = IsUnsignedType(righttype) ? K_ZEROEXTEND : K_SIGNEXTEND;
-                    ast->right = dopromote(ast->right, rightsize, LONG_SIZE, operator);
+                    operatr = IsUnsignedType(righttype) ? K_ZEROEXTEND : K_SIGNEXTEND;
+                    ast->right = dopromote(ast->right, rightsize, LONG_SIZE, operatr);
                     righttype = ast_type_long;
                 }
             }

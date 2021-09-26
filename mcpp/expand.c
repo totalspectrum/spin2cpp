@@ -473,7 +473,7 @@ static char *   replace(
         /* Number of actual arguments (maybe less than expected)    */
     int     enable_trace_macro;     /* To exclude _Pragma() pseudo macro    */
     int     m_num = 0;              /* 'mac_num' of current macro   */
-    MACRO_INF *     m_inf;          /* Pointer into mac_inf[]       */
+    MACRO_INF *     m_inf = NULL;   /* Pointer into mac_inf[]       */
 
     if (mcpp_debug & EXPAND) {
         dump_a_def( "replace entry", defp, FALSE, TRUE, fp_debug);
@@ -1187,10 +1187,11 @@ static char *     remove_magics(
     mac_n = arg_n = n = 0;
 
     while ((*tp++ = c = get_ch()) != RT_END && file == infile) {
-        char ** loc_tab;
+        char ** loc_tab = NULL;
         int     num, mark, rm, magic;
-        size_t  len;
+        size_t  len = 0;
 
+        rm = mark = num = 0;
         if (c != MAC_INF) {
             scan_token( c, (--tp, &tp), ep);
             continue;
@@ -1495,7 +1496,7 @@ static char *   rescan(
     char *  tp = NULL;              /* Temporary pointer into buffer*/
     char *  out_p = out;            /* Current output pointer       */
     FILEINFO *  file;       /* Input sequences stacked on a "file"  */
-    DEFBUF *    inner;              /* Inner macro to replace       */
+    DEFBUF *    inner = NULL;       /* Inner macro to replace       */
     int     c;                      /* First character of token     */
     int     token_type;
     char *  mac_arg_start = NULL;
@@ -1773,7 +1774,7 @@ static int  collect_args(
     int     nargs = 0;                  /* Number of collected args */
     int     var_arg = defp->nargs & VA_ARGS;    /* Variable args    */
     int     more_to_come = FALSE;       /* Next argument is expected*/
-    LOCATION *  locs;           /* Location of args in source file  */
+    LOCATION *  locs = NULL;           /* Location of args in source file  */
     LOCATION *  loc;                            /* Current locs     */
     MAGIC_SEQ   mgc_prefix;     /* MAC_INF seqs and spaces preceding an arg */
     int     c;
