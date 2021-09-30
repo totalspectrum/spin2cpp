@@ -1,5 +1,5 @@
 Version 5.9.4
-- Fixed round() and trunc() operators for variables
+- Fixed Spin2 round(), trunc(), and float() operators for variable expressions
 
 Version 5.9.3
 - Fixed automatic detection of floats for printf/scanf

@@ -2614,6 +2614,11 @@ MarkUsedBody(AST *body, const char *caller)
             *body = *ConvertInternal(body, "_float_trunc", body->left, NULL, NULL);
         }
         break;
+    case AST_TOFLOAT:
+        if (!IsConstExpr(body->left)) {
+            *body = *ConvertInternal(body, "_float_fromint", body->left, NULL, NULL);
+        }
+        break;
     case AST_OPERATOR:
         switch (body->d.ival) {
         case K_SQRT:
