@@ -2604,6 +2604,16 @@ MarkUsedBody(AST *body, const char *caller)
     case AST_LOOKDOWN:
         UseInternal("_lookdown");
         break;
+    case AST_ROUND:
+        if (!IsConstExpr(body->left)) {
+            *body = *ConvertInternal(body, "_float_round", body->left, NULL, NULL);
+        }
+        break;
+    case AST_TRUNC:
+        if (!IsConstExpr(body->left)) {
+            *body = *ConvertInternal(body, "_float_trunc", body->left, NULL, NULL);
+        }
+        break;
     case AST_OPERATOR:
         switch (body->d.ival) {
         case K_SQRT:

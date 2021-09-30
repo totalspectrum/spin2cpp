@@ -1,3 +1,6 @@
+Version 5.9.4
+- Fixed round() and trunc() operators for variables
+
 Version 5.9.3
 - Fixed automatic detection of floats for printf/scanf
 - Fixed optimizer errors on SCA, XORO32, and similar instructions
