@@ -1471,7 +1471,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
         return convToFloat(lval);
     case AST_TRUNC:
         lval = EvalExpr(expr->left, flags, valid, depth+1);
-        if (!*valid) {
+        if (valid && !*valid) {
             return intExpr(0);
         }
         if (!IsFloatType(lval.type)) {
@@ -1484,7 +1484,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
         }
     case AST_ROUND:
         lval = EvalExpr(expr->left, flags, valid, depth+1);
-        if (!*valid) {
+        if (valid && !*valid) {
             return intExpr(0);
         }
         if (!IsFloatType(lval.type)) {
