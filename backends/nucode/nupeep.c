@@ -87,6 +87,26 @@ static int NuReplaceCBxx(int arg, NuIrList *irl, NuIr *ir) {
     return 1;
 }
 
+// replace PUSHI 0; CBNE x -> BNZ x
+static NuPeepholePattern pat_cbnz[] = {
+    { NU_OP_PUSHI, 0,            PEEP_FLAGS_MATCH_IMM },
+    { NU_OP_CBNE,  PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { 0, 0, PEEP_FLAGS_DONE }
+};
+
+static NuPeepholePattern pat_cbz[] = {
+    { NU_OP_PUSHI, 0,            PEEP_FLAGS_MATCH_IMM },
+    { NU_OP_CBEQ,  PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { 0, 0, PEEP_FLAGS_DONE }
+};
+
+static int NuReplaceCbnz(int arg, NuIrList *irl, NuIr *ir) {
+    NuIr *oldir = ir;
+    ir = ir->next;
+    ir->op = arg;
+    NuDeleteIr(irl, oldir); // delete original pushi
+    return 1;
+}
 
 // replace ST / LD with DUP / ST
 static NuPeepholePattern pat_st_ld[] = {
@@ -116,6 +136,8 @@ struct nupeeps {
     int (*replace)(int arg, NuIrList *irl, NuIr *ir);
 } nupeep[] = {
     { pat_cbxx, 0, NuReplaceCBxx },
+    { pat_cbnz, NU_OP_BNZ, NuReplaceCbnz },
+    { pat_cbz,  NU_OP_BZ,  NuReplaceCbnz },
     { pat_st_ld, 0, NuReplaceStLd },
 };
 

@@ -128,6 +128,8 @@
     X(JMPREL)    /* jump forward relative 3*n bytes */ \
     X(CBEQ)      /* compare branch if equal */ \
     X(CBNE)      /* compare branch if not equal */ \
+    X(BZ)        /* branch if tos is zero */ \
+    X(BNZ)       /* branch if tos is non-zero */ \
     X(CBLTS)     /* compare branch if < signed */ \
     X(CBLES)     /* compare branch if <= signed */ \
     X(CBLTU)     /* compare branch if < unsigned */ \

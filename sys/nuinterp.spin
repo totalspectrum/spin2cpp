@@ -244,6 +244,9 @@ impl_SWAP
 ' perform relative branch
 ' tmp contains offset to add to pb
 '
+do_relbranch_drop1
+	call	#\impl_DROP
+	jmp	#do_relbranch
 do_relbranch_drop2
 	call	#\impl_DROP2
 do_relbranch
@@ -923,6 +926,20 @@ impl_JMPREL
 	add	tmp, tos
 	add	tmp, tos
 	jmp	#\do_relbranch
+
+impl_BZ
+	rfword	tmp
+	signx	tmp, #15
+	cmp	tos, #0 wcz
+  if_nz	mov	tmp, #0
+	jmp	#do_relbranch_drop1
+
+impl_BNZ
+	rfword	tmp
+	signx	tmp, #15
+	cmp	tos, #0 wcz
+  if_z	mov	tmp, #0
+	jmp	#do_relbranch_drop1
 
 impl_CBEQ
 	rfword	tmp

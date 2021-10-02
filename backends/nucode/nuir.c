@@ -861,6 +861,8 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
             flexbuf_printf(fb, "\talignl");
             break;
         case NU_OP_BRA:
+        case NU_OP_BZ:
+        case NU_OP_BNZ:
         case NU_OP_CBEQ:
         case NU_OP_CBNE:
         case NU_OP_CBLTS:

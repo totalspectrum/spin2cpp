@@ -422,6 +422,8 @@ NuCompileArrayAddress(NuIrList *irl, AST *node, int isLoad)
 /* find opposite comparison for branch */
 NuIrOpcode NuFlipCondition(NuIrOpcode op) {
     switch (op) {
+    case NU_OP_BZ:    return NU_OP_BNZ;
+    case NU_OP_BNZ:   return NU_OP_BZ;
     case NU_OP_BRA:   return NU_OP_DROP2;
     case NU_OP_DROP2: return NU_OP_BRA;
     case NU_OP_CBEQ:  return NU_OP_CBNE;
