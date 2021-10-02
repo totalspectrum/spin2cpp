@@ -880,6 +880,9 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
                         flexbuf_printf(fb, "\tbyte\tlong %s | (", name);
                         NuOutputLabel(fb, ir->label);
                         flexbuf_printf(fb, "<< 8)");
+                    } else if (ir->val >= 0 && ir->val <= 0xffff) {
+                        name = "NU_OP_PUSHI16";
+                        flexbuf_printf(fb, "\tbyte\t%s, word %d", name, ir->val);
                     } else {
                         flexbuf_printf(fb, "\tbyte\t%s, long %d", name, ir->val);
                     }
