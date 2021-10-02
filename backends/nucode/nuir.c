@@ -407,6 +407,9 @@ static NuBytecode *NuFindCompressBytecode(NuIrList *irl, int *savings) {
             // cost of each invocation is 5 bytes normally (PUSHI + data)
             // so we save 4 bytes by replacing with a singleton
             int invoke_cost = 4;
+            if (bc->value >= 0 && bc->value <= 0xffff) {
+                invoke_cost = 2;
+            }
             if (bc->value >= -511 && bc->value <= 511) {
                 impl_cost = 8;
             }
