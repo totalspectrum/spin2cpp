@@ -8,7 +8,8 @@
 #define PUSHI_BYTECODE  1
 #define PUSHA_BYTECODE  2
 #define CALLA_BYTECODE  3
-#define FIRST_BYTECODE  4
+#define PUSHI16_BYTECODE 4
+#define FIRST_BYTECODE  5
 #define MAX_BYTECODE 0xf8
 
 static const char *NuOpName[] = {
@@ -753,6 +754,7 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     flexbuf_printf(fb, "\tlong\timpl_PUSHI\n");
     flexbuf_printf(fb, "\tlong\timpl_PUSHA\n");
     flexbuf_printf(fb, "\tlong\timpl_CALLA\n");
+    flexbuf_printf(fb, "\tlong\timpl_PUSHI16\n");
     
     for (i = 0; i < num_bytecodes; i++) {
         NuBytecode *bc = globalBytecodes[i];
@@ -775,6 +777,7 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     flexbuf_printf(fb, "\tNU_OP_PUSHI = %d\n", PUSHI_BYTECODE);
     flexbuf_printf(fb, "\tNU_OP_PUSHA = %d\n", PUSHA_BYTECODE);
     flexbuf_printf(fb, "\tNU_OP_CALLA = %d\n", CALLA_BYTECODE);
+    flexbuf_printf(fb, "\tNU_OP_PUSHI16 = %d\n", PUSHI16_BYTECODE);
     // others
     for (i = 0; i < num_bytecodes; i++) {
         NuBytecode *bc = globalBytecodes[i];
