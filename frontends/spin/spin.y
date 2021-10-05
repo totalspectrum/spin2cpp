@@ -1535,6 +1535,8 @@ expr:
     { $$ = AstOperator(K_BIT_NOT, NULL, $2); }
   | '!' '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign(K_BIT_NOT, $3, NULL); }
+  | '-' '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_NEGATE, $3, NULL); }
   | SP_NOT expr
     { $$ = AstOperator(K_BOOL_NOT, NULL, $2); }
   | SP_NOT '=' expr %prec SP_ASSIGN
