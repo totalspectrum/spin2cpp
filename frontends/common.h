@@ -748,7 +748,9 @@ extern unsigned int gl_hub_base;
 */
 
 /* base address for inline variables in COG memory */
-#define PASM_INLINE_ASM_VAR_BASE 0x1d0
+//#define PASM_INLINE_ASM_VAR_BASE 0x1d0
+#define PASM_INLINE_ASM_VAR_BASE 0x1cc
+#define PASM_MAX_ASM_VAR_OFFSET  20
 
 /*
  * functions to initialize lexers

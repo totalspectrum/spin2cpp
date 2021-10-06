@@ -450,7 +450,11 @@ old_cogsp res	1
 dbg_flag res	1  ' for serial debug
 
 
-	 fit	$1d0  ' inline assembly variables start here
+'	fit	$1d0  ' inline assembly variables start here
+	fit	$1cc  ' inline assembly variables start here
+	org	$1cc
+inline_vars
+	res	20
 	 org	$1e0  ' special locals here
 dbase	res    	1     ' $1e0
 new_pc	res	1     ' $1e1
@@ -1034,8 +1038,8 @@ impl_INLINEASM
 	pop	tmp
 	push	#restart_loop
 	' load local variables
-	setq	#15
-	rdlong	$1d0, dbase
+	setq	#19
+	rdlong	inline_vars, dbase
 	' load code to $0
 	setq	tos
 	rdlong	$0, nos
@@ -1046,8 +1050,8 @@ impl_INLINEASM
 	call	#\0-0
 	
 	' save local variables
-	setq	#15
-	wrlong	$1d0, dbase
+	setq	#19
+	wrlong	inline_vars, dbase
 	ret
 
 

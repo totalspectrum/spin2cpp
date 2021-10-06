@@ -1565,8 +1565,8 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
                 if ((flags & PASM_FLAG) && curfunc) {
                     // we must be in inline assembly
                     offset = (sym->offset + 3) / 4;
-                    if (offset > 16) {
-                        ERROR(expr, "Only the first 8 variables in a function may be accessed in inline assembly");
+                    if (offset > PASM_MAX_ASM_VAR_OFFSET) {
+                        ERROR(expr, "Only the first 16 variables in a function may be accessed in inline assembly");
                     }
                     offset += PASM_INLINE_ASM_VAR_BASE;
                     return intExpr(offset);
