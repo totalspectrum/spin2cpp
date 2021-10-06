@@ -720,6 +720,15 @@ impl_COGINIT
   if_c	neg	nos, #1
   _ret_	jmp	#\impl_DROP
 
+impl_COGATN
+	cogatn	tos
+	jmp	#\impl_DROP
+
+impl_POLLATN
+	call	#\impl_DUP
+	pollatn	wc
+  _ret_	subx	tos, #0		' turns c bit into -1
+
 impl_BYTEMOVE
 	call	#\impl_POP	' nos == dst, tos == src, popval == count
 	cmp	popval, #0 wz

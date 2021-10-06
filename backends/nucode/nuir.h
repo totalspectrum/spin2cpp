@@ -95,6 +95,8 @@
     X(WAITCNT)   /* wait for a particular cycle */ \
     X(HUBSET)    /* hubset instruction */ \
     X(COGSTOP)   /* stop a particular cog */ \
+    X(COGATN)    /* raise attention */ \
+    X(POLLATN)   /* check attention */ \
     X(COGID)     /* get current COG id */ \
     X(COGINIT)   /* launch new COG */ \
     X(LOCKMEM)   /* lock using a memory location instead of hw lock */ \

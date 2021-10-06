@@ -18,6 +18,12 @@ pri _getcnt : r = +long | rh
 pri _cogid : r = long
   __bytecode__("COGID")
 
+pri _cogatn(mask)
+  __bytecode__("COGATN")
+
+pri _pollatn : r = long
+  __bytecode__("POLLATN")
+
 pri _cogstop(x)
   __bytecode__("COGSTOP")
 
