@@ -1466,6 +1466,7 @@ static void NuCompileInlineAsm(NuIrList *irl, AST *ast) {
     }
     startPos = flexbuf_curlen(&fdata->dataBuf);
     startLabel = NuIrOffsetLabel(fdata->dataLabel, startPos);
+    AssignAddresses(&curfunc->localsyms, list, 0);
     PrintDataBlock(&fdata->dataBuf,list,NULL,NULL);
     // append a RET instruction
     // which is $FD64002D
