@@ -1,5 +1,6 @@
 Version 5.9.4
 - Fixed Spin2 round(), trunc(), and float() operators for variable expressions
+- Fixed multiply by -1 when local variables are on the stack
 
 Version 5.9.3
 - Fixed automatic detection of floats for printf/scanf

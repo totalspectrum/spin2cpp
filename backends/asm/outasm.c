@@ -1938,6 +1938,7 @@ doCompileMul(IRList *irl, Operand *lhs, Operand *rhs, int gethi, Operand *dest)
         }
     }
     if (rhs->kind == IMM_INT && rhs->val == -1 && gethi == 0) {
+        lhs = Dereference(irl, lhs);
         EmitOp2(irl, OPC_NEG, temp, lhs);
         return temp;
     }
