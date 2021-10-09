@@ -842,7 +842,7 @@ doDeclareFunction(AST *funcblock)
     sym = FindSymbol(&current->objsyms, funcname_internal);
     if (sym && sym->kind != SYM_WEAK_ALIAS) {
         if (sym->kind != SYM_FUNCTION) {
-            ERROR(funcdef, "Redefining %s as a function", funcname_user);
+            ERROR(funcdef, "Redefining %s as a function or subroutine", funcname_user);
             return NULL;
         }
         fdef = (Function *)sym->val;
@@ -882,7 +882,7 @@ doDeclareFunction(AST *funcblock)
                    a real declaration; just ignore it */
                 return fdef;
             } else if (!AstMatch(fdef->decl, funcdef) || !AstBodyMatch(fdef->body, body)) {
-                ERROR(funcdef, "redefining function %s", funcname_user);
+                ERROR(funcdef, "redefining function or subroutine %s", funcname_user);
                 NOTE(fdef->decl, "the previous definition is here");
             } else {
                 if (DifferentLineNumbers(funcdef, fdef->decl)) {
@@ -1081,7 +1081,7 @@ doDeclareFunction(AST *funcblock)
     /* if there was an old definition, validate it */
     if (oldtype && oldtype->left) {
         if (!CompatibleTypes(oldtype, fdef->overalltype)) {
-            WARNING(funcdef, "Redefining function %s with an incompatible type", funcname_user);
+            WARNING(funcdef, "Redefining function or subroutine %s with an incompatible type", funcname_user);
         }
     }
     fdef->body = body;
