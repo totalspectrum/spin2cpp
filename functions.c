@@ -1936,7 +1936,7 @@ CheckFunctionCalls(AST *ast)
                         ftype = ftype->left;
                     }
                     if (!IsFunctionType(ftype)) {
-                        ERROR(ast, "%s is not a function", fname);
+                        ERROR(ast, "%s is not a function but is being called", fname);
                         return;
                     }
                     if (ftype && ftype->kind == AST_PTRTYPE) {

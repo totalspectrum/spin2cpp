@@ -832,7 +832,7 @@ ParsePrintStatement(AST *ast)
 }
 
 static void
-doBasicTransform(AST **astptr)
+doBasicTransform(AST **astptr, bool transformFuncall)
 {
     AST *ast = *astptr;
     Function *func;
@@ -854,15 +854,15 @@ doBasicTransform(AST **astptr)
             }
             AstReportDone(&saveinfo);
         }
-        doBasicTransform(&ast->left);
-        doBasicTransform(&ast->right);
+        doBasicTransform(&ast->left, transformFuncall);
+        doBasicTransform(&ast->right, transformFuncall);
         break;
     case AST_CASE:
     case AST_CASETABLE:
     {
         AST *list = ast->right;
         const char *case_name = (ast->kind == AST_CASETABLE) ? "ON GOTO" : NULL;
-        doBasicTransform(&ast->left);
+        doBasicTransform(&ast->left, transformFuncall);
         AstReportAs(ast, &saveinfo);
         while (list) {
             AST *caseitem;
@@ -870,8 +870,8 @@ doBasicTransform(AST **astptr)
                 ERROR(list, "internal error, expected list holder");
             }
             caseitem = list->left;
-            doBasicTransform(&caseitem->left);
-            doBasicTransform(&caseitem->right);
+            doBasicTransform(&caseitem->left, transformFuncall);
+            doBasicTransform(&caseitem->right, transformFuncall);
             list = list->right;
         }
         *ast = *CreateSwitch(ast, case_name);
@@ -880,24 +880,24 @@ doBasicTransform(AST **astptr)
     }        
     case AST_COUNTREPEAT:
         // convert repeat count into a for loop
-        doBasicTransform(&ast->left);
-        doBasicTransform(&ast->right);
+        doBasicTransform(&ast->left, transformFuncall);
+        doBasicTransform(&ast->right, transformFuncall);
         *astptr = TransformCountRepeat(*astptr);
         break;
     case AST_RANGEREF:
-        doBasicTransform(&ast->left);
-        doBasicTransform(&ast->right);
+        doBasicTransform(&ast->left, transformFuncall);
+        doBasicTransform(&ast->right, transformFuncall);
         *astptr = ast = TransformRangeUse(ast);
         break;
     case AST_ALLOCA:
-        doBasicTransform(&ast->right);
+        doBasicTransform(&ast->right, true);
         curfunc->uses_alloca = 1;
         break;
     case AST_ADDROF:
     case AST_ABSADDROF:
         {
-            doBasicTransform(&ast->left);
-            doBasicTransform(&ast->right);
+            doBasicTransform(&ast->left, transformFuncall);
+            doBasicTransform(&ast->right, transformFuncall);
             if (IsLocalVariable(ast->left)) {
                 curfunc->local_address_taken = 1;
             }
@@ -918,8 +918,9 @@ doBasicTransform(AST **astptr)
         }
         break;
     case AST_FUNCCALL:
-        doBasicTransform(&ast->left);
-        doBasicTransform(&ast->right);
+        doBasicTransform(&ast->left, transformFuncall);
+        doBasicTransform(&ast->right, transformFuncall);
+        if (transformFuncall)
         {
             // the parser treats a(x) as a function call (always), but in
             // fact it may be an array reference; change it to one if applicable
@@ -927,8 +928,8 @@ doBasicTransform(AST **astptr)
         }
         break;
     case AST_METHODREF:
-        doBasicTransform(&ast->left);
-        doBasicTransform(&ast->right);
+        doBasicTransform(&ast->left, transformFuncall);
+        doBasicTransform(&ast->right, transformFuncall);
         {
             AST *typ = ExprType(ast->left);
             if (IsPointerType(typ) && !IsRefType(typ)) {
@@ -938,8 +939,8 @@ doBasicTransform(AST **astptr)
         }
         break;
     case AST_USING:
-        doBasicTransform(&ast->left);
-        doBasicTransform(&ast->right);
+        doBasicTransform(&ast->left, transformFuncall);
+        doBasicTransform(&ast->right, transformFuncall);
         if (ast->left && ast->left->kind == AST_STRING) {
             AST *x = TransformUsing(ast->left->d.string, ast->right);
             if (x) {
@@ -950,15 +951,15 @@ doBasicTransform(AST **astptr)
         }
         break;
     case AST_TRYENV:
-        doBasicTransform(&ast->left);
-        doBasicTransform(&ast->right);
+        doBasicTransform(&ast->left, transformFuncall);
+        doBasicTransform(&ast->right, transformFuncall);
         // keep local variables on stack, so they will be preserved
         // if an exception throws us back here without cleanup
         curfunc->local_address_taken = 1;
         break;
     case AST_READ:
-        doBasicTransform(&ast->left);
-        doBasicTransform(&ast->right);
+        doBasicTransform(&ast->left, transformFuncall);
+        doBasicTransform(&ast->right, transformFuncall);
         {
             // convert to a series of calls to _basic_getstr, etc.
             AST *exprlist = ast->left;
@@ -1000,8 +1001,8 @@ doBasicTransform(AST **astptr)
         }
         break;
     case AST_PRINT:
-        doBasicTransform(&ast->left);
-        doBasicTransform(&ast->right);
+        doBasicTransform(&ast->left, transformFuncall);
+        doBasicTransform(&ast->right, transformFuncall);
         *astptr = ast = ParsePrintStatement(ast);
         break;
     case AST_LABEL:
@@ -1017,11 +1018,24 @@ doBasicTransform(AST **astptr)
         }
         break;
     case AST_COGINIT:
-        doBasicTransform(&ast->left);
-        doBasicTransform(&ast->right);
-        if (IsSpinCoginit(ast, &func) && func) {
-            func->cog_task = 1;
-            func->force_static = 1;
+        doBasicTransform(&ast->right, transformFuncall);
+        {
+            int n = 0;
+            AST *origast = ast;
+            ast = ast->left;
+            if (!ast || ast->kind != AST_EXPRLIST) {
+                ERROR(ast, "Expecting expression list in CPU");
+                break;
+            }
+            while (ast) {
+                doBasicTransform(&ast->left, n!=1); // do not transform function call in first parameter
+                n++;
+                ast = ast->right;
+            }
+            if (IsSpinCoginit(origast, &func) && func) {
+                func->cog_task = 1;
+                func->force_static = 1;
+            }
         }
         break;
     case AST_LOCAL_IDENTIFIER:
@@ -1039,8 +1053,8 @@ doBasicTransform(AST **astptr)
         break;
     }
     default:
-        doBasicTransform(&ast->left);
-        doBasicTransform(&ast->right);
+        doBasicTransform(&ast->left, transformFuncall);
+        doBasicTransform(&ast->right, transformFuncall);
         break;
     }
 }
@@ -1051,6 +1065,6 @@ BasicTransform(Function *func)
     InitGlobalFuncs();
 
     SimplifyAssignments(&func->body, 1); // insert casts in assignment chains
-    doBasicTransform(&func->body);
+    doBasicTransform(&func->body, true);
     CheckTypes(func->body);
 }

@@ -1376,18 +1376,57 @@ AST *CheckTypes(AST *ast)
         return NULL;
     case AST_COGINIT:
         ltype = ast_type_long;
-        // promote types of parameters if necessary
         {
-            AST *parmlist = ast->left;
-            AST *parmtype;
-            AST *sub;
-            while (parmlist) {
-                sub = parmlist->left;
-                parmtype = ExprType(sub);
-                if (IsArrayType(parmtype)) {
-                    parmlist->left = ArrayAddress(parmlist->left);
+            bool isCog = IsSpinCoginit(ast, NULL);
+            
+            // promote types of parameters if necessary
+            AST *paramlist = ast->left;
+            AST *paramtype;
+            AST *cogid, *funcall, *stack;
+            while (paramlist) {
+                stack = paramlist->left;
+                paramtype = ExprType(stack);
+                if (IsArrayType(paramtype)) {
+                    paramlist->left = ArrayAddress(paramlist->left);
                 }
-                parmlist = parmlist->right;
+                paramlist = paramlist->right;
+            }
+            paramlist = ast->left;
+            if (!paramlist) {
+                ERROR(ast, "Missing cog parameter for coginit/cognew");
+                return NULL;
+            }
+            cogid = paramlist->left;
+            paramlist = paramlist->right;
+            if (!paramlist) {
+                ERROR(ast, "Missing function call in coginit/cognew");
+                return NULL;
+            }
+            funcall = paramlist->left;
+            paramlist = paramlist->right;
+            if (!paramlist) {
+                ERROR(ast, "Missing stack parameter for coginit/cognew");
+                return NULL;
+            }
+            stack = paramlist->left;
+            if (paramlist->right) {
+                ERROR(ast, "Too many parameters to coginit/cognew");
+                return NULL;
+            }
+            paramtype = ExprType(cogid);
+            if (paramtype && !IsIntType(paramtype)) {
+                ERROR(ast, "Expected integer type for COG id");
+                return NULL;
+            }
+            if (!isCog) {
+                paramtype = ExprType(funcall);
+                if (paramtype && !IsPointerType(paramtype)) {
+                    WARNING(ast, "Expected pointer to instructions for coginit/cognew");
+                }
+            }
+            paramtype = ExprType(stack);
+            if (paramtype && !IsPointerType(paramtype)) {
+                ERROR(ast, "Expected pointer to stack as last parameter to coginit/cogid");
             }
         }
         break;
