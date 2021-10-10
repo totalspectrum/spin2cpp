@@ -2426,6 +2426,8 @@ This opens the given file for input, output, or append. A file opened for output
 
 This second form of `open` is only useful after a `mount` call is used to establish a file system.
 
+Note that file data is buffered internally, and may not actually be written to the disk until `close` is called for the file; if `close` is never called then the data may never be written.
+
 #### Error Handling
 
 The `open` command will throw an integer error corresponding to one of the error numbers in the C `errno.h` header file. This may be caught using the usual `try` / `catch` paradigm. Alternatively, if no `try` / `catch` block is in effect, the error may be checked with `_geterr()`.
