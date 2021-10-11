@@ -588,12 +588,14 @@ static char *parse_getincludestring(ParseState *P)
 
 
 /*
- * expand macros in a buffer
+ * expand macros and clean comments in a buffer
  * "src" is the source data
  * "dst" is a destination flexbuf
+ * "doMacros" is the number of times we should expand macros
+ *    normally this starts at 2, but can be 0 if no expansion is desired
  */
 static int
-expand_macros(struct preprocess *pp, struct flexbuf *dst, char *src)
+do_expand(struct preprocess *pp, struct flexbuf *dst, char *src, int doMacros)
 {
     ParseState P;
     char *word;
@@ -618,9 +620,13 @@ expand_macros(struct preprocess *pp, struct flexbuf *dst, char *src)
             }
             def = word;
         } else if (isalpha((unsigned char)*word) || *word == '_') {
-            def = pp_getdef(pp, word);
-            if (!def)
+            if (doMacros) {
+                def = pp_getdef(pp, word);
+                if (!def)
+                    def = word;
+            } else {
                 def = word;
+            }
         } else {
             if (pp->startcomment && strstr(word, pp->startcomment)) {
                 pp->incomment++;
@@ -631,7 +637,17 @@ expand_macros(struct preprocess *pp, struct flexbuf *dst, char *src)
     }
     len = flexbuf_curlen(dst);
     flexbuf_addchar(dst, 0);
+    if (doMacros > 1) {
+        src = flexbuf_get(dst);
+        len = do_expand(pp, dst, src, doMacros-1);
+    }
     return len;
+}
+
+static int
+expand_macros(struct preprocess *pp, struct flexbuf *dst, char *src)
+{
+    return do_expand(pp, dst, src, 2);
 }
 
 static void
@@ -780,7 +796,7 @@ handle_define(struct preprocess *pp, ParseState *P, int isDef)
         parse_skipspaces(P);
         def = parse_restofline(P);
         flexbuf_init(&newdef, 80);
-        expand_macros(pp, &newdef, def);
+        do_expand(pp, &newdef, def, 0);
         def = flexbuf_get(&newdef);
     } else {
         def = NULL;
