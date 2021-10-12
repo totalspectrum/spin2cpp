@@ -2843,6 +2843,14 @@ Set up the serial port baud rate, based on the current clock frequency.
 ```
 The default serial rate on P1 is 115_200 baud, and assuming a clock frequency of 80_000_000 (on P2 both defaults are doubled). If these are changed, it is necessary to call `_setbaud` again in order for serial I/O to work.
 
+### SHARED
+
+The `shared` keyword may be applied to variables and to assembly code.
+
+When applied to a variable, it means that a single version of the variable exists for all instances of a class. In this respect it is like `static` in C++, or putting data in the `dat` block of Spin. Shared variables are also called "global".
+
+When applied to assembly code, it indicates that the code is "global" code intended to be executed by a `cpu` directive. Again, this is similar to putting code in a `dat` block in Spin.
+
 ### SHL
 
 Operator for shifting left. For example:
