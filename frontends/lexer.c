@@ -2087,6 +2087,7 @@ struct reservedword c_keywords[] = {
   { "__builtin_va_arg", C_BUILTIN_VA_ARG },
   { "__builtin_va_start", C_BUILTIN_VA_START },
   { "case", C_CASE },
+  { "__catch", C_CATCH },
   { "__class", C_CLASS },
   { "char", C_CHAR },
   { "const", C_CONST },

@@ -257,6 +257,10 @@ then a call `incr(x)` where the second parameter is not given will be compiled a
 
 The keywords `__this` and `__class` are allowed in both C and C++ code, and mean the same as `this` and `class` in C++. These keywords are intended for use in C code which wishes to use FlexC's class features.
 
+### __catch and __throw
+
+The limited form of exception handling supported by FlexC in C++ mode is also available in C mode, using the `__catch` and `__throw` keywords.
+
 ### Range cases
 
 In switch statements you may add a range of consecutive cases by putting three dots between them. If the case values are integers you should put spaces around the dots to ensure the parser is not confused. So for example:
