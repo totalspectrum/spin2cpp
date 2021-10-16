@@ -10,7 +10,7 @@ public:
   static const int C = 4506;
   static const int D = 4505;
   static char dat[];
-  static void	Demo(void);
+  static int32_t 	Demo(void);
 private:
 };
 

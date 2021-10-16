@@ -11,10 +11,11 @@ AbortHook__ *abortChain__ __attribute__((common));
 char test131::dat[] = {
   0x00, 0x00, 0x80, 0x45, 0xcd, 0xcc, 0x8c, 0x45, 0x9a, 0x11, 0x00, 0x00, 0x99, 0x11, 0x00, 0x00, 
 };
-void test131::Demo(void)
+int32_t test131::Demo(void)
 {
   if (!abortChain__) abort();
   abortChain__->val =  0;
   longjmp(abortChain__->jmp, 1);
+  return 0;
 }
 

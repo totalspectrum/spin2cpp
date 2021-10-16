@@ -3,6 +3,7 @@ Version 5.9.4
 - Fixed Spin2 round(), trunc(), and float() operators for variable expressions
 - Fixed multiply by -1 when local variables are on the stack
 - Fixed expansion of macros which contain other macros
+- Fixed ABORT in Spin functions with no return statements
 - Implemented subset of try/catch for C++
 - Various improvements to the nu code backend
 
