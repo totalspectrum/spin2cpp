@@ -877,6 +877,7 @@ ConstructDefaultValue(AST *decl, AST *val)
 %token C_THIS "this"
 %token C_THROW "throw"
 %token C_THROWIF "__throwifcaught"
+%token C_TRY "try"
 
 // asm only tokens
 %token C_ALIGNL "alignl"
@@ -1867,6 +1868,7 @@ statement
 	| iteration_statement
 	| jump_statement
         | asm_statement
+        | try_statement
 	;
 
 labeled_statement
@@ -2241,6 +2243,78 @@ jump_statement
               }
               throwit->d.ival = 1;
               $$ = top;
+          }
+        ;
+
+try_statement
+	: C_TRY compound_statement handler_sequence
+          {
+              AST *tryblock = $2;
+              AST *catchlist = $3;
+              AST *catchseq;
+              AST *catchvar, *catchblock, *catchdecl;
+              AST *try_if = NULL;
+              AST *trytest;
+
+              while (catchlist) {
+                  catchseq = catchlist->left;
+                  catchlist = catchlist->right;
+                  catchdecl = catchseq->left;
+                  catchblock = catchseq->right;
+
+                  catchvar = catchdecl->left->right;
+                  catchblock = NewAST(AST_STMTLIST, AstAssign(catchvar, NewAST(AST_CATCHRESULT, NULL, NULL)), catchblock);
+                  catchblock = NewAST(AST_STMTLIST, catchdecl, catchblock);
+
+                  trytest = NewAST(AST_SETJMP, NULL, NULL);
+                  try_if = NewAST(AST_IF,
+                                  AstOperator(K_EQ, trytest, AstInteger(0)),
+                                  NewAST(AST_THENELSE, tryblock, catchblock));
+                  try_if = NewCommentedStatement(try_if);
+                  tryblock = NewAST(AST_TRYENV, try_if, NULL);
+              }
+              $$ = tryblock;
+          }
+        ;
+
+handler_sequence
+	: handler_item
+          { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
+	| handler_sequence handler_item
+          {
+              AST *last = NewAST(AST_LISTHOLDER, $2, NULL);
+              $$ = AddToList($1, last);
+          }
+        ;
+
+handler_item
+	: C_CATCH push_current_types '(' handler_declarator ')' compound_statement pop_current_types
+          {
+              AST *declarator = $4;
+              AST *block = $6;
+              // NOTE: the declarator is wrapped in a stmtlist
+              $$ = NewAST(AST_SEQUENCE, declarator, block);
+          }
+	;
+
+push_current_types
+	: { PushCurrentTypes(); }
+	;
+pop_current_types
+	: { PopCurrentTypes(); }
+	;
+
+handler_declarator
+	: raw_parameter_declaration
+          {
+              AST *decl = MakeDeclarations($1, currentTypes);
+              $$ = decl;
+          }
+        | C_ELLIPSIS
+          {
+              AST *var = AstTempIdentifier("catch");
+              var = NewAST(AST_DECLARE_VAR, ast_type_generic, var);
+              $$ = var;
           }
         ;
 
