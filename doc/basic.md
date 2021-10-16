@@ -2996,7 +2996,7 @@ Introduces a multi-line series of statements for an `if` statement. See IF for d
 
 Throws an error which may be caught by a caller's `try`/`catch` block. If none of our callers has established a `try` / `catch` block, the program is ended. To avoid ending the program, use `throwifcaught` instead.
 
-The argument to `throw` must (for now) be an integral type. Earlier versions of FlexBASIC allowed other types, but this is deprecated and a warning will be issued.
+The argument to `throw` must (for now) be an integral type, or `any`. Earlier versions of FlexBASIC allowed other types, but this is deprecated and a warning will be issued. To pass a string or similar message, use `cast` to cast the pointer to `any`.
 
 Example:
 ```
