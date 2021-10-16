@@ -40,14 +40,15 @@ print "done funcs"
 
 '' now test throw/catch
 dim sa as class using "throwtest.bas"
+dim errnum as ulong
 dim err as string
-
 try
   print sa.setval(4)
   print sa.incval(-2)
   print sa.incval(-2)
   print sa.incval(-2)
-catch err
+catch errnum
+  err = cast(any, errnum)
   print "caught error "; err
 end try
 print "done try; val = "; sa.getval()

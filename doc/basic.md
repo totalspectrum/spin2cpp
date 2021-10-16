@@ -2996,7 +2996,7 @@ Introduces a multi-line series of statements for an `if` statement. See IF for d
 
 Throws an error which may be caught by a caller's `try`/`catch` block. If none of our callers has established a `try` / `catch` block, the program is ended. To avoid ending the program, use `throwifcaught` instead.
 
-The argument to `throw` may be of any type. Programmers should beware of mixing different types, as the `try` / `catch` block generally needs to know what type of value it should expect to receive.
+The argument to `throw` must (for now) be an integral type. Earlier versions of FlexBASIC allowed other types, but this is deprecated and a warning will be issued.
 
 Example:
 ```
@@ -3028,7 +3028,7 @@ A predefined constant equal to `$ffffffff` (all bits set). This is the official 
 
 Example:
 ```
-  dim errmsg as string
+  dim errmsg as integer
   try
     ' run sub1, sub2, then sub3. If any one of them
     ' throws an error, we will immediately stop execution
@@ -3037,7 +3037,7 @@ Example:
     sub2
     sub3
   catch errmsg
-    print "a subroutine reports error: " errmsg
+    print "a subroutine reports error number: " errmsg
   end try
 ```
 

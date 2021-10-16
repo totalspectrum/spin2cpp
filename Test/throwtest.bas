@@ -6,7 +6,7 @@ end function
 
 function setval(n as integer)
   if n == 0 then
-    throw "cannot set value to 0"
+    throw cast(any, "cannot set value to 0")
   endif
   val = n
   return val

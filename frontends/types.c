@@ -1374,6 +1374,11 @@ AST *CheckTypes(AST *ast)
             }
         }
         return NULL;
+    case AST_THROW:
+        if (!IsIntOrGenericType(ltype)) {
+            WARNING(ast, "Throwing non-integral types is not supported");
+        }
+        return NULL;
     case AST_COGINIT:
         ltype = ast_type_long;
         {
