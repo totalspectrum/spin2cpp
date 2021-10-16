@@ -2151,7 +2151,7 @@ ProcessOneFunc(Function *pf)
     }
     sawreturn = CheckRetStatementList(pf, pf->body);
 
-    if (GetFunctionReturnType(pf) == NULL && pf->result_used) {
+    if ( GetFunctionReturnType(pf) == NULL && (pf->result_used || (IsSpinLang(pf->language) && pf->has_throw)) ) {
         /* there really is a return type */
         SetFunctionReturnType(pf, ast_type_generic);
     }
