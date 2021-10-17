@@ -533,15 +533,9 @@ pri _getus() : freq = +long | lo, hi
 ''
 pri __builtin_memset(ptr, val, count) : r | lval
   r := ptr
-  lval := (val << 8) | val
-  lval := (lval << 16) | lval
-  repeat while (count > 3)
-    long[ptr] := lval
-    ptr += 4
-    count -= 4
-  repeat count
-    byte[ptr] := val
-    ptr += 1
+  asm
+    call #\builtin_bytefill_
+  endasm
     
 pri __builtin_memmove(dst, src, count) : origdst
   origdst := dst

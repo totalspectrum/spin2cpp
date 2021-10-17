@@ -5546,6 +5546,26 @@ const char *builtin_gosub_p2 =
     "    jmp  #pushregs_done_\n"
     ;
 
+// ptr = arg0, val = arg1, count = arg2
+const char *builtin_memfill_p2 =
+    "builtin_bytefill_\n"
+    "        shr	arg2, #1 wc\n"
+    " if_c   wrbyte	arg1, arg0\n"
+    " if_c   add	arg0, #1\n"
+    "        movbyts	arg1, #0\n"
+    "builtin_wordfill_\n"
+    "    	shr	arg2, #1 wc\n"
+    " if_c   wrword	arg1, ptr\n"
+    " if_c   add	arg0, #2\n"
+    "        setword	arg1, arg1, #1\n"
+    "builtin_longfill_\n"
+    "        wrfast	#0,arg0\n"
+    "        cmp	arg2, #0 wz\n"
+    " if_nz  rep	#1, arg2\n"
+    " if_nz  wflong	arg1\n"
+    "        ret\n"
+    ;
+
 /* WARNING: make sure to increase SETJMP_BUF_SIZE if you add
  * more things to be saved in abort/catch
  */
@@ -5698,6 +5718,10 @@ EmitBuiltins(IRList *irl)
             loop = NewOperand(IMM_STRING, builtin_lmm, 0);
             EmitOp1(irl, OPC_LITERAL, loop);
         }
+    }
+    if (gl_p2) {
+        Operand *memfill = NewOperand(IMM_STRING, builtin_memfill_p2, 0);
+        EmitOp1(irl, OPC_LITERAL, memfill);
     }
     if (pushregs_) {
         const char *builtin_pushregs = (gl_p2 ? builtin_pushregs_p2 : builtin_pushregs_p1);
@@ -6186,7 +6210,7 @@ InitAsmCode()
 
     if (initDone) return;
     
-    newlineOp = NewOperand(IMM_STRING, "\n", 0);    
+    newlineOp = NewOperand(IMM_STRING, "\n", 0);
     initDone = 1;
 }
 
