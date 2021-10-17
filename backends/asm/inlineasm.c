@@ -134,6 +134,8 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
             {
                 r = GetArgReg( parseargnum(name+3) );
                 r_address = immflag;
+            } else if (!strncmp(name, "builtin_", 8)) {
+                r = NewOperand(IMM_COG_LABEL, name, 0);
             } else {
                 ERROR(expr, "Undefined symbol %s", name);
                 return NewImmediate(0);
