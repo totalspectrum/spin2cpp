@@ -536,7 +536,7 @@ pri __builtin_memset(ptr, val, count) : r | lval
   asm
     call #\builtin_bytefill_
   endasm
-    
+
 pri __builtin_memmove(dst, src, count) : origdst
   origdst := dst
   if (dst < src)
@@ -556,3 +556,22 @@ pri __builtin_memmove(dst, src, count) : origdst
       dst -= 1
       src -= 1
       byte[dst] := byte[src]
+
+''
+'' bytefill etc.
+''
+pri bytefill(ptr, val, count)
+  asm
+    call #\builtin_bytefill_
+  endasm
+  
+pri wordfill(ptr, val, count)
+  asm
+    call #\builtin_wordfill_
+  endasm
+
+pri longfill(ptr, val, count)
+  asm
+    call #\builtin_longfill_
+  endasm
+  

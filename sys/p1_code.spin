@@ -329,6 +329,17 @@ pri __builtin_memmove(dst, src, count) : origdst
       src -= 1
       byte[dst] := byte[src]
 
+pri longfill(ptr, val, count)
+  repeat count
+    long[ptr] := val
+    ptr += 4
+pri wordfill(ptr, val, count)
+  repeat count
+    word[ptr] := val
+    ptr += 2
+pri bytefill(ptr, val, count)
+  __builtin_memset(ptr, val, count)
+
 ''
 '' divide (n, nlo) by d, producing qlo and rlo (used in FRAC operation)
 ''

@@ -1,16 +1,6 @@
 ''
 '' common code that applies to both P1 and P2 PASM
 ''
-pri longfill(ptr, val, count)
-  repeat count
-    long[ptr] := val
-    ptr += 4
-pri wordfill(ptr, val, count)
-  repeat count
-    word[ptr] := val
-    ptr += 2
-pri bytefill(ptr, val, count)
-  __builtin_memset(ptr, val, count)
   
 pri longmove(dst, src, count) : origdst
   origdst := dst
