@@ -1,5 +1,6 @@
 Version 5.9.4
 - Added some error checking for parameters of CPU/coginit/cognew
+- Added --charset=C for changing runtime character set
 - Fixed Spin2 round(), trunc(), and float() operators for variable expressions
 - Fixed multiply by -1 when local variables are on the stack
 - Fixed expansion of macros which contain other macros

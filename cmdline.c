@@ -49,7 +49,8 @@ const char *gl_outname = NULL;
 void InitializeSystem(CmdLineOptions *cmd, const char **argv)
 {
     memset(cmd, 0, sizeof(*cmd));
-    gl_isutf8 = 1;
+    gl_src_charset = CHARSET_UTF8;
+    gl_run_charset = CHARSET_UTF8;
     cmd->eepromSize = 32768;
     InitPreprocessor(argv);
     gl_max_errors = 1;
@@ -594,4 +595,24 @@ void check_special_define(const char *name, const char *def)
         val = strtoul(def, NULL, 0);
         gl_default_baud = val;
     }
+}
+
+//
+// parse character set definition
+//
+int ParseCharset(int *var, const char *name)
+{
+    if (!strcasecmp(name, "utf8") || !strcasecmp(name, "utf-8")) {
+        *var = CHARSET_UTF8;
+        return 1;
+    }
+    if (!strcasecmp(name, "latin1") || !strcasecmp(name, "latin-1")) {
+        *var = CHARSET_LATIN1;
+        return 1;
+    }
+    if (!strcasecmp(name, "parallax") || !strcasecmp(name, "oem")) {
+        *var = CHARSET_PARALLAX;
+        return 1;
+    }
+    return 0;
 }

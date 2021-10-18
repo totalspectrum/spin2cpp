@@ -393,6 +393,12 @@ Normally input (e.g. from a C `getchar()`) is echoed back to the screen, and car
 
 The current state of the flags may be retrieved via `_getrxtxflags()`.
 
+## Character Set
+
+The input character set for the compiler is assumed to be UTF-8, or Windows UCS2 (16 bit Unicode).
+
+The character set to use at runtime is set by the compiler switch `--charset=C`, and may be one of `utf8` (the default), `latin1` (for ISO_8859-1), or `parallax` (for the Parallax font). For example, if you are using a VGA graphics program with the Parallax font, you would typically use `--charset=parallax`. This would cause any strings in the program to be translated from UTF-8 (the input character set) to the Parallax font encoding.
+
 ## File I/O (P2 Only)
 
 C and BASIC have built in support for accessing file systems. The file systems first must be given a name with the `mount` system call, and then may be accessed with the normal language functions.
@@ -453,6 +459,10 @@ There are various command line options for the compiler which may modify the com
   [ -w ]             produce Spin wrappers for PASM code
   [ -H nnnn ]        change the base HUB address (see below)
   [ -E ]             omit any coginit header
+  [ --charset=C ]    set the character set to use at runtime
+           C = utf8 for UTF-8 encoding (the default)
+	   C = latin1 for Latin-1 encoding
+	   C = parallax for Parallax font encoding
   [ --code=cog  ]    compile to run in COG memory instead of HUB
   [ --fcache=N  ]    set size of FCACHE space in longs (0 to disable)
   [ --fixedreal ]    use 16.16 fixed point instead of IEEE floating point

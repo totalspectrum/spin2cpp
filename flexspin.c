@@ -94,6 +94,8 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "  [ -C ]             enable case sensitive mode\n");
     fprintf(f, "  [ -x ]             capture program exit code (for testing)\n");
     //fprintf(f, "  [ -z ]             compress code\n");
+    fprintf(f, "  [ --charset=xxx ]  set character set for runtime\n");
+    fprintf(f, "           xxx is one of utf8, latin1, or parallax\n");
     fprintf(f, "  [ --code=cog ]     compile for COG mode instead of LMM\n");
     fprintf(f, "  [ --interp=rom ]   compile bytecodes for P1 ROM interpreter (alpha feature!)\n");
     fprintf(f, "  [ --interp=nu ]    compile bytecodes for NuCode interpreter (alpha feature!)\n");
@@ -479,6 +481,12 @@ main(int argc, const char **argv)
             const char *flags = &argv[0][2];
             if (!ParseWFlags(flags)) {
                 fprintf(stderr, "-W option %s is not supported\n", flags);
+                Usage(stderr, cmd->bstcMode);
+            }
+            argv++; --argc;
+        } else if (!strncmp(argv[0], "--charset=", 10)) {
+            if (!ParseCharset(&gl_run_charset, argv[0]+10)) {
+                fprintf(stderr, "Unknown character set in %s\n", argv[0]);
                 Usage(stderr, cmd->bstcMode);
             }
             argv++; --argc;

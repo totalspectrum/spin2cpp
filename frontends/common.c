@@ -51,7 +51,8 @@ Module *systemModule;
 SymbolTable *currentTypes;
 
 int gl_p2;
-int gl_isutf8 = 1;
+int gl_src_charset = CHARSET_UTF8;
+int gl_run_charset = CHARSET_UTF8;
 int gl_have_lut;
 int gl_errors;
 int gl_warnings_are_errors;

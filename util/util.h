@@ -53,7 +53,7 @@ char *strdupcat(const char *a, const char *b);
 // convert wide character wcorig to utf-8 in s, returns count
 size_t to_utf8(char *s, wchar_t wcorig);
 
-// convert utf-8 sequence to wide character
+// convert utf-8 sequence to wide character; n is max size of cptr
 size_t from_utf8(wchar_t *wcptr, const char *cptr, size_t n);
 
 #endif

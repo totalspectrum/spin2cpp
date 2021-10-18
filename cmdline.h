@@ -30,6 +30,7 @@ typedef struct CmdLineOptions {
 void InitializeSystem(CmdLineOptions *opts, const char **argv);
 int ProcessCommandLine(CmdLineOptions *opts);
 int ParseWFlags(const char *flags);
+int ParseCharset(int *charset_var, const char *charset_name);
 
 void check_special_define(const char *name, const char *val);
 

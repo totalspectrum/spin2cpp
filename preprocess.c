@@ -44,6 +44,7 @@
 #include <ctype.h>
 #include <stdarg.h>
 #include "preprocess.h"
+#include "util/util.h"
 
 #ifdef _MSC_VER
 #define strdup _strdup
@@ -141,7 +142,7 @@ pp_nextline(struct preprocess *pp)
     FILE *f;
     char buf[4];
     struct filestate *A;
-    
+
     A = pp->fil;
     if (!A)
         return 0;
