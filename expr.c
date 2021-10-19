@@ -2178,7 +2178,11 @@ FindFuncSymbol(AST *ast, AST **objrefPtr, int errflag)
             }
         }
     } else {
-        sym = LookupAstSymbol(expr, errflag ? "function call" : NULL);
+        if (expr) {
+            sym = LookupAstSymbol(expr, errflag ? "function call" : NULL);
+        } else if (errflag) {
+            ERROR(ast, "NULL pointer in function call");
+        }
     }
     if (objrefPtr) *objrefPtr = objref;
     return sym;
