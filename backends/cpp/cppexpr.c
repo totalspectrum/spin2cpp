@@ -337,7 +337,7 @@ PrintFuncCall(Flexbuf *f, Symbol *sym, AST *params, AST *objtype, AST *objref)
 void
 PrintLabelCoginit(Flexbuf *f, AST *params)
 {
-    const char *funcname = "coginit";
+    const char *funcname = gl_p2 ? "_cogstart_PASM" : "coginit";
     if (params->kind == AST_COGINIT) {
         params = params->left;
     } else {
@@ -347,7 +347,14 @@ PrintLabelCoginit(Flexbuf *f, AST *params)
 
     if (params && params->left && IsConstExpr(params->left)) {
         int32_t cogid = EvalConstExpr(params->left);
-        if (cogid >= NUM_COGS || cogid < 0) {
+        bool use_cognew = false;
+
+        if (gl_p2) {
+            use_cognew = (cogid == 16);
+        } else {
+            use_cognew = (cogid >= NUM_COGS || cogid < 0);
+        }
+        if (use_cognew) {
             params = params->right;
             funcname = gl_p2 ? "_cognew" : "cognew";
         }
