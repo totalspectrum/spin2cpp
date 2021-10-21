@@ -372,6 +372,7 @@ ProcessModule(Module *P)
     
     /* now declare all the symbols that weren't already declared */
     DeclareConstants(P, &P->conblock);
+    ProcessConstants(P);
     DeclareMemberVariables(P);
     DeclareFunctions(P);
 

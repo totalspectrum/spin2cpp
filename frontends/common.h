@@ -893,6 +893,9 @@ int ParseOptimizeString(AST *lineNum, const char *str, int *flags);
 /* declare constants */
 void DeclareConstants(Module *P, AST **conlist);
 
+/* process constants to set clock frequency and such */
+void ProcessConstants(Module *P);
+
 /* declare all functions */
 void DeclareFunctions(Module *);
 

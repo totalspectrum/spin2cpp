@@ -435,6 +435,7 @@ AddEnumerators(AST *identifier, AST *enumlist)
     // in struct definitions and such
     P->conblock = AddToList(P->conblock, enumlist);
     DeclareConstants(P, &P->conblock);
+    P->conblock = NULL;
     return ast_type_long;
 }
 

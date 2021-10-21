@@ -1,10 +1,3 @@
-con
-	T_NONE = 0
-	T_FIRST = 256
-	T_SECOND = 257
-	T_THIRD = 258
-	S_FOO = 0
-	S_BAR = 1
 pub main
   coginit(0, @entry, 0)
 dat

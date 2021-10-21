@@ -150,6 +150,7 @@ uint32_t  _pollcnt(uint32_t tick);
 void      _waitcnt(uint32_t tick);
 
 void      _waitx(uint32_t cycles);
+void      _waitsec(uint32_t seconds);
 void	  _waitms(uint32_t milliseconds);
 void	  _waitus(uint32_t microseconds);
 

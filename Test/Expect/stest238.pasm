@@ -1,6 +1,3 @@
-con
-	DEF1 = 2
-	DEF2 = 8
 pub main
   coginit(0, @entry, 0)
 dat

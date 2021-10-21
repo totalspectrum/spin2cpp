@@ -606,7 +606,11 @@ DeclareConstants(Module *P, AST **conlist_ptr)
     }
     completed_declarations = AddToList(completed_declarations, conlist);
     *conlist_ptr = completed_declarations;
+}
 
+void
+ProcessConstants(Module *P)
+{
     /* for the top level module, calculate frequency and declare constants if necessary */
     if (IsTopLevel(P)) {
         if (gl_p2) {
