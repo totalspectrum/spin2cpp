@@ -8,6 +8,7 @@ Version 5.9.4
 - Fixed C _clkfreq constant in multiple enums problem
 - Implemented subset of try/catch for C++
 - Improved Catalina compatibility for spin2cpp
+- Reverted some variable layout changes from 5.5.1
 - Various improvements to the nu code backend
 
 Version 5.9.3
