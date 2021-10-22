@@ -682,21 +682,8 @@ ConvertPrintToPrintf(AST *ast)
             expr = expr->left;
             if (IsConstExpr(expr)) {
                 int c = EvalConstExpr(expr);
-                switch (c) {
-                case '\n':
-                    strcpy(strbuf, "\\n");
-                    break;
-                case '\r':
-                    strcpy(strbuf, "\\r");
-                    break;
-                case '\t':
-                    strcpy(strbuf, "\\t");
-                    break;
-                default:
-                    strbuf[0] = c;
-                    strbuf[1] = 0;
-                    break;
-                }
+                strbuf[0] = c;
+                strbuf[1] = 0;
                 flexbuf_addstr(&fbstr, strbuf);
             } else {
                 flexbuf_addstr(&fbstr, "%c");
