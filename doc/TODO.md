@@ -28,20 +28,6 @@ Remaining string functions
 
 Easier implicit declarations
 
-Spin
-----
-Update to match spin2
-
-Float operators:
-  ABS.
-  SQRT.
-  *. /. +. -.
-  #>. #<.  (force ge or le)
-  <. <=. >=. >.
-  <=>.  return -1, 0, 1
-  a := float(i)             ' convert i from integer to float
-  i := round(a) or trunc(a) ' convert float back to int
-  
 Short Term Misc
 ---------------
 More documentation.
