@@ -1,6 +1,7 @@
 //
 // test for {++ } at top level
 //
+#define __SPIN2CPP__
 #include <propeller.h>
 #include "test133.h"
 

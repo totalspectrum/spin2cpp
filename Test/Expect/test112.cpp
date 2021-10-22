@@ -1,4 +1,5 @@
 // test for org and label interaction
+#define __SPIN2CPP__
 #include <propeller.h>
 #include "test112.h"
 

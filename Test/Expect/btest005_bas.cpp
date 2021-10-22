@@ -1,4 +1,5 @@
 // simple program to toggle a pin
+#define __SPIN2CPP__
 #include <propeller.h>
 #include "btest005.h"
 

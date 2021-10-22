@@ -4,6 +4,7 @@
 /* 
   with an inline comment
  */
+#define __SPIN2CPP__
 #include <propeller.h>
 #include "test007.h"
 

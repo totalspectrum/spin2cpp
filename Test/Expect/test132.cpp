@@ -1,6 +1,7 @@
 //
 // test for {++ } inside pub/pri
 //
+#define __SPIN2CPP__
 #include <propeller.h>
 #include "test132.h"
 

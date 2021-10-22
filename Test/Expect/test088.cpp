@@ -1,6 +1,7 @@
 //
 // make sure tab counts as 8 spaces!!
 //
+#define __SPIN2CPP__
 #include <propeller.h>
 #include "test088.h"
 

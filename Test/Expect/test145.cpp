@@ -2,6 +2,7 @@
 // test for non-static methods called from
 // a function forced to be static
 //
+#define __SPIN2CPP__
 #include <propeller.h>
 #include "test145.h"
 

@@ -484,6 +484,10 @@ PrintMacros(Flexbuf *f, Module *parse)
 	  flexbuf_printf(f, "#define cognew(code, par) coginit(0x8, (code), (par))\n");
 	  flexbuf_printf(f, "#define cogstop(i) _cogstop(i)\n");
           flexbuf_printf(f, "#endif /* __FLEXC__ */\n");
+          flexbuf_printf(f, "#ifdef __CATALINA__\n");
+          flexbuf_printf(f, "#define _CNT CNT\n");
+          flexbuf_printf(f, "#define _clkfreq _clockfreq()\n");
+          flexbuf_printf(f, "#endif\n");
 	  if (be->needsHighmult) {
               flexbuf_printf(f, "static int32_t Highmult__(int32_t a, int32_t b) {\n");
 	      flexbuf_printf(f, "  int sign = (a^b)>>31;\n");
@@ -829,6 +833,7 @@ PrintCppFile(Flexbuf *f, Module *parse)
         flexbuf_printf(f, "#include <string.h>\n");
     }
     IfdefPropeller(f);
+    flexbuf_printf(f, "#define __SPIN2CPP__\n");
     if (gl_p2) {
         flexbuf_printf(f, "#include <propeller2.h>\n");
     } else {

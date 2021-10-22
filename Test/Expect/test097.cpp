@@ -1,4 +1,5 @@
 /*  some additional defines  */
+#define __SPIN2CPP__
 #include <propeller.h>
 #include "test097.h"
 

@@ -1,5 +1,6 @@
 /*  indicate to spin2cpp that it should not output Spin methods  */
 /*  the Spin version of the methods  */
+#define __SPIN2CPP__
 #include <propeller.h>
 #include "test095.h"
 

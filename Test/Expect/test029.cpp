@@ -1,4 +1,5 @@
 #include <string.h>
+#define __SPIN2CPP__
 #include <propeller.h>
 #include "test029.h"
 

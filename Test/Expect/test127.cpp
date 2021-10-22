@@ -1,5 +1,6 @@
 // check that return value processing goes through
 // case statements
+#define __SPIN2CPP__
 #include <propeller.h>
 #include "test127.h"
 

@@ -1,3 +1,4 @@
+#define __SPIN2CPP__
 #include <propeller.h>
 #include "test018.h"
 

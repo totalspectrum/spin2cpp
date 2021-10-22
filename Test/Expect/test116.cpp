@@ -1,6 +1,7 @@
 //
 // test for wordfill
 //
+#define __SPIN2CPP__
 #include <propeller.h>
 #include "test116.h"
 

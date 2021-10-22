@@ -1,6 +1,7 @@
 // this is a comment
 //
 // and this is a comment too
+#define __SPIN2CPP__
 #include <propeller.h>
 #include "btest001.h"
 
