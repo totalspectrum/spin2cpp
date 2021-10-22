@@ -9,6 +9,6 @@ void btest007::program(void)
   x = "hello";
   y = 2;
   z = y * y;
-  printf("%s\\t%d\\t%d\\n", x, y, z);
+  printf("%s\t%d\t%d\n", x, y, z);
 }
 

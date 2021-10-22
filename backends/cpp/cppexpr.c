@@ -1096,6 +1096,8 @@ PrintStringChar(Flexbuf *f, int c)
         } else {
             flexbuf_printf(f, "%c", c);
         }
+    } else if (c == 9) {
+        flexbuf_printf(f, "\\t");
     } else if (c == 10) {
         flexbuf_printf(f, "\\n");
     } else if (c == 13) {
