@@ -1705,13 +1705,22 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
     return;
 }
 
+#define SIZEFLAG_BYTE 0x01
+#define SIZEFLAG_WORD 0x02
+#define SIZEFLAG_LONG 0x04
+#define SIZEFLAG_VAR  0x08
+#define SIZEFLAG_OBJ  0x10
+#define SIZEFLAG_DONE 0x8000
+#define SIZEFLAG_ALL  0xFFFF
+
 static int
-DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
+DeclareMemberVariablesOfSizeFlag(Module *P, int sizeRequest, int offset)
 {
     AST *upper;
     AST *ast;
     AST *curtype;
-    int curtypesize = basetypesize;
+    int curtypesize = 0;
+    int curSizeFlag = 0;
     int isUnion = P->isUnion;
     AST *varblocklist;
     int oldoffset = offset;
@@ -1721,7 +1730,7 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
         sym_flags = SYMF_PRIVATE;
     }
     varblocklist = P->pendingvarblock;
-    if (basetypesize == 0) {
+    if (sizeRequest & SIZEFLAG_DONE) {
         P->finalvarblock = AddToList(P->finalvarblock, varblocklist);
         P->pendingvarblock = NULL;
     }
@@ -1737,16 +1746,19 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
         case AST_BYTELIST:
             curtype = ast_type_byte;
             curtypesize = 1;
+            curSizeFlag = SIZEFLAG_BYTE;
             idlist = ast->left;
             break;
         case AST_WORDLIST:
             curtype = ast_type_word;
             curtypesize = 2;
+            curSizeFlag = SIZEFLAG_WORD;
             idlist = ast->left;
             break;
         case AST_LONGLIST:
 	    curtype = NULL; // was ast_type_generic;
             curtypesize = 4;
+            curSizeFlag = SIZEFLAG_LONG;
             idlist = ast->left;
             break;
         case AST_DECLARE_VAR:
@@ -1754,6 +1766,11 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
             curtype = ast->left;
             idlist = ast->right;
             curtypesize = CheckedTypeSize(curtype); // make sure module variables are declared
+            if (IsClassType(curtype) || curtypesize == 0) {
+                curSizeFlag = SIZEFLAG_OBJ;
+            } else {
+                curSizeFlag = SIZEFLAG_VAR;
+            }
             if (ast->d.ival) {
                 // variable should be private
                 sym_flags = SYMF_PRIVATE;
@@ -1761,7 +1778,7 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
                 sym_flags = 0;
             }
             if (curtype->kind == AST_ASSIGN) {
-                if (basetypesize == 4 || basetypesize == 0) {
+                if (sizeRequest & SIZEFLAG_DONE) {
                     ERROR(ast, "Member variables cannot have initial values");
                     return offset;
                 }
@@ -1783,20 +1800,20 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
                 P->varsize = curtypesize;
             }
         }
-        if (basetypesize == 0) {
-            // round offset up to necessary alignment
-            // If you change this, be sure to change code for aligning
-            // initializers, too!
-            if (1 /*!gl_p2*/) { /* FIXME: what about PACKED structs */
-                if (curtypesize == 2) {
-                    offset = (offset + 1) & ~1;
-                } else if (curtypesize >= 4) {
-                    offset = (offset + 3) & ~3;
+        if (0 != (curSizeFlag & sizeRequest)) {
+            if (sizeRequest & (SIZEFLAG_VAR|SIZEFLAG_OBJ)) {
+                // round offset up to necessary alignment
+                // If you change this, be sure to change code for aligning
+                // initializers, too!
+                if (1 /*!gl_p2*/) { /* FIXME: what about PACKED structs */
+                    if (curtypesize == 2) {
+                        offset = (offset + 1) & ~1;
+                    } else if (curtypesize >= 4) {
+                        offset = (offset + 3) & ~3;
+                    }
                 }
             }
             // declare all the variables
-            offset = EnterVars(SYM_VARIABLE, &P->objsyms, curtype, idlist, offset, P->isUnion, sym_flags);
-        } else if (basetypesize == curtypesize || (basetypesize == 4 && (curtypesize >= 4 || curtypesize == 0))) {
             offset = EnterVars(SYM_VARIABLE, &P->objsyms, curtype, idlist, offset, P->isUnion, sym_flags);
         }
     }
@@ -1880,11 +1897,17 @@ DeclareMemberVariables(Module *P)
     if (P->mainLanguage == LANG_SPIN_SPIN1) {
         // Spin always declares longs first, then words, then bytes
         // but other languages may have other preferences
-        offset = DeclareMemberVariablesOfSize(P, 4, offset); // also declares >= 4
-        offset = DeclareMemberVariablesOfSize(P, 2, offset);
-        offset = DeclareMemberVariablesOfSize(P, 1, offset);
+        offset = DeclareMemberVariablesOfSizeFlag(P, SIZEFLAG_LONG, offset);
+        offset = DeclareMemberVariablesOfSizeFlag(P, SIZEFLAG_WORD, offset);
+        offset = DeclareMemberVariablesOfSizeFlag(P, SIZEFLAG_BYTE, offset);
+        offset = DeclareMemberVariablesOfSizeFlag(P, SIZEFLAG_VAR, offset);
+        offset = DeclareMemberVariablesOfSizeFlag(P, SIZEFLAG_OBJ|SIZEFLAG_DONE, offset);
+    } else if (P->mainLanguage == LANG_SPIN_SPIN2) {
+        // Spin always declares longs first, then words, then bytes
+        offset = DeclareMemberVariablesOfSizeFlag(P, SIZEFLAG_LONG|SIZEFLAG_WORD|SIZEFLAG_BYTE, offset);
+        offset = DeclareMemberVariablesOfSizeFlag(P, SIZEFLAG_VAR|SIZEFLAG_OBJ|SIZEFLAG_DONE, offset);
     } else {
-        offset = DeclareMemberVariablesOfSize(P, 0, offset);
+        offset = DeclareMemberVariablesOfSizeFlag(P, SIZEFLAG_ALL, offset);
     }
     if (!P->isUnion) {
         // round up to next LONG boundary
