@@ -2210,6 +2210,7 @@ Convert a floating point value to integer. Any fractional parts are truncated.
 ```
   i = int(3.1415) ' now i will be set to 3
 ```
+Warning: truncation will sometimes result in surprising results (e.g. `int(23.99999)` will produce `23` rather than `24`). For many purposes the `round` function is preferable to `int`.
 
 ### INTEGER
 
