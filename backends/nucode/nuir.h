@@ -59,6 +59,7 @@
     X(NOT)       /* bit complement tos */ \
     X(ABS)       /* abs value tos */ \
     X(REV)       /* reverse bits of tos */ \
+    X(ONES)      /* count one bits of tos */ \
     X(QEXP)      /* exp2 */ \
     X(QLOG)      /* log2 */ \
     /* UNARY math operations end here */ \

@@ -676,6 +676,9 @@ impl_NOT
 impl_ABS
   _ret_	abs	tos, tos
 
+impl_ONES
+  _ret_	ones	tos, tos
+
 impl_REV
   _ret_	rev	tos
 
