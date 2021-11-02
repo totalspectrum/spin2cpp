@@ -1622,10 +1622,13 @@ CheckForStatic(Function *fdef, AST *body)
         if (IsSpinCoginit(body, NULL)) {
             fdef->is_static = 0;
         }
+        CheckForStatic(fdef, body->left);
+        CheckForStatic(fdef, body->right);
         break;
     default:
         CheckForStatic(fdef, body->left);
         CheckForStatic(fdef, body->right);
+        break;
     }
 }
 

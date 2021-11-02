@@ -1,3 +1,6 @@
+Version 5.9.5
+- Fixed incorrect static function detection when coginit is used (affected reSound)
+
 Version 5.9.4
 - Added some error checking for parameters of CPU/coginit/cognew
 - Added --charset=C for changing runtime character set
