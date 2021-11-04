@@ -1,5 +1,6 @@
 Version 5.9.5
 - Fixed incorrect static function detection when coginit is used (affected reSound)
+- Fixed a serious memory overflow bug in fopen()
 
 Version 5.9.4
 - Added some error checking for parameters of CPU/coginit/cognew

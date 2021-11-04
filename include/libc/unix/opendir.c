@@ -11,7 +11,7 @@ DIR *opendir(const char *orig_name)
     DIR *dir;
     int r;
     name = __getfilebuffer();
-    v = (struct vfs *)__getvfsforfile(name, orig_name);
+    v = (struct vfs *)__getvfsforfile(name, orig_name, NULL);
     if (!v || !v->opendir) {
         _seterror(ENOSYS);
         return 0;

@@ -19,7 +19,7 @@ char *__getfilebuffer()
 }
 
 struct vfs *
-__getvfsforfile(char *name, const char *orig_name, char *full_path = 0)
+__getvfsforfile(char *name, const char *orig_name, char *full_path)
 {
     int i, len;
     struct vfs *v;

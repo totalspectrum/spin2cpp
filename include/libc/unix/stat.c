@@ -11,7 +11,7 @@ int stat(const char *orig_name, struct stat *buf)
 #ifdef _DEBUG
     __builtin_printf("stat(%s)\n", name);
 #endif    
-    v = __getvfsforfile(name, orig_name);
+    v = __getvfsforfile(name, orig_name, NULL);
     if (!v || !v->stat) {
 #ifdef _DEBUG
         __builtin_printf("stat: ENOSYS\n");

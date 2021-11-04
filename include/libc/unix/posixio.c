@@ -104,7 +104,7 @@ _openraw(void *fil_ptr, const char *orig_name, int flags, mode_t mode)
     vfs_file_t *fil = fil_ptr;
     
     char *name = __getfilebuffer();
-    v = (struct vfs *)__getvfsforfile(name, orig_name);
+    v = (struct vfs *)__getvfsforfile(name, orig_name, NULL);
     if (!v || !v->open) {
 #ifdef _DEBUG
         __builtin_printf("ENOSYS: vfs == %x\n", (unsigned)v);
@@ -396,7 +396,7 @@ unlink(const char *orig_name)
     int r;
     struct vfs *v;
     char *name = __getfilebuffer();
-    v = (struct vfs *)__getvfsforfile(name, orig_name);
+    v = (struct vfs *)__getvfsforfile(name, orig_name, NULL);
     if (!v || !v->open) {
 #ifdef _DEBUG
         __builtin_printf("rmdir: ENOSYS: vfs=%x\n", (unsigned)v);
@@ -416,7 +416,7 @@ rmdir(const char *orig_name)
     struct vfs *v;
     char *name = __getfilebuffer();
     int r;
-    v = (struct vfs *)__getvfsforfile(name, orig_name);
+    v = (struct vfs *)__getvfsforfile(name, orig_name, NULL);
     if (!v || !v->rmdir) {
 #ifdef _DEBUG
         __builtin_printf("rmdir: ENOSYS: vfs=%x\n", (unsigned)v);
@@ -436,7 +436,7 @@ mkdir(const char *orig_name, mode_t mode)
     int r;
     struct vfs *v;
     char *name = __getfilebuffer();
-    v = (struct vfs *)__getvfsforfile(name, orig_name);
+    v = (struct vfs *)__getvfsforfile(name, orig_name, NULL);
     if (!v || !v->open) {
 #ifdef _DEBUG
         __builtin_printf("rmdir: ENOSYS: vfs=%x\n", (unsigned)v);

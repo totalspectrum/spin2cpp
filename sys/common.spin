@@ -251,7 +251,7 @@ pri {++complexio} file "libc/unix/vfs.c" _getrootvfs()
 pri {++complexio} file "libc/unix/vfs.c" _setrootvfs(root)
 pri {++complexio} file "libc/unix/mount.c" _mount(name, volume)
 pri {++complexio} file "libc/unix/mount.c" __getfilebuffer() : r=@byte
-pri {++complexio} file "libc/unix/mount.c" __getvfsforfile(name, orig_name)
+pri {++complexio} file "libc/unix/mount.c" __getvfsforfile(name, orig_name, full_path)
 pri {++complexio} file "libc/unix/exec.c" _execve(name=string, argv=0, envp=0)
 
 '' I/O functions

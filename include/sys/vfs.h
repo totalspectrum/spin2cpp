@@ -69,6 +69,6 @@ int __default_flush(vfs_file_t *f) _IMPL("libc/unix/bufio.c");
 
 /* directory functions */
 char *__getfilebuffer();
-struct vfs *__getvfsforfile(char *fullname, const char *orig_name);
+struct vfs *__getvfsforfile(char *fullname, const char *orig_name, char *full_path);
 
 #endif
