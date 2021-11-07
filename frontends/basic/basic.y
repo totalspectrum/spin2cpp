@@ -400,6 +400,7 @@ AdjustParamForByVal(AST *param)
 %token BAS_CASE       "case"
 %token BAS_CAST       "cast"
 %token BAS_CATCH      "catch"
+%token BAS_CHAIN      "chain"
 %token BAS_CLASS      "class"
 %token BAS_CLOSE      "close"
 %token BAS_CONST      "const"
@@ -909,6 +910,30 @@ iostmt:
         $$ = NewCommentedAST(AST_FUNCCALL,
                     AstIdentifier("_basic_close"),
                              NewAST(AST_EXPRLIST, $3, NULL), $1);
+    }
+  | BAS_CHAIN '#' BAS_INTEGER
+    {
+        AST *twonulls = NewAST(AST_EXPRLIST,
+                              AstInteger(0),
+                              NewAST(AST_EXPRLIST,
+                                     AstInteger(0),
+                                     NULL));
+        AST *handle = $3;
+        $$ = NewCommentedAST(AST_FUNCCALL,
+                    AstIdentifier("_fexecve"),
+                             NewAST(AST_EXPRLIST, handle, twonulls), $1);
+    }
+  | BAS_CHAIN BAS_STRING
+    {
+        AST *twonulls = NewAST(AST_EXPRLIST,
+                              AstInteger(0),
+                              NewAST(AST_EXPRLIST,
+                                     AstInteger(0),
+                                     NULL));
+        AST *name = NewAST(AST_STRINGPTR, NewAST(AST_EXPRLIST, $2, NULL), NULL);
+        $$ = NewCommentedAST(AST_FUNCCALL,
+                    AstIdentifier("_execve"),
+                             NewAST(AST_EXPRLIST, name, twonulls), $1);
     }
   | BAS_GET '#' putgetargs
     {

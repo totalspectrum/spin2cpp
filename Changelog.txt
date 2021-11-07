@@ -1,4 +1,5 @@
 Version 5.9.5
+- Added CHAIN #n for BASIC, and _fexecve(fd, argv, envp) for C
 - Fixed incorrect static function detection when coginit is used (affected reSound)
 - Fixed a serious memory overflow bug in fopen()
 

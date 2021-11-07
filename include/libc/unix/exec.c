@@ -54,13 +54,11 @@ void __run(long *src, int size, void *arg) __attribute__((cog))
 // for now the arguments and environment are ignored
 // someday we'll implement them!
 //
-int _execve(const char *filename, char **argv = 0, char **envp = 0)
+int _execve(const char *filename, char **argv, char **envp)
 {
     vfs_file_t *tab = __getftab(0);
     int fd;
     int r;
-    char *buf, *ptr, *topmem;
-    int sizeleft;
     vfs_file_t *f;
     
     // find an empty slot... actually this
@@ -78,6 +76,24 @@ int _execve(const char *filename, char **argv = 0, char **envp = 0)
     if (r != 0) {
         return r;
     }
+    return _vfsexecve(f, argv, envp);
+}
+
+int _fexecve(int fd, char **argv, char **envp)
+{
+    vfs_file_t *f = __getftab(fd);
+    if (!f) {
+        return _seterror(EBADF);
+    }
+    return _vfsexecve(f, argv, envp);
+}
+
+int _vfsexecve(vfs_file_t *f, char **argv, char **envp)
+{
+    char *buf, *ptr, *topmem;
+    int sizeleft;
+    int r;
+
     // OK, now read the file contents into memory
     // we need to find unused RAM, which basically means after our stack
     // the stack pointer is obtained via

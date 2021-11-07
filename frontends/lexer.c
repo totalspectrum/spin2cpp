@@ -2046,6 +2046,7 @@ struct reservedword basic_keywords[] = {
   { "case", BAS_CASE },
   { "cast", BAS_CAST },
   { "catch", BAS_CATCH },
+  { "chain", BAS_CHAIN },
   { "class", BAS_CLASS },
   { "close", BAS_CLOSE },
   { "const", BAS_CONST },

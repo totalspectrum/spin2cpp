@@ -177,6 +177,7 @@ call
 case
 cast
 catch
+chain
 class
 close
 const
@@ -272,7 +273,6 @@ A number of functions and variables are predefined. These names may be redefined
 bin$
 bytefill
 bytemove
-chain
 _clkfreq
 clkfreq
 clkset
@@ -1347,6 +1347,18 @@ mount "/sd", _vfs_open_sdcard()
 chain "/sd/prog.bin"
 ```
 will start the program "prog.bin" from the SD card. The new program completely replaces the currently running program, and will not return to it (although it may itself use `chain` to start the original again.
+
+Alternatively, `chain` may be used to run a program from a previously opened file descriptor, e.g.:
+```
+' this example uses a made up myspi class
+' which has methods 'init' and 'rx'
+' rx() reads a single byte
+dim spi as class using("myspi.spin")
+' start the SPI class
+spi.init(pin1, pin2, pin3, pin4)
+open SendRecvDevice(nil, @spi.rx, nil) as #4
+chain #4
+```
 
 #### Limitations of CHAIN
 
