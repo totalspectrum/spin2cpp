@@ -440,8 +440,18 @@ outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs, A
         return;
     }
     if (item) {
-        exprType = CheckTypes(item);
+        if (item->kind == AST_SIMPLEFUNCPTR) {
+            exprType = NULL;
+        } else {
+            exprType = CheckTypes(item);
+            if (IsGenericType(exprType) && item->kind == AST_CAST && item->right->kind == AST_ABSADDROF) {
+                exprType = NULL;
+            }
+        }
         if (exprType) {
+            if (!IsPointerType(exprType) && !IsArrayType(exprType) && !IsConstExpr(item)) {
+                ERROR(item, "compile time initializer must be constant");
+            }
             type = CoerceAssignTypes(item, AST_ASSIGN, &item, type, exprType, "initialization");
             // ignore any casts added
             while (item->kind == AST_CAST) {
