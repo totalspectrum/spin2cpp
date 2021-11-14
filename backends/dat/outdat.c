@@ -450,7 +450,7 @@ outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs, A
         }
         if (exprType) {
             if (!IsPointerType(exprType) && !IsArrayType(exprType) && !IsConstExpr(item)) {
-                ERROR(item, "compile time initializer must be constant");
+                ERROR(item, "global initializers are evaluated at compile time and therefore must be constant");
             }
             type = CoerceAssignTypes(item, AST_ASSIGN, &item, type, exprType, "initialization");
             // ignore any casts added
