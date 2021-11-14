@@ -1,3 +1,7 @@
+Version 5.9.6
+- Added error for non-constant compile time initializers
+- Fixed incorrect error when printing DEBUG expressions containing function calls
+
 Version 5.9.5
 - Added CHAIN #n for BASIC, and _fexecve(fd, argv, envp) for C
 - Fixed incorrect static function detection when coginit is used (affected reSound)

@@ -1593,7 +1593,7 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
             const char *name = GetIdentifierName(expr->left);
             if (name) {
                 flexbuf_printf(f, "%s(", name);
-                PrintExprList(f, expr->right, PRINTEXPR_DEFAULT, NULL);
+                PrintExprList(f, expr->right, flags, NULL);
                 flexbuf_printf(f, ")");
             }
         } else if (sym->kind == SYM_BUILTIN) {
