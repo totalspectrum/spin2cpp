@@ -27,6 +27,7 @@ SymbolTable *currentTypes;
 
 AST *ast_type_long, *ast_type_word, *ast_type_byte, *ast_type_float;
 AST *ast_type_string, *ast_type_generic;
+AST *ast_type_generic_funcptr;
 AST *ast_type_ptr_byte;
 AST *ast_type_unsigned_long;
 AST *ast_type_void;
