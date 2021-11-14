@@ -389,6 +389,30 @@ static NuMacro *NuScanForMacros(NuIrList *lists, int *savings) {
     return where;
 }
 
+//
+// recalculate usage of bytescodes
+//
+static void NuRecalcUsage(NuIrList *lists) {
+    NuIrList *irl = lists;
+    NuIr *ir;
+    NuBytecode *curCode;
+    int i;
+
+    for (i = 0; i < num_bytecodes; i++) {
+        globalBytecodes[i]->usage = 0;
+    }
+    while (irl) {
+        for (ir = irl->head; ir; ir = ir->next) {
+            curCode = ir->bytecode;
+            if (curCode) {
+                curCode->usage++;
+            }
+        }
+        irl = irl->nextList;
+    }
+    qsort(&globalBytecodes, num_bytecodes, sizeof(globalBytecodes[0]), usage_sortfunc);
+}
+
 // find bytecode to compress
 // this may be either a single PUSHI/PUSHA (which is compressed by creating a single opcode immediate version)
 // or a macro pair (which is compressed by creating a new bytecode which does both macros)
@@ -496,7 +520,7 @@ static NuBytecode *NuReplaceMacro(NuIrList *lists, NuMacro *macro) {
     while (irl) {
         for (ir = irl->head; ir; ir = ir->next) {
             NuIr *delir = ir->next;
-            if (ir->bytecode == first && delir && delir->bytecode == second) {
+            if (ir->bytecode == first && delir && delir->bytecode == second) {                
                 ir->bytecode = bc;
                 bc->usage++;
                 ir->next = delir->next;
@@ -505,6 +529,8 @@ static NuBytecode *NuReplaceMacro(NuIrList *lists, NuMacro *macro) {
                 } else {
                     irl->tail = ir;
                 }
+                first->usage--;
+                second->usage--;
             }
         }
         
@@ -564,7 +590,8 @@ void NuCreateBytecodes(NuIrList *lists)
         const char *instr = "mov";
         const char *opname;
         NuMacro *macro;
-        
+
+        NuRecalcUsage(lists);
         bc = NuFindCompressBytecode(lists, &compressValue);
         macro = NuScanForMacros(lists, &macroValue);
         if (bc && macro) {
