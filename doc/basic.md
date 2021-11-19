@@ -329,6 +329,7 @@ pinlo
 pinread
 pinrnd
 pinset
+pinstart
 pintoggle
 rdpin
 _reboot
@@ -2573,6 +2574,14 @@ Force a pin to be an output, and set its value (new value must be either 0 or 1)
 ```
   pinset(p, v)
 ```
+
+### PINSTART (available on P2 only)
+
+Set up and start a P2 smart pin. This is similar to the Spin2 function:
+```
+pinstart(pin, mode, xval, yval)
+```
+`pin` is the pin to start, `mode` is the smart pin mode, and `xval` and `yval` are the (mode dependent) initial values for the smartpin X and Y registers. See the P2 documentation for details on the smart pins.
 
 ### PINTOGGLE
 

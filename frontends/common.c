@@ -254,11 +254,16 @@ Aliases basicalias[] = {
     { "pinread", "_pinread" },
     { "pinrnd", "_drvrnd" },
     { "pinset", "_drvw" },
+    { "pinstart", "_pinstart" },
     { "pintoggle", "_drvnot" },
+    { "rdpin", "_rdpin" },
     { "rnd", "_basic_rnd" },
     { "strerror$", "_strerror" },
     { "val", "__builtin_atof" },
     { "val%", "__builtin_atoi" },
+    { "wrpin", "_wrpin" },
+    { "wxpin", "_wxpin" },
+    { "wypin", "_wypin" },
 
     /* math functions */
     { "acos", "__builtin_acosf" },
