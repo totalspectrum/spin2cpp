@@ -2408,6 +2408,7 @@ Builtin builtinfuncs[] = {
     { "wordmove", 3, memBuiltin, "memmove", NULL, NULL, 2, NULL },
     { "bytefill", 3, memBuiltin, "memset", NULL, NULL, 1, NULL },
     { "bytemove", 3, memBuiltin, "memmove", NULL, NULL, 1, NULL },
+    { "__builtin_memcpy", 3, memBuiltin, "memcpy", NULL, NULL, 1, NULL },
 
     { "getcnt", 0, defaultBuiltin, "getcnt", "_cnt", "_getcnt", 0, NULL },
     { "_getcnt", 0, defaultBuiltin, "getcnt", "_cnt", "_getcnt", 0, NULL },

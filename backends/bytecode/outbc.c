@@ -1710,7 +1710,7 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
                 callOp.kind = BOK_BUILTIN_STRSIZE;
             } else if (!strcmp(sym->our_name,"strcomp")) {
                 callOp.kind = BOK_BUILTIN_STRCOMP;
-            } else if (!strcmp(sym->our_name,"bytemove")) {
+            } else if (!strcmp(sym->our_name,"bytemove") || !strcmp(sym->our_name, "__builtin_memcpy")) {
                 // need to manually return the first parameter
                 // (the interpreter doesn't do this for us)
                 callOp.kind = BOK_BUILTIN_BULKMEM;
@@ -1748,7 +1748,7 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
                 callOp.kind = BOK_BUILTIN_BULKMEM;
                 callOp.attr.bulkmem.isMove = false;
                 callOp.attr.bulkmem.memSize = BULKMEM_SIZE_LONG;
-            } else if (!strcmp(sym->our_name,"bytemove")) {
+            } else if (!strcmp(sym->our_name,"bytemove") || !strcmp(sym->our_name, "__builtin_memcpy")) {
                 callOp.kind = BOK_BUILTIN_BULKMEM;
                 callOp.attr.bulkmem.isMove = true;
                 callOp.attr.bulkmem.memSize = BULKMEM_SIZE_BYTE;
