@@ -3004,6 +3004,14 @@ TransformAssignChainNoCasts(AST **astptr)
     if (ast->kind != AST_ASSIGN) return tmp;
     lhs = ast->left;
     rhs = ast->right;
+    // watch out for Spin function calls masquerading as identifiers
+    if (curfunc->language == LANG_SPIN_SPIN1 && rhs->kind == AST_IDENTIFIER) {
+        AST *typ = ExprType(rhs);
+        if (IsFunctionType(typ)) {
+            rhs = ast->right = NewAST(AST_FUNCCALL, rhs, NULL);
+        }
+        //printf("typ->kind == %d\n", typ->kind);
+    }
     if (rhs->kind != AST_ASSIGN) {
         switch (rhs->kind) {
         case AST_IDENTIFIER:
