@@ -1653,7 +1653,7 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
             return;
         }
         
-        sym = LookupMemberSymbol(node, objtype, thename, NULL);
+        sym = LookupMemberSymbol(node, objtype, thename, NULL, NULL);
         if (!sym) {
             ERROR(node->left, "%s is not a member", thename);
             return;

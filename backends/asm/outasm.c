@@ -3631,7 +3631,7 @@ GetAddressOf(IRList *irl, AST *expr)
         int off;
         
         name = GetUserIdentifierName(expr->right);
-        sym = LookupMemberSymbol(expr, ExprType(expr->left), name, &P);
+        sym = LookupMemberSymbol(expr, ExprType(expr->left), name, &P, NULL);
         if (sym) {
             if (sym->kind == SYM_VARIABLE) {
                 Operand *base = CompileExpression(irl, expr->left, NULL);
@@ -4017,7 +4017,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
           return EmptyOperand();
       }
       base = CompileExpression(irl, expr->left, NULL);
-      sym = LookupMemberSymbol(expr, objtype, name, &P);
+      sym = LookupMemberSymbol(expr, objtype, name, &P, NULL);
       if (sym) {
           switch (sym->kind) {
           case SYM_VARIABLE:

@@ -31,7 +31,7 @@ bool IsStringConst(AST *expr);
 AST *FoldIfConst(AST *expr);
 
 /* look up a methodref or constref */
-Symbol *LookupMethodRef(AST *expr, Module **Ptr);
+Symbol *LookupMethodRef(AST *expr, Module **Ptr, int *valid);
 
 /* look up the class name of an object */
 const char *ObjClassName(AST *objtype);
@@ -107,7 +107,7 @@ const char *GetVarNameForError(AST *expr);
 // various symbol lookup utilities
 Symbol *LookupSymbol(const char *name);
 Symbol *LookupAstSymbol(AST *ast, const char *msg);
-Symbol *LookupMemberSymbol(AST *topexpr, AST *objtype, const char *name, Module **Ptr);
+Symbol *LookupMemberSymbol(AST *topexpr, AST *objtype, const char *name, Module **Ptr, int *valid);
 
 // find expression type relative to current function
 AST *ExprType(AST *ast);

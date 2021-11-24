@@ -179,7 +179,7 @@ LookupAstSymbol(AST *ast, const char *msg)
  * look up an object member given the object type
  */
 Symbol *
-LookupMemberSymbol(AST *expr, AST *objtype, const char *name, Module **Ptr)
+LookupMemberSymbol(AST *expr, AST *objtype, const char *name, Module **Ptr, int *valid)
 {
     Module *P;
     Symbol *sym;
@@ -230,7 +230,11 @@ LookupMemberSymbol(AST *expr, AST *objtype, const char *name, Module **Ptr)
         }
     }
     if (!objtype || objtype->kind != AST_OBJECT) {
-        ERROR(expr, "request for member %s in something not an object", name);
+        if (valid) {
+            *valid = 0;
+        } else {
+            ERROR(expr, "request for member %s in something not an object", name);
+        }
         return NULL;
     }
     P = (Module *)objtype->d.ptr;
@@ -251,14 +255,14 @@ LookupMemberSymbol(AST *expr, AST *objtype, const char *name, Module **Ptr)
  * object referred to
  */
 Symbol *
-LookupMethodRef(AST *expr, Module **Ptr)
+LookupMethodRef(AST *expr, Module **Ptr, int *valid)
 {
     AST *type = ExprType(expr->left);
     AST *ident = expr->right;
     const char *name;
     
     name = GetUserIdentifierName(ident);
-    return LookupMemberSymbol(expr, type, name, Ptr);
+    return LookupMemberSymbol(expr, type, name, Ptr, valid);
     
 }
 
@@ -274,7 +278,7 @@ LookupObjrefSymbol(AST *lhs, const char *name)
         ERROR(lhs, "Expected class type for looking up %s", name);
         return NULL;
     }
-    return LookupMemberSymbol(lhs, objtype, name, NULL);
+    return LookupMemberSymbol(lhs, objtype, name, NULL, NULL);
 }
 
 /*
@@ -1501,7 +1505,8 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
     case AST_METHODREF:
     {
         Module *P;
-        sym = LookupMethodRef(expr, &P);
+        
+        sym = LookupMethodRef(expr, &P, valid);
         if (!sym) {
             return intExpr(0);
         }
@@ -2170,7 +2175,7 @@ FindFuncSymbol(AST *ast, AST **objrefPtr, int errflag)
             }
             return NULL;
         }
-        sym = LookupMemberSymbol(objref, objtype, thename, NULL);
+        sym = LookupMemberSymbol(objref, objtype, thename, NULL, NULL);
         if (sym) {
             if (sym->flags & SYMF_PRIVATE) {
                 ERROR(ast, "attempt to access private member symbol %s", thename);
@@ -2634,7 +2639,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
             ERROR(expr, "Expecting object for dereference of %s", methodname);
             return NULL;
         }
-        sym = LookupMemberSymbol(expr, objtype, methodname, NULL);
+        sym = LookupMemberSymbol(expr, objtype, methodname, NULL, NULL);
         if (!sym) {
             ERROR(expr, "%s is not a member of %s", methodname, TypeName(objtype));
             return NULL;

@@ -1547,7 +1547,7 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
                 ERROR(expr, "request for %s in something that is not a class", thename);
                 return;
             }
-            sym = LookupMemberSymbol(expr, objtype, thename, NULL);
+            sym = LookupMemberSymbol(expr, objtype, thename, NULL, NULL);
             if (!sym) {
                 ERROR(expr, "%s is not a member", thename);
                 return;
@@ -1576,7 +1576,7 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
                 ERROR(expr, "request for %s in something that is not a class", thename);
                 return;
             }
-            sym = LookupMemberSymbol(expr, objtype, thename, NULL);
+            sym = LookupMemberSymbol(expr, objtype, thename, NULL, NULL);
             if (!sym) {
                 ERROR(expr, "%s is not a member", thename);
             }
@@ -1626,7 +1626,7 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
     case AST_CONSTREF:
     {
         Module *P;
-        sym = LookupMethodRef(expr, &P);
+        sym = LookupMethodRef(expr, &P, NULL);
         
         PrintObjConstName(f, P, sym->user_name);
         break;
