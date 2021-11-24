@@ -25,7 +25,7 @@ loop
 
 `const LED=16` is a line declaring that `LED` is a constant with the value `16`. Thus later when we write `output(LED)` it's the same as writing `output(16)`.
 
-We could have writtne `var LED=16`. This would make `LED` a variable, which could change. However, if we never plan to change the value of `LED` it's better to declare it a constant, because then the compiler can produce better code.
+We could have written `var LED=16`. This would make `LED` a variable, which could change. However, if we never plan to change the value of `LED` it's better to declare it a constant, because then the compiler can produce better code.
 
 The line `direction(LED) = output` declares that the pin connected to `LED` should be an output. Since we want to drive the pin, it obviously should be an output. If it were connected to a switch or something we wanted to read, we would want to set the direction to `input` instead.
 
