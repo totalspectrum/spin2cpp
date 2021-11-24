@@ -1869,6 +1869,24 @@ DeclareOneMemberVar(Module *P, AST *ident, AST *type, int is_private)
     return r;
 }
 
+static bool
+AlreadyDeclared(AST *pendinglist, AST *newIdentifier)
+{
+    AST *entry;
+    AST *ident;
+    while (pendinglist) {
+        entry = pendinglist->left;
+        pendinglist = pendinglist->right;
+        if (entry && entry->kind == AST_DECLARE_VAR) {
+            ident = entry->right;
+            if (AstUses(ident, newIdentifier)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 AST *
 MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ, int is_private, unsigned flags)
 {
@@ -1894,7 +1912,7 @@ MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ, int is_private, unsi
         // check for sensible re-definition
         return 0;
     }
-    if (!AstUses(P->pendingvarblock, identifier)) {
+    if (!AlreadyDeclared(P->pendingvarblock, identifier)) {
         AST *iddecl = NewAST(AST_LISTHOLDER, identifier, NULL);
         AST *newdecl = NewAST(AST_DECLARE_VAR, typ, iddecl);
         newdecl->d.ival = is_private;

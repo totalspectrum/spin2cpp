@@ -368,7 +368,7 @@ ProcessParamList(AST *list)
     AST *entry, *type;
     int count = 0;
     AST *orig_list = list;
-
+    
     if (list->kind == AST_EXPRLIST) {
         while (list) {
             entry = list->left;

@@ -3,6 +3,7 @@ Version 5.9.6
 - Allow ALIGNL and ALIGNW in VAR sections
 - Fixed incorrect error when printing DEBUG expressions containing function calls
 - Fixed error in assignment chain processing in Spin1 when one item is a function
+- Fixed some bugs in parsing C struct declarations
 
 Version 5.9.5
 - Added CHAIN #n for BASIC, and _fexecve(fd, argv, envp) for C
