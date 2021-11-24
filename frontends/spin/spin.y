@@ -1162,6 +1162,10 @@ varline:
         AST *decl = NewAST(AST_LISTHOLDER, $1, NULL);
         $$ = NewAST(AST_LONGLIST, decl, NULL);
     }
+  | SP_ALIGNL SP_EOLN
+    { $$ = NewCommentedAST(AST_ALIGN, AstInteger(4), NULL, $1); }
+  | SP_ALIGNW SP_EOLN
+    { $$ = NewCommentedAST(AST_ALIGN, AstInteger(2), NULL, $1); }
   | SP_EOLN
     { $$ = NULL; }
   | error SP_EOLN

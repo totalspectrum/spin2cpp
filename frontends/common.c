@@ -1789,6 +1789,24 @@ DeclareMemberVariablesOfSizeFlag(Module *P, int sizeRequest, int offset)
                 }
             }
             break;
+        case AST_ALIGN:
+        {
+            int skipSize;
+            if (P->mainLanguage == LANG_SPIN_SPIN1) {
+                if (sizeRequest & SIZEFLAG_DONE) {
+                    WARNING(ast, "alignment directive in VAR section ignored in Spin1");
+                }
+                continue;
+            }
+            skipSize = EvalConstExpr(ast->left);
+            if ( (sizeRequest & SIZEFLAG_LONG) && skipSize == 4 ) {
+                offset = (offset + 3) & ~3;
+            }
+            if ( (sizeRequest & SIZEFLAG_WORD) && skipSize == 2 ) {
+                offset = (offset + 1) & ~1;
+            }
+            continue;
+        }
         case AST_DECLARE_BITFIELD:
             /* skip */
             continue;
@@ -1796,7 +1814,7 @@ DeclareMemberVariablesOfSizeFlag(Module *P, int sizeRequest, int offset)
             /* skip */
             continue;
         default:
-            ERROR(ast, "bad type  %d in variable list\n", ast->kind);
+            ERROR(ast, "bad type %d in variable list", ast->kind);
             return offset;
         }
         if (isUnion) {
