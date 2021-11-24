@@ -8,6 +8,7 @@
 
 /* filesys/fatfs/fatfs_vfs.c */
 struct vfs *_vfs_open_sdcard(void) __fromfile("filesys/fatfs/fatfs_vfs.c");
+struct vfs *_vfs_open_sdcardx(int pclk, int pss, int pdi, int pdo) __fromfile("filesys/fatfs/fatfs_vfs.c");
 
 /* filesys/fs9p/fs9p_vfs.c */
 struct vfs *_vfs_open_host(void) __fromfile("filesys/fs9p/fs9p_vfs.c");
@@ -181,10 +182,6 @@ int read(int fd, void *buf, int count) __fromfile("libc/unix/posixio.c");
 int close(int fd) __fromfile("libc/unix/posixio.c");
 off_t lseek(int fd, off_t offset, int whence) __fromfile("libc/unix/posixio.c");
 int access(const char *path, int mode) __fromfile("libc/unix/access.c");
-
-/* libc/unix/vfs.c */
-struct vfs *_getrootvfs(void) __fromfile("libc/unix/vfs.c");
-void _setrootvfs(struct vfs *) __fromfile("libc/unix/vfs.c");
 
 /* libc/wchar/btowc.c */
 wint_t btowc(int c) __fromfile("libc/wchar/btowc.c");
