@@ -1828,6 +1828,24 @@ function for "cog" add(x, y)
   return x+y
 end
 ```
+Note that there are some restrictions on functions placed in COG or LUT memory. See the general FlexSpin documentation for details.
+
+The following attributes are supported:
+
+`cog`: places the function in COG memory
+
+`lut`: places the function in LUT memory
+
+`noinline`: specifies that the function should not be inlined
+
+`opt(xxx)`: specifies explicitly which optimizations should be applied to the function; see the general compiler documentation for details. For example, if a subroutine starts with `sub for "opt(0,peephole)"`  it will be compiled with no optimization (like `-O0`) except for peepholes.
+
+Attributes may be grouped together in the same string, e.g. to compile a function for LUT and with all optimizations always enabled regardless of the compiler setting, you can do:
+```
+function for "lut,opt(all)" fastfunc()
+...
+end function
+```
 
 ### FUNCTION
 

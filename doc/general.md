@@ -82,7 +82,7 @@ Inline assembly is not supported in Spin1 bytecode (`--interp=rom`). It will pro
 
 Normally functions are placed in HUB memory, because there is a lot more of that. However, it is possible to force some functions to be placed in the chip's internal memory, where they will execute much more quickly. This must be done with care, because internal memory is a very limited resource.
 
-Only small functions should be placed in internal memory, and these functions should not call any other function.
+Only small functions should be placed in internal memory. It's probably better if these functions do not call any functions in HUB, at least in the normal case, since any speed advantage of placing a function in COG or LUT will be negated if it calls out to HUB.
 
 Functions in COG or LUT memory are not supported in bytecode output (e.g. `--interp=rom`).
 
