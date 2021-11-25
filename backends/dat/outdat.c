@@ -771,7 +771,7 @@ ImmMask(Instruction *instr, int opnum, bool bigImm, AST *ast)
                 /* the L bit occupies the same place as Z, so if the
                    instruction can do a wz or wcz no immediate is legal */
                 if (instr->flags & (FLAG_WZ|FLAG_WCZ|FLAG_ANDZ)) {
-                    ERROR(ast, "Bad use of immediate for first operand of %s", instr->name);
+                    ERROR(ast, "Immediate values are not allowed for first operand of %s", instr->name);
                 }
                 mask = P2_IMM_DST;
                 if (bigImm) {
