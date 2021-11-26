@@ -95,7 +95,7 @@ LabelName(AST *x)
     return AstIdentifier(new_name);
 }
 
-static AST *CombineTypes(AST *first, AST *second, AST **identifier);
+static AST *CombineTypes(AST *first, AST *second, AST **identifier, Module **module);
 
 static AST *
 C_ModifySignedUnsigned(AST *modifier, AST *type)
@@ -109,7 +109,7 @@ C_ModifySignedUnsigned(AST *modifier, AST *type)
     // "long long" and "long int"
         type = LengthenType(type);
     } else {
-        type = CombineTypes(modifier, type, NULL);
+        type = CombineTypes(modifier, type, NULL, NULL);
     }
     return type;
 }
@@ -127,6 +127,26 @@ CombinePointer(AST *ptr, AST *type)
     return ptr;
 }
 
+Module *
+FindClassByAst(AST *astName)
+{
+    const char *name = GetUserIdentifierName(astName);
+    Module *P = NULL;
+    Symbol *sym = LookupSymbolInTable(currentTypes, name);
+    if (sym && sym->kind == SYM_TYPEDEF) {
+        AST *typ = (AST *)sym->val;
+        if (typ->kind != AST_OBJECT) {
+            ERROR(astName, "%s is not a class", name);
+            return NULL;
+        }
+        P = GetClassPtr(typ);
+    }
+    if (!P) {
+        ERROR(astName, "cannot find class %s", name);
+    }
+    return P;
+}
+
 static AST *MergePrefix(AST *prefix, AST *first)
 {
     if (prefix) {
@@ -141,7 +161,7 @@ static AST *MergePrefix(AST *prefix, AST *first)
 }
 
 static AST *
-CombineTypes(AST *first, AST *second, AST **identifier)
+CombineTypes(AST *first, AST *second, AST **identifier, Module **module)
 {
     AST *expr, *ident;
     AST *prefix = NULL;
@@ -162,9 +182,19 @@ CombineTypes(AST *first, AST *second, AST **identifier)
     }
     switch (second->kind) {
     case AST_DECLARE_VAR:
-        first = CombineTypes(first, second->left, identifier);
-        first = CombineTypes(first, second->right, identifier);
+        first = CombineTypes(first, second->left, identifier, module);
+        first = CombineTypes(first, second->right, identifier, module);
         return MergePrefix(prefix, first);
+    case AST_METHODREF:
+        if (module) {
+            if (*module) {
+                ERROR(second, "flexspin only supports one :: in declarations");
+            } else {
+                *module = FindClassByAst(second->left);
+            }
+            second = second->right;
+        }
+        /* fall through */
     case AST_SYMBOL:
     case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER:
@@ -174,19 +204,19 @@ CombineTypes(AST *first, AST *second, AST **identifier)
         return MergePrefix(prefix, first);
     case AST_ARRAYDECL:
         first = NewAST(AST_ARRAYTYPE, first, second->right);
-        return MergePrefix(prefix, CombineTypes(first, second->left, identifier));
+        return MergePrefix(prefix, CombineTypes(first, second->left, identifier, module));
     case AST_REFTYPE:
     case AST_PTRTYPE:
         first = NewAST(second->kind, first, NULL);
-        second = CombineTypes(first, second->left, identifier);
+        second = CombineTypes(first, second->left, identifier, module);
         return MergePrefix(prefix, second);
         
     case AST_FUNCTYPE:
-        second->left = CombineTypes(first, second->left, identifier);
+        second->left = CombineTypes(first, second->left, identifier,  module);
         return MergePrefix(prefix, second);
     case AST_ASSIGN:
         expr = second->right;
-        first = CombineTypes(first, second->left, &ident);
+        first = CombineTypes(first, second->left, &ident, module);
         ident = AstAssign(ident, expr);
         if (identifier) {
             *identifier = ident;
@@ -195,7 +225,7 @@ CombineTypes(AST *first, AST *second, AST **identifier)
     case AST_MODIFIER_CONST:
     case AST_MODIFIER_VOLATILE:
         expr = NewAST(second->kind, NULL, NULL);
-        second = MergePrefix(prefix, CombineTypes(first, second->left, identifier));
+        second = MergePrefix(prefix, CombineTypes(first, second->left, identifier, module));
         expr->left = second;
         return expr;
     case AST_BITFIELD:
@@ -297,6 +327,7 @@ MultipleDeclareVar(AST *first, AST *second)
     AST *ident, *type;
     AST *stmtlist = NULL;
     AST *item;
+    Module *module = NULL;
     
     while (second) {
         if (second->kind != AST_LISTHOLDER) {
@@ -305,7 +336,10 @@ MultipleDeclareVar(AST *first, AST *second)
         }
         item = second->left;
         second = second->right;
-        type = CombineTypes(first, item, &ident);
+        type = CombineTypes(first, item, &ident, &module);
+        if (module) {
+            ERROR(first, ":: not supported yet");
+        }
         if (type && type->kind == AST_STATIC) {
             stmtlist = AddToList(stmtlist, DeclareStatics(current, type->left, ident));
         } else if (type && type->kind == AST_EXTERN) {
@@ -322,15 +356,19 @@ AST *
 SingleDeclareVar(AST *decl_spec, AST *declarator)
 {
     AST *type, *ident;
-
+    Module *module = NULL;
+    
     ident = NULL;
-    type = CombineTypes(decl_spec, declarator, &ident);
+    type = CombineTypes(decl_spec, declarator, &ident, &module);
     if (type && type->kind == AST_EXTERN) {
         // just ignore EXTERN declarations
         return NULL;
     }
     if (!ident && !type) {
         return NULL;
+    }
+    if (module) {
+        ERROR(declarator, ":: not supported for variable declarations yet");
     }
     return NewAST(AST_DECLARE_VAR, type, ident);
 }
@@ -840,6 +878,7 @@ ConstructDefaultValue(AST *decl, AST *val)
 %token C_UNION "union"
 %token C_ENUM "enum"
 %token C_ELLIPSIS "..."
+%token C_DOUBLECOLON "::"
 
 %token C_CASE "case"
 %token C_DEFAULT "default"
@@ -1556,20 +1595,24 @@ struct_declaration
         | specifier_qualifier_list struct_declarator_list compound_statement
             {
                 AST *type;
-                AST *ident;
+                AST *ident = NULL;
                 AST *body = $3;
                 AST *decl = $2;
                 AST *spqual = $1;
                 AST *top_decl;
-
+                Module *module = NULL;
+                
                 if (decl->right) {
                     SYNTAX_ERROR("bad method declaration");
                 }
-                type = CombineTypes(spqual, decl->left, &ident);
+                type = CombineTypes(spqual, decl->left, &ident, &module);
 
                 top_decl = NewAST(AST_LISTHOLDER, type,
                                   NewAST(AST_LISTHOLDER, ident,
                                          NewAST(AST_LISTHOLDER, body, NULL)));
+                if (module) {
+                    ERROR(decl, ":: not supported inside structures");
+                }
                 top_decl = NewAST(AST_FUNCDECL, top_decl, NULL);
                 $$ = NewAST(AST_STMTLIST, top_decl, NULL);
             }        
@@ -1655,6 +1698,12 @@ declarator
 direct_declarator
 	: C_IDENTIFIER
             { $$ = $1; }
+        | C_IDENTIFIER C_DOUBLECOLON C_IDENTIFIER
+            {
+                AST *modname = $1;
+                AST *member = $3;
+                $$ = NewAST(AST_METHODREF, modname, member);
+            }
 	| '(' declarator ')'
             { $$ = $2; }
 	| direct_declarator '[' constant_expression ']'
@@ -1764,7 +1813,7 @@ type_name
 	: specifier_qualifier_list
             { $$ = $1; }
 	| specifier_qualifier_list abstract_declarator
-            { $$ = CombineTypes($1, $2, NULL); }
+            { $$ = CombineTypes($1, $2, NULL, NULL); }
 	;
 
 abstract_declarator
@@ -2339,11 +2388,15 @@ function_definition
                 AST *decl = $2;
                 AST *decl_list = $3;
                 AST *body = $4;
-                AST *ident;
+                AST *ident = NULL;
+                Module *module = NULL;
                 int is_public = 1;
 
                 decl = MergeOldStyleDeclarationList(decl, decl_list);
-                type = CombineTypes(type, decl, &ident);
+                type = CombineTypes(type, decl, &ident, &module);
+                if (module) {
+                    ERROR(decl, ":: not supported yet for old style functions");
+                }
                 DeclareCTypedFunction(current, type, ident, is_public, body, NULL);
             }
 	| declaration_specifiers declarator attribute_decl compound_statement_or_fromfile
@@ -2352,32 +2405,45 @@ function_definition
                 AST *decl = $2;
                 AST *anno = $3;
                 AST *body = $4;
-                AST *ident;
+                AST *ident = NULL;
+                Module *module = NULL;
                 int is_public = 1;
-                type = CombineTypes(type, decl, &ident);
-                DeclareCTypedFunction(current, type, ident, is_public, body, anno);
+                type = CombineTypes(type, decl, &ident, &module);
+                if (module) {
+                    DeclareCTypedFunction(module, type, ident, is_public, body, anno);
+                } else {
+                    DeclareCTypedFunction(current, type, ident, is_public, body, anno);
+                }
             }
 	| declarator func_declaration_list compound_statement_or_fromfile
             {
                 AST *type;
-                AST *ident;
+                AST *ident = NULL;
+                Module *module = NULL;
                 AST *decl = $1;
                 AST *decl_list = $2;
                 AST *body = $3;
                 int is_public = 1;
                 decl = MergeOldStyleDeclarationList(decl, decl_list);
-                type = CombineTypes(NULL, decl, &ident);
+                type = CombineTypes(NULL, decl, &ident, &module);
+                if (module) {
+                    ERROR(decl, ":: not allowed with old style function declarations");
+                }
                 DeclareCTypedFunction(current, type, ident, is_public, body, NULL);
             }
 	| declarator attribute_decl compound_statement_or_fromfile
             {
                 AST *type;
-                AST *ident;
+                AST *ident = NULL;
+                Module *module = NULL;
                 AST *decl = $1;
                 AST *anno = $2;
                 AST *body = $3;
                 int is_public = 1;
-                type = CombineTypes(NULL, decl, &ident);
+                type = CombineTypes(NULL, decl, &ident, &module);
+                if (module) {
+                    ERROR(decl, ":: needs fixing");
+                }
                 DeclareCTypedFunction(current, type, ident, is_public, body, anno);
             }
 	;
