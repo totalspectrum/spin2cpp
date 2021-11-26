@@ -104,6 +104,7 @@ InitGlobalModule(void)
     SymbolTable *table;
     Symbol *sym;
     int oldtmpnum;
+    int saveyydebug;
     const char *syscode = "";
     
     current = systemModule = NewModule("_system_", LANG_SPIN_SPIN1);
@@ -164,7 +165,9 @@ InitGlobalModule(void)
         
         /* set up temporary variable processing */
         oldtmpnum = SetTempVariableBase(90000, 0);
-
+        saveyydebug = spinyydebug;  // do not show parser debug output for system
+        spinyydebug = 0;
+        
         // add in processor specific code
         if (gl_output == OUTPUT_BYTECODE) {
             switch (gl_interp_kind) {
@@ -214,6 +217,7 @@ InitGlobalModule(void)
         curfunc = NULL;
         /* restore temp variable base */
         (void)SetTempVariableBase(oldtmpnum, 89999);
+        spinyydebug = saveyydebug;
         gl_normalizeIdents = old_normalize;
     }
 
