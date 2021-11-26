@@ -2571,7 +2571,7 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         } else {
             // REPEAT FROM TO
             bool stepConst = IsConstExpr(stepExpression);
-            uint32_t stepConstVal = stepConst ? EvalConstExpr(stepExpression) : 0;
+            int32_t stepConstVal = stepConst ? EvalConstExpr(stepExpression) : 0;
             bool haveStep = !stepConst || abs(stepConstVal) != 1;
 
             // Compile init value

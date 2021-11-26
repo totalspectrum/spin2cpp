@@ -713,7 +713,7 @@ void SETCOLOR(enum printColorKind color) {
     #ifdef WIN32
         SetConsoleTextAttribute(GetStdHandle(STD_ERROR_HANDLE),colorWindows[color]);
     #else
-        fprintf(stderr,colorANSI[color]);
+        fprintf(stderr, "%s", colorANSI[color]);
     #endif
     current_print_color = color;
 }
