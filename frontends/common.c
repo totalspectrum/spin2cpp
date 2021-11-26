@@ -1869,22 +1869,27 @@ DeclareOneMemberVar(Module *P, AST *ident, AST *type, int is_private)
     return r;
 }
 
-static bool
+static AST *
 AlreadyDeclared(AST *pendinglist, AST *newIdentifier)
 {
     AST *entry;
     AST *ident;
+    AST *typ;
     while (pendinglist) {
         entry = pendinglist->left;
         pendinglist = pendinglist->right;
         if (entry && entry->kind == AST_DECLARE_VAR) {
             ident = entry->right;
             if (AstUses(ident, newIdentifier)) {
-                return true;
+                typ = entry->left;
+                if (typ == NULL) {
+                    typ = ast_type_generic;
+                }
+                return typ;
             }
         }
     }
-    return false;
+    return NULL;
 }
 
 AST *
@@ -1892,6 +1897,7 @@ MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ, int is_private, unsi
 {
     AST *ret = 0;
     AST *sub;
+    AST *oldtype = NULL;
     const char *name;
     sub = identifier;
     if (sub && sub->kind == AST_ASSIGN) {
@@ -1912,15 +1918,19 @@ MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ, int is_private, unsi
         // check for sensible re-definition
         return 0;
     }
-    if (!AlreadyDeclared(P->pendingvarblock, identifier)) {
+    oldtype = AlreadyDeclared(P->pendingvarblock, identifier);
+    if (!oldtype) {
         AST *iddecl = NewAST(AST_LISTHOLDER, identifier, NULL);
         AST *newdecl = NewAST(AST_DECLARE_VAR, typ, iddecl);
         newdecl->d.ival = is_private;
         ret = NewAST(AST_LISTHOLDER, newdecl, NULL);
         P->pendingvarblock = AddToList(P->pendingvarblock, ret);
     } else {
-        // this can happen harmlessly, so do not warn
-        //ERROR(sub, "Re-defining member %s", name);
+        // re-defining
+        // allow (and ignore it) if the types are the same 
+        if (!AstMatch(typ, oldtype)) {
+            ERROR(sub, "Re-defining member %s", name);
+        }
     }
     return ret;
 }
