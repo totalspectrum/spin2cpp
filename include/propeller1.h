@@ -105,3 +105,8 @@ static __inline__ void togglepin(int pin)
 
 
 #define cognew(code, data) _coginit(0x10, code, data)
+#define locknew() _locknew()
+#define lockclr(x) _lockclr(x)
+#define lockset(x) _lockset(x)
+#define lockret(x) _lockret(x)
+#define cogstop(x) _cogstop(x)
