@@ -260,6 +260,7 @@ DeclareStatics(Module *P, AST *basetype, AST *decllist)
     const char *nameString;
     int needs_initializer = 0;
     int has_initializer;
+    int inSubModule = !IsTopLevel(P);
     
     // ignore static declarations like
     //   static int blah[]
@@ -303,7 +304,7 @@ DeclareStatics(Module *P, AST *basetype, AST *decllist)
                 *nameAst = *nameAst->right; // create a new local
             }
         }
-        if (nameAst->kind == AST_LOCAL_IDENTIFIER) {
+        if (nameAst->kind == AST_LOCAL_IDENTIFIER || inSubModule) {
             DeclareOneGlobalVar(P, decl, basetype, IN_DAT);
         } else {
             // OK, "nameAst" is the name we want it to be known as inside
@@ -1571,14 +1572,14 @@ struct_declaration_list
 	;
 
 struct_declaration
-        : specifier_qualifier_list ';' /* for anonymous struct/union */
+        : struct_specifier_qualifier_list ';' /* for anonymous struct/union */
             {
                 AST *dummy;
                 dummy = AstTempIdentifier("__anonymous__");
                 dummy = NewAST(AST_LISTHOLDER, dummy, NULL);
                 $$ = MultipleDeclareVar($1, dummy);
             }
-	| specifier_qualifier_list struct_declarator_list ';'
+	| struct_specifier_qualifier_list struct_declarator_list ';'
             {
                 $$ = MultipleDeclareVar($1, $2);
             }
@@ -1592,7 +1593,7 @@ struct_declaration
                 $$ = NewAST(AST_STMTLIST,
                             NewAST(AST_PRIFUNC, NULL, NULL), NULL);
             }
-        | specifier_qualifier_list struct_declarator_list compound_statement
+        | struct_specifier_qualifier_list struct_declarator_list compound_statement
             {
                 AST *type;
                 AST *ident = NULL;
@@ -1616,6 +1617,23 @@ struct_declaration
                 top_decl = NewAST(AST_FUNCDECL, top_decl, NULL);
                 $$ = NewAST(AST_STMTLIST, top_decl, NULL);
             }        
+	;
+
+struct_specifier_qualifier_list
+	: type_specifier specifier_qualifier_list
+            { $$ = C_ModifySignedUnsigned($1, $2); }
+	| type_specifier
+            { $$ = $1; }
+	| type_qualifier struct_specifier_qualifier_list
+            { $$ = $1; $$->left = $2; }
+	| type_qualifier
+            { $$ = $1; $$->left = ast_type_long; }
+	| C_STATIC struct_specifier_qualifier_list
+            {
+                AST *list = $2;
+                AST *static_spec = NewAST(AST_STATIC, NULL, NULL);
+                $$ = MergePrefix(static_spec, list);
+            }
 	;
 
 specifier_qualifier_list
