@@ -1120,7 +1120,7 @@ LabelRef(IRList *irl, Symbol *sym)
 {
     Operand *temp;
     Label *lab = (Label *)sym->val;
-    Module *P = current;
+    Module *P = sym->module ? sym->module : current;
     Operand *datbase = ValidateDatBase(P);
 
 #if 0    
@@ -1259,7 +1259,7 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
           return EmptyOperand();
       }
   }
-  sym = LookupSymbolInFunc(func, name);
+  sym = LookupSymbol(name);
   if (sym) {
       return CompileSymbolForFunc(irl, sym, func, expr);
   } else {
