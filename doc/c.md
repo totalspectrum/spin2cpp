@@ -683,14 +683,28 @@ Makes pin `pin` an output and sets it to a random bit value.
 ```
 int       _pinr(int pin);
 ```
-Makes pin `pin` an input and returns its current value (0 or 1).
+Makes pin `pin` an input and returns its current value (0 or 1). Only works for single pins. For multiple pins, use `_pinread`.
+
+#### _pinread
+
+```
+int	_pinread(int pins);
+```
+Read one or more pins. `pins` can be a single pin from 0-63, or it can be a group of `num` pins starting at `base` specified as `base + ((num-1)<<6)`. For reading a single pin, the `_pinr` function is more efficient.
 
 #### _pinw
 
 ```
 void      _pinw(int pin, int val);
 ```
-Makes pin `pin` an output and writes `val` to it. `val` should be only 0 or 1; results for other values are undefined.
+Makes pin `pin` an output and writes `val` to it. `val` should be only 0 or 1; results for other values are undefined (that is, only a single pin is supported). For writing multiple pins, see `_pinwrite`.
+
+#### _pinwrite
+
+```
+void      _pinwrite(int pins, int val);
+```
+`pins` can be a single pin from 0-63, or it can be a group of `num` pins starting at `base` specified as `base + ((num-1)<<6)`. For writing a single pin, `_pinw` is more efficient.
 
 ### Smart Pin controls
 
