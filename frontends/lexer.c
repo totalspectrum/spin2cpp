@@ -4498,8 +4498,17 @@ parse_number:
                 lexungetc(L, c2);
             }
         }
-    } else if (c == ':' && !gl_p2 && isIdentifierStart(lexpeekc(L)) && InDatBlock(L)) {
-        c = parseSpinIdentifier(L, &ast, L->lastGlobal ? L->lastGlobal : "");
+    } else if (c == ':') {
+        if (InDatBlock(L) && !gl_p2 && isIdentifierStart(lexpeekc(L)) && InDatBlock(L)) {
+            c = parseSpinIdentifier(L, &ast, L->lastGlobal ? L->lastGlobal : "");
+        } else {
+            c2 = lexgetc(L);
+            if (c2 == ':') {
+                c = C_DOUBLECOLON;
+            } else {
+                lexungetc(L, c2);
+            }
+        }
     } else if (c == '<') {
         c2 = lexgetc(L);
         if (c2 == '=') {

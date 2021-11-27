@@ -840,6 +840,15 @@ doDeclareFunction(AST *funcblock)
     }
     /* look for an existing definition */
     sym = FindSymbol(&current->objsyms, funcname_internal);
+    if (sym && sym->kind == SYM_VARIABLE) {
+        AST *typ = (AST *)sym->val;
+        if (typ->kind == AST_FUNCTYPE) {
+            // We are redefining a bare function declaration in a class
+            fdef = NewFunction(language);
+            sym->val = (void *)fdef;
+            sym->kind = SYM_FUNCTION;
+        }
+    }
     if (sym && sym->kind != SYM_WEAK_ALIAS) {
         if (sym->kind != SYM_FUNCTION) {
             ERROR(funcdef, "Redefining %s as a function or subroutine", funcname_user);
