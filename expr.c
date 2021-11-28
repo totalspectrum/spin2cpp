@@ -1295,6 +1295,13 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
             return (uint32_t)round(e);
         }
         break;
+    case K_POWER:
+        {
+            double a = (double)lval;
+            double b = (double)rval;
+            a = pow(a, b);
+            return (uint32_t)round(a);
+        }
     case K_FADD:
         return floatAsInt(intAsFloat(lval) + intAsFloat(rval));
     case K_FSUB:
