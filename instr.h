@@ -78,6 +78,8 @@ typedef enum IROpcode {
 
     /* p2 instructions */
     OPC_ADDCT1,
+    OPC_BITC,
+    OPC_BITNC,
     OPC_BITH,
     OPC_BITL,
     OPC_BITNOT,

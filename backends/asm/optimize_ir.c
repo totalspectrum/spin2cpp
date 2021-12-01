@@ -318,6 +318,8 @@ InstrUsesFlags(IR *ir, unsigned flags)
     case OPC_DRVNC:
     case OPC_MUXC:
     case OPC_MUXNC:
+    case OPC_BITC:
+    case OPC_BITNC:
         /* definitely uses the C flag */
         return (flags & FLAG_WC) != 0;
     case OPC_DRVZ:
@@ -3907,6 +3909,39 @@ static PeepholePattern pat_drvc2[] = {
     { COND_C,  OPC_DRVH, PEEP_OP_MATCH|0, OPERAND_ANY, PEEP_FLAGS_P2 },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
+// replace if_c drvl / if_nc drvh with drvnc
+static PeepholePattern pat_drvnc1[] = {
+    { COND_C,  OPC_DRVL, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { COND_NC, OPC_DRVH, PEEP_OP_MATCH|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_drvnc2[] = {
+    { COND_NC, OPC_DRVH, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { COND_C,  OPC_DRVL, PEEP_OP_MATCH|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+// replace if_c bith / if_nc bitl with bitc
+static PeepholePattern pat_bitc1[] = {
+    { COND_C,  OPC_BITH, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { COND_NC, OPC_BITL, PEEP_OP_MATCH|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_bitc2[] = {
+    { COND_NC, OPC_BITL, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { COND_C,  OPC_BITH, PEEP_OP_MATCH|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+// replace if_c bitl / if_nc bith with bitnc
+static PeepholePattern pat_bitnc1[] = {
+    { COND_C,  OPC_BITL, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { COND_NC, OPC_BITH, PEEP_OP_MATCH|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_bitnc2[] = {
+    { COND_NC, OPC_BITH, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { COND_C,  OPC_BITL, PEEP_OP_MATCH|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
 // replace if_z drvh / if_nz drvl with drvz
 static PeepholePattern pat_drvz[] = {
     { COND_EQ, OPC_DRVH, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
@@ -4355,6 +4390,12 @@ struct Peepholes {
 
     { pat_drvc1, OPC_DRVC, ReplaceDrvc },
     { pat_drvc2, OPC_DRVC, ReplaceDrvc },
+    { pat_drvnc1, OPC_DRVNC, ReplaceDrvc },
+    { pat_drvnc2, OPC_DRVNC, ReplaceDrvc },
+    { pat_bitc1, OPC_BITC, ReplaceDrvc },
+    { pat_bitc2, OPC_BITC, ReplaceDrvc },
+    { pat_bitnc1, OPC_BITNC, ReplaceDrvc },
+    { pat_bitnc2, OPC_BITNC, ReplaceDrvc },
     { pat_drvz, OPC_DRVZ, ReplaceDrvc },
     { pat_drvnz1, OPC_DRVNZ, ReplaceDrvc },
     { pat_drvnz2, OPC_DRVNZ, ReplaceDrvc },
