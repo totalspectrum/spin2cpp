@@ -881,11 +881,14 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
             // Add header offset
             if (sym->module == current || sym->module == 0) {
                 labelval += BCgetDAToffset(current,false,node,true);
+                memOp.data.int32 = labelval;
             } else {
-                WARNING(ident, "bytecode may not always support cross-module label references");
-                labelval += BCgetDAToffset(sym->module, false,node,true);
+                //WARNING(ident, "bytecode may not always support cross-module label references");
+                labelval += BCgetDAToffset(sym->module, true,node,true);
+                memOp.attr.memop.base = MEMOP_BASE_POP;
+                if (baseExpr) ERROR(node,"baseExpr already set?!?!");
+                else baseExpr = AstInteger(labelval);
             }
-            memOp.data.int32 = labelval;
         } break;
         case SYM_VARIABLE: {
             if (!strcmp(sym->our_name,"__clkfreq_var") || !strcmp(sym->our_name,"__clkmode_var")) {
