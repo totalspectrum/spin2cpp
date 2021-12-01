@@ -879,7 +879,12 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
             Label *lab = sym->val;
             uint32_t labelval = lab->hubval;
             // Add header offset
-            labelval += BCgetDAToffset(current,false,node,true);
+            if (sym->module == current || sym->module == 0) {
+                labelval += BCgetDAToffset(current,false,node,true);
+            } else {
+                WARNING(ident, "bytecode may not always support cross-module label references");
+                labelval += BCgetDAToffset(sym->module, false,node,true);
+            }
             memOp.data.int32 = labelval;
         } break;
         case SYM_VARIABLE: {
