@@ -242,6 +242,7 @@ shl
 short
 shr
 single
+sizeof
 sqrt
 step
 sub
@@ -271,6 +272,7 @@ xor
 A number of functions and variables are predefined. These names may be redefined (for example as local variable names inside a function), but changing them at the global level is probably unwise; at the very least it will cause confusion for readers of your code.
 ```
 bin$
+bitrev
 bytefill
 bytemove
 _clkfreq
@@ -1154,6 +1156,13 @@ Predefined function. `atan2(y, x)` returns the angle (in radians) that the line 
   t = bin$(x)
 ```
 Returns a string representing the unsigned integer `x` in binary notation. Only the lowest `n` digits of the representation are included; use 32 if you want to get all of the digits. If `n` is omitted or is 0 then the returned string is the minimum length needed to represent the unsigned value.
+
+### BITREV
+
+```
+  x = bitrev(y)
+```
+Returns the bits of the 32 bit unsigned integer `y` in reverse order. For example, `bitrev(1)` will give `$80000000`, and `bitrev($5555)` will give `$aaaa0000`.
 
 ### __BUILTIN_ALLOCA
 
@@ -2918,6 +2927,10 @@ Predefined function. `sin(x)` returns the sine of `x`, which is a floating point
 ### SINGLE
 
 Single precision floating point data type. By default this is an IEEE 32 bit single precision float, but compiler options may change this (for example to a 16.16 fixed point number).
+
+### SIZEOF
+
+Returns the size of a variable or type, in bytes. Note that for strings this is not the length of the string, but rather the size of the string descriptor (pointer).
 
 ### SPACE$
 

@@ -464,6 +464,7 @@ AdjustParamForByVal(AST *param)
 %token BAS_SHARED     "shared"
 %token BAS_SHORT      "short"
 %token BAS_SINGLE     "single"
+%token BAS_SIZEOF     "sizeof"
 %token BAS_SQRT       "sqrt"
 %token BAS_STEP       "step"
 %token BAS_STRING_KW  "string"
@@ -1557,6 +1558,10 @@ np_primary_expr:
   | BAS_ALLOCA '(' expr ')'
     {
         $$ = NewAST(AST_ALLOCA, ast_type_ptr_void, $3);
+    }
+  | BAS_SIZEOF expr
+    {
+        $$ = NewAST(AST_SIZEOF, $2, NULL);
     }
 ;
 
