@@ -333,7 +333,7 @@ void    do_options(
     set_cplus_dir = TRUE;
 
     /* Get current directory for -I option and #pragma once */
-    getcwd( cur_work_dir, PATHMAX);
+    (void)getcwd( cur_work_dir, PATHMAX);
 #if SYS_FAMILY == SYS_WIN
     bsl2sl( cur_work_dir);
 #endif
@@ -914,7 +914,7 @@ char *NormalizePath(const char *path)
     if (is_full_path(path)) {
         return strdup(path);
     }
-    getcwd(curpath, PATHMAX);
+    (void)getcwd(curpath, PATHMAX);
     return norm_path(curpath, path, FALSE, FALSE);
 }
 

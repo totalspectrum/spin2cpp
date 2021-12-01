@@ -1119,8 +1119,12 @@ DoPropellerPostprocess(const char *fname, size_t eepromSize)
     uint32_t extralen = 0;
     if (gl_brkdebug) {
         char buffer[len]; // allocate VLA
+        int r;
         fseek(f,0,SEEK_SET);
-        fread(buffer,len,1,f);
+        r = fread(buffer,len,1,f);
+        if (r != 1) {
+            WARNING(NULL, "I/O error while setting up debug info");
+        }
         Flexbuf debugger = CompileBrkDebugger(len);
         extralen += flexbuf_curlen(&debugger);
         fseek(f,0,SEEK_SET);
