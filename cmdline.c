@@ -412,6 +412,7 @@ static struct optflag_table {
     { "casetable", OPT_CASETABLE },
     { "extrasmall", OPT_EXTRASMALL },
     { "bcmacros", OPT_MAKE_MACROS },
+    { "special-functions", OPT_SPECIAL_FUNCS },
     { "all", OPT_FLAGS_ALL },
 };
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))

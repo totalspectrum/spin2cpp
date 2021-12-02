@@ -254,6 +254,14 @@ Small loops are copied to internal memory (COG) to be executed there. These loop
 
 Some bytecode backends (e.g. the nucode one) are able to combine bytecodes to create macros. This saves considerable space in the generated code. Note that this option applies globally, and cannot be turned on/off per function.
 
+### Special Function handling (-O1, -Ospecial-functions)
+
+Optimizes some specialized function calls for common cases. For example, in the general case pinwrite() has to handle being able to set ranges of bits, but in a special case where just one bit is being written it can be optimized to a _drvw(). Functions processed with this include:
+
+pinread:  Optimized if just one pin is read
+pinwrite: Optimized if just one pin or one bit are being written
+
+
 ### Single Use Method inlining (-O2, -Oinline-single)
 
 If a method is called only once in a whole program, it is expanded inline at the call site.
