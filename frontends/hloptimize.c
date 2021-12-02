@@ -140,21 +140,21 @@ HandleSpecialFunction(AST *ast, const char *spfunc)
 }
 
 static void
-OptimizeFuncCalls(AST *body) {
+HLOptimizePass(AST *body) {
     if (!body) return;
     if (body->kind == AST_FUNCCALL && IsIdentifier(body->left)) {
         Symbol *sym;
-        OptimizeFuncCalls(body->right);
+        HLOptimizePass(body->right);
         sym = LookupSymbol(GetIdentifierName(body->left));
         if (sym && sym->kind == SYM_FUNCTION) {
             Function *F = (Function *)sym->val;
-            if (F->specialfunc) {
+            if (F->specialfunc && (curfunc->optimize_flags & OPT_SPECIAL_FUNCS)) {
                 HandleSpecialFunction(body, F->specialfunc);
             }
         }
     } else {
-        OptimizeFuncCalls(body->right);
-        OptimizeFuncCalls(body->left);
+        HLOptimizePass(body->right);
+        HLOptimizePass(body->left);
     }
 }
 
@@ -170,7 +170,7 @@ void DoHighLevelOptimize(Module *Q)
         if (func->optimize_flags & OPT_DEADCODE) {
             RemoveDeadCode(func->body);
         }
-        OptimizeFuncCalls(func->body);
+        HLOptimizePass(func->body);
     }
     curfunc = savefunc;
     current = savecur;
