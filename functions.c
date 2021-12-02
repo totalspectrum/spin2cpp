@@ -920,6 +920,26 @@ doDeclareFunction(AST *funcblock)
     if (FindAnnotation(annotation, "noinline") != 0) {
         fdef->no_inline = 1;
     }
+    {
+        const char *spfunc = FindAnnotation(annotation, "specialfunc");
+        if (spfunc) {
+            //printf("Optimize string: [%s]\n", opt);
+            if (spfunc[0] != '(') {
+                ERROR(annotation, "special function options must be enclosed in parentheses");
+            } else {
+                char *tmp;
+                spfunc = tmp = strdup(spfunc+1);
+                while (tmp && *tmp) {
+                    if (*tmp == ')') {
+                        *tmp = 0;
+                        break;
+                    }
+                    tmp++;
+                }
+                fdef->specialfunc = spfunc;
+            }
+        }
+    }
     
     fdef->name = funcname_internal;
     fdef->user_name = funcname_user;

@@ -208,6 +208,8 @@ SpinFunctionSpecialCase(AST **astptr, AST *ast)
     if (!strcasecmp(name, "longmove")) {
         return TransformLongMove(astptr, ast);
     }
+#if 0
+    // these are handled in the high level optimization now
     if (!strcasecmp(name, "pinw") || !strcasecmp(name, "pinwrite")) {
         // check for simple cases:
         // pinwrite(p, x) where x is in { 0, 1, x & 1, or !(x & 1) }
@@ -277,6 +279,7 @@ SpinFunctionSpecialCase(AST **astptr, AST *ast)
             return true;
         }
     }
+#endif    
     return false;
 }
 

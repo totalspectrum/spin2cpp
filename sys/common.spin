@@ -144,7 +144,7 @@ pri __builtin_nan(p) : r=float
 pri __builtin_bitrev(x) : r = long
   return x >< 32
 
-pri _pinwrite(pingrp, val) | mask, basepin, reg
+pri {++specialfunc(pinw)} _pinwrite(pingrp, val) | mask, basepin, reg
   basepin := pingrp & $1f
   reg := pingrp & $20
   mask := (pingrp >> 6)
@@ -158,7 +158,7 @@ pri _pinwrite(pingrp, val) | mask, basepin, reg
     dira |= mask
     outa := (outa & !mask) | val
 
-pri _pinread(pingrp) : y
+pri {++specialfunc(pinr)} _pinread(pingrp) : y
   y := (pingrp & $20) ? inb : ina
   y >>= pingrp   ' implicitly relies on only bottom 5 bits being used
   pingrp >>= 6   ' now pingrp has number of pins to use
