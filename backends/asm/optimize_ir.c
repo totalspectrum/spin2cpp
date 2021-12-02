@@ -2396,7 +2396,7 @@ OptimizePeepholes(IRList *irl)
     IR *ir, *ir_next;
     IR *previr;
     int changed = 0;
-    int opc;
+    IROpcode opc;
     
     ir = irl->head;
     while (ir) {
@@ -3307,7 +3307,7 @@ OptimizeJumps(IRList *irl)
         // FLAG_JMPTABLE_INSTR
         if (ir->opc == OPC_JUMP && (!InstrIsVolatile(ir) || ir->flags & FLAG_JMPTABLE_INSTR)) {
             // ptr to jump destination (if known) is in aux; see if it's also a jump
-            jmpdest = NextInstruction(ir->aux);
+            jmpdest = NextInstruction((IR *)ir->aux);
             if (jmpdest && jmpdest->opc == OPC_JUMP && jmpdest->cond == COND_TRUE && jmpdest->aux && jmpdest != ir && jmpdest->dst != ir->dst) {
                 ir->dst = jmpdest->dst;
                 ir->aux = jmpdest->aux;
@@ -3531,7 +3531,7 @@ LoopCanBeFcached(IRList *irl, IR *root, int size_left)
         // this loop is not in HUB memory
         return 0;
     }
-    endjmp = ir->aux;
+    endjmp = (IR *)ir->aux;
     if (!endjmp || !IsJump(endjmp)) {
         // we don't know who jumps here
         return 0;
@@ -3825,9 +3825,25 @@ static PeepholePattern pat_signex[] = {
     { COND_ANY, OPC_SAR, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_P2 },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
-static PeepholePattern pat_wrc[] = {
+
+// wrc x; cmp x, #0 wz
+static PeepholePattern pat_wrc_cmp[] = {
     { COND_TRUE, OPC_WRC, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
     { COND_TRUE, OPC_CMP, PEEP_OP_MATCH|0, PEEP_OP_IMM|0, PEEP_FLAGS_P2|PEEP_FLAGS_WCZ_OK },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
+// wrc x; and x, #1 -> the AND is redundant
+static PeepholePattern pat_wrc_and[] = {
+    { COND_TRUE, OPC_WRC, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_AND, PEEP_OP_MATCH|0, PEEP_OP_IMM|1, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
+// wrc x; test x, #1 wc -> the TEST is redundant
+static PeepholePattern pat_wrc_test[] = {
+    { COND_TRUE, OPC_WRC, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_TEST, PEEP_OP_MATCH|0, PEEP_OP_IMM|1, PEEP_FLAGS_P2 | PEEP_FLAGS_WCZ_OK },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
@@ -4079,7 +4095,7 @@ static int ReplaceMaxMin(int arg, IRList *irl, IR *ir)
     if (!FlagsDeadAfter(irl, ir->next, FLAG_WZ|FLAG_WC)) {
         return 0;
     }
-    ReplaceOpcode(ir, arg);
+    ReplaceOpcode(ir, (IROpcode)arg);
     DeleteIR(irl, ir->next);
     return 1;
 }
@@ -4092,7 +4108,7 @@ static int ReplaceExtend(int arg, IRList *irl, IR *ir)
     }
     zbit = 31 - src->val;
     ir->src = NewImmediate(zbit);
-    ReplaceOpcode(ir, arg);
+    ReplaceOpcode(ir, (IROpcode)arg);
     DeleteIR(irl, ir->next);
     return 1;
 }
@@ -4102,7 +4118,7 @@ static int ReplaceExtend(int arg, IRList *irl, IR *ir)
 //   cmp x, #0 wz
 // and if possible deletes it and replaces subsequent uses of C with NZ
 //
-static int ReplaceWrc(int arg, IRList *irl, IR *ir)
+static int ReplaceWrcCmp(int arg, IRList *irl, IR *ir)
 {
     IR *ir0 = ir;
     IR *ir1 = ir->next;
@@ -4145,6 +4161,23 @@ static int ReplaceWrc(int arg, IRList *irl, IR *ir)
     return 1;
 }
 
+static int ReplaceWrcTest(int arg, IRList *irl, IR *ir)
+{
+    IR *ir1 = ir->next;
+
+    // make sure the TEST only sets WC
+    if (!ir1) return 0;
+    if (ir1->flags & FLAG_WZ) return 0;
+    if (!(ir1->flags & FLAG_WC)) return 0;
+    if (InstrIsVolatile(ir1)) return 0;
+    DeleteIR(irl, ir1);
+    return 1;
+}
+
+//
+// remove "arg" instructions following the current one
+// and transfer their flag bits to the current one
+//
 static int RemoveNFlagged(int arg, IRList *irl, IR *ir)
 {
     IR *irlast, *irnext;
@@ -4231,7 +4264,7 @@ static int FixupGetByteWord(int arg, IRList *irl, IR *ir0)
         return 0;
     }
 
-    ReplaceOpcode(ir0, arg);
+    ReplaceOpcode(ir0, (IROpcode)arg);
     if (arg == OPC_GETBYTE) {
         shift = shift/8;
     } else {
@@ -4258,7 +4291,7 @@ static int FixupSetByteWord(int arg, IRList *irl, IR *ir0)
         return 0;
     }
 
-    ReplaceOpcode(ir2, arg);
+    ReplaceOpcode(ir2, (IROpcode)arg);
     if (arg == OPC_SETBYTE) {
         shift = shift/8;
     } else {
@@ -4309,7 +4342,7 @@ static int FixupEq(int arg, IRList *irl, IR *ir)
 
     irnext = ir->next;
     irnext2 = irnext->next;
-    ReplaceOpcode(irnext2, arg);
+    ReplaceOpcode(irnext2, (IROpcode)arg);
     irnext2->src = NULL;
     irnext2->cond = COND_TRUE;
     DeleteIR(irl, ir);
@@ -4318,7 +4351,7 @@ static int FixupEq(int arg, IRList *irl, IR *ir)
 
 static int ReplaceDrvc(int arg, IRList *irl, IR *ir)
 {
-    ReplaceOpcode(ir, arg);
+    ReplaceOpcode(ir, (IROpcode)arg);
     ir->cond = COND_TRUE;
     DeleteIR(irl, ir->next);
     return 1;
@@ -4400,8 +4433,10 @@ struct Peepholes {
     { pat_drvnz1, OPC_DRVNZ, ReplaceDrvc },
     { pat_drvnz2, OPC_DRVNZ, ReplaceDrvc },
 
-    { pat_wrc, 0, ReplaceWrc },
-
+    { pat_wrc_cmp, 0, ReplaceWrcCmp },
+    { pat_wrc_and, 1, RemoveNFlagged },
+    { pat_wrc_test, 0, ReplaceWrcTest },
+    
     { pat_rdbyte1, 2, RemoveNFlagged },
     { pat_rdword1, 2, RemoveNFlagged },
     { pat_rdbyte2, 1, RemoveNFlagged },
