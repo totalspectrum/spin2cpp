@@ -1275,8 +1275,8 @@ TransformCountRepeat(AST *ast)
     int loopkind = AST_FOR;
     AST *forast;
     
-    AST *initstmt;
-    AST *stepstmt;
+    AST *initstmt = NULL;
+    AST *stepstmt = NULL;
 
     AST *limitvar = NULL;
 
@@ -1384,7 +1384,8 @@ TransformCountRepeat(AST *ast)
     if (isIntegerLoop) {
         if (IsConstExpr(fromval) && IsConstExpr(toval)) {
             int32_t fromi, toi;
-
+            int32_t reps;
+            
             fromi = EvalConstExpr(fromval);
             toi = EvalConstExpr(toval);
             if (!knownStepDir) {
@@ -1394,8 +1395,39 @@ TransformCountRepeat(AST *ast)
                     knownStepDir = (fromi > toi) ? -1 : 1;
                 }
             }
-            if (!(gl_output == OUTPUT_C || gl_output == OUTPUT_CPP)) {
-                loopkind = AST_FORATLEASTONCE;
+            reps = (toi - fromi) * knownStepDir;
+            if ( reps >= 0 ) {
+                // loop will execute at least once
+                if (!(gl_output == OUTPUT_C || gl_output == OUTPUT_CPP)) {
+                    if ((int32_t)fromi > 0 && (int32_t)toi > 0) {
+                        isUnsignedLoop = 1;
+                    }
+                    loopkind = AST_FORATLEASTONCE;
+                    if (knownStepVal == 1 && knownStepDir == 1 && !AstUses(body, loopvar)) {
+                        // the loop will execute exactly "reps" times
+                        // and the loop variable seems not to be used inside
+                        // if it's a local variable, we can switch to count down
+                        // PROBLEM: loop variable must be left with correct final value
+                        Symbol *sym = LookupAstSymbol(loopvar, NULL);
+                        if (sym && (sym->kind == SYM_LOCALVAR||sym->kind == SYM_TEMPVAR) ) {
+                            //printf("switch loop to count down");
+                            initstmt = AstAssign(loopvar, AstInteger(toi+1));
+                            loopvar = AstTempLocalVariable("_idx_", looptype);
+                            fromi = reps+1;
+                            toi = 1;
+                            knownStepDir = -1;
+                            if (IsSpinLang(curfunc->language)) {
+                                knownStepVal = 1;
+                            } else {
+                                knownStepVal = -1;
+                            }
+                            stepval = AstInteger(-1);
+                            fromval = AstInteger(fromi);
+                            toval = AstInteger(toi);
+                            isUnsignedLoop = 1;
+                        }
+                    }
+                }
             }
         } else {
             // check for loops like repeat i from @label1 to @label2
@@ -1420,7 +1452,11 @@ TransformCountRepeat(AST *ast)
         initstmt = AstAssign(loopvar, AstAssign(initvar, fromval));
         fromval = initvar;
     } else {
-        initstmt = AstAssign(loopvar, fromval);
+        if (initstmt) {
+            initstmt = NewAST(AST_SEQUENCE, initstmt, AstAssign(loopvar, fromval));
+        } else {
+            initstmt = AstAssign(loopvar, fromval);
+        }
     }
     /* set the limit variable */
     if (IsConstExpr(toval)) {
@@ -1529,6 +1565,8 @@ TransformCountRepeat(AST *ast)
                 // count until we wrap around
                 if (to_i == 0) {
                     condtest = AstOperator(K_LEU, loopvar, fromval);
+                } else if (to_i == 1 && knownStepVal == -1) {
+                    condtest = AstOperator(K_NE, loopvar, AstInteger(0));
                 } else {
                     condtest = AstOperator(K_GEU, loopvar, toval);
                 }
