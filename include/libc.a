@@ -5,6 +5,8 @@
 #define mode_t unsigned int
 #define off_t long
 #define _FILE struct vfs_file_t
+#define DIR struct _dir
+#define DIRENT struct dirent
 
 /* filesys/fatfs/fatfs_vfs.c */
 struct vfs *_vfs_open_sdcard(void) __fromfile("filesys/fatfs/fatfs_vfs.c");
@@ -172,6 +174,11 @@ time_t time(time_t *tp) __fromfile("libc/time/time.c");
 
 /* libc/time/usleep.c */
 int usleep(unsigned int n) __fromfile("libc/time/usleep.c");
+
+/* libc/unix/opendir.c */
+DIR *opendir(const char *orig_name) __fromfile("libc/unix/opendir.c");
+int closedir(DIR *dir) __fromfile("libc/unix/opendir.c");
+DIRENT *readdir(DIR *dir) __fromfile("libc/unix/opendir.c");
 
 /* libc/unix/posixio.c */
 int _openraw(_FILE *f, const char *name, unsigned flags, unsigned perm) __fromfile("libc/unix/posixio.c");
