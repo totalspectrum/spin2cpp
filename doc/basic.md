@@ -214,6 +214,7 @@ input
 integer
 let
 lib
+line
 long
 longint
 loop
@@ -1030,6 +1031,10 @@ Returns the absolute value of x. If x is a floating point number then so will be
 
 Predefined function. `acos(x)` returns the inverse cosine of `x`. The result is a floating point value given in radians (*not* degrees). To convert from degrees to radians, multiply by `3.1415926536 / 180.0`.
 
+### ALIAS
+
+Keyword reserved for future use.
+
 ### AND
 
 ```
@@ -1388,6 +1393,15 @@ chain #4
 (3) On P2, the clock frequency is reset to its default boot value (RCFAST) before the chained program starts.
 
 
+### CHDIR
+
+Changes the current (default) directory for the program. Note that using this function requires that the "dir.bi" header be included. For example:
+```
+#include "dir.bi"
+...
+chdir("/host/dir")
+```
+
 ### _CLKFREQ
 
 ```
@@ -1538,6 +1552,14 @@ for i = 0 to 3
 next i
 ```
 
+### CURDIR$
+
+`curdir$()` returns a string containing the name of the current directory. This may be changed via `chdir`. Before using this function, make sure to `#include "dir.bi"`:
+```
+#include "dir.bi"
+print "current directory is: "; curdir$()
+```
+
 ### DATA
 
 Introduces raw data to be read via the `read` keyword. This is usually used for initializing arrays or other data structures. The calculations for converting values from strings to integers or floats are done at run time, so consider using array initializers instead (which are more efficient).
@@ -1560,7 +1582,14 @@ The order of `data` statements matters, but they may be intermixed with other st
 
 ### DECLARE
 
-Keyword reserved for future use.
+Used to declare a function or subroutine in another file. Only a subset of the usual FreeBasic `declare` keyword is supported. The syntax is:
+```
+DECLARE FUNCTION ident1 LIB "path/to/file1" ( parameters ) AS type
+DECLARE SUB ident2 LIB "path/to/file2" ( parameters )
+```
+The string following `lib` specifies the path to the file containing the implementation of the routine (subroutine or function). Note that with `declare` the type of a function must be explicitly given with `as`.
+
+External Spin and C routines may be declared in this fashion. Note however that C is a case sensitive language, whereas BASIC is not. BASIC identifiers are converted to all lower case, so C functions containing upper case letters cannot be accessed via `declare`.
 
 ### DECUNS$
 
@@ -1639,6 +1668,37 @@ dim as single a(10), b%, c$, d
 Variables declared inside a function or subroutine are "local" to that function or subroutine, and are not available outside or to other functions or subroutines. Variables dimensioned at the top level may be used by all functions and subroutines in the file.
 
 See also VAR.
+
+### DIR$
+
+Scan the current directory for files. The first call to `dir$` should have the form `r = dir$(patrn, attrib)`, where `patrn` is a simple file name pattern, and `attrib` is either 0 (to match all files or directories), or some combination of the bits:
+
+ Bit           | Meaning              
+---------------|----------------------
+ `fbDirectory` | find directories     
+ `fbReadOnly`  | find read only files
+ `fbArchive`   | find writable files
+ `fbHidden`    | find hidden files
+ `fbSystem`    | find system files
+ `fbNormal`    | find read only or writable files
+
+`patrn` is a very simple file pattern, such as `*` to match any names, `*.txt` to match all files ending in `.txt`, `foo.txt` to match only the file named `foo.txt`, or `abc*` to match files starting with `abc`. The pattern is case insensitive, so `*.c` will match both files ending in `.c` and `.C`.
+
+The `dir$` call will return the first file name matching both the string pattern and the requested attributes. Subsequent `dir$` calls without patterns will continue matching the pattern and attributes set up by the first call. An empty string `""` will be returned when there are no more matches. A `nil` will be returned if there is an error.
+
+Example:
+```
+#include "dir.bi"
+...
+dim filename as string
+chdir("/host/dir")       ' set working directory
+filename = dir$("*", 0)  ' start scan for all files and directories
+while filename <> "" and filename <> nil
+  print filename
+  filename = dir$()      ' continue scan
+end while
+```
+Note that `dir$` is not thread-safe: it should always be called from one CPU / thread at a time, and if multiple CPUs try to call it at the same time then the results are utterly unpredictable.
 
 ### DIRECTION
 
@@ -1956,6 +2016,14 @@ for i = 1 to 4
   print c()
 next
 ```
+
+#### Declaring external functions
+
+The `declare` and `lib` keywords may be used to declare functions from other files ("libraries"), for example:
+```
+declare function rename lib "libc/unix/rename.c" (oldpath as string, newpath as string) as integer
+```
+Declares that the function `rename(oldpath, newpath)` may be found in the file `"libc/unix/rename.c"`. See `declare` for more details.
 
 #### Placing functions in internal memory
 
@@ -2293,6 +2361,14 @@ sets `a` to be equal to `b`. This can usually be written as:
   a = b
 ```
 the only difference is that in the `let` form if `a` does not already exist it is created as a member variable (one accessible in all functions of this file). The `let` keyword is deprecated in some versions of BASIC (such as FreeBASIC) so it's probably better to use `var` or `dim` to explicitly declare your variables.
+
+### LIB
+
+Keyword used with DECLARE to define functions in other files.
+
+### LINE
+
+Reserved for future use.
 
 ### LOG
 
