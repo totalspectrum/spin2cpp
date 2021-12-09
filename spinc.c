@@ -372,6 +372,7 @@ ProcessModule(Module *P)
             InitBasicData(P);
         }
         DeclareFunction(P, ast_type_void, 1, funcdef, P->body, NULL, NULL);
+        P->body = NULL;
     }
     
     /* now declare all the symbols that weren't already declared */
