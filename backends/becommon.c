@@ -43,6 +43,7 @@ BuildMethodPointer(AST *ast)
     AST *result;
     AST *call;
     Function *func;
+    AST *funcptrtype;
     
     sym = FindCalledFuncSymbol(ast, &objast, 0);
     if (!sym || sym->kind != SYM_FUNCTION) {
@@ -61,6 +62,7 @@ BuildMethodPointer(AST *ast)
     } else {
         objast = NewAST(AST_ADDROF, objast, NULL);
     }
+    funcptrtype = NewAST(AST_PTRTYPE, func->overalltype, NULL);
     func->used_as_ptr = 1;
     if (func->callSites == 0) {
         MarkUsed(func, "func pointer");
@@ -74,6 +76,8 @@ BuildMethodPointer(AST *ast)
     call = NewAST(AST_EXPRLIST, funcaddr, NULL);
     call = NewAST(AST_EXPRLIST, objast, call);
     result = NewAST(AST_FUNCCALL, make_methodptr, call);
+    // cast the result to the correct function pointer type
+    result = NewAST(AST_CAST, funcptrtype, result);
     return result;
 }
 

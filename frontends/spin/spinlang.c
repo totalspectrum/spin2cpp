@@ -304,7 +304,7 @@ SetLocalArray(Function *fdef, Symbol *sym, AST *body)
  * "expectType" marks a parameter type that is expected
  */
 extern AST *FunctionAddress(AST *); // in types.c
-extern AST *BuildMethodPointer(AST *); // in types.c
+extern AST *BuildMethodPointer(AST *); // in becommon.c
 
 static void
 ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
