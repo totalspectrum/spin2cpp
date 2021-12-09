@@ -415,6 +415,24 @@ isIdentifierChar(int c)
     return isIdentifierStart(c) || safe_isdigit(c);
 }
 
+/* in our C we will allow $ in identifiers */
+int
+isCIdentifierStart(int c)
+{
+    if (safe_isalpha(c))
+        return 1;
+    if (c == '_')
+        return 1;
+    return 0;
+}
+
+
+int
+isCIdentifierChar(int c)
+{
+    return isIdentifierStart(c) || safe_isdigit(c) || (c == '$');
+}
+
 /* dynamically grow a string */
 #define INCSTR 16
 
@@ -2031,6 +2049,7 @@ struct reservedword basic_keywords[] = {
   { "_", BAS_EMPTY },
   
   { "abs", BAS_ABS },
+  { "alias", BAS_ALIAS },
   { "and", BAS_AND },
   { "andalso", BAS_ANDALSO },
   { "any", BAS_ANY },
@@ -2066,6 +2085,7 @@ struct reservedword basic_keywords[] = {
   { "end", BAS_END },
   { "endif", BAS_ENDIF },
   { "enum", BAS_ENUM },
+  { "extern", BAS_EXTERN },
   { "exit", BAS_EXIT },
   { "fixed", BAS_FIXED },
   { "for", BAS_FOR },
@@ -2081,6 +2101,7 @@ struct reservedword basic_keywords[] = {
   { "int", BAS_CAST_INT },
   { "integer", BAS_INTEGER_KW },
   { "let", BAS_LET },
+  { "lib", BAS_LIB },
   { "long", BAS_LONG },
   { "longint", BAS_LONGINT },
   { "loop", BAS_LOOP },
@@ -4229,7 +4250,7 @@ parseCIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
         }
     }
     c = lexgetc(L);
-    while (isIdentifierChar(c)) {
+    while (isCIdentifierChar(c)) {
         flexbuf_addchar(&fb, c);
         c = lexgetc(L);
     }
@@ -4445,7 +4466,7 @@ parse_number:
         done_number:            
             c = C_CONSTANT;
         }
-    } else if (isIdentifierStart(c)) {
+    } else if (isCIdentifierStart(c)) {
         if (c == 'L') {
             int c2 = lexgetc(L);
             if (c2 == '\'') {

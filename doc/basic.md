@@ -163,6 +163,7 @@ For example, the following are all ways to represent the decimal number `10`:
 Keywords are always treated specially by the compiler, and no identifier may be named the same as a keyword.
 ```
 abs
+alias
 and
 andalso
 any
@@ -198,6 +199,7 @@ end
 endif
 enum
 exit
+extern
 fixed
 for
 function
@@ -211,6 +213,7 @@ import
 input
 integer
 let
+lib
 long
 longint
 loop
@@ -275,6 +278,7 @@ bin$
 bitrev
 bytefill
 bytemove
+chdir
 _clkfreq
 clkfreq
 clkset
@@ -284,8 +288,10 @@ cpuchk
 cpuid
 cpustop
 cpuwait
+curdir$
 decuns$
 delete$
+dir$
 dira
 dirb
 exp
@@ -316,6 +322,7 @@ longmove
 lpad$
 ltrim$
 mid$
+mkdir
 mount
 number$
 oct$

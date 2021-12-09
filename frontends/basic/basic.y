@@ -385,6 +385,7 @@ AdjustParamForByVal(AST *param)
 
 /* keywords */
 %token BAS_ABS        "abs"
+%token BAS_ALIAS      "alias"
 %token BAS_AND        "and"
 %token BAS_ANDALSO    "andalso"
 %token BAS_ANY        "any"
@@ -421,6 +422,7 @@ AdjustParamForByVal(AST *param)
 %token BAS_ENDIF      "endif"
 %token BAS_ENUM       "enum"
 %token BAS_EXIT       "exit"
+%token BAS_EXTERN     "extern"
 %token BAS_FIXED      "fixed"
 %token BAS_FOR        "for"
 %token BAS_FUNCTION   "function"
@@ -435,6 +437,7 @@ AdjustParamForByVal(AST *param)
 %token BAS_CAST_INT   "int"
 %token BAS_INTEGER_KW "integer"
 %token BAS_LET        "let"
+%token BAS_LIB        "lib"
 %token BAS_LONG       "long"
 %token BAS_LONGINT    "longint"
 %token BAS_LOOP       "loop"
@@ -1930,6 +1933,19 @@ funcdecl:
     AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
     DeclareFunction(current, rettype, 1, funcdef, body, attrib, $1);
   }
+  | BAS_DECLARE BAS_FUNCTION BAS_IDENTIFIER BAS_LIB BAS_STRING '(' paramdecl ')' BAS_AS typelist
+     {
+         AST *attrib = NULL;
+         AST *name = $3;
+         AST *parms = $7;
+         AST *rettype = $10;
+         AST *body = $5;
+         AST *funcdecl = NewAST(AST_FUNCDECL, name, NULL);
+         AST *funcvars = NewAST(AST_FUNCVARS, parms, NULL);
+         AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
+         
+         DeclareFunction(current, rettype, 1, funcdef, body, attrib, $1);
+     }
   | BAS_DEF BAS_IDENTIFIER '(' paramdecl ')' '=' expr
   {
     AST *name = $2;
@@ -1944,7 +1960,7 @@ funcdecl:
                   NewAST(AST_RETURN, retval, NULL),
                   NULL);
     DeclareFunction(current, rettype, 1, funcdef, body, NULL, $1);
-  }  
+  }
   ;
 
 functemplate:
