@@ -2925,6 +2925,9 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         // stack after compiling the contents of the scope.
         BCCompileStmtlist(irbuf,node->left,context);
     } break;
+    case AST_INLINEASM: {
+        ERROR(node, "Inline assembly is not supported in bytecode output");
+    } break;
     default:
         ERROR(node,"Unhandled node kind %d in statement",node->kind);
         break;
