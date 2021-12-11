@@ -2,10 +2,10 @@
 '' Nucode specific functions
 ''
 
-pri _waitx(tim)
+pri _waitx(tim = long)
   __bytecode__("WAITX")
 
-pri _pinr(pin) : val
+pri _pinr(pin = long) : val
   __bytecode__("PINR")
   
 pri _getcnthl : rl = +long, rh = +long
@@ -18,62 +18,62 @@ pri _getcnt : r = +long | rh
 pri _cogid : r = long
   __bytecode__("COGID")
 
-pri _cogatn(mask)
+pri _cogatn(mask = +long)
   __bytecode__("COGATN")
 
 pri _pollatn : r = long
   __bytecode__("POLLATN")
 
-pri _cogstop(x)
+pri _cogstop(x = long)
   __bytecode__("COGSTOP")
 
-pri _coginit(id, code, param): r
+pri _coginit(id = long, code, param): r
   __bytecode__("COGINIT")
   
-pri _cogchk(id) : r
+pri _cogchk(id = long) : r
   __bytecode__("COGCHK")
 
-pri _drvl(pin)
+pri _drvl(pin = long)
   __bytecode__("DRVL")
-pri _drvh(pin)
+pri _drvh(pin = long)
   __bytecode__("DRVH")
-pri _drvnot(pin)
+pri _drvnot(pin = long)
   __bytecode__("DRVNOT")
-pri _drvrnd(pin)
+pri _drvrnd(pin = long)
   __bytecode__("DRVRND")
 
-pri _dirl(pin)
+pri _dirl(pin = long)
   __bytecode__("DIRL")
-pri _dirh(pin)
+pri _dirh(pin = long)
   __bytecode__("DIRH")
 
-pri _fltl(pin)
+pri _fltl(pin = long)
   __bytecode__("FLTL")
 
-pri _wrpin(pin, val)
+pri _wrpin(pin = long, val = long)
   __bytecode__("WRPIN")
-pri _wxpin(pin, val)
+pri _wxpin(pin = long, val = long)
   __bytecode__("WXPIN")
-pri _wypin(pin, val)
+pri _wypin(pin = long, val = long)
   __bytecode__("WYPIN")
-pri _rdpin(pin) : r
+pri _rdpin(pin = long) : r
   __bytecode__("RDPIN")
 
 ' synthetic smartpin instruction for setting up smartpin parameters
-pri _pinsetup(pin, mode, xval, yval)
+pri _pinsetup(pin = long, mode = long, xval, yval)
   _dirl(pin)
   _wrpin(pin, mode)
   _wxpin(pin, xval)
   _wypin(pin, yval)
 
-pri _pinstart(pin, mode, xval, yval)
+pri _pinstart(pin = long, mode, xval, yval)
   _pinsetup(pin, mode, xval, yval)
   _dirh(pin)
 
-pri _waitcnt(x)
+pri _waitcnt(x = long)
   __bytecode__("WAITCNT")
 
-pri waitcnt(x)
+pri waitcnt(x = long)
   __bytecode__("WAITCNT")
   
 dat

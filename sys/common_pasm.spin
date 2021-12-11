@@ -2,7 +2,7 @@
 '' common code that applies to both P1 and P2 PASM
 ''
   
-pri longmove(dst, src, count) : origdst
+pri longmove(dst, src, count=long) : origdst
   origdst := dst
   if dst < src
     repeat count
@@ -17,7 +17,7 @@ pri longmove(dst, src, count) : origdst
       src -= 4
       long[dst] := long[src]
       
-pri wordmove(dst, src, count) : origdst
+pri wordmove(dst, src, count=long) : origdst
   origdst := dst
   if dst < src
     repeat count
@@ -32,10 +32,10 @@ pri wordmove(dst, src, count) : origdst
       src -= 2
       word[dst] := word[src]
 
-pri bytemove(dst, src, count)
+pri bytemove(dst, src, count=long)
   return __builtin_memmove(dst, src, count)
 
-pri __builtin_memcpy(dst, src, count)
+pri __builtin_memcpy(dst, src, count=long)
   return __builtin_memmove(dst, src, count)
   
 pri __builtin_strlen(str) : r=long
@@ -58,12 +58,12 @@ pri strcomp(s1, s2) | c1, c2
       return 0
   until (c1 == 0)
   return -1
-pri _lookup(x, b, arr, n) | i
+pri _lookup(x, b, arr, n=long) | i
   i := x - b
   if (i => 0 and i < n)
     return long[arr][i]
   return 0
-pri _lookdown(x, b, arr, n) | i
+pri _lookdown(x, b, arr, n=long) | i
   repeat i from 0 to n-1
     if (long[arr] == x)
       return i+b

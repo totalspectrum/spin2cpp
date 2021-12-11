@@ -18,35 +18,35 @@ pri _getcnthl : rl = +long, rh = +long
   endasm
   return rl, rh
   
-pri waitcnt(x)
+pri waitcnt(x = long)
   asm
     addct1  x, #0
     waitct1
   endasm
-pri _waitcnt(x)
+pri _waitcnt(x = long)
   asm
     addct1  x, #0
     waitct1
   endasm
 
-pri _cogid | rval
+pri _cogid : rval = long
   asm
     cogid rval
   endasm
   return rval
-pri _cogstop(id)
+pri _cogstop(id = long)
   asm
     cogstop id
   endasm
   return 0
-pri _lockclr(id) : rval | mask
+pri _lockclr(id = long) : rval | mask
   mask := -1
   asm
     lockrel id wc
     muxc   rval,mask
   endasm
   return rval
-pri _lockset(id) : rval | mask
+pri _lockset(id = long) : rval | mask
   mask := -1
   asm
     locktry id wc
@@ -55,19 +55,19 @@ pri _lockset(id) : rval | mask
   return rval
 
 ' locktry is like lockset but with opposite return value
-pri _locktry(id) : rval |  mask
+pri _locktry(id = long) : rval |  mask
   mask := -1
   asm
     locktry id wc
     muxc   rval,mask
   endasm
   return rval
-pri _locknew | rval
+pri _locknew : rval = long
   asm
     locknew rval
   endasm
   return rval
-pri _lockret(id)
+pri _lockret(id = long)
   asm
     lockret id
   endasm
@@ -124,7 +124,7 @@ pri _coginit(id, code, param)
   endasm
   return id
 
-pri _cogchk(id) : r
+pri _cogchk(id = long) : r
   r := -1
   asm
     cogid id wc
@@ -221,107 +221,107 @@ pri _call_method(o, f, x=0) | r
   endasm
   return r
   
-pri _dirl(pin)
+pri _dirl(pin = long)
   asm
     dirl pin
   endasm
-pri _dirh(pin)
+pri _dirh(pin = long)
   asm
     dirh pin
   endasm
-pri _dirnot(pin)
+pri _dirnot(pin = long)
   asm
     dirnot pin
   endasm
-pri _dirrnd(pin)
+pri _dirrnd(pin = long)
   asm
     dirrnd pin
   endasm
-pri _dirw(pin, c)
+pri _dirw(pin = long, c = long)
   asm
     test   c,#1 wc
     dirc pin
   endasm
 
-pri _drvl(pin)
+pri _drvl(pin = long)
   asm
     drvl pin
   endasm
-pri _drvh(pin)
+pri _drvh(pin = long)
   asm
     drvh pin
   endasm
-pri _drvnot(pin)
+pri _drvnot(pin = long)
   asm
     drvnot pin
   endasm
-pri _drvrnd(pin)
+pri _drvrnd(pin = long)
   asm
     drvrnd pin
   endasm
-pri _drvw(pin, c)
+pri _drvw(pin = long, c = long)
   asm
     test   c,#1 wc
     drvc pin
   endasm
 
-pri _outl(pin)
+pri _outl(pin = long)
   asm
     outl pin
   endasm
-pri _outh(pin)
+pri _outh(pin = long)
   asm
     outh pin
   endasm
-pri _outnot(pin)
+pri _outnot(pin = long)
   asm
     outnot pin
   endasm
-pri _outrnd(pin)
+pri _outrnd(pin = long)
   asm
     outnot pin
   endasm
-pri _out(pin, c)
+pri _out(pin = long, c = long)
   asm
     test   c,#1 wc
     outc pin
   endasm
 
-pri _fltl(pin)
+pri _fltl(pin = long)
   asm
     fltl pin
   endasm
-pri _flth(pin)
+pri _flth(pin = long)
   asm
     flth pin
   endasm
-pri _fltnot(pin)
+pri _fltnot(pin = long)
   asm
     fltnot pin
   endasm
-pri _fltrnd(pin)
+pri _fltrnd(pin = long)
   asm
     fltnot pin
   endasm
-pri _fltw(pin, val)
+pri _fltw(pin = long, val = long)
   asm
     test   val,#1 wc
     fltc pin
   endasm
 
 ' special case of _pinread where "pin" is a single pin
-pri _pinr(pin) : val
+pri _pinr(pin = long) : val
   asm
     testp   pin wc
     wrc val
   endasm
   
-pri _waitx(tim)
+pri _waitx(tim = long)
   asm
     waitx tim
   endasm
 
-pri _cogatn(mask)
+pri _cogatn(mask = +long)
   asm
     cogatn mask
   endasm
@@ -338,15 +338,15 @@ pri _waitatn()
     waitatn
   endasm
   
-pri _rdpin(pin) : r
+pri _rdpin(pin = long) : r
   asm
     rdpin r, pin
   endasm
-pri _rqpin(pin) : r
+pri _rqpin(pin = long) : r
   asm
     rqpin r, pin
   endasm
-pri _akpin(pin)
+pri _akpin(pin = long)
   asm
     akpin pin
   endasm

@@ -331,58 +331,58 @@ pri _unsigned_himul(a, b) : r
   if b < 0
     r += a
 
-pri _waitx(tim)
+pri _waitx(tim = long)
   tim += cnt
   waitcnt(tim)
 
 pri _getcnt : r = +long
   r := cnt
 
-pri _fltl(pin) | mask
+pri _fltl(pin = long) | mask
   mask := 1<<pin
   dira &= !mask
   outa &= !mask
   
-pri _flth(pin) | mask
+pri _flth(pin = long) | mask
   mask := 1<<pin
   dira &= !mask
   outa |= mask
 
-pri _dirl(pin) | mask
+pri _dirl(pin = long) | mask
   mask := 1<<pin
   dira &= !mask
 
-pri _dirh(pin) | mask
+pri _dirh(pin = long) | mask
   mask := 1<<pin
   dira |= mask
 
-pri _dirnot(pin) | mask
+pri _dirnot(pin = long) | mask
   mask := 1<<pin
   dira ^= mask
 
-pri _dirw(pin, c) | mask
+pri _dirw(pin = long, c = long) | mask
   mask := 1<<pin
   if (c)
     dira |= mask
   else
     dira &= !mask
 
-pri _drvl(pin) | mask
+pri _drvl(pin = long) | mask
   mask := 1<<pin
   dira |= mask
   outa &= !mask
 
-pri _drvh(pin) | mask
+pri _drvh(pin = long) | mask
   mask := 1<<pin
   dira |= mask
   outa |= mask
 
-pri _drvnot(pin) | mask
+pri _drvnot(pin = long) | mask
   mask := 1<<pin
   dira |= mask
   outa ^= mask
 
-pri _drvw(pin, c) | mask
+pri _drvw(pin = long, c = long) | mask
   mask := 1<<pin
   dira |= mask
   if (c)
@@ -391,7 +391,7 @@ pri _drvw(pin, c) | mask
     outa &= !mask
 
 ' special case of _pinread where "pin" is a single pin
-pri _pinr(pin)
+pri _pinr(pin = long)
   return (ina >> pin) & 1
     
 pri _ones(v) : r

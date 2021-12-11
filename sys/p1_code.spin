@@ -45,7 +45,7 @@ pri _clkset(mode, freq)
 pri _reboot
   _clkset($80, 0)
 
-pri _lockclr(id) | mask, rval
+pri _lockclr(id = long) | mask, rval
   mask := -1
   asm
     lockclr id wc
@@ -53,7 +53,7 @@ pri _lockclr(id) | mask, rval
   endasm
   return rval
 
-pri _lockset(id) | mask, rval
+pri _lockset(id = long) | mask, rval
   mask := -1
   asm
     lockset id wc
@@ -62,7 +62,7 @@ pri _lockset(id) | mask, rval
   return rval
 
 ' like lockset but has opposite return value
-pri _locktry(id) | mask, rval
+pri _locktry(id = long) | mask, rval
   mask := -1
   asm
     lockset id wc
@@ -70,19 +70,19 @@ pri _locktry(id) | mask, rval
   endasm
   return rval
 
-pri _locknew | rval
+pri _locknew : rval = long
   asm
     locknew rval
   endasm
   return rval
 
-pri _lockret(id)
+pri _lockret(id = long)
   asm
     lockret id
   endasm
   return 0
 
-pri _coginit(id, code, param) | parm
+pri _coginit(id = long, code, param) | parm
   parm := (param & $fffc) << 16
   parm |= (code & $fffc) << 2
   parm | = id & $f
@@ -186,51 +186,51 @@ pri _call_method(o, f, x=0) | r
   endasm
   return r
 
-pri _fltl(pin) | mask
+pri _fltl(pin = long) | mask
   mask := 1<<pin
   dira &= !mask
   outa &= !mask
   
-pri _flth(pin) | mask
+pri _flth(pin = long) | mask
   mask := 1<<pin
   dira &= !mask
   outa |= mask
 
-pri _dirl(pin) | mask
+pri _dirl(pin = long) | mask
   mask := 1<<pin
   dira &= !mask
 
-pri _dirh(pin) | mask
+pri _dirh(pin = long) | mask
   mask := 1<<pin
   dira |= mask
 
-pri _dirnot(pin) | mask
+pri _dirnot(pin = long) | mask
   mask := 1<<pin
   dira ^= mask
 
-pri _dirw(pin, c) | mask
+pri _dirw(pin = long, c = long) | mask
   mask := 1<<pin
   if (c)
     dira |= mask
   else
     dira &= !mask
 
-pri _drvl(pin) | mask
+pri _drvl(pin = long) | mask
   mask := 1<<pin
   dira |= mask
   outa &= !mask
 
-pri _drvh(pin) | mask
+pri _drvh(pin = long) | mask
   mask := 1<<pin
   dira |= mask
   outa |= mask
 
-pri _drvnot(pin) | mask
+pri _drvnot(pin = long) | mask
   mask := 1<<pin
   dira |= mask
   outa ^= mask
 
-pri _drvw(pin, c) | mask
+pri _drvw(pin = long, c = long) | mask
   mask := 1<<pin
   dira |= mask
   if (c)
@@ -239,10 +239,10 @@ pri _drvw(pin, c) | mask
     outa &= !mask
 
 ' special case of _pinread where "pin" is a single pin
-pri _pinr(pin)
+pri _pinr(pin = long)
   return (ina >> pin) & 1
     
-pri _waitx(tim)
+pri _waitx(tim = long)
   asm
     add  tim, cnt
     waitcnt tim, #0
