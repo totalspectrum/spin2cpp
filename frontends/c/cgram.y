@@ -203,6 +203,7 @@ CombineTypes(AST *first, AST *second, AST **identifier, Module **module)
         }
         return MergePrefix(prefix, first);
     case AST_ARRAYDECL:
+    case AST_ARRAYTYPE:
         first = NewAST(AST_ARRAYTYPE, first, second->right);
         return MergePrefix(prefix, CombineTypes(first, second->left, identifier, module));
     case AST_REFTYPE:
@@ -1845,14 +1846,23 @@ abstract_declarator
 
 direct_abstract_declarator
 	: '(' abstract_declarator ')'
+            { $$ = $2; }
 	| '[' ']'
+            { $$ = NewAST(AST_ARRAYTYPE, NULL, NULL); }
 	| '[' constant_expression ']'
+            { $$ = NewAST(AST_ARRAYTYPE, NULL, $2); }
 	| direct_abstract_declarator '[' ']'
+            { $$ = NewAST(AST_ARRAYTYPE, $1, NULL); }
 	| direct_abstract_declarator '[' constant_expression ']'
+            { $$ = NewAST(AST_ARRAYTYPE, $1, $3); }
 	| '(' ')'
+            { $$ = NULL; }
 	| '(' parameter_type_list ')'
+            { $$ = NULL; }
 	| direct_abstract_declarator '(' ')'
+            { $$ = NULL; }
 	| direct_abstract_declarator '(' parameter_type_list ')'
+            { $$ = NULL; }
 	;
 
 initializer
