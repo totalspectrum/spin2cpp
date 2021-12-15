@@ -2842,6 +2842,39 @@ SameTypes(AST *A, AST *B)
     return AstMatch(A->left, B->left) && SameTypes(A->right, B->right);
 }
 
+/* check to see if array type A is compatible with tuple type T */
+static int ArrayCompatibleWithTuple(AST *A, AST *T) {
+    int n = 0; // length of tuple
+    AST *arrayTyp = A->left;
+    AST *arrayLen = A->right;
+    AST *Qtyp;
+    AST *Q;
+    Q = T;
+    while (Q) {
+        Qtyp = (Q->kind == AST_TUPLE_TYPE) ? Q->left : Q;
+        if (!arrayTyp) {
+            arrayTyp = Qtyp;
+        }
+        if (!SameTypes(arrayTyp, Qtyp)) {
+            return 0;
+        }
+        n++;
+        if (Q->kind == AST_TUPLE_TYPE) {
+            Q = Q->right;
+        } else {
+            Q = NULL;
+        }
+    }
+    // check for lengths compatible
+    if (arrayLen) {
+        int expectLen = EvalConstExpr(arrayLen);
+        if (expectLen != n) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
 /* check for compatibility of types */
 /* NOTE: this is not symmetric; we allow A to be of stricter type
  * than B (so for example passing type B to type A is OK if B
@@ -2873,6 +2906,10 @@ CompatibleTypes(AST *A, AST *B)
              * any object of the same size
              */
             return TypeSize(A) == TypeSize(B);
+        } else if (B && B->kind == AST_ARRAYTYPE) {
+            // arrays and tuples are compatible if all tuple components are
+            // the same, and the lengths match
+            return ArrayCompatibleWithTuple(B, A);
         } else if (A->right) {
             return 0;
         } else {
@@ -2881,6 +2918,10 @@ CompatibleTypes(AST *A, AST *B)
     } else if (B && B->kind == AST_TUPLE_TYPE) {
         if (A && A->kind == AST_OBJECT) {
             return TypeSize(A) == TypeSize(B);
+        } else if (A && A->kind == AST_ARRAYTYPE) {
+            // arrays and tuples are compatible if all tuple components are
+            // the same, and the lengths match
+            return ArrayCompatibleWithTuple(A, B);
         }
         if (B->right) {
             return 0;
