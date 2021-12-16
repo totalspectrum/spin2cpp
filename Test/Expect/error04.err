@@ -1,2 +1,3 @@
-WARNING: EOF seen inside comment
-error04.spin:8: error: syntax error, unexpected $end
+error04.spin:2: error: End of file seen inside comment (comment starts at line 2)
+
+error04.spin:9: error: unexpected end of input

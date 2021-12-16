@@ -2733,6 +2733,10 @@ cgramyyerror(const char *msg)
     SETCOLOR(PRINT_ERROR);
     ERRORHEADER(current->Lptr->fileName, current->Lptr->lineCounter, "error");
 
+    if (!strcmp(msg, "syntax error, unexpected $end")) {
+        fprintf(stderr, "unexpected end of input");
+        msg = "";
+    }
     // massage bison's error messages to make them easier to understand
     while (*msg) {
         // say which identifier was unexpected

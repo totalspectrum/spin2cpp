@@ -956,6 +956,13 @@ DumpAST(AST *ast)
     doASTDump(ast, 0);
 }
 
+AST *DummyLineAst(int lineNum)
+{
+    AST *dummy = NewAST(AST_ANNOTATION, NULL, NULL);
+    dummy->lineidx = lineNum+1;
+    return dummy;
+}
+
 LineInfo *GetLineInfo(AST *ast)
 {
     LexStream *L;

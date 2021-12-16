@@ -793,7 +793,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             case SP_ASM_CONST:
             case SP_ORG:
 	        if (L->block_type == BLOCK_ASM && (c == SP_ASM || c == SP_ASM_CONST)) {
-		    fprintf(stderr, "WARNING: ignoring nested asm\n");
+		    WARNING(DummyLineAst(L->lineCounter), "ignoring nested asm near line %d\n", L->lineCounter);
                 } else if (InDatBlock(L)) {
                     /* for ORG, nothing special to do */
                     /* for ASM, check for identifier */
@@ -1472,7 +1472,7 @@ again:
 	int doccomment = 0;
         int doccommentchar;
         int allowNestedComments;
-        
+
         startcol = L->colCounter;
         startline = L->lineCounter;
         flexbuf_init(&anno, INCSTR);
@@ -1532,8 +1532,9 @@ again:
             }
         }
         if (c == EOF) {
-	    if (commentNest > 0)
-	        fprintf(stderr, "WARNING: EOF seen inside comment\n");
+	    if (commentNest > 0) {
+	        ERROR(DummyLineAst(startline), "End of file seen inside comment (comment starts at line %d)\n", startline);
+            }
             return eof_token;
 	}
         if (annotate) {

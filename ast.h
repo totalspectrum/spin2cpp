@@ -301,6 +301,9 @@ void DumpAST(AST *);
 /* get LineInfo for an AST */
 LineInfo *GetLineInfo(AST *);
 
+/* create a dummy AST to report an error on line lineNo of the current file */
+AST *DummyLineAst(int lineNum);
+
 /* useful utilities for language parsers */
 AST *NewCommentedAST(enum astkind kind, AST *left, AST *right, AST *comment);
 AST *NewStatement(AST *stmt);
