@@ -3719,7 +3719,7 @@ const char *TypeName(AST *typ)
             nexttyp = NULL;
             break;
         case AST_TUPLE_TYPE:
-            strcat(buf, "multiple values ");
+            strcat(buf, "list of values ");
             nexttyp = NULL;
             break;
         case AST_OBJECT:
