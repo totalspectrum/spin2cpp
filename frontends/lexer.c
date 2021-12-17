@@ -2223,6 +2223,7 @@ struct reservedword c_keywords[] = {
   { "__throwifcaught", C_THROWIF },
   { "__try", C_TRY },
   { "typedef", C_TYPEDEF },
+  { "__typeof__", C_TYPEOF },
   { "union", C_UNION },
   { "unsigned", C_UNSIGNED },
   { "__using", C_USING },
@@ -2244,6 +2245,7 @@ struct reservedword cpp_keywords[] = {
   { "throw", C_THROW },
   { "true", C_TRUE },
   { "try", C_TRY },
+  { "typeof", C_TYPEOF },
 };
 
 // keywords reserved in BASIC only in asm blocks

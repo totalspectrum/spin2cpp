@@ -829,6 +829,7 @@ ConstructDefaultValue(AST *decl, AST *val)
 %token C_CONSTANT   "constant"
 %token C_STRING_LITERAL "string literal"
 %token C_SIZEOF     "sizeof"
+%token C_TYPEOF     "typeof"
 
 %token C_PTR_OP "->"
 %token C_INC_OP "++"
@@ -1483,6 +1484,15 @@ type_specifier
                     SYNTAX_ERROR("Internal error, bad typename %s", ident->d.string);
                     $$ = NULL;
                 }
+            }
+        | C_TYPEOF '(' unary_expression ')'
+            {
+                AST *typ = ExprType($2);
+                if (!typ) {
+                    WARNING($1, "Unable to find type of expression, assuming generic");
+                    typ = NULL;
+                }
+                $$ = typ;
             }
 	;
 
