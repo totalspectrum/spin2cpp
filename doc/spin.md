@@ -712,7 +712,7 @@ The space available for use in ORG/END inline assembly is smaller by default in 
 
 ### Memory map
 
-The location of the clock frequency is at the standard location $10 used by TAQOZ, micropython, and most C compilers, rather than $40 as used by Spin2.
+The location of the clock frequency is at the standard location $14 used by TAQOZ, micropython, and most C compilers, rather than $44 as used by Spin2; similarly, clock mode is at $18 instead of $48.
 
 COG memory is also laid out differently. See the general compiler documentation for details of the memory map.
 
@@ -720,17 +720,19 @@ COG memory is also laid out differently. See the general compiler documentation 
 
 In flexspin, `DEBUG` statements are accepted only in Spin2 methods, *not* in PASM (they are ignored in PASM).
 
-Debug statements are output only when the `-g` flag is given to flexspin.
+Debug statements are output only when some variant of the `-g` flag (e.g. `-g` or `-gbrk` is given to flexspin.
 
-Only a subset of the Spin2 `DEBUG` directives are accepted:
+Only a subset of the Spin2 `DEBUG` directives are accepted in normal `-g` mode:
 ```
 ZSTR, UDEC, UDEC_BYTE, UDEC_WORD, UDEC_LONG, SDEC, SDEC_BYTE, SDEC_WORD, SDEC_LONG, UHEX, UHEX_BYTE, UHEX_WORD, UHEX_LONG
 ```
 Other debug directives are ignored, with a warning.
 
-`DEBUG` in flexspin is implemented differently than in PNut, so timing when debug is enabled may be different.
+with plain `-g` debugging `DEBUG` in flexspin is implemented differently than in PNut, so timing when debug is enabled may be different.
 
-`DEBUG` statements containing backticks are (partially) translated so as to output the correct strings, but FlexProp does not have any way to interpret these strings so no graphical debug capabiliites exist.
+`DEBUG` statements containing backticks are (partially) translated so as to output the correct strings, but FlexProp does not have any way to interpret these strings so no graphical debug capabiliites exist in FlexProp; third party tools may provide a way around this.
+
+Thanks to Ada Gottensträter, flexspin also now supports a `-gbrk` flag to enable `DEBUG` using the standard PNut method (using a BRK) instruction. This method will work inside PASM code, and is generally more compatible with the standard PNut Spin2 code.
 
 ### ASMCLK instruction
 

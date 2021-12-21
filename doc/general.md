@@ -451,7 +451,8 @@ There are various command line options for the compiler which may modify the com
   [ -c ]             output only DAT sections
   [ -l ]             output a .lst listing file
   [ -f ]             output list of file names
-  [ -g ]             enable debug statements
+  [ -g ]             enable debug statements (default printf method)
+  [ -gbrk ]          enable BRK based debugging
   [ -q ]             quiet mode (suppress banner and non-error text)
   [ -p ]             disable the preprocessor
   [ -O[#] ]          set optimization level
