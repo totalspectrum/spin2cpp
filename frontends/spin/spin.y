@@ -148,6 +148,7 @@ static struct s_dbgfmt {
     const char *cfmt;
     int bits;
 } dbgfmt[] = {
+    { "uchar#", "%c", 0 },
     { "zstr", "%s", 0 },
     { "udec", "%u", 0 },
     { "fdec", "%g", 0 },

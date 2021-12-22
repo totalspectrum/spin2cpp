@@ -115,6 +115,7 @@ static struct DebugFunc debug_func_table[] = {
     {"sbin_word_array"  ,DBC_FLAG_SIGNED|DBC_TYPE_BIN|DBC_SIZE_WORD|DBC_FLAG_ARRAY},
     {"sbin_long_array"  ,DBC_FLAG_SIGNED|DBC_TYPE_BIN|DBC_SIZE_LONG|DBC_FLAG_ARRAY},
 
+    {"uchar#"           ,DBC_CHAR},
 
     {NULL,0}
 };

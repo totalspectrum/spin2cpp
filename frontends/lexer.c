@@ -1061,6 +1061,8 @@ parseBacktickInBacktick(LexStream *L, AST **ast_ptr)
         strcpy(identName, "uhex_");
     } else if (identLen == 1 && identName[0] == '%') {
         strcpy(identName, "ubin_");
+    } else if (identLen == 1 && identName[0] == '#') {
+        strcpy(identName, "uchar#");
     }
     if (c) {
         lexungetc(L, c);
@@ -1662,7 +1664,9 @@ getSpinToken(LexStream *L, AST **ast_ptr)
     int peekc;
 
     if (L->backtick_state) {
-        c = lexgetc(L);
+        int sawSpaces = 0;
+        //printf(" %d: L->backtick_state\n", L->backtick_state);
+        c = lexgetc(L); // note: could change L->backtick_state in some cases
         switch (L->backtick_state) {
         case BACKTICK_STATE_ESCAPE_PREFIX:
             lexungetc(L, c);
@@ -1678,6 +1682,11 @@ getSpinToken(LexStream *L, AST **ast_ptr)
             *ast_ptr = last_ast = ast;
             return c;
         case BACKTICK_STATE_ESCAPE_PARAMS:
+            /* ignore spaces */
+            while (c == ' ' || c == '\t') {
+                c = lexgetc(L);
+                sawSpaces++;
+            }
             if (c == ')') {
                 // done with the backtick escape
                 L->backtick_state = BACKTICK_STATE_INSERT_COMMA;
@@ -1705,8 +1714,11 @@ getSpinToken(LexStream *L, AST **ast_ptr)
             c = parseBacktickString(L, &ast, 0);
             *ast_ptr = last_ast = ast;
             return c;
+        case BACKTICK_STATE_NONE:
+            ERROR(DummyLineAst(L->lineCounter), "unexpected end of line in backtick sequence");
+            break;
         default:
-            ERROR(NULL, "bad backtick state");
+            ERROR(DummyLineAst(L->lineCounter), "bad backtick state %d", L->backtick_state);
             L->backtick_state = BACKTICK_STATE_NONE;
             break;
         }
