@@ -2626,8 +2626,38 @@ MarkUsedBody(AST *body, const char *caller)
         break;
     case AST_COGINIT:
         UseInternal("_coginit");
-        if (IsSpinCoginit(body,NULL)) {
-            ActivateFeature(FEATURE_MULTICOG_USED);
+        // sanity check that enough arguments are given
+        {
+            AST *list;
+            list = body->left;
+            if (!list) {
+                ERROR(body, "missing arguments to coginit/cognew");
+                return;
+            }
+            list = list->right;
+            if (!list) {
+                ERROR(body, "no function or label in coginit/cognew");
+                return;
+            }
+            if (IsSpinCoginit(body,NULL)) {
+                ActivateFeature(FEATURE_MULTICOG_USED);
+                if (!list->right) {
+                    ERROR(body, "no stack given for coginit/cognew");
+                } else {
+                    list = list->right;
+                    if (list->right) {
+                        ERROR(body, "too many arguments to coginit/cognew");
+                    }
+                }
+            } else if (!list->right) {
+                WARNING(body, "no argument given for ASM coginit/cognew; assuming 0");
+                list->right = NewAST(AST_EXPRLIST, AstInteger(0), NULL);
+            } else {
+                list = list->right;
+                if (list->right) {
+                    ERROR(body, "too many arguments to coginit/cognew");
+                }
+            }
         }
         break;
     case AST_LOOKUP:

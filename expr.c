@@ -312,6 +312,10 @@ IsSpinCoginit(AST *params, Function **methodptr)
     }
     exprlist = params->left;
     exprlist = exprlist->right; // skip over cog id
+    if (!exprlist) {
+        ERROR(params, "no function given in coginit/cognew");
+        return false;
+    }
     if (exprlist->kind != AST_EXPRLIST || !exprlist->left) {
         ERROR(params, "coginit/cognew expected expression");
         return false;
