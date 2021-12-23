@@ -3370,7 +3370,7 @@ instr_p2[] = {
 
     { "rep",    0x0cd00000, P2_TWO_OPERANDS, OPC_REPEAT, 0 },
   
-    { "coginit",0x0ce00000, P2_TWO_OPERANDS, OPC_GENERIC, FLAG_WC },
+    { "coginit",0x0ce00000, P2_TWO_OPERANDS, OPC_GENERIC_NR, FLAG_WC },
     { "qmul",   0x0d000000, P2_TWO_OPERANDS, OPC_QMUL, 0 },
     { "qdiv",   0x0d100000, P2_TWO_OPERANDS, OPC_QDIV, 0 },
     { "qfrac",  0x0d200000, P2_TWO_OPERANDS, OPC_QFRAC, 0 },
