@@ -945,6 +945,7 @@ int _basic_open(unsigned h, TxFunc sendf, RxFunc recvf, CloseFunc closef)
     vfs_file_t *v;
 
     v = __getftab(h);
+    //__builtin_printf("basic_open(%d) = %x\n", h, (unsigned)v);
     if (!v) {
         THROW_RETURN(EIO);
     }
@@ -959,6 +960,7 @@ int _basic_open(unsigned h, TxFunc sendf, RxFunc recvf, CloseFunc closef)
     } else {
         v->putcf = (putcfunc_t)sendf;
     }
+    v->state = _VFS_STATE_INUSE|_VFS_STATE_RDOK|_VFS_STATE_WROK;
     v->getcf = (getcfunc_t)recvf;
     v->close = (VFS_CloseFunc)closef;
     return 0;
