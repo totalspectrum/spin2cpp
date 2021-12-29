@@ -7,6 +7,7 @@ Version 5.9.7
 - Added ALIAS, DECLARE, EXTERN, LINE, and LIB keywords to BASIC
 - Fixed a few missing definitions in <propeller.h>
 - Fixed a problem with SendRecvDevice() in BASIC
+- Fixed an incorrect optimization for loops containing GOSUB
 - Improved C++ compatibility for class functions, including supporting "static" in classes and declarations of functions outside the class
 
 Version 5.9.6

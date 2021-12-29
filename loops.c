@@ -1403,7 +1403,7 @@ TransformCountRepeat(AST *ast)
                         isUnsignedLoop = 1;
                     }
                     loopkind = AST_FORATLEASTONCE;
-                    if (knownStepVal == 1 && knownStepDir == 1 && !AstUses(body, loopvar)) {
+                    if (knownStepVal == 1 && knownStepDir == 1 && !AstUses(body, loopvar) && !HasBranch(body)) {
                         // the loop will execute exactly "reps" times
                         // and the loop variable seems not to be used inside
                         // if it's a local variable, we can switch to count down

@@ -949,7 +949,9 @@ int _basic_open(unsigned h, TxFunc sendf, RxFunc recvf, CloseFunc closef)
     if (!v) {
         THROW_RETURN(EIO);
     }
-
+    if (v->state) {
+        _closeraw(v);
+    }
     if (sendf) {
         wrapper = _gc_alloc_managed(sizeof(BasicWrapper));
         if (!wrapper) {

@@ -14,14 +14,14 @@ sub closex
   print "closed handle"
 end sub
 
-open SendRecvDevice(@putx, nil, @closex) as #2
+open SendRecvDevice(@putx, nil, @closex) as #3
 print "hello, world!"
-print #2, "hello, world!"
-print #2
-print #2, "good"; "bye!"
-close #2
+print #3, "hello, world!"
+print #3
+print #3, "good"; "bye!"
+close #3
 
-print #2, "this should be ignored"
+print #3, "this should be ignored"
 
 dim shared as integer x=-2, y=-3
 
