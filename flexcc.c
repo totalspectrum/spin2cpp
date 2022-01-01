@@ -1,7 +1,7 @@
 /*
  * Spin to C/C++ translator
  * flexcc front end 
- * Copyright 2011-2021 Total Spectrum Software Inc.
+ * Copyright 2011-2022 Total Spectrum Software Inc.
  *
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -43,7 +43,7 @@
 static void
 PrintInfo(FILE *f)
 {
-    fprintf(f, "FlexC compiler (c) 2011-2020 Total Spectrum Software Inc.\n");
+    fprintf(f, "FlexC compiler (c) 2011-2022 Total Spectrum Software Inc.\n");
     fprintf(f, "Version %s Compiled on: " __DATE__ "\n", VERSIONSTR);
     fflush(f);
 }

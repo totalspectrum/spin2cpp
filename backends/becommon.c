@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2021 Total Spectrum Software Inc.
+ * Copyright 2011-2022 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -208,7 +208,13 @@ static void StringAppend(Flexbuf *fb,AST *expr) {
         if (expr->right) StringAppend(fb,expr->right);
     } break;
     default: {
-        ERROR(expr,"Unhandled AST kind %d in string expression",expr->kind);
+        if (IsConstExpr(expr)) {
+            int i = EvalConstExpr(expr);
+            if (i < 0 || i>255) ERROR(expr,"Character out of range!");
+            flexbuf_putc(i,fb);
+        } else {
+            ERROR(expr,"String expression is not constant");
+        }
     } break;
     }
 }
