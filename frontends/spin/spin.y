@@ -143,6 +143,8 @@ FixupList(AST *list)
     return origlist;
 }
 
+#define DBG_BITS_DELAY 0x1000
+
 static struct s_dbgfmt {
     const char *name;
     const char *cfmt;
@@ -163,6 +165,7 @@ static struct s_dbgfmt {
     { "uhex_byte", "$%02x", 8 },
     { "uhex_word", "$%04x", 16 },
     { "uhex_long", "$%08x", 0 },
+    { "dly", "%.0s", DBG_BITS_DELAY },
     { 0, 0, 0 }
 };
 
@@ -175,6 +178,7 @@ static AST *GetFormatForDebug(struct flexbuf *fb, const char *itemname_orig, AST
     int len;
     int output_name = 1;
     const char *idname;
+    int bits = 0;
     
     len = strlen(itemname_orig);
     if (len > sizeof(itemname)-1) {
@@ -196,7 +200,10 @@ static AST *GetFormatForDebug(struct flexbuf *fb, const char *itemname_orig, AST
         WARNING(args, "Unhandled debug format %s", itemname_orig);
         return NULL;
     }
-
+    bits = ptr->bits;
+    if (bits == DBG_BITS_DELAY) {
+        output_name = 0;
+    }
     // now output all the arguments
     while (args) {
         arg = args->left;
@@ -212,8 +219,11 @@ static AST *GetFormatForDebug(struct flexbuf *fb, const char *itemname_orig, AST
             flexbuf_addstr(fb, ptr->cfmt);
         }
         needcomma = 1;
-        if (ptr->bits) {
-            int bits = ptr->bits;
+        if (bits == DBG_BITS_DELAY) {
+            // cause a delay
+            arg = NewAST(AST_FUNCCALL, AstIdentifier("_waitms"),
+                         NewAST(AST_EXPRLIST, arg, NULL));
+        } else if (bits & 0x1f) {
             if (bits < 0) {
                 arg = AstOperator(K_SIGNEXTEND, arg, AstInteger(-bits));
             } else {

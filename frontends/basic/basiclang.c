@@ -469,13 +469,20 @@ genPrintf(AST *ast)
                         return NULL;
                     }
                 }
+                if (c == '.' && fmtstring[0] == '0' && fmtstring[1] == 's') {
+                    // special case: %0.s does nothing except evaluate its argument
+                    thisarg = NewAST(AST_SEQUENCE, thisarg, AstInteger(0));
+                    seq = addToPrintSeq(seq, thisarg);
+                    fmtstring += 2;
+                    goto done_arg;
+                }
                 if (c == '0') {
                     zeropad = 1;
                 }
                 while ( (c >= '0' && c <= '9') && *fmtstring) {
                      minwidth = minwidth * 10 + (c - '0');
                     c = *fmtstring++;
-               }
+                }
                 if ( (c == '+' || c == ' ') && *fmtstring) {
                     signchar = (c == '+') ? FMTPARAM_SIGNPLUS : FMTPARAM_SIGNSPACE;
                     c = *fmtstring++;
@@ -525,6 +532,8 @@ genPrintf(AST *ast)
                     //ERROR(ast, "unknown printf format character `%c'", c);
                     return NULL;
                 }
+            done_arg:
+                ;
             }
         } else if (c == '\n') {
             exprlist = harvest(NULL, &fb);
