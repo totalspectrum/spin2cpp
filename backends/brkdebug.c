@@ -231,13 +231,14 @@ int AsmDebug_CodeGen(AST *ast, BackendDebugEval evalFunc, void *evalArg) {
             if (!simple && !needcomma) opcode |= DBC_FLAG_NOCOMMA;
             if (!simple && noExpr) opcode |= DBC_FLAG_NOEXPR;
 
-            flexbuf_putc(opcode,f);
-            DEBUG(item,"Emitting DEBUG opcode %02X",opcode);
-
             int expectedArgs = (func->opcode & DBC_FLAG_ARRAY) ? 2 : 1;
             int gotArgs = 0;
             ASSERT_AST_KIND(item->right,AST_EXPRLIST,break;);
             for (AST *arglist=item->right;arglist;arglist=arglist->right) {
+                if (gotArgs == 0) {
+                    flexbuf_putc(opcode,f);
+                    DEBUG(item,"Emitting DEBUG opcode %02X",opcode);
+                }
                 gotArgs++;
                 AST *arg = arglist->left;
                 int addrKind, addr;
@@ -271,9 +272,16 @@ int AsmDebug_CodeGen(AST *ast, BackendDebugEval evalFunc, void *evalArg) {
                     ERROR(arg, "Unknown address kind returned by back end");
                     break;
                 }
+                if (gotArgs == expectedArgs) {
+                    // consumed them all
+                    gotArgs = 0;
+                    needcomma = true;
+                    opcode &= ~DBC_FLAG_NOCOMMA;
+                }
             }
-            if (gotArgs!=expectedArgs) ERROR(item,"%s expects %d args, got %d",name,expectedArgs,gotArgs);
-
+            if (gotArgs) {
+                ERROR(item,"%s expects %d args, got %d",name,expectedArgs,gotArgs);
+            }
             needcomma = true;
         } break;
         default:
