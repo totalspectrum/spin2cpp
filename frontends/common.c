@@ -1105,6 +1105,9 @@ DoPropellerPostprocess(const char *fname, size_t eepromSize)
         maxlen = eepromSize;
     } else if (gl_p2) {
         maxlen = 512 * 1024;
+        if (gl_brkdebug) {
+            maxlen -= 16*1024;
+        }
     } else {
         maxlen = 32768;
     }
