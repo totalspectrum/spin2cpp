@@ -1613,7 +1613,9 @@ AST *CheckTypes(AST *ast)
                     ast->right = AstOperator('-', ast->right, base);
                 }
             } else {
-                ERROR(ast, "Array dereferences a non-array object");
+                // try to figure out a name for this
+                const char *name = GetExprString(ast->left);
+                ERROR(ast, "Array dereferences on non-array %s", name);
                 return NULL;
             }
             return basetype;
