@@ -94,6 +94,9 @@ int NumArgsForType(AST *functyp);
 // it's OK to pass a "char *" to a "const char *" but not vice-versa)
 int CompatibleTypes(AST *A, AST *B);
 
+// check for two types the same
+int SameTypes(AST *A, AST *B);
+
 // get the internal name from an AST_IDENTIFIER or AST_SYMBOL
 const char *GetIdentifierName(AST *ident);
 // get the user visible name from an AST_IDENTIFIER or AST_SYMBOL
