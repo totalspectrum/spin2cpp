@@ -11,7 +11,10 @@ extern "C" {
 #endif
 
 typedef unsigned int clock_t;
+#ifndef __FLEXC__    
 extern clock_t __clkfreq_var;
+#endif
+
 /* the actual frequency the machine is running at may vary */
 #define CLOCKS_PER_SEC __clkfreq_var
 #define CLK_TCK __clkfreq_var

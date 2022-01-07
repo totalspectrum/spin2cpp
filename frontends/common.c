@@ -1669,7 +1669,16 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
         return;
     }
     if (olddef) {
-        ERROR(ident, "Redefining symbol %s", user_name);
+        // check for type compatibility; if it's being redefined with the
+        // same type, that is OK
+        AST *oldtyp = ExprType(ident);
+        if (oldtyp && !SameTypes(oldtyp, type)) {
+            ERROR(ident, "Redefining symbol %s", user_name);
+        }
+        // if the old definition is a builtin, leave it alone
+        if (olddef->kind == SYM_WEAK_ALIAS) {
+            return;
+        }
     }
     // if this is an array type with no size, there must be an
     // initializer

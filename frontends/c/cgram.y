@@ -345,7 +345,9 @@ MultipleDeclareVar(AST *first, AST *second)
         if (type && type->kind == AST_STATIC) {
             stmtlist = AddToList(stmtlist, DeclareStatics(current, type->left, ident));
         } else if (type && type->kind == AST_EXTERN) {
-            /* do nothing */
+            /* declare a global variable */
+            ident = NewAST(AST_DECLARE_VAR, type->left, ident);
+            DeclareTypedGlobalVariables(ident, 1); // "extern" variables are always in DAT
         } else {
             ident = NewAST(AST_DECLARE_VAR, type, ident);
             stmtlist = AddToList(stmtlist, NewAST(AST_STMTLIST, ident, NULL));

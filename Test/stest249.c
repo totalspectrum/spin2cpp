@@ -1,4 +1,4 @@
-#include <propeller2.h>
+#include <propeller.h>
 
 typedef struct Position {
     int x, y;

@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+#ifndef __FLEXC__
 /*
  * special cog register names (the actual types are compiler dependent)
  * Not all compilers will necessarily support these
@@ -24,6 +25,8 @@ extern volatile uint32_t _OUTA;
 extern volatile uint32_t _OUTB;
 extern volatile uint32_t _INA;
 extern volatile uint32_t _INB;
+
+#endif
 
 #ifdef _PROP1_COMPATIBLE
 /*

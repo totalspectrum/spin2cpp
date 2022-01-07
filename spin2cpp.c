@@ -716,6 +716,7 @@ main(int argc, const char **argv)
                 appendToCmd("-o");
                 appendToCmd(elfname);
 
+                //printf("... executing [%s]\n", cmdline);
                 retval = system(cmdline);
                 if (retval < 0) {
                     fprintf(stderr, "Unable to run command: %s\n", cmdline);
@@ -731,9 +732,11 @@ main(int argc, const char **argv)
                     //printf("running: [%s]\n", cmdline);
 
                     retval = system(cmdline);
-                    remove(elfname);
                     if (retval == 0) {
+                        remove(elfname);
                         retval = DoPropellerPostprocess(binname, eepromSize);
+                    } else {
+                        fprintf(stderr, "command `%s' returned %d\n", cmdline, retval);
                     }
 		}
 		if (retval != 0)

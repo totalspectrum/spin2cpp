@@ -13,15 +13,15 @@ _insertstr_ret
 	ret
 
 _main
-	mov	_main_p_0001, #1
-	mov	_main_p_0001_01, #2
-	mov	arg02, _main_p_0001_01
-	mov	arg01, _main_p_0001
+	mov	_main_p_0007, #1
+	mov	_main_p_0007_01, #2
+	mov	arg02, _main_p_0007_01
+	mov	arg01, _main_p_0007
 	mov	arg03, #99
 	call	#_insertstr
 	mov	outb, result1
-	mov	_main_q_0002_01, result2
-	mov	outa, _main_p_0001
+	mov	_main_q_0008_01, result2
+	mov	outa, _main_p_0007
 _main_ret
 	ret
 
@@ -32,13 +32,13 @@ result2
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_main_p_0001
+_main_p_0007
 	res	1
-_main_p_0001_01
+_main_p_0007_01
 	res	1
-_main_q_0002
+_main_q_0008
 	res	1
-_main_q_0002_01
+_main_q_0008_01
 	res	1
 _var01
 	res	1

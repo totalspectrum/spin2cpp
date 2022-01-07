@@ -3,7 +3,9 @@
 
 #pragma once
 
+#ifndef __FLEXC__
 extern unsigned int _clkfreq;
+#endif
 
 #define _CLKFREQ _clkfreq
 
