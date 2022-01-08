@@ -195,7 +195,7 @@ p2test: $(PROGS)
 	(cd Test; ./p2bin.sh)
 
 runtest: $(PROGS)
-	(cd Test; ./runtests.sh)
+	(cd Test; ./runtests_p2.sh)
 
 $(BUILD)/spin2cpp$(EXT): spin2cpp.c cmdline.c $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)

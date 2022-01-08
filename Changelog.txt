@@ -6,6 +6,7 @@ Version 5.9.7
 - Added BITREV function to BASIC
 - Added ALIAS, DECLARE, EXTERN, LINE, and LIB keywords to BASIC
 - Added support for DLY() to default -g debugging
+- Changed default runtime tests to use P2 instead of P1
 - Fixed a few missing definitions in <propeller.h>
 - Fixed a problem with SendRecvDevice() in BASIC
 - Fixed an incorrect optimization for loops containing GOSUB
