@@ -1684,9 +1684,9 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
     // initializer
     if (rawtype->kind == AST_ARRAYTYPE && !rawtype->right) {
         if (!initializer) {
-            ERROR(ident, "global array %s declared with no size and no initializer", user_name);
-            rawtype->right = AstInteger(1);
-        } else {
+//            ERROR(ident, "global array %s declared with no size and no initializer", user_name);
+            return; // just ignore this declaration
+          } else {
             if (initializer->kind == AST_EXPRLIST) {
                 initializer = FixupInitList(rawtype, initializer);
                 *initptr = initializer;
