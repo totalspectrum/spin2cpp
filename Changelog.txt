@@ -11,6 +11,7 @@ Version 5.9.7
 - Fixed an incorrect optimization for loops containing GOSUB
 - Fixed multiple args in DEBUG() statements with -gbrk
 - Fixed a problem with extern declarations in C not working in .o files
+- Fixed in bug in mis-detecting use of result values in bytecode output
 - Improved C++ compatibility for class functions, including supporting "static" in classes and declarations of functions outside the class
 
 Version 5.9.6

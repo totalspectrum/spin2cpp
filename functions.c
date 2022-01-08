@@ -2177,6 +2177,9 @@ ProcessOneFunc(Function *pf)
     pf->extradecl = AddToList(pf->extradecl, decls);
 
     /* check for void functions */
+    if (TraditionalBytecodeOutput()) {
+        pf->result_used = 1;
+    }
     if (pf->result_declared && pf->language == LANG_SPIN_SPIN2) {
         // there was an explicit result declared, so it is returned
         pf->result_used = 1;
