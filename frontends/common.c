@@ -1664,6 +1664,9 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
     if (is_typedef) {
         if (olddef) {
             ERROR(ident, "Redefining symbol %s", user_name);
+            if (olddef->def) {
+                ERROR(olddef->def, "Previous definition here");
+            }
         }
         AddSymbolPlaced(currentTypes, name, SYM_TYPEDEF, type, NULL, ident);
         return;
@@ -1674,6 +1677,9 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
         AST *oldtyp = ExprType(ident);
         if (oldtyp && !SameTypes(oldtyp, type)) {
             ERROR(ident, "Redefining symbol %s", user_name);
+            if (olddef->def) {
+                ERROR(olddef->def, "Previous definition here");
+            }
         }
         // if the old definition is a builtin, leave it alone
         if (olddef->kind == SYM_WEAK_ALIAS) {
