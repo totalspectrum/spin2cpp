@@ -160,8 +160,8 @@ LookupAstSymbol(AST *ast, const char *msg)
         return NULL;
     }
     if (id->kind == AST_LOCAL_IDENTIFIER) {
-        username = GetIdentifierName(id);
-        ourname = ast->left->d.string;
+        username = GetUserIdentifierName(id);
+        ourname = GetIdentifierName(id);
     } else if (id->kind == AST_IDENTIFIER || id->kind == AST_SYMBOL) {
         username = ourname = GetIdentifierName(id);
     } else {
