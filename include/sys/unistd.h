@@ -52,7 +52,7 @@ extern "C" {
   char *_mktemp(char *templ);
   char *mktemp(char *);
 
-    extern char **_environ_ptr;
+    extern const char **_environ_ptr;
 #define environ _environ_ptr    
 #define getuid() (0)
 #define getgid() (0)
