@@ -13,6 +13,7 @@ Version 5.9.7
 - Fixed multiple args in DEBUG() statements with -gbrk
 - Fixed a problem with extern declarations in C not working in .o files
 - Fixed in bug in mis-detecting use of result values in bytecode output
+- Fixed a nasty bug for functions with more than 99 local registers used
 - Improved C++ compatibility for class functions, including supporting "static" in classes and declarations of functions outside the class
 
 Version 5.9.6

@@ -472,7 +472,12 @@ static Operand *GetGeneralLocalReg(int n)
         return NULL;
     }
     if (!localreg[n]) {
-        sprintf(rvalname, "local%02d", n+1);
+        // tricky stuff to make sure local100 sorts after local99
+        if (n < 99) {
+            sprintf(rvalname, "local%02d", n+1);
+        } else {
+            sprintf(rvalname, "local_%03d", n+1);
+        }            
         /* do not use REG_LOCAL here, that will break optimization of recursive
            functions */
         localreg[n] = GetOneGlobal(REG_ARG, strdup(rvalname), 0);
