@@ -330,7 +330,7 @@ Multiple `-O` options may be given, or combined separated by commas. So for exam
 
 The `-Os` option enables all of the optimizations specified by `-O1`, plus some size related optimizations.
 
-## Memory Management
+## Memory Allocation and Management
 
 There are some built in functions for doing memory allocation. These are intended for C or BASIC, but may be used by Spin programs as well.
 
