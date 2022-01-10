@@ -1440,6 +1440,9 @@ NormalizeFunc(AST *ast, Function *func, int setflag)
             ldecl = AddToList(ldecl, NormalizeFunc(update, func, setflag));
             return ldecl;
         }
+    case AST_DECLARE_VAR:
+        /* avoid spurious use-before-set warnings */
+        return NULL;
     case AST_INLINEASM:
         /* assume declared result variables are used in
            inline assembly */
