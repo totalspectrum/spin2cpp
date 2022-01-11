@@ -1917,7 +1917,6 @@ struct reservedword {
     { "repeat", SP_REPEAT },
     { "res", SP_RES },
     { "rev", SP_REV2 },
-    { "result", SP_RESULT },
     { "return", SP_RETURN },
     { "rol", SP_ROTL },
     { "ror", SP_ROTR },
@@ -1996,6 +1995,7 @@ struct reservedword {
 
 struct reservedword init_spin1_words[] = {
     { "constant", SP_CONSTANT },
+    { "result", SP_RESULT },
     { "spr", SP_SPR },
 
     { "?", SP_RANDOM },
