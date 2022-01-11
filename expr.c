@@ -74,7 +74,7 @@ GetClassPtr(AST *objtype)
 {
     objtype = BaseType(objtype);
     if (objtype->kind != AST_OBJECT) {
-        ERROR(objtype, "internal error, not an object symbol");
+        ERROR(objtype, "Internal error, not an object symbol");
         return NULL;
     }
     return (Module *)objtype->d.ptr;
@@ -156,7 +156,7 @@ LookupAstSymbol(AST *ast, const char *msg)
             id = id->right;
         }
     } else {
-        //ERROR(ast, "internal error, bad id passed to LookupAstSymbol");
+        //ERROR(ast, "Internal error, bad id passed to LookupAstSymbol");
         return NULL;
     }
     if (id->kind == AST_LOCAL_IDENTIFIER) {
@@ -636,7 +636,7 @@ TransformRangeAssign(AST *dst, AST *src, int optoken, int toplevel)
     
     if (!dst) return dst;
     if (!dst->right || dst->right->kind != AST_RANGE) {
-        ERROR(dst, "internal error: expecting range");
+        ERROR(dst, "Internal error, expecting range");
         return 0;
     }
     if (src && src->kind == AST_ASSIGN) {
@@ -890,7 +890,7 @@ TransformRangeUse(AST *src)
     }
     range = src->right;
     if (range->kind != AST_RANGE) {
-        ERROR(src, "internal error: expecting range");
+        ERROR(src, "Internal error, expecting range");
         return src;
     }
     AstReportAs(src, &saveinfo);
@@ -1946,7 +1946,7 @@ IsArrayType(AST *ast)
     case AST_TUPLE_TYPE:
         return 0;
     default:
-        ERROR(ast, "Internal error: unknown type %d passed to IsArrayType",
+        ERROR(ast, "Internal error, unknown type %d passed to IsArrayType",
               ast->kind);
     }
     return 0;
@@ -2032,7 +2032,7 @@ int TypeSize(AST *typ)
     {
         Module *P = (Module *)typ->d.ptr;
         if (P->pendingvarblock) {
-            ERROR(typ, "Internal error: Taking size of an object with pending variables\n");
+            ERROR(typ, "Internal error, Taking size of an object with pending variables\n");
         }
         return P->varsize;
     }
@@ -2049,7 +2049,7 @@ int TypeSize(AST *typ)
         return 1;
     }
     default:
-        ERROR(typ, "Internal error: unknown type %d passed to TypeSize",
+        ERROR(typ, "Internal error, unknown type %d passed to TypeSize",
               typ->kind);
         return 1;
     }
@@ -2094,7 +2094,7 @@ int TypeAlignment(AST *typ)
     case AST_VOIDTYPE:
         return LONG_SIZE; // "void" type is used for res statements
     default:
-        ERROR(typ, "Internal error: unknown type %d passed to TypeAlignment",
+        ERROR(typ, "Internal error, unknown type %d passed to TypeAlignment",
               typ->kind);
         return 1;
     }
@@ -3323,7 +3323,7 @@ AST *PullElement(AST *type, AST **rawlist_ptr)
         int sawBitfield = 0;
         Module *P = (Module *)type->d.ptr;
         if (P->pendingvarblock) {
-            ERROR(type, "Internal error: pending variables on object");
+            ERROR(type, "Internal error, pending variables on object");
             return NULL;
         }
         varlist = P->finalvarblock;
@@ -3458,7 +3458,7 @@ FixupInitList(AST *type, AST *initval)
                     ERROR(fixup, "initialization designator for array is not an array element");
                     val->left = AstInteger(0);
                 } else if (fixup->left != NULL) {
-                    ERROR(fixup, "Internal error: cannot handle nested designators");
+                    ERROR(fixup, "Internal error, cannot handle nested designators");
                     val->left = AstInteger(0);
                 } else if (!IsConstExpr(fixup->right)) {
                     ERROR(fixup, "initialization designator for array is not constant");
@@ -3506,7 +3506,7 @@ FixupInitList(AST *type, AST *initval)
                     ERROR(fixup, "initialization designator for struct is not a method reference");
                     newval = AstInteger(0);
                 } else if (fixup->left != NULL) {
-                    ERROR(fixup, "Internal error: cannot handle nested designators");
+                    ERROR(fixup, "Internal error, cannot handle nested designators");
                     newval = AstInteger(0);
                 } else {
                     varlist = FindMethodInList(P->finalvarblock, fixup->right, &curelem);
@@ -3573,7 +3573,7 @@ AggregateCount(AST *typ)
             return 1;
         }
         if (P->pendingvarblock) {
-            ERROR(typ, "Internal error: Taking size of an object with pending variables\n");
+            ERROR(typ, "Internal error, Taking size of an object with pending variables\n");
         }
         list = P->finalvarblock;
         size = 0;

@@ -654,7 +654,7 @@ MakeNewStruct(Module *Parent, AST *skind, AST *identifier, AST *body)
         is_union = 1;
         is_class = 0;
     } else {
-        ERROR(skind, "internal error: not struct or union");
+        ERROR(skind, "Internal error, not struct or union");
         return NULL;
     }
     if (!identifier) {
@@ -665,7 +665,7 @@ MakeNewStruct(Module *Parent, AST *skind, AST *identifier, AST *body)
         identifier = AstIdentifier(strdup(buf));
     }
     if (!IsIdentifier(identifier)) {
-        ERROR(identifier, "internal error: bad struct def");
+        ERROR(identifier, "Internal error, bad struct def");
         return NULL;
     }
     name = GetIdentifierName(identifier);
@@ -816,7 +816,7 @@ ConstructDefaultValue(AST *decl, AST *val)
         return decl;
     }
     if (!decl || decl->kind != AST_DECLARE_VAR) {
-        ERROR(decl, "Internal error: expected variable declaration");
+        ERROR(decl, "Internal error, expected variable declaration");
         return decl;
     }
     ident = decl->right;

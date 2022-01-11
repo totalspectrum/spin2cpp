@@ -330,7 +330,7 @@ static void
 ValidateAbortFuncs(void)
 {
     if (0 == (gl_features_used & FEATURE_LONGJMP_USED)) {
-        ERROR(NULL, "Internal error: using longjmp/setjmp but feature not marked\n");
+        ERROR(NULL, "Internal error, using longjmp/setjmp but feature not marked\n");
     }
     if (!longjmpfunc) {
         longjmpfunc = NewOperand(IMM_COG_LABEL, "__longjmp", 0);
@@ -364,7 +364,7 @@ static void
 ValidateGosub(void)
 {
     if (0 == (gl_features_used & FEATURE_GOSUB_USED)) {
-        ERROR(NULL, "Internal error: using longjmp/setjmp but feature not marked\n");
+        ERROR(NULL, "Internal error, using longjmp/setjmp but feature not marked\n");
     }    
     ValidatePushregs();
     gosub_ = NewOperand(IMM_COG_LABEL, "gosub_", 0);
@@ -528,7 +528,7 @@ FindInstrForOpc(IROpcode kind)
     }
     r = lookup_table[(unsigned int)kind];
     if (!r) {
-        ERROR(NULL, "internal error: unknown instruction");
+        ERROR(NULL, "Internal error, unknown instruction");
     }
     return r;
 }
@@ -1284,12 +1284,12 @@ GetSystemFunction(const char *name)
         return mulfunc;
     }
     if (sym->kind != SYM_FUNCTION) {
-        ERROR(NULL, "Internal error: %s is not a function", name);
+        ERROR(NULL, "Internal error, %s is not a function", name);
         return mulfunc;
     }
     calledf = (Function *)sym->val;
     if (!calledf || !FuncData(calledf)) {
-        ERROR(NULL, "Internal error: %s not set up", name);
+        ERROR(NULL, "Internal error, %s not set up", name);
         return mulfunc;
     }
     return FuncData(calledf)->asmname;
@@ -1357,11 +1357,11 @@ static Operand *GetFunctionParameterForCall(IRList *irl, Function *func, AST *fu
                     Symbol *sym;
                     sym = FindSymbol(&func->localsyms, name);
                     if (!sym) {
-                        ERROR(NULL, "Internal error: symbol %s not found", name);
+                        ERROR(NULL, "Internal error, symbol %s not found", name);
                         return EmptyOperand();
                     }
                     if (sym->offset != offset) {
-                        ERROR(NULL, "Internal error: offset %d is not sym offset %d", offset, sym->offset);
+                        ERROR(NULL, "Internal error, offset %d is not sym offset %d", offset, sym->offset);
                     }
                 }
                 // we have to leave space for:
@@ -2514,7 +2514,7 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
       }
       return temp;
   case K_DECODE:
-      ERROR(rhs, "Internal error: decode operators should have been handled in spin transormations");
+      ERROR(rhs, "Internal error, decode operators should have been handled in spin transormations");
       return EmptyOperand();
 
   case K_BOOL_NOT:
@@ -2554,7 +2554,7 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
   case K_QLOG:
   case '?':
   {
-      ERROR(expr, "Internal error: Unexpected operator 0x%x found, should have been converted to function", op);
+      ERROR(expr, "Internal error, Unexpected operator 0x%x found, should have been converted to function", op);
       return EmptyOperand();
   }
   default:
@@ -2658,7 +2658,7 @@ PopQuitNext()
 
   ql = quitstack.next;
   if (!ql || !ql->next) {
-    ERROR(NULL, "Internal error: empty loop stack");
+    ERROR(NULL, "Internal error, empty loop stack");
     return;
   }
   nl = ql->next;
@@ -3453,7 +3453,7 @@ CompileCoginit(IRList *irl, AST *expr)
             EmitOp2(irl, OPC_ADD, fobjptr, offset);
         }
         if (!IS_FAST_CALL(remote)) {
-            ERROR(expr, "Internal error: wrong calling convention for coginit");
+            ERROR(expr, "Internal error, wrong calling convention for coginit");
             return OPERAND_DUMMY;
         }
         if (gl_output == OUTPUT_COGSPIN) {
@@ -3650,7 +3650,7 @@ GetAddressOf(IRList *irl, AST *expr)
             }
         }
         if (!res) {
-            ERROR(expr, "Internal error: cannot take address of %s", name);
+            ERROR(expr, "Internal error, cannot take address of %s", name);
             res = OPERAND_DUMMY;
         }
         return res;
@@ -3836,7 +3836,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       return CompileFunccallFirstResult(irl, expr);
   case AST_ASSIGN:
       if (expr->d.ival != K_ASSIGN) {
-          ERROR(expr, "Internal error: asm code cannot handle assignment");
+          ERROR(expr, "Internal error, asm code cannot handle assignment");
       }
       if (expr->left) {
           AST *typ;
@@ -4091,7 +4091,7 @@ CompileStatementList(IRList *irl, AST *ast)
 {
     while (ast) {
         if (ast->kind != AST_STMTLIST) {
-            ERROR(ast, "Internal error: expected statement list, got %d",
+            ERROR(ast, "Internal error, expected statement list, got %d",
                   ast->kind);
             return;
         }

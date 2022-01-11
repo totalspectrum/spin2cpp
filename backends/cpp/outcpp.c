@@ -102,7 +102,7 @@ PrintIndentedComment(Flexbuf *f, AST *ast, int indent)
             }
         } else {
             if (ast->kind != AST_COMMENT) {
-                ERROR(ast, "Internal error: expected comment");
+                ERROR(ast, "Internal error, expected comment");
                 return;
             }
             PrintCommentString(f, ast->d.string, indent);
@@ -171,7 +171,7 @@ PrintAllVarListsOfSize(Flexbuf *f, Module *parse, int siz, int flags)
     
     for (upper = parse->finalvarblock; upper; upper = upper->right) {
         if (upper->kind != AST_LISTHOLDER) {
-            ERROR(upper, "internal error: expected listholder");
+            ERROR(upper, "Internal error, expected listholder");
             return n;
         }
         ast = upper->left;
@@ -205,7 +205,7 @@ PrintAllVarListsOfSize(Flexbuf *f, Module *parse, int siz, int flags)
             }
             break;
         default:
-            ERROR(ast, "Internal error: Unexpected declaration");
+            ERROR(ast, "Internal error, Unexpected declaration");
             return n;
         }            
         if (astsiz == siz || ( (siz == 4 || siz == 0) && (astsiz == 0 || astsiz >= siz))) {
@@ -227,7 +227,7 @@ PrintSubHeaders(Flexbuf *f, Module *parse)
     /* include any needed object headers */
     for (ast = parse->objblock; ast; ast = ast->right) {
         if (ast->kind != AST_OBJECT) {
-            ERROR(ast, "Internal error: expected an OBJECT");
+            ERROR(ast, "Internal error, expected an OBJECT");
             break;
         }
 

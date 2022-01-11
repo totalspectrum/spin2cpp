@@ -182,7 +182,7 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
             }
         }
         if (!regptr) {
-            ERROR(NULL, "Internal error: tried to use memory directly");
+            ERROR(NULL, "Internal error, tried to use memory directly");
             flexbuf_addstr(fb, "#@@@#");
         }
         break;
@@ -195,7 +195,7 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
             }
             flexbuf_addstr(fb, "@");
         } else {
-            ERROR(NULL, "Internal error: tried to use string directly");
+            ERROR(NULL, "Internal error, tried to use string directly");
             flexbuf_addstr(fb, "#@@@");
         }
         flexbuf_addstr(fb, RemappedName(reg->name));
@@ -484,12 +484,12 @@ OutputDataBlob(Flexbuf *fb, Flexbuf *databuf, Flexbuf *relocbuf, const char *sta
                 }
                 if (nextreloc->kind == RELOC_KIND_I32) {
                     if (bytesPending < 4) {
-                        ERROR(NULL, "internal error: not enough space for reloc");
+                        ERROR(NULL, "Internal error, not enough space for reloc");
                         return;
                     }
                 } else if (nextreloc->kind == RELOC_KIND_AUGD || nextreloc->kind == RELOC_KIND_AUGS) {
                     if (bytesPending < 8) {
-                        ERROR(NULL, "internal error: not enough space for reloc");
+                        ERROR(NULL, "Internal error, not enough space for reloc");
                         return;
                     }
                 } else if (nextreloc->kind == RELOC_KIND_NONE) {
@@ -498,7 +498,7 @@ OutputDataBlob(Flexbuf *fb, Flexbuf *databuf, Flexbuf *relocbuf, const char *sta
                     --relocs;
                     goto again;
                 } else {
-                    ERROR(NULL, "internal error: bad reloc kind %d", nextreloc->kind);
+                    ERROR(NULL, "Internal error, bad reloc kind %d", nextreloc->kind);
                     return;
                 }
                 flexbuf_printf(fb, "\tlong\t");
@@ -984,7 +984,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         case OPC_CALL:
             if (IsHubDest(ir->dst)) {
                 if (ir->dst->kind != IMM_HUB_LABEL) {
-                    ERROR(NULL, "internal error: non-hub label in LMM jump");
+                    ERROR(NULL, "Internal error, non-hub label in LMM jump");
                 }
                 if (!lmmMode) {
                     // call of hub function from COG
@@ -1089,7 +1089,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                 }
                 flexbuf_addstr(fb, "\tlong\t");
                 if (ir->src->kind != IMM_HUB_LABEL) {
-                    ERROR(NULL, "internal error: non-hub label in LMM jump");
+                    ERROR(NULL, "Internal error, non-hub label in LMM jump");
                 }
                 PrintOperandAsValue(fb, ir->src);
                 flexbuf_addstr(fb, "\n");
@@ -1123,7 +1123,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                     ERROR(NULL, "jump from COG to LMM not supported yet");
                 }
                 if (ir->dst->kind != IMM_HUB_LABEL) {
-                    ERROR(NULL, "internal error: non-hub label in LMM jump");
+                    ERROR(NULL, "Internal error, non-hub label in LMM jump");
                 }
                 if (gl_lmm_kind == LMM_KIND_COMPRESS) {
                     PrintCompressCondJump(fb, ir->cond, ir->dst);
@@ -1385,7 +1385,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         flexbuf_addstr(fb, ") & $FF\n");
         break;
     default:
-        ERROR(NULL, "Internal error: unable to process IR\n");
+        ERROR(NULL, "Internal error, unable to process IR\n");
         break;
     }
 }

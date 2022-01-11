@@ -1100,7 +1100,7 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
                 }
             }
         } else {
-            ERROR(line, "Internal error: expected instruction modifier found %d", ast->kind);
+            ERROR(line, "Internal error, expected instruction modifier found %d", ast->kind);
             return -1;
         }
         ast = ast->right;
@@ -1940,7 +1940,7 @@ PrintDataBlock(Flexbuf *f, AST *list, DataBlockOutFuncs *funcs, Flexbuf *relocs)
             AssembleInstruction(f, ast, relocs);
             break;
         case AST_BRKDEBUG:
-            if (!gl_brkdebug) WARNING(ast,"Internal error: Got AST_BRKDEBUG, but BRK debugger is not enabled?");
+            if (!gl_brkdebug) WARNING(ast,"Internal error, Got AST_BRKDEBUG, but BRK debugger is not enabled?");
             if (NEED_ALIGNMENT || (!inHub) ) {
                 while ((datacount % 4) != 0) {
                     outputByte(f, 0);

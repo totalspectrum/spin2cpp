@@ -33,7 +33,7 @@ PrintParameterList(Flexbuf *f, Function *func)
         AST *typ;
         Symbol *sym;
         if (list->kind != AST_LISTHOLDER) {
-            ERROR(list, "Internal error: expected parameter list");
+            ERROR(list, "Internal error, expected parameter list");
             return;
         }
         ast = list->left;
@@ -331,7 +331,7 @@ PrintStatementList(Flexbuf *f, AST *ast, int indent)
 {
     while (ast) {
         if (ast->kind != AST_STMTLIST) {
-            ERROR(ast, "Internal error: expected statement list, got %d",
+            ERROR(ast, "Internal error, expected statement list, got %d",
                   ast->kind);
             return;
         }
@@ -458,7 +458,7 @@ PrintCaseStmt(Flexbuf *f, AST *expr, AST *ast, int indent)
         PrintAssign(f, var, expr->right, PRINTEXPR_DEFAULT);
         flexbuf_printf(f, ";"); PrintNewline(f);
     } else {
-        ERROR(expr, "Internal error: expected identifier or assignment in case");
+        ERROR(expr, "Internal error, expected identifier or assignment in case");
         var = NULL;
     }
     while (ast) {
@@ -728,7 +728,7 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
         PrintNewline(f);
         break;
     case AST_COUNTREPEAT:
-        ERROR(ast, "Internal error: unexpected COUNTREPEAT");
+        ERROR(ast, "Internal error, unexpected COUNTREPEAT");
         //PrintCountRepeat(f, ast, indent);
         break;
     case AST_STMTLIST:

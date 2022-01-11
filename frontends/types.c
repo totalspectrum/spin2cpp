@@ -753,7 +753,7 @@ static AST *ScalePointer(AST *type, AST *val)
 {
     int size;
     if (!IsPointerType(type)) {
-        ERROR(val, "internal error: expected pointer type");
+        ERROR(val, "Internal error, expected pointer type");
         return val;
     }
     size = TypeSize(BaseType(type));

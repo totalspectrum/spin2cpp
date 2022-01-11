@@ -349,7 +349,7 @@ void
 lexungetc(LexStream *L, int c)
 {
     if (L->ungot_ptr == UNGET_MAX-1) {
-        SYNTAX_ERROR("internal error: unget limit exceeded\n");
+        SYNTAX_ERROR("Internal error, unget limit exceeded\n");
     }
     L->ungot[L->ungot_ptr++] = c;
 }
@@ -745,7 +745,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                 *ast_ptr = ast;
                 return SP_HWREG;
             }
-            fprintf(stderr, "Internal error: Unknown pasm symbol type %d\n", sym->kind);
+            fprintf(stderr, "Internal error, Unknown pasm symbol type %d\n", sym->kind);
         }
     }
     if (L->language == LANG_SPIN_SPIN2) {
@@ -877,7 +877,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             *ast_ptr = ast;
             return SP_HWREG;
         }
-        fprintf(stderr, "Internal error: Unknown symbol type %d\n", sym->kind);
+        fprintf(stderr, "Internal error, Unknown symbol type %d\n", sym->kind);
     }
 
 is_identifier:
@@ -3956,7 +3956,7 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
                 *ast_ptr = ast;
                 return BAS_HWREG;
             }
-            fprintf(stderr, "Internal error: Unknown pasm symbol type %d\n", sym->kind);
+            fprintf(stderr, "Internal error, Unknown pasm symbol type %d\n", sym->kind);
         }
     }
 
@@ -4308,7 +4308,7 @@ parseCIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                 *ast_ptr = ast;
                 return C_HWREG;
             }
-            fprintf(stderr, "Internal error: Unknown pasm symbol type %d\n", sym->kind);
+            fprintf(stderr, "Internal error, Unknown pasm symbol type %d\n", sym->kind);
         }
     }
 

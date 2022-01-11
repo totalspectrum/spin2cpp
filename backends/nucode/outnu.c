@@ -85,7 +85,7 @@ static void NuPopQuitNext() {
     NuLabelList *ql, *nl;
     ql = quitstack.next;
     if (!ql || !ql->next) {
-        ERROR(NULL, "Internal error: empty loop stack");
+        ERROR(NULL, "Internal error, empty loop stack");
         return;
     }
     nl = ql->next;

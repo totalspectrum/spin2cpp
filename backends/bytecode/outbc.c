@@ -131,7 +131,7 @@ int BCgetDAToffset(Module *P, bool absolute, AST *errloc, bool printErrors) {
     if (absolute) {
         int compiledAddress = ModData(P)->compiledAddress;
         if (compiledAddress < 0) {
-            if (printErrors) ERROR(errloc,"Internal error: Taking address of uncompiled module");
+            if (printErrors) ERROR(errloc,"Internal error, Taking address of uncompiled module");
             return -1;
         }
         return pbase_offset + compiledAddress;
@@ -1424,7 +1424,7 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
     }
 
     if (!memopNode) {
-        ERROR(node,"Internal error: no memopNode");
+        ERROR(node,"Internal error, no memopNode");
         return;
     }
 
@@ -1631,7 +1631,7 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
             }
             Symbol *objsym = LookupAstSymbol(ident,NULL);
             if (!objsym) {
-                ERROR(node->left,"Internal error: Null call receiver");
+                ERROR(node->left,"Internal error, Null call receiver");
                 return;
             } else if (objsym->kind == SYM_VARIABLE) {
                 // Normal call
@@ -3145,7 +3145,7 @@ BCPrepareObject(Module *P) {
         // Count and gather object members
         for (AST *upper = P->finalvarblock; upper; upper = upper->right) {
             if (upper->kind != AST_LISTHOLDER) {
-                ERROR(upper, "internal error: expected listholder");
+                ERROR(upper, "Internal error, expected listholder");
                 return;
             }
             AST *var = upper->left;

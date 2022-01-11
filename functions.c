@@ -292,7 +292,7 @@ EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offse
             default:
                 /* this may be a type with no variable */
                 
-                ERROR(ast, "Internal error: bad AST value %d", ast->kind);
+                ERROR(ast, "Internal error, bad AST value %d", ast->kind);
                 break;
             }
         } else {
@@ -815,7 +815,7 @@ doDeclareFunction(AST *funcblock)
     language = holder->d.ival;
     
     if (funcdef->kind != AST_FUNCDEF || funcdef->left->kind != AST_FUNCDECL) {
-        ERROR(funcdef, "Internal error: bad function definition");
+        ERROR(funcdef, "Internal error, bad function definition");
         return NULL;
     }
     src = funcdef->left;
@@ -835,7 +835,7 @@ doDeclareFunction(AST *funcblock)
     } else if (srcname->kind == AST_IDENTIFIER) {
         funcname_internal = funcname_user = srcname->d.string;
     } else {
-        ERROR(funcdef, "Internal error: no function name");
+        ERROR(funcdef, "Internal error, no function name");
         return NULL;
     }
     /* look for an existing definition */
@@ -955,7 +955,7 @@ doDeclareFunction(AST *funcblock)
     }
     if (comment) {
         if (comment->kind != AST_COMMENT && comment->kind != AST_SRCCOMMENT) {
-            ERROR(comment, "Internal error: expected comment");
+            ERROR(comment, "Internal error, expected comment");
             abort();
         }
         fdef->doccomment = comment;
@@ -1022,13 +1022,13 @@ doDeclareFunction(AST *funcblock)
             fdef->overalltype->left = rettype;
             fdef->resultexpr = TranslateToExprList(fdef->resultexpr);
         } else {
-            ERROR(funcdef, "Internal error: bad contents of return value field");
+            ERROR(funcdef, "Internal error, bad contents of return value field");
         }
     }
 
     vars = funcdef->right;
     if (vars->kind != AST_FUNCVARS) {
-        ERROR(vars, "Internal error: bad variable declaration");
+        ERROR(vars, "Internal error, bad variable declaration");
     }
 
     /* enter the variables into the local symbol table */
@@ -1466,7 +1466,7 @@ Symbol *VarSymbol(Function *func, AST *ast)
     if (ast && ast->kind == AST_ARRAYDECL)
         ast = ast->left;
     if (ast == 0 || ast->kind != AST_IDENTIFIER) {
-        ERROR(ast, "internal error: expected variable name\n");
+        ERROR(ast, "Internal error, expected variable name\n");
         return NULL;
     }
     return FindSymbol(&func->localsyms, ast->d.string);
@@ -2049,7 +2049,7 @@ CheckFunctionCalls(AST *ast)
                         for (i = 0; i < n; i++) {
                             sym = FindSymbolByOffsetAndKind(&P->objsyms, i*LONG_SIZE, SYM_VARIABLE);
                             if (!sym || sym->kind != SYM_VARIABLE) {
-                                ERROR(ast, "Internal error: couldn't find object variable with offset %d", i*LONG_SIZE);
+                                ERROR(ast, "Internal error, couldn't find object variable with offset %d", i*LONG_SIZE);
                                 return;
                             }
                             temp = NewAST(AST_METHODREF, id, AstIdentifier(sym->our_name));
@@ -2063,7 +2063,7 @@ CheckFunctionCalls(AST *ast)
                         temp = NewAST(AST_EXPRLIST, temp, NULL);
                         exprlist = AddToList(exprlist, temp);
                     } else {
-                        ERROR(exprlist, "Internal error: Unable to handle this type of parameter");
+                        ERROR(exprlist, "Internal error, Unable to handle this type of parameter");
                         return;
                     }
                 }
@@ -2239,7 +2239,7 @@ InferTypesStmtList(AST *list)
   }
   while (list) {
     if (list->kind != AST_STMTLIST) {
-      ERROR(list, "Internal error: expected statement list");
+      ERROR(list, "Internal error, expected statement list");
       return 0;
     }
     changes |= InferTypesStmt(list->left);
@@ -3297,7 +3297,7 @@ DeclareFunctionTemplate(Module *P, AST *templ)
     } else if (ident->kind == AST_IDENTIFIER) {
       name_internal = name_user = ident->d.string;
     } else {
-        ERROR(templ, "Internal error: no template name found");
+        ERROR(templ, "Internal error, no template name found");
         return;
     }
     /* check for existing definition */

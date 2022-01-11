@@ -603,7 +603,7 @@ DeclareConstants(Module *P, AST **conlist_ptr)
                 /* just skip it for now */
                 break;
             default:
-                ERROR(ast, "Internal error: bad AST value %d", ast->kind);
+                ERROR(ast, "Internal error, bad AST value %d", ast->kind);
                 break;
             }
         } else {
@@ -1381,7 +1381,7 @@ MakeOneDeclaration(AST *origdecl, SymbolTable *table, AST *restOfList)
         ident = ident->right;
     }
     if (ident->kind != AST_IDENTIFIER) {
-        ERROR(decl, "internal error: expected identifier in declaration");
+        ERROR(decl, "Internal error, expected identifier in declaration");
         return NULL;
     }
     name = ident->d.string;
@@ -1634,7 +1634,7 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
     }
     if (type->kind == AST_STATIC) {
         // FIXME: this case probably shouldn't happen any more??
-        WARNING(ident, "internal error: did not expect static in code");
+        WARNING(ident, "Internal error, did not expect static in code");
         type = type->left;
     }
     if (type->kind == AST_FUNCTYPE && !is_typedef) {

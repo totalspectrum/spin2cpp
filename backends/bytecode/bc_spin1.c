@@ -42,7 +42,7 @@ static int CompileJumpOffset_Spin1(uint8_t *buf,int *pos,ByteOpIR *ir,int baseSi
         if (!isLittleEndian) buf[(*pos)++] = offset&0xFF;
         break;
     default:
-        ERROR(NULL,"Internal error: Trying to emit jump offset of size %d",ir->fixedSize);
+        ERROR(NULL,"Internal error, Trying to emit jump offset of size %d",ir->fixedSize);
         break;
     }
     return offset;
@@ -732,7 +732,7 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
     }
     if (!comment) comment = byteOpKindNames[ir->kind];
     if (pos!=size) {
-        ERROR(NULL,"Internal error: compiled size (%d) doesn't match op's determined size (%d) (op is a %s)",pos,size,byteOpKindNames[ir->kind]); 
+        ERROR(NULL,"Internal error, compiled size (%d) doesn't match op's determined size (%d) (op is a %s)",pos,size,byteOpKindNames[ir->kind]); 
         return "!!! WRONG SIZE !!!";
     }
     return comment;

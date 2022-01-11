@@ -317,7 +317,7 @@ reduceStrings(AST *orig_exprlist)
     ASTReportInfo saveinfo;
     
     if (!exprlist || exprlist->kind != AST_EXPRLIST) {
-        ERROR(exprlist, "internal error, expected exprlist");
+        ERROR(exprlist, "Internal error, expected exprlist");
         return exprlist;
     }
     while (exprlist) {
@@ -478,7 +478,7 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
         AST *thisval = NULL;
         varlist = Q->finalvarblock;
         if (Q->pendingvarblock) {
-            ERROR(initializer, "internal error, got something in pendingvarblock");
+            ERROR(initializer, "Internal error, got something in pendingvarblock");
             return;
         }
         if (initializer->kind != AST_EXPRLIST) {
@@ -674,7 +674,7 @@ AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags)
             current->datHasCode = 1;
             break;
         case AST_BRKDEBUG:
-            if (!gl_brkdebug) WARNING(ast,"Internal error: Got AST_BRKDEBUG, but BRK debugger is not enabled?");
+            if (!gl_brkdebug) WARNING(ast,"Internal error, Got AST_BRKDEBUG, but BRK debugger is not enabled?");
             MARK_CODE(label_flags);
             // Kinda similiar the instruction code above ..
             if (inHub) {

@@ -150,7 +150,7 @@ void BCIR_GetJumpOffsetBounds(ByteOpIR *jump,bool func_relative,int *minDist, in
 int BCIR_GetJumpOffset(ByteOpIR *jump,bool func_relative) {
     int min,max;
     BCIR_GetJumpOffsetBounds(jump,func_relative,&min,&max,0);
-    if (min!=max) ERROR(NULL,"Internal error: GetJumpOffset called (on a %s), got indeterminate offset (%d..%d)",byteOpKindNames[jump->kind],min,max);
+    if (min!=max) ERROR(NULL,"Internal error, GetJumpOffset called (on a %s), got indeterminate offset (%d..%d)",byteOpKindNames[jump->kind],min,max);
     return max;
 }
 
@@ -559,7 +559,7 @@ BCIR_DetermineSizes(BCIRBuffer *irbuf,bool force,int maxRecursion) {
         if (BCIR_SizeDetermined(ir)) continue;
         int min=-1,max=-1;
         GetSizeBound_Func(ir,&min,&max,maxRecursion);
-        if (min<0||max<0) ERROR(NULL,"Internal error: size bounds negative");
+        if (min<0||max<0) ERROR(NULL,"Internal error, size bounds negative");
         if (min==max) {
             ir->fixedSize = max;
             didSomething = true;

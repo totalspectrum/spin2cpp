@@ -1016,30 +1016,30 @@ FixupFuncData(Module *P)
             curfunc = f;
             while (ast) {
                 if (ast->kind != AST_LISTHOLDER) {
-                    ERROR(ast, "Internal error: expected list holder");
+                    ERROR(ast, "Internal error, expected list holder");
                     break;
                 }
                 decl = ast->left;
                 if (decl->kind != AST_TEMPARRAYDECL) {
-                    ERROR(ast, "Internal error: expected temp array decl");
+                    ERROR(ast, "Internal error, expected temp array decl");
                     break;
                 }
                 name = decl->left;  // this is the array def
                 tablelen = EvalConstExpr(name->right);
                 name = name->left;
                 if (!IsIdentifier(name)) {
-                    ERROR(ast, "Internal error: expected identifier");
+                    ERROR(ast, "Internal error, expected identifier");
                     break;
                 }
                 sym = FindSymbol(&P->objsyms, GetIdentifierName(name));
                 if (!sym || sym->kind != SYM_TEMPVAR) {
-                    ERROR(name, "Internal error: unable to find symbol");
+                    ERROR(name, "Internal error, unable to find symbol");
                     break;
                 }
                 
                 table = decl->right;
                 if (table->kind != AST_EXPRLIST) {
-                    ERROR(table, "Internal error: expected expression list");
+                    ERROR(table, "Internal error, expected expression list");
                     break;
                 }
                 if (1 || !gl_p2) {
