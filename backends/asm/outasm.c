@@ -5525,9 +5525,8 @@ const char *builtin_pushregs_p2 =
     "    pop    pa\n"
     "    setq   #2\n"
     "    rdlong COUNT_, --ptra\n"
-    "    tjz    COUNT_, #popregs__ret\n"
-    "    altd  COUNT_, #511\n" // adjust for setq/rdlong
-    "    setq   #0-0\n"
+    "    djf    COUNT_, #popregs__ret\n"
+    "    setq   COUNT_\n"
     "    rdlong local01, --ptra\n"
     "popregs__ret\n"
     "    push   RETADDR_\n"
