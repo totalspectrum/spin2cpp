@@ -9,9 +9,9 @@ _lfs_trunc
 	and	result1, #255
 	mov	lfs_trunc_tmp001_, result1
 	add	ptr__dat__, #4
-	rdlong	lfs_trunc_tmp004_, ptr__dat__
+	rdlong	lfs_trunc_tmp003_, ptr__dat__
 	sub	ptr__dat__, #4
-	add	lfs_trunc_tmp001_, lfs_trunc_tmp004_
+	add	lfs_trunc_tmp001_, lfs_trunc_tmp003_
 	wrlong	lfs_trunc_tmp001_, arg01
 	add	arg01, #4
 	rdlong	lfs_trunc_tmp001_, arg01
@@ -34,6 +34,6 @@ arg01
 	res	1
 lfs_trunc_tmp001_
 	res	1
-lfs_trunc_tmp004_
+lfs_trunc_tmp003_
 	res	1
 	fit	496

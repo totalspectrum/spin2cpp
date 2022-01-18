@@ -1041,6 +1041,14 @@ NewFunctionTempRegister()
     return GetFunctionTempRegister(f, fdata->curtempreg);
 }
 
+void
+FreeTempRegisters(IRList *irl, int starttempreg)
+{
+    /* release temporaries we used */
+    FuncData(curfunc)->curtempreg = starttempreg;
+}
+
+
 static Operand *
 SizedHubMemRef(int size, Operand *addr, int offset)
 {
@@ -2232,6 +2240,7 @@ CompileBoolBranches(IRList *irl, AST *expr, Operand *truedest, Operand *falsedes
         Operand *val;
         Operand *tmplo, *tmphi;
         Operand *tmp2lo, *tmp2hi;
+        
         val = CompileExpression(irl, expr->left, NULL);
         val = Dereference(irl, val);
         lo = CompileExpression(irl, expr->right->left, NULL);
@@ -2680,6 +2689,7 @@ CompileExprList(IRList *irl, AST *fromlist)
   Operand *opto = NULL;
   OperandList *ret = NULL;
   OperandList *fresults = NULL;
+  int starttempreg;
   
   while (fromlist) {
     from = fromlist->left;
@@ -2689,11 +2699,13 @@ CompileExprList(IRList *irl, AST *fromlist)
         fresults = CompileFunccall(irl, from);
         AppendOperandList(&ret, fresults);
     } else {
-        opfrom = CompileExpression(irl, from, NULL);
         opto = NewFunctionTempRegister();
+        starttempreg = FuncData(curfunc)->curtempreg;
+        opfrom = CompileExpression(irl, from, NULL);
         if (!opfrom) break;
         EmitMove(irl, opto, opfrom);
         AppendOperand(&ret, opto);
+        FreeTempRegisters(irl, starttempreg);
     }
   }
   return ret;
@@ -2913,7 +2925,9 @@ CompileFunccall(IRList *irl, AST *expr)
   IR *ir;
   int i;
   int stackadj = 0;
-  
+  int starttempreg = FuncData(curfunc)->curtempreg;
+
+      
   func = CompileGetFunctionInfo(irl, expr, &absobjaddr, &offset, &funcaddr, &functype);
 
   if (!func && !functype) {
@@ -2951,6 +2965,8 @@ CompileFunccall(IRList *irl, AST *expr)
   }
   ir->aux = (void *)func; // remember the function for optimization purposes
 
+  FreeTempRegisters(irl, starttempreg);
+  
   /* now get the results */
   /* NOTE: we cannot assume this is unchanged over future calls,
      so save it in a temp register
@@ -2964,6 +2980,7 @@ CompileFunccall(IRList *irl, AST *expr)
           numresults = func->numresults;
       }
   }
+  
   for (i = 0; i < numresults; i++) {
       reg = NewFunctionTempRegister();
       EmitMove(irl, reg, GetResultReg(i));
@@ -4329,13 +4346,6 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
     return ir;
 }
 
-void
-FreeTempRegisters(IRList *irl, int starttempreg)
-{
-    /* release temporaries we used */
-    FuncData(curfunc)->curtempreg = starttempreg;
-}
-
 //
 // a for loop gets a pattern like
 //
@@ -4422,7 +4432,8 @@ static void CompileCaseStmt(IRList *irl, AST *ast)
     AST *item;
     AST *booltest;
     AST *stmts;
-
+    int starttempreg;
+    
     var = ast->left;
     if (var->kind == AST_ASSIGN) {
         CompileExpression(irl, var, NULL);
@@ -4433,6 +4444,7 @@ static void CompileCaseStmt(IRList *irl, AST *ast)
     }
     ast = ast->right;
     while (ast) {
+        starttempreg = FuncData(curfunc)->curtempreg;
         if (ast->kind != AST_LISTHOLDER) {
             ERROR(ast, "Internal error in case list");
             return;
@@ -4447,7 +4459,9 @@ static void CompileCaseStmt(IRList *irl, AST *ast)
         }
         labelnext = NewCodeLabel();
         CompileBoolBranches(irl, booltest, NULL, labelnext);
+        FreeTempRegisters(irl, starttempreg);
         CompileStatementList(irl, stmts);
+        FreeTempRegisters(irl, starttempreg);
     }
     if (labelnext) {
         EmitLabel(irl, labelnext);
