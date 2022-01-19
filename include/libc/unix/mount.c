@@ -27,8 +27,12 @@ __getvfsforfile(char *name, const char *orig_name, char *full_path)
         strncpy(name, orig_name, _PATH_MAX);
     } else {
         strncpy(name, curdir, _PATH_MAX);
-        strncat(name, "/", _PATH_MAX);
-        strncat(name, orig_name, _PATH_MAX);
+        if (orig_name[0] == 0 || (orig_name[0] == '.' && orig_name[1] == 0)) {
+            // do nothing, we're looking at the directory
+        } else {
+            strncat(name, "/", _PATH_MAX);
+            strncat(name, orig_name, _PATH_MAX);
+        }
     }
     for (i = 0; i < MAX_MOUNTS; i++) {
         if (!mounttab[i]) continue;

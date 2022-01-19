@@ -18,6 +18,7 @@ Version 5.9.7
 - Made RESULT no longer a reserved word in Spin2, should fix a number of bugs
 - Optimized local variable push/pull (thanks Ada)
 - Reduced number of temporary registers needed by the compiler
+- Fixed a bug in DIR$() in subdirectories of SD cards
 
 Version 5.9.6
 - Added error for non-constant compile time initializers

@@ -81,6 +81,9 @@ char *_basic_dir(const char *pattern = 0, unsigned attrib = 0) {
         oldpattern = pattern;
     }
     if (!olddir) {
+#ifdef _DEBUG
+        __builtin_printf("_basic_dir: olddir is NULL\n");
+#endif        
         return "";
     }
     for(;;) {
@@ -88,8 +91,14 @@ char *_basic_dir(const char *pattern = 0, unsigned attrib = 0) {
         if (!ent) {
             closedir(olddir);
             olddir = 0;
+#ifdef _DEBUG
+            __builtin_printf("_basic_dir: entry is NULL\n");
+#endif        
             return "";
         }
+#ifdef _DEBUG
+        __builtin_printf("_basic_dir: entry name is %s\n", ent->d_name);
+#endif        
         /* see if the entry matches the pattern */
         if (!_pat_match(ent->d_name, oldpattern)) continue;
         /* now see if the entry matches the attributes */
