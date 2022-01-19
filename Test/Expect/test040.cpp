@@ -10,7 +10,8 @@ void test040::Tx(int32_t Character)
 
 int32_t test040::Dec(int32_t Value)
 {
-  int32_t 	I, X, _idx__0000;
+  int32_t 	I, X;
+  int32_t 	_idx__0000;
   int32_t result = 0;
   // Print a decimal number
   // Check for max negative

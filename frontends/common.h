@@ -410,6 +410,8 @@ typedef struct funcdef {
 
     /* counter for local variables */
     int local_var_counter;
+    /* high water mark for local variables */
+    int max_local_var_counter;
     
 } Function;
 

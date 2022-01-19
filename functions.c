@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2021 Total Spectrum Software Inc.
+ * Copyright 2011-2022 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling functions
@@ -138,6 +138,10 @@ EnterVariable(int kind, SymbolTable *stab, AST *astname, AST *type, unsigned sym
     
     sym = AddSymbolPlaced(stab, name, kind, (void *)type, username, astname);
     if (!sym) {
+        // ignore duplicate definitions for SYM_TEMPVAR
+        if (kind == SYM_TEMPVAR && (!type || type == ast_type_generic)) {
+            return sym;
+        }
         ERROR(astname, "duplicate definition for %s", username);
     } else {
         sym->flags |= sym_flag;
@@ -1497,17 +1501,21 @@ AddLocalVariable(Function *func, AST *var, AST *vartype, int symtype)
     }
 }
 
+int  GetTempStack(void) { return curfunc->local_var_counter; }
+void SetTempStack(int n) { curfunc->local_var_counter = n; }
+
 AST *
 AstTempLocalVariable(const char *prefix, AST *type)
 {
     char *name;
     AST *ast = NewAST(AST_IDENTIFIER, NULL, NULL);
-    int *counter = NULL;
 
-    if (curfunc) {
-        counter = &curfunc->local_var_counter;
+    if (curfunc && (!type || TypeSize(type) == LONG_SIZE)) {
+        name = NewTemporaryVariable(prefix, &curfunc->local_var_counter);
+        type = ast_type_generic; /* make it untyped so it can be re-used */
+    } else {
+        name = NewTemporaryVariable(NULL, NULL);
     }
-    name = NewTemporaryVariable(prefix, counter);
     ast->d.string = name;
     AddLocalVariable(curfunc, ast, type, SYM_TEMPVAR);
     return ast;
@@ -1942,7 +1950,14 @@ CheckFunctionCalls(AST *ast)
     AST *initseq = NULL;
     AST *temps[MAX_TUPLE];
     ASTReportInfo saveinfo;
-    
+
+    while (ast && ast->kind == AST_STMTLIST) {
+        AST *sub = ast->left;
+        int mark = GetTempStack();
+        CheckFunctionCalls(sub);
+        ast = ast->right;
+        SetTempStack(mark);
+    }
     if (!ast) {
         return;
     }
