@@ -127,7 +127,7 @@ char *_basic_dir(const char *pattern = 0, unsigned attrib = 0) {
                 continue;
             }
         }
-        string = _gc_alloc(strlen(ent->d_name)+1);
+        string = _gc_alloc_managed(strlen(ent->d_name)+1);
         if (string) {
             strcpy(string, ent->d_name);
         }
