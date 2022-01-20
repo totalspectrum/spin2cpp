@@ -591,6 +591,14 @@ impl_SAR
 	sar	nos, tos
 	jmp	#\impl_DROP
 
+impl_ROL
+	rol	nos, tos
+	jmp	#\impl_DROP
+
+impl_ROR
+	ror	nos, tos
+	jmp	#\impl_DROP
+
 impl_MINS
 	fges	tos, nos
 	jmp	#\impl_DOWN
@@ -825,6 +833,11 @@ impl_DRVRND
 	drvrnd	tos
 	jmp	#\impl_DROP
 
+impl_DRVWR
+	test	nos, #1 wc
+	drvc	tos
+	jmp	#\impl_DROP2
+
 impl_FLTL
 	fltl	tos
 	jmp	#\impl_DROP
@@ -856,6 +869,9 @@ impl_WYPIN
 
 impl_RDPIN
   _ret_	rdpin	tos, tos
+	
+impl_RQPIN
+  _ret_	rqpin	tos, tos
 	
 impl_XORO
 	xoro32	tos

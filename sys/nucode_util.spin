@@ -41,6 +41,8 @@ pri _drvnot(pin = long)
   __bytecode__("DRVNOT")
 pri _drvrnd(pin = long)
   __bytecode__("DRVRND")
+pri _drvw(pin = long, bit = long)
+  __bytecode__("DRVWR")
 
 pri _dirl(pin = long)
   __bytecode__("DIRL")
@@ -58,6 +60,8 @@ pri _wypin(pin = long, val = long)
   __bytecode__("WYPIN")
 pri _rdpin(pin = long) : r
   __bytecode__("RDPIN")
+pri _rqpin(pin = long) : r
+  __bytecode__("RQPIN")
 
 ' synthetic smartpin instruction for setting up smartpin parameters
 pri _pinsetup(pin = long, mode = long, xval, yval)

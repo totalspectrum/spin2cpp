@@ -41,6 +41,8 @@
     X(SHL)       /* tos := nos << tos */ \
     X(SHR)       /* tos := nos >> tos (unsigned right shift) */ \
     X(SAR)       /* tos := nos SAR tos (signed right shift) */ \
+    X(ROL)       /* tos := nos ROL tos */ \
+    X(ROR)       /* tos := nos ROR tos */ \
     X(ENCODE)    /* tos := nos ENCODE tos (0-32) */ \
     X(ENCODE2)   /* tos := nos ENCODE tos (0-31) */ \
     /* BINARY math operations end here (ones below leave 2 items on stack */ \
@@ -90,6 +92,7 @@
     X(WXPIN)     /* smart pin write */ \
     X(WYPIN)     /* smart pin write */ \
     X(RDPIN)     /* smart pin read */ \
+    X(RQPIN)     /* smart pin read (quiet) */ \
     \
     X(GETCTHL)   /* get current cycle counter */ \
     X(WAITX)     /* delay for tos cycles */ \

@@ -953,6 +953,8 @@ NuCompileOperator(NuIrList *irl, AST *node) {
         case K_SHL: NuEmitOp(irl, NU_OP_SHL); break;
         case K_SHR: NuEmitOp(irl, NU_OP_SHR); break;
         case K_SAR: NuEmitOp(irl, NU_OP_SAR); break;
+        case K_ROTL: NuEmitOp(irl, NU_OP_ROL); break;
+        case K_ROTR: NuEmitOp(irl, NU_OP_ROR); break;
         case K_ENCODE: NuEmitOp(irl, NU_OP_ENCODE); break;
         case K_ENCODE2: NuEmitOp(irl, NU_OP_ENCODE2); break;
         case K_LIMITMIN: NuEmitOp(irl, NU_OP_MINS); break;
@@ -1683,7 +1685,7 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
     case AST_RETURN:
         if (ast->left) {
             n = NuCompileExpression(irl, ast->left);
-        } else if (curfunc->numresults && curfunc->result_declared) {
+        } else if (curfunc->numresults) {
             // RETURN without arguments, in a function with declared results,
             // gets changed to RETURN result
             n = NuCompileExpression(irl, curfunc->resultexpr);
