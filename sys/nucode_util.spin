@@ -62,6 +62,13 @@ pri _rdpin(pin = long) : r
   __bytecode__("RDPIN")
 pri _rqpin(pin = long) : r
   __bytecode__("RQPIN")
+pri _akpin(pin = long)
+  __bytecode__("AKPIN")
+
+' clear a smart pin
+pri _pinclear(pin)
+  _fltl(pin)
+  _wrpin(pin, 0)
 
 ' synthetic smartpin instruction for setting up smartpin parameters
 pri _pinsetup(pin = long, mode = long, xval, yval)
@@ -377,6 +384,9 @@ pri _ones(v) : r
 
 pri _rotxy(x, y, angle) : nx, ny
   __bytecode__("ROTXY")
+
+pri _xypol(x, y) : d, angle
+  __bytecode__("XYPOL")
 
 pri _qsin(len, angle, twopi) : y | x
   if twopi

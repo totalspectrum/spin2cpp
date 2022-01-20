@@ -55,6 +55,7 @@
     X(MULDIV64)  /* calculate a*b/c with full precision */ \
     X(SQRT64)    /* calculate sqrt(nos, tos) with full precision */ \
     X(ROTXY)     /* rotate x, y */ \
+    X(XYPOL)     /* convert x, y to polar */ \
     \
     /* UNARY math operations start here */ \
     X(NEG)       /* negate tos */ \
@@ -93,6 +94,7 @@
     X(WYPIN)     /* smart pin write */ \
     X(RDPIN)     /* smart pin read */ \
     X(RQPIN)     /* smart pin read (quiet) */ \
+    X(AKPIN)     /* smart pin acknowledge */ \
     \
     X(GETCTHL)   /* get current cycle counter */ \
     X(WAITX)     /* delay for tos cycles */ \

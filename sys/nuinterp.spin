@@ -869,10 +869,14 @@ impl_WYPIN
 
 impl_RDPIN
   _ret_	rdpin	tos, tos
-	
+
 impl_RQPIN
   _ret_	rqpin	tos, tos
-	
+
+impl_AKPIN
+	akpin	tos
+	jmp	#\impl_DROP
+
 impl_XORO
 	xoro32	tos
   _ret_	mov	tos, tos
