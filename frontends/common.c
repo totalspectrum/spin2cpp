@@ -280,6 +280,7 @@ Aliases basicalias[] = {
 
     { "round", "_float_round" },
     
+    { "_lockrel", "_lockclr" },
     { NULL, NULL },
 };
 Aliases calias[] = {

@@ -317,6 +317,10 @@ instrrev
 lcase$
 left$
 len
+_lockclr
+_locknew
+_lockrel
+_locktry
 log
 longfill
 longmove
@@ -2369,6 +2373,37 @@ Keyword used with DECLARE to define functions in other files.
 ### LINE
 
 Reserved for future use.
+
+### _LOCKCLR
+
+```
+_lockclr(lockNum)
+```
+Clears (releases) a lock previously claimed by `_locktry`.
+
+### _LOCKNEW
+
+```
+  dim lockNum as integer
+  lockNum = _locknew()
+```
+Allocates a new hardware lock. If no more locks are available (there are only 8 of them) returns -1.
+
+### _LOCKREL
+
+```
+  _lockrel(lockNum)
+```
+Frees (returns to inventory) a lock previously allocated by `_locknew`.
+
+### _LOCKTRY
+
+```
+  do
+    x = _locktry(n)
+  while x = 0
+```
+Tries to capture a lock previously allocated by `_locknew`; returns 0 on failure, -1 on success.
 
 ### LOG
 
