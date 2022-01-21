@@ -364,7 +364,8 @@ AdjustParamForByVal(AST *param)
 
 %token BAS_EMPTY      "_"
 %token BAS_IDENTIFIER "identifier"
-%token BAS_LABEL      "label"
+%token BAS_LABEL_INFERRED      "label:"
+%token BAS_LABEL_KEYWORD       "label"
 %token BAS_INTEGER    "integer number"
 %token BAS_FLOAT      "number"
 %token BAS_STRING     "literal string"
@@ -540,13 +541,15 @@ eolnseq:
   | eolnseq BAS_EOLN
   ;
 
-toplabel: BAS_LABEL
+
+toplabel: BAS_LABEL_INFERRED
   {
         AST *label = NewAST(AST_LABEL, $1, NULL);
         AST *stmt = NewAST(AST_STMTLIST, label, NULL);
         current->body = AddToList(current->body, stmt);
   }
 ;
+
 
 topitem:
     /* empty */
@@ -575,17 +578,16 @@ wrapped_stmt:
     {
         $$ = NewAST(AST_STMTLIST, $1, NULL);
     }
-  | BAS_LABEL wrapped_stmt
+  | BAS_LABEL_INFERRED wrapped_stmt
     {
         AST *label = NewAST(AST_LABEL, $1, NULL);
         $$ = NewAST(AST_STMTLIST, label, $2);
     }
-  | BAS_LABEL BAS_EOLN wrapped_stmt
+  | BAS_LABEL_INFERRED BAS_EOLN wrapped_stmt
     {
         AST *label = NewAST(AST_LABEL, $1, NULL);
         $$ = NewAST(AST_STMTLIST, label, $3);
     }
-  
 ;
 
 optstatementlist:
@@ -600,9 +602,9 @@ stmtlistitem:
     { $$ = $1; }
   | dimension
     { $$ = NewAST(AST_STMTLIST, $1, NULL); }
-  | BAS_LABEL
+  | BAS_LABEL_INFERRED
     { $$ = NewAST(AST_STMTLIST, NewAST(AST_LABEL, $1, NULL), NULL); }
-  | BAS_LABEL dimension
+  | BAS_LABEL_INFERRED dimension
       {
         AST *label = NewAST(AST_STMTLIST, NewAST(AST_LABEL, $1, NULL), NULL);
         AST *dim = NewAST(AST_STMTLIST, $2, label);
@@ -792,6 +794,10 @@ branchstmt:
     { $$ = AstReturn(NULL, $1); }
   | BAS_RETURN exprlist
     { $$ = AstReturn($2, $1); }
+  | BAS_LABEL_KEYWORD BAS_INTEGER
+    { $$ = NewAST(AST_LABEL, IntegerLabel($2), NULL); }
+  | BAS_LABEL_KEYWORD BAS_IDENTIFIER
+    { $$ = NewAST(AST_LABEL, $2, NULL); }
   | BAS_GOTO BAS_IDENTIFIER
     { $$ = NewAST(AST_GOTO, $2, NULL); }
   | BAS_GOTO BAS_INTEGER

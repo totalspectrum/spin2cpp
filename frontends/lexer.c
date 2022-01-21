@@ -2113,6 +2113,7 @@ struct reservedword basic_keywords[] = {
   { "input", BAS_INPUT },
   { "int", BAS_CAST_INT },
   { "integer", BAS_INTEGER_KW },
+  { "label", BAS_LABEL_KEYWORD },
   { "let", BAS_LET },
   { "lib", BAS_LIB },
   { "line", BAS_LINE },
@@ -4060,7 +4061,7 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
                 lexungetc(L, c2);
             }
             if (c2 == '\n') {
-                return BAS_LABEL;
+                return BAS_LABEL_INFERRED;
             }
         }
         lexungetc(L, c);
@@ -4132,7 +4133,7 @@ again:
 	} else {
             if (is_label) {
                 ast = IntegerLabel(ast);
-                c = BAS_LABEL;
+                c = BAS_LABEL_INFERRED;
                 L->firstNonBlank = L->colCounter;
             } else {
                 c = BAS_INTEGER;
