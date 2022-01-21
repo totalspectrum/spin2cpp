@@ -364,8 +364,8 @@ AdjustParamForByVal(AST *param)
 
 %token BAS_EMPTY      "_"
 %token BAS_IDENTIFIER "identifier"
-%token BAS_LABEL_INFERRED      "label:"
-%token BAS_LABEL_KEYWORD       "label"
+%token BAS_LABEL_INFERRED      "label"
+%token BAS_LABEL_EXPLICIT       "label:"
 %token BAS_INTEGER    "integer number"
 %token BAS_FLOAT      "number"
 %token BAS_STRING     "literal string"
@@ -794,10 +794,8 @@ branchstmt:
     { $$ = AstReturn(NULL, $1); }
   | BAS_RETURN exprlist
     { $$ = AstReturn($2, $1); }
-  | BAS_LABEL_KEYWORD BAS_INTEGER
-    { $$ = NewAST(AST_LABEL, IntegerLabel($2), NULL); }
-  | BAS_LABEL_KEYWORD BAS_IDENTIFIER
-    { $$ = NewAST(AST_LABEL, $2, NULL); }
+  | BAS_LABEL_EXPLICIT
+    { $$ = NewAST(AST_LABEL, $1, NULL); }
   | BAS_GOTO BAS_IDENTIFIER
     { $$ = NewAST(AST_GOTO, $2, NULL); }
   | BAS_GOTO BAS_INTEGER

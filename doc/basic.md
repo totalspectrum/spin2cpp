@@ -212,7 +212,6 @@ if
 import
 input
 integer
-label
 let
 lib
 line
@@ -2138,21 +2137,10 @@ Builtin function. Returns the number of microseconds since the device was turned
 
 ### GOTO
 
-`goto x` jumps to a label `x`, which must be defined in the same function. Labels are defined by giving the keyword `label` followed by an identifier. They may also be implicitly defined by giving an identifier, followed by a `:`, followed by an end-of-line; but this works only if the identifier and colon are the only things on the line, and only if they are followed by a complete statement (an `END` or `LOOP` is the end of a statement, so it does not qualify).
+`goto x` jumps to a label `x`, which must be defined in the same function. Labels are defined by giving an identifier, followed by a `:`, followed by an end-of-line; that is, a label is the only thing which may be on a line.
 
-For example, either example below will work:
+For example:
 
-With explicit labels:
-```
-  if x=y goto xyequal
-  print "x differs from y"
-  goto done
-label xyequal
-  print "x and y are equal"
-label done
-```
-
-With implicit labels:
 ```
   if x=y goto xyequal
   print "x differs from y"
@@ -2161,17 +2149,6 @@ xyequal:
   print "x and y are equal"
 done:
 ```
-
-However, in a loop or subroutine exit, like:
-```
-sub testsub
-  if i<>0 then goto p999
-  i=i+1
-label p999
-end sub
-```
-
-The `label p999` may not be replaced with `p999:`, because it is followed by an `end` instead of a new statement.
 
 Note that in most cases code written with a `goto` could better be written with
 `if` or `do` (for instance the example above would be easier to read if written with `if` ... `then` ... `else`). `goto` should be used sparingly.
@@ -2191,6 +2168,8 @@ whereas
    bar
 ```
 is a label `foo` followed by a statement `bar`.
+
+In old source code integers may also be used as labels. The integer must be at the start of the line, followed by white space. This form of label is supported for legacy use only and may not work as expected in all circumstances (e.g. before an `END` or `LOOP` keyword).
 
 ### _HASMETHOD
 
