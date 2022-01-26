@@ -12,9 +12,8 @@ fi
 
 PROG_C="$SPIN2CPP -I../Lib"
 PROG_ASM="$FASTSPIN -I../Lib"
-#LOADP2="loadp2 -b230400"
-LOADP2="propeller-load -r"
-LOADP1="propeller-load -r"
+#LOADER="loadp2 -b230400"
+LOADER="proploader -D loader-baud-rate=115200 -D baud-rate=115200 -r"
 
 CC=propeller-elf-gcc
 ok="ok"
@@ -51,7 +50,7 @@ do
 
   # now compile with asm
   if $PROG_ASM -o $j.binary $i; then
-    $LOADP2 $j.binary -t -q > $j.out
+    $LOADER $j.binary -t -q > $j.out
   fi
   # the --lines=+6 skips the first 6 lines that propeller-load printed
   tail --lines=+6 $j.out >$j.txt
@@ -89,7 +88,7 @@ do
 
   # now compile with asm
   if $PROG_ASM -o $j.binary $i; then
-    $LOADP2 $j.binary -t -q > $j.out
+    $LOADER $j.binary -t -q > $j.out
   fi
   # the --lines=+6 skips the first 6 lines that propeller-load printed
   tail --lines=+6 $j.out >$j.txt
@@ -115,7 +114,7 @@ do
     echo "TEST_C = ($TEST_C)"
     if $PROG_C --binary --ctypes --gas -fpermissive -Os -o $j.binary $i; then
       rm -f $j.out
-      $LOADP1 $j.binary -t -q > $j.out
+      $LOADER $j.binary -t -q > $j.out
     fi
     # the --lines=+6 skips the first 6 lines that propeller-load printed
     tail --lines=+6 $j.out >$j.txt
@@ -131,7 +130,7 @@ do
   
   # now compile with asm
   if $PROG_ASM -o $j.binary $i; then
-    $LOADP2 $j.binary -t -q > $j.out
+    $LOADER $j.binary -t -q > $j.out
   fi
   # the --lines=+6 skips the first 6 lines that propeller-load printed
   tail --lines=+6 $j.out >$j.txt
