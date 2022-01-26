@@ -24,7 +24,7 @@ flexspin has a pre-processor that understands basic directives like `#include`, 
 ```
 Defines a new macro `FOO` with the value `hello`. Whenever the symbol `FOO` appears in the text, the preprocessor will substitute `hello`.
 
-Note that unlike the C preprocessor, this one cannot accept arguments. Only simple defines are permitted.
+Note that unlike the C preprocessor, this one cannot accept arguments. Only simple defines are permitted. Also note that in BASIC, unlike C, the preprocessor symbols are not case sensitive.
 
 If no value is given, e.g.
 ```
