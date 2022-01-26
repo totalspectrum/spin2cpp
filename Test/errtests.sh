@@ -15,7 +15,7 @@ endmsg=$ok
 for i in error*.spin
 do
   j=`basename $i .spin`
-  $PROG -Wall --noheader -DCOUNT=4 $i >$j.err 2>&1
+  $PROG -Wall --noheader -DDEFCOUNT=4 $i >$j.err 2>&1
   if  diff -ub Expect/$j.err $j.err
   then
       rm -f $j.err
@@ -29,7 +29,7 @@ done
 for i in error*.spin2
 do
   j=`basename $i .spin2`
-  $PROG --p2 --asm -Wall --noheader -DCOUNT=4 $i >$j.err 2>&1
+  $PROG --p2 --asm -Wall --noheader -DDEFCOUNT=4 $i >$j.err 2>&1
   if  diff -ub Expect/$j.err $j.err
   then
       rm -f $j.err
@@ -43,7 +43,7 @@ done
 for i in error*.bas
 do
   j=`basename $i .bas`
-  $PROG -Wall --noheader -DCOUNT=4 $i >$j.err 2>&1
+  $PROG -Wall --noheader -DDEFCOUNT=4 $i >$j.err 2>&1
   if  diff -ub Expect/$j.err $j.err
   then
       rm -f $j.err

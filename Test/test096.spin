@@ -1,6 +1,6 @@
 PUB blah
-#ifdef COUNT
-  return COUNT
+#ifdef DEFCOUNT
+  return DEFCOUNT
 #else
   return 0
 #endif
