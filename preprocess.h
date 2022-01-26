@@ -79,6 +79,9 @@ struct preprocess {
 
     /* list of strings to use as an include path */
     struct flexbuf inc_path;
+
+    /* if true (nonzero), preprocessor should be case sensitive */
+    int is_case_sensitive;
 };
 
 #define pp_active(pp) (!((pp)->ifs && (pp)->ifs->skip))

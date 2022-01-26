@@ -19,7 +19,7 @@ Version 5.9.7
 - Optimized local variable push/pull (thanks Ada)
 - Reduced number of temporary registers needed by the compiler
 - Fixed a bug in DIR$() in subdirectories of SD cards
-- New BASIC keyword `LABEL` to allow defining labels at end of statements
+- Made preprocessor ignore case in Spin and BASIC
 
 Version 5.9.6
 - Added error for non-constant compile time initializers

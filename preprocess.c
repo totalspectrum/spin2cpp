@@ -406,9 +406,16 @@ pp_getdef(struct preprocess *pp, const char *name)
 {
     struct predef *X;
     const char *def = NULL;
+    int (*strcmp_func)(const char *a, const char *b);
+    
     X = pp->defs;
+    if (pp->is_case_sensitive) {
+        strcmp_func = strcmp;
+    } else {
+        strcmp_func = strcasecmp;
+    }
     while (X) {
-        if (!strcmp(X->name, name)) {
+        if (!strcmp_func(X->name, name)) {
             def = X->def;
             break;
         }
@@ -417,10 +424,10 @@ pp_getdef(struct preprocess *pp, const char *name)
     if (!def) {
         static char newdef[1024];
         // check for certain predefined words
-        if (!strcmp("__FILE__", name)) {
+        if (!strcmp_func("__FILE__", name)) {
             snprintf(newdef, sizeof(newdef), "\"%s\"", pp->fil->name);
             def = newdef;
-        } else if (!strcmp("__LINE__", name)) {
+        } else if (!strcmp_func("__LINE__", name)) {
             snprintf(newdef, sizeof(newdef), "%d", pp->fil->lineno - 1);
             def = newdef;
         }
