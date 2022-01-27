@@ -1598,7 +1598,11 @@ The order of `data` statements matters, but they may be intermixed with other st
 
 ### DECLARE
 
-Used to declare a function or subroutine in another file. Only a subset of the usual FreeBasic `declare` keyword is supported. The syntax is:
+Used to declare an alias, or a function or subroutine in another file. Only a subset of the usual FreeBasic `declare` keyword is supported.
+
+#### DECLARE function in another file
+
+The syntax is:
 ```
 DECLARE FUNCTION ident1 LIB "path/to/file1" ( parameters ) AS type
 DECLARE SUB ident2 LIB "path/to/file2" ( parameters )
@@ -1606,6 +1610,32 @@ DECLARE SUB ident2 LIB "path/to/file2" ( parameters )
 The string following `lib` specifies the path to the file containing the implementation of the routine (subroutine or function). Note that with `declare` the type of a function must be explicitly given with `as`.
 
 External Spin and C routines may be declared in this fashion. Note however that C is a case sensitive language, whereas BASIC is not. BASIC identifiers are converted to all lower case, so C functions containing upper case letters cannot be accessed via `declare`.
+
+#### DECLARE ALIAS
+
+This form of declare defines an alias for an existing identifier. The simple form is just:
+```
+DECLARE newIdent ALIAS oldIdent
+```
+With this form, every reference to `newIdent` in the code is translated behind the scenes to `oldIdent`. This will work for any kind of identifier, including functions, subroutines, and constants.
+
+For identifiers that represent variables, it is also possible to have the alias represent a different "view" of the variable (using a different type). For example, after:
+```
+DIM x as single
+DECLARE xi ALIAS x AS integer
+```
+then both `x` and `xi` point to the same variable; when referred to as `x` the data is interpreted as a single, but when referred to as `xi` it is interpreted as an integer. Note that no type checking or conversion is performed, so this is potentially a dangerous way to alias variables, and should be used with care.
+
+For global variables and members of classes, it is also possible to alias the individual bytes of the variable:
+```
+DIM x as single
+DECLARE xa ALIAS x AS ubyte(4)
+```
+Then the individual bytes of the variable `x` may be addressed as `xa(0)`, `xa(1)`, and so forth. There are some big caveats associated with this:
+
+(1) Again, no type checking is performed (including checking of the size of the array), so it is the programmer's responsibility to make sure the array is of the appropriate size.
+
+(2) This form of ALIAS will *not* usually work as expected with local variables and subroutine/function parameters, which are placed in registers.
 
 ### DECUNS$
 
