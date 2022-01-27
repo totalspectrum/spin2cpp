@@ -587,8 +587,8 @@ findLocalsAndDeclare(Function *func, AST *ast)
         /* this case may be obsolete now */
         name = ast->left;
         ident = ast->right;
-        AddSymbolPlaced(&func->localsyms, name->d.string, SYM_WEAK_ALIAS, (void *)ident->d.string, NULL, ast);
-        AstNullify(ast);
+        DeclareAlias(&func->localsyms, name, ident);
+        AstNullify(ast);  // delete the declaration so we don't see it again
         return;
     case AST_GLOBALVARS:
         ERROR(ast, "global variable declarations not allowed in functions");
