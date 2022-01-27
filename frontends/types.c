@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2021 Total Spectrum Software Inc.
+ * Copyright 2011-2022 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -300,6 +300,10 @@ domakedouble(AST *typ, AST *ast)
         ret = AstOperator(K_SHL, ast, AstInteger(G_FIXPOINT));
         return FoldIfConst(ret);
     }
+    if (!IsIntOrGenericType(typ)) {
+        ERROR(ast, "Unable to cast this type to float");
+        return ast;
+    }
     ast = forcepromote(typ, ast);
     if (IsUnsignedType(typ)) {
         ret = MakeOperatorCall(double_fromuns, ast, NULL, NULL);
@@ -318,6 +322,10 @@ domakefloat(AST *typ, AST *ast)
     if (gl_fixedreal) {
         ret = AstOperator(K_SHL, ast, AstInteger(G_FIXPOINT));
         return FoldIfConst(ret);
+    }
+    if (!IsIntOrGenericType(typ)) {
+        ERROR(ast, "Unable to cast this type to float");
+        return ast;
     }
     ast = forcepromote(typ, ast);
     if (IsConstExpr(ast)) {
