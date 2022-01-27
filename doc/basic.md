@@ -24,13 +24,15 @@ flexspin has a pre-processor that understands basic directives like `#include`, 
 ```
 Defines a new macro `FOO` with the value `hello`. Whenever the symbol `FOO` appears in the text, the preprocessor will substitute `hello`.
 
-Note that unlike the C preprocessor, this one cannot accept arguments. Only simple defines are permitted. Also note that in BASIC, unlike C, the preprocessor symbols are not case sensitive.
+Note that unlike the C preprocessor, this one cannot accept arguments. Only simple defines are permitted.
+
+Also note that by default the preprocessor is case sensitive, like the C preprocessor but unlike the rest of the BASIC language. This is for compatibility with older releases, and may change at some point. However, the preprocessor may be made case insensitive with the `#pragma ignore_case` directive (see below).
 
 If no value is given, e.g.
 ```
 #define BAR
 ```
-then the symbol is defined as the string `1`.
+then the symbol `BAR` is defined as the string `1`.
 
 #### IFDEF
 
@@ -78,7 +80,17 @@ Included files are searched for first in the same directory as the file that con
 
 #### PRAGMA
 
-Provide a compiler hint. This is unimplemented for now, and silently ignored.
+Provide a compiler or preprocessor hint. Only two pragmas are currently supported:
+```
+#pragma ignore_case
+```
+Makes the preprocessor, like the rest of the compiler, case insensitive. This will probably become the default in some future release.
+
+```
+#pragma keep_case
+```
+Forces the preprocessor to be case sensitive.
+
 
 #### WARN
 

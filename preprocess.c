@@ -41,6 +41,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <ctype.h>
 #include <stdarg.h>
 #include "preprocess.h"
@@ -409,10 +410,10 @@ pp_getdef(struct preprocess *pp, const char *name)
     int (*strcmp_func)(const char *a, const char *b);
     
     X = pp->defs;
-    if (pp->is_case_sensitive) {
-        strcmp_func = strcmp;
-    } else {
+    if (pp->ignore_case) {
         strcmp_func = strcasecmp;
+    } else {
+        strcmp_func = strcmp;
     }
     while (X) {
         if (!strcmp_func(X->name, name)) {
@@ -812,6 +813,31 @@ handle_define(struct preprocess *pp, ParseState *P, int isDef)
     pp_define_internal(pp, name, def, PREDEF_FLAG_FREEDEFS);
 }
 
+//
+// process a pragma
+// returns true if pragma handled, false if not
+//
+static bool
+handle_pragma(struct preprocess *pp, ParseState *P)
+{
+    char *word;
+    int live = pp_active(pp);
+
+    if (!live) {
+        // not live, just consume the pragma and ignore it
+        return true;
+    }
+    word = parse_getwordafterspaces(P);
+    if (!strcmp(word, "ignore_case")) {
+        pp->ignore_case = 1;
+        return true;
+    } else if (!strcmp(word, "keep_case")) {
+        pp->ignore_case = 0;
+        return true;
+    }
+    return false;
+}
+
 void
 pp_add_to_path(struct preprocess *pp, const char *dir)
 {
@@ -990,10 +1016,17 @@ do_line(struct preprocess *pp)
             handle_define(pp, &P, 0);
         } else if (!strcasecmp(func, "include")) {
             handle_include(pp, &P);
+        } else if (!strcasecmp(func, "pragma")) {
+            if (!handle_pragma(pp, &P)) {
+                // pragma was not recognized, pass it through
+                if (P.save) {
+                    *P.save = P.c;
+                    P.save = NULL;
+                }
+                r = expand_macros(pp, &pp->line, data);
+            }
         } else {
-            if (!strcasecmp(func, "line")
-                || !strcasecmp(func, "pragma")
-                )
+            if (!strcasecmp(func, "line"))
             {
                 /* no warning for these directives */
             } else if (isdigit(func[0]) || func[0] == '$' || func[0] == '%') {

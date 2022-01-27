@@ -80,8 +80,9 @@ struct preprocess {
     /* list of strings to use as an include path */
     struct flexbuf inc_path;
 
-    /* if true (nonzero), preprocessor should be case sensitive */
-    int is_case_sensitive;
+    /* if 1, preprocessor should ignore case */
+    /* default is 0 (for compatiblity) where case matters in macros and #ifdef */
+    int ignore_case;
 };
 
 #define pp_active(pp) (!((pp)->ifs && (pp)->ifs->skip))
