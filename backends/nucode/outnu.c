@@ -1,7 +1,7 @@
 //
 // Bytecode (nucode) compiler for spin2cpp
 //
-// Copyright 2021 Total Spectrum Software Inc.
+// Copyright 2021-2022 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include "outnu.h"
@@ -380,6 +380,18 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
         offsetOp = NU_OP_ILLEGAL;
         offsetValid = false;
     } break;
+    case SYM_ALIAS: {
+        AST *expr = (AST *)sym->val;
+        // this had better be a simple alias
+        while (expr && expr->kind == AST_CAST) {
+            expr = expr->right;
+        }
+        if (!expr || !IsIdentifier(expr)) {
+            ERROR(node, "Unable to compile aliased expression");
+            return loadOp;
+        }
+        return NuCompileIdentifierAddress(irl, expr, isLoad);
+    } break;
     default:
         ERROR(node, "Unhandled symbol type for %s", sym->user_name);
         return loadOp;
@@ -576,6 +588,9 @@ static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs)
         op = NuCompileIdentifierAddress(irl, lhs, 0);
         break;
     case AST_RESULT:
+        if (curfunc->resultexpr && IsIdentifier(curfunc->resultexpr)) {
+            return NuCompileLhsAddress(irl, curfunc->resultexpr);
+        }
         if (LookupSymbolInTable(&curfunc->localsyms, "result")) {
             op = NuCompileIdentifierAddress(irl, AstIdentifier("result"), 0);
         } else {

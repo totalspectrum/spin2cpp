@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2021 Total Spectrum Software Inc.
+ * Copyright 2011-2022 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling expressions
@@ -2549,6 +2549,9 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
             return (AST *)sym->val;
         case SYM_FUNCTION:
             return ((Function *)sym->val)->overalltype;
+        case SYM_ALIAS:
+            // an alias for an expression
+            return ExprTypeRelative(table, (AST *)sym->val, P);
         default:
             return NULL;
         }            

@@ -1,7 +1,7 @@
 //
 // Bytecode compiler for spin2cpp
 //
-// Copyright 2021 Ada Gottensträter and Total Spectrum Software Inc.
+// Copyright 2021-2022 Ada Gottensträter and Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 
@@ -1357,6 +1357,7 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
 
     AST *memopNode = NULL;
 
+redoLeft:
     switch(left->kind) {
     case AST_EMPTY:
         if (asExpression || ExprHasSideEffects(right)) BCCompileExpression(irbuf,right,context,!asExpression);
@@ -1403,6 +1404,19 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
             memopNode = NewAST(AST_HWREG, NULL, NULL);
             memopNode->d.ptr = sym->val;
             break;
+        case SYM_ALIAS: {
+            // this is an alias for an expression, so compile the expression
+            AST *expr = (AST *)sym->val;
+            while (expr && expr->kind == AST_CAST) {
+                expr = expr->right;
+            }
+            if (!expr || !IsIdentifier(expr)) {
+                ERROR(left, "Non-identifier ALIAS in assignments not handled yet");
+                return;
+            }
+            left = expr;
+            goto redoLeft;
+        }
         default:
             ERROR(left,"Unhandled Identifier symbol kind %d in assignment",sym->kind);
             return;
@@ -2015,8 +2029,8 @@ BCCompileCast(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStatement)
         ERROR(node, "casts that change size not supported in bytecode yet");
         return;
     }
-    if ( (IsFloatType(oldType) && !IsFloatType(newType)) || 
-         (IsFloatType(newType) && !IsFloatType(oldType)) ) {
+    if ( (IsFloatType(oldType) && !IsFloatType(newType) && !IsGenericType(newType)) || 
+         (IsFloatType(newType) && !IsFloatType(oldType) && !IsGenericType(oldType)) ) {
         ERROR(node, "casts to/from float not supported in bytecode yet");
         return;
     }
@@ -2284,6 +2298,13 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                         popResults = 0;
                     }
                     break;
+                case SYM_ALIAS:
+                    // this is an alias for an expression, compile it
+                {
+                    AST *expr = (AST *)sym->val;
+                    BCCompileExpression(irbuf, expr, context, asStatement);
+                    return;
+                }
                 default:
                     ERROR(node,"Unhandled Identifier symbol kind %d in expression",sym->kind);
                     return;

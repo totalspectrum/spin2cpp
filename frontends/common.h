@@ -914,6 +914,9 @@ void DeclareFunctions(Module *);
 /* find number of elements in aggregate (struct or array) */
 int AggregateCount(AST *typ);
 
+// declare an alias in a symbol table
+Symbol *DeclareAlias(SymbolTable *table, AST *newname, AST *oldname);
+
 // external vars
 extern AST *basic_get_float;
 extern AST *basic_get_string;

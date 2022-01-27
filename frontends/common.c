@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2021 Total Spectrum Software Inc.
+ * Copyright 2011-2022 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -1996,6 +1996,10 @@ DeclareMemberVariables(Module *P)
 }
 
 
+//
+// AddSymbolPlaced adds a symbol, but uses the last parameter "def" to identify where
+// the definition of the symbol was (for benefit of error messages and such)
+//
 Symbol *AddSymbolPlaced(SymbolTable *table, const char *name, int type, void *val, const char *user_name, AST *def)
 {
     Symbol *sym = AddSymbol(table, name, type, val, user_name);
@@ -2307,4 +2311,39 @@ ActivateFeature(unsigned flag)
             ERROR(NULL, "ActivateFeature: no define found for %x", flag);
         }
     }
+}
+
+//
+// declare a symbol alias
+//
+Symbol *DeclareAlias(SymbolTable *table, AST *newId, AST *oldId)
+{
+    AST *typ = NULL;
+    const char *newname, *oldname;
+    Symbol *sym = NULL;
+    
+    if (!IsIdentifier(newId)) {
+        ERROR(newId, "Internal error, not an identifier for alias");
+        return NULL;
+    }
+    if (oldId && oldId->kind == AST_TYPEDEF) {
+        typ = oldId->left;
+        oldId = oldId->right;
+    }
+    if (!oldId || !IsIdentifier(oldId)) {
+        ERROR(oldId, "Internal error, bad alias structure");
+        return NULL;
+    }
+    newname = GetIdentifierName(newId);
+    oldname = GetIdentifierName(oldId);
+
+    if (typ) {
+        // a "typed" alias involves changing type, so it aliases a
+        // name to a cast expression
+        AST *expr = NewAST(AST_CAST, typ, oldId);
+        sym = AddSymbolPlaced(table, newname, SYM_ALIAS, expr, NULL, newId);
+    } else {
+        sym = AddSymbolPlaced(table, newname, SYM_WEAK_ALIAS, (void *)oldname, NULL, newId);
+    }
+    return sym;
 }

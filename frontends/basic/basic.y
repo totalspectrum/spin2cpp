@@ -1,6 +1,6 @@
 /*
  * BASIC compiler parser
- * Copyright (c) 2011-2021 Total Spectrum Software Inc.
+ * Copyright (c) 2011-2022 Total Spectrum Software Inc.
  * See the file COPYING for terms of use.
  */
 
@@ -224,6 +224,22 @@ DeclareBASICMemberVariables(AST *ast)
     if (!ast) return;
     if (ast->kind == AST_SEQUENCE) {
         ERROR(ast, "Internal error, unexpected sequence");
+        return;
+    }
+    if (ast->kind == AST_DECLARE_ALIAS) {
+        AST *newname = ast->left;
+        AST *oldname = ast->right;
+        Symbol *sym;
+        if (!newname || !oldname) {
+            ERROR(ast, "Internal error, bad alias structure");
+            return;
+        }
+        sym = DeclareAlias(&current->objsyms, newname, oldname);
+        (void)sym;
+        return;
+    }
+    if (ast->kind != AST_DECLARE_VAR) {
+        ERROR(ast, "Internal error, unexpected ast");
         return;
     }
     idlist = ast->right;
@@ -2278,7 +2294,24 @@ dimension:
     { $$ = NewAST(AST_GLOBALVARS, NewAST(AST_DECLARE_VAR, $5, $3), NULL); }
   | BAS_DIM BAS_SHARED BAS_AS typename dimlist
     { $$ = NewAST(AST_GLOBALVARS, NewAST(AST_DECLARE_VAR, $4, $5), NULL); }
+  | BAS_DECLARE BAS_IDENTIFIER BAS_ALIAS BAS_IDENTIFIER opt_type_as
+    {
+        AST *newname = $2;
+        AST *oldname = $4;
+        AST *newtype = $5;
+        if (newtype) {
+            oldname = NewAST(AST_TYPEDEF, newtype, oldname);
+        }
+        $$ = NewAST(AST_DECLARE_ALIAS, newname, oldname);
+    }
   ;
+
+opt_type_as :
+  /* nothing */
+    { $$ = NULL; }
+  | BAS_AS typename
+    { $$ = $2; }
+;
 
 dimlist:
   dimitem

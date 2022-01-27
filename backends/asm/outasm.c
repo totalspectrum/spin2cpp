@@ -1153,6 +1153,7 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func, AST *ast)
   Module *P = func->module;
   if (sym) {
       AST *exprtype;
+      AST *expr;
       stype = sym->kind;
       switch (stype) {
       case SYM_VARIABLE:
@@ -1241,6 +1242,9 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func, AST *ast)
           return GetSizedGlobal(REG_TEMP, IdentifierLocalName(func, sym->our_name), 0, size);
       case SYM_LABEL:
           return LabelRef(irl, sym);
+      case SYM_ALIAS:
+          expr = (AST *)sym->val;
+          return CompileExpression(irl, expr, NULL);
       }
   }
   return NULL;
