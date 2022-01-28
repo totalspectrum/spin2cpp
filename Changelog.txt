@@ -6,6 +6,9 @@ Version 5.9.7
 - Added BITREV function to BASIC
 - Added ALIAS, DECLARE, EXTERN, LINE, and LIB keywords to BASIC
 - Added support for DLY() to default -g debugging
+- Added #pragma ignore_case directive
+- Added DECLARE ALIAS to BASIC
+- Allowed printing of pointers in BASIC
 - Changed default runtime tests to use P2 instead of P1
 - Fixed a few missing definitions in <propeller.h>
 - Fixed a problem with SendRecvDevice() in BASIC
@@ -14,15 +17,12 @@ Version 5.9.7
 - Fixed a problem with extern declarations in C not working in .o files
 - Fixed in bug in mis-detecting use of result values in bytecode output
 - Fixed a nasty bug for functions with more than 99 local registers used
+- Fixed a bug in DIR$() in subdirectories of SD cards
+- Fixed printing of values passed by reference
 - Improved C++ compatibility for class functions, including supporting "static" in classes and declarations of functions outside the class
 - Made RESULT no longer a reserved word in Spin2, should fix a number of bugs
 - Optimized local variable push/pull (thanks Ada)
 - Reduced number of temporary registers needed by the compiler
-- Fixed a bug in DIR$() in subdirectories of SD cards
-- Added #pragma ignore_case directive
-- Added DECLARE ALIAS to BASIC
-- Allowed printing of pointers in BASIC
-- Fixed printing of values passed by reference
 
 Version 5.9.6
 - Added error for non-constant compile time initializers
