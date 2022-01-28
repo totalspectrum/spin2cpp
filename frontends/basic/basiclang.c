@@ -807,7 +807,7 @@ ParsePrintStatement(AST *ast)
             if (!print_done) {   
                 seq = addPrintCall(seq, handle, basic_print_string, expr, fmtAst);
             }
-        } else if (IsGenericType(type)) {
+        } else if (IsGenericType(type) || IsPointerType(type)) {
             // create a hex call
             seq = addPrintHex(seq, handle, basic_print_unsigned, expr, fmtAst);
         } else if (IsUnsignedType(type)) {
