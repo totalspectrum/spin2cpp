@@ -2953,6 +2953,9 @@ CompatibleTypes(AST *A, AST *B)
             return 0;
         }
     }
+    if (IsRefType(A) && IsRefType(B)) {
+        return CompatibleTypes(A->left, B->left);
+    }
     if (A->kind == AST_FUNCTYPE) {
         if (FuncNumResults(A) != FuncNumResults(B)) {
             return 0;
