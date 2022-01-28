@@ -20,6 +20,8 @@ Version 5.9.7
 - Reduced number of temporary registers needed by the compiler
 - Fixed a bug in DIR$() in subdirectories of SD cards
 - Added #pragma ignore_case directive
+- Added DECLARE ALIAS to BASIC
+- Allowed printing of pointers in BASIC
 - Fixed printing of values passed by reference
 
 Version 5.9.6

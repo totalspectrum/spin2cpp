@@ -2330,7 +2330,7 @@ Symbol *DeclareAlias(SymbolTable *table, AST *newId, AST *oldId)
         typ = oldId->left;
         oldId = oldId->right;
     }
-    if (!oldId || !IsIdentifier(oldId)) {
+    if (!oldId || (!typ && !IsIdentifier(oldId))) {
         ERROR(oldId, "Internal error, bad alias structure");
         return NULL;
     }

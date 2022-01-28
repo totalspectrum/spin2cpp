@@ -1049,7 +1049,7 @@ Predefined function. `acos(x)` returns the inverse cosine of `x`. The result is 
 
 ### ALIAS
 
-Keyword reserved for future use.
+Keyword used in `DECLARE` to declare variable aliases.
 
 ### AND
 
@@ -1613,7 +1613,7 @@ External Spin and C routines may be declared in this fashion. Note however that 
 
 #### DECLARE ALIAS
 
-This form of declare defines an alias for an existing identifier. The simple form is just:
+This form of declare defines an alias for an existing identifier or address. The simple form is just:
 ```
 DECLARE newIdent ALIAS oldIdent
 ```
@@ -1636,6 +1636,13 @@ Then the individual bytes of the variable `x` may be addressed as `xa(0)`, `xa(1
 (1) Again, no type checking is performed (including checking of the size of the array), so it is the programmer's responsibility to make sure the array is of the appropriate size.
 
 (2) This form of ALIAS will *not* usually work as expected with local variables and subroutine/function parameters, which are placed in registers.
+
+Finally, it is possible to use DECLARE ALIAS to declare references to parts of memory, although this is something that should be used with great care indeed:
+```
+DECLARE xa ALIAS 0x12300 AS uinteger
+```
+declares `xa` to be a `uinteger` stored at address `0x12300`. With this form of `declare` the aliased value must be a literal integer, and the `AS type` clause must be present.
+
 
 ### DECUNS$
 

@@ -2304,6 +2304,17 @@ dimension:
         }
         $$ = NewAST(AST_DECLARE_ALIAS, newname, oldname);
     }
+  | BAS_DECLARE BAS_IDENTIFIER BAS_ALIAS BAS_INTEGER BAS_AS typename
+    {
+        AST *newname = $2;
+        AST *addr = $4;
+        AST *newtype = $6;
+
+        addr = NewAST(AST_MEMREF, newtype, addr);
+        addr = BASICArrayRef(addr, AstInteger(0));
+        addr = NewAST(AST_TYPEDEF, newtype, addr);
+        $$ = NewAST(AST_DECLARE_ALIAS, newname, addr);
+    }
   ;
 
 opt_type_as :
