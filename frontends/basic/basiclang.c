@@ -788,6 +788,9 @@ ParsePrintStatement(AST *ast)
         if (!type) {
             type = ast_type_long;
         }
+        if (IsRefType(type)) {
+            type = type->left;
+        }
         if (IsFloatType(type)) {
             int ch = '#';
             seq = addFloatPrintCall(seq, handle, basic_print_float, expr, fmtAst, ch);

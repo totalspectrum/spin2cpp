@@ -19,7 +19,8 @@ Version 5.9.7
 - Optimized local variable push/pull (thanks Ada)
 - Reduced number of temporary registers needed by the compiler
 - Fixed a bug in DIR$() in subdirectories of SD cards
-- Made preprocessor ignore case in Spin and BASIC
+- Added #pragma ignore_case directive
+- Fixed printing of values passed by reference
 
 Version 5.9.6
 - Added error for non-constant compile time initializers
