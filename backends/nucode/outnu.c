@@ -98,7 +98,7 @@ static void NuPopQuitNext() {
 
 static NuIrLabel *
 NuIrOffsetLabel(NuIrLabel *base, int offset) {
-    NuIrLabel *r = malloc(sizeof(r));
+    NuIrLabel *r = malloc(sizeof(*r));
     *r = *base;
     r->offset = offset;
     return r;
