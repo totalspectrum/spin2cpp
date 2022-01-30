@@ -997,6 +997,10 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
             }
             ERROR(node, "Unhandled memory operation on function");
         } break;
+        case SYM_ALIAS: {
+            ERROR(ident,"DECLARE ALIAS %s not handled yet in bytecode", sym->user_name);
+            return;
+        }
         default:
             ERROR(ident,"Unhandled Symbol type %d in memop",sym->kind);
             return;
