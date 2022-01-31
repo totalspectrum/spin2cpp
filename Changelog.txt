@@ -1,3 +1,6 @@
+Version 5.9.8
+- Fixed a crash in nucode compilation
+
 Version 5.9.7
 - Added some more bit-banging optimizations (e.g. bith/bitl -> bitc)
 - Added a new optimization for simple FOR loops with constant bounds
