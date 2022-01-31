@@ -1,5 +1,6 @@
 Version 5.9.8
 - Fixed a crash in nucode compilation
+- Fixed DECLARE ALIAS in bytecode mode
 
 Version 5.9.7
 - Added some more bit-banging optimizations (e.g. bith/bitl -> bitc)

@@ -998,6 +998,20 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
             ERROR(node, "Unhandled memory operation on function");
         } break;
         case SYM_ALIAS: {
+            AST *expr = (AST *)sym->val;
+            AST *typ = NULL;
+            if (expr->kind == AST_CAST) {
+                typ = expr->left;
+                expr = expr->right;
+            }
+            if (typ) typeoverride = type;
+            if (expr && expr->kind == AST_ARRAYREF) {
+                expr = expr->left;
+            }
+            if (IsIdentifier(expr) || expr->kind == AST_MEMREF) {
+                ident = expr;
+                goto try_ident_again;
+            }
             ERROR(ident,"DECLARE ALIAS %s not handled yet in bytecode", sym->user_name);
             return;
         }
