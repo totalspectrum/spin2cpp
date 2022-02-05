@@ -1,4 +1,7 @@
 Version 5.9.8
+- Fixed variable redeclaration in Basic OPTION IMPLICIT
+
+Version 5.9.8
 - Fixed a crash in nucode compilation
 - Fixed DECLARE ALIAS in bytecode mode
 

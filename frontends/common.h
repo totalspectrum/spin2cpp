@@ -812,6 +812,8 @@ AST *DeclareOneMemberVar(Module *P, AST *ident, AST *typ, int is_private);
 /* returns a pointer to the P->varlist entry for it */
 #define NORMAL_VAR 0
 #define HIDDEN_VAR 1
+#define IMPLICIT_VAR 2
+
 AST *MaybeDeclareMemberVar(Module *P, AST *ident, AST *typ, int is_private, unsigned flags);
 
 /* declare a member alias of P */

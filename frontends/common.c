@@ -1952,7 +1952,7 @@ MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ, int is_private, unsi
     } else {
         // re-defining
         // allow (and ignore it) if the types are the same 
-        if (!AstMatch(typ, oldtype)) {
+        if (!(flags & IMPLICIT_VAR) && !SameTypes(typ, oldtype)) {
             ERROR(sub, "Re-defining member %s", name);
         }
     }
