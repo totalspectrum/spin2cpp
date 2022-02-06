@@ -1133,7 +1133,7 @@ LabelRef(IRList *irl, Symbol *sym)
 {
     Operand *temp;
     Label *lab = (Label *)sym->val;
-    Module *P = sym->module ? sym->module : current;
+    Module *P = sym->module ? (Module *)sym->module : current;
     Operand *datbase = ValidateDatBase(P);
 
 #if 0    
@@ -4303,7 +4303,11 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
             src = temp2;
         }
         if (off) {
-            EmitAddSub(irl, dst, off);
+            if (dst->kind == IMM_INT) {
+                dst->val = off;
+            } else {
+                EmitAddSub(irl, dst, off);
+            }
         }
         if (origdst->kind == COGMEM_REF) {
             if (num_tmp_regs != 1) {
@@ -4336,7 +4340,7 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
         } else {
             ERROR(NULL, "Illegal memory reference");
         }
-        if (off) {
+        if (off && dst->kind != IMM_INT) {
             EmitAddSub(irl, dst, -off);
         }
     } else {

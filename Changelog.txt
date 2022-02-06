@@ -1,5 +1,6 @@
 Version 5.9.8
 - Fixed variable redeclaration in Basic OPTION IMPLICIT
+- Fixed an immediate addressing bug that showed up with DECLARE ALIAS sometimes
 
 Version 5.9.8
 - Fixed a crash in nucode compilation
