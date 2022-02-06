@@ -287,7 +287,7 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
     NuIrOpcode loadOp = NU_OP_ILLEGAL;
     NuIr *ir;
     const char *name = NULL;
-    int offset;
+    int offset = 0;
     bool offsetValid = true;
     if (sym && sym->kind == SYM_WEAK_ALIAS) {
         sym = LookupSymbol((const char *)sym->val);
@@ -386,11 +386,12 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
         while (expr && expr->kind == AST_CAST) {
             expr = expr->right;
         }
-        if (!expr || !IsIdentifier(expr)) {
+        if (!expr) {
             ERROR(node, "Unable to compile aliased expression");
             return loadOp;
         }
-        return NuCompileIdentifierAddress(irl, expr, isLoad);
+        loadOp = NuCompileLhsAddress(irl, expr);
+        if (isLoad) loadOp = NuLoadOpFor(loadOp);
     } break;
     default:
         ERROR(node, "Unhandled symbol type for %s", sym->user_name);
