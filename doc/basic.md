@@ -2643,7 +2643,7 @@ Note that file data is buffered internally, and may not actually be written to t
 
 #### Error Handling
 
-The `open` command will throw an integer error corresponding to one of the error numbers in the C `errno.h` header file. This may be caught using the usual `try` / `catch` paradigm. Alternatively, if no `try` / `catch` block is in effect, the error may be checked with `_geterr()`.
+The `open` command will throw an integer error corresponding to one of the error numbers in the C `errno.h` header file. This may be caught using the usual `try` / `catch` paradigm. Alternatively, if no `try` / `catch` block is in effect, the error may be checked with `geterr()`.
 
 ### OPTION
 
