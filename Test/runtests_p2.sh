@@ -10,7 +10,8 @@ fi
 
 PROG_C="$SPIN2CPP -I../Lib"
 PROG_ASM="$FASTSPIN -I../Lib"
-LOADP2="loadp2 -b230400"
+#LOADP2="loadp2 -b230400"
+LOADP2="proploader -2 -D baud-rate=230400 -Q -r"
 #LOADP2="propeller-load -r"
 
 CC=propeller-elf-gcc
