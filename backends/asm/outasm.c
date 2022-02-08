@@ -2444,7 +2444,6 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
           EmitMove(irl, temp, left);
           EmitOp2(irl, op == K_ZEROEXTEND ? OPC_ZEROX : OPC_SIGNX, temp, right);
       } else { // P1
-          //int shift = 32 - EvalConstExpr(rhs);
           AST *rhs_temp = FoldIfConst(AstOperator('-',AstInteger(32),rhs));
           left = CompileExpression(irl, lhs, temp);
           EmitMove(irl, temp, left);
