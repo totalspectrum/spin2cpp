@@ -2443,16 +2443,15 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
           left = CompileExpression(irl, lhs, temp);
           EmitMove(irl, temp, left);
           EmitOp2(irl, op == K_ZEROEXTEND ? OPC_ZEROX : OPC_SIGNX, temp, right);
-      } else if (!IsConstExpr(rhs)) {
-          ERROR(rhs, "Error: only constant values are supported for sign/zero extension");
-      } else {
-          int shift = 32 - EvalConstExpr(rhs);
+      } else { // P1
+          //int shift = 32 - EvalConstExpr(rhs);
+          AST *rhs_temp = FoldIfConst(AstOperator('-',AstInteger(32),rhs));
           left = CompileExpression(irl, lhs, temp);
           EmitMove(irl, temp, left);
-          if (op == K_ZEROEXTEND && shift == 24) {
-              EmitOp2(irl, OPC_AND, temp, NewImmediate(255));
+          if (op == K_ZEROEXTEND && rhs_temp->kind == AST_INTEGER && rhs_temp->d.ival >= 23) {
+              EmitOp2(irl, OPC_AND, temp, NewImmediate(0xFFFFFFFFu>>rhs_temp->d.ival));
           } else {
-              right = NewImmediate(shift);
+              right = CompileExpression(irl, rhs_temp, NULL);
               EmitOp2(irl, OPC_SHL, temp, right);
               EmitOp2(irl, (op == K_ZEROEXTEND) ? OPC_SHR : OPC_SAR, temp, right);
           }
