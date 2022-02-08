@@ -2448,7 +2448,7 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
           left = CompileExpression(irl, lhs, temp);
           EmitMove(irl, temp, left);
           if (op == K_ZEROEXTEND && rhs_temp->kind == AST_INTEGER && (rhs_temp->d.ival&31) >= 23) {
-              EmitOp2(irl, OPC_AND, temp, NewImmediate(0xFFFFFFFFu>>rhs_temp->d.ival));
+              EmitOp2(irl, OPC_AND, temp, NewImmediate(0xFFFFFFFFu>>(rhs_temp->d.ival&31)));
           } else {
               right = CompileExpression(irl, rhs_temp, NULL);
               EmitOp2(irl, OPC_SHL, temp, right);
