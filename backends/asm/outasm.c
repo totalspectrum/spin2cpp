@@ -2447,7 +2447,7 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
           AST *rhs_temp = FoldIfConst(AstOperator('-',AstInteger(32),rhs));
           left = CompileExpression(irl, lhs, temp);
           EmitMove(irl, temp, left);
-          if (op == K_ZEROEXTEND && rhs_temp->kind == AST_INTEGER && rhs_temp->d.ival >= 23) {
+          if (op == K_ZEROEXTEND && rhs_temp->kind == AST_INTEGER && (rhs_temp->d.ival&31) >= 23) {
               EmitOp2(irl, OPC_AND, temp, NewImmediate(0xFFFFFFFFu>>rhs_temp->d.ival));
           } else {
               right = CompileExpression(irl, rhs_temp, NULL);
