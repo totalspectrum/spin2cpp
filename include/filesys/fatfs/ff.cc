@@ -2480,7 +2480,12 @@ static FRESULT dir_find (	/* FR_OK(0):succeeded, !=0:error */
 		res = move_window(fs, dp->sect);
 		if (res != FR_OK) break;
 		c = dp->dir[DIR_Name];
-		if (c == 0) { res = FR_NO_FILE; break; }	/* Reached to end of table */
+		if (c == 0) {
+#if defined(_DEBUG_FATFS) && defined(__FLEXC__)
+                    __builtin_printf("  dir_find: END OF TABLE\n", res);
+#endif	
+                    res = FR_NO_FILE; break;	/* Reached to end of table */
+                }
 #if FF_USE_LFN		/* LFN configuration */
 		dp->obj.attr = a = dp->dir[DIR_Attr] & AM_MASK;
 		if (c == DDEM || ((a & AM_VOL) && a != AM_LFN)) {	/* An entry without valid data */
@@ -2504,6 +2509,9 @@ static FRESULT dir_find (	/* FR_OK(0):succeeded, !=0:error */
 		}
 #else		/* Non LFN configuration */
 		dp->obj.attr = dp->dir[DIR_Attr] & AM_MASK;
+#if defined(_DEBUG_FATFS) && defined(__FLEXC__)
+                __builtin_printf("  dir_find: dp->dir=[%s] dp->fn = [%s]\n", dp->dir, dp->fn);
+#endif	
 		if (!(dp->dir[DIR_Attr] & AM_VOL) && !mem_cmp(dp->dir, dp->fn, 11)) break;	/* Is it a valid entry? */
 #endif
 		res = dir_next(dp, 0);	/* Next entry */
@@ -3096,12 +3104,20 @@ static FRESULT follow_path (	/* FR_OK(0): successful, !=0: error code */
 	if ((UINT)*path < ' ') {				/* Null path name is the origin directory itself */
 		dp->fn[NSFLAG] = NS_NONAME;
 		res = dir_sdi(dp, 0);
-
+#if defined(_DEBUG_FATFS) && defined(__FLEXC__)
+                __builtin_printf("null path name, res=%d\n", res);
+#endif	
 	} else {								/* Follow path */
 		for (;;) {
 			res = create_name(dp, &path);	/* Get a segment name of the path */
+#if defined(_DEBUG_FATFS) && defined(__FLEXC__)
+                        __builtin_printf("create_name: res= %d path[%s]\n", res, path);
+#endif                        
 			if (res != FR_OK) break;
 			res = dir_find(dp);				/* Find an object with the segment name */
+#if defined(_DEBUG_FATFS) && defined(__FLEXC__)
+                        __builtin_printf("  dir_find, res=%d\n", res);
+#endif	
 			ns = dp->fn[NSFLAG];
 			if (res != FR_OK) {				/* Failed to find the object */
 				if (res == FR_NO_FILE) {	/* Object is not found */
@@ -3118,6 +3134,9 @@ static FRESULT follow_path (	/* FR_OK(0): successful, !=0: error code */
 			if (ns & NS_LAST) break;			/* Last segment matched. Function completed. */
 			/* Get into the sub-directory */
 			if (!(dp->obj.attr & AM_DIR)) {		/* It is not a sub-directory and cannot follow */
+#if defined(_DEBUG_FATFS) && defined(__FLEXC__)
+                        __builtin_printf("  FR_NO_PATH\n", res, path);
+#endif                        
 				res = FR_NO_PATH; break;
 			}
 #if FF_FS_EXFAT
@@ -3716,9 +3735,15 @@ FRESULT f_open (
 		dj.obj.fs = fs;
 		INIT_NAMBUF(fs);
 		res = follow_path(&dj, path);	/* Follow the file path */
+#if defined(_DEBUG_FATFS) && defined(__FLEXC__)
+                __builtin_printf("  follow_path returned %d\n", res);
+#endif	
 #if !FF_FS_READONLY	/* Read/Write configuration */
 		if (res == FR_OK) {
 			if (dj.fn[NSFLAG] & NS_NONAME) {	/* Origin directory itself? */
+#if defined(_DEBUG_FATFS) && defined(__FLEXC__)
+                            __builtin_printf("FR_INVALID_NAME\n", path, mode);
+#endif	
 				res = FR_INVALID_NAME;
 			}
 #if FF_FS_LOCK != 0
@@ -3741,6 +3766,9 @@ FRESULT f_open (
 			}
 			else {								/* Any object with the same name is already existing */
 				if (dj.obj.attr & (AM_RDO | AM_DIR)) {	/* Cannot overwrite it (R/O or DIR) */
+#if defined(_DEBUG_FATFS) && defined(__FLEXC__)
+                                    __builtin_printf("FR_DENIED\n", path, mode);
+#endif	
 					res = FR_DENIED;
 				} else {
 					if (mode & FA_CREATE_NEW) res = FR_EXIST;	/* Cannot create as new file */
@@ -7048,7 +7076,7 @@ static int v_stat(const char *name, struct stat *buf)
     buf->st_blocks = buf->st_size / 512;
     buf->st_atime = buf->st_mtime = buf->st_ctime = unixtime(finfo.fdate, finfo.ftime);
 #ifdef _DEBUG_FATFS
-    __builtin_printf("v_stat returning %d\n", r);
+    __builtin_printf("v_stat returning %d mode=0x%x\n", r, buf->st_mode);
 #endif
     return r;
 }
@@ -7195,6 +7223,9 @@ static int v_open(vfs_file_t *fil, const char *name, int flags)
   r = f_open(&f->fil, name, fs_flags);
   if (r) {
     free(f);
+#if defined(_DEBUG_FATFS) && defined(__FLEXC__)
+    __builtin_printf("  f_open returned %d\n", r);
+#endif                        
     return _set_dos_error(r);
   }
   fil->vfsdata = f;
