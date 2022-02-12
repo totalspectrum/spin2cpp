@@ -1611,6 +1611,8 @@ The string following `lib` specifies the path to the file containing the impleme
 
 External Spin and C routines may be declared in this fashion. Note however that C is a case sensitive language, whereas BASIC is not. BASIC identifiers are converted to all lower case, so C functions containing upper case letters cannot be accessed via `declare`.
 
+Also note that functions declared with the `LIB` keyword are global, and will not be limited to the current module.
+
 #### DECLARE ALIAS
 
 This form of declare defines an alias for an existing identifier or address. The simple form is just:
