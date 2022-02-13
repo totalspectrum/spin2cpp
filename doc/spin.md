@@ -110,6 +110,25 @@ Symbol                   | When Defined
 `__OUTPUT_C__`           | if C code is being generated
 `__OUTPUT_CPP__`         | if C++ code is being generated
 
+### Special Preprocessor Comments
+
+If the preprocessor sees the special comment `{$flexspin` at the beginning of a line, it will re-process the rest of the comment as input. This allows flexspin specific code to be placed in such comments. For example, you could do:
+```
+CON
+  _clkfreq = 160_000_000
+
+PUB main()
+  repeat
+{$flexspin
+#ifdef __FLEXSPIN__
+    DEBUG("hello from flexspin", 13, 10)
+#else
+}
+    DEBUG("hello from PNut", 13, 10)
+{$flexspin #endif}
+    DEBUG("hello from both", 13, 10)
+```
+
 ## Memory Management
 
 There are some built in functions for doing memory allocation. These are intended for C or BASIC, but may be used by Spin programs as well.
@@ -718,19 +737,19 @@ COG memory is also laid out differently. See the general compiler documentation 
 
 ### DEBUG statements
 
-In flexspin, `DEBUG` statements are accepted only in Spin2 methods, *not* in PASM (they are ignored in PASM).
+In flexspin, `DEBUG` statements are accepted only in Spin2 methods, *not* in PASM (they are ignored in PASM). This restriction is relaxed if the P2 only `-gbrk` flag is used instead of plain `-g`.
 
 Debug statements are output only when some variant of the `-g` flag (e.g. `-g` or `-gbrk` is given to flexspin.
 
 Only a subset of the Spin2 `DEBUG` directives are accepted in normal `-g` mode:
 ```
-ZSTR, UDEC, UDEC_BYTE, UDEC_WORD, UDEC_LONG, SDEC, SDEC_BYTE, SDEC_WORD, SDEC_LONG, UHEX, UHEX_BYTE, UHEX_WORD, UHEX_LONG
+ZSTR, UDEC, UDEC_BYTE, UDEC_WORD, UDEC_LONG, SDEC, SDEC_BYTE, SDEC_WORD, SDEC_LONG, UHEX, UHEX_BYTE, UHEX_WORD, UHEX_LONG, DLY
 ```
 Other debug directives are ignored, with a warning.
 
-with plain `-g` debugging `DEBUG` in flexspin is implemented differently than in PNut, so timing when debug is enabled may be different.
+With plain `-g` debugging `DEBUG` in flexspin is implemented differently than in PNut, so timing when debug is enabled may be different.
 
-`DEBUG` statements containing backticks are (partially) translated so as to output the correct strings, but FlexProp does not have any way to interpret these strings so no graphical debug capabiliites exist in FlexProp; third party tools may provide a way around this.
+`DEBUG` statements containing backticks are (partially) translated so as to output the correct strings, but FlexProp only interprets a limited subset of these strings so graphical debug capabiliites are restricted in FlexProp.
 
 Thanks to Ada Gottensträter, flexspin also now supports a `-gbrk` flag to enable `DEBUG` using the standard PNut method (using a BRK) instruction. This method will work inside PASM code, and is generally more compatible with the standard PNut Spin2 code.
 
@@ -742,3 +761,6 @@ The `ASMCLK` pseudo-instruction is supported as a preprocessor macro in FlexSpin
 
 The `REGLOAD` and `REGEXEC` Spin2 instructions are not supported at this time, mainly because they depend on a particular layout of memory in the Spin2 interpreter.
 
+### Detecting FlexSpin versus PNut
+
+FlexSpin understands a special comments that start with `{$flexspin` and treats these as regular code. PNut will ignore these comments, so this provides a way to mix FlexSpin specific code and PNut specific code. See the preprocessor section above ("Special Preprocessor Comments") for further details and an example.

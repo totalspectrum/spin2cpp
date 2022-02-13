@@ -1,6 +1,6 @@
 /*
  * Generic and very simple preprocessor
- * Copyright (c) 2012-2020 Total Spectrum Software Inc.
+ * Copyright (c) 2012-2022 Total Spectrum Software Inc.
  * MIT Licensed, see terms of use at end of file
  *
  * Reads UTF-16LE or UTF-8 encoded files, and returns a
@@ -16,6 +16,12 @@
  *  #include "file"
  *
  * Any other # directives are passed through.
+ *
+ * Also, code wrapped in a comment that starts:
+ * {$flexspin
+ * $}
+ * (both need to be the only thing on the line) will be passed through
+ * to flexspin. This happens even before preprocessing.
  *
  * Note that the preprocessor itself will insert #line directives
  * before and after any included text, of the form:
@@ -50,6 +56,9 @@
 #ifdef _MSC_VER
 #define strdup _strdup
 #endif
+
+// forward declaration
+static void doerror(struct preprocess *pp, const char *msg, ...);
 
 /*
  * function to read a single LATIN-1 character
@@ -134,6 +143,16 @@ read_utf16(FILE *f, char buf[4])
 /*
  * read a line
  * returns number of bytes read, or 0 on EOF
+ *
+ * here at the lowest level we also transform some
+ * special comment sequences:
+ *
+ * {$flexspin
+ * ...
+ * }
+ *
+ * is actually turned from a comment into plain code
+ * NOTE: the closing } must be the first thing on the line!
  */
 int
 pp_nextline(struct preprocess *pp)
@@ -142,6 +161,7 @@ pp_nextline(struct preprocess *pp)
     int count = 0;
     FILE *f;
     char buf[4];
+    char *full_line;
     struct filestate *A;
 
     A = pp->fil;
@@ -214,6 +234,50 @@ pp_nextline(struct preprocess *pp)
         }
     }
     flexbuf_addchar(&pp->line, '\0');
+    if (pp->incomment == 0) {
+        /* look for special sequences */
+        full_line = flexbuf_peek(&pp->line);
+        if (!strncmp(full_line, "{$flexspin", 10)) {
+            char *new_line;
+            if (pp->special_flexspin_comment) {
+                doerror(pp, "cannot nest {$flexspin comments");
+            }
+            pp->special_flexspin_comment++;
+            full_line = flexbuf_get(&pp->line);
+            new_line = full_line + 10;
+            count -= 10;
+            while (*new_line == ' ') {
+                new_line++;
+                count--;
+            }
+            flexbuf_addmem(&pp->line, new_line, count+1);
+            free(full_line);
+            full_line = flexbuf_peek(&pp->line);
+        }
+        if (pp->special_flexspin_comment) {
+            char *s;
+            /* search for closing '}' */
+            for (s = full_line; *s; s++) {
+                if (*s == '{') {
+                    pp->incomment++;
+                } else if (*s == '}') {
+                    if (pp->incomment > 0) {
+                        --pp->incomment;
+                    } else {
+                        // remove that one character
+                        int prefix_len = s - full_line;
+                        full_line = flexbuf_get(&pp->line);
+                        if (prefix_len) {
+                            flexbuf_addmem(&pp->line, full_line, prefix_len);
+                        }
+                        flexbuf_addmem(&pp->line, full_line + prefix_len + 1, count - prefix_len);
+                        --count;
+                        pp->special_flexspin_comment = 0;
+                    }
+                }
+            }
+        }           
+    }
     return count;
 }
 
@@ -398,7 +462,7 @@ pp_define(struct preprocess *pp, const char *name, const char *str)
 }
 
 /*
- * retrieive a definition
+ * retrieve a definition
  * returns NULL if no definition exists (or if there was an
  * explicit #undef)
  */
@@ -509,7 +573,7 @@ static char *parse_getword(ParseState *P)
         ptr = skip_quoted_string(ptr+1, '\"');
         if (*ptr == '\"') ptr++;
     } else if (*ptr == pp->startcomment[0] && !strncmp(ptr, pp->startcomment, strlen(pp->startcomment))) {
-        ptr += strlen(pp->startcomment);
+        ptr += strlen(pp->startcomment);        
     } else if (*ptr == pp->endcomment[0] && !strncmp(ptr, pp->endcomment, strlen(pp->endcomment))) {
         ptr += strlen(pp->endcomment);
     } else {

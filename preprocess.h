@@ -2,7 +2,7 @@
  * Basic preprocessor for Spin
  *
  * Written by Eric R. Smith
- * Copyright (c) 2012-2016 Total Spectrum Software Inc.
+ * Copyright (c) 2012-2022 Total Spectrum Software Inc.
  * MIT Licensed; see preprocess.c for details
  */
 
@@ -60,7 +60,8 @@ struct preprocess {
     const char *endcomment;
 
     int incomment;
-
+    int special_flexspin_comment;
+    
     /* error handling code */
     void (*errfunc)(void *arg, const char *filename, int linenum, const char *msg);
     void (*warnfunc)(void *arg, const char *filename, int linenum, const char *msg);
