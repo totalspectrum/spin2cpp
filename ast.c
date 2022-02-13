@@ -455,6 +455,17 @@ AstTempVariable(const char *prefix)
     return ident;
 }
 
+int
+IsAstTempVariable(AST *ident)
+{
+    if (IsIdentifier(ident)) {
+        Symbol *sym = LookupSymbol(GetIdentifierName(ident));
+        if (sym && sym->kind == SYM_TEMPVAR) {
+            return 1;
+        }
+    }
+    return 0;
+}
 
 /*
  * create a lookup expression for LOOKUP, LOOKUPZ, etc.

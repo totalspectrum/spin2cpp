@@ -270,6 +270,7 @@ AST *AstAssign(AST *left, AST *right);
 AST *AstDeclareLocal(AST *left, AST *right);
 AST *AstTempVariable(const char *prefix);
 AST *AstTempLocalVariable(const char *prefix, AST *type);
+int IsAstTempVariable(AST *var);
 AST *AstLookup(enum astkind kind, int index, AST *expr, AST *table);
 
 /* check to see if two trees are identical */

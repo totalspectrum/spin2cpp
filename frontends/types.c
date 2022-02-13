@@ -891,7 +891,7 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
         }
         return HandleTwoNumerics(ast->d.ival, ast, lefttype, righttype);
     case '+':
-        if (IsStringType(lefttype) && IsStringType(righttype)) {
+        if (IsStringType(lefttype) || IsStringType(righttype)) {
             *ast = *MakeOperatorCall(string_concat, ast->left, ast->right, NULL);
             return lefttype;
         }
@@ -1448,7 +1448,9 @@ AST *CheckTypes(AST *ast)
         break;
     case AST_ASSIGN:
         if (rtype) {
-            ltype = CoerceAssignTypes(ast, AST_ASSIGN, &ast->right, ltype, rtype, "assignment");
+            if (!IsAstTempVariable(ast->left)) {
+                ltype = CoerceAssignTypes(ast, AST_ASSIGN, &ast->right, ltype, rtype, "assignment");
+            }
         }
         if (ltype && IsClassType(ltype)) {
             int siz = TypeSize(ltype);
