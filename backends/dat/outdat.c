@@ -644,26 +644,43 @@ outputFvar(Flexbuf *f, Flexbuf *relocs, AST *ast, int isSigned, int32_t *relocOf
 }
         
 /* output a data list as found in PASM "long", "byte", etc. */
+/* checkSize = 1 says the output must fit in an unsigned */
+/* checkSize = 2 says the output must fit in a signed */
+/* checkSize = 3 allows for either */
+
+#define CHECKSIZE_NONE     0
+#define CHECKSIZE_UNSIGNED 1
+#define CHECKSIZE_SIGNED   2
+#define CHECKSIZE_ANY      3
 void
-outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
+outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs, int checkSize)
 {
-    unsigned val, origval;
+    unsigned origval;
+    int32_t val;
     int i, reps;
     AST *sub;
     int32_t relocOff = 0;
     int origsize = size;
+    int checkThis = 0;
     
     origval = 0;
     while (ast) {
         sub = ast->left;
+        checkThis = checkSize;
         if (sub->kind == AST_EXPRLIST && sub->right == 0) {
             sub = sub->left;
         }
-        if (sub->kind == AST_BYTELIST) {
+        if (sub->kind == AST_BYTELIST || sub->kind == AST_BYTEFITLIST) {
             size = 1;
+            if (sub->kind == AST_BYTEFITLIST) {
+                checkThis = CHECKSIZE_UNSIGNED;
+            }
             sub = ExpectOneListElem(sub->left);
-        } else if (sub->kind == AST_WORDLIST) {
+        } else if (sub->kind == AST_WORDLIST || sub->kind == AST_WORDFITLIST) {
             size = 2;
+            if (sub->kind == AST_WORDFITLIST) {
+                checkThis = CHECKSIZE_UNSIGNED;
+            }
             sub = ExpectOneListElem(sub->left);
         } else if (sub->kind == AST_LONGLIST) {
             size = 4;
@@ -711,10 +728,27 @@ outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
             reps = 1;
         }
         while (reps > 0) {
-            val = origval;
+            int sign = 0;
+            val = (int32_t) origval;
             for (i = 0; i < size; i++) {
                 outputByte(f, val & 0xff);
+                sign = (val & 0x80);
                 val = val >> 8;
+            }
+            if (checkThis) {
+                int ok = 0;
+                if (checkThis & CHECKSIZE_UNSIGNED) {
+                    if (val == 0) ok = 1;
+                }
+                if (checkThis & CHECKSIZE_SIGNED) {
+                    if (val == 0 && sign == 0) ok = 1;
+                    if (val == -1 && sign == 0x80) ok = 1;
+                }
+                if (!ok) {
+                    char *sizemsg = (size == 1) ? "byte" : "word";
+                    ERROR(ast, "Value $%x does not fit in %s", origval, sizemsg);
+                }
+                checkThis = 0;
             }
             --reps;
         }
@@ -1764,12 +1798,12 @@ instr_ok:
 }
 
 void
-outputAlignedDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
+outputAlignedDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs, int checkSize)
 {
     if (size > 1 && NEED_ALIGNMENT) {
         AlignPc(f, size);
     }
-    outputDataList(f, size, ast, relocs);
+    outputDataList(f, size, ast, relocs, checkSize);
 }
 
 /*
@@ -1916,13 +1950,19 @@ PrintDataBlock(Flexbuf *f, AST *list, DataBlockOutFuncs *funcs, Flexbuf *relocs)
         }
         switch (ast->kind) {
         case AST_BYTELIST:
-            outputAlignedDataList(f, 1, ast->left, relocs);
+            outputAlignedDataList(f, 1, ast->left, relocs, 0);
+            break;
+        case AST_BYTEFITLIST:
+            outputAlignedDataList(f, 1, ast->left, relocs, CHECKSIZE_ANY);
             break;
         case AST_WORDLIST:
-            outputAlignedDataList(f, 2, ast->left, relocs);
+            outputAlignedDataList(f, 2, ast->left, relocs, 0);
+            break;
+        case AST_WORDFITLIST:
+            outputAlignedDataList(f, 2, ast->left, relocs, CHECKSIZE_ANY);
             break;
         case AST_LONGLIST:
-            outputAlignedDataList(f, 4, ast->left, relocs);
+            outputAlignedDataList(f, 4, ast->left, relocs, 0);
             break;
         case AST_ALIGN:
         {

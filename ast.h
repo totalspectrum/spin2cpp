@@ -225,6 +225,9 @@ enum astkind {
     AST_HASMETHOD = 160, // BASIC compile time checking, _hasmethod(T, identifier)
 
     AST_BRKDEBUG = 161, // Opaque debug break.
+    AST_BYTEFITLIST = 162,
+    AST_WORDFITLIST = 163,
+    
 };
 
 /* forward reference */

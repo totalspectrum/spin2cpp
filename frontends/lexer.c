@@ -827,6 +827,8 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             case SP_LONG:
             case SP_BYTE:
             case SP_WORD:
+            case SP_BYTEFIT:
+            case SP_WORDFIT:
                 if (InDatBlock(L)) {
                     gatherComments = 1;
                     L->sawInstruction = 1;
@@ -2027,6 +2029,7 @@ struct reservedword init_spin2_words[] = {
     { "addpins", SP_ADDPINS },
     { "asmclk", SP_ASMCLK },
     { "bmask", SP_BMASK },
+    { "bytefit", SP_BYTEFIT },
     { "cogspin", SP_COGINIT },
     { "debug", SP_DEBUG },
     { "decod", SP_DECODE },
@@ -2055,6 +2058,7 @@ struct reservedword init_spin2_words[] = {
     { "scas", SP_SCAS },
     { "signx", SP_SIGNX },
     { "sqrt", SP_SQRT },
+    { "wordfit", SP_WORDFIT },
     { "zerox", SP_ZEROX },
 };
 

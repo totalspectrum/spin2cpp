@@ -330,6 +330,8 @@ BuildDebugList(AST *exprlist)
 %token SP_BYTE       "BYTE"
 %token SP_WORD       "WORD"
 %token SP_LONG       "LONG"
+%token SP_BYTEFIT    "BYTEFIT"
+%token SP_WORDFIT    "WORDFIT"
 %token SP_FVAR       "FVAR"
 %token SP_FVARS      "FVARS"
 %token SP_ASMCLK     "ASMCLK"
@@ -1058,6 +1060,18 @@ basedatline:
     { $$ = NewCommentedAST(AST_WORDLIST, NULL, NULL, $1); }
   | SP_WORD datexprlist SP_EOLN
     { $$ = NewCommentedAST(AST_WORDLIST, FixupList($2), NULL, $1); }
+  | SP_BYTEFIT SP_EOLN
+    { $$ = NewCommentedAST(AST_BYTELIST, NULL, NULL, $1); }
+  | SP_BYTEFIT datexprlist SP_EOLN
+    {
+        $$ = NewCommentedAST(AST_BYTEFITLIST, FixupList($2), NULL, $1);
+    }
+  | SP_WORDFIT SP_EOLN
+    {
+        $$ = NewCommentedAST(AST_WORDLIST, NULL, NULL, $1);
+    }
+  | SP_WORDFIT datexprlist SP_EOLN
+    { $$ = NewCommentedAST(AST_WORDFITLIST, FixupList($2), NULL, $1); }
   | SP_LONG SP_EOLN
     { $$ = NewCommentedAST(AST_LONGLIST, NULL, NULL, $1); }
   | SP_LONG datexprlist SP_EOLN
@@ -1899,6 +1913,17 @@ datexpritem:
        { $$ = NewAST(AST_EXPRLIST, NewAST(AST_WORDLIST, $2, NULL), NULL); }
    | SP_BYTE expritem
        { $$ = NewAST(AST_EXPRLIST, NewAST(AST_BYTELIST, $2, NULL), NULL); }
+   | SP_WORDFIT expritem
+       {
+           AST *dat = NewAST(AST_EXPRLIST, NewAST(AST_WORDFITLIST, $2, NULL), NULL);
+           dat->d.ival = 1; // make it fit
+           $$ = dat;
+       }
+   | SP_BYTEFIT expritem
+       {
+           AST *dat = NewAST(AST_EXPRLIST, NewAST(AST_BYTEFITLIST, $2, NULL), NULL);
+           $$ = dat;
+       }
    | SP_FVAR expritem
        { $$ = NewAST(AST_EXPRLIST, NewAST(AST_FVAR_LIST, $2, NULL), NULL); }
    | SP_FVARS expritem

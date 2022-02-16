@@ -632,6 +632,7 @@ AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags)
         if (!ast) continue;
         switch (ast->kind) {
         case AST_BYTELIST:
+        case AST_BYTEFITLIST:
             MARK_DATA(label_flags);
             pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_byte, lastOrg, inHub, label_flags);
             replaceHereDataList(ast->left, inHub, inHub ? hubpc : cogpc, 1, lastOrg);
@@ -639,6 +640,7 @@ AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags)
             lasttype = ast_type_byte;
             break;
         case AST_WORDLIST:
+        case AST_WORDFITLIST:
             MARK_DATA(label_flags);
             MAYBEALIGNPC(2);
             pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_word, lastOrg, inHub, label_flags);

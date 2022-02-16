@@ -5,6 +5,7 @@ Version 5.9.9
 - Fixed an immediate addressing bug that showed up with DECLARE ALIAS sometimes
 - Fixed curdir$() problems in BASIC
 - Fixed an issue with += of strings where the rhs is a function call
+- Recognized new Spin2 BYTEFIT and WORDFIT keywords
 
 Version 5.9.8
 - Fixed a crash in nucode compilation
