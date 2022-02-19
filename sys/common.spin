@@ -393,40 +393,40 @@ pri _int64_shl(alo, ahi, count, counthi) : rlo, rhi | tmp
   rlo := alo
   rhi := ahi
   count &= 63
-  if count > 32
+  if count => 32
     rhi := rlo
     rlo := 0
-    count -= 32
-  rhi := rhi << count
-  tmp := rlo >> (32-count)
-  rhi |= tmp
-  rlo := rlo << count
+  if count & 31
+    rhi := rhi << count
+    tmp := rlo >> (32-count)
+    rhi |= tmp
+    rlo := rlo << count
 
 pri _int64_shr(alo, ahi, count, counthi) : rlo, rhi | tmp
   rlo := alo
   rhi := ahi
   count &= 63
-  if count > 32
+  if count => 32
     rlo := rhi
     rhi := 0
-    count -= 32
-  rlo := rlo >> count
-  tmp := rhi << (32-count)
-  rlo |= tmp
-  rhi := rhi >> count
+  if count & 31
+    rlo := rlo >> count
+    tmp := rhi << (32-count)
+    rlo |= tmp
+    rhi := rhi >> count
 
 pri _int64_sar(alo, ahi, count, counthi) : rlo, rhi | tmp
   rlo := alo
   rhi := ahi
   count &= 63
-  if count > 32
+  if count => 32
     rlo := rhi
-    rhi := 0
-    count -= 32
-  rlo := rlo ~> count
-  tmp := rhi << (32-count)
-  rlo |= tmp
-  rhi := rhi ~> count
+    rhi := rlo~>31
+  if count & 31
+    rlo := rlo >> count
+    tmp := rhi << (32-count)
+    rlo |= tmp
+    rhi := rhi ~> count
 
 pri _int64_muls(alo, ahi, blo, bhi) : rlo, rhi
   rlo := alo * blo
