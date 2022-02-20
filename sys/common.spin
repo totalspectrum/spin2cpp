@@ -397,7 +397,7 @@ pri _int64_shl(alo, ahi, count, counthi) : rlo, rhi | tmp
     rlo := 0
   if count & 31
     rhi := rhi << count
-    tmp := rlo >> (32-count)
+    tmp := rlo >> (-count)
     rhi |= tmp
     rlo := rlo << count
 
@@ -409,7 +409,7 @@ pri _int64_shr(alo, ahi, count, counthi) : rlo, rhi | tmp
     rhi := 0
   if count & 31
     rlo := rlo >> count
-    tmp := rhi << (32-count)
+    tmp := rhi << (-count)
     rlo |= tmp
     rhi := rhi >> count
 
@@ -421,7 +421,7 @@ pri _int64_sar(alo, ahi, count, counthi) : rlo, rhi | tmp
     rhi := rlo~>31
   if count & 31
     rlo := rlo >> count
-    tmp := rhi << (32-count)
+    tmp := rhi << (-count)
     rlo |= tmp
     rhi := rhi ~> count
 
