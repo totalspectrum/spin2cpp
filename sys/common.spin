@@ -325,8 +325,8 @@ pri _int64_cmpu(alo, ahi, blo, bhi) : r
   asm
       cmp  alo, blo wc,wz
       cmpx ahi, bhi wc,wz
- if_a mov  r, #1
- if_b neg  r, #1
+if_z  mov  r, #0
+if_nz negc r, #1
   endasm
   
 ' compare signed alo, ahi, return -1, 0, or +1
@@ -334,8 +334,8 @@ pri _int64_cmps(alo, ahi, blo, bhi) : r
   asm
       cmp  alo, blo wc,wz
       cmpsx ahi, bhi wc,wz
- if_a mov  r, #1
- if_b neg  r, #1
+if_z  mov  r, #0
+if_nz negc r, #1
   endasm
 
 pri _int64_signx(x = long) : rlo, rhi
@@ -392,41 +392,38 @@ pri _int64_xor(alo, ahi, blo, bhi) : rlo, rhi
 pri _int64_shl(alo, ahi, count, counthi) : rlo, rhi | tmp
   rlo := alo
   rhi := ahi
-  count &= 63
-  if count > 32
+  if count & 32
     rhi := rlo
     rlo := 0
-    count -= 32
-  rhi := rhi << count
-  tmp := rlo >> (32-count)
-  rhi |= tmp
-  rlo := rlo << count
+  if count & 31
+    rhi := rhi << count
+    tmp := rlo >> (-count)
+    rhi |= tmp
+    rlo := rlo << count
 
 pri _int64_shr(alo, ahi, count, counthi) : rlo, rhi | tmp
   rlo := alo
   rhi := ahi
-  count &= 63
-  if count > 32
+  if count & 32
     rlo := rhi
     rhi := 0
-    count -= 32
-  rlo := rlo >> count
-  tmp := rhi << (32-count)
-  rlo |= tmp
-  rhi := rhi >> count
+  if count & 31
+    rlo := rlo >> count
+    tmp := rhi << (-count)
+    rlo |= tmp
+    rhi := rhi >> count
 
 pri _int64_sar(alo, ahi, count, counthi) : rlo, rhi | tmp
   rlo := alo
   rhi := ahi
-  count &= 63
-  if count > 32
+  if count & 32
     rlo := rhi
-    rhi := 0
-    count -= 32
-  rlo := rlo ~> count
-  tmp := rhi << (32-count)
-  rlo |= tmp
-  rhi := rhi ~> count
+    rhi := rlo~>31
+  if count & 31
+    rlo := rlo >> count
+    tmp := rhi << (-count)
+    rlo |= tmp
+    rhi := rhi ~> count
 
 pri _int64_muls(alo, ahi, blo, bhi) : rlo, rhi
   rlo := alo * blo
