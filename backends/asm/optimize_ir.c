@@ -3894,6 +3894,13 @@ static PeepholePattern pat_movadd[] = {
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
+// potentially eliminate a redundant mov+neg sequence
+static PeepholePattern pat_movneg[] = {
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_NEG, PEEP_OP_MATCH|0, PEEP_OP_MATCH|0, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
 // replace mov x, #2; shl x, y; sub x, #1  with bmask x, y
 static PeepholePattern pat_bmask1[] = {
     { COND_ANY, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_IMM|2, PEEP_FLAGS_P2 },
@@ -4207,6 +4214,15 @@ static int FixupMovAdd(int arg, IRList *irl, IR *ir)
     return 0;
 }
 
+/* mov x, y; neg x, x => neg x, y */
+static int FixupMovNeg(int arg, IRList *irl, IR *ir)
+{
+    IR *nextir = ir->next;
+    ReplaceOpcode(ir, OPC_NEG);
+    DeleteIR(irl, nextir);
+    return 1;
+}
+
 /* mov x, #0 ; test x, #1 wc => mov x, #0 wc */
 static int FixupClrC(int arg, IRList *irl, IR *ir)
 {
@@ -4443,6 +4459,7 @@ struct Peepholes {
     { pat_rdword2, 1, RemoveNFlagged },
 
     { pat_movadd, 0, FixupMovAdd },
+    { pat_movneg, 0, FixupMovNeg },
 
     { pat_bmask1, 0, FixupBmask },
     { pat_bmask2, 0, FixupBmask },
