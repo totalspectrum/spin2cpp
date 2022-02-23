@@ -993,7 +993,7 @@ iostmt:
         }
         call = NewAST(AST_FUNCCALL, thefunc, params);
         if (result) {
-            call = NewAST(AST_ASSIGN, result, call);
+            call = AstAssign(result, call);
         }
         if (comment) {
             call = NewAST(AST_COMMENTEDNODE, call, comment);
@@ -1104,7 +1104,7 @@ putgetargs:
       filenum->right = position;
 
       if (var) {
-          filenum = NewAST(AST_ASSIGN, var, filenum);
+          filenum = AstAssign(var, filenum);
       }
       $$ = filenum;
   }

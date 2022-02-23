@@ -3177,7 +3177,7 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
                 return;
             }
         }
-        else if (op != K_ASSIGN )
+        else if (op && op != K_ASSIGN )
         {
             ASTReportInfo saveinfo;
             AstReportAs(ast, &saveinfo);
@@ -3207,7 +3207,7 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
                 }
                 lhs = ExtractSideEffects(lhs, &preseq);
             }
-            if (op == K_ASSIGN) {
+            if (op == 0 || op == K_ASSIGN) {
                 ast = AstAssign(lhs, rhs);
             } else {
                 if (rhs) {
