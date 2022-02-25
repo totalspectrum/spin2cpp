@@ -244,7 +244,33 @@ LookupMemberSymbol(AST *expr, AST *objtype, const char *name, Module **Ptr, int 
     sym = FindSymbol(&P->objsyms, name);
     if (!sym) {
         ERROR(expr, "unknown identifier %s in class %s", name, P->classname);
+    } else if (sym->kind == SYM_ALIAS) {
+        AST *newexpr = (AST *)sym->val;
+        if (newexpr && newexpr->kind == AST_METHODREF) {
+            const char *basename = GetIdentifierName(newexpr->left);
+            const char *subname = GetIdentifierName(newexpr->right);
+            Symbol *basesym;
+            Symbol *finalsym;
+            AST *Qtype;
+            basesym = FindSymbol(&P->objsyms, basename);
+            if (!basesym || basesym->kind != SYM_VARIABLE) {
+                ERROR(expr, "unknown anonymous class %s in class %s", basename, P->classname);
+                return NULL;
+            }
+            Qtype = (AST *)basesym->val;
+            if (!IsClassType(Qtype)) {
+                ERROR(expr, "unknown anonymous class %s in class %s", basename, P->classname);
+                return NULL;
+            }
+            finalsym = LookupMemberSymbol(newexpr, Qtype, subname, NULL, valid);
+            if (!finalsym) return NULL;
+            //WARNING(expr, "transforming anon struct ref: base off=%d plus %d", basesym->offset, finalsym->offset);
+            sym->kind = finalsym->kind;
+            sym->offset = finalsym->offset + basesym->offset;
+            sym->val = finalsym->val; // preserve the type
+        }
     }
+
     return sym;
 }
 

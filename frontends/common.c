@@ -2347,3 +2347,36 @@ Symbol *DeclareAlias(SymbolTable *table, AST *newId, AST *oldId)
     }
     return sym;
 }
+
+typedef struct {
+    Module *Parent;
+    AST *prefix;
+} AnonAliasStruct;
+
+static int makeAnonAlias(Symbol *sym, void *arg)
+{
+    AnonAliasStruct *A = (AnonAliasStruct *)arg;
+    Module *P = A->Parent;
+    AST *prefix = A->prefix;
+    AST *symident;
+    AST *expr;
+    const char *newname = sym->our_name;
+
+    symident = AstIdentifier(newname);
+    expr = NewAST(AST_METHODREF, prefix, symident);
+    AddSymbolPlaced(&P->objsyms, newname, SYM_ALIAS, expr, NULL, symident); 
+    return 1;
+}
+
+void DeclareAnonymousAliases(Module *Parent, Module *sub, AST *prefix)
+{
+    AnonAliasStruct A;
+
+    if (prefix && prefix->kind == AST_LISTHOLDER) {
+        prefix = prefix->left;
+    }
+    A.Parent = Parent;
+    A.prefix = prefix;
+    
+    IterateOverSymbols(&sub->objsyms, makeAnonAlias, (void *)&A); 
+}

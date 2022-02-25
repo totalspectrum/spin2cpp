@@ -1588,9 +1588,17 @@ struct_declaration
         : struct_specifier_qualifier_list ';' /* for anonymous struct/union */
             {
                 AST *dummy;
+                AST *anonstruct = $1;
+                AST *decl;
                 dummy = AstTempIdentifier("__anonymous__");
                 dummy = NewAST(AST_LISTHOLDER, dummy, NULL);
-                $$ = MultipleDeclareVar($1, dummy);
+                decl = MultipleDeclareVar(anonstruct, dummy);
+                // declare aliases for each variable in the object
+                Module *P = GetClassPtr(anonstruct);
+                if (P) {
+                    DeclareAnonymousAliases(current, P, dummy);
+                }
+                $$ = decl;
             }
 	| struct_specifier_qualifier_list struct_declarator_list ';'
             {

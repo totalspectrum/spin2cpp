@@ -40,10 +40,6 @@ will work, but a designated initializer for a sub structure field like:
 ```
 will not work: the double levels of ".address.streetnum" will fail.
 
-#### Anonymous Structs and Unions
-
-Anonymous structs and unions (i.e. nested struct members without a name) are not supported.
-
 #### Variable length arrays
 
 Variable length arrays are not supported. A work-around is to use the `__builtin_alloca()` function to allocate memory on the stack.

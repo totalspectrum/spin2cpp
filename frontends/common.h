@@ -919,6 +919,9 @@ int AggregateCount(AST *typ);
 // declare an alias in a symbol table
 Symbol *DeclareAlias(SymbolTable *table, AST *newname, AST *oldname);
 
+// declare aliases in for members of anohymous struct/union
+void DeclareAnonymousAliases(Module *Parent, Module *sub, AST *prefix);
+
 // external vars
 extern AST *basic_get_float;
 extern AST *basic_get_string;
