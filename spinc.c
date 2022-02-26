@@ -801,6 +801,10 @@ CheckUnusedMethods(int isBinary)
     
     // mark everything unused
     for (P = allparse; P; P = P->next) {
+        if (P->funcblock) {
+            // make sure pending functions are declared
+            DeclareFunctions(P);
+        }
         for (pf = P->functions; pf; pf = pf->next) {
             pf->callSites = 0;
         }
@@ -946,6 +950,11 @@ ResolveSymbols()
     int changes = 0;
     
     savecurrent = current;
+    for (Q = allparse; Q; Q = Q->next) {
+        if (Q->funcblock) {
+            DeclareFunctions(Q);
+        }
+    }
     for (Q = allparse; Q; Q = Q->next) {
         for (pf = Q->functions; pf; pf = pf->next) {
             if ((pf->callSites > 0) && pf->body) {
