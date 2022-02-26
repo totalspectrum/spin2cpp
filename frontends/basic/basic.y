@@ -1938,7 +1938,7 @@ subdecl:
          AST *funcvars = NewAST(AST_FUNCVARS, parms, NULL);
          AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
          
-         DeclareFunction(systemModule, rettype, 1, funcdef, body, attrib, $1);
+         DeclareFunction(current, rettype, 1, funcdef, body, attrib, $1);
      }
   ;
 
@@ -1978,7 +1978,7 @@ funcdecl:
          AST *funcvars = NewAST(AST_FUNCVARS, parms, NULL);
          AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
          
-         DeclareFunction(systemModule, rettype, 1, funcdef, body, attrib, $1);
+         DeclareFunction(current, rettype, 1, funcdef, body, attrib, $1);
      }
   | BAS_DEF BAS_IDENTIFIER '(' paramdecl ')' '=' expr
   {
