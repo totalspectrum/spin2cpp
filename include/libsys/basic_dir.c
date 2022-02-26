@@ -120,12 +120,15 @@ char *_basic_dir(const char *pattern = 0, unsigned attrib = 0) {
             }
             if (0 == (sbuf.st_mode & (S_IWUSR|S_IWGRP|S_IWOTH))) {
                 attrib |= fbReadOnly;
-            } else {
+            } else if (mode != S_IFDIR) {
                 attrib |= fbArchive;
             }
             if ( 0 == (attrib & oldattrib) ) {
                 continue;
             }
+#ifdef _DEBUG
+            __builtin_printf("attrib=0x%x oldattrib=0x%x\n", attrib, oldattrib);
+#endif            
         }
         string = _gc_alloc_managed(strlen(ent->d_name)+1);
         if (string) {
