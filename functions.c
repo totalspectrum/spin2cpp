@@ -1153,13 +1153,15 @@ void
 DeclareFunctions(Module *P)
 {
     AST *ast;
-
+    Module *savecurrent = current;
+    current = P;
     ast = P->funcblock;
     while (ast) {
         doDeclareFunction(ast->left);
         ast = ast->right;
     }
     P->funcblock = NULL;
+    current = savecurrent;
 }
 
 /*
