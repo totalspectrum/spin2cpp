@@ -312,6 +312,9 @@ pri file "libsys/strings.bas" ucase`$(x=string): r=string
 pri file "libsys/strings.bas" instr(off, x, y): r=long
 pri file "libsys/strings.bas" instrrev(off, x, y): r=long
 
+pri file "libsys/dir.bas" curdir`$(): r = string
+pri file "libsys/dir.bas" dir`$(pat = "", attrib = 0): r=string
+
 pri file "libc/stdlib/errno.c" _seterror(r)
 pri file "libc/stdlib/errno.c" _geterror(): r=long
 pri file "libc/stdlib/errno.c" _geterrnoptr(): r=@long
