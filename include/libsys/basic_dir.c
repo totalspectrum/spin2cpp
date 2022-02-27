@@ -109,19 +109,21 @@ char *_basic_dir(const char *pattern = 0, unsigned attrib = 0) {
                 return "";
             }
             mode = sbuf.st_mode & S_IFMT;
-            attrib = 0;
+            if (ent->d_name[0] == '.') {
+                attrib = fbHidden;
+            } else {
+                attrib = 0;
+            }
             if ( mode == S_IFDIR ) {
                 attrib |= fbDirectory;
             } else if ( mode == S_IFCHR || mode == S_IFBLK || mode == S_IFIFO) {
                 attrib |= fbSystem;
-            }
-            if (ent->d_name[0] == '.') {
-                attrib |= fbHidden;
-            }
-            if (0 == (sbuf.st_mode & (S_IWUSR|S_IWGRP|S_IWOTH))) {
-                attrib |= fbReadOnly;
-            } else if (mode != S_IFDIR) {
-                attrib |= fbArchive;
+            } else {
+                if (0 == (sbuf.st_mode & (S_IWUSR|S_IWGRP|S_IWOTH))) {
+                    attrib |= fbReadOnly;
+                } else if (mode != S_IFDIR) {
+                    attrib |= fbArchive;
+                }
             }
             if ( 0 == (attrib & oldattrib) ) {
                 continue;

@@ -6,6 +6,7 @@ Version 5.9.9
 - Fixed curdir$() problems in BASIC
 - Fixed an issue with += of strings where the rhs is a function call
 - Fixed some bugs in PUT/GET processing when the result is read
+- Made dir$("*",fbNormal) skip directories
 - Preliminary support for anonymous structures and unions in C
 - Recognized new Spin2 BYTEFIT and WORDFIT keywords
 
