@@ -1,3 +1,5 @@
+Version 5.9.10
+
 Version 5.9.9
 - Added special preprocessor comments {$flexspin ... } for FlexSpin specific code.
 - Allow dynamic sign/zero extend on P1 (thanks Ada)

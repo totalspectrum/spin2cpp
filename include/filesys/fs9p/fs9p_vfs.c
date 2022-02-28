@@ -1,3 +1,9 @@
+//
+// simple test program for 9p access to host files
+// Written by Eric R. Smith, Total Spectrum Software Inc.
+// Released into the public domain.
+//
+
 #include <stdint.h>
 #include <sys/types.h>
 #include <sys/vfs.h>
