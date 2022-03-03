@@ -2283,39 +2283,24 @@ IsCommutativeMath(IROpcode opc)
     }
 }
 
-// check if x is of the form (A<<n)
+// check if x is of the form (A ROL n)
 // where A is a small integer that is all 1's
 // in binary; if so, return a bit mask
 // otherwise, return -1
 static int P2CheckBitMask(unsigned int x)
 {
-    int rshift = 0;
+    if (x == 0 || x == 0xFFFFFFFF) return -1;
 
-    if (x == 0) return -1;
-    while ((x & 1) == 0) {
-        rshift++;
-        x = x>>1;
+    int rshift = __builtin_ctz(x);
+    if (rshift == 0 && (x>>31)) { // No trailing zero, but leading one -> try wraparound case
+        rshift = 32-__builtin_clz(~x);
     }
-    switch (x) {
-    case 1:
-        return rshift;
-    case 3:
-        return rshift + (1<<5);
-    case 7:
-        return rshift + (2<<5);
-    case 15:
-        return rshift + (3<<5);
-    case 31:
-        return rshift + (4<<5);
-    case 63:
-        return rshift + (5<<5);
-    case 127:
-        return rshift + (6<<5);
-    case 255:
-        return rshift + (7<<5);
-    default:
-        return -1;
-    }
+    x = x>>rshift | x<<((32-rshift)&31);
+
+    if(x&(x+1)) return -1; // x is not (2^n)-1
+    int addbits = 31-__builtin_clz(x);
+    if (addbits > 15) return -1; // Doesn't fit in 9 bits
+    return rshift + (addbits<<5);
 }
 
 static bool
@@ -2694,6 +2679,15 @@ OptimizePeepholes(IRList *irl)
 
         // on P2, check for immediate operand with just one bit set
         if (gl_p2 && ir->src && ir->src->kind == IMM_INT && !InstrSetsAnyFlags(ir) && ((uint32_t)ir->src->val) > 511) {
+            if (ir->opc == OPC_AND) { 
+                int invmask = P2CheckBitMask(~(ir->src->val));
+                if (invmask != -1) {
+                    ReplaceOpcode(ir, OPC_BITL);
+                    ir->src = NewImmediate(invmask);
+                    changed = 1;
+                    goto done;
+                }
+            }
             int mask = P2CheckBitMask(ir->src->val);
             if (mask != -1) {
                 if (ir->opc == OPC_ANDN) {
@@ -2720,16 +2714,18 @@ OptimizePeepholes(IRList *irl)
                     changed = 1;
                     goto done;
                 }
-            } else if (ir->opc == OPC_MOV) {
+            } 
+            if (ir->opc == OPC_MOV || ir->opc == OPC_AND || ir->opc == OPC_ANDN) {
                 uint32_t mask = ir->src->val;
+                if (ir->opc == OPC_ANDN) mask = ~mask;
                 int bits = 0;
                 while ( (mask & 1) ) {
                     bits++;
                     mask = mask >> 1;
                 }
                 if (bits > 0 && mask == 0) {
-                    // could use BMASK instruction
-                    ReplaceOpcode(ir, OPC_BMASK);
+                    // could use BMASK/ZEROX instruction
+                    ReplaceOpcode(ir, ir->opc == OPC_MOV ? OPC_BMASK : OPC_ZEROX);
                     ir->src = NewImmediate(bits-1);
                     changed = 1;
                     goto done;
