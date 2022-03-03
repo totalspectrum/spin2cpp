@@ -2662,7 +2662,8 @@ OptimizePeepholes(IRList *irl)
         // check for add a,b ;; mov b,a ;; isdead a
         // becomes add b, a
         
-        if (IsCommutativeMath(opc) && ir_next && ir_next->opc == OPC_MOV
+        if ( (IsCommutativeMath(opc) || (gl_p2 && opc == OPC_SUB))
+            && ir_next && ir_next->opc == OPC_MOV
             && ir->dst == ir_next->src
             && ir->src == ir_next->dst
             && !InstrSetsAnyFlags(ir)
@@ -2671,7 +2672,7 @@ OptimizePeepholes(IRList *irl)
             && IsDeadAfter(ir_next, ir->dst)
             )
         {
-            ReplaceOpcode(ir_next, opc);
+            ReplaceOpcode(ir_next, opc == OPC_SUB ? OPC_SUBR : opc);
             DeleteIR(irl, ir);
             changed = 1;
             goto done;
