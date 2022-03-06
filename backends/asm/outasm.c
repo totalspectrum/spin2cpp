@@ -2038,13 +2038,16 @@ CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
   getmod &= 1;
   
 #ifdef FAST_IMMEDIATE_DIVIDES
-  if (rhs->kind == IMM_INT && rhs->val > 0 && isPowerOf2(rhs->val) && !isfrac64) {
+  if (rhs->kind == IMM_INT  && !isfrac64 && ((rhs->val > 0 && isPowerOf2(rhs->val)) || (rhs->val < 0 && isPowerOf2(0-rhs->val)))) {
       IR *ir;
-      int val = rhs->val;
+      int aval = abs(rhs->val);
       
-      if (val == 1) {
+      if (rhs->val == 1 || (rhs->val == -1 && getmod)) {
           EmitMove(irl, temp, lhs);
           return temp;
+      } else if (rhs->val == -1) {
+        EmitOp2(irl, OPC_NEG, temp, lhs);
+        return temp;
       }
 
       lhs = Dereference(irl, lhs);
@@ -2055,19 +2058,13 @@ CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
           EmitMove(irl, temp, lhs);
       }
       if (getmod) {
-          EmitOp2(irl, OPC_AND, temp, NewImmediate(val-1));
+          EmitOp2(irl, OPC_AND, temp, NewImmediate(aval-1));
       } else {
-          int shift = 0;
-          val = val >>1;
-          while (val != 0) {
-              shift++;
-              val = val >> 1;
-          }
-          EmitOp2(irl, OPC_SHR, temp, NewImmediate(shift));
+          EmitOp2(irl, OPC_SHR, temp, NewImmediate(__builtin_ctz(aval)));
       }
       if (isSigned) {
-          ir = EmitOp2(irl, OPC_NEG, temp, temp);
-          ir->cond = COND_LT; // only do the negate if x < 0
+          bool negresult = !getmod && (rhs->val < 0); // Negate result if divisor is negative and we're not getting the remainder
+          ir = EmitOp2(irl, negresult ? OPC_NEGNC : OPC_NEGC, temp, temp);
       }
       return temp;
   }
@@ -2087,6 +2084,7 @@ CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
       }
   }
 
+  // P2 can use QDIV for unsigned divide
   if (gl_p2 && !isSigned) {
     Operand *temp2 = NewFunctionTempRegister();
     EmitMove(irl, temp2, rhs);
@@ -2095,6 +2093,37 @@ CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
     EmitOp1(irl, getmod ? OPC_GETQY : OPC_GETQX, temp);
     return temp;
   }
+
+  // Use native QDIV + ABS/NEGC for signed divide with known divisor
+  if (gl_p2 && isSigned && rhs->kind == IMM_INT) {
+    IR *ir;
+    Operand *rhs2 = NewOperand(IMM_INT,rhs->name,abs(rhs->val));
+    ir = EmitOp2(irl, OPC_ABS, temp, lhs);
+    ir->flags |= FLAG_WC;
+    EmitOp2(irl, OPC_QDIV, temp, rhs2);
+    EmitOp1(irl, getmod ? OPC_GETQY : OPC_GETQX, temp);
+    bool negresult = !getmod && (rhs->val < 0); // Negate result if divisor is negative and we're not getting the remainder
+    EmitOp2(irl,negresult ? OPC_NEGNC : OPC_NEGC, temp, temp);
+    //ir->cond = negresult ? COND_GE : COND_LT; // only do the negate if x < 0
+    return temp;
+  }
+  
+  // Use native QDIV + ABS/NEGC for signed divide with known dividend
+  if (gl_p2 && isSigned && lhs->kind == IMM_INT) {
+    IR *ir;
+    Operand *lhs2 = NewOperand(IMM_INT,lhs->name,abs(lhs->val));
+    ir = EmitOp2(irl, OPC_ABS, temp, rhs);
+    if (!getmod) ir->flags |= FLAG_WC;
+    EmitOp2(irl, OPC_QDIV, lhs2, temp);
+    EmitOp1(irl, getmod ? OPC_GETQY : OPC_GETQX, temp);
+    if (getmod) {
+      EmitOp2(irl, (lhs->val < 0) ? OPC_NEG : OPC_MOV, temp, temp);
+    } else {
+      EmitOp2(irl, (lhs->val < 0) ? OPC_NEGNC : OPC_NEGC, temp, temp);
+    }
+    return temp;
+  }
+
 
   // Fall back on function call
   if (!divfunc) {

@@ -57,6 +57,10 @@ InstrReadsDst(IR *ir)
   switch (ir->opc) {
   case OPC_MOV:
   case OPC_NEG:
+  case OPC_NEGC:
+  case OPC_NEGNC:
+  case OPC_NEGZ:
+  case OPC_NEGNZ:
   case OPC_ABS:
   case OPC_RDBYTE:
   case OPC_RDWORD:
@@ -318,6 +322,8 @@ InstrUsesFlags(IR *ir, unsigned flags)
     case OPC_DRVNC:
     case OPC_MUXC:
     case OPC_MUXNC:
+    case OPC_NEGC:
+    case OPC_NEGNC:
     case OPC_BITC:
     case OPC_BITNC:
         /* definitely uses the C flag */
@@ -326,6 +332,8 @@ InstrUsesFlags(IR *ir, unsigned flags)
     case OPC_DRVNZ:
     case OPC_MUXZ:
     case OPC_MUXNZ:
+    case OPC_NEGZ:
+    case OPC_NEGNZ:
     case OPC_WRZ:
     case OPC_WRNZ:
         /* definitely uses the Z flag */
@@ -2242,6 +2250,12 @@ ReplaceZWithNC(IR *ir)
     case OPC_MUXNZ:
         ReplaceOpcode(ir, OPC_MUXC);
         break;
+    case OPC_NEGZ:
+        ReplaceOpcode(ir, OPC_NEGNC);
+        break;
+    case OPC_NEGNZ:
+        ReplaceOpcode(ir, OPC_NEGC);
+        break;
     case OPC_DRVZ:
         ReplaceOpcode(ir, OPC_DRVNC);
         break;
@@ -2250,6 +2264,8 @@ ReplaceZWithNC(IR *ir)
         break;
     case OPC_MUXC:
     case OPC_MUXNC:
+    case OPC_NEGC:
+    case OPC_NEGNC:
     case OPC_GENERIC:
     case OPC_GENERIC_DELAY:
     case OPC_GENERIC_NR:
@@ -3670,12 +3686,14 @@ typedef struct PeepholePattern {
 #define PEEP_FLAGS_NONE 0x0000
 #define PEEP_FLAGS_P2   0x0001
 #define PEEP_FLAGS_WCZ_OK 0x0002
+#define PEEP_FLAGS_MUST_WZ 0x0004
+#define PEEP_FLAGS_MUST_WC 0x0008
 #define PEEP_FLAGS_DONE 0xffff
 
 #define OPERAND_ANY -1
 #define COND_ANY    -1
 #define OPC_ANY     -1
-#define MAX_OPERANDS_IN_PATTERN 4
+#define MAX_OPERANDS_IN_PATTERN 16
 
 #define PEEP_OP_SET     0x01000000
 #define PEEP_OP_MATCH   0x02000000
@@ -3775,6 +3793,8 @@ static int MatchPattern(PeepholePattern *patrn, IR *ir)
                 return 0;
             }
         }
+        if ((flags & PEEP_FLAGS_MUST_WC) && !(ir->flags & FLAG_WC) && !(ir->flags & FLAG_WCZ)) return 0;
+        if ((flags & PEEP_FLAGS_MUST_WZ) && !(ir->flags & FLAG_WZ) && !(ir->flags & FLAG_WCZ)) return 0;
         
         if (!PeepOperandMatch(patrn->dst, ir->dst, ir)) {
             return 0;
@@ -3894,9 +3914,35 @@ static PeepholePattern pat_movadd[] = {
 // potentially eliminate a redundant mov+neg sequence
 static PeepholePattern pat_movneg[] = {
     { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
-    { COND_TRUE, OPC_NEG, PEEP_OP_MATCH|0, PEEP_OP_MATCH|0, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_NEG, PEEP_OP_SET|2, PEEP_OP_MATCH|0, PEEP_FLAGS_WCZ_OK },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
+static PeepholePattern pat_movabs[] = {
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_ABS, PEEP_OP_SET|2, PEEP_OP_MATCH|0, PEEP_FLAGS_WCZ_OK },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_movnegc[] = {
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_NEGC, PEEP_OP_SET|2, PEEP_OP_MATCH|0, PEEP_FLAGS_WCZ_OK },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_movnegnc[] = {
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_NEGNC, PEEP_OP_SET|2, PEEP_OP_MATCH|0, PEEP_FLAGS_WCZ_OK },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_movnegz[] = {
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_NEGZ, PEEP_OP_SET|2, PEEP_OP_MATCH|0, PEEP_FLAGS_WCZ_OK },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_movnegnz[] = {
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_NEGNZ, PEEP_OP_SET|2, PEEP_OP_MATCH|0, PEEP_FLAGS_WCZ_OK },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
 
 // replace mov x, #2; shl x, y; sub x, #1  with bmask x, y
 static PeepholePattern pat_bmask1[] = {
@@ -4108,6 +4154,66 @@ static PeepholePattern pat_qdiv_qdiv2[] = {
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
+// Fuse signed quotient+remainder (constant divider)
+static PeepholePattern pat_qdiv_qdiv_signed1[] = {
+    { COND_TRUE, OPC_ABS,   PEEP_OP_SET|0,   PEEP_OP_SET|1,   PEEP_FLAGS_P2 | PEEP_FLAGS_MUST_WC | PEEP_FLAGS_WCZ_OK },
+    { COND_TRUE, OPC_QDIV,  PEEP_OP_MATCH|0, PEEP_OP_SET|2,   PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQX, PEEP_OP_SET|3,   OPERAND_ANY,     PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_ANY,   OPERAND_ANY,     PEEP_OP_MATCH|3, PEEP_FLAGS_NONE }, // NEGC/NEGNC
+    { COND_TRUE, OPC_ABS,   PEEP_OP_SET|4,   PEEP_OP_MATCH|1, PEEP_FLAGS_P2 | PEEP_FLAGS_MUST_WC | PEEP_FLAGS_WCZ_OK },
+    { COND_TRUE, OPC_QDIV,  PEEP_OP_MATCH|4, PEEP_OP_MATCH|2, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQY, PEEP_OP_SET|5,   OPERAND_ANY,     PEEP_FLAGS_NONE },
+    // NEGC/NEGNC here, but we don't really care if it's actually there
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+// Fuse signed remainder+quotient (constant divider) 
+static PeepholePattern pat_qdiv_qdiv_signed2[] = {
+    { COND_TRUE, OPC_ABS,   PEEP_OP_SET|0,   PEEP_OP_SET|1,   PEEP_FLAGS_P2 | PEEP_FLAGS_MUST_WC | PEEP_FLAGS_WCZ_OK },
+    { COND_TRUE, OPC_QDIV,  PEEP_OP_MATCH|0, PEEP_OP_SET|2,   PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQY, PEEP_OP_SET|3,   OPERAND_ANY,     PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_ANY,   OPERAND_ANY,     PEEP_OP_MATCH|3, PEEP_FLAGS_NONE }, // NEGC/NEGNC
+    { COND_TRUE, OPC_ABS,   PEEP_OP_SET|4,   PEEP_OP_MATCH|1, PEEP_FLAGS_P2 | PEEP_FLAGS_MUST_WC | PEEP_FLAGS_WCZ_OK },
+    { COND_TRUE, OPC_QDIV,  PEEP_OP_MATCH|4, PEEP_OP_MATCH|2, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQX, PEEP_OP_SET|5,   OPERAND_ANY,     PEEP_FLAGS_NONE },
+    // NEGC/NEGNC here, but we don't really care if it's actually there
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+// Fuse signed quotient+remainder (constant dividend)
+static PeepholePattern pat_qdiv_qdiv_signed3[] = {
+    { COND_TRUE, OPC_ABS,   PEEP_OP_SET|0,   PEEP_OP_SET|1,   PEEP_FLAGS_P2 | PEEP_FLAGS_MUST_WC | PEEP_FLAGS_WCZ_OK },
+    { COND_TRUE, OPC_QDIV,  PEEP_OP_SET|2,   PEEP_OP_MATCH|0,   PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQX, PEEP_OP_SET|3,   OPERAND_ANY,     PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_ANY,   OPERAND_ANY,     PEEP_OP_MATCH|3, PEEP_FLAGS_NONE }, // NEGC/NEGNC
+    { COND_TRUE, OPC_ABS,   PEEP_OP_SET|4,   PEEP_OP_MATCH|1, PEEP_FLAGS_P2},
+    { COND_TRUE, OPC_QDIV,  PEEP_OP_MATCH|2, PEEP_OP_MATCH|4, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQY, PEEP_OP_SET|5,   OPERAND_ANY,     PEEP_FLAGS_NONE },
+    // There may be a NEG here
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+// Fuse signed remainder+quotient (constant dividend, negative)
+static PeepholePattern pat_qdiv_qdiv_signed4[] = {
+    { COND_TRUE, OPC_ABS,   PEEP_OP_SET|0,   PEEP_OP_SET|1,   PEEP_FLAGS_P2},
+    { COND_TRUE, OPC_QDIV,  PEEP_OP_SET|2,   PEEP_OP_MATCH|0,   PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQY, PEEP_OP_SET|3,   OPERAND_ANY,     PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_NEG,   OPERAND_ANY,     PEEP_OP_MATCH|3, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_ABS,   PEEP_OP_SET|4,   PEEP_OP_MATCH|1, PEEP_FLAGS_P2 | PEEP_FLAGS_MUST_WC | PEEP_FLAGS_WCZ_OK },
+    { COND_TRUE, OPC_QDIV,  PEEP_OP_MATCH|2, PEEP_OP_MATCH|4, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQX, PEEP_OP_SET|5,   OPERAND_ANY,     PEEP_FLAGS_NONE },
+    // NEGC/NEGNC here, but we don't really care if it's actually there
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+// Fuse signed remainder+quotient (constant dividend, positive)
+static PeepholePattern pat_qdiv_qdiv_signed5[] = {
+    { COND_TRUE, OPC_ABS,   PEEP_OP_SET|0,   PEEP_OP_SET|1,   PEEP_FLAGS_P2},
+    { COND_TRUE, OPC_QDIV,  PEEP_OP_SET|2,   PEEP_OP_MATCH|0,   PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQY, PEEP_OP_SET|3,   OPERAND_ANY,     PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_ABS,   PEEP_OP_SET|4,   PEEP_OP_MATCH|1, PEEP_FLAGS_P2 | PEEP_FLAGS_MUST_WC | PEEP_FLAGS_WCZ_OK },
+    { COND_TRUE, OPC_QDIV,  PEEP_OP_MATCH|2, PEEP_OP_MATCH|4, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQX, PEEP_OP_SET|5,   OPERAND_ANY,     PEEP_FLAGS_NONE },
+    // There may be a NEG here
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
 static int ReplaceMaxMin(int arg, IRList *irl, IR *ir)
 {
     if (!InstrSetsFlags(ir, FLAG_WZ|FLAG_WC)) {
@@ -4232,8 +4338,9 @@ static int FixupMovAdd(int arg, IRList *irl, IR *ir)
 static int FixupMovNeg(int arg, IRList *irl, IR *ir)
 {
     IR *nextir = ir->next;
-    ReplaceOpcode(ir, OPC_NEG);
-    DeleteIR(irl, nextir);
+    if (nextir->dst != nextir->src && !IsDeadAfter(nextir,nextir->src)) return 0;
+    nextir->src = ir->src;
+    DeleteIR(irl, ir);
     return 1;
 }
 
@@ -4438,6 +4545,90 @@ static int FixupQmuls(int arg, IRList *irl, IR *ir0)
     return 1;
 }
 
+// pattern:
+//  abs a, x wc
+//  qdiv a,y
+//  getq* b
+//  neg* z,b
+//  abs c, x wc
+//  qdiv c,y
+//  getq* d
+//  neg* w,d
+static int FixupQdivSigned(int arg, IRList *irl, IR *ir0)
+{
+    IR* ir1 = ir0->next; // qdiv 1
+    IR* ir2 = ir1->next; // getq* 1
+    IR* ir3 = ir2->next; // neg* 1
+    IR* ir4 = ir3->next; // abs 2
+    IR* ir5 = ir4->next; // qdiv 2
+
+    if (ir3->opc != OPC_NEGC && ir3->opc != OPC_NEGNC) return 0;
+
+    if (InstrModifies(ir2,ir4->src)||InstrModifies(ir3,ir4->src)||
+        InstrModifies(ir2,ir5->src)||InstrModifies(ir3,ir5->src) ) {
+        return 0;
+    }
+    if (IsDeadAfter(ir5,ir5->dst)) DeleteIR(irl,ir4); // Delete second ABS unless register is somehow reused
+    DeleteIR(irl,ir5); // Delete second QDIV
+    return 1;
+}
+
+// pattern:
+//  abs a, x 
+//  qdiv y,a
+//  getq* b
+//  neg* z,b
+//  abs c, x wc
+//  qdiv y,c
+//  getq* d
+//  neg w,d (maybe)
+static int FixupQdivSigned2(int arg, IRList *irl, IR *ir0)
+{
+    IR* ir1 = ir0->next; // qdiv 1
+    IR* ir2 = ir1->next; // getq* 1
+    IR* ir3 = ir2->next; // neg* 1
+    IR* ir4 = ir3->next; // abs 2
+    IR* ir5 = ir4->next; // qdiv 2
+
+    if (ir3->opc != OPC_NEGC && ir3->opc != OPC_NEGNC && ir3->opc != OPC_NEG) return 0;
+
+    if (InstrModifies(ir2,ir4->src)||InstrModifies(ir3,ir4->src)||
+        InstrModifies(ir2,ir5->dst)||InstrModifies(ir3,ir5->dst) ) {
+        return 0;
+    }
+    if (IsDeadAfter(ir5,ir5->src)) DeleteIR(irl,ir4); // Delete second ABS unless register is somehow reused
+    DeleteIR(irl,ir5); // Delete second QDIV
+    ir0->flags |= FLAG_WC;
+    return 1;
+}
+
+// pattern:
+//  abs a, x 
+//  qdiv y,a
+//  getq* z
+//  abs c, x wc
+//  qdiv y,c
+//  getq* d
+//  neg* w,d
+static int FixupQdivSigned3(int arg, IRList *irl, IR *ir0)
+{
+    IR* ir1 = ir0->next; // qdiv 1
+    IR* ir2 = ir1->next; // getq* 1
+    //IR* ir3 = ir2->next; // neg* 1
+    IR* ir4 = ir2->next; // abs 2
+    IR* ir5 = ir4->next; // qdiv 2
+
+    if (InstrModifies(ir2,ir4->src)||
+        InstrModifies(ir2,ir5->dst)  ) {
+        return 0;
+    }
+    if (IsDeadAfter(ir5,ir5->src)) DeleteIR(irl,ir4); // Delete second ABS unless register is somehow reused
+    DeleteIR(irl,ir5); // Delete second QDIV
+    ir0->flags |= FLAG_WC;
+    return 1;
+}
+
+
 struct Peepholes {
     PeepholePattern *check;
     int arg;
@@ -4473,7 +4664,13 @@ struct Peepholes {
     { pat_rdword2, 1, RemoveNFlagged },
 
     { pat_movadd, 0, FixupMovAdd },
+
     { pat_movneg, 0, FixupMovNeg },
+    { pat_movabs, 0, FixupMovNeg },
+    { pat_movnegc, 0, FixupMovNeg },
+    { pat_movnegnc, 0, FixupMovNeg },
+    { pat_movnegz, 0, FixupMovNeg },
+    { pat_movnegnz, 0, FixupMovNeg },
 
     { pat_bmask1, 0, FixupBmask },
     { pat_bmask2, 0, FixupBmask },
@@ -4509,6 +4706,12 @@ struct Peepholes {
     { pat_qmul_qmul2, 0, FixupQmuls },
     { pat_qdiv_qdiv1, 0, FixupQmuls },
     { pat_qdiv_qdiv2, 0, FixupQmuls },
+
+    { pat_qdiv_qdiv_signed1, 0, FixupQdivSigned},
+    { pat_qdiv_qdiv_signed2, 0, FixupQdivSigned},
+    { pat_qdiv_qdiv_signed3, 0, FixupQdivSigned2},
+    { pat_qdiv_qdiv_signed4, 0, FixupQdivSigned2},
+    { pat_qdiv_qdiv_signed5, 0, FixupQdivSigned3},
 };
 
 
