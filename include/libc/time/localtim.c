@@ -8,16 +8,6 @@
 #include <time.h>
 #include <ctype.h>
 
-#if defined(__linux__) || defined(__FLEXC__)
-struct TLS {
-  struct tm time_temp;
-} foo;
-struct TLS *_TLS = &foo;
-
-#else
-#include <sys/thread.h>
-#endif
-
 #define toint(c) ((c)-'0')
 
 #if 0
@@ -203,12 +193,14 @@ struct tm *_localtime_r(const time_t *t, struct tm *stm)
 
 struct tm *localtime(const time_t *t)
 {
-	return _localtime_r(t, &_TLS->time_temp);
+	static struct tm time_temp;
+	return _localtime_r(t, &time_temp);
 }
 
 struct tm *gmtime(const time_t *t)
 {
-	return _gmtime_r(t, &_TLS->time_temp);
+	static struct tm time_temp;
+	return _gmtime_r(t, &time_temp);
 }
 
 /*
