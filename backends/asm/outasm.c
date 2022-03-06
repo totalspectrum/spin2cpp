@@ -5425,24 +5425,18 @@ static const char *builtin_div_p1 =
 "DIVCNT\n"
 "\tlong\t0\n"
 ;
-static const char *builtin_div_p2 =
-"\nunsdivide_\n"
-"       setq    #0\n"
-"       qdiv    muldiva_, muldivb_\n"
-"       getqx   muldivb_\n"  // get quotient
-" _ret_ getqy   muldiva_\n"  // get remainder
-    
+static const char *builtin_div_p2 = 
 "\ndivide_\n"
-"       abs     muldiva_,muldiva_     wc       'abs(x)\n"
-"       muxc    itmp2_,#%11                    'store sign of x\n"
 "       abs     muldivb_,muldivb_     wcz      'abs(y)\n"
-" if_c  xor     itmp2_,#%10                    'store sign of y\n"
-" if_z  ret\n"
-"       call    #unsdivide_\n"
-"       test    itmp2_,#1        wc       'restore sign, remainder\n"
-"       negc    muldiva_,muldiva_ \n"
-"       test    itmp2_,#%10      wc       'restore sign, division result\n"
-" _ret_ negc    muldivb_,muldivb_\n"
+"       wrc     itmp2_                         'store sign of y\n"
+"       abs     muldiva_,muldiva_     wc       'abs(x)\n"
+"       qdiv    muldiva_, muldivb_             'queue divide\n"
+" if_c  xor     itmp2_,#1                      'store sign of x\n"
+"       getqx   muldivb_                       'get quotient\n"
+"       getqy   muldiva_                       'get remainder\n"
+"       negc    muldiva_,muldiva_              'restore sign, remainder (sign of x)\n"
+"       testb   itmp2_,#0             wc       'restore sign, division result\n"
+" _ret_ negc    muldivb_,muldivb_     \n"
 
 ;
 
