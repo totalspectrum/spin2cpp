@@ -4091,6 +4091,23 @@ static PeepholePattern pat_qmul_qmul2[] = {
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
+// qdiv x, y; getqx z; qdiv x, y; getqy w -> qdiv x, y; getqx z; getqy w
+static PeepholePattern pat_qdiv_qdiv1[] = {
+    { COND_TRUE, OPC_QDIV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQX, PEEP_OP_SET|2, OPERAND_ANY, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_QDIV, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQY, PEEP_OP_SET|3, OPERAND_ANY, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+// qdiv x, y; getqx z; qdiv x, y; getqy w -> qdiv x, y; getqx z; getqy w
+static PeepholePattern pat_qdiv_qdiv2[] = {
+    { COND_TRUE, OPC_QDIV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQY, PEEP_OP_SET|2, OPERAND_ANY, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_QDIV, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQX, PEEP_OP_SET|3, OPERAND_ANY, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
 static int ReplaceMaxMin(int arg, IRList *irl, IR *ir)
 {
     if (!InstrSetsFlags(ir, FLAG_WZ|FLAG_WC)) {
@@ -4490,6 +4507,8 @@ struct Peepholes {
 
     { pat_qmul_qmul1, 0, FixupQmuls },
     { pat_qmul_qmul2, 0, FixupQmuls },
+    { pat_qdiv_qdiv1, 0, FixupQmuls },
+    { pat_qdiv_qdiv2, 0, FixupQmuls },
 };
 
 

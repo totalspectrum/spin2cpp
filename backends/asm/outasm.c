@@ -2073,12 +2073,6 @@ CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
   }
 #endif
   
-  if (!divfunc) {
-    divfunc = NewOperand(IMM_COG_LABEL, "divide_", 0);
-    unsdivfunc = NewOperand(IMM_COG_LABEL, "unsdivide_", 0);
-    muldiva = GetOneGlobal(REG_ARG, "muldiva_", 0);
-    muldivb = GetOneGlobal(REG_ARG, "muldivb_", 0);
-  }
   if (isfrac64) {
       if (gl_p2) {
           Operand *temp2 = NewFunctionTempRegister();
@@ -2087,17 +2081,35 @@ CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
           EmitOp2(irl, OPC_QFRAC, temp, temp2);
           EmitOp1(irl, OPC_GETQX, temp);
           return temp;
+      } else {
+        ERROR(expr, "FRAC not supported on P1 yet");
+        return temp; //???
       }
-      ERROR(expr, "FRAC not supported on P1 yet");
-  } else {
-      EmitMove(irl, muldiva, lhs);
-      EmitMove(irl, muldivb, rhs);
-      EmitOp1(irl, OPC_CALL, (isSigned) ? divfunc : unsdivfunc);
   }
+
+  if (gl_p2 && !isSigned) {
+    Operand *temp2 = NewFunctionTempRegister();
+    EmitMove(irl, temp2, rhs);
+    EmitMove(irl, temp, lhs);
+    EmitOp2(irl, OPC_QDIV, temp, temp2);
+    EmitOp1(irl, getmod ? OPC_GETQY : OPC_GETQX, temp);
+    return temp;
+  }
+
+  // Fall back on function call
+  if (!divfunc) {
+    divfunc = NewOperand(IMM_COG_LABEL, "divide_", 0);
+    unsdivfunc = NewOperand(IMM_COG_LABEL, "unsdivide_", 0);
+    muldiva = GetOneGlobal(REG_ARG, "muldiva_", 0);
+    muldivb = GetOneGlobal(REG_ARG, "muldivb_", 0);
+  }
+  EmitMove(irl, muldiva, lhs);
+  EmitMove(irl, muldivb, rhs);
+  EmitOp1(irl, OPC_CALL, (isSigned) ? divfunc : unsdivfunc);
   if (getmod) {
-      EmitMove(irl, temp, muldiva);
+    EmitMove(irl, temp, muldiva);
   } else {
-      EmitMove(irl, temp, muldivb);
+    EmitMove(irl, temp, muldivb);
   }
   return temp;
 }
