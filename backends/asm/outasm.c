@@ -2097,6 +2097,7 @@ CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
   // Use native QDIV + ABS/NEGC for signed divide with known divisor
   if (gl_p2 && isSigned && rhs->kind == IMM_INT) {
     IR *ir;
+    lhs = Dereference(irl,lhs);
     Operand *rhs2 = NewOperand(IMM_INT,rhs->name,abs(rhs->val));
     ir = EmitOp2(irl, OPC_ABS, temp, lhs);
     ir->flags |= FLAG_WC;
@@ -2111,6 +2112,7 @@ CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
   // Use native QDIV + ABS/NEGC for signed divide with known dividend
   if (gl_p2 && isSigned && lhs->kind == IMM_INT) {
     IR *ir;
+    rhs = Dereference(irl,rhs);
     Operand *lhs2 = NewOperand(IMM_INT,lhs->name,abs(lhs->val));
     ir = EmitOp2(irl, OPC_ABS, temp, rhs);
     if (!getmod) ir->flags |= FLAG_WC;
