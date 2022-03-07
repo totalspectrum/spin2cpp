@@ -3562,7 +3562,7 @@ DoReorderBlock(IRList *irl,IR *after,IR *top,IR *bottom) {
 static struct reorder_block
 FindBlockForReorderingDownward(IR *after) {
     IR *bottom = after;
-    DEBUG(NULL,"Looking for a block...");
+    DEBUG(NULL,"Looking for a block to move down...");
     // Are the flags used at after?
     bool volatileC = FlagsUsedAt(after,FLAG_WC);
     bool volatileZ = FlagsUsedAt(after,FLAG_WZ);
@@ -3570,6 +3570,8 @@ FindBlockForReorderingDownward(IR *after) {
     // (if a block uses a flag, but and we didn't find a flag write inbetween,
     // that is the same flag state as after)
     bool foundC = false, foundZ = false;
+    // Encountered a flag read on the way up?
+    bool dependC = InstrUsesFlags(after,FLAG_WC),dependZ = InstrUsesFlags(after,FLAG_WZ);
     struct dependency *depends = NULL;
     // Hunt for the start of a potential reordering block
     for (;;) {
@@ -3586,10 +3588,12 @@ FindBlockForReorderingDownward(IR *after) {
             if (InstrSetsFlags(top,FLAG_WC)) {
                 needC = false;
                 if (volatileC && foundC) break;
+                if (dependC) break;
             }
             if (InstrSetsFlags(top,FLAG_WZ)) {
                 needZ = false;
                 if (volatileZ && foundZ) break;
+                if (dependZ) break;
             }
             if (InstrUsesFlags(top,FLAG_WC)) needC = true;
             if (InstrUsesFlags(top,FLAG_WZ)) needZ = true;
@@ -3614,8 +3618,16 @@ FindBlockForReorderingDownward(IR *after) {
             }
         }
         // broke out of loop, this block is invalid
-        foundC = foundC || InstrSetsFlags(bottom,FLAG_WC);
-        foundZ = foundZ || InstrSetsFlags(bottom,FLAG_WZ);
+        if (InstrSetsFlags(bottom,FLAG_WC)) {
+            foundC = true;
+            dependC = false;
+        }
+        if (InstrSetsFlags(bottom,FLAG_WZ)) {
+            foundZ = true;
+            dependZ = false;
+        }
+        if (InstrUsesFlags(bottom,FLAG_WC)) dependC = true;
+        if (InstrUsesFlags(bottom,FLAG_WZ)) dependZ = true;
         DeleteDependencyList(&depends);
         continue;
     }
