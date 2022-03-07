@@ -3471,8 +3471,8 @@ static bool IsReorderBarrier(IR *ir) {
 static bool UsedInRange(IR *start,IR *end,Operand *reg) {
     if (!reg || !IsRegister(reg->kind)) return false;
     for (IR *ir=start;ir!=end->next;ir=ir->next) {
-        if (InstrUses(ir,reg)) return true;
-        if (InstrModifies(ir,reg)) return false; // Has become dead
+        if (InstrUses(ir,reg)||IsBranch(ir)) return true;
+        if (InstrModifies(ir,reg) && ir->cond==COND_TRUE) return false; // Has become dead
     }
     return false;
 }
@@ -3480,7 +3480,7 @@ static bool UsedInRange(IR *start,IR *end,Operand *reg) {
 static bool ModifiedInRange(IR *start,IR *end,Operand *reg) {
     if (!reg || !IsRegister(reg->kind)) return false;
     for (IR *ir=start;ir!=end->next;ir=ir->next) {
-        if (InstrModifies(ir,reg)) return true;
+        if (InstrModifies(ir,reg)||IsBranch(ir)) return true;
     }
     return false;
 }
@@ -3649,19 +3649,30 @@ FindBlockForReorderingUpward(IR *before) {
         IR *bottom;
         // Need closure on a flag? (In this case, the last user)
         bool needC = false, needZ = false;
+        // Have a flag setter in the block?
+        bool foundClocal = false, foundZlocal = false;
         unsigned count = 0;
         for (bottom=top;bottom;bottom=bottom->next) {
             count++;
             if (IsReorderBarrier(bottom)) break;
+            // if we use a flag that isn't set inside the block but we want to reorder over another flag write, abort
+            if (foundC && !foundClocal && InstrUsesFlags(bottom,FLAG_WC)) break;
+            if (foundZ && !foundZlocal && InstrUsesFlags(bottom,FLAG_WC)) break;
             // If we write a flag, but there's another write we want to move over
             // we need to pull instructions until the flag is dead
-            if (foundC && InstrSetsFlags(bottom,FLAG_WC)) {
-                if (volatileC) break;
-                needC = true;
+            if (InstrSetsFlags(bottom,FLAG_WC)) {
+                if (foundC) {
+                    if (volatileC) break;
+                    needC = true;
+                }
+                foundClocal = true;
             }
-            if (foundZ && InstrSetsFlags(bottom,FLAG_WZ)) {
-                if (volatileZ) break;
-                needZ = true;
+            if (InstrSetsFlags(bottom,FLAG_WZ)) {
+                if (foundZ) {
+                    if (volatileZ) break;
+                    needZ = true;
+                }
+                foundZlocal = true;
             }
             // Flags dead?
             if (needC && !FlagsUsedAt(bottom->next,FLAG_WC)) needC = false;
