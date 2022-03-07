@@ -1523,6 +1523,7 @@ HasSideEffectsOtherThanReg(IR *ir)
         }
         return true;
     }
+    if (HasUsedFlags(ir)) return true;
     if (InstrIsVolatile(ir)) {
       return true;
     }
@@ -1570,7 +1571,7 @@ HasSideEffects(IR *ir)
     if (ir->dst && !IsLocalOrArg(ir->dst) /*ir->dst->kind == REG_HW*/) {
         return true;
     }
-    return HasSideEffectsOtherThanReg(ir) || HasUsedFlags(ir);
+    return HasSideEffectsOtherThanReg(ir);
 }
 #endif
 
@@ -1691,7 +1692,7 @@ int EliminateDeadCode(IRList *irl)
       } else if (ir->cond == COND_FALSE) {
 	  DeleteIR(irl, ir);
 	  change = 1;
-      } else if (!IsDummy(ir) && ir->dst && !(HasSideEffectsOtherThanReg(ir)||HasUsedFlags(ir)) && IsDeadAfter(ir, ir->dst)) {
+      } else if (!IsDummy(ir) && ir->dst && !HasSideEffectsOtherThanReg(ir) && IsDeadAfter(ir, ir->dst)) {
 	  DeleteIR(irl, ir);
 	  change = 1;
       } else if (MeaninglessMath(ir)) {
