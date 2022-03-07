@@ -1488,8 +1488,8 @@ FlagsUsedAt(IR *ir,unsigned flags) {
     for (IR *irnext = ir; irnext; irnext = irnext->next) {
         if (InstrUsesFlags(irnext, flags))  return true;
         if (InstrIsVolatile(irnext)) return true;
-        if (IsBranch(irnext) && irnext->cond == COND_TRUE) break;
-        if (InstrSetsFlags(irnext,flags)) break;
+        if (irnext->cond == COND_TRUE && IsBranch(irnext)) break;
+        if (irnext->cond == COND_TRUE && InstrSetsFlags(irnext,flags)) break;
     }
     return false;
 }
