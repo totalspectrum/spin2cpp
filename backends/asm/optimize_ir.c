@@ -3567,9 +3567,9 @@ FindBlockForReorderingDownward(IR *after) {
     bool volatileC = FlagsUsedAt(after,FLAG_WC);
     bool volatileZ = FlagsUsedAt(after,FLAG_WZ);
     // Encountered a flag write on the way up?
-    // (if a block uses a flag, but and we didn't find a flag write inbetween,
+    // (if a block uses a flag, but we didn't find a flag write inbetween,
     // that is the same flag state as after)
-    bool foundC = false, foundZ = false;
+    bool foundC = InstrSetsFlags(after,FLAG_WC), foundZ = InstrSetsFlags(after,FLAG_WZ);
     // Encountered a flag read on the way up?
     bool dependC = InstrUsesFlags(after,FLAG_WC),dependZ = InstrUsesFlags(after,FLAG_WZ);
     struct dependency *depends = NULL;
@@ -3578,7 +3578,7 @@ FindBlockForReorderingDownward(IR *after) {
         bottom = bottom->prev;
         if (!bottom || IsReorderBarrier(bottom)) return (struct reorder_block){0};
         IR *top;
-        // Need closure on a flag?
+        // Need closure on a flag? (In this case, a setter)
         bool needC = false, needZ = false;
         unsigned count = 0;
 
@@ -3629,7 +3629,67 @@ FindBlockForReorderingDownward(IR *after) {
         if (InstrUsesFlags(bottom,FLAG_WC)) dependC = true;
         if (InstrUsesFlags(bottom,FLAG_WZ)) dependZ = true;
         DeleteDependencyList(&depends);
-        continue;
+    }
+}
+
+static struct reorder_block
+FindBlockForReorderingUpward(IR *before) {
+    IR *top = before;
+    DEBUG(NULL,"Looking for a block to move up...");
+    // Are the flags used at before?
+    bool volatileC = FlagsUsedAt(before,FLAG_WC);
+    bool volatileZ = FlagsUsedAt(before,FLAG_WZ);
+    // Encountered a flag write on the way down?
+    bool foundC = InstrSetsFlags(before,FLAG_WC), foundZ = InstrSetsFlags(before,FLAG_WZ);
+    struct dependency *depends = NULL;
+    // Hunt for the start of a potential reordering block
+    for (;;) {
+        top = top->next;
+        if (!top || IsReorderBarrier(top)) return (struct reorder_block){0};
+        IR *bottom;
+        // Need closure on a flag? (In this case, the last user)
+        bool needC = false, needZ = false;
+        unsigned count = 0;
+        for (bottom=top;bottom;bottom=bottom->next) {
+            count++;
+            if (IsReorderBarrier(bottom)) break;
+            // If we write a flag, but there's another write we want to move over
+            // we need to pull instructions until the flag is dead
+            if (foundC && InstrSetsFlags(bottom,FLAG_WC)) {
+                if (volatileC) break;
+                needC = true;
+            }
+            if (foundZ && InstrSetsFlags(bottom,FLAG_WZ)) {
+                if (volatileZ) break;
+                needZ = true;
+            }
+            // Flags dead?
+            if (needC && !FlagsUsedAt(bottom->next,FLAG_WC)) needC = false;
+            if (needZ && !FlagsUsedAt(bottom->next,FLAG_WZ)) needZ = false;
+            // Can't reorder memory
+            if (IsReadWrite(bottom) && ReadWriteInRange(before,bottom->prev)) break;
+            // Can't reorder over code depending on another value for dst
+            if (InstrSetsDst(bottom) && UsedInRange(before,top->prev,bottom->dst)) break;
+            // Can't reorder over code this depends on
+            if (ModifiedInRange(before,top->prev,bottom->src) && UsedInRange(top,bottom,bottom->src)) break;
+            if (InstrReadsDst(bottom)&&ModifiedInRange(before,top->prev,bottom->dst) && UsedInRange(top,bottom,bottom->dst)) break;
+            // if this result is modified by code we reorder over, it must become dead at the end of the block
+            if (InstrSetsDst(bottom) && ModifiedInRange(before,top->prev,bottom->dst)) {
+                PrependDependency(&depends,bottom->dst);
+            }
+            // Delete dependencies that go dead
+            if (bottom->src && IsDeadAfter(bottom,bottom->src)) DeleteDependencies(&depends,bottom->src);
+            if (InstrReadsDst(bottom) && IsDeadAfter(bottom,bottom->dst)) DeleteDependencies(&depends,bottom->dst);
+
+            // Ok, if there are no unmet dependencies, the block is good.
+            if (!needC && !needZ && !depends && !IsPrefixOpcode(bottom)) {
+                return (struct reorder_block){.count=count,.top=top,.bottom=bottom};
+            }
+        }
+        // broke out of loop, this block is invalid
+        if (InstrSetsFlags(top,FLAG_WC)) foundC = true;
+        if (InstrSetsFlags(top,FLAG_WZ)) foundZ = true;
+        DeleteDependencyList(&depends);
     }
 }
 
@@ -3642,6 +3702,7 @@ OptimizeCORDIC(IRList *irl) {
     bool change = false;
     for (IR *ir=irl->tail;ir;ir=ir->prev) {
         if (!IsCordicCommand(ir)) continue;
+        if(IsHwReg(ir->dst)||IsHwReg(ir->src)) continue;
         int cycles = 0;
         // Count min-cycles already inbetween command and get
         for (IR *ir2=ir->next;ir2;ir2=ir2->next) {
@@ -3653,8 +3714,29 @@ OptimizeCORDIC(IRList *irl) {
         while (cycles<CORDIC_PIPE_LENGTH) {
             struct reorder_block blk = FindBlockForReorderingDownward(ir);
             if (blk.count == 0) break; // No block found
-            DEBUG(NULL,"Reordering block of %d instructions",blk.count);
+            DEBUG(NULL,"Reordering block of %d instructions down",blk.count);
             DoReorderBlock(irl,ir,blk.top,blk.bottom);
+            cycles += MinCyclesInRange(blk.top,blk.bottom);
+            change = true;
+        }
+    }
+    // Search for GETQ*
+    for (IR *ir=irl->head;ir;ir=ir->next) {
+        if(!IsCordicGet(ir)) continue;
+        if(IsHwReg(ir->dst)) continue;
+        int cycles = 0;
+        // Count min-cycles already inbetween command and get
+        for (IR *ir2=ir->prev;ir2;ir2=ir2->prev) {
+            if (IsCordicCommand(ir2)) break;
+            cycles += InstrMinCycles(ir2);
+        }
+        // Try pulling up blocks
+        // (The cycle limit only applies in pathological cases)
+        while (cycles<CORDIC_PIPE_LENGTH) {
+            struct reorder_block blk = FindBlockForReorderingUpward(ir);
+            if (blk.count == 0) break; // No block found
+            DEBUG(NULL,"Reordering block of %d instructions up",blk.count);
+            DoReorderBlock(irl,ir->prev,blk.top,blk.bottom);
             cycles += MinCyclesInRange(blk.top,blk.bottom);
             change = true;
         }
