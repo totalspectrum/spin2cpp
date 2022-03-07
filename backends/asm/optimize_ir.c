@@ -97,6 +97,7 @@ InstrSetsDst(IR *ir)
   case OPC_QDIV:
   case OPC_QFRAC:
   case OPC_QMUL:
+  case OPC_QSQRT:
   case OPC_DRVH:
   case OPC_DRVL:
   case OPC_DRVC:
@@ -561,6 +562,7 @@ static int InstrMaxCycles(IR *ir) {
     case OPC_QMUL:
     case OPC_QDIV:
     case OPC_QFRAC:
+    case OPC_QSQRT:
         return aug+9;
     default:
         return aug+2;
@@ -1546,6 +1548,7 @@ HasSideEffectsOtherThanReg(IR *ir)
     case OPC_QDIV:
     case OPC_QFRAC:
     case OPC_QMUL:
+    case OPC_QSQRT:
     case OPC_DRVC:
     case OPC_DRVNC:
     case OPC_DRVL:
@@ -3416,6 +3419,7 @@ static bool IsCordicCommand(IR *ir) {
     case OPC_QMUL:
     case OPC_QDIV:
     case OPC_QFRAC:
+    case OPC_QSQRT:
         return true;
     default:
         return false;
@@ -3439,6 +3443,7 @@ static bool IsReorderBarrier(IR *ir) {
     case OPC_GENERIC:
     case OPC_GENERIC_NR:
     case OPC_GENERIC_DELAY:
+
     case OPC_LOCKCLR:
     case OPC_LOCKNEW:
     case OPC_LOCKRET:
@@ -3448,11 +3453,15 @@ static bool IsReorderBarrier(IR *ir) {
     case OPC_COGSTOP:
     case OPC_ADDCT1:
     case OPC_HUBSET:
+
     case OPC_QDIV: // TODO
     case OPC_QFRAC:
     case OPC_QMUL:
+    case OPC_QSQRT:
+
     case OPC_GETQX: // TODO
     case OPC_GETQY: 
+
     case OPC_DRVC:
     case OPC_DRVNC:
     case OPC_DRVL:
@@ -3562,7 +3571,7 @@ DoReorderBlock(IRList *irl,IR *after,IR *top,IR *bottom) {
 static struct reorder_block
 FindBlockForReorderingDownward(IR *after) {
     IR *bottom = after;
-    DEBUG(NULL,"Looking for a block to move down...");
+    DEBUG(NULL,"Looking for a block to move down... (in %s)",curfunc->name);
     // Are the flags used at after?
     bool volatileC = FlagsUsedAt(after,FLAG_WC);
     bool volatileZ = FlagsUsedAt(after,FLAG_WZ);
@@ -3595,8 +3604,8 @@ FindBlockForReorderingDownward(IR *after) {
                 if (volatileZ && foundZ) break;
                 if (dependZ) break;
             }
-            if (InstrUsesFlags(top,FLAG_WC)) needC = true;
-            if (InstrUsesFlags(top,FLAG_WZ)) needZ = true;
+            if (foundC && InstrUsesFlags(top,FLAG_WC)) needC = true;
+            if (foundZ && InstrUsesFlags(top,FLAG_WZ)) needZ = true;
             // Can't reorder memory
             if (IsReadWrite(top) && ReadWriteInRange(bottom->next,after)) break;
             // Can't reorder over dependent code
@@ -3635,7 +3644,7 @@ FindBlockForReorderingDownward(IR *after) {
 static struct reorder_block
 FindBlockForReorderingUpward(IR *before) {
     IR *top = before;
-    DEBUG(NULL,"Looking for a block to move up...");
+    DEBUG(NULL,"Looking for a block to move up... (in %s)",curfunc->name);
     // Are the flags used at before?
     bool volatileC = FlagsUsedAt(before,FLAG_WC);
     bool volatileZ = FlagsUsedAt(before,FLAG_WZ);
