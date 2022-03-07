@@ -3649,6 +3649,7 @@ FindBlockForReorderingUpward(IR *before) {
     // Are the flags used at before?
     bool volatileC = FlagsUsedAt(before,FLAG_WC);
     bool volatileZ = FlagsUsedAt(before,FLAG_WZ);
+    //DEBUG(NULL,"Volatile C: %s , Volatile Z: %s",volatileC?"Y":"n",volatileZ?"Y":"n");
     // Encountered a flag write on the way down?
     bool foundC = InstrSetsFlags(before,FLAG_WC), foundZ = InstrSetsFlags(before,FLAG_WZ);
     struct dependency *depends = NULL;
@@ -3667,21 +3668,17 @@ FindBlockForReorderingUpward(IR *before) {
             if (IsReorderBarrier(bottom)) break;
             // if we use a flag that isn't set inside the block but we want to reorder over another flag write, abort
             if (foundC && !foundClocal && InstrUsesFlags(bottom,FLAG_WC)) break;
-            if (foundZ && !foundZlocal && InstrUsesFlags(bottom,FLAG_WC)) break;
+            if (foundZ && !foundZlocal && InstrUsesFlags(bottom,FLAG_WZ)) break;
             // If we write a flag, but there's another write we want to move over
             // we need to pull instructions until the flag is dead
             if (InstrSetsFlags(bottom,FLAG_WC)) {
-                if (foundC) {
-                    if (volatileC) break;
-                    needC = true;
-                }
+                if (volatileC) break;
+                if (foundC) needC = true;
                 foundClocal = true;
             }
             if (InstrSetsFlags(bottom,FLAG_WZ)) {
-                if (foundZ) {
-                    if (volatileZ) break;
-                    needZ = true;
-                }
+                if (volatileZ) break;
+                if (foundZ)  needZ = true;
                 foundZlocal = true;
             }
             // Flags dead?
