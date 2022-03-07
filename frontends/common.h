@@ -166,6 +166,7 @@ extern int gl_optimize_flags; /* flags for optimization */
 #define OPT_REMOVE_FEATURES     0x010000  /* remove unused features in libraries */
 #define OPT_MAKE_MACROS         0x020000  /* combine multiple bytecodes */
 #define OPT_SPECIAL_FUNCS       0x040000  /* optimize some special functions like pinr and pinw */
+#define OPT_CORDIC_REORDER      0x080000  /* reorder instructions around CORDIC operations */
 #define OPT_FLAGS_ALL           0xffffff
 
 #define OPT_ASM_BASIC  (OPT_BASIC_REGS|OPT_BRANCHES|OPT_PEEPHOLE|OPT_CONST_PROPAGATE|OPT_REMOVE_FEATURES|OPT_MAKE_MACROS)

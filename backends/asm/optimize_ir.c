@@ -274,12 +274,14 @@ IsValidDstReg(Operand *op)
     }
 }
 
+static unsigned CanonizeFlags(unsigned f) {
+    return ((f&FLAG_CSET)?FLAG_WC:0)|((f&FLAG_ZSET)?FLAG_WZ:0);
+}
+
 static bool
 InstrSetsFlags(IR *ir, int flags)
 {
-    if ( 0 != (ir->flags & flags) )
-        return true;
-    return false;
+    return ir->flags & CanonizeFlags(flags);
 }
 
 static bool
@@ -308,6 +310,9 @@ InstrUsesFlags(IR *ir, unsigned flags)
                 return true;
         }
     }
+    if ((ir->flags & (FLAG_ANDC|FLAG_XORC|FLAG_ORC)) && (flags & FLAG_WC)) return true;
+    if ((ir->flags & (FLAG_ANDZ|FLAG_XORZ|FLAG_ORZ)) && (flags & FLAG_WZ)) return true;
+
     switch (ir->opc) {
     case OPC_GENERIC:
     case OPC_GENERIC_DELAY:
@@ -504,6 +509,65 @@ IsMathInstr(IR *ir)
         return false;
     }
 }
+
+// Note: currently only valid for P2
+static int InstrMinCycles(IR *ir) {
+    if (IsDummy(ir)||IsLabel(ir)) return 0;
+    int aug = 0;
+    if (ir->src && ir->src->kind == IMM_INT && ir->src->val > 511) aug += 2;
+    if (ir->dst && ir->dst->kind == IMM_INT && ir->dst->val > 511) aug += 2;
+
+    switch (ir->opc) {
+    case OPC_WRBYTE:
+    case OPC_WRWORD:
+    case OPC_WRLONG:
+        return aug+3;
+    case OPC_RDBYTE:
+    case OPC_RDWORD:
+    case OPC_RDLONG:
+        return aug+9;
+    default:
+        return aug+2;
+    }
+}
+// Note: currently only valid for P2
+static int InstrMaxCycles(IR *ir) {
+    if (IsDummy(ir)||IsLabel(ir)) return 0;
+    if (IsBranch(ir)) return 100000; // No good.
+
+    int aug = 0;
+    if (ir->src && ir->src->kind == IMM_INT && ir->src->val > 511) aug += 2;
+    if (ir->dst && ir->dst->kind == IMM_INT && ir->dst->val > 511) aug += 2;
+
+    switch (ir->opc) {
+    case OPC_WRBYTE:
+        return aug+26; // Can never be unaligned
+    case OPC_WRWORD:
+    case OPC_WRLONG:
+        return aug+27;
+    case OPC_RDBYTE:
+        return aug+20; // Can never be unaligned
+    case OPC_RDWORD:
+    case OPC_RDLONG:
+        return aug+21;
+    case OPC_GENERIC:
+    case OPC_GENERIC_NR:
+    case OPC_GENERIC_DELAY:
+    case OPC_GENERIC_BRANCH:
+    case OPC_GENERIC_BRCOND:
+    case OPC_WAITX:
+    case OPC_WAITCNT:
+        return 100000; // No good;
+    case OPC_QMUL:
+    case OPC_QDIV:
+    case OPC_QFRAC:
+        return aug+9;
+    default:
+        return aug+2;
+    }
+}
+
+
 
 extern Operand *mulfunc, *unsmulfunc, *divfunc, *unsdivfunc, *muldiva, *muldivb;
 
@@ -1416,6 +1480,28 @@ OptimizeMoves(IRList *irl)
     return everchange;
 }
 
+// Are given flag bits currently in use at this IR?
+static unsigned
+FlagsUsedAt(IR *ir,unsigned flags) {
+    for (IR *irnext = ir; irnext; irnext = irnext->next) {
+        if (InstrUsesFlags(irnext, flags))  return true;
+        if (InstrIsVolatile(irnext)) return true;
+        if (IsBranch(irnext) && irnext->cond == COND_TRUE) break;
+        if (InstrSetsFlags(irnext,flags)) break;
+    }
+    return false;
+}
+
+static bool
+HasUsedFlags(IR *ir) {
+    if (InstrSetsAnyFlags(ir)) {
+        // if the flags might possibly be used, we have to assume there
+        // are side effects
+        return FlagsUsedAt(ir->next,CanonizeFlags(ir->flags));
+    }
+    return false;
+}
+
 static bool
 HasSideEffectsOtherThanReg(IR *ir)
 {
@@ -1426,23 +1512,6 @@ HasSideEffectsOtherThanReg(IR *ir)
     }
     if (ir->dsteffect != OPEFFECT_NONE || ir->srceffect != OPEFFECT_NONE) {
         return true;
-    }
-    if (InstrSetsAnyFlags(ir)) {
-        // if the flags might possibly be used, we have to assume there
-        // are side effects
-        IR *irnext;
-        int flagsSet = ir->flags & (FLAG_WZ|FLAG_WC);
-        for (irnext = ir->next; irnext; irnext = irnext->next) {
-            if (InstrUsesFlags(irnext, flagsSet)) {
-                return true;
-            }
-            if (InstrIsVolatile(irnext)) {
-                return true;
-            }
-            if (IsBranch(irnext) && irnext->cond == COND_TRUE) {
-                break;
-            }
-        }
     }
     if (IsBranch(ir)) {
         if (ir->opc == OPC_CALL &&
@@ -1498,7 +1567,7 @@ HasSideEffects(IR *ir)
     if (ir->dst && !IsLocalOrArg(ir->dst) /*ir->dst->kind == REG_HW*/) {
         return true;
     }
-    return HasSideEffectsOtherThanReg(ir);
+    return HasSideEffectsOtherThanReg(ir) || HasUsedFlags(ir);
 }
 #endif
 
@@ -1619,7 +1688,7 @@ int EliminateDeadCode(IRList *irl)
       } else if (ir->cond == COND_FALSE) {
 	  DeleteIR(irl, ir);
 	  change = 1;
-      } else if (!IsDummy(ir) && ir->dst && !HasSideEffectsOtherThanReg(ir) && IsDeadAfter(ir, ir->dst)) {
+      } else if (!IsDummy(ir) && ir->dst && !(HasSideEffectsOtherThanReg(ir)||HasUsedFlags(ir)) && IsDeadAfter(ir, ir->dst)) {
 	  DeleteIR(irl, ir);
 	  change = 1;
       } else if (MeaninglessMath(ir)) {
@@ -3332,6 +3401,256 @@ OptimizeJumps(IRList *irl)
     return change;
 }
 
+static bool IsPrefixOpcode(IR *ir) {
+    switch (ir->opc) {
+    case OPC_GENERIC_DELAY:
+    case OPC_SETQ:
+    case OPC_SETQ2:
+        return true;
+    default:
+        return false;
+    }
+}
+static bool IsCordicCommand(IR *ir) {
+    switch (ir->opc) {
+    case OPC_QMUL:
+    case OPC_QDIV:
+    case OPC_QFRAC:
+        return true;
+    default:
+        return false;
+    }
+}
+static bool IsCordicGet(IR *ir) {
+    switch (ir->opc) {
+    case OPC_GETQX:
+    case OPC_GETQY:
+        return true;
+    default:
+        return false;
+    }
+}
+
+static bool IsReorderBarrier(IR *ir) {
+    if (!ir||InstrIsVolatile(ir)||IsBranch(ir)||IsLabel(ir)) return true;
+    if (ir->dst&&IsHwReg(ir->dst)) return true;
+    if (ir->src&&IsHwReg(ir->src)) return true;
+    switch (ir->opc) {
+    case OPC_GENERIC:
+    case OPC_GENERIC_NR:
+    case OPC_GENERIC_DELAY:
+    case OPC_LOCKCLR:
+    case OPC_LOCKNEW:
+    case OPC_LOCKRET:
+    case OPC_LOCKSET:
+    case OPC_WAITCNT:
+    case OPC_WAITX:
+    case OPC_COGSTOP:
+    case OPC_ADDCT1:
+    case OPC_HUBSET:
+    case OPC_QDIV: // TODO
+    case OPC_QFRAC:
+    case OPC_QMUL:
+    case OPC_GETQX: // TODO
+    case OPC_GETQY: 
+    case OPC_DRVC:
+    case OPC_DRVNC:
+    case OPC_DRVL:
+    case OPC_DRVH:
+    case OPC_DRVNZ:
+    case OPC_DRVZ:
+    case OPC_PUSH:
+    case OPC_POP:
+    case OPC_FCACHE:
+        return true;
+    default:
+        return false;
+    }
+}
+
+static bool UsedInRange(IR *start,IR *end,Operand *reg) {
+    if (!reg || !IsRegister(reg->kind)) return false;
+    for (IR *ir=start;ir!=end->next;ir=ir->next) {
+        if (InstrUses(ir,reg)) return true;
+        if (InstrModifies(ir,reg)) return false; // Has become dead
+    }
+    return false;
+}
+
+static bool ModifiedInRange(IR *start,IR *end,Operand *reg) {
+    if (!reg || !IsRegister(reg->kind)) return false;
+    for (IR *ir=start;ir!=end->next;ir=ir->next) {
+        if (InstrModifies(ir,reg)) return true;
+    }
+    return false;
+}
+
+static bool ReadWriteInRange(IR *start,IR *end) {
+    for (IR *ir=start;ir!=end->next;ir=ir->next) {
+        if (IsReadWrite(ir)) return true;
+    }
+    return false;
+}
+
+static int MinCyclesInRange(IR *start,IR *end) {
+    int cyc = 0;
+    for (IR *ir=start;ir!=end->next;ir=ir->next) {
+        cyc += InstrMinCycles(ir);
+    }
+    return cyc;
+}
+
+struct reorder_block {
+    unsigned count; // If zero, everything else is invalid
+    IR *top,*bottom;
+};
+
+
+// a kingdom for a std::vector....
+struct dependency {
+    struct dependency *link;
+    Operand *reg;
+};
+
+static void DeleteDependencyList(struct dependency **list) {
+    for (struct dependency *tmp=*list;tmp;) {
+        struct dependency *tmp2 = tmp->link;
+        free(tmp);
+        tmp=tmp2;
+    }
+    *list = NULL;
+}
+
+static void PrependDependency(struct dependency **list,Operand *reg) {
+    struct dependency *tmp = malloc(sizeof(struct dependency));
+    tmp->link = *list;
+    tmp->reg = reg;
+    *list = tmp;
+}
+
+static void DeleteDependencies(struct dependency **list,Operand *reg) {
+    struct dependency **prevlink = list;
+    for (struct dependency *tmp=*list;tmp;) {
+        struct dependency *next = tmp->link;
+        if (tmp->reg == reg) {
+            *prevlink = next;
+            free(tmp);
+        } else {
+            prevlink = &tmp->link;
+        }
+        tmp=next;
+    }
+}
+
+static void
+DoReorderBlock(IRList *irl,IR *after,IR *top,IR *bottom) {
+    IR *above = top->prev;
+    IR *below = bottom->next;
+    // Unlink block
+    if (above) above->next = below;
+    else irl->head = below;
+    if (below) below->prev = above;
+    else irl->tail = above;
+    // Link block at new location
+    top->prev = after;
+    bottom->next = after->next;
+    if (after->next) after->next->prev = bottom;
+    else irl->tail = bottom;
+    after->next = top;
+}
+
+static struct reorder_block
+FindBlockForReorderingDownward(IR *after) {
+    IR *bottom = after;
+    DEBUG(NULL,"Looking for a block...");
+    // Are the flags used at after?
+    bool volatileC = FlagsUsedAt(after,FLAG_WC);
+    bool volatileZ = FlagsUsedAt(after,FLAG_WZ);
+    // Encountered a flag write on the way up?
+    // (if a block uses a flag, but and we didn't find a flag write inbetween,
+    // that is the same flag state as after)
+    bool foundC = false, foundZ = false;
+    struct dependency *depends = NULL;
+    // Hunt for the start of a potential reordering block
+    for (;;) {
+        bottom = bottom->prev;
+        if (!bottom || IsReorderBarrier(bottom)) return (struct reorder_block){0};
+        IR *top;
+        // Need closure on a flag?
+        bool needC = false, needZ = false;
+        unsigned count = 0;
+
+        for (top=bottom;top;top=top->prev) {
+            count++;
+            if (IsReorderBarrier(top)) break;
+            if (InstrSetsFlags(top,FLAG_WC)) {
+                needC = false;
+                if (volatileC && foundC) break;
+            }
+            if (InstrSetsFlags(top,FLAG_WZ)) {
+                needZ = false;
+                if (volatileZ && foundZ) break;
+            }
+            if (InstrUsesFlags(top,FLAG_WC)) needC = true;
+            if (InstrUsesFlags(top,FLAG_WZ)) needZ = true;
+            // Can't reorder memory
+            if (IsReadWrite(top) && ReadWriteInRange(bottom->next,after)) break;
+            // Can't reorder over dependent code
+            if (InstrSetsDst(top) && UsedInRange(bottom->next,after,top->dst)) break;
+            // Check if this instruction meets some dependencies
+            if (InstrSetsDst(top)) {
+                DeleteDependencies(&depends,top->dst);
+            }
+            // Does _this_ depend on anything that we can't take through reorder?
+            if (ModifiedInRange(bottom->next,after,top->src)) {
+                PrependDependency(&depends,top->src);
+            }
+            if (InstrReadsDst(top) && ModifiedInRange(bottom->next,after,top->dst)) {
+                PrependDependency(&depends,top->dst);
+            }
+            // Ok, if there are no unmet dependencies, the block is good.
+            if (!needC && !needZ && !depends && (!top->prev || !IsPrefixOpcode(top->prev))) {
+                return (struct reorder_block){.count=count,.top=top,.bottom=bottom};
+            }
+        }
+        // broke out of loop, this block is invalid
+        foundC = foundC || InstrSetsFlags(bottom,FLAG_WC);
+        foundZ = foundZ || InstrSetsFlags(bottom,FLAG_WZ);
+        DeleteDependencyList(&depends);
+        continue;
+    }
+}
+
+#define CORDIC_PIPE_LENGTH 56
+
+// Try to move code between QMUL/QDIV and GETQ* to amortize CORDIC latency
+static bool
+OptimizeCORDIC(IRList *irl) {
+    // Search for QMUL/QDIV
+    bool change = false;
+    for (IR *ir=irl->tail;ir;ir=ir->prev) {
+        if (!IsCordicCommand(ir)) continue;
+        int cycles = 0;
+        // Count min-cycles already inbetween command and get
+        for (IR *ir2=ir->next;ir2;ir2=ir2->next) {
+            if (IsCordicGet(ir2)) break;
+            cycles += InstrMinCycles(ir2);
+        }
+        // Try pulling down blocks
+        // (The cycle limit only applies in pathological cases)
+        while (cycles<CORDIC_PIPE_LENGTH) {
+            struct reorder_block blk = FindBlockForReorderingDownward(ir);
+            if (blk.count == 0) break; // No block found
+            DEBUG(NULL,"Reordering block of %d instructions",blk.count);
+            DoReorderBlock(irl,ir,blk.top,blk.bottom);
+            cycles += MinCyclesInRange(blk.top,blk.bottom);
+            change = true;
+        }
+    }
+    return change;
+}
+
+
 // optimize an isolated piece of IRList
 // (typically a function)
 void
@@ -3383,7 +3702,10 @@ again:
         change = OptimizeTailCalls(irl, f);
     }
     if (change) goto again;
-    
+    if (gl_p2 && (flags & OPT_CORDIC_REORDER)) {
+        change = OptimizeCORDIC(irl);
+    }
+    if (change) goto again;
 }
 
 //
