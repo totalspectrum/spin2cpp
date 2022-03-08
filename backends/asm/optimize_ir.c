@@ -3826,6 +3826,64 @@ OptimizeCORDIC(IRList *irl) {
     return change;
 }
 
+//
+static bool
+CORDICconstPropagate(IRList *irl) {
+    bool constantCommand=false,change=false,foundX=false,foundY=false;
+    int32_t const_x=0,const_y=0;
+
+    for(IR *ir=irl->head;ir;ir=ir->next) {
+        if (IsCordicCommand(ir) && !IsPrefixOpcode(ir->prev)
+        && ir->dst && ir->dst->kind == IMM_INT
+        && ir->src && ir->src->kind == IMM_INT) {
+            constantCommand = true;
+            foundX = false;
+            foundY = false;
+            switch(ir->opc) {
+            case OPC_QMUL: {
+                DEBUG(NULL,"Got const QMUL %d,%d",ir->dst->val,ir->src->val);
+                uint64_t tmp = (uint64_t)((uint32_t)ir->dst->val) * (uint32_t)ir->src->val;
+                const_x = (int32_t)tmp;
+                const_y = (int32_t)(tmp>>32);
+            } break;
+            case OPC_QDIV: {
+                if (ir->src->val == 0) {
+                    const_x = 0xFFFFFFFF;
+                    const_y = ir->dst->val;
+                } else {
+                    const_x = (uint32_t)ir->dst->val / (uint32_t)ir->src->val;
+                    const_x = (uint32_t)ir->dst->val % (uint32_t)ir->src->val;
+                }
+            } break;
+            default: // other ops make brain hurt, owie
+                constantCommand = false;
+                break;
+            }
+            if (constantCommand) {
+                DeleteIR(irl,ir);
+                change = true;
+            }
+        } else if (constantCommand&&(ir->opc==OPC_GETQX || ir->opc==OPC_GETQY)) {
+            if (ir->opc==OPC_GETQX) {
+                if (foundX) WARNING(NULL,"Internal warning, found two GETQX during constant propagate??");
+                foundX = true;
+                ir->src = NewImmediate(const_x);
+            } else {
+                if (foundY) WARNING(NULL,"Internal warning, found two GETQY during constant propagate??");
+                foundY = true;
+                ir->src = NewImmediate(const_y);
+            }
+            ReplaceOpcode(ir,OPC_MOV);
+        } else if (constantCommand&&(IsBranch(ir)||IsLabel(ir))) {
+            if (!foundX && !foundY) WARNING(NULL,"Internal warning, unused CORDIC constant??");
+            constantCommand = false;
+        }
+    }
+    if (constantCommand && !foundX && !foundY) WARNING(NULL,"Internal warning, unused CORDIC constant at end of function??");
+
+    return change;
+}
+
 // Optimization may have created lone CORDIC commands
 // which will lead to strange results.
 // Thus, we shall remove these.
@@ -3895,6 +3953,9 @@ again:
         }
         if (gl_p2) {
             change |= FixupLoneCORDIC(irl);
+            if (flags & OPT_CONST_PROPAGATE) {
+                change |= CORDICconstPropagate(irl);
+            }
         }
     } while (change != 0);
     if (flags & OPT_TAIL_CALLS) {
