@@ -3195,7 +3195,7 @@ static IR* FindNextRead(IR *irorig, Operand *dest, Operand *src)
         if (ir->cond != irorig->cond) {
             return NULL;
         }
-        if (ir->opc == OPC_RDLONG && ir->src == src) {
+        if (ir->src == src && (ir->opc == OPC_RDLONG||ir->opc == OPC_RDWORD||ir->opc == OPC_RDBYTE)) {
             return ir;
         }
         if (InstrModifies(ir, dest) || InstrModifies(ir, src)) {
@@ -3224,6 +3224,26 @@ IsReadWrite(IR *ir)
         return true;
     default:
         return false;
+    }
+}
+
+static int
+MemoryOpSize(IR *ir) {
+    if (!ir) {
+        return 0;
+    }
+    switch (ir->opc) {
+    case OPC_RDBYTE:
+    case OPC_WRBYTE:
+        return 1;
+    case OPC_RDWORD:
+    case OPC_WRWORD:
+        return 2;
+    case OPC_RDLONG:
+    case OPC_WRLONG:
+        return 4;
+    default:
+        return 0;
     }
 }
 
@@ -3298,7 +3318,9 @@ restart_check:
         if (ir->srceffect != OPEFFECT_NONE || ir->dsteffect != OPEFFECT_NONE) {
             goto get_next;
         }
-        if (ir->opc == OPC_RDLONG || ir->opc == OPC_WRLONG) {
+        if (ir->opc == OPC_RDLONG || ir->opc == OPC_WRLONG 
+        ||  ir->opc == OPC_RDWORD || ir->opc == OPC_WRWORD 
+        ||  ir->opc == OPC_RDBYTE || ir->opc == OPC_WRBYTE) {
             // don't mess with it if prev instr was OPC_SETQ
             if (prev_ir && (prev_ir->opc == OPC_SETQ || prev_ir->opc == OPC_SETQ2)) {
                 prev_ir->flags |= FLAG_KEEP_INSTR;
@@ -3306,24 +3328,31 @@ restart_check:
             }
             dst1 = ir->dst;
             base = ir->src;
+            int size = MemoryOpSize(ir);
+            bool write = IsWrite(ir);
             nextread = FindNextRead(ir, dst1, base);
-            if (nextread && nextread->cond == ir->cond && !InstrSetsAnyFlags(nextread)) {
+            int nextsize = MemoryOpSize(nextread);
+            if (nextread && (nextread->cond == ir->cond || ir->cond == COND_TRUE)) {
                 // wrlong a, b ... rdlong c, b  -> mov c, a
                 // rdlong a, b ... rdlong c, b  -> mov c, a
-                nextread->src = dst1;
-                ReplaceOpcode(nextread, OPC_MOV);
-                change = 1;
-                goto get_next;
+                if(size == nextsize && (!write || size==4) && (gl_p2 || !InstrSetsFlags(nextread,FLAG_WC)) ) {
+                    nextread->src = dst1;
+                    ReplaceOpcode(nextread, OPC_MOV);
+                    change = 1;
+                    goto get_next;
+                }
             }
-        } else if (ir->opc == OPC_RDBYTE) {
+        } 
+        if (ir->opc == OPC_RDBYTE || ir->opc == OPC_RDWORD) {
             dst1 = ir->dst;
+            int mask = ir->opc == OPC_RDBYTE ? 0xFF : 0xFFFF;
             nextread = FindNextUse(ir, dst1);
             if (nextread
                 && nextread->opc == OPC_AND
                 && nextread->dst == dst1
                 && IsImmediate(nextread->src)
                 && !InstrSetsAnyFlags(nextread)
-                && nextread->src->val == 255)
+                && nextread->src->val == mask)
             {
                 // don't need zero extend after rdbyte
                 nextread->opc = OPC_DUMMY;
