@@ -158,6 +158,18 @@ static bool IsWrite(IR *ir) {
     }
 }
 
+static bool IsRead(IR *ir) {
+    switch (ir->opc) {
+    case OPC_RDLONG:
+    case OPC_RDWORD:
+    case OPC_RDBYTE:
+    case OPC_GENERIC:
+        return true;
+    default:
+        return false;
+    }
+}
+
 static bool
 IsLabel(IR *ir)
 {
@@ -3536,6 +3548,12 @@ static bool ReadWriteInRange(IR *start,IR *end) {
     }
     return false;
 }
+static bool WriteInRange(IR *start,IR *end) {
+    for (IR *ir=start;ir!=end->next;ir=ir->next) {
+        if (IsWrite(ir)) return true;
+    }
+    return false;
+}
 
 static int MinCyclesInRange(IR *start,IR *end) {
     int cyc = 0;
@@ -3642,8 +3660,9 @@ FindBlockForReorderingDownward(IR *after) {
             }
             if (foundC && InstrUsesFlags(top,FLAG_WC)) needC = true;
             if (foundZ && InstrUsesFlags(top,FLAG_WZ)) needZ = true;
-            // Can't reorder memory
-            if (IsReadWrite(top) && ReadWriteInRange(bottom->next,after)) break;
+            // Can only reorder reads with reads
+            if (IsWrite(top) && ReadWriteInRange(bottom->next,after)) break;
+            if (IsRead(top) && WriteInRange(bottom->next,after)) break;
             // Can't reorder over dependent code
             if (InstrSetsDst(top) && UsedInRange(bottom->next,after,top->dst)) break;
             // Check if this instruction meets some dependencies
@@ -3719,8 +3738,9 @@ FindBlockForReorderingUpward(IR *before) {
             // Flags dead?
             if (needC && !FlagsUsedAt(bottom->next,FLAG_WC)) needC = false;
             if (needZ && !FlagsUsedAt(bottom->next,FLAG_WZ)) needZ = false;
-            // Can't reorder memory
-            if (IsReadWrite(bottom) && ReadWriteInRange(before,bottom->prev)) break;
+            // Can only reorder reads with reads
+            if (IsWrite(bottom) && ReadWriteInRange(before,bottom->prev)) break;
+            if (IsRead(bottom) && WriteInRange(before,bottom->prev)) break;
             // Can't reorder over code depending on another value for dst
             if (InstrSetsDst(bottom) && UsedInRange(before,top->prev,bottom->dst)) break;
             // Can't reorder over code this depends on
