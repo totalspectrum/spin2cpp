@@ -1849,6 +1849,10 @@ CanTestZero(int opc)
     case OPC_OR:
     case OPC_MOV:
     case OPC_NEG:
+    case OPC_NEGC:
+    case OPC_NEGNC:
+    case OPC_NEGZ:
+    case OPC_NEGNZ:
     case OPC_RDLONG:
     case OPC_RDBYTE:
     case OPC_RDWORD:
@@ -4492,6 +4496,49 @@ static PeepholePattern pat_drvnz2[] = {
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
+// replace if_c neg / if_nc mov and smiliar patterns with NEGcc
+static PeepholePattern pat_negc1[] = {
+    { COND_C,  OPC_NEG, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_NC, OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_negc2[] = {
+    { COND_NC, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_C,  OPC_NEG, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_negnc1[] = {
+    { COND_NC, OPC_NEG, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_C,  OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_negnc2[] = {
+    { COND_C,  OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_NC, OPC_NEG, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_negz1[] = {
+    { COND_Z,  OPC_NEG, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_NZ, OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_negz2[] = {
+    { COND_NZ, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_Z,  OPC_NEG, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_negnz1[] = {
+    { COND_NZ, OPC_NEG, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_Z,  OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_negnz2[] = {
+    { COND_Z,  OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_NZ, OPC_NEG, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
+
 // replace mov x, #0 / cmp a, b wz / if_e mov x, #1
 static PeepholePattern pat_seteq[] = {
     { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_IMM|0, PEEP_FLAGS_P2 },
@@ -5120,6 +5167,15 @@ struct Peepholes {
     { pat_drvz, OPC_DRVZ, ReplaceDrvc },
     { pat_drvnz1, OPC_DRVNZ, ReplaceDrvc },
     { pat_drvnz2, OPC_DRVNZ, ReplaceDrvc },
+
+    { pat_negc1, OPC_NEGC, ReplaceDrvc },
+    { pat_negc2, OPC_NEGC, ReplaceDrvc },
+    { pat_negnc1, OPC_NEGNC, ReplaceDrvc },
+    { pat_negnc2, OPC_NEGNC, ReplaceDrvc },
+    { pat_negz1, OPC_NEGZ, ReplaceDrvc },
+    { pat_negz2, OPC_NEGZ, ReplaceDrvc },
+    { pat_negnz1, OPC_NEGNZ, ReplaceDrvc },
+    { pat_negnz2, OPC_NEGNZ, ReplaceDrvc },
 
     { pat_wrc_cmp, 0, ReplaceWrcCmp },
     { pat_wrc_and, 1, RemoveNFlagged },
