@@ -2046,7 +2046,8 @@ CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
           EmitMove(irl, temp, lhs);
           return temp;
       } else if (rhs->val == -1) {
-        EmitOp2(irl, OPC_NEG, temp, lhs);
+          EmitMove(irl, temp, lhs);
+          EmitOp2(irl, OPC_NEG, temp, temp);
         return temp;
       }
 
