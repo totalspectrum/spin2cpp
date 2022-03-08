@@ -3374,7 +3374,7 @@ FixupLoneCORDIC(IRList *irl) {
                 DeleteIR(irl,ir);
                 change = true;
             } else seenCommand = true;
-        } else if (IsCordicGet(ir)||IsBranch(ir)) {
+        } else if (IsCordicGet(ir)||IsBranch(ir)||IsLabel(ir)) {
             seenCommand = false;
         }
     }
