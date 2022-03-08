@@ -349,61 +349,12 @@ CompileInlineInstr_only(IRList *irl, AST *ast)
     } else {
         condbits = (ival >> 18) & 0xf;
     }
-    switch (condbits) {
-    case 0xf:
-        ir->cond = COND_TRUE;
-        break;
-    case 0xe:
-        ir->cond = COND_LE;
-        break;
-    case 0xd:
-        ir->cond = COND_C_OR_NZ;
-        break;
-    case 0xc:
-        ir->cond = COND_LT;
-        break;
-    case 0xb:
-        ir->cond = COND_NC_OR_Z;
-        break;
-    case 0xa:
-        ir->cond = COND_EQ;
-        break;
-    case 0x9:
-        ir->cond = COND_C_EQ_Z;
-        break;
-    case 0x7:
-        ir->cond = COND_NC_OR_NZ;
-        break;
-    case 0x6:
-        ir->cond = COND_C_NE_Z;
-        break;
-    case 0x5:
-        ir->cond = COND_NE;
-        break;
-    case 0x4:
-        ir->cond = COND_C_AND_NZ;
-        break;
-    case 0x3:
-        ir->cond = COND_GE;
-        break;
-    case 0x2:
-        ir->cond = COND_NC_AND_Z;
-        break;
-    case 0x1:
-        ir->cond = COND_GT;
-        break;
-    case 0x0:
-        if (gl_p2) {
-            IR *newir = NewIR(OPC_RET);
-            ir->next = newir;
-            //ERROR(ast, "Cannot handle _ret_ on instruction in inline asm; convert to regular ret for flexspin compatibility");
-        } else {
-            ir->cond = COND_FALSE;
-        }
-        break;
-    default:
-        ERROR(ast, "Cannot handle this condition on instruction in inline asm");
-        break;
+    if (condbits==0 && gl_p2) {
+        IR *newir = NewIR(OPC_RET);
+        ir->next = newir;
+        //ERROR(ast, "Cannot handle _ret_ on instruction in inline asm; convert to regular ret for flexspin compatibility");
+    } else {
+        ir->cond = (IRCond)(condbits^15);
     }
     
     if (numoperands < 0) {

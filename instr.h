@@ -203,34 +203,33 @@ typedef enum IROpcode {
 } IROpcode;
 
 /* condition for conditional execution */
-/* NOTE: opposite conditions must go together
- * in pairs so that InvertCond can easily
- * find the opposite of any condition
- */
+/* NOTE: These are basically the hardware's bit patterns, but inverted 
+ * so COND_TRUE is zero. This allows some useful bit operations. */
 typedef enum IRCond {
-    COND_TRUE,
-    COND_FALSE,
-    COND_LT,
-    COND_GE,
-    COND_EQ,
-    COND_NE,
-    COND_LE,
-    COND_GT,
+    COND_TRUE,      // 1111
+    COND_C_OR_Z,    // 1110
+    COND_C_OR_NZ,   // 1101
+    COND_C,         // 1100
+    COND_NC_OR_Z,   // 1011
+    COND_Z,         // 1010
+    COND_C_EQ_Z,    // 1001
+    COND_C_AND_Z,   // 1000
+    COND_NC_OR_NZ,  // 0111
+    COND_C_NE_Z,    // 0110
+    COND_NZ,        // 0101
+    COND_C_AND_NZ,  // 0100
+    COND_NC,        // 0011
+    COND_NC_AND_Z,  // 0010
+    COND_NC_AND_NZ, // 0001
+    COND_FALSE,     // 0000
 
-    COND_C,
-    COND_NC,
-    COND_NC_AND_NZ,
-    COND_NC_AND_Z,
-    COND_C_AND_NZ,
-    COND_C_AND_Z,
-    
-    COND_NC_OR_NZ,
-    COND_NC_OR_Z,
-    COND_C_OR_NZ,
-    
-    COND_C_EQ_Z,
-    COND_C_NE_Z,
-    
+
+    COND_LE = COND_C_OR_Z,
+    COND_LT = COND_C,
+    COND_GE = COND_NC,
+    COND_EQ = COND_Z,
+    COND_NE = COND_NZ,
+    COND_GT = COND_NC_AND_NZ,
 } IRCond;
 
 enum flags {

@@ -511,6 +511,10 @@ IsMathInstr(IR *ir)
     }
 }
 
+static inline bool CondIsSubset(IRCond super, IRCond sub) {
+    return sub == (super|sub);
+}
+
 // Note: currently only valid for P2
 static int InstrMinCycles(IR *ir) {
     if (IsDummy(ir)||IsLabel(ir)) return 0;
@@ -3332,7 +3336,7 @@ restart_check:
             bool write = IsWrite(ir);
             nextread = FindNextRead(ir, dst1, base);
             int nextsize = MemoryOpSize(nextread);
-            if (nextread && (nextread->cond == ir->cond || ir->cond == COND_TRUE)) {
+            if (nextread && CondIsSubset(ir->cond,nextread->cond)) {
                 // wrlong a, b ... rdlong c, b  -> mov c, a
                 // rdlong a, b ... rdlong c, b  -> mov c, a
                 if(size == nextsize && (!write || size==4) && (gl_p2 || !InstrSetsFlags(nextread,FLAG_WC)) ) {

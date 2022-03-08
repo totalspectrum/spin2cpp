@@ -2200,7 +2200,7 @@ FlipSides(IRCond cond)
 IRCond
 InvertCond(IRCond v)
 {
-  v = (IRCond)(1 ^ (unsigned)v);
+  v = (IRCond)(15 ^ (unsigned)v);
   return v;
 }
 
