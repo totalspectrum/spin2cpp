@@ -1048,63 +1048,61 @@ ReplaceForward(IR *instr, Operand *orig, Operand *replace, IR *stop_ir)
 int
 ApplyConditionAfter(IR *instr, int val)
 {
-  IR *ir;
-  IRCond newcond;
-  int change = 0;
-  int setz = instr->flags & FLAG_WZ;
-  int setc = instr->flags & FLAG_WC;
+    IR *ir;
+    IRCond newcond;
+    int change = 0;
+    int setz = instr->flags & FLAG_WZ;
+    int setc = instr->flags & FLAG_WC;
+    int cval = val  < 0 ? 2 : 0;
+    int zval = val == 0 ? 1 : 0;
+
+
   
-  for (ir = instr->next; ir; ir = ir->next) {
-    if (IsDummy(ir)) continue;
-    newcond = ir->cond;
-    switch (newcond) {
-    case COND_TRUE:
-    case COND_FALSE:
-        /* no change */
-        break;
-    case COND_EQ:
-        if (setz) {
-            newcond = (val == 0) ? COND_TRUE : COND_FALSE;
+    for (ir = instr->next; ir; ir = ir->next) {
+        if (IsDummy(ir)) continue;
+        newcond = ir->cond;
+
+        // Bit-magic on the condition values.
+        // (Basically, take the half that's selected by the constant flag
+        // and replicate it into the other half)
+        if (setc) newcond = ((newcond >> cval)&0b0011)*0b0101;
+        if (setz) newcond = ((newcond >> zval)&0b0101)*0b0011;
+
+        if (ir->cond != newcond) {
+            change = 1;
+            ir->cond = newcond;
         }
-        break;
-    case COND_NE:
-        if (setz) {
-            newcond = (val != 0) ? COND_TRUE : COND_FALSE;
+        switch(ir->opc) {
+        case OPC_NEGC : if (setc) {ReplaceOpcode(ir, cval ? OPC_NEG  : OPC_MOV );change=1;} break;
+        case OPC_NEGNC: if (setc) {ReplaceOpcode(ir,!cval ? OPC_NEG  : OPC_MOV );change=1;} break;
+        case OPC_NEGZ : if (setz) {ReplaceOpcode(ir, zval ? OPC_NEG  : OPC_MOV );change=1;} break;
+        case OPC_NEGNZ: if (setz) {ReplaceOpcode(ir,!zval ? OPC_NEG  : OPC_MOV );change=1;} break;
+        case OPC_MUXC : if (setc) {ReplaceOpcode(ir, cval ? OPC_OR   : OPC_ANDN);change=1;} break;
+        case OPC_MUXNC: if (setc) {ReplaceOpcode(ir,!cval ? OPC_OR   : OPC_ANDN);change=1;} break;
+        case OPC_MUXZ : if (setz) {ReplaceOpcode(ir, zval ? OPC_OR   : OPC_ANDN);change=1;} break;
+        case OPC_MUXNZ: if (setz) {ReplaceOpcode(ir,!zval ? OPC_OR   : OPC_ANDN);change=1;} break;
+        case OPC_DRVC : if (setc) {ReplaceOpcode(ir, cval ? OPC_DRVH : OPC_DRVL);change=1;} break;
+        case OPC_DRVNC: if (setc) {ReplaceOpcode(ir,!cval ? OPC_DRVH : OPC_DRVL);change=1;} break;
+        case OPC_DRVZ : if (setz) {ReplaceOpcode(ir, zval ? OPC_DRVH : OPC_DRVL);change=1;} break;
+        case OPC_DRVNZ: if (setz) {ReplaceOpcode(ir,!zval ? OPC_DRVH : OPC_DRVL);change=1;} break;
+
+        case OPC_WRC  : if (setc) {ReplaceOpcode(ir,OPC_MOV);ir->src=NewImmediate( cval?1:0);} break;
+        case OPC_WRNC : if (setc) {ReplaceOpcode(ir,OPC_MOV);ir->src=NewImmediate(!cval?1:0);} break;
+        case OPC_WRZ  : if (setz) {ReplaceOpcode(ir,OPC_MOV);ir->src=NewImmediate( zval?1:0);} break;
+        case OPC_WRNZ : if (setz) {ReplaceOpcode(ir,OPC_MOV);ir->src=NewImmediate(!zval?1:0);} break;
+
+        default:
+            if (InstrUsesFlags(ir,setc|setz)) WARNING(NULL,"Internal warning. Couldn't ApplyConditionAfter");
         }
-        break;
-    case COND_LT:
-        if (setc) {
-            newcond = (val < 0) ? COND_TRUE : COND_FALSE;
+
+        if (newcond != COND_FALSE) {
+            if(InstrSetsFlags(ir,FLAG_WC)) setc = 0;
+            if(InstrSetsFlags(ir,FLAG_WZ)) setz = 0;
         }
-        break;
-    case COND_GT:
-        if (setc && setz) {
-            newcond = (val > 0) ? COND_TRUE : COND_FALSE;
-        }
-        break;
-    case COND_LE:
-        if (setc && setz) {
-            newcond = (val <= 0) ? COND_TRUE : COND_FALSE;
-        }
-        break;
-    case COND_GE:
-        if (setc) {
-            newcond = (val >= 0) ? COND_TRUE : COND_FALSE;
-        }
-        break;
-    default:
-        ERROR(NULL, "Internal error, unhandled condition");
-        return 0;
+
+        if (!setc && !setz) break;
     }
-    if (ir->cond != newcond) {
-        change = 1;
-        ir->cond = newcond;
-    }
-    if (InstrSetsAnyFlags(ir)) {
-        break;
-    }
-  }
-  return change;
+    return change;
 }
 
 static bool
