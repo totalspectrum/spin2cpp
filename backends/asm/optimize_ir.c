@@ -93,6 +93,9 @@ InstrSetsDst(IR *ir)
   case OPC_QDIV:
   case OPC_QFRAC:
   case OPC_QMUL:
+  case OPC_QROTATE:
+  case OPC_QSQRT:
+  case OPC_QVECTOR:
   case OPC_DRVH:
   case OPC_DRVL:
   case OPC_DRVC:
@@ -1469,6 +1472,9 @@ HasSideEffectsOtherThanReg(IR *ir)
     case OPC_QDIV:
     case OPC_QFRAC:
     case OPC_QMUL:
+    case OPC_QROTATE:
+    case OPC_QSQRT:
+    case OPC_QVECTOR:
     case OPC_DRVC:
     case OPC_DRVNC:
     case OPC_DRVL:
@@ -3316,6 +3322,63 @@ OptimizeJumps(IRList *irl)
     return change;
 }
 
+static bool IsPrefixOpcode(IR *ir) {
+    if (!ir) return false;
+    switch (ir->opc) {
+    case OPC_GENERIC_DELAY:
+    case OPC_SETQ:
+    case OPC_SETQ2:
+        return true;
+    default:
+        return false;
+    }
+}
+static bool IsCordicCommand(IR *ir) {
+    if (!ir) return false;
+    switch (ir->opc) {
+    case OPC_QMUL:
+    case OPC_QDIV:
+    case OPC_QFRAC:
+    case OPC_QROTATE:
+    case OPC_QSQRT:
+    case OPC_QVECTOR:
+        return true;
+    default:
+        return false;
+    }
+}
+static bool IsCordicGet(IR *ir) {
+    if (!ir) return false;
+    switch (ir->opc) {
+    case OPC_GETQX:
+    case OPC_GETQY:
+        return true;
+    default:
+        return false;
+    }
+}
+
+// Optimization may have created lone CORDIC commands
+// which will lead to strange results.
+// Thus, we shall remove these.
+static bool
+FixupLoneCORDIC(IRList *irl) {
+    bool seenCommand = false, change = false;
+    for(IR *ir=irl->tail;ir;ir=ir->prev) {
+        if (IsCordicCommand(ir)) {
+            if (seenCommand && !InstrIsVolatile(ir)) {
+                if (IsPrefixOpcode(ir->prev)) DeleteIR(irl,ir->prev);
+                DeleteIR(irl,ir);
+                change = true;
+            } else seenCommand = true;
+        } else if (IsCordicGet(ir)||IsBranch(ir)||IsLabel(ir)) {
+            seenCommand = false;
+        }
+    }
+    return change;
+}
+
+
 // optimize an isolated piece of IRList
 // (typically a function)
 void
@@ -3361,6 +3424,9 @@ again:
         }
         if (gl_p2 && (flags & OPT_BASIC_REGS)) {
             change |= OptimizeP2(irl);
+        }
+        if (gl_p2) {
+            change |= FixupLoneCORDIC(irl);
         }
     } while (change != 0);
     if (flags & OPT_TAIL_CALLS) {

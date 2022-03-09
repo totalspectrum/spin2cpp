@@ -3378,9 +3378,9 @@ instr_p2[] = {
     { "qmul",   0x0d000000, P2_TWO_OPERANDS, OPC_QMUL, 0 },
     { "qdiv",   0x0d100000, P2_TWO_OPERANDS, OPC_QDIV, 0 },
     { "qfrac",  0x0d200000, P2_TWO_OPERANDS, OPC_QFRAC, 0 },
-    { "qsqrt",  0x0d300000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
-    { "qrotate",0x0d400000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
-    { "qvector",0x0d500000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
+    { "qsqrt",  0x0d300000, P2_TWO_OPERANDS, OPC_QSQRT, 0 },
+    { "qrotate",0x0d400000, P2_TWO_OPERANDS, OPC_QROTATE, 0 },
+    { "qvector",0x0d500000, P2_TWO_OPERANDS, OPC_QVECTOR, 0 },
 
     { "hubset", 0x0d600000, P2_DST_CONST_OK,  OPC_HUBSET, 0 },
     { "cogid",  0x0d600001, P2_DST_CONST_OK,  OPC_COGID, FLAG_WC },
