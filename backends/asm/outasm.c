@@ -2255,7 +2255,20 @@ CompileBasicBoolExpression(IRList *irl, AST *expr)
     rhs = tmp;
     cond = FlipSides(cond);
   }
+  // If comparing with constant, try for a condition that only uses C
+  // but only if it's correct and it won't horribly pessimize everything
+  if ((cond == COND_LE||cond == COND_GT)
+  && rhs && rhs->kind == IMM_INT
+  && rhs->val != 511 && (int32_t)rhs->val != (isUnsigned ? UINT32_MAX : INT32_MAX)) {
+    cond = (cond == COND_LE) ? COND_LT : COND_GE;
+    rhs = NewImmediate(rhs->val+1);
+  }
+
   switch (cond) {
+  case COND_LT:
+  case COND_GE:
+    flags = FLAG_WC;
+    break;
   case COND_NE:
   case COND_EQ:
     flags = FLAG_WZ;
