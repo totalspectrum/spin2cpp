@@ -114,6 +114,7 @@ typedef enum IROpcode {
     OPC_SETQ,
     OPC_SETQ2,
     OPC_SIGNX,
+    OPC_SUBR,
     OPC_TESTB,
     OPC_TESTBN,
     OPC_WAITX,
