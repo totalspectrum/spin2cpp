@@ -3369,7 +3369,7 @@ FixupLoneCORDIC(IRList *irl) {
     bool seenCommand = false, change = false;
     for(IR *ir=irl->tail;ir;ir=ir->prev) {
         if (IsCordicCommand(ir)) {
-            if (seenCommand) {
+            if (seenCommand && !InstrIsVolatile(ir)) {
                 if (IsPrefixOpcode(ir->prev)) DeleteIR(irl,ir->prev);
                 DeleteIR(irl,ir);
                 change = true;
