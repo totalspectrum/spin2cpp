@@ -123,10 +123,18 @@ MakeOperatorCall(AST *func, AST *left, AST *right, AST *extraArg)
 {
     AST *call;
     AST *params = NULL;
-
+    ASTReportInfo saveinfo;
+    
     if (!func) {
         ERROR(left, "Internal error, NULL parameter");
         return AstInteger(0);
+    }
+    if (left) {
+        AstReportAs(left, &saveinfo);
+    } else if (right) {
+        AstReportAs(right, &saveinfo);
+    } else {
+        AstReportAs(func, &saveinfo);
     }
     if (left) {
         params = AddToList(params, NewAST(AST_EXPRLIST, left, NULL));
@@ -138,6 +146,7 @@ MakeOperatorCall(AST *func, AST *left, AST *right, AST *extraArg)
         params = AddToList(params, NewAST(AST_EXPRLIST, extraArg, NULL));
     }
     call = NewAST(AST_FUNCCALL, func, params);
+    AstReportDone(&saveinfo);
     return call;
 }
 
@@ -146,10 +155,12 @@ static AST *dopromote(AST *expr, int srcbytes, int destbytes, int operatr)
 {
     int shiftbits = srcbytes * 8;
     AST *promote;
+    ASTReportInfo saveinfo;
 
     if (shiftbits == 32 && destbytes < 8) {
         return expr; // nothing to do
     }
+    AstReportAs(expr, &saveinfo);
     promote = AstOperator(operatr, expr, AstInteger(shiftbits));
     if (destbytes == 8) {
         // at this point "promote" will contain a 4 byte value
@@ -163,6 +174,7 @@ static AST *dopromote(AST *expr, int srcbytes, int destbytes, int operatr)
         }
         promote = MakeOperatorCall(convfunc, promote, NULL, NULL);
     }
+    AstReportDone(&saveinfo);
     return promote;
 }
 // do a narrowing operation to convert from A bytes to B bytes
@@ -409,9 +421,11 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
     int isfloat64 = 0;
     int isalreadyfixed = 0;
     AST *scale = NULL;
+    ASTReportInfo saveinfo;
 
+    AstReportAs(ast, &saveinfo);
     if (op == K_MODULUS) {
-        // MOD operator convers float operands to integer
+        // MOD operator converts float operands to integer
         if (IsFloatType(lefttype)) {
             ast->left = dofloatToInt(ast->left, lefttype);
             lefttype = ast_type_long;
@@ -503,6 +517,7 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
         if (IsFloatType(lefttype)) {
             ast->kind = AST_FLOAT;
         }
+        AstReportDone(&saveinfo);
         return lefttype;
     }
     if (isfloat) {
@@ -537,10 +552,13 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
             ERROR(ast, "internal error unhandled operator");
             break;
         }
+        AstReportDone(&saveinfo);
         return ast_type_float;
     }
-    if (!MakeBothIntegers(ast, lefttype, righttype, "operator"))
+    if (!MakeBothIntegers(ast, lefttype, righttype, "operator")) {
+        AstReportDone(&saveinfo);
         return NULL;
+    }
     lefttype = MatchIntegerTypes(ast, lefttype, righttype, 0);
     if (IsUnsignedType(lefttype)) {
         if (op == K_MODULUS) {
@@ -596,6 +614,7 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
             break;
         }
     }             
+    AstReportDone(&saveinfo);
     return lefttype;
 }
 
