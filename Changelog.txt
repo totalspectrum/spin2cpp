@@ -1,4 +1,6 @@
 Version 5.9.10
+- Fixed some bugs in time related functions
+- Merged a number of helpful P2 logic and CORDIC optimizations contributed by Ada
 
 Version 5.9.9
 - Added special preprocessor comments {$flexspin ... } for FlexSpin specific code.
