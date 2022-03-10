@@ -473,3 +473,35 @@ pri _int64_modu(nlo, nhi, dlo, dhi) : rlo, rhi | x0, x1
   x0, x1, rlo, rhi := _int64_divmodu(nlo, nhi, dlo, dhi)
   return rlo, rhi
 
+pri _int64_divmods(nlo, nhi, dlo, dhi) : qlo, qhi, rlo, rhi | sign
+  asm
+          cmps nhi,#0 wc
+          muxc sign,#%11
+    if_c  neg nhi,nhi
+    if_c  neg nlo,nlo wz
+    if_nz_and_c sub nhi,#1
+          cmps dhi,#0 wc
+    if_c  xor sign,#%10
+    if_c  neg dhi,dhi
+    if_c  neg dlo,dlo wz
+    if_nz_and_c sub dhi,#1
+  endasm
+  qlo, qhi, rlo, rhi := _int64_divmodu(nlo,nhi,dlo,dhi)
+  asm
+          test sign,#%10 wc
+    if_c  neg qhi,qhi
+    if_c  neg qlo,qlo wz
+    if_nz_and_c sub qhi,#1
+          test sign,#%01 wc
+    if_c  neg rhi,rhi
+    if_c  neg rlo,rlo wz
+    if_nz_and_c sub rhi,#1
+  endasm
+
+pri _int64_divs(nlo, nhi, dlo, dhi) : qlo, qhi | x0, x1
+  qlo, qhi, x0, x1 := _int64_divmods(nlo, nhi, dlo, dhi)
+  return qlo, qhi
+
+pri _int64_mods(nlo, nhi, dlo, dhi) : rlo, rhi | x0, x1
+  x0, x1, rlo, rhi := _int64_divmods(nlo, nhi, dlo, dhi)
+  return rlo, rhi
