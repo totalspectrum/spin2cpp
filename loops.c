@@ -1487,7 +1487,7 @@ TransformCountRepeat(AST *ast)
         }
     } else {
         AST *stepvar = AstTempLocalVariable("_step_", looptype);
-        int op = isUnsignedLoop ? K_GTU : '>';
+        int op = isUnsignedLoop ? K_GEU : K_GE;
         if (knownStepDir < 0) {
             op = isUnsignedLoop ? K_LTU : '<';
         }

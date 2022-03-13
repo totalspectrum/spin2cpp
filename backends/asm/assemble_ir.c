@@ -366,15 +366,15 @@ PrintCond(struct flexbuf *fb, IRCond cond)
     case COND_LE:
       flexbuf_addstr(fb, " if_be");
       break;
-    case COND_C:
-      flexbuf_addstr(fb, " if_c");
-      break;
-    case COND_NC:
-      flexbuf_addstr(fb, " if_nc");
-      break;
-    case COND_NC_AND_NZ:
-      flexbuf_addstr(fb, " if_nc_and_nz");
-      break;
+    // case COND_C:
+    //   flexbuf_addstr(fb, " if_c");
+    //   break;
+    // case COND_NC:
+    //   flexbuf_addstr(fb, " if_nc");
+    //   break;
+    // case COND_NC_AND_NZ:
+    //   flexbuf_addstr(fb, " if_nc_and_nz");
+    //   break;
     case COND_NC_AND_Z:
       flexbuf_addstr(fb, " if_nc_and_z");
       break;        
@@ -825,15 +825,12 @@ PrintCompressCondJump(struct flexbuf *fb, int cond, Operand *dst)
         flag |= 0x5;
         break;
     case COND_LT:
-    case COND_C:
         flag |= 0xc;
         break;
     case COND_GE:
-    case COND_NC:
         flag |= 0x3;
         break;
     case COND_GT:
-    case COND_NC_AND_NZ:
         flag |= 0x1;
         break;
     case COND_LE:

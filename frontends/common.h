@@ -166,12 +166,13 @@ extern int gl_optimize_flags; /* flags for optimization */
 #define OPT_REMOVE_FEATURES     0x010000  /* remove unused features in libraries */
 #define OPT_MAKE_MACROS         0x020000  /* combine multiple bytecodes */
 #define OPT_SPECIAL_FUNCS       0x040000  /* optimize some special functions like pinr and pinw */
+#define OPT_CORDIC_REORDER      0x080000  /* reorder instructions around CORDIC operations */
 #define OPT_FLAGS_ALL           0xffffff
 
 #define OPT_ASM_BASIC  (OPT_BASIC_REGS|OPT_BRANCHES|OPT_PEEPHOLE|OPT_CONST_PROPAGATE|OPT_REMOVE_FEATURES|OPT_MAKE_MACROS)
 
 // default optimization (-O1) for ASM output
-#define DEFAULT_ASM_OPTS        (OPT_ASM_BASIC|OPT_DEADCODE|OPT_REMOVE_UNUSED_FUNCS|OPT_INLINE_SMALLFUNCS|OPT_AUTO_FCACHE|OPT_LOOP_BASIC|OPT_TAIL_CALLS|OPT_SPECIAL_FUNCS)
+#define DEFAULT_ASM_OPTS        (OPT_ASM_BASIC|OPT_DEADCODE|OPT_REMOVE_UNUSED_FUNCS|OPT_INLINE_SMALLFUNCS|OPT_AUTO_FCACHE|OPT_LOOP_BASIC|OPT_TAIL_CALLS|OPT_SPECIAL_FUNCS|OPT_CORDIC_REORDER)
 // extras added with -O2
 #define EXTRA_ASM_OPTS          (OPT_INLINE_SINGLEUSE|OPT_PERFORM_CSE|OPT_PERFORM_LOOPREDUCE|OPT_REMOVE_HUB_BSS)
 

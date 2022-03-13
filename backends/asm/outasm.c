@@ -2038,13 +2038,17 @@ CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
   getmod &= 1;
   
 #ifdef FAST_IMMEDIATE_DIVIDES
-  if (rhs->kind == IMM_INT && rhs->val > 0 && isPowerOf2(rhs->val) && !isfrac64) {
+  if (rhs->kind == IMM_INT  && !isfrac64 && ((rhs->val > 0 && isPowerOf2(rhs->val)) || (rhs->val < 0 && isPowerOf2(0-rhs->val)))) {
       IR *ir;
-      int val = rhs->val;
+      int aval = abs(rhs->val);
       
-      if (val == 1) {
+      if (rhs->val == 1 || (rhs->val == -1 && getmod)) {
           EmitMove(irl, temp, lhs);
           return temp;
+      } else if (rhs->val == -1) {
+          EmitMove(irl, temp, lhs);
+          EmitOp2(irl, OPC_NEG, temp, temp);
+        return temp;
       }
 
       lhs = Dereference(irl, lhs);
@@ -2055,30 +2059,18 @@ CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
           EmitMove(irl, temp, lhs);
       }
       if (getmod) {
-          EmitOp2(irl, OPC_AND, temp, NewImmediate(val-1));
+          EmitOp2(irl, OPC_AND, temp, NewImmediate(aval-1));
       } else {
-          int shift = 0;
-          val = val >>1;
-          while (val != 0) {
-              shift++;
-              val = val >> 1;
-          }
-          EmitOp2(irl, OPC_SHR, temp, NewImmediate(shift));
+          EmitOp2(irl, OPC_SHR, temp, NewImmediate(__builtin_ctz(aval)));
       }
       if (isSigned) {
-          ir = EmitOp2(irl, OPC_NEG, temp, temp);
-          ir->cond = COND_LT; // only do the negate if x < 0
+          bool negresult = !getmod && (rhs->val < 0); // Negate result if divisor is negative and we're not getting the remainder
+          ir = EmitOp2(irl, negresult ? OPC_NEGNC : OPC_NEGC, temp, temp);
       }
       return temp;
   }
 #endif
   
-  if (!divfunc) {
-    divfunc = NewOperand(IMM_COG_LABEL, "divide_", 0);
-    unsdivfunc = NewOperand(IMM_COG_LABEL, "unsdivide_", 0);
-    muldiva = GetOneGlobal(REG_ARG, "muldiva_", 0);
-    muldivb = GetOneGlobal(REG_ARG, "muldivb_", 0);
-  }
   if (isfrac64) {
       if (gl_p2) {
           Operand *temp2 = NewFunctionTempRegister();
@@ -2087,17 +2079,69 @@ CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
           EmitOp2(irl, OPC_QFRAC, temp, temp2);
           EmitOp1(irl, OPC_GETQX, temp);
           return temp;
+      } else {
+        ERROR(expr, "FRAC not supported on P1 yet");
+        return temp; //???
       }
-      ERROR(expr, "FRAC not supported on P1 yet");
-  } else {
-      EmitMove(irl, muldiva, lhs);
-      EmitMove(irl, muldivb, rhs);
-      EmitOp1(irl, OPC_CALL, (isSigned) ? divfunc : unsdivfunc);
   }
+
+  // P2 can use QDIV for unsigned divide
+  if (gl_p2 && !isSigned) {
+    Operand *temp2 = NewFunctionTempRegister();
+    EmitMove(irl, temp2, rhs);
+    EmitMove(irl, temp, lhs);
+    EmitOp2(irl, OPC_QDIV, temp, temp2);
+    EmitOp1(irl, getmod ? OPC_GETQY : OPC_GETQX, temp);
+    return temp;
+  }
+
+  // Use native QDIV + ABS/NEGC for signed divide with known divisor
+  if (gl_p2 && isSigned && rhs->kind == IMM_INT) {
+    IR *ir;
+    lhs = Dereference(irl,lhs);
+    Operand *rhs2 = NewOperand(IMM_INT,rhs->name,abs(rhs->val));
+    ir = EmitOp2(irl, OPC_ABS, temp, lhs);
+    ir->flags |= FLAG_WC;
+    EmitOp2(irl, OPC_QDIV, temp, rhs2);
+    EmitOp1(irl, getmod ? OPC_GETQY : OPC_GETQX, temp);
+    bool negresult = !getmod && (rhs->val < 0); // Negate result if divisor is negative and we're not getting the remainder
+    EmitOp2(irl,negresult ? OPC_NEGNC : OPC_NEGC, temp, temp);
+    //ir->cond = negresult ? COND_GE : COND_LT; // only do the negate if x < 0
+    return temp;
+  }
+  
+  // Use native QDIV + ABS/NEGC for signed divide with known dividend
+  if (gl_p2 && isSigned && lhs->kind == IMM_INT) {
+    IR *ir;
+    rhs = Dereference(irl,rhs);
+    Operand *lhs2 = NewOperand(IMM_INT,lhs->name,abs(lhs->val));
+    ir = EmitOp2(irl, OPC_ABS, temp, rhs);
+    if (!getmod) ir->flags |= FLAG_WC;
+    EmitOp2(irl, OPC_QDIV, lhs2, temp);
+    EmitOp1(irl, getmod ? OPC_GETQY : OPC_GETQX, temp);
+    if (getmod) {
+      EmitOp2(irl, (lhs->val < 0) ? OPC_NEG : OPC_MOV, temp, temp);
+    } else {
+      EmitOp2(irl, (lhs->val < 0) ? OPC_NEGNC : OPC_NEGC, temp, temp);
+    }
+    return temp;
+  }
+
+
+  // Fall back on function call
+  if (!divfunc) {
+    divfunc = NewOperand(IMM_COG_LABEL, "divide_", 0);
+    unsdivfunc = NewOperand(IMM_COG_LABEL, "unsdivide_", 0);
+    muldiva = GetOneGlobal(REG_ARG, "muldiva_", 0);
+    muldivb = GetOneGlobal(REG_ARG, "muldivb_", 0);
+  }
+  EmitMove(irl, muldiva, lhs);
+  EmitMove(irl, muldivb, rhs);
+  EmitOp1(irl, OPC_CALL, (isSigned) ? divfunc : unsdivfunc);
   if (getmod) {
-      EmitMove(irl, temp, muldiva);
+    EmitMove(irl, temp, muldiva);
   } else {
-      EmitMove(irl, temp, muldivb);
+    EmitMove(irl, temp, muldivb);
   }
   return temp;
 }
@@ -2157,7 +2201,7 @@ FlipSides(IRCond cond)
 IRCond
 InvertCond(IRCond v)
 {
-  v = (IRCond)(1 ^ (unsigned)v);
+  v = (IRCond)(15 ^ (unsigned)v);
   return v;
 }
 
@@ -5413,24 +5457,18 @@ static const char *builtin_div_p1 =
 "DIVCNT\n"
 "\tlong\t0\n"
 ;
-static const char *builtin_div_p2 =
-"\nunsdivide_\n"
-"       setq    #0\n"
-"       qdiv    muldiva_, muldivb_\n"
-"       getqx   muldivb_\n"  // get quotient
-" _ret_ getqy   muldiva_\n"  // get remainder
-    
+static const char *builtin_div_p2 = 
 "\ndivide_\n"
-"       abs     muldiva_,muldiva_     wc       'abs(x)\n"
-"       muxc    itmp2_,#%11                    'store sign of x\n"
 "       abs     muldivb_,muldivb_     wcz      'abs(y)\n"
-" if_c  xor     itmp2_,#%10                    'store sign of y\n"
-" if_z  ret\n"
-"       call    #unsdivide_\n"
-"       test    itmp2_,#1        wc       'restore sign, remainder\n"
-"       negc    muldiva_,muldiva_ \n"
-"       test    itmp2_,#%10      wc       'restore sign, division result\n"
-" _ret_ negc    muldivb_,muldivb_\n"
+"       wrc     itmp2_                         'store sign of y\n"
+"       abs     muldiva_,muldiva_     wc       'abs(x)\n"
+"       qdiv    muldiva_, muldivb_             'queue divide\n"
+" if_c  xor     itmp2_,#1                      'store sign of x\n"
+"       getqx   muldivb_                       'get quotient\n"
+"       getqy   muldiva_                       'get remainder\n"
+"       negc    muldiva_,muldiva_              'restore sign, remainder (sign of x)\n"
+"       testb   itmp2_,#0             wc       'restore sign, division result\n"
+" _ret_ negc    muldivb_,muldivb_     \n"
 
 ;
 

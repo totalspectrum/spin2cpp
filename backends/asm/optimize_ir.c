@@ -57,6 +57,10 @@ InstrReadsDst(IR *ir)
   switch (ir->opc) {
   case OPC_MOV:
   case OPC_NEG:
+  case OPC_NEGC:
+  case OPC_NEGNC:
+  case OPC_NEGZ:
+  case OPC_NEGNZ:
   case OPC_ABS:
   case OPC_RDBYTE:
   case OPC_RDWORD:
@@ -149,6 +153,18 @@ static bool IsWrite(IR *ir) {
     case OPC_WRLONG:
     case OPC_WRWORD:
     case OPC_WRBYTE:
+    case OPC_GENERIC:
+        return true;
+    default:
+        return false;
+    }
+}
+
+static bool IsRead(IR *ir) {
+    switch (ir->opc) {
+    case OPC_RDLONG:
+    case OPC_RDWORD:
+    case OPC_RDBYTE:
     case OPC_GENERIC:
         return true;
     default:
@@ -273,12 +289,14 @@ IsValidDstReg(Operand *op)
     }
 }
 
+static unsigned CanonizeFlags(unsigned f) {
+    return ((f&FLAG_CSET)?FLAG_WC:0)|((f&FLAG_ZSET)?FLAG_WZ:0);
+}
+
 static bool
 InstrSetsFlags(IR *ir, int flags)
 {
-    if ( 0 != (ir->flags & flags) )
-        return true;
-    return false;
+    return ir->flags & CanonizeFlags(flags);
 }
 
 static bool
@@ -307,6 +325,9 @@ InstrUsesFlags(IR *ir, unsigned flags)
                 return true;
         }
     }
+    if ((ir->flags & (FLAG_ANDC|FLAG_XORC|FLAG_ORC)) && (flags & FLAG_WC)) return true;
+    if ((ir->flags & (FLAG_ANDZ|FLAG_XORZ|FLAG_ORZ)) && (flags & FLAG_WZ)) return true;
+
     switch (ir->opc) {
     case OPC_GENERIC:
     case OPC_GENERIC_DELAY:
@@ -321,6 +342,8 @@ InstrUsesFlags(IR *ir, unsigned flags)
     case OPC_DRVNC:
     case OPC_MUXC:
     case OPC_MUXNC:
+    case OPC_NEGC:
+    case OPC_NEGNC:
     case OPC_BITC:
     case OPC_BITNC:
         /* definitely uses the C flag */
@@ -329,6 +352,8 @@ InstrUsesFlags(IR *ir, unsigned flags)
     case OPC_DRVNZ:
     case OPC_MUXZ:
     case OPC_MUXNZ:
+    case OPC_NEGZ:
+    case OPC_NEGNZ:
     case OPC_WRZ:
     case OPC_WRNZ:
         /* definitely uses the Z flag */
@@ -499,6 +524,70 @@ IsMathInstr(IR *ir)
         return false;
     }
 }
+
+static inline bool CondIsSubset(IRCond super, IRCond sub) {
+    return sub == (super|sub);
+}
+
+// Note: currently only valid for P2
+static int InstrMinCycles(IR *ir) {
+    if (IsDummy(ir)||IsLabel(ir)) return 0;
+    int aug = 0;
+    if (ir->src && ir->src->kind == IMM_INT && ir->src->val > 511) aug += 2;
+    if (ir->dst && ir->dst->kind == IMM_INT && ir->dst->val > 511) aug += 2;
+
+    switch (ir->opc) {
+    case OPC_WRBYTE:
+    case OPC_WRWORD:
+    case OPC_WRLONG:
+        return aug+3;
+    case OPC_RDBYTE:
+    case OPC_RDWORD:
+    case OPC_RDLONG:
+        return aug+9;
+    default:
+        return aug+2;
+    }
+}
+// Note: currently only valid for P2
+static int InstrMaxCycles(IR *ir) {
+    if (IsDummy(ir)||IsLabel(ir)) return 0;
+    if (IsBranch(ir)) return 100000; // No good.
+
+    int aug = 0;
+    if (ir->src && ir->src->kind == IMM_INT && ir->src->val > 511) aug += 2;
+    if (ir->dst && ir->dst->kind == IMM_INT && ir->dst->val > 511) aug += 2;
+
+    switch (ir->opc) {
+    case OPC_WRBYTE:
+        return aug+26; // Can never be unaligned
+    case OPC_WRWORD:
+    case OPC_WRLONG:
+        return aug+27;
+    case OPC_RDBYTE:
+        return aug+20; // Can never be unaligned
+    case OPC_RDWORD:
+    case OPC_RDLONG:
+        return aug+21;
+    case OPC_GENERIC:
+    case OPC_GENERIC_NR:
+    case OPC_GENERIC_DELAY:
+    case OPC_GENERIC_BRANCH:
+    case OPC_GENERIC_BRCOND:
+    case OPC_WAITX:
+    case OPC_WAITCNT:
+        return 100000; // No good;
+    case OPC_QMUL:
+    case OPC_QDIV:
+    case OPC_QFRAC:
+    case OPC_QSQRT:
+        return aug+9;
+    default:
+        return aug+2;
+    }
+}
+
+
 
 extern Operand *mulfunc, *unsmulfunc, *divfunc, *unsdivfunc, *muldiva, *muldivb;
 
@@ -973,63 +1062,61 @@ ReplaceForward(IR *instr, Operand *orig, Operand *replace, IR *stop_ir)
 int
 ApplyConditionAfter(IR *instr, int val)
 {
-  IR *ir;
-  IRCond newcond;
-  int change = 0;
-  int setz = instr->flags & FLAG_WZ;
-  int setc = instr->flags & FLAG_WC;
+    IR *ir;
+    IRCond newcond;
+    int change = 0;
+    int setz = instr->flags & FLAG_WZ;
+    int setc = instr->flags & FLAG_WC;
+    int cval = val  < 0 ? 2 : 0;
+    int zval = val == 0 ? 1 : 0;
+
+
   
-  for (ir = instr->next; ir; ir = ir->next) {
-    if (IsDummy(ir)) continue;
-    newcond = ir->cond;
-    switch (newcond) {
-    case COND_TRUE:
-    case COND_FALSE:
-        /* no change */
-        break;
-    case COND_EQ:
-        if (setz) {
-            newcond = (val == 0) ? COND_TRUE : COND_FALSE;
+    for (ir = instr->next; ir; ir = ir->next) {
+        if (IsDummy(ir)) continue;
+        newcond = ir->cond;
+
+        // Bit-magic on the condition values.
+        // (Basically, take the half that's selected by the constant flag
+        // and replicate it into the other half)
+        if (setc) newcond = ((newcond >> cval)&0b0011)*0b0101;
+        if (setz) newcond = ((newcond >> zval)&0b0101)*0b0011;
+
+        if (ir->cond != newcond) {
+            change = 1;
+            ir->cond = newcond;
         }
-        break;
-    case COND_NE:
-        if (setz) {
-            newcond = (val != 0) ? COND_TRUE : COND_FALSE;
+        switch(ir->opc) {
+        case OPC_NEGC : if (setc) {ReplaceOpcode(ir, cval ? OPC_NEG  : OPC_MOV );change=1;} break;
+        case OPC_NEGNC: if (setc) {ReplaceOpcode(ir,!cval ? OPC_NEG  : OPC_MOV );change=1;} break;
+        case OPC_NEGZ : if (setz) {ReplaceOpcode(ir, zval ? OPC_NEG  : OPC_MOV );change=1;} break;
+        case OPC_NEGNZ: if (setz) {ReplaceOpcode(ir,!zval ? OPC_NEG  : OPC_MOV );change=1;} break;
+        case OPC_MUXC : if (setc) {ReplaceOpcode(ir, cval ? OPC_OR   : OPC_ANDN);change=1;} break;
+        case OPC_MUXNC: if (setc) {ReplaceOpcode(ir,!cval ? OPC_OR   : OPC_ANDN);change=1;} break;
+        case OPC_MUXZ : if (setz) {ReplaceOpcode(ir, zval ? OPC_OR   : OPC_ANDN);change=1;} break;
+        case OPC_MUXNZ: if (setz) {ReplaceOpcode(ir,!zval ? OPC_OR   : OPC_ANDN);change=1;} break;
+        case OPC_DRVC : if (setc) {ReplaceOpcode(ir, cval ? OPC_DRVH : OPC_DRVL);change=1;} break;
+        case OPC_DRVNC: if (setc) {ReplaceOpcode(ir,!cval ? OPC_DRVH : OPC_DRVL);change=1;} break;
+        case OPC_DRVZ : if (setz) {ReplaceOpcode(ir, zval ? OPC_DRVH : OPC_DRVL);change=1;} break;
+        case OPC_DRVNZ: if (setz) {ReplaceOpcode(ir,!zval ? OPC_DRVH : OPC_DRVL);change=1;} break;
+
+        case OPC_WRC  : if (setc) {ReplaceOpcode(ir,OPC_MOV);ir->src=NewImmediate( cval?1:0);} break;
+        case OPC_WRNC : if (setc) {ReplaceOpcode(ir,OPC_MOV);ir->src=NewImmediate(!cval?1:0);} break;
+        case OPC_WRZ  : if (setz) {ReplaceOpcode(ir,OPC_MOV);ir->src=NewImmediate( zval?1:0);} break;
+        case OPC_WRNZ : if (setz) {ReplaceOpcode(ir,OPC_MOV);ir->src=NewImmediate(!zval?1:0);} break;
+
+        default:
+            if (InstrUsesFlags(ir,setc|setz)) WARNING(NULL,"Internal warning. Couldn't ApplyConditionAfter");
         }
-        break;
-    case COND_LT:
-        if (setc) {
-            newcond = (val < 0) ? COND_TRUE : COND_FALSE;
+
+        if (newcond != COND_FALSE) {
+            if(InstrSetsFlags(ir,FLAG_WC)) setc = 0;
+            if(InstrSetsFlags(ir,FLAG_WZ)) setz = 0;
         }
-        break;
-    case COND_GT:
-        if (setc && setz) {
-            newcond = (val > 0) ? COND_TRUE : COND_FALSE;
-        }
-        break;
-    case COND_LE:
-        if (setc && setz) {
-            newcond = (val <= 0) ? COND_TRUE : COND_FALSE;
-        }
-        break;
-    case COND_GE:
-        if (setc) {
-            newcond = (val >= 0) ? COND_TRUE : COND_FALSE;
-        }
-        break;
-    default:
-        ERROR(NULL, "Internal error, unhandled condition");
-        return 0;
+
+        if (!setc && !setz) break;
     }
-    if (ir->cond != newcond) {
-        change = 1;
-        ir->cond = newcond;
-    }
-    if (InstrSetsAnyFlags(ir)) {
-        break;
-    }
-  }
-  return change;
+    return change;
 }
 
 static bool
@@ -1411,6 +1498,28 @@ OptimizeMoves(IRList *irl)
     return everchange;
 }
 
+// Are given flag bits currently in use at this IR?
+static unsigned
+FlagsUsedAt(IR *ir,unsigned flags) {
+    for (IR *irnext = ir; irnext; irnext = irnext->next) {
+        if (InstrUsesFlags(irnext, flags))  return true;
+        if (InstrIsVolatile(irnext)) return true;
+        if (irnext->cond == COND_TRUE && IsBranch(irnext)) break;
+        if (irnext->cond == COND_TRUE && InstrSetsFlags(irnext,flags)) break;
+    }
+    return false;
+}
+
+static bool
+HasUsedFlags(IR *ir) {
+    if (InstrSetsAnyFlags(ir)) {
+        // if the flags might possibly be used, we have to assume there
+        // are side effects
+        return FlagsUsedAt(ir->next,CanonizeFlags(ir->flags));
+    }
+    return false;
+}
+
 static bool
 HasSideEffectsOtherThanReg(IR *ir)
 {
@@ -1422,23 +1531,6 @@ HasSideEffectsOtherThanReg(IR *ir)
     if (ir->dsteffect != OPEFFECT_NONE || ir->srceffect != OPEFFECT_NONE) {
         return true;
     }
-    if (InstrSetsAnyFlags(ir)) {
-        // if the flags might possibly be used, we have to assume there
-        // are side effects
-        IR *irnext;
-        int flagsSet = ir->flags & (FLAG_WZ|FLAG_WC);
-        for (irnext = ir->next; irnext; irnext = irnext->next) {
-            if (InstrUsesFlags(irnext, flagsSet)) {
-                return true;
-            }
-            if (InstrIsVolatile(irnext)) {
-                return true;
-            }
-            if (IsBranch(irnext) && irnext->cond == COND_TRUE) {
-                break;
-            }
-        }
-    }
     if (IsBranch(ir)) {
         if (ir->opc == OPC_CALL &&
             (ir->dst == mulfunc || ir->dst == divfunc || ir->dst == unsdivfunc))
@@ -1447,6 +1539,7 @@ HasSideEffectsOtherThanReg(IR *ir)
         }
         return true;
     }
+    if (HasUsedFlags(ir)) return true;
     if (InstrIsVolatile(ir)) {
       return true;
     }
@@ -1770,6 +1863,10 @@ CanTestZero(int opc)
     case OPC_OR:
     case OPC_MOV:
     case OPC_NEG:
+    case OPC_NEGC:
+    case OPC_NEGNC:
+    case OPC_NEGZ:
+    case OPC_NEGNZ:
     case OPC_RDLONG:
     case OPC_RDBYTE:
     case OPC_RDWORD:
@@ -2248,6 +2345,12 @@ ReplaceZWithNC(IR *ir)
     case OPC_MUXNZ:
         ReplaceOpcode(ir, OPC_MUXC);
         break;
+    case OPC_NEGZ:
+        ReplaceOpcode(ir, OPC_NEGNC);
+        break;
+    case OPC_NEGNZ:
+        ReplaceOpcode(ir, OPC_NEGC);
+        break;
     case OPC_DRVZ:
         ReplaceOpcode(ir, OPC_DRVNC);
         break;
@@ -2256,6 +2359,8 @@ ReplaceZWithNC(IR *ir)
         break;
     case OPC_MUXC:
     case OPC_MUXNC:
+    case OPC_NEGC:
+    case OPC_NEGNC:
     case OPC_GENERIC:
     case OPC_GENERIC_DELAY:
     case OPC_GENERIC_NR:
@@ -3112,7 +3217,7 @@ static IR* FindNextRead(IR *irorig, Operand *dest, Operand *src)
         if (ir->cond != irorig->cond) {
             return NULL;
         }
-        if (ir->opc == OPC_RDLONG && ir->src == src) {
+        if (ir->src == src && (ir->opc == OPC_RDLONG||ir->opc == OPC_RDWORD||ir->opc == OPC_RDBYTE)) {
             return ir;
         }
         if (InstrModifies(ir, dest) || InstrModifies(ir, src)) {
@@ -3141,6 +3246,26 @@ IsReadWrite(IR *ir)
         return true;
     default:
         return false;
+    }
+}
+
+static int
+MemoryOpSize(IR *ir) {
+    if (!ir) {
+        return 0;
+    }
+    switch (ir->opc) {
+    case OPC_RDBYTE:
+    case OPC_WRBYTE:
+        return 1;
+    case OPC_RDWORD:
+    case OPC_WRWORD:
+        return 2;
+    case OPC_RDLONG:
+    case OPC_WRLONG:
+        return 4;
+    default:
+        return 0;
     }
 }
 
@@ -3215,7 +3340,9 @@ restart_check:
         if (ir->srceffect != OPEFFECT_NONE || ir->dsteffect != OPEFFECT_NONE) {
             goto get_next;
         }
-        if (ir->opc == OPC_RDLONG || ir->opc == OPC_WRLONG) {
+        if (ir->opc == OPC_RDLONG || ir->opc == OPC_WRLONG 
+        ||  ir->opc == OPC_RDWORD || ir->opc == OPC_WRWORD 
+        ||  ir->opc == OPC_RDBYTE || ir->opc == OPC_WRBYTE) {
             // don't mess with it if prev instr was OPC_SETQ
             if (prev_ir && (prev_ir->opc == OPC_SETQ || prev_ir->opc == OPC_SETQ2)) {
                 prev_ir->flags |= FLAG_KEEP_INSTR;
@@ -3223,24 +3350,31 @@ restart_check:
             }
             dst1 = ir->dst;
             base = ir->src;
+            int size = MemoryOpSize(ir);
+            bool write = IsWrite(ir);
             nextread = FindNextRead(ir, dst1, base);
-            if (nextread && nextread->cond == ir->cond && !InstrSetsAnyFlags(nextread)) {
+            int nextsize = MemoryOpSize(nextread);
+            if (nextread && CondIsSubset(ir->cond,nextread->cond)) {
                 // wrlong a, b ... rdlong c, b  -> mov c, a
                 // rdlong a, b ... rdlong c, b  -> mov c, a
-                nextread->src = dst1;
-                ReplaceOpcode(nextread, OPC_MOV);
-                change = 1;
-                goto get_next;
+                if(size == nextsize && (!write || size==4) && (gl_p2 || !InstrSetsFlags(nextread,FLAG_WC)) ) {
+                    nextread->src = dst1;
+                    ReplaceOpcode(nextread, OPC_MOV);
+                    change = 1;
+                    goto get_next;
+                }
             }
-        } else if (ir->opc == OPC_RDBYTE) {
+        } 
+        if (ir->opc == OPC_RDBYTE || ir->opc == OPC_RDWORD) {
             dst1 = ir->dst;
+            int mask = ir->opc == OPC_RDBYTE ? 0xFF : 0xFFFF;
             nextread = FindNextUse(ir, dst1);
             if (nextread
                 && nextread->opc == OPC_AND
                 && nextread->dst == dst1
                 && IsImmediate(nextread->src)
                 && !InstrSetsAnyFlags(nextread)
-                && nextread->src->val == 255)
+                && nextread->src->val == mask)
             {
                 // don't need zero extend after rdbyte
                 nextread->opc = OPC_DUMMY;
@@ -3358,6 +3492,398 @@ static bool IsCordicGet(IR *ir) {
     }
 }
 
+static bool IsReorderBarrier(IR *ir) {
+    if (!ir||InstrIsVolatile(ir)||IsBranch(ir)||IsLabel(ir)) return true;
+    if (ir->dst&&IsHwReg(ir->dst)) return true;
+    if (ir->src&&IsHwReg(ir->src)) return true;
+    switch (ir->opc) {
+    case OPC_GENERIC:
+    case OPC_GENERIC_NR:
+    case OPC_GENERIC_DELAY:
+
+    case OPC_LOCKCLR:
+    case OPC_LOCKNEW:
+    case OPC_LOCKRET:
+    case OPC_LOCKSET:
+    case OPC_WAITCNT:
+    case OPC_WAITX:
+    case OPC_COGSTOP:
+    case OPC_ADDCT1:
+    case OPC_HUBSET:
+
+    case OPC_QDIV: // TODO
+    case OPC_QFRAC:
+    case OPC_QMUL:
+    case OPC_QSQRT:
+
+    case OPC_GETQX: // TODO
+    case OPC_GETQY: 
+
+    case OPC_DRVC:
+    case OPC_DRVNC:
+    case OPC_DRVL:
+    case OPC_DRVH:
+    case OPC_DRVNZ:
+    case OPC_DRVZ:
+    case OPC_PUSH:
+    case OPC_POP:
+    case OPC_FCACHE:
+        return true;
+    default:
+        return false;
+    }
+}
+
+static bool UsedInRange(IR *start,IR *end,Operand *reg) {
+    if (!reg || !IsRegister(reg->kind)) return false;
+    for (IR *ir=start;ir!=end->next;ir=ir->next) {
+        if (InstrUses(ir,reg)||IsBranch(ir)) return true;
+        if (InstrModifies(ir,reg) && ir->cond==COND_TRUE) return false; // Has become dead
+    }
+    return false;
+}
+
+static bool ModifiedInRange(IR *start,IR *end,Operand *reg) {
+    if (!reg || !IsRegister(reg->kind)) return false;
+    for (IR *ir=start;ir!=end->next;ir=ir->next) {
+        if (InstrModifies(ir,reg)||IsBranch(ir)) return true;
+    }
+    return false;
+}
+
+static bool ReadWriteInRange(IR *start,IR *end) {
+    for (IR *ir=start;ir!=end->next;ir=ir->next) {
+        if (IsReadWrite(ir)) return true;
+    }
+    return false;
+}
+static bool WriteInRange(IR *start,IR *end) {
+    for (IR *ir=start;ir!=end->next;ir=ir->next) {
+        if (IsWrite(ir)) return true;
+    }
+    return false;
+}
+
+static int MinCyclesInRange(IR *start,IR *end) {
+    int cyc = 0;
+    for (IR *ir=start;ir!=end->next;ir=ir->next) {
+        cyc += InstrMinCycles(ir);
+    }
+    return cyc;
+}
+
+struct reorder_block {
+    unsigned count; // If zero, everything else is invalid
+    IR *top,*bottom;
+};
+
+
+// a kingdom for a std::vector....
+struct dependency {
+    struct dependency *link;
+    Operand *reg;
+};
+
+static void DeleteDependencyList(struct dependency **list) {
+    for (struct dependency *tmp=*list;tmp;) {
+        struct dependency *tmp2 = tmp->link;
+        free(tmp);
+        tmp=tmp2;
+    }
+    *list = NULL;
+}
+
+static void PrependDependency(struct dependency **list,Operand *reg) {
+    struct dependency *tmp = malloc(sizeof(struct dependency));
+    tmp->link = *list;
+    tmp->reg = reg;
+    *list = tmp;
+}
+
+static void DeleteDependencies(struct dependency **list,Operand *reg) {
+    struct dependency **prevlink = list;
+    for (struct dependency *tmp=*list;tmp;) {
+        struct dependency *next = tmp->link;
+        if (tmp->reg == reg) {
+            *prevlink = next;
+            free(tmp);
+        } else {
+            prevlink = &tmp->link;
+        }
+        tmp=next;
+    }
+}
+
+static void
+DoReorderBlock(IRList *irl,IR *after,IR *top,IR *bottom) {
+    IR *above = top->prev;
+    IR *below = bottom->next;
+    // Unlink block
+    if (above) above->next = below;
+    else irl->head = below;
+    if (below) below->prev = above;
+    else irl->tail = above;
+    // Link block at new location
+    top->prev = after;
+    bottom->next = after->next;
+    if (after->next) after->next->prev = bottom;
+    else irl->tail = bottom;
+    after->next = top;
+}
+
+static struct reorder_block
+FindBlockForReorderingDownward(IR *after) {
+    IR *bottom = after;
+    DEBUG(NULL,"Looking for a block to move down... (in %s)",curfunc->name);
+    // Are the flags used at after?
+    bool volatileC = FlagsUsedAt(after,FLAG_WC);
+    bool volatileZ = FlagsUsedAt(after,FLAG_WZ);
+    // Encountered a flag write on the way up?
+    // (if a block uses a flag, but we didn't find a flag write inbetween,
+    // that is the same flag state as after)
+    bool foundC = InstrSetsFlags(after,FLAG_WC), foundZ = InstrSetsFlags(after,FLAG_WZ);
+    // Encountered a flag read on the way up?
+    bool dependC = InstrUsesFlags(after,FLAG_WC),dependZ = InstrUsesFlags(after,FLAG_WZ);
+    struct dependency *depends = NULL;
+    // Hunt for the start of a potential reordering block
+    for (;;) {
+        bottom = bottom->prev;
+        if (!bottom || IsReorderBarrier(bottom)) return (struct reorder_block){0};
+        IR *top;
+        // Need closure on a flag? (In this case, a setter)
+        bool needC = false, needZ = false;
+        unsigned count = 0;
+
+        for (top=bottom;top;top=top->prev) {
+            count++;
+            if (IsReorderBarrier(top)) break;
+            if (InstrSetsFlags(top,FLAG_WC)) {
+                needC = false;
+                if (volatileC && foundC) break;
+                if (dependC) break;
+            }
+            if (InstrSetsFlags(top,FLAG_WZ)) {
+                needZ = false;
+                if (volatileZ && foundZ) break;
+                if (dependZ) break;
+            }
+            if (foundC && InstrUsesFlags(top,FLAG_WC)) needC = true;
+            if (foundZ && InstrUsesFlags(top,FLAG_WZ)) needZ = true;
+            // Can only reorder reads with reads
+            if (IsWrite(top) && ReadWriteInRange(bottom->next,after)) break;
+            if (IsRead(top) && WriteInRange(bottom->next,after)) break;
+            // Can't reorder over dependent code
+            if (InstrSetsDst(top) && UsedInRange(bottom->next,after,top->dst)) break;
+            // Check if this instruction meets some dependencies
+            if (InstrSetsDst(top)) {
+                DeleteDependencies(&depends,top->dst);
+            }
+            // Does _this_ depend on anything that we can't take through reorder?
+            if (ModifiedInRange(bottom->next,after,top->src)) {
+                PrependDependency(&depends,top->src);
+            }
+            if (InstrReadsDst(top) && ModifiedInRange(bottom->next,after,top->dst)) {
+                PrependDependency(&depends,top->dst);
+            }
+            // Ok, if there are no unmet dependencies, the block is good.
+            if (!needC && !needZ && !depends && (!top->prev || !IsPrefixOpcode(top->prev))) {
+                return (struct reorder_block){.count=count,.top=top,.bottom=bottom};
+            }
+        }
+        // broke out of loop, this block is invalid
+        if (InstrSetsFlags(bottom,FLAG_WC)) {
+            foundC = true;
+            dependC = false;
+        }
+        if (InstrSetsFlags(bottom,FLAG_WZ)) {
+            foundZ = true;
+            dependZ = false;
+        }
+        if (InstrUsesFlags(bottom,FLAG_WC)) dependC = true;
+        if (InstrUsesFlags(bottom,FLAG_WZ)) dependZ = true;
+        DeleteDependencyList(&depends);
+    }
+}
+
+static struct reorder_block
+FindBlockForReorderingUpward(IR *before) {
+    IR *top = before;
+    DEBUG(NULL,"Looking for a block to move up... (in %s)",curfunc->name);
+    // Are the flags used at before?
+    bool volatileC = FlagsUsedAt(before,FLAG_WC);
+    bool volatileZ = FlagsUsedAt(before,FLAG_WZ);
+    //DEBUG(NULL,"Volatile C: %s , Volatile Z: %s",volatileC?"Y":"n",volatileZ?"Y":"n");
+    // Encountered a flag write on the way down?
+    bool foundC = InstrSetsFlags(before,FLAG_WC), foundZ = InstrSetsFlags(before,FLAG_WZ);
+    struct dependency *depends = NULL;
+    // Hunt for the start of a potential reordering block
+    for (;;) {
+        top = top->next;
+        if (!top || IsReorderBarrier(top)) return (struct reorder_block){0};
+        IR *bottom;
+        // Need closure on a flag? (In this case, the last user)
+        bool needC = false, needZ = false;
+        // Have a flag setter in the block?
+        bool foundClocal = false, foundZlocal = false;
+        unsigned count = 0;
+        for (bottom=top;bottom;bottom=bottom->next) {
+            count++;
+            if (IsReorderBarrier(bottom)) break;
+            // if we use a flag that isn't set inside the block but we want to reorder over another flag write, abort
+            if (foundC && !foundClocal && InstrUsesFlags(bottom,FLAG_WC)) break;
+            if (foundZ && !foundZlocal && InstrUsesFlags(bottom,FLAG_WZ)) break;
+            // If we write a flag, but there's another write we want to move over
+            // we need to pull instructions until the flag is dead
+            if (InstrSetsFlags(bottom,FLAG_WC)) {
+                if (volatileC) break;
+                if (foundC) needC = true;
+                foundClocal = true;
+            }
+            if (InstrSetsFlags(bottom,FLAG_WZ)) {
+                if (volatileZ) break;
+                if (foundZ)  needZ = true;
+                foundZlocal = true;
+            }
+            // Flags dead?
+            if (needC && !FlagsUsedAt(bottom->next,FLAG_WC)) needC = false;
+            if (needZ && !FlagsUsedAt(bottom->next,FLAG_WZ)) needZ = false;
+            // Can only reorder reads with reads
+            if (IsWrite(bottom) && ReadWriteInRange(before,bottom->prev)) break;
+            if (IsRead(bottom) && WriteInRange(before,bottom->prev)) break;
+            // Can't reorder over code depending on another value for dst
+            if (InstrSetsDst(bottom) && UsedInRange(before,top->prev,bottom->dst)) break;
+            // Can't reorder over code this depends on
+            if (ModifiedInRange(before,top->prev,bottom->src) && UsedInRange(top,bottom,bottom->src)) break;
+            if (InstrReadsDst(bottom)&&ModifiedInRange(before,top->prev,bottom->dst) && UsedInRange(top,bottom,bottom->dst)) break;
+            // if this result is modified by code we reorder over, it must become dead at the end of the block
+            if (InstrSetsDst(bottom) && ModifiedInRange(before,top->prev,bottom->dst)) {
+                PrependDependency(&depends,bottom->dst);
+            }
+            // Delete dependencies that go dead
+            if (bottom->src && IsDeadAfter(bottom,bottom->src)) DeleteDependencies(&depends,bottom->src);
+            if (InstrReadsDst(bottom) && IsDeadAfter(bottom,bottom->dst)) DeleteDependencies(&depends,bottom->dst);
+
+            // Ok, if there are no unmet dependencies, the block is good.
+            if (!needC && !needZ && !depends && !IsPrefixOpcode(bottom)) {
+                return (struct reorder_block){.count=count,.top=top,.bottom=bottom};
+            }
+        }
+        // broke out of loop, this block is invalid
+        if (InstrSetsFlags(top,FLAG_WC)) foundC = true;
+        if (InstrSetsFlags(top,FLAG_WZ)) foundZ = true;
+        DeleteDependencyList(&depends);
+    }
+}
+
+#define CORDIC_PIPE_LENGTH 56
+
+// Try to move code between QMUL/QDIV and GETQ* to amortize CORDIC latency
+static bool
+OptimizeCORDIC(IRList *irl) {
+    // Search for QMUL/QDIV
+    bool change = false;
+    for (IR *ir=irl->tail;ir;ir=ir->prev) {
+        if (!IsCordicCommand(ir)) continue;
+        if(IsHwReg(ir->dst)||IsHwReg(ir->src)) continue;
+        int cycles = 0;
+        // Count min-cycles already inbetween command and get
+        for (IR *ir2=ir->next;ir2;ir2=ir2->next) {
+            if (IsCordicGet(ir2)) break;
+            cycles += InstrMinCycles(ir2);
+        }
+        // Try pulling down blocks
+        // (The cycle limit only applies in pathological cases)
+        while (cycles<CORDIC_PIPE_LENGTH) {
+            struct reorder_block blk = FindBlockForReorderingDownward(ir);
+            if (blk.count == 0) break; // No block found
+            DEBUG(NULL,"Reordering block of %d instructions down",blk.count);
+            DoReorderBlock(irl,ir,blk.top,blk.bottom);
+            cycles += MinCyclesInRange(blk.top,blk.bottom);
+            change = true;
+        }
+    }
+    // Search for GETQ*
+    for (IR *ir=irl->head;ir;ir=ir->next) {
+        if(!IsCordicGet(ir)) continue;
+        if(IsHwReg(ir->dst)) continue;
+        int cycles = 0;
+        // Count min-cycles already inbetween command and get
+        for (IR *ir2=ir->prev;ir2;ir2=ir2->prev) {
+            if (IsCordicCommand(ir2)) break;
+            cycles += InstrMinCycles(ir2);
+        }
+        // Try pulling up blocks
+        // (The cycle limit only applies in pathological cases)
+        while (cycles<CORDIC_PIPE_LENGTH) {
+            struct reorder_block blk = FindBlockForReorderingUpward(ir);
+            if (blk.count == 0) break; // No block found
+            DEBUG(NULL,"Reordering block of %d instructions up",blk.count);
+            DoReorderBlock(irl,ir->prev,blk.top,blk.bottom);
+            cycles += MinCyclesInRange(blk.top,blk.bottom);
+            change = true;
+        }
+    }
+    return change;
+}
+
+//
+static bool
+CORDICconstPropagate(IRList *irl) {
+    bool constantCommand=false,change=false,foundX=false,foundY=false;
+    int32_t const_x=0,const_y=0;
+
+    for(IR *ir=irl->head;ir;ir=ir->next) {
+        if (IsCordicCommand(ir) && !IsPrefixOpcode(ir->prev)
+        && ir->dst && ir->dst->kind == IMM_INT
+        && ir->src && ir->src->kind == IMM_INT) {
+            constantCommand = true;
+            foundX = false;
+            foundY = false;
+            switch(ir->opc) {
+            case OPC_QMUL: {
+                DEBUG(NULL,"Got const QMUL %d,%d",ir->dst->val,ir->src->val);
+                uint64_t tmp = (uint64_t)((uint32_t)ir->dst->val) * (uint32_t)ir->src->val;
+                const_x = (int32_t)tmp;
+                const_y = (int32_t)(tmp>>32);
+            } break;
+            case OPC_QDIV: {
+                if (ir->src->val == 0) {
+                    const_x = 0xFFFFFFFF;
+                    const_y = ir->dst->val;
+                } else {
+                    const_x = (uint32_t)ir->dst->val / (uint32_t)ir->src->val;
+                    const_x = (uint32_t)ir->dst->val % (uint32_t)ir->src->val;
+                }
+            } break;
+            default: // other ops make brain hurt, owie
+                constantCommand = false;
+                break;
+            }
+            if (constantCommand) {
+                DeleteIR(irl,ir);
+                change = true;
+            }
+        } else if (constantCommand&&(ir->opc==OPC_GETQX || ir->opc==OPC_GETQY)) {
+            if (ir->opc==OPC_GETQX) {
+                if (foundX) WARNING(NULL,"Internal warning, found two GETQX during constant propagate??");
+                foundX = true;
+                ir->src = NewImmediate(const_x);
+            } else {
+                if (foundY) WARNING(NULL,"Internal warning, found two GETQY during constant propagate??");
+                foundY = true;
+                ir->src = NewImmediate(const_y);
+            }
+            ReplaceOpcode(ir,OPC_MOV);
+        } else if (constantCommand&&(IsBranch(ir)||IsLabel(ir))) {
+            if (!foundX && !foundY) WARNING(NULL,"Internal warning, unused CORDIC constant??");
+            constantCommand = false;
+        }
+    }
+    if (constantCommand && !foundX && !foundY) WARNING(NULL,"Internal warning, unused CORDIC constant at end of function??");
+
+    return change;
+}
+
 // Optimization may have created lone CORDIC commands
 // which will lead to strange results.
 // Thus, we shall remove these.
@@ -3427,13 +3953,19 @@ again:
         }
         if (gl_p2) {
             change |= FixupLoneCORDIC(irl);
+            if (flags & OPT_CONST_PROPAGATE) {
+                change |= CORDICconstPropagate(irl);
+            }
         }
     } while (change != 0);
     if (flags & OPT_TAIL_CALLS) {
         change = OptimizeTailCalls(irl, f);
     }
     if (change) goto again;
-    
+    if (gl_p2 && (flags & OPT_CORDIC_REORDER)) {
+        change = OptimizeCORDIC(irl);
+    }
+    if (change) goto again;
 }
 
 //
@@ -3736,12 +4268,14 @@ typedef struct PeepholePattern {
 #define PEEP_FLAGS_NONE 0x0000
 #define PEEP_FLAGS_P2   0x0001
 #define PEEP_FLAGS_WCZ_OK 0x0002
+#define PEEP_FLAGS_MUST_WZ 0x0004
+#define PEEP_FLAGS_MUST_WC 0x0008
 #define PEEP_FLAGS_DONE 0xffff
 
 #define OPERAND_ANY -1
 #define COND_ANY    -1
 #define OPC_ANY     -1
-#define MAX_OPERANDS_IN_PATTERN 4
+#define MAX_OPERANDS_IN_PATTERN 16
 
 #define PEEP_OP_SET     0x01000000
 #define PEEP_OP_MATCH   0x02000000
@@ -3841,6 +4375,8 @@ static int MatchPattern(PeepholePattern *patrn, IR *ir)
                 return 0;
             }
         }
+        if ((flags & PEEP_FLAGS_MUST_WC) && !(ir->flags & FLAG_WC) && !(ir->flags & FLAG_WCZ)) return 0;
+        if ((flags & PEEP_FLAGS_MUST_WZ) && !(ir->flags & FLAG_WZ) && !(ir->flags & FLAG_WCZ)) return 0;
         
         if (!PeepOperandMatch(patrn->dst, ir->dst, ir)) {
             return 0;
@@ -3960,9 +4496,35 @@ static PeepholePattern pat_movadd[] = {
 // potentially eliminate a redundant mov+neg sequence
 static PeepholePattern pat_movneg[] = {
     { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
-    { COND_TRUE, OPC_NEG, PEEP_OP_MATCH|0, PEEP_OP_MATCH|0, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_NEG, PEEP_OP_SET|2, PEEP_OP_MATCH|0, PEEP_FLAGS_WCZ_OK },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
+static PeepholePattern pat_movabs[] = {
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_ABS, PEEP_OP_SET|2, PEEP_OP_MATCH|0, PEEP_FLAGS_WCZ_OK },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_movnegc[] = {
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_NEGC, PEEP_OP_SET|2, PEEP_OP_MATCH|0, PEEP_FLAGS_WCZ_OK },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_movnegnc[] = {
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_NEGNC, PEEP_OP_SET|2, PEEP_OP_MATCH|0, PEEP_FLAGS_WCZ_OK },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_movnegz[] = {
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_NEGZ, PEEP_OP_SET|2, PEEP_OP_MATCH|0, PEEP_FLAGS_WCZ_OK },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_movnegnz[] = {
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_NEGNZ, PEEP_OP_SET|2, PEEP_OP_MATCH|0, PEEP_FLAGS_WCZ_OK },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
 
 // replace mov x, #2; shl x, y; sub x, #1  with bmask x, y
 static PeepholePattern pat_bmask1[] = {
@@ -4044,6 +4606,49 @@ static PeepholePattern pat_drvnz2[] = {
     { COND_NE, OPC_DRVH, PEEP_OP_MATCH|0, OPERAND_ANY, PEEP_FLAGS_P2 },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
+
+// replace if_c neg / if_nc mov and smiliar patterns with NEGcc
+static PeepholePattern pat_negc1[] = {
+    { COND_C,  OPC_NEG, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_NC, OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_negc2[] = {
+    { COND_NC, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_C,  OPC_NEG, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_negnc1[] = {
+    { COND_NC, OPC_NEG, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_C,  OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_negnc2[] = {
+    { COND_C,  OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_NC, OPC_NEG, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_negz1[] = {
+    { COND_Z,  OPC_NEG, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_NZ, OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_negz2[] = {
+    { COND_NZ, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_Z,  OPC_NEG, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_negnz1[] = {
+    { COND_NZ, OPC_NEG, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_Z,  OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_negnz2[] = {
+    { COND_Z,  OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_NZ, OPC_NEG, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
 
 // replace mov x, #0 / cmp a, b wz / if_e mov x, #1
 static PeepholePattern pat_seteq[] = {
@@ -4154,6 +4759,83 @@ static PeepholePattern pat_qmul_qmul2[] = {
     { COND_TRUE, OPC_GETQY, PEEP_OP_SET|2, OPERAND_ANY, PEEP_FLAGS_NONE },
     { COND_TRUE, OPC_QMUL, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_P2 },
     { COND_TRUE, OPC_GETQX, PEEP_OP_SET|3, OPERAND_ANY, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
+// qdiv x, y; getqx z; qdiv x, y; getqy w -> qdiv x, y; getqx z; getqy w
+static PeepholePattern pat_qdiv_qdiv1[] = {
+    { COND_TRUE, OPC_QDIV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQX, PEEP_OP_SET|2, OPERAND_ANY, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_QDIV, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQY, PEEP_OP_SET|3, OPERAND_ANY, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+// qdiv x, y; getqx z; qdiv x, y; getqy w -> qdiv x, y; getqx z; getqy w
+static PeepholePattern pat_qdiv_qdiv2[] = {
+    { COND_TRUE, OPC_QDIV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQY, PEEP_OP_SET|2, OPERAND_ANY, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_QDIV, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQX, PEEP_OP_SET|3, OPERAND_ANY, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
+// Fuse signed quotient+remainder (constant divider)
+static PeepholePattern pat_qdiv_qdiv_signed1[] = {
+    { COND_TRUE, OPC_ABS,   PEEP_OP_SET|0,   PEEP_OP_SET|1,   PEEP_FLAGS_P2 | PEEP_FLAGS_MUST_WC | PEEP_FLAGS_WCZ_OK },
+    { COND_TRUE, OPC_QDIV,  PEEP_OP_MATCH|0, PEEP_OP_SET|2,   PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQX, PEEP_OP_SET|3,   OPERAND_ANY,     PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_ANY,   OPERAND_ANY,     PEEP_OP_MATCH|3, PEEP_FLAGS_NONE }, // NEGC/NEGNC
+    { COND_TRUE, OPC_ABS,   PEEP_OP_SET|4,   PEEP_OP_MATCH|1, PEEP_FLAGS_P2 | PEEP_FLAGS_MUST_WC | PEEP_FLAGS_WCZ_OK },
+    { COND_TRUE, OPC_QDIV,  PEEP_OP_MATCH|4, PEEP_OP_MATCH|2, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQY, PEEP_OP_SET|5,   OPERAND_ANY,     PEEP_FLAGS_NONE },
+    // NEGC/NEGNC here, but we don't really care if it's actually there
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+// Fuse signed remainder+quotient (constant divider) 
+static PeepholePattern pat_qdiv_qdiv_signed2[] = {
+    { COND_TRUE, OPC_ABS,   PEEP_OP_SET|0,   PEEP_OP_SET|1,   PEEP_FLAGS_P2 | PEEP_FLAGS_MUST_WC | PEEP_FLAGS_WCZ_OK },
+    { COND_TRUE, OPC_QDIV,  PEEP_OP_MATCH|0, PEEP_OP_SET|2,   PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQY, PEEP_OP_SET|3,   OPERAND_ANY,     PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_ANY,   OPERAND_ANY,     PEEP_OP_MATCH|3, PEEP_FLAGS_NONE }, // NEGC/NEGNC
+    { COND_TRUE, OPC_ABS,   PEEP_OP_SET|4,   PEEP_OP_MATCH|1, PEEP_FLAGS_P2 | PEEP_FLAGS_MUST_WC | PEEP_FLAGS_WCZ_OK },
+    { COND_TRUE, OPC_QDIV,  PEEP_OP_MATCH|4, PEEP_OP_MATCH|2, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQX, PEEP_OP_SET|5,   OPERAND_ANY,     PEEP_FLAGS_NONE },
+    // NEGC/NEGNC here, but we don't really care if it's actually there
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+// Fuse signed quotient+remainder (constant dividend)
+static PeepholePattern pat_qdiv_qdiv_signed3[] = {
+    { COND_TRUE, OPC_ABS,   PEEP_OP_SET|0,   PEEP_OP_SET|1,   PEEP_FLAGS_P2 | PEEP_FLAGS_MUST_WC | PEEP_FLAGS_WCZ_OK },
+    { COND_TRUE, OPC_QDIV,  PEEP_OP_SET|2,   PEEP_OP_MATCH|0,   PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQX, PEEP_OP_SET|3,   OPERAND_ANY,     PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_ANY,   OPERAND_ANY,     PEEP_OP_MATCH|3, PEEP_FLAGS_NONE }, // NEGC/NEGNC
+    { COND_TRUE, OPC_ABS,   PEEP_OP_SET|4,   PEEP_OP_MATCH|1, PEEP_FLAGS_P2},
+    { COND_TRUE, OPC_QDIV,  PEEP_OP_MATCH|2, PEEP_OP_MATCH|4, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQY, PEEP_OP_SET|5,   OPERAND_ANY,     PEEP_FLAGS_NONE },
+    // There may be a NEG here
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+// Fuse signed remainder+quotient (constant dividend, negative)
+static PeepholePattern pat_qdiv_qdiv_signed4[] = {
+    { COND_TRUE, OPC_ABS,   PEEP_OP_SET|0,   PEEP_OP_SET|1,   PEEP_FLAGS_P2},
+    { COND_TRUE, OPC_QDIV,  PEEP_OP_SET|2,   PEEP_OP_MATCH|0,   PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQY, PEEP_OP_SET|3,   OPERAND_ANY,     PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_NEG,   OPERAND_ANY,     PEEP_OP_MATCH|3, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_ABS,   PEEP_OP_SET|4,   PEEP_OP_MATCH|1, PEEP_FLAGS_P2 | PEEP_FLAGS_MUST_WC | PEEP_FLAGS_WCZ_OK },
+    { COND_TRUE, OPC_QDIV,  PEEP_OP_MATCH|2, PEEP_OP_MATCH|4, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQX, PEEP_OP_SET|5,   OPERAND_ANY,     PEEP_FLAGS_NONE },
+    // NEGC/NEGNC here, but we don't really care if it's actually there
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+// Fuse signed remainder+quotient (constant dividend, positive)
+static PeepholePattern pat_qdiv_qdiv_signed5[] = {
+    { COND_TRUE, OPC_ABS,   PEEP_OP_SET|0,   PEEP_OP_SET|1,   PEEP_FLAGS_P2},
+    { COND_TRUE, OPC_QDIV,  PEEP_OP_SET|2,   PEEP_OP_MATCH|0,   PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQY, PEEP_OP_SET|3,   OPERAND_ANY,     PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_ABS,   PEEP_OP_SET|4,   PEEP_OP_MATCH|1, PEEP_FLAGS_P2 | PEEP_FLAGS_MUST_WC | PEEP_FLAGS_WCZ_OK },
+    { COND_TRUE, OPC_QDIV,  PEEP_OP_MATCH|2, PEEP_OP_MATCH|4, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_GETQX, PEEP_OP_SET|5,   OPERAND_ANY,     PEEP_FLAGS_NONE },
+    // There may be a NEG here
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
@@ -4281,8 +4963,9 @@ static int FixupMovAdd(int arg, IRList *irl, IR *ir)
 static int FixupMovNeg(int arg, IRList *irl, IR *ir)
 {
     IR *nextir = ir->next;
-    ReplaceOpcode(ir, OPC_NEG);
-    DeleteIR(irl, nextir);
+    if (nextir->dst != nextir->src && !IsDeadAfter(nextir,nextir->src)) return 0;
+    nextir->src = ir->src;
+    DeleteIR(irl, ir);
     return 1;
 }
 
@@ -4487,6 +5170,90 @@ static int FixupQmuls(int arg, IRList *irl, IR *ir0)
     return 1;
 }
 
+// pattern:
+//  abs a, x wc
+//  qdiv a,y
+//  getq* b
+//  neg* z,b
+//  abs c, x wc
+//  qdiv c,y
+//  getq* d
+//  neg* w,d
+static int FixupQdivSigned(int arg, IRList *irl, IR *ir0)
+{
+    IR* ir1 = ir0->next; // qdiv 1
+    IR* ir2 = ir1->next; // getq* 1
+    IR* ir3 = ir2->next; // neg* 1
+    IR* ir4 = ir3->next; // abs 2
+    IR* ir5 = ir4->next; // qdiv 2
+
+    if (ir3->opc != OPC_NEGC && ir3->opc != OPC_NEGNC) return 0;
+
+    if (InstrModifies(ir2,ir4->src)||InstrModifies(ir3,ir4->src)||
+        InstrModifies(ir2,ir5->src)||InstrModifies(ir3,ir5->src) ) {
+        return 0;
+    }
+    if (IsDeadAfter(ir5,ir5->dst)) DeleteIR(irl,ir4); // Delete second ABS unless register is somehow reused
+    DeleteIR(irl,ir5); // Delete second QDIV
+    return 1;
+}
+
+// pattern:
+//  abs a, x 
+//  qdiv y,a
+//  getq* b
+//  neg* z,b
+//  abs c, x wc
+//  qdiv y,c
+//  getq* d
+//  neg w,d (maybe)
+static int FixupQdivSigned2(int arg, IRList *irl, IR *ir0)
+{
+    IR* ir1 = ir0->next; // qdiv 1
+    IR* ir2 = ir1->next; // getq* 1
+    IR* ir3 = ir2->next; // neg* 1
+    IR* ir4 = ir3->next; // abs 2
+    IR* ir5 = ir4->next; // qdiv 2
+
+    if (ir3->opc != OPC_NEGC && ir3->opc != OPC_NEGNC && ir3->opc != OPC_NEG) return 0;
+
+    if (InstrModifies(ir2,ir4->src)||InstrModifies(ir3,ir4->src)||
+        InstrModifies(ir2,ir5->dst)||InstrModifies(ir3,ir5->dst) ) {
+        return 0;
+    }
+    if (IsDeadAfter(ir5,ir5->src)) DeleteIR(irl,ir4); // Delete second ABS unless register is somehow reused
+    DeleteIR(irl,ir5); // Delete second QDIV
+    ir0->flags |= FLAG_WC;
+    return 1;
+}
+
+// pattern:
+//  abs a, x 
+//  qdiv y,a
+//  getq* z
+//  abs c, x wc
+//  qdiv y,c
+//  getq* d
+//  neg* w,d
+static int FixupQdivSigned3(int arg, IRList *irl, IR *ir0)
+{
+    IR* ir1 = ir0->next; // qdiv 1
+    IR* ir2 = ir1->next; // getq* 1
+    //IR* ir3 = ir2->next; // neg* 1
+    IR* ir4 = ir2->next; // abs 2
+    IR* ir5 = ir4->next; // qdiv 2
+
+    if (InstrModifies(ir2,ir4->src)||
+        InstrModifies(ir2,ir5->dst)  ) {
+        return 0;
+    }
+    if (IsDeadAfter(ir5,ir5->src)) DeleteIR(irl,ir4); // Delete second ABS unless register is somehow reused
+    DeleteIR(irl,ir5); // Delete second QDIV
+    ir0->flags |= FLAG_WC;
+    return 1;
+}
+
+
 struct Peepholes {
     PeepholePattern *check;
     int arg;
@@ -4512,6 +5279,15 @@ struct Peepholes {
     { pat_drvnz1, OPC_DRVNZ, ReplaceDrvc },
     { pat_drvnz2, OPC_DRVNZ, ReplaceDrvc },
 
+    { pat_negc1, OPC_NEGC, ReplaceDrvc },
+    { pat_negc2, OPC_NEGC, ReplaceDrvc },
+    { pat_negnc1, OPC_NEGNC, ReplaceDrvc },
+    { pat_negnc2, OPC_NEGNC, ReplaceDrvc },
+    { pat_negz1, OPC_NEGZ, ReplaceDrvc },
+    { pat_negz2, OPC_NEGZ, ReplaceDrvc },
+    { pat_negnz1, OPC_NEGNZ, ReplaceDrvc },
+    { pat_negnz2, OPC_NEGNZ, ReplaceDrvc },
+
     { pat_wrc_cmp, 0, ReplaceWrcCmp },
     { pat_wrc_and, 1, RemoveNFlagged },
     { pat_wrc_test, 0, ReplaceWrcTest },
@@ -4522,7 +5298,13 @@ struct Peepholes {
     { pat_rdword2, 1, RemoveNFlagged },
 
     { pat_movadd, 0, FixupMovAdd },
+
     { pat_movneg, 0, FixupMovNeg },
+    { pat_movabs, 0, FixupMovNeg },
+    { pat_movnegc, 0, FixupMovNeg },
+    { pat_movnegnc, 0, FixupMovNeg },
+    { pat_movnegz, 0, FixupMovNeg },
+    { pat_movnegnz, 0, FixupMovNeg },
 
     { pat_bmask1, 0, FixupBmask },
     { pat_bmask2, 0, FixupBmask },
@@ -4556,6 +5338,14 @@ struct Peepholes {
 
     { pat_qmul_qmul1, 0, FixupQmuls },
     { pat_qmul_qmul2, 0, FixupQmuls },
+    { pat_qdiv_qdiv1, 0, FixupQmuls },
+    { pat_qdiv_qdiv2, 0, FixupQmuls },
+
+    { pat_qdiv_qdiv_signed1, 0, FixupQdivSigned},
+    { pat_qdiv_qdiv_signed2, 0, FixupQdivSigned},
+    { pat_qdiv_qdiv_signed3, 0, FixupQdivSigned2},
+    { pat_qdiv_qdiv_signed4, 0, FixupQdivSigned2},
+    { pat_qdiv_qdiv_signed5, 0, FixupQdivSigned3},
 };
 
 
