@@ -549,7 +549,8 @@ static int InstrMinCycles(IR *ir) {
         return aug+2;
     }
 }
-// Note: currently only valid for P2
+#if 0
+// Note: currently only valid for P2, and not used yet
 static int InstrMaxCycles(IR *ir) {
     if (IsDummy(ir)||IsLabel(ir)) return 0;
     if (IsBranch(ir)) return 100000; // No good.
@@ -586,8 +587,7 @@ static int InstrMaxCycles(IR *ir) {
         return aug+2;
     }
 }
-
-
+#endif
 
 extern Operand *mulfunc, *unsmulfunc, *divfunc, *unsdivfunc, *muldiva, *muldivb;
 
@@ -1106,7 +1106,8 @@ ApplyConditionAfter(IR *instr, int val)
         case OPC_WRNZ : if (setz) {ReplaceOpcode(ir,OPC_MOV);ir->src=NewImmediate(!zval?1:0);} break;
 
         default:
-            if (InstrUsesFlags(ir,setc|setz)) WARNING(NULL,"Internal warning. Couldn't ApplyConditionAfter");
+            //if (InstrUsesFlags(ir,setc|setz)) WARNING(NULL,"Internal warning. Couldn't ApplyConditionAfter");
+            break;
         }
 
         if (newcond != COND_FALSE) {
@@ -3841,7 +3842,7 @@ CORDICconstPropagate(IRList *irl) {
             foundY = false;
             switch(ir->opc) {
             case OPC_QMUL: {
-                DEBUG(NULL,"Got const QMUL %d,%d",ir->dst->val,ir->src->val);
+                DEBUG(NULL,"Got const QMUL %ld,%ld",(long)ir->dst->val,(long)ir->src->val);
                 uint64_t tmp = (uint64_t)((uint32_t)ir->dst->val) * (uint32_t)ir->src->val;
                 const_x = (int32_t)tmp;
                 const_y = (int32_t)(tmp>>32);
