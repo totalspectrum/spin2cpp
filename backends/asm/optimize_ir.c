@@ -3890,7 +3890,7 @@ CORDICconstPropagate(IRList *irl) {
 // Thus, we shall remove these.
 static bool
 FixupLoneCORDIC(IRList *irl) {
-    bool seenCommand = false, change = false;
+    bool seenCommand = true, change = false;
     for(IR *ir=irl->tail;ir;ir=ir->prev) {
         if (IsCordicCommand(ir)) {
             if (seenCommand && !InstrIsVolatile(ir)) {
@@ -3898,8 +3898,10 @@ FixupLoneCORDIC(IRList *irl) {
                 DeleteIR(irl,ir);
                 change = true;
             } else seenCommand = true;
-        } else if (IsCordicGet(ir)||IsBranch(ir)||IsLabel(ir)) {
+        } else if (IsCordicGet(ir)) {
             seenCommand = false;
+        } else if (IsBranch(ir)||IsLabel(ir)) {
+            seenCommand = true;
         }
     }
     return change;
