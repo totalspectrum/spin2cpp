@@ -28,7 +28,7 @@ _dounpack_x
 	mov	_var03, #32
 LR__0001
 	shl	_var02, #1 wc
- if_nc	djnz	_var03, #LR__0001
+ if_ae	djnz	_var03, #LR__0001
 	sub	_var03, #23
 	mov	_var01, _var03
 	mov	_var04, #7

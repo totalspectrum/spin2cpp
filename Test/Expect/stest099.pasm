@@ -8,8 +8,7 @@ _copy1
 	mov	_var01, #0
 	sub	arg03, #1
 	cmps	arg03, #0 wc,wz
- if_a	mov	_var02, #1
- if_be	neg	_var02, #1
+	negc	_var02, #1
 	add	arg03, _var02
 LR__0001
 	rdbyte	_var03, arg02

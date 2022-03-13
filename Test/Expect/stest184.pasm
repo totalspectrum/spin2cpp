@@ -149,8 +149,8 @@ __system___gc_ptrs
 	add	__system___gc_ptrs_base, #16
 	abs	_system___gc_ptrs_tmp001_, __system___gc_ptrs_size wc
 	shr	_system___gc_ptrs_tmp001_, #4
- if_b	neg	_system___gc_ptrs_tmp001_, _system___gc_ptrs_tmp001_
-	wrword	_system___gc_ptrs_tmp001_, __system___gc_ptrs_base
+	negc	__system___gc_ptrs__cse__0008, _system___gc_ptrs_tmp001_
+	wrword	__system___gc_ptrs__cse__0008, __system___gc_ptrs_base
 	mov	__system___gc_ptrs__cse__0010, __system___gc_ptrs_base
 	add	__system___gc_ptrs__cse__0010, #2
 	mov	_system___gc_ptrs_tmp001_, imm_27791_
@@ -386,9 +386,9 @@ LR__0019
 	sub	__system___gc_doalloc_size, #8
 	abs	_system___gc_doalloc_tmp001_, __system___gc_doalloc_size wc
 	shr	_system___gc_doalloc_tmp001_, #2
- if_b	neg	_system___gc_doalloc_tmp001_, _system___gc_doalloc_tmp001_
-	mov	__system___gc_doalloc__idx__0000, _system___gc_doalloc_tmp001_ wz
+	negc	__system___gc_doalloc__idx__0000, _system___gc_doalloc_tmp001_
 	mov	__system___gc_doalloc_zptr, __system___gc_doalloc_ptr
+	cmp	__system___gc_doalloc__idx__0000, #0 wz
  if_e	jmp	#LR__0021
 LR__0020
 	mov	_system___gc_doalloc_tmp001_, #0
@@ -906,6 +906,8 @@ __system___gc_ptrs__cse__0004
 __system___gc_ptrs__cse__0005
 	res	1
 __system___gc_ptrs__cse__0006
+	res	1
+__system___gc_ptrs__cse__0008
 	res	1
 __system___gc_ptrs__cse__0010
 	res	1

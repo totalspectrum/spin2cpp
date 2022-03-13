@@ -28,7 +28,7 @@ __system___float_tointeger
 	mov	_tmp001_, #32
 LR__0001
 	shl	_tmp002_, #1 wc
- if_nc	djnz	_tmp001_, #LR__0001
+ if_ae	djnz	_tmp001_, #LR__0001
 	sub	_tmp001_, #23
 	mov	__system___float_Unpack_x, _tmp001_
 	mov	__system___float_Unpack__cse__0006, #7

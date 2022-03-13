@@ -41,12 +41,11 @@ LR__0003
 	rdlong	__system___waitms_freqms, ptr___system__dat__ wz
 	sub	ptr___system__dat__, #12
  if_ne	jmp	#LR__0004
-	mov	muldiva_, __system___waitms_freq
-	mov	muldivb_, ##1000
-	call	#unsdivide_
-	mov	__system___waitms_freqms, muldivb_
+	qdiv	__system___waitms_freq, ##1000
 	add	ptr___system__dat__, #12
-	wrlong	muldivb_, ptr___system__dat__
+	getqx	__system___waitms__temp__0000
+	mov	__system___waitms_freqms, __system___waitms__temp__0000
+	wrlong	__system___waitms__temp__0000, ptr___system__dat__
 	sub	ptr___system__dat__, #12
 LR__0004
 	cmps	__system___waitms_m, #0 wcz
@@ -72,32 +71,8 @@ builtin_longfill_
  if_nz  wflong	arg02
         ret
 
-unsdivide_
-       setq    #0
-       qdiv    muldiva_, muldivb_
-       getqx   muldivb_
- _ret_ getqy   muldiva_
-
-divide_
-       abs     muldiva_,muldiva_     wc       'abs(x)
-       muxc    itmp2_,#%11                    'store sign of x
-       abs     muldivb_,muldivb_     wcz      'abs(y)
- if_c  xor     itmp2_,#%10                    'store sign of y
- if_z  ret
-       call    #unsdivide_
-       test    itmp2_,#1        wc       'restore sign, remainder
-       negc    muldiva_,muldiva_ 
-       test    itmp2_,#%10      wc       'restore sign, division result
- _ret_ negc    muldivb_,muldivb_
-
-itmp1_
-	long	0
-itmp2_
-	long	0
 ptr___system__dat__
 	long	@__system__dat_
-result1
-	long	0
 COG_BSS_START
 	fit	480
 	orgh
@@ -106,6 +81,8 @@ __system__dat_
 	byte	$00[8]
 	byte	$03, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
 	org	COG_BSS_START
+__system___waitms__temp__0000
+	res	1
 __system___waitms_freq
 	res	1
 __system___waitms_freqms
@@ -113,9 +90,5 @@ __system___waitms_freqms
 __system___waitms_m
 	res	1
 arg01
-	res	1
-muldiva_
-	res	1
-muldivb_
 	res	1
 	fit	480

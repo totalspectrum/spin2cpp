@@ -16,11 +16,11 @@ _getpulse
 LR__0001
 	getct	_getpulse_t0
 	testp	arg01 wc
- if_nc	jmp	#LR__0001
+ if_ae	jmp	#LR__0001
 LR__0002
 	getct	_getpulse_delay
 	testp	arg01 wc
- if_c	jmp	#LR__0002
+ if_b	jmp	#LR__0002
 	sub	_getpulse_delay, _getpulse_t0
 	mov	result1, _getpulse_delay
 _getpulse_ret
