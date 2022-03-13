@@ -1,4 +1,5 @@
 Version 5.9.10
+- Actually fail compilation if a preprocessor #error directive is found in Spin
 - Fixed some bugs in time related functions
 - Merged a number of helpful P2 logic and CORDIC optimizations contributed by Ada
 

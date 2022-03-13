@@ -34,6 +34,7 @@ AST *ast_type_void;
 AST *ast_type_long64, *ast_type_unsigned_long64, *ast_type_float64;
 
 int gl_p2 = 0;
+int gl_errors = 0;
 int gl_have_lut = 0;
 int gl_output = 0;
 int gl_interp_kind = 0;

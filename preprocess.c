@@ -287,8 +287,11 @@ pp_nextline(struct preprocess *pp)
 static void default_errfunc(void *dummy, const char *filename, int line, const char *msg)
 {
     const char *level = (const char *)dummy;
-
-    // FIXME: is there any way we could use ERRORHEADER here??
+    extern int gl_errors;
+    
+    if (!strcmp(level, "error")) {
+        gl_errors++;
+    }
     fprintf(stderr, "%s:%d: %s: ", filename, line, level);
     fprintf(stderr, "%s", msg);
     fprintf(stderr, "\n");
