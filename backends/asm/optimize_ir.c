@@ -116,6 +116,7 @@ InstrSetsDst(IR *ir)
   case OPC_TEST:
   case OPC_TESTN:
   case OPC_GENERIC_NR:
+  case OPC_GENERIC_NR_NOFLAGS:
   case OPC_PUSH:
       return (ir->flags & FLAG_WR) != 0;
   default:
@@ -154,6 +155,7 @@ static bool IsWrite(IR *ir) {
     case OPC_WRWORD:
     case OPC_WRBYTE:
     case OPC_GENERIC:
+    case OPC_GENERIC_NOFLAGS:
         return true;
     default:
         return false;
@@ -166,6 +168,7 @@ static bool IsRead(IR *ir) {
     case OPC_RDWORD:
     case OPC_RDBYTE:
     case OPC_GENERIC:
+    case OPC_GENERIC_NOFLAGS:
         return true;
     default:
         return false;
@@ -336,6 +339,10 @@ InstrUsesFlags(IR *ir, unsigned flags)
     case OPC_GENERIC_BRCOND:
         /* it might use flags, we don't know (e.g. addx) */
         return true;
+    case OPC_GENERIC_NOFLAGS:
+    case OPC_GENERIC_NR_NOFLAGS:
+        /* definitely does not use flags */
+        return false;
     case OPC_WRC:
     case OPC_WRNC:
     case OPC_DRVC:
@@ -346,6 +353,8 @@ InstrUsesFlags(IR *ir, unsigned flags)
     case OPC_NEGNC:
     case OPC_BITC:
     case OPC_BITNC:
+    case OPC_RCL:
+    case OPC_RCR:
         /* definitely uses the C flag */
         return (flags & FLAG_WC) != 0;
     case OPC_DRVZ:
@@ -575,6 +584,8 @@ static int InstrMaxCycles(IR *ir) {
     case OPC_GENERIC_DELAY:
     case OPC_GENERIC_BRANCH:
     case OPC_GENERIC_BRCOND:
+    case OPC_GENERIC_NR_NOFLAGS:
+    case OPC_GENERIC_NOFLAGS:
     case OPC_WAITX:
     case OPC_WAITCNT:
         return 100000; // No good;
@@ -1105,8 +1116,16 @@ ApplyConditionAfter(IR *instr, int val)
         case OPC_WRZ  : if (setz) {ReplaceOpcode(ir,OPC_MOV);ir->src=NewImmediate( zval?1:0);} break;
         case OPC_WRNZ : if (setz) {ReplaceOpcode(ir,OPC_MOV);ir->src=NewImmediate(!zval?1:0);} break;
 
+        case OPC_RCL:
+        case OPC_RCR:
+            if (setc) {
+                ERROR(NULL, "Internal error: ApplyConditionAfter cannot be applied to RCL/RCR");
+            }
+            break;
         default:
-            //if (InstrUsesFlags(ir,setc|setz)) WARNING(NULL,"Internal warning. Couldn't ApplyConditionAfter");
+            if (InstrUsesFlags(ir,setc|setz)) {
+                WARNING(NULL,"Internal warning. Couldn't ApplyConditionAfter");
+            }
             break;
         }
 
@@ -1548,6 +1567,8 @@ HasSideEffectsOtherThanReg(IR *ir)
     case OPC_GENERIC:
     case OPC_GENERIC_NR:
     case OPC_GENERIC_DELAY:
+    case OPC_GENERIC_NOFLAGS:
+    case OPC_GENERIC_NR_NOFLAGS:
     case OPC_LOCKCLR:
     case OPC_LOCKNEW:
     case OPC_LOCKRET:
@@ -1577,6 +1598,8 @@ HasSideEffectsOtherThanReg(IR *ir)
     case OPC_DRVZ:
     case OPC_PUSH:
     case OPC_POP:
+    case OPC_RCL:
+    case OPC_RCR:
         return true;
     default:
         return false;
@@ -2373,6 +2396,8 @@ ReplaceZWithNC(IR *ir)
     case OPC_SETQ2:
     case OPC_PUSH:
     case OPC_POP:
+    case OPC_RCL:
+    case OPC_RCR:
         ERROR(NULL, "Internal error, unexpected use of C");
         break;
     default:
@@ -3500,8 +3525,10 @@ static bool IsReorderBarrier(IR *ir) {
     switch (ir->opc) {
     case OPC_GENERIC:
     case OPC_GENERIC_NR:
+    case OPC_GENERIC_NR_NOFLAGS:
     case OPC_GENERIC_DELAY:
-
+    case OPC_GENERIC_NOFLAGS:
+        
     case OPC_LOCKCLR:
     case OPC_LOCKNEW:
     case OPC_LOCKRET:
@@ -3529,6 +3556,8 @@ static bool IsReorderBarrier(IR *ir) {
     case OPC_PUSH:
     case OPC_POP:
     case OPC_FCACHE:
+    case OPC_RCL:
+    case OPC_RCR:
         return true;
     default:
         return false;

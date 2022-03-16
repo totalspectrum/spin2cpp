@@ -66,6 +66,8 @@ typedef enum IROpcode {
     OPC_RET,
     OPC_REV_P1,
     OPC_REV_P2,
+    OPC_RCL,
+    OPC_RCR,
     OPC_ROL,
     OPC_ROR,
     OPC_SAR,
@@ -143,6 +145,12 @@ typedef enum IROpcode {
 
     /* like OPC_GENERIC, but affects the next instruction too */
     OPC_GENERIC_DELAY,
+
+    /* like OPC_GENERIC, but known not to use flags */
+    OPC_GENERIC_NOFLAGS,
+
+    /* like OPC_GENERIC_NR, but also ignores flags */
+    OPC_GENERIC_NR_NOFLAGS,
     
     /* a branch that the optimizer does not know about */
     OPC_GENERIC_BRANCH,
