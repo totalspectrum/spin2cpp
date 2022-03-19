@@ -100,6 +100,8 @@ InstrSetsDst(IR *ir)
   case OPC_QROTATE:
   case OPC_QSQRT:
   case OPC_QVECTOR:
+  case OPC_QLOG:
+  case OPC_QEXP:
   case OPC_DRVH:
   case OPC_DRVL:
   case OPC_DRVC:
@@ -593,6 +595,8 @@ static int InstrMaxCycles(IR *ir) {
     case OPC_QDIV:
     case OPC_QFRAC:
     case OPC_QSQRT:
+    case OPC_QLOG:
+    case OPC_QEXP:
         return aug+9;
     default:
         return aug+2;
@@ -1590,6 +1594,8 @@ HasSideEffectsOtherThanReg(IR *ir)
     case OPC_QROTATE:
     case OPC_QSQRT:
     case OPC_QVECTOR:
+    case OPC_QLOG:
+    case OPC_QEXP:
     case OPC_DRVC:
     case OPC_DRVNC:
     case OPC_DRVL:
@@ -3502,6 +3508,8 @@ static bool IsCordicCommand(IR *ir) {
     case OPC_QROTATE:
     case OPC_QSQRT:
     case OPC_QVECTOR:
+    case OPC_QLOG:
+    case OPC_QEXP:
         return true;
     default:
         return false;
@@ -3543,6 +3551,10 @@ static bool IsReorderBarrier(IR *ir) {
     case OPC_QFRAC:
     case OPC_QMUL:
     case OPC_QSQRT:
+    case OPC_QROTATE:
+    case OPC_QVECTOR:
+    case OPC_QLOG:
+    case OPC_QEXP:
 
     case OPC_GETQX: // TODO
     case OPC_GETQY: 
