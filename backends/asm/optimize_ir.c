@@ -1463,6 +1463,187 @@ OptimizeMulDiv(IRList *irl)
     return change;
 }
 
+
+/* return 1 if the instruction can have wz appended and produce a sensible
+ * result (compares result to 0)
+ */
+static int
+CanTestZero(int opc)
+{
+    switch (opc) {
+    case OPC_ADD:
+    case OPC_SUB:
+    case OPC_AND:
+    case OPC_ANDN:
+    case OPC_OR:
+    case OPC_MOV:
+    case OPC_NEG:
+    case OPC_NEGC:
+    case OPC_NEGNC:
+    case OPC_NEGZ:
+    case OPC_NEGNZ:
+    case OPC_RDLONG:
+    case OPC_RDBYTE:
+    case OPC_RDWORD:
+    case OPC_XOR:
+    case OPC_SAR:
+    case OPC_SHR:
+    case OPC_SHL:
+    case OPC_SIGNX:
+    case OPC_ZEROX:
+    case OPC_MULU:
+    case OPC_MULS:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
+//
+// find the previous instruction that sets a particular operand
+// used for compares
+// returns NULL if we cannot
+//
+static IR*
+FindPrevSetterForCompare(IR *irl, Operand *dst)
+{
+    IR *ir;
+    int orig_condition = irl->cond;
+    
+    if (SrcOnlyHwReg(dst))
+        return NULL;
+    for (ir = irl->prev; ir; ir = ir->prev) {
+        if (IsDummy(ir)) {
+            continue;
+        }
+        if (ir->opc == OPC_LABEL) {
+            // we may have branched to here from somewhere
+            // else that did the set
+            return NULL;
+        }
+        if (ir->cond != orig_condition) {
+            if (ir->dst == dst) {
+                return NULL;
+            }
+        }
+        if (InstrSetsAnyFlags(ir)) {
+            // flags are messed up here, so we can't go back any further
+            return NULL;
+        }
+        if (IsBranch(ir)) {
+            return NULL;
+        }
+        if (ir->dst == dst && InstrSetsDst(ir)) {
+            if (ir->cond != COND_TRUE) {
+                // cannot be sure that we set the value here,
+                // since the set is conditional
+                return NULL;
+            }
+            return ir;
+        }
+    }
+    return NULL;
+}
+
+//
+// find the previous instruction that changes a particular operand
+// also will return if it's in the dst field of a TEST
+//
+// used for peephole optimization
+// returns NULL if we cannot find the instruction
+//
+static IR*
+FindPrevSetterForReplace(IR *irorig, Operand *dst)
+{
+    IR *ir;
+    IR *saveir;
+
+    if (irorig->cond != COND_TRUE) {
+        return NULL;
+    }
+    if (SrcOnlyHwReg(dst))
+        return NULL;
+    for (ir = irorig->prev; ir; ir = ir->prev) {
+        if (IsDummy(ir)) {
+            continue;
+        }
+        if (ir->opc == OPC_LABEL) {
+            // we may have branched to here from somewhere
+            // else that did the set
+            return NULL;
+        }
+        if (IsBranch(ir)) {
+            return NULL;
+        }
+        if (ir->dst == dst && (InstrSetsDst(ir) || ir->opc == OPC_TEST || ir->opc == OPC_TESTBN)) {
+            if (ir->cond != COND_TRUE) {
+                // cannot be sure that we set the value here,
+                // since the set is conditional
+                return NULL;
+            }
+            break;
+        }
+        if (ir->src == dst || ir->dst == dst) {
+            // we cannot replace the setter, it's in use
+            return NULL;
+        }
+    }
+    if (!ir) {
+        return NULL;
+    }
+    // OK, now go forward and make sure ir->src is not changed
+    // until irorig
+    saveir = ir;
+    ir = ir->next;
+    while (ir && ir != saveir) {
+        if (IsDummy(ir)) {
+            ir = ir->next;
+            continue;
+        }
+        if (ir->dst == saveir->src && InstrSetsDst(ir)) {
+            return NULL;
+        }
+        ir = ir->next;
+    }
+    return saveir;
+}
+
+//
+// check for flags used between ir1 and ir2
+//
+static int
+FlagsNotUsedBetween(IR *ir1, IR *ir2, unsigned flags)
+{
+    while (ir1 && ir1 != ir2) {
+        if (InstrUsesFlags(ir1, flags)) {
+            return 0;
+        }
+        ir1 = ir1->next;
+    }
+    if (!ir1) {
+        return 0;
+    }
+    return 1;
+}
+
+//
+// check for flags set between ir1 and ir2
+//
+static int
+FlagsNotSetBetween(IR *ir1, IR *ir2, unsigned flags)
+{
+    while (ir1 && ir1 != ir2) {
+        if (InstrSetsFlags(ir1, flags)) {
+            return 0;
+        }
+        ir1 = ir1->next;
+    }
+    if (!ir1) {
+        return 0;
+    }
+    return 1;
+}
+
 int
 OptimizeMoves(IRList *irl)
 {
@@ -1483,6 +1664,17 @@ OptimizeMoves(IRList *irl)
                 if (!InstrSetsAnyFlags(ir)) {
                     DeleteIR(irl, ir);
                     change = 1;
+                } else if (ir->flags == FLAG_WZ) {
+                    IR *prev_ir = FindPrevSetterForCompare(ir,ir->src);
+                    if (prev_ir && CanTestZero(prev_ir->opc)
+                    && (prev_ir->flags&(FLAG_ZSET&~FLAG_WZ)) == 0
+                    && prev_ir->cond == COND_TRUE && ir->cond == COND_TRUE
+                    && FlagsNotUsedBetween(prev_ir,ir,FLAG_WZ)
+                    && FlagsNotSetBetween(prev_ir,ir,FLAG_WZ)) {
+                        prev_ir->flags |= FLAG_WZ;
+                        DeleteIR(irl, ir);
+                        change = 1;
+                    }
                 }
             } else if ((ir->opc == OPC_MOV || ir->opc == OPC_NEG) && ir->cond == COND_TRUE && IsImmediate(ir->src)) {
                 int sawchange;
@@ -1873,168 +2065,6 @@ int OptimizeShortBranches(IRList *irl)
     return change;
 }
 
-/* return 1 if the instruction can have wz appended and produce a sensible
- * result (compares result to 0)
- */
-static int
-CanTestZero(int opc)
-{
-    switch (opc) {
-    case OPC_ADD:
-    case OPC_SUB:
-    case OPC_AND:
-    case OPC_ANDN:
-    case OPC_OR:
-    case OPC_MOV:
-    case OPC_NEG:
-    case OPC_NEGC:
-    case OPC_NEGNC:
-    case OPC_NEGZ:
-    case OPC_NEGNZ:
-    case OPC_RDLONG:
-    case OPC_RDBYTE:
-    case OPC_RDWORD:
-    case OPC_XOR:
-    case OPC_SAR:
-    case OPC_SHR:
-    case OPC_SHL:
-    case OPC_SIGNX:
-    case OPC_ZEROX:
-    case OPC_MULU:
-    case OPC_MULS:
-        return 1;
-    default:
-        return 0;
-    }
-}
-
-//
-// find the previous instruction that sets a particular operand
-// used for compares
-// returns NULL if we cannot
-//
-static IR*
-FindPrevSetterForCompare(IR *irl, Operand *dst)
-{
-    IR *ir;
-    int orig_condition = irl->cond;
-    
-    if (SrcOnlyHwReg(dst))
-        return NULL;
-    for (ir = irl->prev; ir; ir = ir->prev) {
-        if (IsDummy(ir)) {
-            continue;
-        }
-        if (ir->opc == OPC_LABEL) {
-            // we may have branched to here from somewhere
-            // else that did the set
-            return NULL;
-        }
-        if (ir->cond != orig_condition) {
-            if (ir->dst == dst) {
-                return NULL;
-            }
-        }
-        if (InstrSetsAnyFlags(ir)) {
-            // flags are messed up here, so we can't go back any further
-            return NULL;
-        }
-        if (IsBranch(ir)) {
-            return NULL;
-        }
-        if (ir->dst == dst && InstrSetsDst(ir)) {
-            if (ir->cond != COND_TRUE) {
-                // cannot be sure that we set the value here,
-                // since the set is conditional
-                return NULL;
-            }
-            return ir;
-        }
-    }
-    return NULL;
-}
-
-//
-// find the previous instruction that changes a particular operand
-// also will return if it's in the dst field of a TEST
-//
-// used for peephole optimization
-// returns NULL if we cannot find the instruction
-//
-static IR*
-FindPrevSetterForReplace(IR *irorig, Operand *dst)
-{
-    IR *ir;
-    IR *saveir;
-
-    if (irorig->cond != COND_TRUE) {
-        return NULL;
-    }
-    if (SrcOnlyHwReg(dst))
-        return NULL;
-    for (ir = irorig->prev; ir; ir = ir->prev) {
-        if (IsDummy(ir)) {
-            continue;
-        }
-        if (ir->opc == OPC_LABEL) {
-            // we may have branched to here from somewhere
-            // else that did the set
-            return NULL;
-        }
-        if (IsBranch(ir)) {
-            return NULL;
-        }
-        if (ir->dst == dst && (InstrSetsDst(ir) || ir->opc == OPC_TEST || ir->opc == OPC_TESTBN)) {
-            if (ir->cond != COND_TRUE) {
-                // cannot be sure that we set the value here,
-                // since the set is conditional
-                return NULL;
-            }
-            break;
-        }
-        if (ir->src == dst || ir->dst == dst) {
-            // we cannot replace the setter, it's in use
-            return NULL;
-        }
-    }
-    if (!ir) {
-        return NULL;
-    }
-    // OK, now go forward and make sure ir->src is not changed
-    // until irorig
-    saveir = ir;
-    ir = ir->next;
-    while (ir && ir != saveir) {
-        if (IsDummy(ir)) {
-            ir = ir->next;
-            continue;
-        }
-        if (ir->dst == saveir->src && InstrSetsDst(ir)) {
-            return NULL;
-        }
-        ir = ir->next;
-    }
-    return saveir;
-}
-
-//
-// check for flags used between ir1 and ir2
-//
-static int
-FlagsNotUsedBetween(IR *ir1, IR *ir2, unsigned flags)
-{
-    while (ir1 && ir1 != ir2) {
-        if (InstrUsesFlags(ir1, flags)) {
-            return 0;
-        }
-        ir1 = ir1->next;
-    }
-    if (!ir1) {
-        return 0;
-    }
-    return 1;
-}
-
 //
 // Optimize compares with 0 by changing a previous instruction to set
 // flags instead
@@ -2125,9 +2155,11 @@ OptimizeCompares(IRList *irl)
                 && !InstrSetsAnyFlags(ir_prev)
                 && !InstrIsVolatile(ir_prev)
                 && !InstrIsVolatile(ir)
-                && (ir_prev->flags == COND_TRUE)
+                && ir_prev->cond == COND_TRUE
+                && (ir_prev->flags & (FLAG_ZSET&~FLAG_WZ)) == 0
                 && CanTestZero(ir_prev->opc)
-                && FlagsNotUsedBetween(ir_prev, ir, FLAG_WC|FLAG_WZ))
+                && FlagsNotUsedBetween(ir_prev, ir, FLAG_WZ)
+                && FlagsNotSetBetween(ir_prev,ir,FLAG_WZ))
             {
                 ir_prev->flags |= FLAG_WZ;
                 DeleteIR(irl, ir);
