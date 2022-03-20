@@ -7,7 +7,7 @@ entry
 _blah
 	cmp	arg01, #99 wz
  if_ne	jmp	#LR__0001
-	cmps	arg02, #0 wc,wz
+	cmps	arg02, #0 wc
  if_b	jmp	#LR__0002
 LR__0001
 	mov	arg02, #0

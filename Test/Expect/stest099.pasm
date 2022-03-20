@@ -7,7 +7,7 @@ entry
 _copy1
 	mov	_var01, #0
 	sub	arg03, #1
-	cmps	arg03, #0 wc,wz
+	cmps	arg03, #0 wc
 	negc	_var02, #1
 	add	arg03, _var02
 LR__0001

@@ -5,7 +5,7 @@ dat
 entry
 
 _zcount
-	cmps	arg02, arg01 wc,wz
+	cmps	arg02, arg01 wc
 	negc	_var01, #1
 	add	arg02, _var01
 LR__0001

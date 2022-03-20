@@ -26,7 +26,7 @@ LR__0001
 	add	_get_sum, _tmp004_
 	add	_get_i, #1
 	add	_get__cse__0000, #4
-	cmps	_get_i, #10 wc,wz
+	cmps	_get_i, #10 wc
 	sub	fp, #4
  if_b	jmp	#LR__0001
 	mov	result1, _get_sum

@@ -6,7 +6,7 @@ entry
 
 _ex
 	mov	_var01, #0
-	cmps	arg01, #0 wc,wz
+	cmps	arg01, #0 wc
  if_b	neg	_var01, #1
 	wrlong	_var01, objptr
 	mov	result1, arg01

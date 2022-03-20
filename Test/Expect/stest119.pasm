@@ -8,7 +8,7 @@ _zeroit
 	mov	_var01, #1
 	add	arg02, #1
 LR__0001
-	cmps	_var01, arg02 wc,wz
+	cmps	_var01, arg02 wc
  if_ae	jmp	#LR__0002
 	mov	_var02, #0
 	wrbyte	_var02, arg01

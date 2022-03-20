@@ -21,7 +21,7 @@ __float_fromuns_ret
 
 __float_fromint
 	mov	__float_fromint_integer, arg01
-	cmps	__float_fromint_integer, #0 wc,wz
+	cmps	__float_fromint_integer, #0 wc
  if_b	neg	__float_fromint_integer, __float_fromint_integer
  if_b	mov	__float_fromint_negate, #1
  if_ae	mov	__float_fromint_negate, #0

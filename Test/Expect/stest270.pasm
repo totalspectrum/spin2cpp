@@ -9,7 +9,7 @@ LR__0001
 	call	#_rxcheck
 	mov	_rx__temp__0000, result1
 	mov	_rx_rxbyte, _rx__temp__0000
-	cmps	_rx__temp__0000, #0 wc,wz
+	cmps	_rx__temp__0000, #0 wc
  if_b	jmp	#LR__0001
 	mov	result1, _rx_rxbyte
 _rx_ret

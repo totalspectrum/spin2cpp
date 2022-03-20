@@ -45,7 +45,7 @@ LR__0003
 	or	_var02, _var01
 	mov	outa, _var02
 	add	_var01, #1
-	cmps	_var01, #5 wc,wz
+	cmps	_var01, #5 wc
  if_b	jmp	#LR__0003
 __mytx_ret
 	ret

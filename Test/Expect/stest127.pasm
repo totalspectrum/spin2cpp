@@ -19,7 +19,7 @@ LR__0001
 	mov	arg01, _main_i_0003
 	call	#_blah
 	add	_main_i_0003, #1
-	cmps	_main_i_0003, #2 wc,wz
+	cmps	_main_i_0003, #2 wc
  if_b	jmp	#LR__0001
 _main_ret
 	ret

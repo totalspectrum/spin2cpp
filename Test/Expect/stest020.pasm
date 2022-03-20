@@ -8,7 +8,7 @@ _simplemul
 	mov	_var01, #0
 	mov	_var02, #0
 LR__0001
-	cmps	_var01, arg01 wc,wz
+	cmps	_var01, arg01 wc
  if_b	add	_var02, arg02
  if_b	add	_var01, #1
  if_b	jmp	#LR__0001

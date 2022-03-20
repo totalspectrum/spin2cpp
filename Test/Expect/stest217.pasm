@@ -5,7 +5,7 @@ dat
 entry
 
 _getval
-	cmp	arg01, #2 wc,wz
+	cmp	arg01, #2 wc
  if_b	mov	result1, #99
  if_ae	mov	result1, #100
 _getval_ret

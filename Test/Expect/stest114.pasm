@@ -11,7 +11,7 @@ LR__0001
 	wrlong	_var02, _var01
 	add	_var02, #1
 	add	_var01, #4
-	cmp	_var02, #11 wc,wz
+	cmp	_var02, #11 wc
  if_b	jmp	#LR__0001
 _init_ret
 	ret

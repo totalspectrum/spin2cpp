@@ -6,7 +6,7 @@ entry
 
 _clamp
 	maxs	arg01, #127 wc,wz
-	mins	arg01, #0 wc,wz
+	mins	arg01, #0 wc
 	mov	result1, arg01
 _clamp_ret
 	ret

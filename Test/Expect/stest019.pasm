@@ -9,7 +9,7 @@ _count
 LR__0001
 	mov	outa, _var01
 	add	_var01, #1
-	cmps	_var01, #4 wc,wz
+	cmps	_var01, #4 wc
  if_b	jmp	#LR__0001
 _count_ret
 	ret

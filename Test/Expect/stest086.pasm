@@ -10,7 +10,7 @@ _update
 	mov	_var02, objptr
 	sub	objptr, #4
 LR__0001
-	cmps	_var01, #10 wc,wz
+	cmps	_var01, #10 wc
  if_ae	jmp	#LR__0002
 	rdlong	_var03, _var02
 	add	_var03, #1

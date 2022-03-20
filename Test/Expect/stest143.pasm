@@ -23,7 +23,7 @@ _sum3_ret
 	ret
 
 _sum4
-	cmps	arg02, #0 wc,wz
+	cmps	arg02, #0 wc
  if_b	mov	result1, #0
  if_ae	add	arg01, arg02
  if_ae	mov	result1, arg01

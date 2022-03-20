@@ -16,7 +16,7 @@ _fibo
 	mov	fp, sp
 _fibo_enter
 	mov	local01, arg01
-	cmps	local01, #2 wc,wz
+	cmps	local01, #2 wc
  if_b	mov	result1, local01
  if_b	jmp	#LR__0001
 	mov	arg01, local01

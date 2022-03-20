@@ -6,9 +6,9 @@ entry
 
 _blah
 	mov	_var01, #0
-	cmps	arg01, #0 wc,wz
+	cmps	arg01, #0 wc
  if_ae	jmp	#LR__0001
-	cmps	arg02, #0 wc,wz
+	cmps	arg02, #0 wc
  if_b	neg	_var01, #1
 LR__0001
 	mov	result1, _var01

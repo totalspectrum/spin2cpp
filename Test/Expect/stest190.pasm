@@ -11,7 +11,7 @@ LR__0001
 	cmp	_var02, #10 wz
  if_e	mov	_var01, _var02
 	add	_var02, #1
-	cmps	_var02, #21 wc,wz
+	cmps	_var02, #21 wc
  if_b	jmp	#LR__0001
 	mov	outa, _var01
 	mov	outb, _var02

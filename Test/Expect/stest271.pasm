@@ -9,7 +9,7 @@ _test1up
 LR__0001
 	xor	outa, _var01
 	add	_var01, #1
-	cmp	_var01, #9 wc,wz
+	cmp	_var01, #9 wc
  if_b	jmp	#LR__0001
 _test1up_ret
 	ret

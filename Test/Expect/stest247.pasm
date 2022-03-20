@@ -40,7 +40,7 @@ LR__0002
 	mov	result2, __system___float_Unpack_x
 	mov	__system___float_tointeger_x, result2
 	mov	__system___float_tointeger_m, result3
-	cmps	__system___float_tointeger_x, imm_4294967295_ wc,wz
+	cmps	__system___float_tointeger_x, imm_4294967295_ wc
  if_b	jmp	#LR__0003
 	cmps	__system___float_tointeger_x, #30 wc,wz
  if_a	jmp	#LR__0003

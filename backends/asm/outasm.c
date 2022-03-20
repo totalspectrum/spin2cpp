@@ -2255,6 +2255,9 @@ CompileBasicBoolExpression(IRList *irl, AST *expr)
     rhs = tmp;
     cond = FlipSides(cond);
   }
+#if 0
+  // FIXME: temporarily disabled by ERS because there's a min/max
+  // pessimization we should fix
   // If comparing with constant, try for a condition that only uses C
   // but only if it's correct and it won't horribly pessimize everything
   if ((cond == COND_LE||cond == COND_GT)
@@ -2263,7 +2266,8 @@ CompileBasicBoolExpression(IRList *irl, AST *expr)
     cond = (cond == COND_LE) ? COND_LT : COND_GE;
     rhs = NewImmediate(rhs->val+1);
   }
-
+#endif
+  
   switch (cond) {
   case COND_LT:
   case COND_GE:

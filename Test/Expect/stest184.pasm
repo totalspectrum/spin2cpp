@@ -63,7 +63,7 @@ __system___setbaud_ret
 
 __system____builtin_memmove
 	mov	_var01, arg01
-	cmps	arg01, arg02 wc,wz
+	cmps	arg01, arg02 wc
  if_ae	jmp	#LR__0004
 	mov	_var02, arg03 wz
  if_e	jmp	#LR__0007
@@ -234,7 +234,7 @@ LR__0011
  if_ne	rdword	__system___gc_tryalloc_availsize, __system___gc_tryalloc__cse__0001
 	cmp	__system___gc_tryalloc_ptr, #0 wz
  if_e	jmp	#LR__0012
-	cmps	__system___gc_tryalloc_ptr, __system___gc_tryalloc_heap_end wc,wz
+	cmps	__system___gc_tryalloc_ptr, __system___gc_tryalloc_heap_end wc
  if_ae	jmp	#LR__0012
 	cmps	__system___gc_tryalloc_size, __system___gc_tryalloc_availsize wc,wz
  if_a	jmp	#LR__0011
@@ -245,7 +245,7 @@ LR__0012
 	mov	__system___gc_tryalloc__cse__0002, __system___gc_tryalloc_ptr
 	add	__system___gc_tryalloc__cse__0002, #6
 	rdword	__system___gc_tryalloc_linkindex, __system___gc_tryalloc__cse__0002
-	cmps	__system___gc_tryalloc_size, __system___gc_tryalloc_availsize wc,wz
+	cmps	__system___gc_tryalloc_size, __system___gc_tryalloc_availsize wc
  if_ae	jmp	#LR__0014
 	mov	__system___gc_tryalloc__cse__0003, __system___gc_tryalloc_ptr
 	wrword	__system___gc_tryalloc_size, __system___gc_tryalloc__cse__0003
@@ -280,7 +280,7 @@ LR__0012
 	call	#__system___gc_nextBlockPtr
 	mov	__system___gc_tryalloc_nextptr, result1 wz
  if_e	jmp	#LR__0013
-	cmps	__system___gc_tryalloc_nextptr, __system___gc_tryalloc_heap_end wc,wz
+	cmps	__system___gc_tryalloc_nextptr, __system___gc_tryalloc_heap_end wc
  if_ae	jmp	#LR__0013
 	mov	__system___gc_tryalloc__cse__0011, __system___gc_tryalloc_nextptr
 	add	__system___gc_tryalloc__cse__0011, #4
@@ -386,9 +386,8 @@ LR__0019
 	sub	__system___gc_doalloc_size, #8
 	abs	_system___gc_doalloc_tmp001_, __system___gc_doalloc_size wc
 	shr	_system___gc_doalloc_tmp001_, #2
-	negc	__system___gc_doalloc__idx__0000, _system___gc_doalloc_tmp001_
+	negc	__system___gc_doalloc__idx__0000, _system___gc_doalloc_tmp001_ wz
 	mov	__system___gc_doalloc_zptr, __system___gc_doalloc_ptr
-	cmp	__system___gc_doalloc__idx__0000, #0 wz
  if_e	jmp	#LR__0021
 LR__0020
 	mov	_system___gc_doalloc_tmp001_, #0
@@ -411,9 +410,9 @@ __system___gc_isvalidptr
 	sub	_var01, #8
 	mov	_var03, _var01
 	andn	_var03, imm_4293918720_
-	cmps	_var03, arg01 wc,wz
+	cmps	_var03, arg01 wc
  if_b	jmp	#LR__0023
-	cmps	_var03, arg02 wc,wz
+	cmps	_var03, arg02 wc
  if_b	jmp	#LR__0024
 LR__0023
 	mov	result1, #0
@@ -489,7 +488,7 @@ LR__0026
 	mov	arg01, __system___gc_dofree_ptr
 	call	#__system___gc_nextBlockPtr
 	mov	__system___gc_dofree_nextptr, result1
-	cmps	__system___gc_dofree_nextptr, __system___gc_dofree_heapend wc,wz
+	cmps	__system___gc_dofree_nextptr, __system___gc_dofree_heapend wc
  if_ae	jmp	#LR__0027
 	mov	__system___gc_dofree__cse__0007, __system___gc_dofree_nextptr
 	add	__system___gc_dofree__cse__0007, #4
@@ -509,7 +508,7 @@ LR__0029
 	call	#__system___gc_nextBlockPtr
 	mov	__system___gc_dofree_tmpptr, result1 wz
  if_e	jmp	#LR__0031
-	cmps	__system___gc_dofree_tmpptr, __system___gc_dofree_heapend wc,wz
+	cmps	__system___gc_dofree_tmpptr, __system___gc_dofree_heapend wc
  if_ae	jmp	#LR__0031
 	mov	arg01, __system___gc_dofree_tmpptr
 	call	#__system___gc_isFree
@@ -540,7 +539,7 @@ LR__0029
 	mov	_system___gc_dofree_tmp001_, result1
 	mov	__system___gc_dofree_nextptr, _system___gc_dofree_tmp001_ wz
  if_e	jmp	#LR__0030
-	cmps	__system___gc_dofree_nextptr, __system___gc_dofree_heapend wc,wz
+	cmps	__system___gc_dofree_nextptr, __system___gc_dofree_heapend wc
  if_ae	jmp	#LR__0030
 	mov	__system___gc_dofree__cse__0014, __system___gc_dofree_nextptr
 	add	__system___gc_dofree__cse__0014, #4
@@ -567,7 +566,7 @@ __system___gc_docollect
 	mov	__system___gc_docollect_ourid, result1
  if_e	jmp	#LR__0033
 LR__0032
-	cmps	__system___gc_docollect_ptr, __system___gc_docollect_endheap wc,wz
+	cmps	__system___gc_docollect_ptr, __system___gc_docollect_endheap wc
  if_ae	jmp	#LR__0033
 	mov	__system___gc_docollect__cse__0000, __system___gc_docollect_ptr
 	add	__system___gc_docollect__cse__0000, #2
@@ -610,7 +609,7 @@ LR__0034
 	wrword	__system___gc_markcog__cse__0001, __system___gc_markcog__cse__0000
 LR__0035
 	add	__system___gc_markcog_cogaddr, #1
-	cmps	__system___gc_markcog_cogaddr, #496 wc,wz
+	cmps	__system___gc_markcog_cogaddr, #496 wc
  if_b	jmp	#LR__0034
 	mov	arg01, __system___gc_docollect_startheap
 	call	#__system___gc_nextBlockPtr
@@ -649,7 +648,7 @@ LR__0039
 LR__0040
 	cmp	__system___gc_docollect_nextptr, #0 wz
  if_e	jmp	#LR__0041
-	cmps	__system___gc_docollect_nextptr, __system___gc_docollect_endheap wc,wz
+	cmps	__system___gc_docollect_nextptr, __system___gc_docollect_endheap wc
  if_b	jmp	#LR__0037
 LR__0041
 __system___gc_docollect_ret
@@ -662,7 +661,7 @@ __system___gc_markhub
 	mov	__system___gc_markhub_heap_base, result1
 	mov	__system___gc_markhub_heap_end, result2
 LR__0042
-	cmps	__system___gc_markhub_startaddr, __system___gc_markhub_endaddr wc,wz
+	cmps	__system___gc_markhub_startaddr, __system___gc_markhub_endaddr wc
  if_ae	jmp	#LR__0043
 	rdlong	arg03, __system___gc_markhub_startaddr
 	add	__system___gc_markhub_startaddr, #4

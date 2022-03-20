@@ -7,7 +7,7 @@ entry
 _update
 	mov	_var01, #0
 LR__0001
-	cmps	_var01, #10 wc,wz
+	cmps	_var01, #10 wc
  if_ae	jmp	#LR__0002
 	rdlong	_var02, arg01
 	add	_var02, #1

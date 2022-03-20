@@ -6,7 +6,7 @@ entry
 
 _test1
 	mov	_var01, #0
-	cmps	arg01, arg02 wc,wz
+	cmps	arg01, arg02 wc
  if_b	neg	_var01, #1
 	mov	result1, _var01
 _test1_ret

@@ -16,7 +16,7 @@ LR__0001
 	call	#wrcog
 	add	_var01, _var04
 	add	_var02, #1
-	cmps	_var02, #10 wc,wz
+	cmps	_var02, #10 wc
  if_b	jmp	#LR__0001
 	mov	result1, _var01
 _get_ret
@@ -32,7 +32,7 @@ LR__0002
 	movd	wrcog, _var02
 	call	#wrcog
 	add	_var01, #1
-	cmps	_var01, #10 wc,wz
+	cmps	_var01, #10 wc
  if_b	jmp	#LR__0002
 _put_ret
 	ret
