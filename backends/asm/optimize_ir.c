@@ -2009,7 +2009,7 @@ static int IsSafeShortForwardJump(IR *irbase) {
                 // DJNZ does not work conditionally in LMM
                 return 0;
             }
-            if (n++ > limit) return 0;
+            if (++n > limit) return 0;
         }
         ir = ir->next;
     }

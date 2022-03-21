@@ -579,8 +579,18 @@ void ReplaceIRWithInline(IRList *irl, IR *origir, Function *func)
     IR *dest = origir->prev;
     IRList *insert = FuncIRL(func);
     IR *ir;
+    IRCond cond = origir->cond;
+    Operand *condlbl = NULL;
 
     DeleteIR(irl, origir);
+    if (cond != COND_TRUE) {
+        condlbl = NewCodeLabel();
+        IR *jmp = NewIR(OPC_JUMP);
+        jmp->dst = condlbl;
+        jmp->cond = InvertCond(cond);
+        InsertAfterIR(irl, dest, jmp);
+        dest = jmp;
+    }
     ir = insert->head;
     while (ir) {
         newir = DupIR(ir);
@@ -608,6 +618,12 @@ void ReplaceIRWithInline(IRList *irl, IR *origir, Function *func)
             dest = newir;
         }
         ir = ir->next;
+    }
+    if (condlbl) {
+        IR *lbl = NewIR(OPC_LABEL);
+        lbl->dst = condlbl;
+        InsertAfterIR(irl,dest,lbl);
+        dest = lbl;
     }
 
     // replace all labels in the original inline code
