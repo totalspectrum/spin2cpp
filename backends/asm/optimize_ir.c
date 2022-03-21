@@ -885,7 +885,7 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace, IRCond sette
   // special case: if orig is dead after this,
   // and if first_ir does not modify it, then it is safe to
   // replace
-  if (!IsBranch(first_ir) && IsDeadAfter(first_ir, orig) && !InstrModifies(first_ir, orig)) {
+  if (!IsBranch(first_ir) && IsDeadAfter(first_ir, orig) && !InstrModifies(first_ir, orig) && !isCond) {
       return first_ir;
   }
 #endif  
@@ -969,6 +969,9 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace, IRCond sette
             // unknown jumper, assume the worst
             return NULL;
         }
+    }
+    if (!CondIsSubset(setterCond,ir->cond) && InstrUses(ir,orig)) {
+        return NULL;
     }
     if (InstrModifies(ir,replace)) {
       // special case: if we have a "mov replace,x" and orig is dead
