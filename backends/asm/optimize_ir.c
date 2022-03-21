@@ -861,12 +861,13 @@ SrcOnlyHwReg(Operand *orig)
 // or NULL if replacement is unsafe
 //
 static IR*
-SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
+SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace, IRCond setterCond)
 {
   IR *ir;
   IR *last_ir = NULL;
   bool assignments_are_safe = true;
   bool orig_modified = false;
+  bool isCond = (setterCond != COND_TRUE);
   
   if (SrcOnlyHwReg(replace) || !IsRegister(replace->kind)) {
       return NULL;
@@ -906,7 +907,7 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
         return NULL;
     }
     if (ir->opc == OPC_RET) {
-        return IsLocalOrArg(orig) ? ir : NULL;
+        return (IsLocalOrArg(orig) && !isCond) ? ir : NULL;
     } else if (ir->opc == OPC_CALL) {
         // it's OK to replace forward over a call as long
         // as orig is a local register (not an ARG!)
@@ -922,7 +923,7 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
                 // if there are any more references to orig then
                 // replacement will fail (since arg gets changed
                 // by the call)
-                return (assignments_are_safe && IsDeadAfter(ir, orig)) ? ir : NULL;
+                return (assignments_are_safe && IsDeadAfter(ir, orig) && !isCond) ? ir : NULL;
             }
         } else if (!IsLocal(replace)) {
             return NULL;
@@ -958,7 +959,7 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
             // however, in the special case that the register is never
             // actually used again then it's safe
             if (comefrom->addr < first_ir->addr) {
-                if (assignments_are_safe && IsDeadAfter(ir, orig)) {
+                if (assignments_are_safe && IsDeadAfter(ir, orig) && !isCond) {
                     return ir;
                 }
                 return NULL;
@@ -978,7 +979,7 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
       //      value is being put into it
       //  if "assignments_are_safe" is false then we don't know if another
       //  branch might still use "replace", so punt and give up
-      if (ir->cond != COND_TRUE) {
+      if (!CondIsSubset(ir->cond,setterCond)) {
           return NULL;
       }
       if (ir->dst->kind == REG_SUBREG || replace->kind == REG_SUBREG) {
@@ -1009,8 +1010,12 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
             // sub registers are complicated, punt
             return NULL;
         }
-        if (ir->cond != COND_TRUE) {
+        if (ir->cond != setterCond) {
             assignments_are_safe = false;
+            if (!CondIsSubset(setterCond,ir->cond)) {
+                // Not a subset of the setter condition, can't replace
+                return NULL;
+            }
         }
         if (!InstrUses(ir, orig) && assignments_are_safe) {
             // we are completely re-setting "orig" here, so we can just
@@ -1692,16 +1697,16 @@ OptimizeMoves(IRList *irl)
                     // we no longer need the original mov
                     DeleteIR(irl, ir);
                 }
-            } else if (ir->opc == OPC_MOV && ir->cond == COND_TRUE) {
+            } else if (ir->opc == OPC_MOV) {
                 if (ir->src == ir->dst && !InstrSetsAnyFlags(ir)) {
                     DeleteIR(irl, ir);
                     change = 1;
-                } else if (!InstrSetsAnyFlags(ir) && IsDeadAfter(ir, ir->src) && SafeToReplaceBack(ir->prev, ir->src, ir->dst)) {
+                } else if (!InstrSetsAnyFlags(ir) && ir->cond == COND_TRUE && IsDeadAfter(ir, ir->src) && SafeToReplaceBack(ir->prev, ir->src, ir->dst)) {
                     ReplaceBack(ir->prev, ir->src, ir->dst);
                     DeleteIR(irl, ir);
                     change = 1;
                 }
-                else if ( !InstrSetsAnyFlags(ir) && 0 != (stop_ir = SafeToReplaceForward(ir->next, ir->dst, ir->src)) ) {
+                else if ( !InstrSetsAnyFlags(ir) && 0 != (stop_ir = SafeToReplaceForward(ir->next, ir->dst, ir->src,ir->cond)) ) {
                     ReplaceForward(ir->next, ir->dst, ir->src, stop_ir);
                     DeleteIR(irl, ir);
                     change = 1;
