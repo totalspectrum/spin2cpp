@@ -7,8 +7,8 @@ entry
 _addlist
 	mov	_var01, #0
 LR__0001
-	cmps	arg01, #0 wc,wz
- if_be	jmp	#LR__0002
+	cmps	arg01, #1 wc
+ if_b	jmp	#LR__0002
 	rdlong	_var02, arg02
 	add	arg02, #4
 	add	_var01, _var02

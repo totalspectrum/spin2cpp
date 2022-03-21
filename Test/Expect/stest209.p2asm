@@ -47,10 +47,10 @@ _op2_ret
 
 _op3
 	rdlong	arg01, objptr
-	cmps	arg01, #0 wcz
- if_a	qsqrt	arg01, #0
- if_be	mov	result1, #0
- if_a	getqx	result1
+	cmps	arg01, #1 wc
+ if_ae	qsqrt	arg01, #0
+ if_b	mov	result1, #0
+ if_ae	getqx	result1
 	wrlong	result1, objptr
 _op3_ret
 	ret

@@ -5,8 +5,8 @@ dat
 entry
 
 _zero
-	cmps	arg02, #0 wc,wz
- if_be	jmp	#LR__0002
+	cmps	arg02, #1 wc
+ if_b	jmp	#LR__0002
 	mov	_var01, arg02
 LR__0001
 	mov	_var02, #0

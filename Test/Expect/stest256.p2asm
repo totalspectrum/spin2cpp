@@ -33,10 +33,10 @@ __system___waitms
 	mov	__system___waitms_m, arg01
 	rdlong	__system___waitms_freq, #20
 LR__0003
-	cmps	__system___waitms_m, ##1000 wcz
- if_a	waitx	__system___waitms_freq
- if_a	sub	__system___waitms_m, ##1000
- if_a	jmp	#LR__0003
+	cmps	__system___waitms_m, ##1001 wc
+ if_ae	waitx	__system___waitms_freq
+ if_ae	sub	__system___waitms_m, ##1000
+ if_ae	jmp	#LR__0003
 	add	ptr___system__dat__, #12
 	rdlong	__system___waitms_freqms, ptr___system__dat__ wz
 	sub	ptr___system__dat__, #12
@@ -48,10 +48,10 @@ LR__0003
 	wrlong	__system___waitms__temp__0000, ptr___system__dat__
 	sub	ptr___system__dat__, #12
 LR__0004
-	cmps	__system___waitms_m, #0 wcz
- if_a	qmul	__system___waitms_m, __system___waitms_freqms
- if_a	getqx	arg01
- if_a	waitx	arg01
+	cmps	__system___waitms_m, #1 wc
+ if_ae	qmul	__system___waitms_m, __system___waitms_freqms
+ if_ae	getqx	arg01
+ if_ae	waitx	arg01
 __system___waitms_ret
 	ret
 builtin_bytefill_

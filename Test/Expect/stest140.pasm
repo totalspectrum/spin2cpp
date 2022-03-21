@@ -16,8 +16,8 @@ _factorial
 	mov	fp, sp
 _factorial_enter
 	mov	local01, arg02
-	cmps	arg01, #0 wc,wz
- if_be	jmp	#LR__0001
+	cmps	arg01, #1 wc
+ if_b	jmp	#LR__0001
 	mov	local02, arg01
 	sub	local02, #1
 	mov	muldiva_, local01

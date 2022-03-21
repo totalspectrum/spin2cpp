@@ -42,8 +42,8 @@ LR__0002
 	mov	__system___float_tointeger_m, result3
 	cmps	__system___float_tointeger_x, imm_4294967295_ wc
  if_b	jmp	#LR__0003
-	cmps	__system___float_tointeger_x, #30 wc,wz
- if_a	jmp	#LR__0003
+	cmps	__system___float_tointeger_x, #31 wc
+ if_ae	jmp	#LR__0003
 	shl	__system___float_tointeger_m, #2
 	mov	__system___float_tointeger__cse__0001, #30
 	sub	__system___float_tointeger__cse__0001, __system___float_tointeger_x

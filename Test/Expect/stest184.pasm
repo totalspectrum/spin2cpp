@@ -335,8 +335,8 @@ __system___gc_alloc_managed
 	call	#__system___gc_doalloc
 	mov	__system___gc_alloc_managed_r, result1 wz
  if_ne	jmp	#LR__0017
-	cmps	__system___gc_alloc_managed_size, #0 wc,wz
- if_be	jmp	#LR__0017
+	cmps	__system___gc_alloc_managed_size, #1 wc
+ if_b	jmp	#LR__0017
 	mov	arg01, ptr_L__0043_
 	call	#__system___gc_errmsg
 	jmp	#__system___gc_alloc_managed_ret

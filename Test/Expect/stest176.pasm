@@ -9,9 +9,9 @@ LR__0001
 	mov	_var01, #49
 	wrbyte	_var01, arg01
 	shr	arg02, #1
-	cmp	arg02, #0 wc,wz
+	cmp	arg02, #1 wc
 	add	arg01, #1
- if_a	jmp	#LR__0001
+ if_ae	jmp	#LR__0001
 	mov	_var01, #0
 	wrbyte	_var01, arg01
 	mov	result1, #0

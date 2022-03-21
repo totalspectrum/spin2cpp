@@ -8,8 +8,8 @@ _allbits
 	mov	_allbits_r_0001, #0
 	mov	_allbits_r_0001_01, #0
 LR__0001
-	cmps	arg02, #0 wc,wz
- if_be	jmp	#LR__0002
+	cmps	arg02, #1 wc
+ if_b	jmp	#LR__0002
 	mov	result1, _allbits_r_0001
 	mov	result2, _allbits_r_0001_01
 	rdlong	arg03, arg01

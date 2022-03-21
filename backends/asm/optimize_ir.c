@@ -4359,6 +4359,7 @@ typedef struct PeepholePattern {
 #define PEEP_OP_SET_IMM 0x04000000
 #define PEEP_OP_MATCH_DEAD 0x05000000  /* like PEEP_OP_MATCH, but operand is dead after this instr */
 #define PEEP_OP_CLRBITS 0x06000000
+#define PEEP_OP_MATCH_M1 0x07000000
 #define PEEP_OPNUM_MASK 0x00ffffff
 #define PEEP_OP_MASK    0xff000000
 
@@ -4389,6 +4390,14 @@ static int PeepOperandMatch(int patrn_dst, Operand *dst, IR *ir)
                 return 0;
             }
             if (!IsDeadAfter(ir, dst)) {
+                return 0;
+            }
+        } else if (opflag == PEEP_OP_MATCH_M1) {
+            // the new operand must have the same value as the original, minus 1
+            // (used for compares)
+            if (dst->kind != IMM_INT) return 0;
+            if (peep_ops[opnum]->kind != IMM_INT) return 0;
+            if ( peep_ops[opnum]->val != dst->val+1 ) {
                 return 0;
             }
         } else if (opflag == PEEP_OP_IMM) {
@@ -4486,6 +4495,17 @@ static PeepholePattern pat_mins[] = {
 static PeepholePattern pat_minu[] = {
     { COND_TRUE, OPC_CMP, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_WCZ_OK },
     { COND_LT, OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
+static PeepholePattern pat_maxs_off[] = {
+    { COND_TRUE, OPC_CMPS, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_WCZ_OK },
+    { COND_GE, OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_MATCH_M1|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_maxu_off[] = {
+    { COND_TRUE, OPC_CMP, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_WCZ_OK },
+    { COND_GE, OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_MATCH_M1|1, PEEP_FLAGS_NONE },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
@@ -4924,6 +4944,9 @@ static int ReplaceMaxMin(int arg, IRList *irl, IR *ir)
         return 0;
     }
     ReplaceOpcode(ir, (IROpcode)arg);
+    // note: one of the patterns checks for cmp with GT instead of GE, so
+    // we have to use the second instruction's operand
+    ir->src = ir->next->src;
     DeleteIR(irl, ir->next);
     return 1;
 }
@@ -5339,6 +5362,8 @@ struct Peepholes {
     { pat_maxu, OPC_MAXU, ReplaceMaxMin },
     { pat_mins, OPC_MINS, ReplaceMaxMin },
     { pat_minu, OPC_MINU, ReplaceMaxMin },
+    { pat_maxs_off, OPC_MAXS, ReplaceMaxMin },
+    { pat_maxu_off, OPC_MAXU, ReplaceMaxMin },
 
     { pat_zeroex, OPC_ZEROX, ReplaceExtend },
     { pat_signex, OPC_SIGNX, ReplaceExtend },
