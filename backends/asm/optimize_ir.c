@@ -1980,49 +1980,42 @@ static void CheckUsage(IRList *irl)
  * returns the number of instructions forward
  * or 0 if not a valid candidate for optimization
  */
-#define MAX_JUMP_OVER 3
-static int IsSafeShortForwardJump(IR *irbase)
-{
-  int n = 0;
-  Operand *target;
-  IR *ir;
+static int IsSafeShortForwardJump(IR *irbase) {
+    int n = 0;
+    Operand *target;
+    IR *ir;
+    int limit = (curfunc->optimize_flags & OPT_EXTRASMALL) ? 10 : (gl_p2 ? 5 : 3);
+    bool cond_dirty = false;
 
-  if (irbase->opc != OPC_JUMP)
-    return 0;
-  if (InstrIsVolatile(irbase)) {
-      return 0;
-  }
-  target = irbase->dst;
-  if (IsRegister(target->kind)) {
-      return 0;
-  }
-  ir = irbase->next;
-  while (ir) {
-    if (!IsDummy(ir)) {
-      if (ir->cond != COND_TRUE) return 0;
-      if (ir->opc == OPC_LABEL) {
-	if (ir->dst == target) {
-	  return n;
-	}
-	return 0;
-      }
-      if (ir->opc == OPC_CALL) {
-          // calls do not preserve condition codes
-          return 0;
-      }
-      if (ir->opc == OPC_DJNZ && !gl_p2) {
-          // DJNZ does not work conditionally in LMM
-          return 0;
-      }
-      n++;
-      if (n > MAX_JUMP_OVER) return 0;
+    if (irbase->opc != OPC_JUMP) return 0;
+    if (InstrIsVolatile(irbase)) return 0;
+    target = irbase->dst;
+    if (IsRegister(target->kind)) return 0;
+    ir = irbase->next;
+    while (ir) {
+        if (!IsDummy(ir)) {
+            if (ir->flags & FLAG_CZSET) return 0;
+            if (ir->cond != COND_TRUE) return 0;
+            if (ir->opc == OPC_LABEL) {
+                if (ir->dst == target) return n;
+                else return 0;
+            }
+            if (cond_dirty) return 0;
+            if (ir->opc == OPC_CALL) {
+                // calls do not preserve condition codes
+                cond_dirty = true;
+            }
+            if (ir->opc == OPC_DJNZ && !gl_p2) {
+                // DJNZ does not work conditionally in LMM
+                return 0;
+            }
+            if (n++ > limit) return 0;
+        }
+        ir = ir->next;
     }
-    ir = ir->next;
-  }
-  // we reached the end... were we trying to jump to the end?
-  if (curfunc && target == FuncData(curfunc)->asmreturnlabel)
-      return n;
-  return 0;
+    // we reached the end... were we trying to jump to the end?
+    if (curfunc && target == FuncData(curfunc)->asmreturnlabel) return n;
+    else return 0;
 }
 
 static void ConditionalizeInstructions(IR *ir, IRCond cond, int n)
