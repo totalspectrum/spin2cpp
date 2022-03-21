@@ -3684,6 +3684,13 @@ static void PrependDependency(struct dependency **list,Operand *reg) {
     *list = tmp;
 }
 
+static bool CheckDependency(struct dependency **list, Operand *reg) {
+    for (struct dependency *tmp=*list;tmp;tmp=tmp->link) {
+        if (tmp->reg == reg) return true;
+    }
+    return false;
+}
+
 static void DeleteDependencies(struct dependency **list,Operand *reg) {
     struct dependency **prevlink = list;
     for (struct dependency *tmp=*list;tmp;) {
@@ -3990,6 +3997,36 @@ FixupLoneCORDIC(IRList *irl) {
     return change;
 }
 
+static void addKnownReg(struct dependency **list, Operand *op) {
+    if (op && op->kind != REG_SUBREG && IsLocal(op) && !CheckDependency(list,op)) PrependDependency(list,op);
+}
+
+static bool
+ReuseLocalRegisters(IRList *irl) {
+    struct dependency *known_regs = NULL;
+    bool change = false;
+    IR *stop_ir;
+
+    for (IR *ir=irl->head;ir;ir=ir->next) {
+        // Start of new dependency chain
+        if (ir->dst && ir->dst != ir->src && IsLocal(ir->dst) && ir->dst->kind != REG_SUBREG && InstrModifies(ir,ir->dst) && !InstrUses(ir,ir->dst) && !CheckDependency(&known_regs,ir->dst)) {
+            for (struct dependency *tmp=known_regs;tmp;tmp=tmp->link) {
+                if (tmp->reg!=ir->dst && IsDeadAfter(ir,tmp->reg) && (stop_ir = SafeToReplaceForward(ir->next,ir->dst,tmp->reg,ir->cond))) {
+                    //DEBUG(NULL,"Using %s instead of %s",tmp->reg->name,ir->dst->name);
+                    ReplaceForward(ir->next,ir->dst,tmp->reg,stop_ir);
+                    ir->dst = tmp->reg;
+                    change = true;
+                    break;
+                }
+            }
+        }
+        // Collect known registers
+        addKnownReg(&known_regs,ir->src);
+        addKnownReg(&known_regs,ir->dst);
+    }
+    return change;
+}
+
 
 // optimize an isolated piece of IRList
 // (typically a function)
@@ -4050,6 +4087,10 @@ again:
     if (change) goto again;
     if (gl_p2 && (flags & OPT_CORDIC_REORDER)) {
         change = OptimizeCORDIC(irl);
+    }
+    if (change) goto again;
+    if (flags & OPT_LOCAL_REUSE) {
+        change = ReuseLocalRegisters(irl);
     }
     if (change) goto again;
 }
