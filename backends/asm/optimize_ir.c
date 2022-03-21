@@ -1994,13 +1994,13 @@ static int IsSafeShortForwardJump(IR *irbase) {
     ir = irbase->next;
     while (ir) {
         if (!IsDummy(ir)) {
-            if (ir->flags & FLAG_CZSET) return 0;
             if (ir->cond != COND_TRUE) return 0;
             if (ir->opc == OPC_LABEL) {
                 if (ir->dst == target) return n;
                 else return 0;
             }
             if (cond_dirty) return 0;
+            if (ir->flags & FLAG_CZSET) cond_dirty = true;
             if (ir->opc == OPC_CALL) {
                 // calls do not preserve condition codes
                 cond_dirty = true;
