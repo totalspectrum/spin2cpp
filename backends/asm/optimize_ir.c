@@ -3441,7 +3441,16 @@ restart_check:
                 && nextread->src->val == mask)
             {
                 // don't need zero extend after rdbyte
+                change = 1;
                 nextread->opc = OPC_DUMMY;
+            }
+        }
+        // cut unneccessary bits for immediate write values
+        if (gl_p2 && (ir->opc == OPC_WRBYTE || ir->opc == OPC_WRWORD) && ir->dst && ir->dst->kind == IMM_INT) {
+            int mask = ir->opc == OPC_WRBYTE ? 0xFF : 0xFFFF;
+            if ((ir->dst->val & mask) != ir->dst->val) {
+                ir->dst = NewImmediate(ir->dst->val & mask);
+                change = 1;
             }
         }
 #if 1
@@ -4558,6 +4567,12 @@ static PeepholePattern pat_setc2[] = {
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
+// XOR x,##-1 to NOT x,x
+static PeepholePattern pat_not[] = {
+    { COND_ANY, OPC_XOR, PEEP_OP_SET|0, PEEP_OP_CLRMASK(0,0), PEEP_FLAGS_P2},
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
 // remove redundant zero extends after rdbyte/rdword
 static PeepholePattern pat_rdbyte1[] = {
     { COND_TRUE, OPC_RDBYTE, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_NONE },
@@ -5218,6 +5233,12 @@ static int ReplaceDrvc(int arg, IRList *irl, IR *ir)
     return 1;
 }
 
+static int ReplaceNot(int arg, IRList *irl, IR *ir) {
+    ReplaceOpcode(ir,OPC_NOT);
+    ir->src = ir->dst;
+    return 1;
+}
+
 // pattern is
 //   mov x, y
 //   and x, #1
@@ -5388,6 +5409,8 @@ struct Peepholes {
     { pat_negz2, OPC_NEGZ, ReplaceDrvc },
     { pat_negnz1, OPC_NEGNZ, ReplaceDrvc },
     { pat_negnz2, OPC_NEGNZ, ReplaceDrvc },
+
+    { pat_not, 0, ReplaceNot}, 
 
     { pat_wrc_cmp, 0, ReplaceWrcCmp },
     { pat_wrc_and, 1, RemoveNFlagged },
