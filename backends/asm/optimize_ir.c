@@ -832,7 +832,7 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
 bool
 IsHwReg(Operand *reg)
 {
-    return reg->kind == REG_HW;
+    return reg && reg->kind == REG_HW;
 }
 //
 // returns true if orig is a source only
