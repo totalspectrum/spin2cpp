@@ -1170,7 +1170,7 @@ SameOperand(Operand *a, Operand *b)
 static int
 TransformConstDst(IR *ir, Operand *imm)
 {
-  intptr_t val1, val2;
+  int32_t val1, val2;
   int setsResult = 1;
 
   if (gl_p2 && !InstrSetsDst(ir)) {
@@ -1193,7 +1193,7 @@ TransformConstDst(IR *ir, Operand *imm)
   if (imm->kind == IMM_INT && imm->val == 0) {
       // transform add foo, bar into mov foo, bar, if foo is known to be 0
       if ((ir->opc == OPC_ADD || ir->opc == OPC_SUB)
-          && !InstrSetsAnyFlags(ir))
+          && (ir->flags == FLAG_WZ || !InstrSetsAnyFlags(ir)))
       {
           if (ir->opc == OPC_ADD) {
               ReplaceOpcode(ir, OPC_MOV);
@@ -1247,20 +1247,20 @@ TransformConstDst(IR *ir, Operand *imm)
       val1 &= ~val2;
       break;
     case OPC_SHL:
-      val1 = val1 << val2;
+      val1 = val1 << (val2&31);
       break;
     case OPC_SAR:
-      val1 = val1 >> val2;
+      val1 = val1 >> (val2&31);
       break;
     case OPC_SHR:
-      val1 = ((unsigned)val1) >> val2;
+      val1 = ((uint32_t)val1) >> (val2&31);
       break;
     case OPC_CMPS:
       val1 -= val2;
       setsResult = 0;
       break;
     case OPC_CMP:
-      if ((unsigned)val1 < (unsigned)val2) {
+      if ((uint32_t)val1 < (uint32_t)val2) {
           val1 = -1;
       } else if (val1 == val2) {
           val1 = 0;
@@ -2097,12 +2097,23 @@ OptimizeCompares(IRList *irl)
         }
 	if (!ir) break;
         if ( (ir->opc == OPC_CMP||ir->opc == OPC_CMPS) && ir->cond == COND_TRUE
-             && (FLAG_WZ == (ir->flags & (FLAG_WZ|FLAG_WC)))
+             && (ir->flags & (FLAG_WZ|FLAG_WC))
              && !InstrIsVolatile(ir)
              && ir->src == ir->dst)
         {
-            // this compare always sets Z
+            // this compare always sets Z and clears C
             ApplyConditionAfter(ir, 0);
+            DeleteIR(irl, ir);
+            change |= 1;
+        }
+        else if (ir->cond == COND_TRUE
+             && ((ir->opc == OPC_CMP && IsImmediateVal(ir->src, 0)) || (ir->opc == OPC_CMPS && IsImmediateVal(ir->src, INT32_MIN)) )
+             && (FLAG_WC == (ir->flags & (FLAG_WZ|FLAG_WC)))
+             && !InstrIsVolatile(ir)
+            )
+        {
+            // this compare always clears C
+            ApplyConditionAfter(ir, 1);
             DeleteIR(irl, ir);
             change |= 1;
         }
