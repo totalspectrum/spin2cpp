@@ -4406,7 +4406,7 @@ static int PeepOperandMatch(int patrn_dst, Operand *dst, IR *ir)
             // (used for compares)
             if (dst->kind != IMM_INT) return 0;
             if (peep_ops[opnum]->kind != IMM_INT) return 0;
-            if ( peep_ops[opnum]->val != dst->val+1 ) {
+            if ( (uint32_t)peep_ops[opnum]->val != (uint32_t)dst->val+1 ) {
                 return 0;
             }
         } else if (opflag == PEEP_OP_IMM) {
