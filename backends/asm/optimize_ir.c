@@ -357,6 +357,10 @@ InstrUsesFlags(IR *ir, unsigned flags)
     case OPC_BITNC:
     case OPC_RCL:
     case OPC_RCR:
+    case OPC_ADDX:
+    case OPC_ADDSX:
+    case OPC_SUBX:
+    case OPC_SUBSX:
         /* definitely uses the C flag */
         return (flags & FLAG_WC) != 0;
     case OPC_DRVZ:

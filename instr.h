@@ -26,6 +26,8 @@ typedef enum IROpcode {
     /* note that actual machine instructions must come first */
     OPC_ABS,
     OPC_ADD,
+    OPC_ADDSX,
+    OPC_ADDX,
     OPC_ALTD,
     OPC_ALTS,
     OPC_AND,
@@ -74,6 +76,8 @@ typedef enum IROpcode {
     OPC_SHL,
     OPC_SHR,
     OPC_SUB,
+    OPC_SUBSX,
+    OPC_SUBX,
     OPC_TEST,
     OPC_TESTN,
     OPC_WAITCNT,
