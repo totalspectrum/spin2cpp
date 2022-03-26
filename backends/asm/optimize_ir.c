@@ -4001,8 +4001,8 @@ FixupLoneCORDIC(IRList *irl) {
     return change;
 }
 
-static void addKnownReg(struct dependency **list, Operand *op) {
-    if (op && op->kind != REG_SUBREG && IsLocal(op) && !CheckDependency(list,op)) PrependDependency(list,op);
+static void addKnownReg(struct dependency **list, Operand *op, bool arg) {
+    if (op && op->kind != REG_SUBREG && (arg?IsArg(op):IsLocal(op)) && !CheckDependency(list,op)) PrependDependency(list,op);
 }
 
 static bool
@@ -4010,6 +4010,12 @@ ReuseLocalRegisters(IRList *irl) {
     struct dependency *known_regs = NULL;
     bool change = false;
     IR *stop_ir;
+
+    for(IR *ir=irl->head;ir;ir=ir->next) {
+        // Find all the arg regs first
+        addKnownReg(&known_regs,ir->src,true);
+        addKnownReg(&known_regs,ir->dst,true);
+    }
 
     for (IR *ir=irl->head;ir;ir=ir->next) {
         // Start of new dependency chain
@@ -4025,8 +4031,8 @@ ReuseLocalRegisters(IRList *irl) {
             }
         }
         // Collect known registers
-        addKnownReg(&known_regs,ir->src);
-        addKnownReg(&known_regs,ir->dst);
+        addKnownReg(&known_regs,ir->src,false);
+        addKnownReg(&known_regs,ir->dst,false);
     }
     return change;
 }
