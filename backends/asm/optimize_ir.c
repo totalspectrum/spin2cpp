@@ -816,7 +816,7 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
           if (usecount > 0 && IsHwReg(replace) && ir->src != replace) {
               return false;
           }
-          return ir->cond == COND_TRUE;
+          if (ir->cond == COND_TRUE) return true;
       }
       if (InstrUses(ir, replace) || ir->dst == replace) {
           return false;
