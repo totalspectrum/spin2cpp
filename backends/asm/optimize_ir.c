@@ -642,47 +642,7 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
       return false;
   }
   for (ir = instr->next; ir; ir = ir->next) {
-    for (i = 0; i < level; i++) {
-        if (ir == stack[i]) {
-            // we've come around a loop
-            // registers may be considered dead, labels not
-            return IsRegister(op->kind);
-        }
-    }
-    if (IsDummy(ir)) continue;
-    if (ir->opc == OPC_LABEL) {
-        // potential problem: if there is a branch before instr
-        // that goes to LABEL then we might miss a set
-        // so check
-        IR *comefrom = (IR *)ir->aux;
-        if (ir->flags & FLAG_LABEL_NOJUMP) {
-            // this label isn't a jump target, so don't worry about it
-            continue;
-        }
-        if (!ir->next) {
-            // last label in the function, again, no need to worry
-            continue;
-        }
-        if (!comefrom) {
-            // we don't know what branches come here,
-            // so for caution give up
-            return false;
-        }
-        if (level == 0 && comefrom->addr < instr->addr) {
-            // go back and see if there are any references before the
-            // jump that brought us here
-            // if so, abort
-            IR *backir = comefrom;
-            while (backir) {
-                if (backir->src == op || backir->dst == op) {
-                    return false;
-                }
-                backir = backir->prev;
-            }
-        }
-        continue;
-    }
-    if (InstrUses(ir, op)) {
+    if (InstrUses(ir, op) && !IsDummy(ir)) {
         // value is used, so definitely not dead
         // well, unless the value is used only to update itself:
         // check for that here
@@ -716,7 +676,47 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
         if (ir->src && ir->src->kind == REG_SUBREG) {
             return false;
         }
-    } else if (InstrModifies(ir, op)) {
+    }
+    for (i = 0; i < level; i++) {
+        if (ir == stack[i]) {
+            // we've come around a loop
+            // registers may be considered dead, labels not
+            return IsRegister(op->kind);
+        }
+    }
+    if (ir->opc == OPC_LABEL) {
+        // potential problem: if there is a branch before instr
+        // that goes to LABEL then we might miss a set
+        // so check
+        IR *comefrom = (IR *)ir->aux;
+        if (ir->flags & FLAG_LABEL_NOJUMP) {
+            // this label isn't a jump target, so don't worry about it
+            continue;
+        }
+        if (!ir->next) {
+            // last label in the function, again, no need to worry
+            continue;
+        }
+        if (!comefrom) {
+            // we don't know what branches come here,
+            // so for caution give up
+            return false;
+        }
+        if (level == 0 && comefrom->addr < instr->addr) {
+            // go back and see if there are any references before the
+            // jump that brought us here
+            // if so, abort
+            IR *backir = comefrom;
+            while (backir) {
+                if (backir->src == op || backir->dst == op) {
+                    return false;
+                }
+                backir = backir->prev;
+            }
+        }
+        continue;
+    }
+    if (InstrModifies(ir, op) && !InstrUses(ir,op) && !IsDummy(ir)) {
         // if the instruction modifies but does not use the op,
         // then we're setting it from another register and it's dead
         if (op->kind == REG_SUBREG) {
@@ -731,7 +731,7 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
     }
     if (ir->opc == OPC_RET && ir->cond == COND_TRUE) {
       return IsLocalOrArg(op);
-    } else if (ir->opc == OPC_CALL) {
+    } else if (ir->opc == OPC_CALL && !IsDummy(ir)) {
         if (!IsLocal(op)) {
             // we know of some special cases where argN is not used
             if (IsArg(op) && !FuncUsesArg(ir->dst, op)) {
@@ -740,7 +740,7 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
                 return false;
             }
         }
-    } else if (IsJump(ir)) {
+    } else if (IsJump(ir) && !IsDummy(ir)) {
         // if the jump is to an unknown place give up
         if (!ir->aux) {
             // jump to return is like running off the end
@@ -832,7 +832,7 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
 bool
 IsHwReg(Operand *reg)
 {
-    return reg->kind == REG_HW;
+    return reg && reg->kind == REG_HW;
 }
 //
 // returns true if orig is a source only
@@ -934,14 +934,18 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace, IRCond sette
         // will cause problems
         // Note though that if we do branch ahead then
         // we cannot assume that assignments are safe!
-        if (!JumpIsAfterOrEqual(first_ir, ir)) {
-            return NULL;
-        }
-        if (assignments_are_safe && IsForwardJump(ir) && ir->aux) {
-            IR *jmpdst = (IR *)ir->aux;
-            assignments_are_safe = IsDeadAfter(jmpdst, orig);
+        if (ir->aux && IsDeadAfter((IR *)ir->aux,replace) && IsDeadAfter((IR *)ir->aux,orig)) {
+            // both regs are dead after branch, so we don't care
         } else {
-            assignments_are_safe = false;
+            if (!JumpIsAfterOrEqual(first_ir, ir)) {
+                return NULL;
+            }
+            if (assignments_are_safe && IsForwardJump(ir) && ir->aux) {
+                IR *jmpdst = (IR *)ir->aux;
+                assignments_are_safe = IsDeadAfter(jmpdst, orig);
+            } else {
+                assignments_are_safe = false;
+            }
         }
     }
     if (ir->opc == OPC_LABEL) {
@@ -4448,7 +4452,7 @@ static int PeepOperandMatch(int patrn_dst, Operand *dst, IR *ir)
             // (used for compares)
             if (dst->kind != IMM_INT) return 0;
             if (peep_ops[opnum]->kind != IMM_INT) return 0;
-            if ( peep_ops[opnum]->val != dst->val+1 ) {
+            if ( (uint32_t)peep_ops[opnum]->val != (uint32_t)dst->val+1 ) {
                 return 0;
             }
         } else if (opflag == PEEP_OP_IMM) {
