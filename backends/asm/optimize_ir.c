@@ -75,6 +75,11 @@ InstrReadsDst(IR *ir)
   case OPC_WRNC:
   case OPC_WRZ:
   case OPC_WRNZ:
+  case OPC_DECOD:
+  case OPC_ENCOD:
+  case OPC_BMASK:
+  case OPC_NOT:
+  case OPC_ONES:
     return false;
   default:
     break;
