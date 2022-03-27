@@ -8,6 +8,9 @@
 //#define _DEBUG
 
 #define MAX_MOUNTS 4
+#define MAX_MOUNT_CHARS 15
+
+static char mount_buf[MAX_MOUNTS][MAX_MOUNT_CHARS+1];
 static char *mounttab[MAX_MOUNTS];
 static void *vfstab[MAX_MOUNTS];
 static char curdir[_PATH_MAX];
@@ -64,18 +67,18 @@ __getvfsforfile(char *name, const char *orig_name, char *full_path)
     return v;
 }
 
-int _mount(char *name, struct vfs *v)
+int _mount(char *user_name, struct vfs *v)
 {
     int i, len;
     int firstfree = -1;
     struct vfs *oldv;
     
 #ifdef _DEBUG
-    __builtin_printf("mount(%s, %x) called\n", name, (unsigned)v);
+    __builtin_printf("mount(%s, %x) called\n", user_name, (unsigned)v);
 #endif    
-    if (name[0] != '/') {
+    if (user_name[0] != '/' || strlen(user_name) > MAX_MOUNT_CHARS) {
 #ifdef _DEBUG
-        __builtin_printf("mount %s: EINVAL\n", name);
+        __builtin_printf("mount %s: EINVAL\n", user_name);
 #endif        
         return _seterror(EINVAL);
     }
@@ -87,17 +90,18 @@ int _mount(char *name, struct vfs *v)
             }
         }
         len = strlen(mounttab[i]);
-        if (name[len] == '/' && !strncmp(name, mounttab[i], len)) {
+        if ( (user_name[len] == '/' || user_name[len] == 0) && !strncmp(user_name, mounttab[i], len)) {
             firstfree = i;
             break;
         }
     }
     if (firstfree == -1) {
 #ifdef _DEBUG
-        __builtin_printf("mount %s: EMFILE\n", name);
+        __builtin_printf("mount %s: EMFILE\n", user_name);
 #endif        
         return _seterror(EMFILE);
     }
+
     i = firstfree;
     oldv = vfstab[i];
     if (oldv && oldv->deinit) {
@@ -106,11 +110,17 @@ int _mount(char *name, struct vfs *v)
     vfstab[i] = (void *)v;
     if (!v) {
 #ifdef _DEBUG
-        __builtin_printf("mount: slot %d set empty (unmounted %s)\n", i, name);
+        __builtin_printf("mount: slot %d set empty (unmounted %s)\n", i, user_name);
 #endif    
         mounttab[i] = 0;
     } else {
         int r = 0;
+        char *name;
+
+        name = &mount_buf[i][0];
+        // save the name (the user's parameter may not be static)
+        strncpy(name, user_name, MAX_MOUNT_CHARS+1);
+    
         if (v->init) {
             r = (*v->init)(name);
             if (r) {
@@ -150,7 +160,10 @@ int _umount(char *name)
             continue;
         }
         len = strlen(mounttab[i]);
-        if (name[len] == '/' && !strncmp(name, mounttab[i], len)) {
+#ifdef _DEBUG
+        __builtin_printf("umount looking at %d chars of (%s)\n", len, mounttab[i]);
+#endif        
+        if ( (name[len] == '/' || name[len] == 0) && !strncmp(name, mounttab[i], len)) {
             firstfree = i;
             break;
         }
