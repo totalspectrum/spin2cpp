@@ -176,11 +176,12 @@ int _umount(char *name)
     }
     i = firstfree;
     v = (struct vfs *)vfstab[i];
-    if (v->deinit) {
+    if (v && v->deinit) {
 #ifdef _DEBUG
         __builtin_printf("umount: calling deinit\n", i);
 #endif
         (*v->deinit)(name);
+        vfstab[i] = 0;
     }
     mounttab[i] = 0;
     return 0;
