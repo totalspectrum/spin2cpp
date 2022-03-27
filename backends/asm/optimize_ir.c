@@ -4366,15 +4366,16 @@ typedef struct PeepholePattern {
 #define OPC_ANY     -1
 #define MAX_OPERANDS_IN_PATTERN 16
 
+#define PEEP_OPNUM_MASK 0x00ffffff
+#define PEEP_OP_MASK    0xff000000
 #define PEEP_OP_SET     0x01000000
 #define PEEP_OP_MATCH   0x02000000
 #define PEEP_OP_IMM     0x03000000
 #define PEEP_OP_SET_IMM 0x04000000
 #define PEEP_OP_MATCH_DEAD 0x05000000  /* like PEEP_OP_MATCH, but operand is dead after this instr */
 #define PEEP_OP_CLRBITS 0x06000000
-#define PEEP_OP_MATCH_M1 0x07000000
-#define PEEP_OPNUM_MASK 0x00ffffff
-#define PEEP_OP_MASK    0xff000000
+#define PEEP_OP_MATCH_M1S 0x07000000
+#define PEEP_OP_MATCH_M1U 0x08000000
 
 #define PEEP_OP_CLRMASK(bits, shift) (PEEP_OP_CLRBITS|(bits<<6)|(shift))
 
@@ -4405,12 +4406,28 @@ static int PeepOperandMatch(int patrn_dst, Operand *dst, IR *ir)
             if (!IsDeadAfter(ir, dst)) {
                 return 0;
             }
-        } else if (opflag == PEEP_OP_MATCH_M1) {
+        } else if (opflag == PEEP_OP_MATCH_M1U) {
             // the new operand must have the same value as the original, minus 1
             // (used for compares)
             if (dst->kind != IMM_INT) return 0;
             if (peep_ops[opnum]->kind != IMM_INT) return 0;
-            if ( (uint32_t)peep_ops[opnum]->val != (uint32_t)dst->val+1 ) {
+            if ( (uint32_t)(peep_ops[opnum]->val) != 1+((uint32_t)dst->val) ) {
+                return 0;
+            }
+            // disallow overflow case
+            if ((uint32_t)dst->val == 0xFFFFFFFFU) {
+                return 0;
+            }
+        } else if (opflag == PEEP_OP_MATCH_M1S) {
+            // the new operand must have the same value as the original, minus 1
+            // (signed version of above)
+            if (dst->kind != IMM_INT) return 0;
+            if (peep_ops[opnum]->kind != IMM_INT) return 0;
+            if ( (int32_t)(peep_ops[opnum]->val) != 1+((int32_t)dst->val) ) {
+                return 0;
+            }
+            // disallow overflow case
+            if ((uint32_t)dst->val == 0x7fffffffU) {
                 return 0;
             }
         } else if (opflag == PEEP_OP_IMM) {
@@ -4513,12 +4530,12 @@ static PeepholePattern pat_minu[] = {
 
 static PeepholePattern pat_maxs_off[] = {
     { COND_TRUE, OPC_CMPS, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_WCZ_OK },
-    { COND_GE, OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_MATCH_M1|1, PEEP_FLAGS_NONE },
+    { COND_GE, OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_MATCH_M1S|1, PEEP_FLAGS_NONE },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 static PeepholePattern pat_maxu_off[] = {
     { COND_TRUE, OPC_CMP, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_WCZ_OK },
-    { COND_GE, OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_MATCH_M1|1, PEEP_FLAGS_NONE },
+    { COND_GE, OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_MATCH_M1U|1, PEEP_FLAGS_NONE },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
