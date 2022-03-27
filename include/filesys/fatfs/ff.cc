@@ -7234,16 +7234,19 @@ static int v_open(vfs_file_t *fil, const char *name, int flags)
 
 struct vfs fat_vfs =
 {
-    &v_open,
-    &v_creat,
     &v_close,
-
     &v_read,
     &v_write,
     &v_lseek,
+    
     &v_ioctl,
     0, /* no flush function */
+    0, /* reserved1 */
+    0, /* reserved2 */
     
+    &v_open,
+    &v_creat,
+
     &v_opendir,
     &v_closedir,
     &v_readdir,
@@ -7254,6 +7257,9 @@ struct vfs fat_vfs =
     &v_remove,
 
     &v_rename,
+
+    0, /* init */
+    0, /* deinit */
 };
 
 struct vfs *
