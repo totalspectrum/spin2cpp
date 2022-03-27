@@ -898,10 +898,12 @@ int __unlockio(int h) { return 0; }
 // interfaces which don't return sensible values from send, so we
 // have to wrap the send function into one which always returns 1
 // use this class to do it:
-
+// bytecode also may need wrappers for things as well
 typedef struct _bas_wrap_sender {
-    TxFunc f;
-    int tx(int c, void *arg) { f(c); return 1; }
+    TxFunc ftx;
+    RxFunc frx;
+    int tx(int c, void *arg) { ftx(c); return 1; }
+    int rx(void *arg) { return frx(); }
 } BasicWrapper;
 
 TxFunc _gettxfunc(unsigned h) {
@@ -941,7 +943,7 @@ int _basic_open(unsigned h, TxFunc sendf, RxFunc recvf, CloseFunc closef)
 #ifdef SIMPLE_IO
     THROW_RETURN(EIO);
 #else    
-    struct _bas_wrap_sender *wrapper;
+    struct _bas_wrap_sender *wrapper = 0;
     vfs_file_t *v;
 
     v = __getftab(h);
@@ -952,18 +954,30 @@ int _basic_open(unsigned h, TxFunc sendf, RxFunc recvf, CloseFunc closef)
     if (v->state) {
         _closeraw(v);
     }
+    if (sendf || recvf) {
+        wrapper = _gc_alloc_managed(sizeof(BasicWrapper));
+        if (!wrapper) {
+            THROW_RETURN(ENOMEM); /* out of memory */
+        }
+        wrapper->ftx = 0;
+        wrapper->frx = 0;
+    }
     if (sendf) {
         wrapper = _gc_alloc_managed(sizeof(BasicWrapper));
         if (!wrapper) {
             THROW_RETURN(ENOMEM); /* out of memory */
         }
-        wrapper->f = sendf;
+        wrapper->ftx = sendf;
         v->putcf = (putcfunc_t)&wrapper->tx;
     } else {
-        v->putcf = (putcfunc_t)sendf;
+        v->putcf = 0;
     }
     v->state = _VFS_STATE_INUSE|_VFS_STATE_RDOK|_VFS_STATE_WROK;
-    v->getcf = (getcfunc_t)recvf;
+    if (recvf) {
+        v->getcf = &wrapper->rx;
+    } else {
+        v->getcf = 0;
+    }
     v->close = (VFS_CloseFunc)closef;
     return 0;
 #endif    
