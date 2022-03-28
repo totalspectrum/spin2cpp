@@ -6333,7 +6333,6 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         }
     }
     InitAsmCode();
-    CompileIntermediate(systemModule);
     
     memset(&cogcode, 0, sizeof(cogcode));
     memset(&hubcode, 0, sizeof(hubcode));
@@ -6421,6 +6420,9 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     }
     
     if (emitSpinCode) {
+        // compile libraries
+        CompileIntermediate(systemModule);
+        
         // output the main stub
         EmitLabel(&cogcode, entrylabel);
         if (gl_have_lut) {
