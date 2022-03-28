@@ -59,6 +59,7 @@ IsSimple9BitOperand(Operand *op)
     case REG_REG:
     case REG_LOCAL:
     case REG_ARG:
+    case REG_RESULT:
         return 1;
     default:
         return 0;

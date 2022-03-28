@@ -306,6 +306,7 @@ enum Operandkind {
     REG_HUBPTR, // a register which holds a hub address
     REG_COGPTR, // a register which holds a cog address
     REG_ARG,   // for an argument to a function
+    REG_RESULT, // for a function result
     REG_SUBREG, // for a sub-register: "name" holds the pointer to original reg, "val" is the offset
     
 #define IsRegister(kind) ((kind) >= REG_HW && (kind) <= REG_SUBREG)

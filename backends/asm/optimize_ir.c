@@ -259,6 +259,13 @@ IsArg(Operand *op)
     return op->kind == REG_ARG;
 }
 
+static bool
+isResult(Operand *op)
+{
+    if (op->kind == REG_SUBREG) op = (Operand *)op->name;
+    return op->kind == REG_RESULT;
+}
+
 // returns TRUE if an operand represents a local register
 bool
 IsLocal(Operand *op)
@@ -745,6 +752,8 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
             // we know of some special cases where argN is not used
             if (IsArg(op) && !FuncUsesArg(ir->dst, op)) {
                 /* OK to continue */
+            } else if (isResult(op)) {
+                return true; // Results get set by functions
             } else {
                 return false;
             }
@@ -773,7 +782,15 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
   }
 done:  
   /* if we reach the end without seeing any use */
-  return IsLocalOrArg(op);
+  if (isResult(op)) {
+      int used = curfunc->numresults;
+      for(int i=0;i<used;i++) {
+          if (op == GetResultReg(i)) return false;
+      }
+      return true;
+  } else {
+    return IsLocalOrArg(op);
+  }
 }
 
 static bool

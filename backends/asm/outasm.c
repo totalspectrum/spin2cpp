@@ -431,7 +431,7 @@ Operand *GetResultReg(int n)
     }
     if (!resultreg[n]) {
         sprintf(rvalname, "result%d", n+1);
-        resultreg[n] = GetOneGlobal(REG_REG, strdup(rvalname), 0);
+        resultreg[n] = GetOneGlobal(REG_RESULT, strdup(rvalname), 0);
     }
     return resultreg[n];
 }
@@ -3124,6 +3124,7 @@ IsCogMem(Operand *addr)
     case REG_TEMP:
     case REG_LOCAL:
     case REG_ARG:
+    case REG_RESULT:
     case REG_SUBREG:
         return true;
     case IMM_HUB_LABEL:
@@ -3175,6 +3176,7 @@ OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type)
         case REG_LOCAL:
         case REG_TEMP:
         case REG_ARG:
+        case REG_RESULT:
         case REG_HW:
 #if 1      
             /* special case immediate offsets */
@@ -3250,6 +3252,7 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset, int siz)
         case REG_LOCAL:
         case REG_TEMP:
         case REG_ARG:
+        case REG_RESULT:
         case REG_HW:
 #if 1      
             /* special case immediate offsets */
@@ -3431,6 +3434,7 @@ GetLea(IRList *irl, Operand *src)
         case REG_LOCAL:
         case REG_TEMP:
         case REG_ARG:
+        case REG_RESULT:
         case REG_HW:
             src->used = 1;
             addr = NewOperand(IMM_COG_LABEL, src->name, offset);
