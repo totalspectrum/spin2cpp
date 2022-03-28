@@ -627,7 +627,7 @@ static int MapSpinBlock(int c)
     }
 }
 
-extern uint16_t uni2sjis[0x10000];
+extern const uint16_t uni2sjis[0x10000];
 
 /*
  * fetch a string and translate it to the runtime environment
@@ -656,7 +656,7 @@ getTranslatedString(struct flexbuf *fb)
             // wc is now the unicode code point
             // translate as appropriate
             if (gl_run_charset == CHARSET_SHIFTJIS) {
-                c = uni2sjis[(uint16_t)wc];
+                c = (unsigned)wc <= 0xFFFF ? uni2sjis[(uint16_t)wc] : 0x8148;
                 if (c<=255) {
                     *dst++ = c;
                 } else {
