@@ -4306,7 +4306,11 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
             where = temps[0];
         }
         if (off) {
-            EmitAddSub(irl, src, off);
+            if (src->kind == IMM_INT) {
+                src->val += off;
+            } else {
+                EmitAddSub(irl, src, off);
+            }
         }
         if (origsrc->kind == COGMEM_REF) {
             for (i = 0; i < num_tmp_regs; i++) {
@@ -4337,7 +4341,7 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
             ERROR(NULL, "Illegal memory reference");
         }
 
-        if (off) {
+        if (off && src->kind != IMM_INT) {
             EmitAddSub(irl, src, -off);
         }
         if (where == origdst) {
@@ -4359,7 +4363,7 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
         }
         if (off) {
             if (dst->kind == IMM_INT) {
-                dst->val = off;
+                dst->val += off;
             } else {
                 EmitAddSub(irl, dst, off);
             }
