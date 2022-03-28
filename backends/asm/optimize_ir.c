@@ -746,7 +746,7 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
         }
     }
     if (ir->opc == OPC_RET && ir->cond == COND_TRUE) {
-      return IsLocalOrArg(op);
+      goto done;
     } else if (ir->opc == OPC_CALL) {
         if (!IsLocal(op)) {
             // we know of some special cases where argN is not used
