@@ -76,6 +76,15 @@ InstrReadsDst(IR *ir)
   case OPC_WRZ:
   case OPC_WRNZ:
     return false;
+  case OPC_MUXC:
+  case OPC_MUXNC:
+  case OPC_MUXZ:
+  case OPC_MUXNZ:
+    if (ir->src && ir->src->kind == IMM_INT && (int32_t)ir->src->val == -1) {
+        return false;
+    } else {
+        return true;
+    }
   default:
     break;
   }
