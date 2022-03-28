@@ -1,7 +1,9 @@
 Version 5.9.10
 - Actually fail compilation if a preprocessor #error directive is found in Spin
 - Fixed some bugs in time related functions
-- Merged a number of helpful P2 logic and CORDIC optimizations contributed by Ada
+- Fixed FCACHE not being enabled during system module compilation
+- Merged a LOT of helpful P2 logic and CORDIC optimizations contributed by Ada Gottensträter
+- Merged Ada's change to support Shift-JIS character encoding
 
 Version 5.9.9
 - Added special preprocessor comments {$flexspin ... } for FlexSpin specific code.
