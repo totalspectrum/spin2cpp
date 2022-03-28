@@ -39,27 +39,24 @@ pri _cogstop(id = long)
     cogstop id
   endasm
   return 0
-pri _lockclr(id = long) : rval | mask
-  mask := -1
+pri _lockclr(id = long) : rval
   asm
     lockrel id wc
-    muxc   rval,mask
+    if_c neg rval,#1
   endasm
   return rval
-pri _lockset(id = long) : rval | mask
-  mask := -1
+pri _lockset(id = long) : rval
   asm
     locktry id wc
-    muxnc   rval,mask  ' NOTE: C bit is opposite in P2
+    if_nc neg rval,#1  ' NOTE: C bit is opposite in P2
   endasm
   return rval
 
 ' locktry is like lockset but with opposite return value
-pri _locktry(id = long) : rval |  mask
-  mask := -1
+pri _locktry(id = long) : rval
   asm
     locktry id wc
-    muxc   rval,mask
+    if_c neg rval,#1
   endasm
   return rval
 pri _locknew : rval = long
