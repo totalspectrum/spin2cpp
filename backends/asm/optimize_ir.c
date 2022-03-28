@@ -3281,11 +3281,13 @@ static IR* FindNextUse(IR *ir, Operand *dst)
 // find the next rdlong that uses src
 // returns NULL if we spot anything that changes src, dest,
 // memory, or a branch
+// IMPORTANT: it really is important that any src/dest changes
+// cause NULL to be returned, because we use this call to
+// replace rdlong/wrlong pairs with mov
 //
 static IR* FindNextRead(IR *irorig, Operand *dest, Operand *src)
 {
     IR *ir;
-    int32_t offset = 0;
     for ( ir = irorig->next; ir; ir = ir->next) {
         if (IsDummy(ir)) continue;
         if (ir->opc == OPC_LABEL) {
@@ -3297,13 +3299,10 @@ static IR* FindNextRead(IR *irorig, Operand *dest, Operand *src)
         if (ir->cond != irorig->cond) {
             return NULL;
         }
-        if (ir->src == src && offset == 0 && (ir->opc == OPC_RDLONG||ir->opc == OPC_RDWORD||ir->opc == OPC_RDBYTE)) {
+        if (ir->src == src && (ir->opc == OPC_RDLONG||ir->opc == OPC_RDWORD||ir->opc == OPC_RDBYTE)) {
             return ir;
         }
-        if ((ir->opc == OPC_ADD || ir->opc == OPC_SUB) && ir->dst == src && ir->src && ir->src->kind == IMM_INT) {
-            if (ir->opc == OPC_ADD) offset += ir->src->val;
-            else                    offset -= ir->src->val;
-        } else if (InstrModifies(ir, dest) || InstrModifies(ir, src)) {
+        if (InstrModifies(ir, dest) || InstrModifies(ir, src)) {
             return NULL;
         }
         if (IsWrite(ir)) {
