@@ -616,5 +616,9 @@ int ParseCharset(int *var, const char *name)
         *var = CHARSET_PARALLAX;
         return 1;
     }
+    if (!strcasecmp(name, "shiftjis") || !strcasecmp(name, "shift-jis")) {
+        *var = CHARSET_SHIFTJIS;
+        return 1;
+    }
     return 0;
 }

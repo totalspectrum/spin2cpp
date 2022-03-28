@@ -627,6 +627,8 @@ static int MapSpinBlock(int c)
     }
 }
 
+extern const uint16_t uni2sjis[0x10000];
+
 /*
  * fetch a string and translate it to the runtime environment
  */
@@ -653,18 +655,28 @@ getTranslatedString(struct flexbuf *fb)
             src += count;
             // wc is now the unicode code point
             // translate as appropriate
-            // assume ASCII characters always map 1-1
-            if (wc >= 32 && wc <= 126) {
-                c = wc;
-            } else if (gl_run_charset == CHARSET_PARALLAX) {
-                c = findInTable(parallax_oem, wc);
+            if (gl_run_charset == CHARSET_SHIFTJIS) {
+                c = (unsigned)wc <= 0xFFFF ? uni2sjis[(uint16_t)wc] : 0x8148;
+                if (c<=255) {
+                    *dst++ = c;
+                } else {
+                    *dst++ = c>>8;
+                    *dst++ = c&255;
+                }
             } else {
-                c = wc;
+                // assume ASCII characters always map 1-1
+                if (wc >= 32 && wc <= 126) {
+                    c = wc;
+                } else if (gl_run_charset == CHARSET_PARALLAX) {
+                    c = findInTable(parallax_oem, wc);
+                } else {
+                    c = wc;
+                }
+                if (c < 0 || c > 255) {
+                    c = 0xbf; // upside down question mark in latin-1
+                }
+                *dst++ = c;
             }
-            if (c < 0 || c > 255) {
-                c = 0xbf; // upside down question mark in latin-1
-            }
-            *dst++ = c;
             if (!c) break;
         }
         *dst = 0;
