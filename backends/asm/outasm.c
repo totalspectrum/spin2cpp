@@ -6079,7 +6079,6 @@ EmitMain_P2(IRList *irl, Module *P, Operand *lutstart)
     const char *firstfuncname;
     IR *ir;
     Operand *spinlabel, *skip_clock_label;
-    Operand *const4 = NewImmediate(4);
     Operand *result1 = GetResultReg(0);
     Operand *arg1 = GetArgReg(0);
     Operand *pa_reg = GetOneGlobal(REG_HW, "pa", 0);
@@ -6087,7 +6086,6 @@ EmitMain_P2(IRList *irl, Module *P, Operand *lutstart)
     Operand *clkmode_addr = NewImmediate(0x18);
     uint32_t clkmode, clkfreq;
     int maxArgs = max_coginit_args;
-    int i;
 
     firstfunc = GetMainFunction(P);
     if (!firstfunc) {
@@ -6159,23 +6157,17 @@ EmitMain_P2(IRList *irl, Module *P, Operand *lutstart)
     EmitOp1(irl, OPC_COGSTOP, arg1);
 
     // and now the code for when we are started with Spin coginit
+    // on P2, stackptr is always PTRA, so opeffects can be used
     EmitLabel(irl, spinlabel);
-    EmitOp2(irl, OPC_RDLONG, objbase, stackptr);
-    EmitOp2(irl, OPC_ADD, stackptr, const4);
-    EmitOp2(irl, OPC_RDLONG, result1, stackptr);
-    EmitOp2(irl, OPC_ADD, stackptr, const4);
+    EmitOp2(irl, OPC_RDLONG, objbase, stackptr)->srceffect = OPEFFECT_POSTINC;
+    EmitOp2(irl, OPC_RDLONG, result1, stackptr)->srceffect = OPEFFECT_POSTINC;
     // now pull operands off the stack
-    for (i = 0; i < maxArgs; i++) {
-        EmitMove(irl, GetArgReg(i), stacktop);
-        if (i == maxArgs-1) {
-            int off = maxArgs * 4;
-            if (off > 0) {
-                EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(off));
-            }
-        } else {
-            EmitOp2(irl, OPC_ADD, stackptr, const4);
-        }
+    if (maxArgs > 0)  {
+        for (int i=0;i<maxArgs;i++) GetArgReg(i); // Make sure the registers actually exist
+        if (maxArgs > 1) EmitOp1(irl,OPC_SETQ,NewImmediate(maxArgs-1));
+        EmitOp2(irl,OPC_RDLONG,GetArgReg(0),stackptr);
     }
+    EmitAddSub(irl, stackptr, -4);
     EmitOp1(irl, OPC_CALL, result1);
     EmitJump(irl, COND_TRUE, cogexit);
 }
