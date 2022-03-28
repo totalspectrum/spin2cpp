@@ -2253,7 +2253,7 @@ OptimizeCompares(IRList *irl)
                     && ir_next->cond == COND_NE
                     && IsImmediateVal(ir_prev->src, 1)
                     && IsCloseJump(ir_next)
-                    && !UsedInRange(ir_prev->next,ir->next->prev,ir->prev->dst)
+                    && !UsedInRange(ir_prev->next,ir_next->prev,ir_prev->dst)
                     )
                 {
                     // replace jmp with djnz
