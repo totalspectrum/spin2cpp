@@ -1500,6 +1500,8 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
         }
         ValidateStackptr();
         tmp = GetResultReg(5); // we know this won't be used in the system functions
+        tmp = NewFunctionTempRegister();
+        int starttempreg = FuncData(curfunc)->curtempreg;
         // tmp = _gc_alloc_managed(framesize)
         EmitMove(irl, GetArgReg(0), framesize);
         EmitOp1(irl, OPC_CALL, allocfunc);
@@ -1514,6 +1516,7 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
 
         // adjust stack pointer back
         EmitOp2(irl, OPC_SUB, stackptr, framesize);
+        FreeTempRegisters(irl,starttempreg);
     }
 }
 
