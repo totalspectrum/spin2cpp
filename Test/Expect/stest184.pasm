@@ -188,12 +188,11 @@ __system___gc_pageindex_ret
 	ret
 
 __system___gc_isFree
-	mov	_var01, #0
+	mov	result1, #0
 	add	arg01, #2
-	rdword	_var02, arg01
-	cmp	_var02, imm_27791_ wz
- if_e	neg	_var01, #1
-	mov	result1, _var01
+	rdword	_var01, arg01
+	cmp	_var01, imm_27791_ wz
+ if_e	neg	result1, #1
 __system___gc_isFree_ret
 	ret
 

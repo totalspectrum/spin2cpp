@@ -1,7 +1,7 @@
 //
 // IR optimizer
 //
-// Copyright 2016-2021 Total Spectrum Software Inc.
+// Copyright 2016-2022 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -75,6 +75,11 @@ InstrReadsDst(IR *ir)
   case OPC_WRNC:
   case OPC_WRZ:
   case OPC_WRNZ:
+  case OPC_DECOD:
+  case OPC_ENCOD:
+  case OPC_BMASK:
+  case OPC_NOT:
+  case OPC_ONES:
     return false;
   case OPC_MUXC:
   case OPC_MUXNC:
@@ -884,7 +889,10 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
           if (usecount > 0 && IsHwReg(replace) && ir->src != replace) {
               return false;
           }
-          return ir->cond == COND_TRUE;
+          // this was perhaps overly cautious, but I can remember a lot of headaches
+          // around optimization, so we may need to revert to it
+          //return ir->cond == COND_TRUE;
+          if (ir->cond == COND_TRUE) return true;
       }
       if (InstrUses(ir, replace) || ir->dst == replace) {
           return false;

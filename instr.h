@@ -114,6 +114,7 @@ typedef enum IROpcode {
     OPC_MULS,
     OPC_MULU,
     OPC_NOT,
+    OPC_ONES,
     OPC_POP,
     OPC_PUSH,
     OPC_QDIV,
