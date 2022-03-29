@@ -186,6 +186,26 @@ static bool IsRead(IR *ir) {
     }
 }
 
+
+static bool
+IsReadWrite(IR *ir)
+{
+    if (!ir) {
+        return false;
+    }
+    switch (ir->opc) {
+    case OPC_RDBYTE:
+    case OPC_RDWORD:
+    case OPC_RDLONG:
+    case OPC_WRBYTE:
+    case OPC_WRWORD:
+    case OPC_WRLONG:
+        return true;
+    default:
+        return false;
+    }
+}
+
 static bool
 IsLabel(IR *ir)
 {
@@ -616,6 +636,46 @@ static int InstrMaxCycles(IR *ir) {
     }
 }
 #endif
+
+
+static bool UsedInRange(IR *start,IR *end,Operand *reg) {
+    if (!reg || !IsRegister(reg->kind)) return false;
+    for (IR *ir=start;ir!=end->next;ir=ir->next) {
+        if (InstrUses(ir,reg)||IsBranch(ir)) return true;
+        if (InstrModifies(ir,reg) && ir->cond==COND_TRUE) return false; // Has become dead
+    }
+    return false;
+}
+
+static bool ModifiedInRange(IR *start,IR *end,Operand *reg) {
+    if (!reg || !IsRegister(reg->kind)) return false;
+    for (IR *ir=start;ir!=end->next;ir=ir->next) {
+        if (InstrModifies(ir,reg)||IsBranch(ir)) return true;
+    }
+    return false;
+}
+
+static bool ReadWriteInRange(IR *start,IR *end) {
+    for (IR *ir=start;ir!=end->next;ir=ir->next) {
+        if (IsReadWrite(ir)) return true;
+    }
+    return false;
+}
+static bool WriteInRange(IR *start,IR *end) {
+    for (IR *ir=start;ir!=end->next;ir=ir->next) {
+        if (IsWrite(ir)) return true;
+    }
+    return false;
+}
+
+static int MinCyclesInRange(IR *start,IR *end) {
+    int cyc = 0;
+    for (IR *ir=start;ir!=end->next;ir=ir->next) {
+        cyc += InstrMinCycles(ir);
+    }
+    return cyc;
+}
+
 
 extern Operand *mulfunc, *unsmulfunc, *divfunc, *unsdivfunc, *muldiva, *muldivb;
 
@@ -2202,6 +2262,7 @@ OptimizeCompares(IRList *irl)
                     && ir_next->cond == COND_NE
                     && IsImmediateVal(ir_prev->src, 1)
                     && IsCloseJump(ir_next)
+                    && !UsedInRange(ir_prev->next,ir_next->prev,ir_prev->dst)
                     )
                 {
                     // replace jmp with djnz
@@ -3290,13 +3351,11 @@ static IR* FindNextUse(IR *ir, Operand *dst)
 // find the next rdlong that uses src
 // returns NULL if we spot anything that changes src, dest,
 // memory, or a branch
-// IMPORTANT: it really is important that any src/dest changes
-// cause NULL to be returned, because we use this call to
-// replace rdlong/wrlong pairs with mov
 //
 static IR* FindNextRead(IR *irorig, Operand *dest, Operand *src)
 {
     IR *ir;
+    int32_t offset = 0;
     for ( ir = irorig->next; ir; ir = ir->next) {
         if (IsDummy(ir)) continue;
         if (ir->opc == OPC_LABEL) {
@@ -3308,10 +3367,13 @@ static IR* FindNextRead(IR *irorig, Operand *dest, Operand *src)
         if (ir->cond != irorig->cond) {
             return NULL;
         }
-        if (ir->src == src && (ir->opc == OPC_RDLONG||ir->opc == OPC_RDWORD||ir->opc == OPC_RDBYTE)) {
+        if (ir->src == src && offset == 0 && (ir->opc == OPC_RDLONG||ir->opc == OPC_RDWORD||ir->opc == OPC_RDBYTE)) {
             return ir;
         }
-        if (InstrModifies(ir, dest) || InstrModifies(ir, src)) {
+        if ((ir->opc == OPC_ADD || ir->opc == OPC_SUB) && ir->dst == src && ir->src && ir->src->kind == IMM_INT) {
+            if (ir->opc == OPC_ADD) offset += ir->src->val;
+            else                    offset -= ir->src->val;
+        } else if (InstrModifies(ir, dest) || InstrModifies(ir, src)) {
             return NULL;
         }
         if (IsWrite(ir)) {
@@ -3321,24 +3383,6 @@ static IR* FindNextRead(IR *irorig, Operand *dest, Operand *src)
     return NULL;
 }
 
-static bool
-IsReadWrite(IR *ir)
-{
-    if (!ir) {
-        return false;
-    }
-    switch (ir->opc) {
-    case OPC_RDBYTE:
-    case OPC_RDWORD:
-    case OPC_RDLONG:
-    case OPC_WRBYTE:
-    case OPC_WRWORD:
-    case OPC_WRLONG:
-        return true;
-    default:
-        return false;
-    }
-}
 
 static int
 MemoryOpSize(IR *ir) {
@@ -3642,44 +3686,6 @@ static bool IsReorderBarrier(IR *ir) {
     default:
         return false;
     }
-}
-
-static bool UsedInRange(IR *start,IR *end,Operand *reg) {
-    if (!reg || !IsRegister(reg->kind)) return false;
-    for (IR *ir=start;ir!=end->next;ir=ir->next) {
-        if (InstrUses(ir,reg)||IsBranch(ir)) return true;
-        if (InstrModifies(ir,reg) && ir->cond==COND_TRUE) return false; // Has become dead
-    }
-    return false;
-}
-
-static bool ModifiedInRange(IR *start,IR *end,Operand *reg) {
-    if (!reg || !IsRegister(reg->kind)) return false;
-    for (IR *ir=start;ir!=end->next;ir=ir->next) {
-        if (InstrModifies(ir,reg)||IsBranch(ir)) return true;
-    }
-    return false;
-}
-
-static bool ReadWriteInRange(IR *start,IR *end) {
-    for (IR *ir=start;ir!=end->next;ir=ir->next) {
-        if (IsReadWrite(ir)) return true;
-    }
-    return false;
-}
-static bool WriteInRange(IR *start,IR *end) {
-    for (IR *ir=start;ir!=end->next;ir=ir->next) {
-        if (IsWrite(ir)) return true;
-    }
-    return false;
-}
-
-static int MinCyclesInRange(IR *start,IR *end) {
-    int cyc = 0;
-    for (IR *ir=start;ir!=end->next;ir=ir->next) {
-        cyc += InstrMinCycles(ir);
-    }
-    return cyc;
 }
 
 struct reorder_block {
