@@ -1379,10 +1379,12 @@ TransformConstDst(IR *ir, Operand *imm)
       break;
     case OPC_TESTBN:
       setsResult = false;
-      val1 = ~val1 & (1<<(val2&31));
+      // Z is set if bit is CLEAR
+      val1 = val1 & (1<<(val2&31));
       break;
     case OPC_TESTB:
       setsResult = false;
+      // Z is set if bit is SET
       val1 = ~val1 & (1<<(val2&31));
       break;
     default:
