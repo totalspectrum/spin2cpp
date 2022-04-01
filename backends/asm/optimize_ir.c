@@ -615,6 +615,13 @@ isConstMove(IR *ir, int32_t *valout) {
     case OPC_BMASK:
         val = (2<<(val&31))-1;
         break;
+    case OPC_GETNIB:
+        val = (val>>(ir->src2->val*4))&0xF;
+    case OPC_GETBYTE:
+        val = (val>>(ir->src2->val*4))&0xFF;
+    case OPC_GETWORD:
+        val = (val>>(ir->src2->val*4))&0xFFFF;
+        break;
     default:
         return false;
     }
@@ -3739,15 +3746,15 @@ restart_check:
             }
         } 
         if (ir->opc == OPC_RDBYTE || ir->opc == OPC_RDWORD) {
+            int32_t mval;
             dst1 = ir->dst;
             int mask = ir->opc == OPC_RDBYTE ? 0xFF : 0xFFFF;
             nextread = FindNextUse(ir, dst1);
             if (nextread
-                && nextread->opc == OPC_AND
                 && nextread->dst == dst1
-                && IsImmediate(nextread->src)
                 && !InstrSetsAnyFlags(nextread)
-                && nextread->src->val == mask)
+                && isMaskingOp(ir,&mval)
+                && mval == mask)
             {
                 // don't need zero extend after rdbyte
                 change = 1;
