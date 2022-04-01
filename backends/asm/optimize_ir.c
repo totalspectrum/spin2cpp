@@ -3753,7 +3753,7 @@ restart_check:
             if (nextread
                 && nextread->dst == dst1
                 && !InstrSetsAnyFlags(nextread)
-                && isMaskingOp(ir,&mval)
+                && isMaskingOp(nextread,&mval)
                 && mval == mask)
             {
                 // don't need zero extend after rdbyte
