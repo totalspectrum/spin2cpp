@@ -651,7 +651,7 @@ isMaskingOp(IR *ir, int32_t *maskout) {
             mask = (2<<(mask&31))-1;
             break;
         case OPC_BITL:
-            mask = EvalP2BitMask(mask);
+            mask = ~EvalP2BitMask(mask);
             break;
         default:
             return false;
