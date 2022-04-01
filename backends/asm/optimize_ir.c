@@ -690,6 +690,7 @@ isMoveLikeOp(IR *ir) {
     case OPC_NEGNC:
     case OPC_NEGZ:
     case OPC_NEGNZ:
+    case OPC_GETNIB:
     case OPC_GETBYTE:
     case OPC_GETWORD:
         return true;
