@@ -673,6 +673,31 @@ isMaskingOp(IR *ir, int32_t *maskout) {
     return true;
 }
 
+// Is this an op that moves data from S to D in some manner?
+// For all of these InstrReadsDst is false
+static bool
+isMoveLikeOp(IR *ir) {
+    switch (ir->opc) {
+    case OPC_MOV:
+    case OPC_NEG:
+    case OPC_ABS:
+    case OPC_NOT:
+    case OPC_ENCOD:
+    case OPC_DECOD:
+    case OPC_ONES:
+    case OPC_BMASK:
+    case OPC_NEGC:
+    case OPC_NEGNC:
+    case OPC_NEGZ:
+    case OPC_NEGNZ:
+    case OPC_GETBYTE:
+    case OPC_GETWORD:
+        return true;
+    default:
+        return false;
+    }
+}
+
 static inline bool CondIsSubset(IRCond super, IRCond sub) {
     return sub == (super|sub);
 }
@@ -1913,6 +1938,11 @@ OptimizeMoves(IRList *irl)
                     DeleteIR(irl, ir);
                     change = 1;
                 }
+            } else if (isMoveLikeOp(ir) && (stop_ir = FindPrevSetterForReplace(ir,ir->src)) && stop_ir->opc == OPC_MOV 
+                && !InstrIsVolatile(stop_ir) && !InstrSetsAnyFlags(stop_ir) && (ir->src==ir->dst||IsDeadAfter(ir,ir->src))) {
+                ir->src = stop_ir->src;
+                DeleteIR(irl,stop_ir);
+                change = 1;
             }
             ir = ir_next;
         }
@@ -4861,38 +4891,6 @@ static PeepholePattern pat_movadd[] = {
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
-// potentially eliminate a redundant mov+neg sequence
-static PeepholePattern pat_movneg[] = {
-    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
-    { COND_TRUE, OPC_NEG, PEEP_OP_SET|2, PEEP_OP_MATCH|0, PEEP_FLAGS_WCZ_OK },
-    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
-};
-static PeepholePattern pat_movabs[] = {
-    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
-    { COND_TRUE, OPC_ABS, PEEP_OP_SET|2, PEEP_OP_MATCH|0, PEEP_FLAGS_WCZ_OK },
-    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
-};
-static PeepholePattern pat_movnegc[] = {
-    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
-    { COND_TRUE, OPC_NEGC, PEEP_OP_SET|2, PEEP_OP_MATCH|0, PEEP_FLAGS_WCZ_OK },
-    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
-};
-static PeepholePattern pat_movnegnc[] = {
-    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
-    { COND_TRUE, OPC_NEGNC, PEEP_OP_SET|2, PEEP_OP_MATCH|0, PEEP_FLAGS_WCZ_OK },
-    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
-};
-static PeepholePattern pat_movnegz[] = {
-    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
-    { COND_TRUE, OPC_NEGZ, PEEP_OP_SET|2, PEEP_OP_MATCH|0, PEEP_FLAGS_WCZ_OK },
-    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
-};
-static PeepholePattern pat_movnegnz[] = {
-    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
-    { COND_TRUE, OPC_NEGNZ, PEEP_OP_SET|2, PEEP_OP_MATCH|0, PEEP_FLAGS_WCZ_OK },
-    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
-};
-
 
 // replace mov x, #2; shl x, y; sub x, #1  with bmask x, y
 static PeepholePattern pat_bmask1[] = {
@@ -5331,16 +5329,6 @@ static int FixupMovAdd(int arg, IRList *irl, IR *ir)
     return 0;
 }
 
-/* mov x, y; neg x, x => neg x, y */
-static int FixupMovNeg(int arg, IRList *irl, IR *ir)
-{
-    IR *nextir = ir->next;
-    if (nextir->dst != nextir->src && !IsDeadAfter(nextir,nextir->src)) return 0;
-    nextir->src = ir->src;
-    DeleteIR(irl, ir);
-    return 1;
-}
-
 /* mov x, #0 ; test x, #1 wc => mov x, #0 wc */
 static int FixupClrC(int arg, IRList *irl, IR *ir)
 {
@@ -5681,13 +5669,6 @@ struct Peepholes {
     { pat_rdword2, 1, RemoveNFlagged },
 
     { pat_movadd, 0, FixupMovAdd },
-
-    { pat_movneg, 0, FixupMovNeg },
-    { pat_movabs, 0, FixupMovNeg },
-    { pat_movnegc, 0, FixupMovNeg },
-    { pat_movnegnc, 0, FixupMovNeg },
-    { pat_movnegz, 0, FixupMovNeg },
-    { pat_movnegnz, 0, FixupMovNeg },
 
     { pat_bmask1, 0, FixupBmask },
     { pat_bmask2, 0, FixupBmask },
