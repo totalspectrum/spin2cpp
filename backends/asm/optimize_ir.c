@@ -622,6 +622,57 @@ isConstMove(IR *ir, int32_t *valout) {
     return true;
 }
 
+static int32_t EvalP2BitMask(int x) {
+    int32_t val = (2<<((x>>5)&31))-1;
+    val = val<<(x&31) | val>>((32-x)&31);
+    return val;
+}
+
+static bool
+isMaskingOp(IR *ir, int32_t *maskout) {
+    if (!ir->src) return false;
+    int32_t mask;
+    if (IsImmediate(ir->src)) {
+        mask = (int32_t)ir->src->val;
+        switch (ir->opc) {
+        case OPC_AND:
+            break;
+        case OPC_ANDN:
+            mask = ~mask;
+            break;
+        case OPC_ZEROX:
+            mask = (2<<(mask&31))-1;
+            break;
+        case OPC_BITL:
+            mask = EvalP2BitMask(mask);
+            break;
+        default:
+            return false;
+        }
+    } else if (ir->src == ir->dst) {
+        switch (ir->opc) {
+        case OPC_GETNIB:
+            if (!IsImmediateVal(ir->src2,0)) return false;
+            mask = 0xF;
+            break;
+        case OPC_GETBYTE:
+            if (!IsImmediateVal(ir->src2,0)) return false;
+            mask = 0xFF;
+            break;
+        case OPC_GETWORD:
+            if (!IsImmediateVal(ir->src2,0)) return false;
+            mask = 0xFFFF;
+            break;
+        default:
+            return false;
+        }
+    } else {
+        return false;
+    }
+    if (maskout) *maskout = mask;
+    return true;
+}
+
 static inline bool CondIsSubset(IRCond super, IRCond sub) {
     return sub == (super|sub);
 }
@@ -1754,7 +1805,7 @@ FindPrevSetterForReplace(IR *irorig, Operand *dst)
     // until irorig
     saveir = ir;
     ir = ir->next;
-    while (ir && ir != saveir) {
+    while (ir && ir != irorig) {
         if (IsDummy(ir)) {
             ir = ir->next;
             continue;
@@ -3046,11 +3097,12 @@ OptimizePeepholes(IRList *irl)
             goto done;
         }
 
+        int32_t tmp;
         // AND -> GET* optimization
-        if (gl_p2 && ir->opc == OPC_AND && ir->src && ir->src->kind == IMM_INT && !InstrSetsAnyFlags(ir)) {
+        if (gl_p2 && isMaskingOp(ir,&tmp) && !InstrSetsAnyFlags(ir)) {
             IROpcode getopc;
             int shift;
-            switch (ir->src->val) {
+            switch (tmp) {
             case 0xF:
                 getopc = OPC_GETNIB;
                 shift = 2;
@@ -3073,17 +3125,22 @@ OptimizePeepholes(IRList *irl)
             && (previr->src->val & ((1<<shift)-1)) == 0) {
                 which = (previr->src->val&31)>>shift;
                 DeleteIR(irl,previr);
+                changed = 1;
             } else if (previr && previr->opc == getopc) {
                 // No-op
                 ir->cond = COND_FALSE;
                 changed = 1;
                 goto done;
             }
-
-            ReplaceOpcode(ir,getopc);
+            if (ir->opc != getopc) {
+                ReplaceOpcode(ir,getopc);
+                changed = 1;
+            }
+            if (!ir->src2 || !IsImmediateVal(ir->src2,which)) {
+                ir->src2 = NewImmediate(which);
+                changed = 1;
+            }
             ir->src = ir->dst;
-            ir->src2 = NewImmediate(which);
-            changed = 1;
             goto done;
         }
         no_getx:
