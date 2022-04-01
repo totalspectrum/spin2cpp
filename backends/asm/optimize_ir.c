@@ -595,6 +595,32 @@ IsSrcBitIndex(IR *ir)
     }
 }
 
+static bool
+isConstMove(IR *ir, int32_t *valout) {
+    if (!ir->src || !IsImmediate(ir->src)) return false;
+    int32_t val = (int32_t)ir->src->val;
+    switch (ir->opc) {
+    case OPC_MOV:
+        break;
+    case OPC_NEG:
+        val = -val;
+        break;
+    case OPC_ABS:
+        if (val<0) val = -val;
+        break;
+    case OPC_DECOD:
+        val = 1<<(val&31);
+        break;
+    case OPC_BMASK:
+        val = (2<<(val&31))-1;
+        break;
+    default:
+        return false;
+    }
+    if (valout) *valout = val;
+    return true;
+}
+
 static inline bool CondIsSubset(IRCond super, IRCond sub) {
     return sub == (super|sub);
 }
@@ -1363,6 +1389,14 @@ TransformConstDst(IR *ir, Operand *imm)
     case OPC_SHR:
       val1 = ((uint32_t)val1) >> (val2&31);
       break;
+    case OPC_ZEROX:
+      val2 = 31-(val2&31);
+      val1 = ((uint32_t)val1<<val2)>>val2;
+      break;
+    case OPC_SIGNX:
+      val2 = 31-(val2&31);
+      val1 = ((int32_t)val1<<val2)>>val2;
+      break;
     case OPC_CMPS:
       val1 -= val2;
       setsResult = 0;
@@ -1437,10 +1471,12 @@ PropagateConstForward(IRList *irl, IR *orig_ir, Operand *orig, Operand *immval)
   IR *ir;
   int change = 0;
   bool unconditional;
-
-  if (orig_ir->opc == OPC_NEG) {
-      immval = NewImmediate(-immval->val);
+  int32_t tmp;
+  if (!isConstMove(orig_ir,&tmp)) ERROR(NULL,"isConstMove == false in PropagateConstForward");
+  if (immval->val != tmp) {
+      immval = NewImmediate(tmp);
   }
+
   unconditional = IsOnlySetterFor(irl, orig_ir, orig);
   for (ir = orig_ir->next; ir; ir = ir->next) {
     if (IsDummy(ir)) {
@@ -1774,6 +1810,7 @@ OptimizeMoves(IRList *irl)
     IR *stop_ir;
     int change;
     int everchange = 0;
+    int32_t cval;
 
     do {
         change = 0;
@@ -1798,12 +1835,12 @@ OptimizeMoves(IRList *irl)
                         change = 1;
                     }
                 }
-            } else if ((ir->opc == OPC_MOV || ir->opc == OPC_NEG) && ir->cond == COND_TRUE && IsImmediate(ir->src)) {
+            } else if (ir->cond == COND_TRUE && isConstMove(ir,&cval)) {
                 int sawchange;
-                if (ir->flags == FLAG_WZ) {
+                if (ir->flags == FLAG_WZ && CanTestZero(ir->opc)) {
                     // because this is a mov immediate, we know how
                     // WZ will be set
-                    change |= ApplyConditionAfter(ir, ir->src->val);
+                    change |= ApplyConditionAfter(ir, cval);
                 }
                 change |= (sawchange = PropagateConstForward(irl, ir, ir->dst, ir->src));
                 if (sawchange && !InstrSetsAnyFlags(ir) && IsDeadAfter(ir, ir->dst)) {
