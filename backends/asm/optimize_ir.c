@@ -3073,6 +3073,11 @@ OptimizePeepholes(IRList *irl)
             && (previr->src->val & ((1<<shift)-1)) == 0) {
                 which = (previr->src->val&31)>>shift;
                 DeleteIR(irl,previr);
+            } else if (previr->opc == getopc) {
+                // No-op
+                ir->cond = COND_FALSE;
+                changed = 1;
+                goto done;
             }
 
             ReplaceOpcode(ir,getopc);
@@ -4969,6 +4974,7 @@ static PeepholePattern pat_setne[] = {
     { COND_NE,  OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_IMM|1, PEEP_FLAGS_P2 },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
+#if 0
 static PeepholePattern pat_sar24getbyte[] = {
     { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
     { COND_TRUE, OPC_SAR, PEEP_OP_MATCH|0, PEEP_OP_IMM|24, PEEP_FLAGS_P2 },
@@ -5017,7 +5023,7 @@ static PeepholePattern pat_shr16getword[] = {
     { COND_TRUE, OPC_BITL, PEEP_OP_MATCH|0, PEEP_OP_IMM|0xffff, PEEP_FLAGS_P2 },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
-
+#endif
 static PeepholePattern pat_shl8setbyte[] = {
     { COND_TRUE, OPC_SHL, PEEP_OP_SET|0, PEEP_OP_IMM|8, PEEP_FLAGS_P2 },
     { COND_TRUE, OPC_BITL, PEEP_OP_SET|1, PEEP_OP_IMM|(8+(7<<5)), PEEP_FLAGS_P2 },
@@ -5317,7 +5323,7 @@ static int FixupSetC(int arg, IRList *irl, IR *ir)
 
 // mov x, y; shr x, #N; and x, #255 => getbyte x, y, #N/8
 // mov x, y; shr x, #N; and x, #65535 => getword x, y, #N/16
-
+#if 0
 static int FixupGetByteWord(int arg, IRList *irl, IR *ir0)
 {
     IR *ir1 = ir0->next;
@@ -5348,6 +5354,7 @@ static int FixupGetByteWord(int arg, IRList *irl, IR *ir0)
     DeleteIR(irl, ir2);
     return 1;
 }
+#endif
 // shl x, #N; and y, #MASK; or y, x => setbyte y, x, #N/8
 
 static int FixupSetByteWord(int arg, IRList *irl, IR *ir0)
