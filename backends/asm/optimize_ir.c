@@ -69,6 +69,7 @@ InstrReadsDst(IR *ir)
   case OPC_GETQY:
   case OPC_GETRND:
   case OPC_GETCT:
+  case OPC_GETNIB:
   case OPC_GETBYTE:
   case OPC_GETWORD:
   case OPC_WRC:
@@ -3045,6 +3046,43 @@ OptimizePeepholes(IRList *irl)
             goto done;
         }
 
+        // AND -> GET* optimization
+        if (gl_p2 && ir->opc == OPC_AND && ir->src && ir->src->kind == IMM_INT && !InstrSetsAnyFlags(ir)) {
+            IROpcode getopc;
+            int shift;
+            switch (ir->src->val) {
+            case 0xF:
+                getopc = OPC_GETNIB;
+                shift = 2;
+                break;
+            case 0xFF:
+                getopc = OPC_GETBYTE;
+                shift = 3;
+                break;
+            case 0xFFFF:
+                getopc = OPC_GETWORD;
+                shift = 4;
+                break;
+            default: goto no_getx;
+            }
+            IR *previr;
+            int which = 0;
+            previr = FindPrevSetterForReplace(ir,ir->dst);
+            if (previr && (previr->opc == OPC_SHR || previr->opc == OPC_SAR) 
+            && !InstrSetsAnyFlags(ir) && previr->src->kind == IMM_INT 
+            && (previr->src->val & ((1<<shift)-1)) == 0) {
+                which = (previr->src->val&31)>>shift;
+                DeleteIR(irl,previr);
+            }
+
+            ReplaceOpcode(ir,getopc);
+            ir->src = ir->dst;
+            ir->src2 = NewImmediate(which);
+            changed = 1;
+            goto done;
+        }
+        no_getx:
+
         // on P2, check for immediate operand with just one bit set
         if (gl_p2 && ir->src && ir->src->kind == IMM_INT && !InstrSetsAnyFlags(ir) && ((uint32_t)ir->src->val) > 511) {
             if (ir->opc == OPC_AND) { 
@@ -5594,7 +5632,7 @@ struct Peepholes {
     
     { pat_seteq, OPC_WRZ, FixupEq },
     { pat_setne, OPC_WRNZ, FixupEq },
-
+#if 0
     { pat_sar24getbyte, OPC_GETBYTE, FixupGetByteWord },
     { pat_shr24getbyte, OPC_GETBYTE, FixupGetByteWord },
     { pat_sar16getbyte, OPC_GETBYTE, FixupGetByteWord },
@@ -5604,7 +5642,7 @@ struct Peepholes {
 
     { pat_sar16getword, OPC_GETWORD, FixupGetByteWord },
     { pat_shr16getword, OPC_GETWORD, FixupGetByteWord },
-
+#endif
     { pat_shl8setbyte, OPC_SETBYTE, FixupSetByteWord },
     { pat_shl16setbyte, OPC_SETBYTE, FixupSetByteWord },
     { pat_shl24setbyte, OPC_SETBYTE, FixupSetByteWord },

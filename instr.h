@@ -105,6 +105,7 @@ typedef enum IROpcode {
     OPC_ENCOD,
     OPC_GETBYTE,
     OPC_GETCT,
+    OPC_GETNIB,
     OPC_GETQX,
     OPC_GETQY,
     OPC_GETRND,
