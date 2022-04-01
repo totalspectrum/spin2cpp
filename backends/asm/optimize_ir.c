@@ -574,6 +574,27 @@ IsMathInstr(IR *ir)
     }
 }
 
+bool
+IsSrcBitIndex(IR *ir)
+{
+    switch (ir->opc) {
+    case OPC_SHL:
+    case OPC_SHR:
+    case OPC_SAR:
+    case OPC_ROL:
+    case OPC_ROR:
+    case OPC_RCL:
+    case OPC_RCR:
+    case OPC_TESTB:
+    case OPC_TESTBN:
+    case OPC_ZEROX:
+    case OPC_SIGNX:
+        return true;
+    default:
+        return false;
+    }
+}
+
 static inline bool CondIsSubset(IRCond super, IRCond sub) {
     return sub == (super|sub);
 }
@@ -1273,13 +1294,13 @@ TransformConstDst(IR *ir, Operand *imm)
   }
   if (imm->kind == IMM_INT && imm->val == 0) {
       // transform add foo, bar into mov foo, bar, if foo is known to be 0
-      if ((ir->opc == OPC_ADD || ir->opc == OPC_SUB)
+      if ((ir->opc == OPC_ADD || ir->opc == OPC_SUB || ir->opc == OPC_OR || ir->opc == OPC_XOR)
           && (ir->flags == FLAG_WZ || !InstrSetsAnyFlags(ir)))
       {
-          if (ir->opc == OPC_ADD) {
-              ReplaceOpcode(ir, OPC_MOV);
-          } else if (ir->opc == OPC_SUB) {
+          if (ir->opc == OPC_SUB) {
               ReplaceOpcode(ir, OPC_NEG);
+          } else {
+              ReplaceOpcode(ir, OPC_MOV);
           }
           return 1;
       }
@@ -1315,6 +1336,9 @@ TransformConstDst(IR *ir, Operand *imm)
     case OPC_SUB:
       val1 -= val2;
       break;
+    case OPC_TEST:
+      setsResult = false;
+      // fall through
     case OPC_AND:
       val1 &= val2;
       break;
@@ -1324,6 +1348,9 @@ TransformConstDst(IR *ir, Operand *imm)
     case OPC_XOR:
       val1 ^= val2;
       break;
+    case OPC_TESTN:
+      setsResult = false;
+      // fall through
     case OPC_ANDN:
       val1 &= ~val2;
       break;
@@ -1349,6 +1376,14 @@ TransformConstDst(IR *ir, Operand *imm)
           val1 = 1;
       }
       setsResult = 0;
+      break;
+    case OPC_TESTBN:
+      setsResult = false;
+      val1 = ~val1 & (1<<(val2&31));
+      break;
+    case OPC_TESTB:
+      setsResult = false;
+      val1 = ~val1 & (1<<(val2&31));
       break;
     default:
       return 0;
@@ -1913,8 +1948,30 @@ MeaninglessMath(IR *ir)
     case OPC_SHL:
     case OPC_SHR:
     case OPC_SAR:
+    case OPC_ROL:
+    case OPC_ROR:
+    case OPC_RCL:
+    case OPC_RCR:
     case OPC_OR:
+    case OPC_XOR:
+    case OPC_ANDN:
+    case OPC_MUXC:
+    case OPC_MUXNC:
+    case OPC_MUXZ:
+    case OPC_MUXNZ:
+    case OPC_MINU:
         return (val == 0);
+    case OPC_ZEROX:
+    case OPC_SIGNX:
+        return (val == 31);
+    case OPC_AND:
+        return (val == -1);
+    case OPC_MAXU:
+        return (val == UINT32_MAX);
+    case OPC_MINS:
+        return (val == INT32_MIN);
+    case OPC_MAXS:
+        return (val == INT32_MAX);
     default:
         return false;
     }
@@ -2304,12 +2361,15 @@ OptimizeImmediates(IRList *irl)
         if (! (src && src->kind == IMM_INT) ) {
             continue;
         }
-        if (!gl_p2 && (src->name == NULL || src->name[0] == 0)) {
+        val = src->val;
+        if (val != (val&31) && IsSrcBitIndex(ir)) {
+            // always cut unused bits when immediate is a bit index
+            ir->src = NewImmediate(val&31);
+            change++;
+        } else if (!gl_p2 && (src->name == NULL || src->name[0] == 0)) {
             /* already a small immediate */
             continue;
-        }
-        val = src->val;
-        if (ir->opc == OPC_MOV && val < 0 && val >= -511) {
+        } else if (ir->opc == OPC_MOV && val < 0 && val >= -511) {
 	    ReplaceOpcode(ir, OPC_NEG);
             ir->src = NewImmediate(-val);
             change++;
@@ -2325,7 +2385,7 @@ OptimizeImmediates(IRList *irl)
 	    ReplaceOpcode(ir, OPC_ADD);
             ir->src = NewImmediate(-val);
             change++;
-	}
+	    }
     }
     return change;
 }
