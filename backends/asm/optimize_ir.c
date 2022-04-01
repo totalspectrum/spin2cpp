@@ -1778,7 +1778,7 @@ FindPrevSetterForReplace(IR *irorig, Operand *dst)
     // until irorig
     saveir = ir;
     ir = ir->next;
-    while (ir && ir != saveir) {
+    while (ir && ir != irorig) {
         if (IsDummy(ir)) {
             ir = ir->next;
             continue;
