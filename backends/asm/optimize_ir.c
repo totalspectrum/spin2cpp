@@ -3073,7 +3073,7 @@ OptimizePeepholes(IRList *irl)
             && (previr->src->val & ((1<<shift)-1)) == 0) {
                 which = (previr->src->val&31)>>shift;
                 DeleteIR(irl,previr);
-            } else if (previr->opc == getopc) {
+            } else if (previr && previr->opc == getopc) {
                 // No-op
                 ir->cond = COND_FALSE;
                 changed = 1;
