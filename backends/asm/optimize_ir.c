@@ -350,20 +350,27 @@ InstrIsVolatile(IR *ir)
     return 0 != (ir->flags & FLAG_KEEP_INSTR);
 }
 
-static bool
-InstrUsesFlags(IR *ir, unsigned flags)
-{
-    if (ir->cond != COND_TRUE && ir->cond != COND_FALSE) {
-        if ( (flags & FLAG_WC) ) {
-            /* the E and NE flags do not require C */
-            if (ir->cond != COND_EQ && ir->cond != COND_NE)
-                return true;
-        }
-        if (flags & FLAG_WZ) {
-            if (ir->cond != COND_C && ir->cond != COND_NC)
-                return true;
-        }
+static unsigned
+FlagsUsedByCond(IRCond cond) {
+
+    switch (cond) {
+    case COND_TRUE:
+    case COND_FALSE:
+        return 0;
+    case COND_NC:
+    case COND_C:
+        return FLAG_WC;
+    case COND_NZ:
+    case COND_Z:
+        return FLAG_WZ;
+    default:
+        return FLAG_WC|FLAG_WZ;
     }
+}
+
+static bool
+InstrUsesFlags_CondAside(IR *ir, unsigned flags)
+{
     if ((ir->flags & (FLAG_ANDC|FLAG_XORC|FLAG_ORC)) && (flags & FLAG_WC)) return true;
     if ((ir->flags & (FLAG_ANDZ|FLAG_XORZ|FLAG_ORZ)) && (flags & FLAG_WZ)) return true;
 
@@ -410,6 +417,12 @@ InstrUsesFlags(IR *ir, unsigned flags)
     default:
         return false;
     }
+}
+
+static inline bool
+InstrUsesFlags(IR *ir, unsigned flags) {
+    if (FlagsUsedByCond(ir->cond) & flags) return true;
+    return InstrUsesFlags_CondAside(ir,flags);
 }
 
 bool IsHubDest(Operand *dst)
@@ -2074,25 +2087,37 @@ static int IsSafeShortForwardJump(IR *irbase) {
     Operand *target;
     IR *ir;
     int limit = (curfunc->optimize_flags & OPT_EXTRASMALL) ? 10 : (gl_p2 ? 5 : 3);
-    bool cond_dirty = false;
+    unsigned dirty_flags = 0;
 
     if (irbase->opc != OPC_JUMP) return 0;
     if (InstrIsVolatile(irbase)) return 0;
     target = irbase->dst;
     if (IsRegister(target->kind)) return 0;
     ir = irbase->next;
+    IRCond newcond = InvertCond(irbase->cond);
     while (ir) {
         if (!IsDummy(ir)) {
-            if (ir->cond != COND_TRUE) return 0;
+            //if (ir->cond != COND_TRUE) return 0;
             if (ir->opc == OPC_LABEL) {
                 if (ir->dst == target) return n;
                 else return 0;
             }
-            if (cond_dirty) return 0;
-            if (ir->flags & FLAG_CZSET) cond_dirty = true;
+            unsigned problem_flags = FlagsUsedByCond(newcond) & dirty_flags;
+
+            // If flags are dirty, we can only accept instructions whose
+            // condition is already a subset of our new condition
+            if (problem_flags != 0 && !CondIsSubset(newcond,ir->cond)) {
+                return 0;
+            }
+            // If you're wondering about instrs with inherent flag use (NEGC etc),
+            // Those are not an issue, since if they aren't already conditional,
+            // they're either using the initial flag value or will be cought by the subset check
+            
+            if (ir->flags & FLAG_CSET) dirty_flags |= FLAG_WC;
+            if (ir->flags & FLAG_ZSET) dirty_flags |= FLAG_WZ;
             if (ir->opc == OPC_CALL) {
                 // calls do not preserve condition codes
-                cond_dirty = true;
+                dirty_flags |= FLAG_WC|FLAG_WZ;
             }
             if (ir->opc == OPC_DJNZ && !gl_p2) {
                 // DJNZ does not work conditionally in LMM
@@ -2111,11 +2136,11 @@ static void ConditionalizeInstructions(IR *ir, IRCond cond, int n)
 {
   while (ir && n > 0) {
     if (!IsDummy(ir)) {
-      if (ir->cond != COND_TRUE || ir->opc == OPC_LABEL) {
+      if (ir->opc == OPC_LABEL) {
 	ERROR(NULL, "Internal error bad conditionalize");
 	return;
       }
-      ir->cond = cond;
+      ir->cond |= cond;
       --n;
     }
     ir = ir->next;
