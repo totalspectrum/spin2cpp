@@ -382,7 +382,7 @@ PrintCond(struct flexbuf *fb, IRCond cond)
       flexbuf_addstr(fb, " if_c_and_nz");
       break;
     case COND_C_AND_Z:
-      flexbuf_addstr(fb, " if_nc_and_z");
+      flexbuf_addstr(fb, " if_c_and_z");
       break;        
     case COND_C_OR_NZ:
       flexbuf_addstr(fb, " if_c_or_nz");
