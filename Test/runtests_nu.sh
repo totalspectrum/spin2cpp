@@ -23,7 +23,7 @@ endmsg=$ok
 
 echo "running tests on propeller..."
 
-if false; then
+if true; then
 #
 # BASIC tests; C++ support is still incomplete
 #

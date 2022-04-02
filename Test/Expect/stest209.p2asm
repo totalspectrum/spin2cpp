@@ -39,7 +39,6 @@ _op1_ret
 
 _op2
 	rdlong	arg01, objptr
-	mov	result1, #0
 	ones	result1, arg01
 	wrlong	result1, objptr
 _op2_ret

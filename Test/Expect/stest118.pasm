@@ -20,12 +20,10 @@ __float_fromuns_ret
 	ret
 
 __float_fromint
-	mov	__float_fromint_integer, arg01
-	cmps	__float_fromint_integer, #0 wc
- if_b	neg	__float_fromint_integer, __float_fromint_integer
+	cmps	arg01, #0 wc
+ if_b	neg	arg01, arg01
  if_b	mov	__float_fromint_negate, #1
  if_ae	mov	__float_fromint_negate, #0
-	mov	arg01, __float_fromint_integer
 	call	#__float_fromuns
 	cmp	__float_fromint_negate, #0 wz
  if_ne	xor	result1, imm_2147483648_
@@ -39,8 +37,6 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-__float_fromint_integer
-	res	1
 __float_fromint_negate
 	res	1
 _var01

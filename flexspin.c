@@ -95,7 +95,7 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "  [ -x ]             capture program exit code (for testing)\n");
     //fprintf(f, "  [ -z ]             compress code\n");
     fprintf(f, "  [ --charset=xxx ]  set character set for runtime\n");
-    fprintf(f, "           xxx is one of utf8, latin1, or parallax\n");
+    fprintf(f, "           xxx is one of utf8, latin1, shiftjis, or parallax\n");
     fprintf(f, "  [ --code=cog ]     compile for COG mode instead of LMM\n");
     fprintf(f, "  [ --interp=rom ]   compile bytecodes for P1 ROM interpreter (alpha feature!)\n");
     fprintf(f, "  [ --interp=nu ]    compile bytecodes for NuCode interpreter (alpha feature!)\n");

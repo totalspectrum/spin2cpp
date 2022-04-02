@@ -7232,18 +7232,40 @@ static int v_open(vfs_file_t *fil, const char *name, int flags)
   return 0;
 }
 
+/* initialize (do first mount) */
+/* for now this is a dummy function, but eventually some of the work
+ * in _vfs_open_sdcardx could be done here
+ */
+static int v_init(const char *mountname)
+{
+    return 0;
+}
+
+/* deinitialize (unmount) */
+static int v_deinit(const char *mountname)
+{
+    int r = f_mount(0, "", 0);
+#if defined(_DEBUG_FATFS) && defined(__FLEXC__)
+    __builtin_printf("  deinit: f_mount returned %d\n", r);
+#endif                        
+    return 0;
+}
+
 struct vfs fat_vfs =
 {
-    &v_open,
-    &v_creat,
     &v_close,
-
     &v_read,
     &v_write,
     &v_lseek,
+    
     &v_ioctl,
     0, /* no flush function */
+    0, /* reserved1 */
+    0, /* reserved2 */
     
+    &v_open,
+    &v_creat,
+
     &v_opendir,
     &v_closedir,
     &v_readdir,
@@ -7254,6 +7276,9 @@ struct vfs fat_vfs =
     &v_remove,
 
     &v_rename,
+
+    &v_init, /* init */
+    &v_deinit, /* deinit */
 };
 
 struct vfs *
