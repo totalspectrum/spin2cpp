@@ -629,8 +629,8 @@ isConstMove(IR *ir, int32_t *valout) {
     return true;
 }
 
-static int32_t EvalP2BitMask(int x) {
-    int32_t val = (2<<((x>>5)&31))-1;
+static uint32_t EvalP2BitMask(int x) {
+    uint32_t val = (2<<((x>>5)&31))-1;
     val = val<<(x&31) | val>>((32-x)&31);
     return val;
 }
