@@ -2,6 +2,7 @@ Version 5.9.10
 - Actually fail compilation if a preprocessor #error directive is found in Spin
 - Fixed some bugs in time related functions
 - Fixed FCACHE not being enabled during system module compilation
+- Fixed a nasty condition code printing bug (thanks Ada!)
 - Merged a LOT of helpful P2 logic and CORDIC optimizations contributed by Ada Gottensträter
 - Merged Ada's change to support Shift-JIS character encoding
 
