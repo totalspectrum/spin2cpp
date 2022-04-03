@@ -4258,7 +4258,8 @@ LoopCanBeFcached(IRList *irl, IR *root, int size_left)
         return 0;
     }
     endlabel = endjmp;
-    while (endlabel->next && endlabel->next->opc == OPC_LABEL) {
+    // addr != 0 check is to avoid picking up return labels
+    while (endlabel->next && endlabel->next->opc == OPC_LABEL && endlabel->next->addr != 0) {
         endlabel = endlabel->next;
     }
     if (IsForwardJump(endjmp)) {
