@@ -660,6 +660,10 @@ isMoveLikeOp(IR *ir) {
     case OPC_NEGNZ:
     case OPC_GETBYTE:
     case OPC_GETWORD:
+    // memory reads also count
+    case OPC_RDBYTE:
+    case OPC_RDWORD:
+    case OPC_RDLONG:
         return true;
     default:
         return false;
@@ -4225,7 +4229,7 @@ FixupLoneCORDIC(IRList *irl) {
 }
 
 static void addKnownReg(struct dependency **list, Operand *op, bool arg) {
-    if (op && op->kind != REG_SUBREG && (arg?IsArg(op):IsLocal(op)) && !CheckDependency(list,op)) PrependDependency(list,op);
+    if (op && op->kind != REG_SUBREG && (arg?IsArg(op)||isResult(op):IsLocal(op)) && !CheckDependency(list,op)) PrependDependency(list,op);
 }
 
 static bool
@@ -4235,7 +4239,7 @@ ReuseLocalRegisters(IRList *irl) {
     IR *stop_ir;
 
     for(IR *ir=irl->head;ir;ir=ir->next) {
-        // Find all the arg regs first
+        // Find all the arg/result regs first
         addKnownReg(&known_regs,ir->src,true);
         addKnownReg(&known_regs,ir->dst,true);
     }
