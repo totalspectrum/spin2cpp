@@ -773,8 +773,7 @@ static bool ModifiedInRange(IR *start,IR *end,Operand *reg) {
         if (ir->cond == COND_TRUE && (ir->opc == OPC_ADD || ir->opc == OPC_SUB) && ir->dst == reg && ir->src->kind == IMM_INT) {
             offset += AddSubVal(ir);
         } else if (ir->opc == OPC_CALL) {
-            // TODO: differentiate registers that the function call won't change
-            if (!IsLocal(reg)) return true;
+            if (!IsLocal(reg) && reg->kind != REG_HUBPTR && !(reg->kind == REG_REG && !strcmp(reg->name,"fp"))) return true;
         } else if (InstrModifies(ir,reg)||IsBranch(ir)||IsLabel(ir)) return true;
     }
     return offset != 0;
