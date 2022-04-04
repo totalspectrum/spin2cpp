@@ -6,12 +6,10 @@ entry
 
 _casetest1
 	mov	_var01, arg01
-	mov	_var02, _var01
-	add	_var02, #3
-	max	_var02, #4
-	mov	_var03, _var02
-	add	_var03, ptr_L__0010_
-	jmp	_var03
+	add	_var01, #3
+	max	_var01, #4
+	add	_var01, ptr_L__0010_
+	jmp	_var01
 LR__0001
 	jmp	#LR__0002
 	jmp	#LR__0002
@@ -28,12 +26,10 @@ _casetest1_ret
 
 _casetest2
 	mov	_var01, arg01
-	mov	_var02, _var01
-	add	_var02, #3
-	max	_var02, #3
-	mov	_var03, _var02
-	add	_var03, ptr_L__0014_
-	jmp	_var03
+	add	_var01, #3
+	max	_var01, #3
+	add	_var01, ptr_L__0014_
+	jmp	_var01
 LR__0004
 	jmp	#LR__0005
 	jmp	#LR__0005
@@ -49,11 +45,9 @@ _casetest2_ret
 
 _casetest3
 	mov	_var01, arg01
-	mov	_var02, _var01
-	max	_var02, #3
-	mov	_var03, _var02
-	add	_var03, ptr_L__0018_
-	jmp	_var03
+	max	_var01, #3
+	add	_var01, ptr_L__0018_
+	jmp	_var01
 LR__0007
 	jmp	#LR__0008
 	jmp	#LR__0008
@@ -79,10 +73,6 @@ COG_BSS_START
 	fit	496
 	org	COG_BSS_START
 _var01
-	res	1
-_var02
-	res	1
-_var03
 	res	1
 arg01
 	res	1

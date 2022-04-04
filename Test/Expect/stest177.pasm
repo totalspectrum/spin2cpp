@@ -8,11 +8,10 @@ _calcresult
 	mov	_var01, arg01
 	mov	_var02, arg02
 	mov	_var03, arg03
-	mov	_var04, _var01
-	add	_var04, #3
-	max	_var04, #8
-	add	_var04, ptr_L__0008_
-	jmp	_var04
+	add	_var01, #3
+	max	_var01, #8
+	add	_var01, ptr_L__0008_
+	jmp	_var01
 LR__0001
 	jmp	#LR__0005
 	jmp	#LR__0007
@@ -55,8 +54,6 @@ _var01
 _var02
 	res	1
 _var03
-	res	1
-_var04
 	res	1
 arg01
 	res	1
