@@ -226,6 +226,10 @@ Very small methods are expanded inline. This may be prevented by declaring the m
 
 The compiler analyzes assignments to registers and attempts to minimize the number of moves (and temporary registers) required.
 
+### Local register reuse (-O1, -Olocal-reuse)
+
+Reuse registers to reduce the number of temporary registers introduced. This may reduce the readability of the generated code somewhat, although that's probably moot at this stage because many other optimizations also make the code harder to read.
+
 ### Branch elimination (-O1, -Obranch-convert)
 
 Short branch sequences are converted to conditional execution where possible.
@@ -261,6 +265,10 @@ Optimizes some specialized function calls for common cases. For example, in the 
 pinread:  Optimized if just one pin is read
 pinwrite: Optimized if just one pin or one bit are being written
 
+
+### Reorder instructions for Cordic (-O1, -Ocordic-reorder)
+
+On the P2, reorder instructions to take advantage of cordic pipeline delays.
 
 ### Single Use Method inlining (-O2, -Oinline-single)
 
