@@ -742,10 +742,24 @@ AddSubVal(IR *ir)
     return val;
 }
 
+extern Operand *mulfunc, *unsmulfunc, *divfunc, *unsdivfunc, *muldiva, *muldivb;
+
+static bool FuncUsesArg(Operand *func, Operand *arg)
+{
+    if (func == mulfunc || func == unsmulfunc || func == divfunc || func == unsdivfunc) {
+        return (arg == muldiva) || (arg == muldivb);
+    }
+    return true;
+}
+
 static bool UsedInRange(IR *start,IR *end,Operand *reg) {
     if (!reg || !IsRegister(reg->kind)) return false;
     for (IR *ir=start;ir!=end->next;ir=ir->next) {
-        if (InstrUses(ir,reg)||IsBranch(ir)) return true;
+        if (InstrUses(ir,reg)||IsJump(ir)) return true;
+        if (ir->opc == OPC_CALL) {
+            if (IsArg(reg) && FuncUsesArg(ir->dst,reg)) return true;
+            if (IsArg(reg)||isResult(reg)) return false; // Becomes dead
+        }
         if (InstrModifies(ir,reg) && ir->cond==COND_TRUE) return false; // Has become dead
     }
     return false;
@@ -757,6 +771,8 @@ static bool ModifiedInRange(IR *start,IR *end,Operand *reg) {
     for (IR *ir=start;ir!=end->next;ir=ir->next) {
         if (ir->cond == COND_TRUE && (ir->opc == OPC_ADD || ir->opc == OPC_SUB) && ir->dst == reg && ir->src->kind == IMM_INT) {
             offset += AddSubVal(ir);
+        } else if (ir->opc == OPC_CALL) {
+            if (IsArg(reg)||isResult(reg)) return true;
         } else if (InstrModifies(ir,reg)||IsBranch(ir)) return true;
     }
     return offset != 0;
@@ -783,17 +799,6 @@ static int MinCyclesInRange(IR *start,IR *end) {
     return cyc;
 }
 
-
-extern Operand *mulfunc, *unsmulfunc, *divfunc, *unsdivfunc, *muldiva, *muldivb;
-
-
-static bool FuncUsesArg(Operand *func, Operand *arg)
-{
-    if (func == mulfunc || func == unsmulfunc || func == divfunc || func == unsdivfunc) {
-        return (arg == muldiva) || (arg == muldivb);
-    }
-    return true;
-}
 
 /*
  * return TRUE if the operand's value does not need to be preserved
