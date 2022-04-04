@@ -58,6 +58,7 @@ Symbol                   | When Defined
 `__P2__`                 | only defined if compiling for Propeller 2 (obsolete)
 `__propeller2__`         | only defined if compiling for Propeller 2
 `__ILP32__`              | always defined; some programs use this to determine pointer size
+`__HAVE_FCACHE__`        | if the FCACHE optimization is enabled
 `__VERSION__`            | defined to a string containing the full flexspin version
 `__OUTPUT_ASM__`         | if PASM code is being generated
 `__OUTPUT_BYTECODE__`    | if bytecode is being generated

@@ -94,6 +94,7 @@ Symbol           | When Defined
 `__SPINCVT__`    | always defined
 `__SPIN2PASM__`  | if --asm is given (PASM output) (always defined by flexspin)
 `__SPIN2CPP__`   | if C++ or C is being output (never in flexspin)
+`__HAVE_FCACHE__`  | if the FCACHE optimization is enabled
 `__cplusplus`    | if C++ is being output (never in flexspin)
 `__DATE__`       | a string containing the date when compilation was begun
 `__FILE__`       | a string giving the current file being compiled
