@@ -3667,6 +3667,8 @@ restart_check:
             base = ir->src;
             int size = MemoryOpSize(ir);
             bool write = IsWrite(ir);
+            // don't mess with it if src==dst
+            if (!write && ir->src == ir->dst) goto get_next;
             nextread = FindNextRead(ir, dst1, base);
             int nextsize = MemoryOpSize(nextread);
             if (nextread && CondIsSubset(ir->cond,nextread->cond)) {
