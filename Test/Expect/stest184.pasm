@@ -354,14 +354,13 @@ __system___gc_doalloc
 	mov	arg01, __system___gc_doalloc__cse__0005
 	sub	ptr___system__dat__, #36
 	cogid	result1
-	mov	__system___lockmem_mask, result1
-	add	__system___lockmem_mask, #256
+	add	result1, #256
 LR__0018
 	rdlong	__system___lockmem_r, arg01 wz
- if_e	wrlong	__system___lockmem_mask, arg01
+ if_e	wrlong	result1, arg01
  if_e	rdlong	__system___lockmem_r, arg01
  if_e	rdlong	__system___lockmem_r, arg01
-	cmp	__system___lockmem_r, __system___lockmem_mask wz
+	cmp	__system___lockmem_r, result1 wz
  if_ne	jmp	#LR__0018
 	mov	arg01, __system___gc_doalloc_size
 	mov	arg02, __system___gc_doalloc_reserveflag
@@ -957,8 +956,6 @@ __system___gc_tryalloc_reserveflag
 __system___gc_tryalloc_saveptr
 	res	1
 __system___gc_tryalloc_size
-	res	1
-__system___lockmem_mask
 	res	1
 __system___lockmem_r
 	res	1

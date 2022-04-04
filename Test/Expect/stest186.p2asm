@@ -13,8 +13,7 @@ entry
 
 _go
 	sub	arg01, arg02
-	mov	result2, arg01
-	mov	result1, result2
+	mov	result1, arg01
 _go_ret
 	ret
 

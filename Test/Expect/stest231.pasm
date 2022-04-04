@@ -5,8 +5,6 @@ dat
 entry
 
 _demo
-	mov	result2, #4
-	mov	result1, #0
 	mov	arg03, #0
 	mov	arg04, #4
 	mov	arg01, imm_4660_

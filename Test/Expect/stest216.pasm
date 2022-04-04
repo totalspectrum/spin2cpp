@@ -6,7 +6,6 @@ entry
 
 _demo
 	mov	outa, #99
-	mov	result1, #100
 	mov	outb, #100
 _demo_ret
 	ret
