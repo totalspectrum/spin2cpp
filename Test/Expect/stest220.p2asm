@@ -12,10 +12,8 @@ dat
 entry
 
 _key
-	getbyte	_var01, arg01, #3
-	shl	_var01, #24
-	mov	result1, #0
-	or	result1, _var01
+	getbyte	result1, arg01, #3
+	shl	result1, #24
 	getbyte	_var01, arg01, #1
 	setbyte	result1, _var01, #2
 	shr	arg01, #16

@@ -431,7 +431,7 @@ Operand *GetResultReg(int n)
     }
     if (!resultreg[n]) {
         sprintf(rvalname, "result%d", n+1);
-        resultreg[n] = GetOneGlobal(REG_REG, strdup(rvalname), 0);
+        resultreg[n] = GetOneGlobal(REG_RESULT, strdup(rvalname), 0);
     }
     return resultreg[n];
 }
@@ -1516,6 +1516,8 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
         }
         ValidateStackptr();
         tmp = GetResultReg(5); // we know this won't be used in the system functions
+        tmp = NewFunctionTempRegister();
+        int starttempreg = FuncData(curfunc)->curtempreg;
         // tmp = _gc_alloc_managed(framesize)
         EmitMove(irl, GetArgReg(0), framesize);
         EmitOp1(irl, OPC_CALL, allocfunc);
@@ -1530,6 +1532,7 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
 
         // adjust stack pointer back
         EmitOp2(irl, OPC_SUB, stackptr, framesize);
+        FreeTempRegisters(irl,starttempreg);
     }
 }
 
@@ -3140,6 +3143,7 @@ IsCogMem(Operand *addr)
     case REG_TEMP:
     case REG_LOCAL:
     case REG_ARG:
+    case REG_RESULT:
     case REG_SUBREG:
         return true;
     case IMM_HUB_LABEL:
@@ -3191,6 +3195,7 @@ OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type)
         case REG_LOCAL:
         case REG_TEMP:
         case REG_ARG:
+        case REG_RESULT:
         case REG_HW:
 #if 1      
             /* special case immediate offsets */
@@ -3266,6 +3271,7 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset, int siz)
         case REG_LOCAL:
         case REG_TEMP:
         case REG_ARG:
+        case REG_RESULT:
         case REG_HW:
 #if 1      
             /* special case immediate offsets */
@@ -3447,6 +3453,7 @@ GetLea(IRList *irl, Operand *src)
         case REG_LOCAL:
         case REG_TEMP:
         case REG_ARG:
+        case REG_RESULT:
         case REG_HW:
             src->used = 1;
             addr = NewOperand(IMM_COG_LABEL, src->name, offset);
@@ -4322,7 +4329,11 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
             where = temps[0];
         }
         if (off) {
-            EmitAddSub(irl, src, off);
+            if (src->kind == IMM_INT) {
+                src->val += off;
+            } else {
+                EmitAddSub(irl, src, off);
+            }
         }
         if (origsrc->kind == COGMEM_REF) {
             for (i = 0; i < num_tmp_regs; i++) {
@@ -4353,7 +4364,7 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
             ERROR(NULL, "Illegal memory reference");
         }
 
-        if (off) {
+        if (off && src->kind != IMM_INT) {
             EmitAddSub(irl, src, -off);
         }
         if (where == origdst) {
@@ -4375,7 +4386,7 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
         }
         if (off) {
             if (dst->kind == IMM_INT) {
-                dst->val = off;
+                dst->val += off;
             } else {
                 EmitAddSub(irl, dst, off);
             }
@@ -6091,7 +6102,6 @@ EmitMain_P2(IRList *irl, Module *P, Operand *lutstart)
     const char *firstfuncname;
     IR *ir;
     Operand *spinlabel, *skip_clock_label;
-    Operand *const4 = NewImmediate(4);
     Operand *result1 = GetResultReg(0);
     Operand *arg1 = GetArgReg(0);
     Operand *pa_reg = GetOneGlobal(REG_HW, "pa", 0);
@@ -6099,7 +6109,6 @@ EmitMain_P2(IRList *irl, Module *P, Operand *lutstart)
     Operand *clkmode_addr = NewImmediate(0x18);
     uint32_t clkmode, clkfreq;
     int maxArgs = max_coginit_args;
-    int i;
 
     firstfunc = GetMainFunction(P);
     if (!firstfunc) {
@@ -6171,23 +6180,17 @@ EmitMain_P2(IRList *irl, Module *P, Operand *lutstart)
     EmitOp1(irl, OPC_COGSTOP, arg1);
 
     // and now the code for when we are started with Spin coginit
+    // on P2, stackptr is always PTRA, so opeffects can be used
     EmitLabel(irl, spinlabel);
-    EmitOp2(irl, OPC_RDLONG, objbase, stackptr);
-    EmitOp2(irl, OPC_ADD, stackptr, const4);
-    EmitOp2(irl, OPC_RDLONG, result1, stackptr);
-    EmitOp2(irl, OPC_ADD, stackptr, const4);
+    EmitOp2(irl, OPC_RDLONG, objbase, stackptr)->srceffect = OPEFFECT_POSTINC;
+    EmitOp2(irl, OPC_RDLONG, result1, stackptr)->srceffect = OPEFFECT_POSTINC;
     // now pull operands off the stack
-    for (i = 0; i < maxArgs; i++) {
-        EmitMove(irl, GetArgReg(i), stacktop);
-        if (i == maxArgs-1) {
-            int off = maxArgs * 4;
-            if (off > 0) {
-                EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(off));
-            }
-        } else {
-            EmitOp2(irl, OPC_ADD, stackptr, const4);
-        }
+    if (maxArgs > 0)  {
+        for (int i=0;i<maxArgs;i++) GetArgReg(i); // Make sure the registers actually exist
+        if (maxArgs > 1) EmitOp1(irl,OPC_SETQ,NewImmediate(maxArgs-1));
+        EmitOp2(irl,OPC_RDLONG,GetArgReg(0),stackptr);
     }
+    EmitAddSub(irl, stackptr, -4);
     EmitOp1(irl, OPC_CALL, result1);
     EmitJump(irl, COND_TRUE, cogexit);
 }
@@ -6353,7 +6356,6 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         }
     }
     InitAsmCode();
-    CompileIntermediate(systemModule);
     
     memset(&cogcode, 0, sizeof(cogcode));
     memset(&hubcode, 0, sizeof(hubcode));
@@ -6441,6 +6443,9 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     }
     
     if (emitSpinCode) {
+        // compile libraries
+        CompileIntermediate(systemModule);
+        
         // output the main stub
         EmitLabel(&cogcode, entrylabel);
         if (gl_have_lut) {

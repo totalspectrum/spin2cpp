@@ -64,6 +64,11 @@ char *puts(char *data) __fromfile("libc/stdio/fputs.c");
 _FILE *fopen(const char *name, const char *mode) __fromfile("libc/stdio/fopen.c");
 int fclose(_FILE *f) __fromfile("libc/stdio/fopen.c");
 
+/* libc/stdio/fseek.c */
+int  fseek(_FILE *f, long offset, int whence) __fromfile("libc/stdio/fseek.c");
+long ftell(_FILE *f)                          __fromfile("libc/stdio/fseek.c");
+
+
 /* libc/stdio/fwrite.c */
 size_t fwrite(const void *ptr, size_t size, size_t n, _FILE *f) __fromfile("libc/stdio/fwrite.c");
 size_t fread(void *ptr, size_t size, size_t n, _FILE *f) __fromfile("libc/stdio/fwrite.c");
@@ -127,6 +132,9 @@ char *strcpy(char *__restrict dst, const char *__restrict src) __fromfile("libc/
 
 /* libc/string/strlen.c */
 size_t strlen(const char *scan) __fromfile("libc/string/strlen.c");
+
+/* libc/string/strncat.c */
+char *strncat(char *dest, const char *src, size_t n) __fromfile("libc/string/strncat.c");
 
 /* libc/string/strncmp.c */
 int strncmp(const char *scan1, const char *scan2, size_t n) __fromfile("libc/string/strncmp.c");

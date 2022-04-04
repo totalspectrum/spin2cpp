@@ -7,12 +7,11 @@ entry
 _lfs_trunc
 	rdlong	result1, arg01
 	and	result1, #255
-	mov	lfs_trunc_tmp001_, result1
 	add	ptr__dat__, #4
 	rdlong	lfs_trunc_tmp003_, ptr__dat__
 	sub	ptr__dat__, #4
-	add	lfs_trunc_tmp001_, lfs_trunc_tmp003_
-	wrlong	lfs_trunc_tmp001_, arg01
+	add	result1, lfs_trunc_tmp003_
+	wrlong	result1, arg01
 	add	arg01, #4
 	rdlong	lfs_trunc_tmp001_, arg01
 	and	lfs_trunc_tmp001_, #1

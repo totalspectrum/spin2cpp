@@ -39,17 +39,15 @@ LR__0003
  if_ae	jmp	#LR__0003
 	add	ptr___system__dat__, #12
 	rdlong	__system___waitms_freqms, ptr___system__dat__ wz
+ if_e	qdiv	__system___waitms_freq, ##1000
 	sub	ptr___system__dat__, #12
- if_ne	jmp	#LR__0004
-	qdiv	__system___waitms_freq, ##1000
-	add	ptr___system__dat__, #12
-	getqx	__system___waitms__temp__0000
-	mov	__system___waitms_freqms, __system___waitms__temp__0000
-	wrlong	__system___waitms__temp__0000, ptr___system__dat__
-	sub	ptr___system__dat__, #12
-LR__0004
 	cmps	__system___waitms_m, #1 wc
+ if_e	getqx	__system___waitms__temp__0000
+ if_e	mov	__system___waitms_freqms, __system___waitms__temp__0000
  if_ae	qmul	__system___waitms_m, __system___waitms_freqms
+ if_e	add	ptr___system__dat__, #12
+ if_e	wrlong	__system___waitms__temp__0000, ptr___system__dat__
+ if_e	sub	ptr___system__dat__, #12
  if_ae	getqx	arg01
  if_ae	waitx	arg01
 __system___waitms_ret

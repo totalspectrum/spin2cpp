@@ -6,14 +6,9 @@ entry
 
 _test1
 	mov	_var01, arg01 wz
- if_ne	jmp	#LR__0001
-	cmp	arg02, #0 wz
- if_e	jmp	#LR__0002
-LR__0001
-	mov	result1, arg03
-	jmp	#_test1_ret
-LR__0002
-	neg	result1, #1
+ if_e	cmp	arg02, #0 wz
+ if_ne	mov	result1, arg03
+ if_e	neg	result1, #1
 _test1_ret
 	ret
 

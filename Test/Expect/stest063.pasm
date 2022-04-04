@@ -12,8 +12,6 @@ _blinky
 	or	arg03, arg02
 	or	arg03, #8
 	coginit	arg03 wc,wr
- if_b	neg	arg03, #1
-	mov	result1, arg03
 _blinky_ret
 	ret
 

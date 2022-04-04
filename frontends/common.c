@@ -306,6 +306,7 @@ Aliases calias[] = {
 
     /* useful I/O functions */
     { "mount", "_mount" },
+    { "umount", "_umount" },
     { NULL, NULL },
 };
 

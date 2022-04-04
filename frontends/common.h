@@ -131,6 +131,7 @@ extern int gl_run_charset; /* runtime character set */
 #define CHARSET_UTF8     0
 #define CHARSET_LATIN1   1
 #define CHARSET_PARALLAX 2
+#define CHARSET_SHIFTJIS 3
 extern int gl_have_lut; /* are there any functions placed in LUT? */
 extern int gl_output;  /* type of output to produce */
 extern int gl_outputflags; /* modifiers (e.g. LMM or COG code */

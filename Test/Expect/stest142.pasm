@@ -8,12 +8,10 @@ _addlist
 	mov	_var01, #0
 LR__0001
 	cmps	arg01, #1 wc
- if_b	jmp	#LR__0002
-	rdlong	_var02, arg02
-	add	arg02, #4
-	add	_var01, _var02
-	jmp	#LR__0001
-LR__0002
+ if_ae	rdlong	_var02, arg02
+ if_ae	add	arg02, #4
+ if_ae	add	_var01, _var02
+ if_ae	jmp	#LR__0001
 	mov	result1, _var01
 _addlist_ret
 	ret

@@ -1,7 +1,7 @@
 //
 // IR optimizer
 //
-// Copyright 2016-2021 Total Spectrum Software Inc.
+// Copyright 2016-2022 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -75,7 +75,21 @@ InstrReadsDst(IR *ir)
   case OPC_WRNC:
   case OPC_WRZ:
   case OPC_WRNZ:
+  case OPC_DECOD:
+  case OPC_ENCOD:
+  case OPC_BMASK:
+  case OPC_NOT:
+  case OPC_ONES:
     return false;
+  case OPC_MUXC:
+  case OPC_MUXNC:
+  case OPC_MUXZ:
+  case OPC_MUXNZ:
+    if (ir->src && ir->src->kind == IMM_INT && (int32_t)ir->src->val == -1) {
+        return false;
+    } else {
+        return true;
+    }
   default:
     break;
   }
@@ -177,6 +191,26 @@ static bool IsRead(IR *ir) {
     }
 }
 
+
+static bool
+IsReadWrite(IR *ir)
+{
+    if (!ir) {
+        return false;
+    }
+    switch (ir->opc) {
+    case OPC_RDBYTE:
+    case OPC_RDWORD:
+    case OPC_RDLONG:
+    case OPC_WRBYTE:
+    case OPC_WRWORD:
+    case OPC_WRLONG:
+        return true;
+    default:
+        return false;
+    }
+}
+
 static bool
 IsLabel(IR *ir)
 {
@@ -250,6 +284,13 @@ IsArg(Operand *op)
     return op->kind == REG_ARG;
 }
 
+static bool
+isResult(Operand *op)
+{
+    if (op->kind == REG_SUBREG) op = (Operand *)op->name;
+    return op->kind == REG_RESULT;
+}
+
 // returns TRUE if an operand represents a local register
 bool
 IsLocal(Operand *op)
@@ -316,20 +357,27 @@ InstrIsVolatile(IR *ir)
     return 0 != (ir->flags & FLAG_KEEP_INSTR);
 }
 
-static bool
-InstrUsesFlags(IR *ir, unsigned flags)
-{
-    if (ir->cond != COND_TRUE && ir->cond != COND_FALSE) {
-        if ( (flags & FLAG_WC) ) {
-            /* the E and NE flags do not require C */
-            if (ir->cond != COND_EQ && ir->cond != COND_NE)
-                return true;
-        }
-        if (flags & FLAG_WZ) {
-            if (ir->cond != COND_C && ir->cond != COND_NC)
-                return true;
-        }
+static unsigned
+FlagsUsedByCond(IRCond cond) {
+
+    switch (cond) {
+    case COND_TRUE:
+    case COND_FALSE:
+        return 0;
+    case COND_NC:
+    case COND_C:
+        return FLAG_WC;
+    case COND_NZ:
+    case COND_Z:
+        return FLAG_WZ;
+    default:
+        return FLAG_WC|FLAG_WZ;
     }
+}
+
+static bool
+InstrUsesFlags_CondAside(IR *ir, unsigned flags)
+{
     if ((ir->flags & (FLAG_ANDC|FLAG_XORC|FLAG_ORC)) && (flags & FLAG_WC)) return true;
     if ((ir->flags & (FLAG_ANDZ|FLAG_XORZ|FLAG_ORZ)) && (flags & FLAG_WZ)) return true;
 
@@ -357,6 +405,10 @@ InstrUsesFlags(IR *ir, unsigned flags)
     case OPC_BITNC:
     case OPC_RCL:
     case OPC_RCR:
+    case OPC_ADDX:
+    case OPC_ADDSX:
+    case OPC_SUBX:
+    case OPC_SUBSX:
         /* definitely uses the C flag */
         return (flags & FLAG_WC) != 0;
     case OPC_DRVZ:
@@ -372,6 +424,12 @@ InstrUsesFlags(IR *ir, unsigned flags)
     default:
         return false;
     }
+}
+
+static inline bool
+InstrUsesFlags(IR *ir, unsigned flags) {
+    if (FlagsUsedByCond(ir->cond) & flags) return true;
+    return InstrUsesFlags_CondAside(ir,flags);
 }
 
 bool IsHubDest(Operand *dst)
@@ -536,6 +594,78 @@ IsMathInstr(IR *ir)
     }
 }
 
+bool
+IsSrcBitIndex(IR *ir)
+{
+    switch (ir->opc) {
+    case OPC_SHL:
+    case OPC_SHR:
+    case OPC_SAR:
+    case OPC_ROL:
+    case OPC_ROR:
+    case OPC_RCL:
+    case OPC_RCR:
+    case OPC_TESTB:
+    case OPC_TESTBN:
+    case OPC_ZEROX:
+    case OPC_SIGNX:
+        return true;
+    default:
+        return false;
+    }
+}
+
+static bool
+isConstMove(IR *ir, int32_t *valout) {
+    if (!ir->src || !IsImmediate(ir->src)) return false;
+    int32_t val = (int32_t)ir->src->val;
+    switch (ir->opc) {
+    case OPC_MOV:
+        break;
+    case OPC_NEG:
+        val = -val;
+        break;
+    case OPC_ABS:
+        if (val<0) val = -val;
+        break;
+    case OPC_DECOD:
+        val = 1<<(val&31);
+        break;
+    case OPC_BMASK:
+        val = (2<<(val&31))-1;
+        break;
+    default:
+        return false;
+    }
+    if (valout) *valout = val;
+    return true;
+}
+
+// Is this an op that moves data from S to D in some manner?
+// For all of these InstrReadsDst is false
+static bool
+isMoveLikeOp(IR *ir) {
+    switch (ir->opc) {
+    case OPC_MOV:
+    case OPC_NEG:
+    case OPC_ABS:
+    case OPC_NOT:
+    case OPC_ENCOD:
+    case OPC_DECOD:
+    case OPC_ONES:
+    case OPC_BMASK:
+    case OPC_NEGC:
+    case OPC_NEGNC:
+    case OPC_NEGZ:
+    case OPC_NEGNZ:
+    case OPC_GETBYTE:
+    case OPC_GETWORD:
+        return true;
+    default:
+        return false;
+    }
+}
+
 static inline bool CondIsSubset(IRCond super, IRCond sub) {
     return sub == (super|sub);
 }
@@ -603,6 +733,46 @@ static int InstrMaxCycles(IR *ir) {
     }
 }
 #endif
+
+
+static bool UsedInRange(IR *start,IR *end,Operand *reg) {
+    if (!reg || !IsRegister(reg->kind)) return false;
+    for (IR *ir=start;ir!=end->next;ir=ir->next) {
+        if (InstrUses(ir,reg)||IsBranch(ir)) return true;
+        if (InstrModifies(ir,reg) && ir->cond==COND_TRUE) return false; // Has become dead
+    }
+    return false;
+}
+
+static bool ModifiedInRange(IR *start,IR *end,Operand *reg) {
+    if (!reg || !IsRegister(reg->kind)) return false;
+    for (IR *ir=start;ir!=end->next;ir=ir->next) {
+        if (InstrModifies(ir,reg)||IsBranch(ir)) return true;
+    }
+    return false;
+}
+
+static bool ReadWriteInRange(IR *start,IR *end) {
+    for (IR *ir=start;ir!=end->next;ir=ir->next) {
+        if (IsReadWrite(ir)) return true;
+    }
+    return false;
+}
+static bool WriteInRange(IR *start,IR *end) {
+    for (IR *ir=start;ir!=end->next;ir=ir->next) {
+        if (IsWrite(ir)) return true;
+    }
+    return false;
+}
+
+static int MinCyclesInRange(IR *start,IR *end) {
+    int cyc = 0;
+    for (IR *ir=start;ir!=end->next;ir=ir->next) {
+        cyc += InstrMinCycles(ir);
+    }
+    return cyc;
+}
+
 
 extern Operand *mulfunc, *unsmulfunc, *divfunc, *unsdivfunc, *muldiva, *muldivb;
 
@@ -730,12 +900,15 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
         }
     }
     if (ir->opc == OPC_RET && ir->cond == COND_TRUE) {
-      return IsLocalOrArg(op);
+      goto done;
     } else if (ir->opc == OPC_CALL && !IsDummy(ir)) {
+
         if (!IsLocal(op)) {
             // we know of some special cases where argN is not used
             if (IsArg(op) && !FuncUsesArg(ir->dst, op)) {
                 /* OK to continue */
+            } else if (isResult(op)) {
+                return true; // Results get set by functions
             } else {
                 return false;
             }
@@ -764,7 +937,15 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
   }
 done:  
   /* if we reach the end without seeing any use */
-  return IsLocalOrArg(op);
+  if (isResult(op)) {
+      int used = curfunc->numresults;
+      for(int i=0;i<used;i++) {
+          if (op == GetResultReg(i)) return false;
+      }
+      return true;
+  } else {
+    return IsLocalOrArg(op);
+  }
 }
 
 static bool
@@ -811,7 +992,10 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
           if (usecount > 0 && IsHwReg(replace) && ir->src != replace) {
               return false;
           }
-          return ir->cond == COND_TRUE;
+          // this was perhaps overly cautious, but I can remember a lot of headaches
+          // around optimization, so we may need to revert to it
+          //return ir->cond == COND_TRUE;
+          if (ir->cond == COND_TRUE) return true;
       }
       if (InstrUses(ir, replace) || ir->dst == replace) {
           return false;
@@ -1182,7 +1366,7 @@ SameOperand(Operand *a, Operand *b)
 static int
 TransformConstDst(IR *ir, Operand *imm)
 {
-  intptr_t val1, val2;
+  int32_t val1, val2;
   int setsResult = 1;
 
   if (gl_p2 && !InstrSetsDst(ir)) {
@@ -1204,13 +1388,13 @@ TransformConstDst(IR *ir, Operand *imm)
   }
   if (imm->kind == IMM_INT && imm->val == 0) {
       // transform add foo, bar into mov foo, bar, if foo is known to be 0
-      if ((ir->opc == OPC_ADD || ir->opc == OPC_SUB)
-          && !InstrSetsAnyFlags(ir))
+      if ((ir->opc == OPC_ADD || ir->opc == OPC_SUB || ir->opc == OPC_OR || ir->opc == OPC_XOR)
+          && (ir->flags == FLAG_WZ || !InstrSetsAnyFlags(ir)))
       {
-          if (ir->opc == OPC_ADD) {
-              ReplaceOpcode(ir, OPC_MOV);
-          } else if (ir->opc == OPC_SUB) {
+          if (ir->opc == OPC_SUB) {
               ReplaceOpcode(ir, OPC_NEG);
+          } else {
+              ReplaceOpcode(ir, OPC_MOV);
           }
           return 1;
       }
@@ -1246,6 +1430,9 @@ TransformConstDst(IR *ir, Operand *imm)
     case OPC_SUB:
       val1 -= val2;
       break;
+    case OPC_TEST:
+      setsResult = false;
+      // fall through
     case OPC_AND:
       val1 &= val2;
       break;
@@ -1255,24 +1442,35 @@ TransformConstDst(IR *ir, Operand *imm)
     case OPC_XOR:
       val1 ^= val2;
       break;
+    case OPC_TESTN:
+      setsResult = false;
+      // fall through
     case OPC_ANDN:
       val1 &= ~val2;
       break;
     case OPC_SHL:
-      val1 = val1 << val2;
+      val1 = val1 << (val2&31);
       break;
     case OPC_SAR:
-      val1 = val1 >> val2;
+      val1 = val1 >> (val2&31);
       break;
     case OPC_SHR:
-      val1 = ((unsigned)val1) >> val2;
+      val1 = ((uint32_t)val1) >> (val2&31);
+      break;
+    case OPC_ZEROX:
+      val2 = 31-(val2&31);
+      val1 = ((uint32_t)val1<<val2)>>val2;
+      break;
+    case OPC_SIGNX:
+      val2 = 31-(val2&31);
+      val1 = ((int32_t)val1<<val2)>>val2;
       break;
     case OPC_CMPS:
       val1 -= val2;
       setsResult = 0;
       break;
     case OPC_CMP:
-      if ((unsigned)val1 < (unsigned)val2) {
+      if ((uint32_t)val1 < (uint32_t)val2) {
           val1 = -1;
       } else if (val1 == val2) {
           val1 = 0;
@@ -1280,6 +1478,16 @@ TransformConstDst(IR *ir, Operand *imm)
           val1 = 1;
       }
       setsResult = 0;
+      break;
+    case OPC_TESTBN:
+      setsResult = false;
+      // Z is set if bit is CLEAR
+      val1 = val1 & (1<<(val2&31));
+      break;
+    case OPC_TESTB:
+      setsResult = false;
+      // Z is set if bit is SET
+      val1 = ~val1 & (1<<(val2&31));
       break;
     default:
       return 0;
@@ -1331,10 +1539,12 @@ PropagateConstForward(IRList *irl, IR *orig_ir, Operand *orig, Operand *immval)
   IR *ir;
   int change = 0;
   bool unconditional;
-
-  if (orig_ir->opc == OPC_NEG) {
-      immval = NewImmediate(-immval->val);
+  int32_t tmp;
+  if (!isConstMove(orig_ir,&tmp)) ERROR(NULL,"isConstMove == false in PropagateConstForward");
+  if (immval->val != tmp) {
+      immval = NewImmediate(tmp);
   }
+
   unconditional = IsOnlySetterFor(irl, orig_ir, orig);
   for (ir = orig_ir->next; ir; ir = ir->next) {
     if (IsDummy(ir)) {
@@ -1611,7 +1821,7 @@ FindPrevSetterForReplace(IR *irorig, Operand *dst)
     // until irorig
     saveir = ir;
     ir = ir->next;
-    while (ir && ir != saveir) {
+    while (ir && ir != irorig) {
         if (IsDummy(ir)) {
             ir = ir->next;
             continue;
@@ -1668,6 +1878,7 @@ OptimizeMoves(IRList *irl)
     IR *stop_ir;
     int change;
     int everchange = 0;
+    int32_t cval;
 
     do {
         change = 0;
@@ -1692,12 +1903,12 @@ OptimizeMoves(IRList *irl)
                         change = 1;
                     }
                 }
-            } else if ((ir->opc == OPC_MOV || ir->opc == OPC_NEG) && ir->cond == COND_TRUE && IsImmediate(ir->src)) {
+            } else if (ir->cond == COND_TRUE && isConstMove(ir,&cval)) {
                 int sawchange;
-                if (ir->flags == FLAG_WZ) {
+                if (ir->flags == FLAG_WZ && CanTestZero(ir->opc)) {
                     // because this is a mov immediate, we know how
                     // WZ will be set
-                    change |= ApplyConditionAfter(ir, ir->src->val);
+                    change |= ApplyConditionAfter(ir, cval);
                 }
                 change |= (sawchange = PropagateConstForward(irl, ir, ir->dst, ir->src));
                 if (sawchange && !InstrSetsAnyFlags(ir) && IsDeadAfter(ir, ir->dst)) {
@@ -1718,6 +1929,11 @@ OptimizeMoves(IRList *irl)
                     DeleteIR(irl, ir);
                     change = 1;
                 }
+            } else if (isMoveLikeOp(ir) && (stop_ir = FindPrevSetterForReplace(ir,ir->src)) && stop_ir->opc == OPC_MOV 
+                && !InstrIsVolatile(stop_ir) && !InstrSetsAnyFlags(stop_ir) && (ir->src==ir->dst||IsDeadAfter(ir,ir->src))) {
+                ir->src = stop_ir->src;
+                DeleteIR(irl,stop_ir);
+                change = 1;
             }
             ir = ir_next;
         }
@@ -1844,8 +2060,30 @@ MeaninglessMath(IR *ir)
     case OPC_SHL:
     case OPC_SHR:
     case OPC_SAR:
+    case OPC_ROL:
+    case OPC_ROR:
+    case OPC_RCL:
+    case OPC_RCR:
     case OPC_OR:
+    case OPC_XOR:
+    case OPC_ANDN:
+    case OPC_MUXC:
+    case OPC_MUXNC:
+    case OPC_MUXZ:
+    case OPC_MUXNZ:
+    case OPC_MINU:
         return (val == 0);
+    case OPC_ZEROX:
+    case OPC_SIGNX:
+        return (val == 31);
+    case OPC_AND:
+        return (val == -1);
+    case OPC_MAXU:
+        return (val == UINT32_MAX);
+    case OPC_MINS:
+        return (val == INT32_MIN);
+    case OPC_MAXS:
+        return (val == INT32_MAX);
     default:
         return false;
     }
@@ -1997,25 +2235,37 @@ static int IsSafeShortForwardJump(IR *irbase) {
     Operand *target;
     IR *ir;
     int limit = (curfunc->optimize_flags & OPT_EXTRASMALL) ? 10 : (gl_p2 ? 5 : 3);
-    bool cond_dirty = false;
+    unsigned dirty_flags = 0;
 
     if (irbase->opc != OPC_JUMP) return 0;
     if (InstrIsVolatile(irbase)) return 0;
     target = irbase->dst;
     if (IsRegister(target->kind)) return 0;
     ir = irbase->next;
+    IRCond newcond = InvertCond(irbase->cond);
     while (ir) {
         if (!IsDummy(ir)) {
-            if (ir->cond != COND_TRUE) return 0;
+            //if (ir->cond != COND_TRUE) return 0;
             if (ir->opc == OPC_LABEL) {
                 if (ir->dst == target) return n;
                 else return 0;
             }
-            if (cond_dirty) return 0;
-            if (ir->flags & FLAG_CZSET) cond_dirty = true;
+            unsigned problem_flags = FlagsUsedByCond(newcond) & dirty_flags;
+
+            // If flags are dirty, we can only accept instructions whose
+            // condition is already a subset of our new condition
+            if (problem_flags != 0 && !CondIsSubset(newcond,ir->cond)) {
+                return 0;
+            }
+            // If you're wondering about instrs with inherent flag use (NEGC etc),
+            // Those are not an issue, since if they aren't already conditional,
+            // they're either using the initial flag value or will be cought by the subset check
+            
+            if (ir->flags & FLAG_CSET) dirty_flags |= FLAG_WC;
+            if (ir->flags & FLAG_ZSET) dirty_flags |= FLAG_WZ;
             if (ir->opc == OPC_CALL) {
                 // calls do not preserve condition codes
-                cond_dirty = true;
+                dirty_flags |= FLAG_WC|FLAG_WZ;
             }
             if (ir->opc == OPC_DJNZ && !gl_p2) {
                 // DJNZ does not work conditionally in LMM
@@ -2034,11 +2284,11 @@ static void ConditionalizeInstructions(IR *ir, IRCond cond, int n)
 {
   while (ir && n > 0) {
     if (!IsDummy(ir)) {
-      if (ir->cond != COND_TRUE || ir->opc == OPC_LABEL) {
+      if (ir->opc == OPC_LABEL) {
 	ERROR(NULL, "Internal error bad conditionalize");
 	return;
       }
-      ir->cond = cond;
+      ir->cond |= cond;
       --n;
     }
     ir = ir->next;
@@ -2102,12 +2352,23 @@ OptimizeCompares(IRList *irl)
         }
 	if (!ir) break;
         if ( (ir->opc == OPC_CMP||ir->opc == OPC_CMPS) && ir->cond == COND_TRUE
-             && (FLAG_WZ == (ir->flags & (FLAG_WZ|FLAG_WC)))
+             && (ir->flags & (FLAG_WZ|FLAG_WC))
              && !InstrIsVolatile(ir)
              && ir->src == ir->dst)
         {
-            // this compare always sets Z
+            // this compare always sets Z and clears C
             ApplyConditionAfter(ir, 0);
+            DeleteIR(irl, ir);
+            change |= 1;
+        }
+        else if (ir->cond == COND_TRUE
+             && ((ir->opc == OPC_CMP && IsImmediateVal(ir->src, 0)) || (ir->opc == OPC_CMPS && IsImmediateVal(ir->src, INT32_MIN)) )
+             && (FLAG_WC == (ir->flags & (FLAG_WZ|FLAG_WC)))
+             && !InstrIsVolatile(ir)
+            )
+        {
+            // this compare always clears C
+            ApplyConditionAfter(ir, 1);
             DeleteIR(irl, ir);
             change |= 1;
         }
@@ -2183,6 +2444,7 @@ OptimizeCompares(IRList *irl)
                     && ir_next->cond == COND_NE
                     && IsImmediateVal(ir_prev->src, 1)
                     && IsCloseJump(ir_next)
+                    && !UsedInRange(ir_prev->next,ir_next->prev,ir_prev->dst)
                     )
                 {
                     // replace jmp with djnz
@@ -2216,12 +2478,15 @@ OptimizeImmediates(IRList *irl)
         if (! (src && src->kind == IMM_INT) ) {
             continue;
         }
-        if (!gl_p2 && (src->name == NULL || src->name[0] == 0)) {
+        val = src->val;
+        if (val != (val&31) && IsSrcBitIndex(ir)) {
+            // always cut unused bits when immediate is a bit index
+            ir->src = NewImmediate(val&31);
+            change++;
+        } else if (!gl_p2 && (src->name == NULL || src->name[0] == 0)) {
             /* already a small immediate */
             continue;
-        }
-        val = src->val;
-        if (ir->opc == OPC_MOV && val < 0 && val >= -511) {
+        } else if (ir->opc == OPC_MOV && val < 0 && val >= -511) {
 	    ReplaceOpcode(ir, OPC_NEG);
             ir->src = NewImmediate(-val);
             change++;
@@ -2237,7 +2502,7 @@ OptimizeImmediates(IRList *irl)
 	    ReplaceOpcode(ir, OPC_ADD);
             ir->src = NewImmediate(-val);
             change++;
-	}
+	    }
     }
     return change;
 }
@@ -3275,6 +3540,7 @@ static IR* FindNextUse(IR *ir, Operand *dst)
 static IR* FindNextRead(IR *irorig, Operand *dest, Operand *src)
 {
     IR *ir;
+    int32_t offset = 0;
     for ( ir = irorig->next; ir; ir = ir->next) {
         if (IsDummy(ir)) continue;
         if (ir->opc == OPC_LABEL) {
@@ -3286,10 +3552,13 @@ static IR* FindNextRead(IR *irorig, Operand *dest, Operand *src)
         if (ir->cond != irorig->cond) {
             return NULL;
         }
-        if (ir->src == src && (ir->opc == OPC_RDLONG||ir->opc == OPC_RDWORD||ir->opc == OPC_RDBYTE)) {
+        if (ir->src == src && offset == 0 && (ir->opc == OPC_RDLONG||ir->opc == OPC_RDWORD||ir->opc == OPC_RDBYTE)) {
             return ir;
         }
-        if (InstrModifies(ir, dest) || InstrModifies(ir, src)) {
+        if ((ir->opc == OPC_ADD || ir->opc == OPC_SUB) && ir->dst == src && ir->src && ir->src->kind == IMM_INT) {
+            if (ir->opc == OPC_ADD) offset += ir->src->val;
+            else                    offset -= ir->src->val;
+        } else if (InstrModifies(ir, dest) || InstrModifies(ir, src)) {
             return NULL;
         }
         if (IsWrite(ir)) {
@@ -3299,24 +3568,6 @@ static IR* FindNextRead(IR *irorig, Operand *dest, Operand *src)
     return NULL;
 }
 
-static bool
-IsReadWrite(IR *ir)
-{
-    if (!ir) {
-        return false;
-    }
-    switch (ir->opc) {
-    case OPC_RDBYTE:
-    case OPC_RDWORD:
-    case OPC_RDLONG:
-    case OPC_WRBYTE:
-    case OPC_WRWORD:
-    case OPC_WRLONG:
-        return true;
-    default:
-        return false;
-    }
-}
 
 static int
 MemoryOpSize(IR *ir) {
@@ -3421,6 +3672,8 @@ restart_check:
             base = ir->src;
             int size = MemoryOpSize(ir);
             bool write = IsWrite(ir);
+            // don't mess with it if src==dst
+            if (!write && ir->src == ir->dst) goto get_next;
             nextread = FindNextRead(ir, dst1, base);
             int nextsize = MemoryOpSize(nextread);
             if (nextread && CondIsSubset(ir->cond,nextread->cond)) {
@@ -3620,44 +3873,6 @@ static bool IsReorderBarrier(IR *ir) {
     default:
         return false;
     }
-}
-
-static bool UsedInRange(IR *start,IR *end,Operand *reg) {
-    if (!reg || !IsRegister(reg->kind)) return false;
-    for (IR *ir=start;ir!=end->next;ir=ir->next) {
-        if (InstrUses(ir,reg)||IsBranch(ir)) return true;
-        if (InstrModifies(ir,reg) && ir->cond==COND_TRUE) return false; // Has become dead
-    }
-    return false;
-}
-
-static bool ModifiedInRange(IR *start,IR *end,Operand *reg) {
-    if (!reg || !IsRegister(reg->kind)) return false;
-    for (IR *ir=start;ir!=end->next;ir=ir->next) {
-        if (InstrModifies(ir,reg)||IsBranch(ir)) return true;
-    }
-    return false;
-}
-
-static bool ReadWriteInRange(IR *start,IR *end) {
-    for (IR *ir=start;ir!=end->next;ir=ir->next) {
-        if (IsReadWrite(ir)) return true;
-    }
-    return false;
-}
-static bool WriteInRange(IR *start,IR *end) {
-    for (IR *ir=start;ir!=end->next;ir=ir->next) {
-        if (IsWrite(ir)) return true;
-    }
-    return false;
-}
-
-static int MinCyclesInRange(IR *start,IR *end) {
-    int cyc = 0;
-    for (IR *ir=start;ir!=end->next;ir=ir->next) {
-        cyc += InstrMinCycles(ir);
-    }
-    return cyc;
 }
 
 struct reorder_block {
@@ -4269,7 +4484,8 @@ LoopCanBeFcached(IRList *irl, IR *root, int size_left)
         return 0;
     }
     endlabel = endjmp;
-    while (endlabel->next && endlabel->next->opc == OPC_LABEL) {
+    // addr != 0 check is to avoid picking up return labels
+    while (endlabel->next && endlabel->next->opc == OPC_LABEL && endlabel->next->addr != 0) {
         endlabel = endlabel->next;
     }
     if (IsForwardJump(endjmp)) {
@@ -4414,15 +4630,16 @@ typedef struct PeepholePattern {
 #define OPC_ANY     -1
 #define MAX_OPERANDS_IN_PATTERN 16
 
+#define PEEP_OPNUM_MASK 0x00ffffff
+#define PEEP_OP_MASK    0xff000000
 #define PEEP_OP_SET     0x01000000
 #define PEEP_OP_MATCH   0x02000000
 #define PEEP_OP_IMM     0x03000000
 #define PEEP_OP_SET_IMM 0x04000000
 #define PEEP_OP_MATCH_DEAD 0x05000000  /* like PEEP_OP_MATCH, but operand is dead after this instr */
 #define PEEP_OP_CLRBITS 0x06000000
-#define PEEP_OP_MATCH_M1 0x07000000
-#define PEEP_OPNUM_MASK 0x00ffffff
-#define PEEP_OP_MASK    0xff000000
+#define PEEP_OP_MATCH_M1S 0x07000000
+#define PEEP_OP_MATCH_M1U 0x08000000
 
 #define PEEP_OP_CLRMASK(bits, shift) (PEEP_OP_CLRBITS|(bits<<6)|(shift))
 
@@ -4453,12 +4670,28 @@ static int PeepOperandMatch(int patrn_dst, Operand *dst, IR *ir)
             if (!IsDeadAfter(ir, dst)) {
                 return 0;
             }
-        } else if (opflag == PEEP_OP_MATCH_M1) {
+        } else if (opflag == PEEP_OP_MATCH_M1U) {
             // the new operand must have the same value as the original, minus 1
             // (used for compares)
             if (dst->kind != IMM_INT) return 0;
             if (peep_ops[opnum]->kind != IMM_INT) return 0;
-            if ( (uint32_t)peep_ops[opnum]->val != (uint32_t)dst->val+1 ) {
+            if ( (uint32_t)(peep_ops[opnum]->val) != 1+((uint32_t)dst->val) ) {
+                return 0;
+            }
+            // disallow overflow case
+            if ((uint32_t)dst->val == 0xFFFFFFFFU) {
+                return 0;
+            }
+        } else if (opflag == PEEP_OP_MATCH_M1S) {
+            // the new operand must have the same value as the original, minus 1
+            // (signed version of above)
+            if (dst->kind != IMM_INT) return 0;
+            if (peep_ops[opnum]->kind != IMM_INT) return 0;
+            if ( (int32_t)(peep_ops[opnum]->val) != 1+((int32_t)dst->val) ) {
+                return 0;
+            }
+            // disallow overflow case
+            if ((uint32_t)dst->val == 0x7fffffffU) {
                 return 0;
             }
         } else if (opflag == PEEP_OP_IMM) {
@@ -4561,12 +4794,12 @@ static PeepholePattern pat_minu[] = {
 
 static PeepholePattern pat_maxs_off[] = {
     { COND_TRUE, OPC_CMPS, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_WCZ_OK },
-    { COND_GE, OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_MATCH_M1|1, PEEP_FLAGS_NONE },
+    { COND_GE, OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_MATCH_M1S|1, PEEP_FLAGS_NONE },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 static PeepholePattern pat_maxu_off[] = {
     { COND_TRUE, OPC_CMP, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_WCZ_OK },
-    { COND_GE, OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_MATCH_M1|1, PEEP_FLAGS_NONE },
+    { COND_GE, OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_MATCH_M1U|1, PEEP_FLAGS_NONE },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
@@ -4653,38 +4886,6 @@ static PeepholePattern pat_rdword2[] = {
 static PeepholePattern pat_movadd[] = {
     { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
     { COND_TRUE, OPC_ADD, PEEP_OP_SET|2, PEEP_OP_MATCH|0, PEEP_FLAGS_NONE },
-    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
-};
-
-// potentially eliminate a redundant mov+neg sequence
-static PeepholePattern pat_movneg[] = {
-    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
-    { COND_TRUE, OPC_NEG, PEEP_OP_SET|2, PEEP_OP_MATCH|0, PEEP_FLAGS_WCZ_OK },
-    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
-};
-static PeepholePattern pat_movabs[] = {
-    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
-    { COND_TRUE, OPC_ABS, PEEP_OP_SET|2, PEEP_OP_MATCH|0, PEEP_FLAGS_WCZ_OK },
-    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
-};
-static PeepholePattern pat_movnegc[] = {
-    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
-    { COND_TRUE, OPC_NEGC, PEEP_OP_SET|2, PEEP_OP_MATCH|0, PEEP_FLAGS_WCZ_OK },
-    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
-};
-static PeepholePattern pat_movnegnc[] = {
-    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
-    { COND_TRUE, OPC_NEGNC, PEEP_OP_SET|2, PEEP_OP_MATCH|0, PEEP_FLAGS_WCZ_OK },
-    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
-};
-static PeepholePattern pat_movnegz[] = {
-    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
-    { COND_TRUE, OPC_NEGZ, PEEP_OP_SET|2, PEEP_OP_MATCH|0, PEEP_FLAGS_WCZ_OK },
-    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
-};
-static PeepholePattern pat_movnegnz[] = {
-    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
-    { COND_TRUE, OPC_NEGNZ, PEEP_OP_SET|2, PEEP_OP_MATCH|0, PEEP_FLAGS_WCZ_OK },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
@@ -5125,16 +5326,6 @@ static int FixupMovAdd(int arg, IRList *irl, IR *ir)
     return 0;
 }
 
-/* mov x, y; neg x, x => neg x, y */
-static int FixupMovNeg(int arg, IRList *irl, IR *ir)
-{
-    IR *nextir = ir->next;
-    if (nextir->dst != nextir->src && !IsDeadAfter(nextir,nextir->src)) return 0;
-    nextir->src = ir->src;
-    DeleteIR(irl, ir);
-    return 1;
-}
-
 /* mov x, #0 ; test x, #1 wc => mov x, #0 wc */
 static int FixupClrC(int arg, IRList *irl, IR *ir)
 {
@@ -5474,13 +5665,6 @@ struct Peepholes {
     { pat_rdword2, 1, RemoveNFlagged },
 
     { pat_movadd, 0, FixupMovAdd },
-
-    { pat_movneg, 0, FixupMovNeg },
-    { pat_movabs, 0, FixupMovNeg },
-    { pat_movnegc, 0, FixupMovNeg },
-    { pat_movnegnc, 0, FixupMovNeg },
-    { pat_movnegz, 0, FixupMovNeg },
-    { pat_movnegnz, 0, FixupMovNeg },
 
     { pat_bmask1, 0, FixupBmask },
     { pat_bmask2, 0, FixupBmask },

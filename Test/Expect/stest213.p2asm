@@ -17,8 +17,7 @@ _demo
 	testp	#15 wc
 	rcl	_func1_b, #1
 LR__0001
-	mov	result1, _func1_b
-	mov	outb, result1
+	mov	outb, _func1_b
 	call	#_func2
 	mov	outb, result1
 _demo_ret

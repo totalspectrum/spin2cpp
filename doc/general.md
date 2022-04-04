@@ -405,7 +405,7 @@ The current state of the flags may be retrieved via `_getrxtxflags()`.
 
 The input character set for the compiler is assumed to be UTF-8, or Windows UCS2 (16 bit Unicode).
 
-The character set to use at runtime is set by the compiler switch `--charset=C`, and may be one of `utf8` (the default), `latin1` (for ISO_8859-1), or `parallax` (for the Parallax font). For example, if you are using a VGA graphics program with the Parallax font, you would typically use `--charset=parallax`. This would cause any strings in the program to be translated from UTF-8 (the input character set) to the Parallax font encoding.
+The character set to use at runtime is set by the compiler switch `--charset=C`, and may be one of `utf8` (the default), `latin1` (for ISO_8859-1), `shiftjis` (for Shift-JIS 2004), or `parallax` (for the Parallax font). For example, if you are using a VGA graphics program with the Parallax font, you would typically use `--charset=parallax`. This would cause any strings in the program to be translated from UTF-8 (the input character set) to the Parallax font encoding.
 
 ## File I/O (P2 Only)
 

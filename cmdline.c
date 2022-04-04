@@ -177,6 +177,10 @@ int ProcessCommandLine(CmdLineOptions *cmd)
     if (gl_fixedreal) {
         pp_define(&gl_pp, "__fixedreal__", "1");
     }
+    // Note: replicating logic from GuessFcacheSize here, kinda terrible
+    if (gl_fcache_size > 0 || (gl_fcache_size == -1 && (!gl_p2 || (gl_optimize_flags&OPT_AUTO_FCACHE)))) {
+        pp_define(&gl_pp,"__HAVE_FCACHE__","1");
+    }
     /* if -Oremove-features is not on, then assume certain features are present */
     if ( 0 == (gl_optimize_flags & OPT_REMOVE_FEATURES) ) {
         unsigned i, flag;
@@ -615,6 +619,10 @@ int ParseCharset(int *var, const char *name)
     }
     if (!strcasecmp(name, "parallax") || !strcasecmp(name, "oem")) {
         *var = CHARSET_PARALLAX;
+        return 1;
+    }
+    if (!strcasecmp(name, "shiftjis") || !strcasecmp(name, "shift-jis")) {
+        *var = CHARSET_SHIFTJIS;
         return 1;
     }
     return 0;

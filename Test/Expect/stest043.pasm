@@ -5,13 +5,10 @@ dat
 entry
 
 _blah
-	mov	_var01, #0
+	mov	result1, #0
 	cmps	arg01, #0 wc
- if_ae	jmp	#LR__0001
-	cmps	arg02, #0 wc
- if_b	neg	_var01, #1
-LR__0001
-	mov	result1, _var01
+ if_b	cmps	arg02, #0 wc
+ if_b	neg	result1, #1
 _blah_ret
 	ret
 
@@ -20,8 +17,6 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_var01
-	res	1
 arg01
 	res	1
 arg02

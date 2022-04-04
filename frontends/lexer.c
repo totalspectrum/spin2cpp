@@ -627,6 +627,8 @@ static int MapSpinBlock(int c)
     }
 }
 
+extern const uint16_t uni2sjis[0x10000];
+
 /*
  * fetch a string and translate it to the runtime environment
  */
@@ -653,18 +655,28 @@ getTranslatedString(struct flexbuf *fb)
             src += count;
             // wc is now the unicode code point
             // translate as appropriate
-            // assume ASCII characters always map 1-1
-            if (wc >= 32 && wc <= 126) {
-                c = wc;
-            } else if (gl_run_charset == CHARSET_PARALLAX) {
-                c = findInTable(parallax_oem, wc);
+            if (gl_run_charset == CHARSET_SHIFTJIS) {
+                c = (unsigned)wc <= 0xFFFF ? uni2sjis[(uint16_t)wc] : 0x8148;
+                if (c<=255) {
+                    *dst++ = c;
+                } else {
+                    *dst++ = c>>8;
+                    *dst++ = c&255;
+                }
             } else {
-                c = wc;
+                // assume ASCII characters always map 1-1
+                if (wc >= 32 && wc <= 126) {
+                    c = wc;
+                } else if (gl_run_charset == CHARSET_PARALLAX) {
+                    c = findInTable(parallax_oem, wc);
+                } else {
+                    c = wc;
+                }
+                if (c < 0 || c > 255) {
+                    c = 0xbf; // upside down question mark in latin-1
+                }
+                *dst++ = c;
             }
-            if (c < 0 || c > 255) {
-                c = 0xbf; // upside down question mark in latin-1
-            }
-            *dst++ = c;
             if (!c) break;
         }
         *dst = 0;
@@ -3048,8 +3060,8 @@ instr_p1[] = {
     { "add",    0x80800000, TWO_OPERANDS, OPC_ADD, FLAG_P1_STD },
     { "addabs", 0x88800000, TWO_OPERANDS, OPC_GENERIC, FLAG_P1_STD },
     { "adds",   0xd0800000, TWO_OPERANDS, OPC_GENERIC, FLAG_P1_STD },
-    { "addsx",  0xd8800000, TWO_OPERANDS, OPC_GENERIC, FLAG_P1_STD },
-    { "addx",   0xc8800000, TWO_OPERANDS, OPC_GENERIC, FLAG_P1_STD },
+    { "addsx",  0xd8800000, TWO_OPERANDS, OPC_ADDSX, FLAG_P1_STD },
+    { "addx",   0xc8800000, TWO_OPERANDS, OPC_ADDX, FLAG_P1_STD },
     { "and",    0x60800000, TWO_OPERANDS, OPC_AND, FLAG_P1_STD },
     { "andn",   0x64800000, TWO_OPERANDS, OPC_ANDN, FLAG_P1_STD },
 
@@ -3114,8 +3126,8 @@ instr_p1[] = {
     { "sub",    0x84800000, TWO_OPERANDS, OPC_SUB, FLAG_P1_STD },
     { "subabs", 0x8c800000, TWO_OPERANDS, OPC_GENERIC, FLAG_P1_STD },
     { "subs",   0xc0800000, TWO_OPERANDS, OPC_GENERIC, FLAG_P1_STD },
-    { "subsx",  0xc4800000, TWO_OPERANDS, OPC_GENERIC, FLAG_P1_STD },
-    { "subx",   0xcc800000, TWO_OPERANDS, OPC_GENERIC, FLAG_P1_STD },
+    { "subsx",  0xc4800000, TWO_OPERANDS, OPC_SUBSX, FLAG_P1_STD },
+    { "subx",   0xcc800000, TWO_OPERANDS, OPC_SUBX, FLAG_P1_STD },
     { "sumc",   0x90800000, TWO_OPERANDS, OPC_GENERIC, FLAG_P1_STD },
     { "sumnc",  0x94800000, TWO_OPERANDS, OPC_GENERIC, FLAG_P1_STD },
     { "sumnz",  0x9c800000, TWO_OPERANDS, OPC_GENERIC, FLAG_P1_STD },
@@ -3152,13 +3164,13 @@ instr_p2[] = {
     { "sar",    0x00c00000, TWO_OPERANDS, OPC_SAR, FLAG_P2_STD },
     { "sal",    0x00e00000, TWO_OPERANDS, OPC_GENERIC, FLAG_P2_STD },
     { "add",    0x01000000, TWO_OPERANDS, OPC_ADD, FLAG_P2_STD },
-    { "addx",   0x01200000, TWO_OPERANDS, OPC_GENERIC, FLAG_P2_STD },
+    { "addx",   0x01200000, TWO_OPERANDS, OPC_ADDX, FLAG_P2_STD },
     { "adds",   0x01400000, TWO_OPERANDS, OPC_GENERIC, FLAG_P2_STD },
-    { "addsx",  0x01600000, TWO_OPERANDS, OPC_GENERIC, FLAG_P2_STD },
+    { "addsx",  0x01600000, TWO_OPERANDS, OPC_ADDSX, FLAG_P2_STD },
     { "sub",    0x01800000, TWO_OPERANDS, OPC_SUB, FLAG_P2_STD },
-    { "subx",   0x01a00000, TWO_OPERANDS, OPC_GENERIC, FLAG_P2_STD },
+    { "subx",   0x01a00000, TWO_OPERANDS, OPC_SUBX, FLAG_P2_STD },
     { "subs",   0x01c00000, TWO_OPERANDS, OPC_GENERIC, FLAG_P2_STD },
-    { "subsx",  0x01e00000, TWO_OPERANDS, OPC_GENERIC, FLAG_P2_STD },
+    { "subsx",  0x01e00000, TWO_OPERANDS, OPC_SUBSX, FLAG_P2_STD },
 
     { "cmp",    0x02000000, TWO_OPERANDS, OPC_CMP, FLAG_P2_STD | FLAG_WARN_NOTUSED },
     { "cmpx",   0x02200000, TWO_OPERANDS, OPC_GENERIC, FLAG_P2_STD | FLAG_WARN_NOTUSED },
@@ -3215,7 +3227,7 @@ instr_p2[] = {
     { "signx",  0x07600000, TWO_OPERANDS, OPC_SIGNX, FLAG_P2_STD },
 
     { "encod",  0x07800000, TWO_OPERANDS_OPTIONAL, OPC_ENCOD, FLAG_P2_STD },
-    { "ones",   0x07a00000, TWO_OPERANDS_OPTIONAL, OPC_GENERIC_NOFLAGS, FLAG_P2_STD },
+    { "ones",   0x07a00000, TWO_OPERANDS_OPTIONAL, OPC_ONES, FLAG_P2_STD },
 
     { "test",   0x07c00000, TWO_OPERANDS_OPTIONAL, OPC_TEST, FLAG_P2_STD|FLAG_WARN_NOTUSED },
     { "testn",  0x07e00000, TWO_OPERANDS, OPC_GENERIC_NR, FLAG_P2_STD|FLAG_WARN_NOTUSED },

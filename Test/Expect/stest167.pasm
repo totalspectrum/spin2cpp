@@ -14,12 +14,10 @@ _stepif_ret
 
 _storeif
 	rdlong	_var01, arg01 wz
- if_e	jmp	#LR__0001
-	mov	_var01, arg01
-	add	arg01, #8
-	wrlong	_var01, arg01
-	sub	arg01, #8
-LR__0001
+ if_ne	mov	_var01, arg01
+ if_ne	add	arg01, #8
+ if_ne	wrlong	_var01, arg01
+ if_ne	sub	arg01, #8
 	mov	result1, arg01
 _storeif_ret
 	ret

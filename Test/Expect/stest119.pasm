@@ -9,13 +9,11 @@ _zeroit
 	add	arg02, #1
 LR__0001
 	cmps	_var01, arg02 wc
- if_ae	jmp	#LR__0002
-	mov	_var02, #0
-	wrbyte	_var02, arg01
-	add	_var01, #1
-	add	arg01, #1
-	jmp	#LR__0001
-LR__0002
+ if_b	mov	_var02, #0
+ if_b	wrbyte	_var02, arg01
+ if_b	add	_var01, #1
+ if_b	add	arg01, #1
+ if_b	jmp	#LR__0001
 	mov	result1, #0
 _zeroit_ret
 	ret

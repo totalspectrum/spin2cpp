@@ -252,7 +252,8 @@ pri file "libsys/random.c" _basic_rnd(x=long) : r=float
 '' otherwise we can use a simple serial based library
 pri {++complexio} file "libc/unix/vfs.c" _getrootvfs()
 pri {++complexio} file "libc/unix/vfs.c" _setrootvfs(root)
-pri {++complexio} file "libc/unix/mount.c" _mount(name, volume)
+pri {++complexio} file "libc/unix/mount.c" _mount(name=string, volume)
+pri {++complexio} file "libc/unix/mount.c" _umount(name=string)
 pri {++complexio} file "libc/unix/mount.c" __getfilebuffer() : r=@byte
 pri {++complexio} file "libc/unix/mount.c" __getvfsforfile(name, orig_name, full_path)
 pri {++complexio} file "libc/unix/exec.c" _execve(name=string, argv=0, envp=0)

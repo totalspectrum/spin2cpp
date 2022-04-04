@@ -16,8 +16,7 @@ _cube
 	mov	muldiva_, arg01
 	mov	muldivb_, arg01
 	call	#unsmultiply_
-	mov	result1, muldiva_
-	mov	muldivb_, result1
+	mov	muldivb_, muldiva_
 	mov	muldiva_, arg01
 	call	#unsmultiply_
 	mov	result1, muldiva_

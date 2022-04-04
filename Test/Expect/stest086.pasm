@@ -11,14 +11,12 @@ _update
 	sub	objptr, #4
 LR__0001
 	cmps	_var01, #10 wc
- if_ae	jmp	#LR__0002
-	rdlong	_var03, _var02
-	add	_var03, #1
-	wrlong	_var03, _var02
-	add	_var01, #1
-	add	_var02, #4
-	jmp	#LR__0001
-LR__0002
+ if_b	rdlong	_var03, _var02
+ if_b	add	_var03, #1
+ if_b	wrlong	_var03, _var02
+ if_b	add	_var01, #1
+ if_b	add	_var02, #4
+ if_b	jmp	#LR__0001
 _update_ret
 	ret
 

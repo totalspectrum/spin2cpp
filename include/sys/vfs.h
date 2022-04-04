@@ -9,16 +9,19 @@ typedef DIR vfs_dir_t;
 #pragma once
 
 struct vfs {
-    int (*open)(vfs_file_t *fil, const char *name, int flags);
-    int (*creat)(vfs_file_t *fil, const char *pathname, mode_t mode);
+    // first 8 entries are sufficient to describe a read/write device
     int (*close)(vfs_file_t *fil);
-    
     ssize_t (*read)(vfs_file_t *fil, void *buf, size_t siz);
     ssize_t (*write)(vfs_file_t *fil, const void *buf, size_t siz);
     off_t (*lseek)(vfs_file_t *fil, off_t offset, int whence);
     int   (*ioctl)(vfs_file_t *fil, unsigned long req, void *argp);
     int (*flush)(vfs_file_t *fil);
+    void *reserved1;
+    void *reserved2;
     
+    int (*open)(vfs_file_t *fil, const char *name, int flags);
+    int (*creat)(vfs_file_t *fil, const char *pathname, mode_t mode);
+
     int (*opendir)(vfs_dir_t *dir, const char *name);
     int (*closedir)(vfs_dir_t *dir);
     int (*readdir)(vfs_dir_t *dir, struct dirent *ent);
@@ -26,9 +29,12 @@ struct vfs {
 
     int (*mkdir)(const char *name, mode_t mode);
     int (*rmdir)(const char *name);
+    
     int (*remove)(const char *pathname);
-
     int (*rename)(const char *oldname, const char *newname);
+
+    int (*init)(const char *mountname);
+    int (*deinit)(const char *mountname);
 };
 
 int _openraw(void *f, const char *name, unsigned flags, unsigned perm) _IMPL("libc/unix/posixio.c");

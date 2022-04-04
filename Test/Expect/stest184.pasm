@@ -111,13 +111,11 @@ __system___tx
 	cmp	__system___tx_c, #10 wz
  if_ne	jmp	#LR__0008
 	add	ptr___system__dat__, #24
-	rdlong	_system___tx_tmp002_, ptr___system__dat__
+	rdlong	_system___tx_tmp001_, ptr___system__dat__
 	sub	ptr___system__dat__, #24
-	mov	_system___tx_tmp001_, _system___tx_tmp002_
-	and	_system___tx_tmp001_, #2 wz
- if_e	jmp	#LR__0008
-	mov	arg01, #13
-	call	#__system___txraw
+	test	_system___tx_tmp001_, #2 wz
+ if_ne	mov	arg01, #13
+ if_ne	call	#__system___txraw
 LR__0008
 	mov	arg01, __system___tx_c
 	call	#__system___txraw
@@ -188,12 +186,11 @@ __system___gc_pageindex_ret
 	ret
 
 __system___gc_isFree
-	mov	_var01, #0
+	mov	result1, #0
 	add	arg01, #2
-	rdword	_var02, arg01
-	cmp	_var02, imm_27791_ wz
- if_e	neg	_var01, #1
-	mov	result1, _var01
+	rdword	_var01, arg01
+	cmp	_var01, imm_27791_ wz
+ if_e	neg	result1, #1
 __system___gc_isFree_ret
 	ret
 
@@ -233,10 +230,9 @@ LR__0011
  if_ne	mov	__system___gc_tryalloc__cse__0001, _system___gc_tryalloc_tmp001_
  if_ne	rdword	__system___gc_tryalloc_availsize, __system___gc_tryalloc__cse__0001
 	cmp	__system___gc_tryalloc_ptr, #0 wz
- if_e	jmp	#LR__0012
-	cmps	__system___gc_tryalloc_ptr, __system___gc_tryalloc_heap_end wc
- if_ae	jmp	#LR__0012
-	cmps	__system___gc_tryalloc_size, __system___gc_tryalloc_availsize wc,wz
+ if_ne	cmps	__system___gc_tryalloc_ptr, __system___gc_tryalloc_heap_end wc
+ if_a	jmp	#LR__0012
+ if_ne	cmps	__system___gc_tryalloc_size, __system___gc_tryalloc_availsize wc,wz
  if_a	jmp	#LR__0011
 LR__0012
 	cmp	__system___gc_tryalloc_ptr, #0 wz
@@ -358,14 +354,13 @@ __system___gc_doalloc
 	mov	arg01, __system___gc_doalloc__cse__0005
 	sub	ptr___system__dat__, #36
 	cogid	result1
-	mov	__system___lockmem_mask, result1
-	add	__system___lockmem_mask, #256
+	add	result1, #256
 LR__0018
 	rdlong	__system___lockmem_r, arg01 wz
- if_e	wrlong	__system___lockmem_mask, arg01
+ if_e	wrlong	result1, arg01
  if_e	rdlong	__system___lockmem_r, arg01
  if_e	rdlong	__system___lockmem_r, arg01
-	cmp	__system___lockmem_r, __system___lockmem_mask wz
+	cmp	__system___lockmem_r, result1 wz
  if_ne	jmp	#LR__0018
 	mov	arg01, __system___gc_doalloc_size
 	mov	arg02, __system___gc_doalloc_reserveflag
@@ -601,25 +596,23 @@ LR__0034
 	mov	arg03, __system___gc_markcog_ptr
 	call	#__system___gc_isvalidptr
 	mov	__system___gc_markcog_ptr, result1 wz
- if_e	jmp	#LR__0035
-	mov	__system___gc_markcog__cse__0000, __system___gc_markcog_ptr
-	add	__system___gc_markcog__cse__0000, #2
-	rdword	__system___gc_markcog__cse__0001, __system___gc_markcog__cse__0000
-	or	__system___gc_markcog__cse__0001, #32
-	wrword	__system___gc_markcog__cse__0001, __system___gc_markcog__cse__0000
-LR__0035
+ if_ne	mov	__system___gc_markcog__cse__0000, __system___gc_markcog_ptr
+ if_ne	add	__system___gc_markcog__cse__0000, #2
+ if_ne	rdword	__system___gc_markcog__cse__0001, __system___gc_markcog__cse__0000
+ if_ne	or	__system___gc_markcog__cse__0001, #32
+ if_ne	wrword	__system___gc_markcog__cse__0001, __system___gc_markcog__cse__0000
 	add	__system___gc_markcog_cogaddr, #1
 	cmps	__system___gc_markcog_cogaddr, #496 wc
  if_b	jmp	#LR__0034
 	mov	arg01, __system___gc_docollect_startheap
 	call	#__system___gc_nextBlockPtr
 	mov	__system___gc_docollect_nextptr, result1 wz
- if_ne	jmp	#LR__0036
+ if_ne	jmp	#LR__0035
 	mov	arg01, ptr_L__0069_
 	call	#__system___gc_errmsg
 	jmp	#__system___gc_docollect_ret
+LR__0035
 LR__0036
-LR__0037
 	mov	__system___gc_docollect_ptr, __system___gc_docollect_nextptr
 	mov	arg01, __system___gc_docollect_ptr
 	call	#__system___gc_nextBlockPtr
@@ -628,29 +621,25 @@ LR__0037
 	add	__system___gc_docollect__cse__0002, #2
 	rdword	__system___gc_docollect_flags, __system___gc_docollect__cse__0002
 	test	__system___gc_docollect_flags, #32 wz
- if_ne	jmp	#LR__0040
+ if_ne	jmp	#LR__0038
 	mov	_system___gc_docollect_tmp002_, __system___gc_docollect_flags
 	and	_system___gc_docollect_tmp002_, #16 wz
- if_ne	jmp	#LR__0040
+ if_ne	jmp	#LR__0038
 	mov	_system___gc_docollect_tmp001_, __system___gc_docollect_flags
 	and	_system___gc_docollect_tmp001_, #15
 	mov	__system___gc_docollect_flags, _system___gc_docollect_tmp001_
 	cmp	__system___gc_docollect_flags, __system___gc_docollect_ourid wz
- if_e	jmp	#LR__0038
-	cmp	__system___gc_docollect_flags, #14 wz
- if_ne	jmp	#LR__0039
-LR__0038
+ if_ne	cmp	__system___gc_docollect_flags, #14 wz
+ if_ne	jmp	#LR__0037
 	mov	arg01, __system___gc_docollect_ptr
 	call	#__system___gc_dofree
 	mov	_system___gc_docollect_tmp001_, result1
 	mov	__system___gc_docollect_nextptr, _system___gc_docollect_tmp001_
-LR__0039
-LR__0040
+LR__0037
+LR__0038
 	cmp	__system___gc_docollect_nextptr, #0 wz
- if_e	jmp	#LR__0041
-	cmps	__system___gc_docollect_nextptr, __system___gc_docollect_endheap wc
- if_b	jmp	#LR__0037
-LR__0041
+ if_ne	cmps	__system___gc_docollect_nextptr, __system___gc_docollect_endheap wc
+ if_c_and_nz	jmp	#LR__0036
 __system___gc_docollect_ret
 	ret
 
@@ -660,28 +649,28 @@ __system___gc_markhub
 	call	#__system___gc_ptrs
 	mov	__system___gc_markhub_heap_base, result1
 	mov	__system___gc_markhub_heap_end, result2
-LR__0042
+LR__0039
 	cmps	__system___gc_markhub_startaddr, __system___gc_markhub_endaddr wc
- if_ae	jmp	#LR__0043
+ if_ae	jmp	#LR__0040
 	rdlong	arg03, __system___gc_markhub_startaddr
 	add	__system___gc_markhub_startaddr, #4
 	mov	arg02, __system___gc_markhub_heap_end
 	mov	arg01, __system___gc_markhub_heap_base
 	call	#__system___gc_isvalidptr
 	mov	__system___gc_markhub_ptr, result1 wz
- if_e	jmp	#LR__0042
+ if_e	jmp	#LR__0039
 	mov	arg01, __system___gc_markhub_ptr
 	call	#__system___gc_isFree
 	cmp	result1, #0 wz
- if_ne	jmp	#LR__0042
-	mov	__system___gc_markhub__cse__0001, __system___gc_markhub_ptr
-	add	__system___gc_markhub__cse__0001, #2
-	rdword	__system___gc_markhub_flags, __system___gc_markhub__cse__0001
-	andn	__system___gc_markhub_flags, #15
-	or	__system___gc_markhub_flags, #46
-	wrword	__system___gc_markhub_flags, __system___gc_markhub__cse__0001
-	jmp	#LR__0042
-LR__0043
+ if_e	mov	__system___gc_markhub__cse__0001, __system___gc_markhub_ptr
+ if_e	add	__system___gc_markhub__cse__0001, #2
+ if_e	rdword	_system___gc_markhub_tmp001_, __system___gc_markhub__cse__0001
+ if_e	andn	_system___gc_markhub_tmp001_, #15
+ if_e	or	_system___gc_markhub_tmp001_, #46
+ if_e	mov	__system___gc_markhub_flags, _system___gc_markhub_tmp001_
+ if_e	wrword	__system___gc_markhub_flags, __system___gc_markhub__cse__0001
+	jmp	#LR__0039
+LR__0040
 __system___gc_markhub_ret
 	ret
 ' code originally from spin interpreter, modified slightly
@@ -750,11 +739,11 @@ itmp1_
 itmp2_
 	long	0
 ptr_L__0031_
-	long	@@@LR__0044
+	long	@@@LR__0041
 ptr_L__0043_
-	long	@@@LR__0045
+	long	@@@LR__0042
 ptr_L__0069_
-	long	@@@LR__0046
+	long	@@@LR__0043
 ptr___system__dat__
 	long	@@@__system__dat_
 ptr__dat__
@@ -768,13 +757,13 @@ sp
 COG_BSS_START
 	fit	496
 
-LR__0044
+LR__0041
 	byte	" !!! corrupted heap??? !!! "
 	byte	0
-LR__0045
+LR__0042
 	byte	" !!! out of heap memory !!! "
 	byte	0
-LR__0046
+LR__0043
 	byte	" !!! corrupted heap !!! "
 	byte	0
 	long
@@ -968,8 +957,6 @@ __system___gc_tryalloc_saveptr
 	res	1
 __system___gc_tryalloc_size
 	res	1
-__system___lockmem_mask
-	res	1
 __system___lockmem_r
 	res	1
 __system___tx_c
@@ -996,6 +983,8 @@ _system___gc_dofree_tmp002_
 	res	1
 _system___gc_markcog_tmp001_
 	res	1
+_system___gc_markhub_tmp001_
+	res	1
 _system___gc_ptrs_tmp001_
 	res	1
 _system___gc_tryalloc_tmp001_
@@ -1003,8 +992,6 @@ _system___gc_tryalloc_tmp001_
 _system___gc_tryalloc_tmp002_
 	res	1
 _system___tx_tmp001_
-	res	1
-_system___tx_tmp002_
 	res	1
 _tmp001_
 	res	1

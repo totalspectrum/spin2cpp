@@ -26,6 +26,8 @@ typedef enum IROpcode {
     /* note that actual machine instructions must come first */
     OPC_ABS,
     OPC_ADD,
+    OPC_ADDSX,
+    OPC_ADDX,
     OPC_ALTD,
     OPC_ALTS,
     OPC_AND,
@@ -74,6 +76,8 @@ typedef enum IROpcode {
     OPC_SHL,
     OPC_SHR,
     OPC_SUB,
+    OPC_SUBSX,
+    OPC_SUBX,
     OPC_TEST,
     OPC_TESTN,
     OPC_WAITCNT,
@@ -110,6 +114,7 @@ typedef enum IROpcode {
     OPC_MULS,
     OPC_MULU,
     OPC_NOT,
+    OPC_ONES,
     OPC_POP,
     OPC_PUSH,
     OPC_QDIV,
@@ -306,6 +311,7 @@ enum Operandkind {
     REG_HUBPTR, // a register which holds a hub address
     REG_COGPTR, // a register which holds a cog address
     REG_ARG,   // for an argument to a function
+    REG_RESULT, // for a function result
     REG_SUBREG, // for a sub-register: "name" holds the pointer to original reg, "val" is the offset
     
 #define IsRegister(kind) ((kind) >= REG_HW && (kind) <= REG_SUBREG)
