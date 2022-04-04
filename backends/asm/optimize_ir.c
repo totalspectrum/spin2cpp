@@ -734,6 +734,13 @@ static int InstrMaxCycles(IR *ir) {
 }
 #endif
 
+static int
+AddSubVal(IR *ir)
+{
+    int val = ir->src->val;
+    if (ir->opc == OPC_SUB) val = -val;
+    return val;
+}
 
 static bool UsedInRange(IR *start,IR *end,Operand *reg) {
     if (!reg || !IsRegister(reg->kind)) return false;
@@ -746,10 +753,13 @@ static bool UsedInRange(IR *start,IR *end,Operand *reg) {
 
 static bool ModifiedInRange(IR *start,IR *end,Operand *reg) {
     if (!reg || !IsRegister(reg->kind)) return false;
+    int32_t offset = 0;
     for (IR *ir=start;ir!=end->next;ir=ir->next) {
-        if (InstrModifies(ir,reg)||IsBranch(ir)) return true;
+        if (ir->cond == COND_TRUE && (ir->opc == OPC_ADD || ir->opc == OPC_SUB) && ir->dst == reg && ir->src->kind == IMM_INT) {
+            offset += AddSubVal(ir);
+        } else if (InstrModifies(ir,reg)||IsBranch(ir)) return true;
     }
-    return false;
+    return offset != 0;
 }
 
 static bool ReadWriteInRange(IR *start,IR *end) {
@@ -2515,13 +2525,6 @@ OptimizeImmediates(IRList *irl)
     return change;
 }
 
-static int
-AddSubVal(IR *ir)
-{
-    int val = ir->src->val;
-    if (ir->opc == OPC_SUB) val = -val;
-    return val;
-}
 
 static int
 OptimizeAddSub(IRList *irl)
@@ -3740,6 +3743,62 @@ restart_check:
     return change;
 }
 
+static void
+DoReorderBlock(IRList *irl,IR *after,IR *top,IR *bottom) {
+    IR *above = top->prev;
+    IR *below = bottom->next;
+    // Unlink block
+    if (above) above->next = below;
+    else irl->head = below;
+    if (below) below->prev = above;
+    else irl->tail = above;
+    // Link block at new location
+    top->prev = after;
+    bottom->next = after->next;
+    if (after->next) after->next->prev = bottom;
+    else irl->tail = bottom;
+    after->next = top;
+}
+
+// Pull matching add/sub instructions out of loops
+static int
+OptimizeLoopPtrOffset(IRList *irl) {
+    int change = 0;
+
+    // Find loops
+    for (IR *ir=irl->head;ir;ir=ir->next) {
+        if (IsLabel(ir) && ir->prev && ir->aux && IsJump(ir->aux) && !IsForwardJump(ir->aux)) {
+            IR *end = ir->aux;
+            // Find top add/sub
+            for(IR *top=ir->next;top&&top!=end;top=top->next) {
+                if (!IsDummy(top) 
+                && (top->opc == OPC_ADD || top->opc == OPC_SUB) 
+                && top->cond == COND_TRUE && top->src->kind == IMM_INT
+                && !HasSideEffectsOtherThanReg(top)) {
+                    // Try to find matching sub/add that's safe to move out of the loop
+                    for(IR *bot=end->prev;bot&&bot!=end;bot=bot->prev) {
+                        if (!IsDummy(bot) && 1
+                        && (bot->opc == OPC_ADD || bot->opc == OPC_SUB) 
+                        && bot->dst == top->dst && bot->src->kind == IMM_INT
+                        && bot->cond == COND_TRUE
+                        && !HasSideEffectsOtherThanReg(bot)
+                        && AddSubVal(bot) == 0-AddSubVal(top)
+                        && !UsedInRange(ir,top->prev,top->dst) && !UsedInRange(bot->next,end->prev,top->dst)
+                        && !ModifiedInRange(ir,top->prev,top->dst) && !ModifiedInRange(bot->next,end->prev,top->dst)
+                        && !ModifiedInRange(top->next,bot->prev,top->dst)) {
+                            DoReorderBlock(irl,ir->prev,top,top);
+                            DoReorderBlock(irl,end,bot,bot);
+                            change++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return change;
+}
+
 //
 // optimize for tail calls
 static int
@@ -3930,23 +3989,6 @@ static void DeleteDependencies(struct dependency **list,Operand *reg) {
         }
         tmp=next;
     }
-}
-
-static void
-DoReorderBlock(IRList *irl,IR *after,IR *top,IR *bottom) {
-    IR *above = top->prev;
-    IR *below = bottom->next;
-    // Unlink block
-    if (above) above->next = below;
-    else irl->head = below;
-    if (below) below->prev = above;
-    else irl->tail = above;
-    // Link block at new location
-    top->prev = after;
-    bottom->next = after->next;
-    if (after->next) after->next->prev = bottom;
-    else irl->tail = bottom;
-    after->next = top;
 }
 
 static struct reorder_block
@@ -4292,6 +4334,7 @@ again:
         if (flags & OPT_BASIC_REGS) {
             change |= OptimizeCompares(irl);
             change |= OptimizeAddSub(irl);
+            change |= OptimizeLoopPtrOffset(irl);
         }
         if (flags & OPT_BRANCHES) {
             change |= OptimizeShortBranches(irl);
