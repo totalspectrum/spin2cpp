@@ -915,14 +915,22 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
         }
     } else if (IsJump(ir) && !IsDummy(ir)) {
         // if the jump is to an unknown place give up
+        stack[level] = ir; // remember where we were
         if (!ir->aux) {
             // jump to return is like running off the end
             if (ir->dst == FuncData(curfunc)->asmreturnlabel && ir->cond == COND_TRUE) {
                 goto done;
             }
+            // See if this is a jump table
+            if (ir->cond == COND_TRUE && ir->next && IsLabel(ir->next) && ir->next->next && (ir->next->next->flags & FLAG_JMPTABLE_INSTR)) {
+                for (IR *entry=ir->next->next;entry&&(entry->flags&FLAG_JMPTABLE_INSTR);entry=entry->next) {
+                    if (!entry->aux) return false;
+                    if (!doIsDeadAfter((IR *)entry->aux, op, level+1, stack)) return false;
+                }
+                return true; // All branches dead
+            }
             return false;
         }
-        stack[level] = ir; // remember where we were
         if (!doIsDeadAfter((IR *)ir->aux, op, level+1, stack)) {
             return false;
         }
