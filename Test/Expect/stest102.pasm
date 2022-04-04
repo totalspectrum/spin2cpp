@@ -12,12 +12,12 @@ _set
 	add	fp, #4
 	wrlong	arg01, fp
 	sub	fp, #4
-	mov	_tmp001_, #0
-	wrlong	_tmp001_, fp
+	mov	arg01, #0
+	wrlong	arg01, fp
 	add	fp, #4
-	rdlong	_tmp001_, fp
+	rdlong	arg01, fp
 	sub	fp, #4
-	wrlong	_tmp001_, fp
+	wrlong	arg01, fp
 	wrlong	fp, objptr
 	rdlong	result1, fp
 	mov	sp, fp
@@ -54,8 +54,6 @@ objmem
 stackspace
 	long	0[1]
 	org	COG_BSS_START
-_tmp001_
-	res	1
 arg01
 	res	1
 	fit	496

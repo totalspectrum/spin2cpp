@@ -14,7 +14,7 @@ _fillInput
 	mov	_var05, objptr
 	add	_var05, imm_4096_
 	add	_var04, _var05
-	mov	_var06, imm_1024_
+	mov	_var05, imm_1024_
 LR__0001
 	wrlong	_var01, _var02
 	wrbyte	_var03, _var04
@@ -22,7 +22,7 @@ LR__0001
 	add	_var02, #4
 	add	_var03, #17
 	sub	_var04, #1
-	djnz	_var06, #LR__0001
+	djnz	_var05, #LR__0001
 _fillInput_ret
 	ret
 
@@ -48,7 +48,5 @@ _var03
 _var04
 	res	1
 _var05
-	res	1
-_var06
 	res	1
 	fit	496

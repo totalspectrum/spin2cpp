@@ -22,16 +22,16 @@ __basic_print_char
 	add	__basic_print_char__cse__0000, ptr__dat__
 	rdlong	__basic_print_char_t, __basic_print_char__cse__0000 wz
  if_e	jmp	#__basic_print_char_ret
-	rdlong	__basic_print_char_o, __basic_print_char_t
+	rdlong	__basic_print_char__cse__0000, __basic_print_char_t
 	add	__basic_print_char_t, #4
-	rdlong	__basic_print_char_f, __basic_print_char_t wz
+	rdlong	__basic_print_char_t, __basic_print_char_t wz
  if_ne	jmp	#LR__0001
 	mov	arg01, __basic_print_char_c
 	call	#__mytx
 	jmp	#LR__0002
 LR__0001
-	mov	arg01, __basic_print_char_o
-	mov	arg02, __basic_print_char_f
+	mov	arg01, __basic_print_char__cse__0000
+	mov	arg02, __basic_print_char_t
 	mov	arg03, __basic_print_char_c
 	call	#__call_method
 LR__0002
@@ -71,10 +71,6 @@ stackspace
 __basic_print_char__cse__0000
 	res	1
 __basic_print_char_c
-	res	1
-__basic_print_char_f
-	res	1
-__basic_print_char_o
 	res	1
 __basic_print_char_t
 	res	1

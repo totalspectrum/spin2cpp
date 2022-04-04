@@ -17,10 +17,10 @@ _test1
 	mov	test1_tmp002_, arg02
 	rdlong	test1_tmp003_, test1_tmp002_
 	add	test1_tmp002_, #4
-	rdlong	test1_tmp004_, test1_tmp002_
+	rdlong	test1_tmp002_, test1_tmp002_
 	mov	test1_tmp006_, objptr
 	mov	objptr, test1_tmp003_
-	call	test1_tmp004_
+	call	test1_tmp002_
 	mov	objptr, test1_tmp006_
 	mov	test1_tmp001_, result1
 	jmp	#LR__0002
@@ -79,8 +79,6 @@ test1_tmp001_
 test1_tmp002_
 	res	1
 test1_tmp003_
-	res	1
-test1_tmp004_
 	res	1
 test1_tmp006_
 	res	1

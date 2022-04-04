@@ -16,10 +16,9 @@ _tx_ret
 _str
 	mov	_str_s, arg01
 LR__0002
-	rdbyte	_str_c, _str_s wz
+	rdbyte	arg01, _str_s wz
 	add	_str_s, #1
  if_e	jmp	#LR__0004
-	mov	arg01, _str_c
 	mov	_tx__idx__0000, #4
 LR__0003
 	mov	outa, arg01
@@ -33,8 +32,6 @@ _str_ret
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_str_c
-	res	1
 _str_s
 	res	1
 _tx__idx__0000

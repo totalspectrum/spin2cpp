@@ -8,9 +8,9 @@ _testit
 	mov	_var01, imm_598_
 	add	ptr__dat__, #4
 	wrbyte	_var01, ptr__dat__
-	rdbyte	_var02, ptr__dat__
+	rdbyte	_var01, ptr__dat__
 	sub	ptr__dat__, #4
-	wrlong	_var02, ptr__dat__
+	wrlong	_var01, ptr__dat__
 _testit_ret
 	ret
 
@@ -25,7 +25,5 @@ _dat_
 	byte	$00, $00, $00, $00, $00, $00, $00, $00
 	org	COG_BSS_START
 _var01
-	res	1
-_var02
 	res	1
 	fit	496

@@ -15,18 +15,18 @@ _update_ret
 _bump
 	rdlong	arg02, objptr
 	add	objptr, #4
-	rdlong	bump_tmp002_, objptr
+	rdlong	arg01, objptr
 	sub	objptr, #4
-	add	arg02, bump_tmp002_
+	add	arg02, arg01
 	wrlong	arg02, objptr
 	add	objptr, #4
 	wrlong	arg02, objptr
 	sub	objptr, #4
 	rdlong	arg02, objptr
 	add	objptr, #4
-	rdlong	bump_tmp002_, objptr
+	rdlong	arg01, objptr
 	sub	objptr, #4
-	add	arg02, bump_tmp002_
+	add	arg02, arg01
 	wrlong	arg02, objptr
 	add	objptr, #4
 	wrlong	arg02, objptr
@@ -44,7 +44,5 @@ objmem
 arg01
 	res	1
 arg02
-	res	1
-bump_tmp002_
 	res	1
 	fit	496

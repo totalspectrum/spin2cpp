@@ -8,12 +8,12 @@ _hyp
 	mov	muldiva_, arg01
 	mov	muldivb_, arg01
 	call	#unsmultiply_
-	mov	_var01, muldiva_
+	mov	arg01, muldiva_
 	mov	muldiva_, arg02
 	mov	muldivb_, arg02
 	call	#unsmultiply_
-	add	_var01, muldiva_
-	mov	result1, _var01
+	add	arg01, muldiva_
+	mov	result1, arg01
 _hyp_ret
 	ret
 
@@ -51,8 +51,6 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_var01
-	res	1
 arg01
 	res	1
 arg02

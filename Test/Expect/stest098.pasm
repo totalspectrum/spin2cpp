@@ -31,9 +31,9 @@ LR__0001
  if_ae	djnz	_var03, #LR__0001
 	sub	_var03, #23
 	mov	_var01, _var03
-	mov	_var04, #7
-	sub	_var04, _var03
-	shl	arg01, _var04
+	mov	_var02, #7
+	sub	_var02, _var03
+	shl	arg01, _var02
 LR__0002
 	sub	_var01, #127
 	cmp	arg02, #0 wz
@@ -56,8 +56,6 @@ _var01
 _var02
 	res	1
 _var03
-	res	1
-_var04
 	res	1
 arg01
 	res	1

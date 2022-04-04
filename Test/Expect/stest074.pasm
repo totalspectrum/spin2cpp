@@ -19,11 +19,11 @@ LR__0001
 	rdlong	_tmp003_, _get__cse__0000
 	add	_tmp001_, fp
 	wrlong	_tmp003_, _tmp001_
-	mov	_tmp002_, _get_i
-	shl	_tmp002_, #2
-	add	_tmp002_, fp
-	rdlong	_tmp004_, _tmp002_
-	add	_get_sum, _tmp004_
+	mov	_tmp003_, _get_i
+	shl	_tmp003_, #2
+	add	_tmp003_, fp
+	rdlong	_tmp003_, _tmp003_
+	add	_get_sum, _tmp003_
 	add	_get_i, #1
 	add	_get__cse__0000, #4
 	cmps	_get_i, #10 wc
@@ -59,10 +59,6 @@ _get_sum
 	res	1
 _tmp001_
 	res	1
-_tmp002_
-	res	1
 _tmp003_
-	res	1
-_tmp004_
 	res	1
 	fit	496

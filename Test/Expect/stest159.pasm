@@ -9,8 +9,8 @@ _demo
 	add	sp, #4
 	mov	fp, sp
 	add	sp, #8
-	mov	demo_tmp001_, #0
-	wrlong	demo_tmp001_, fp
+	mov	arg02, #0
+	wrlong	arg02, fp
 	mov	arg02, #1
 	wrbyte	arg02, fp
 	rdlong	result1, fp
@@ -39,7 +39,5 @@ stackspace
 arg01
 	res	1
 arg02
-	res	1
-demo_tmp001_
 	res	1
 	fit	496

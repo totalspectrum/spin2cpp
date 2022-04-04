@@ -16,9 +16,9 @@ LR__0001
 	shr	arg01, #1 wc
 	muxc	outb, _var02
 	djnz	_var03, #LR__0001
-	mov	_var04, #1
-	shl	_var04, _var01
-	or	outb, _var04
+	mov	_var03, #1
+	shl	_var03, _var01
+	or	outb, _var03
 _send_ret
 	ret
 
@@ -34,8 +34,6 @@ _var01
 _var02
 	res	1
 _var03
-	res	1
-_var04
 	res	1
 arg01
 	res	1

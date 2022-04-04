@@ -10,9 +10,9 @@ _main
 LR__0001
 	xor	outa, #1
 	djnz	_var02, #LR__0001
-	mov	_var03, cnt
-	sub	_var03, _var01
-	mov	dira, _var03
+	mov	_var02, cnt
+	sub	_var02, _var01
+	mov	dira, _var02
 _main_ret
 	ret
 
@@ -24,7 +24,5 @@ COG_BSS_START
 _var01
 	res	1
 _var02
-	res	1
-_var03
 	res	1
 	fit	496

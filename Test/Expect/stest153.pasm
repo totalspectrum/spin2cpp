@@ -6,13 +6,13 @@ entry
 
 _blah
 	rdlong	blah_tmp004_, ptr__dat__
-	rdlong	blah_tmp001_, blah_tmp004_
-	rdlong	blah_tmp002_, blah_tmp001_
-	add	blah_tmp001_, #4
-	rdlong	blah_tmp003_, blah_tmp001_
+	rdlong	blah_tmp004_, blah_tmp004_
+	rdlong	blah_tmp002_, blah_tmp004_
+	add	blah_tmp004_, #4
+	rdlong	blah_tmp004_, blah_tmp004_
 	mov	blah_tmp006_, objptr
 	mov	objptr, blah_tmp002_
-	call	blah_tmp003_
+	call	blah_tmp004_
 	mov	objptr, blah_tmp006_
 _blah_ret
 	ret
@@ -31,11 +31,7 @@ _dat_
 objmem
 	long	0[0]
 	org	COG_BSS_START
-blah_tmp001_
-	res	1
 blah_tmp002_
-	res	1
-blah_tmp003_
 	res	1
 blah_tmp004_
 	res	1

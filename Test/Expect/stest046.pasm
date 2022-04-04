@@ -5,12 +5,12 @@ dat
 entry
 
 _ez_pulse_in
-	mov	_ez_pulse_in_r, #1
-	shl	_ez_pulse_in_r, arg01
-	waitpne	_ez_pulse_in_r, _ez_pulse_in_r
-	waitpeq	_ez_pulse_in_r, _ez_pulse_in_r
+	mov	muldivb_, #1
+	shl	muldivb_, arg01
+	waitpne	muldivb_, muldivb_
+	waitpeq	muldivb_, muldivb_
 	neg	muldiva_, cnt
-	waitpne	_ez_pulse_in_r, _ez_pulse_in_r
+	waitpne	muldivb_, muldivb_
 	add	muldiva_, cnt
 	mov	muldivb_, imm_1000000_
 	call	#divide_
@@ -63,8 +63,6 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_ez_pulse_in_r
-	res	1
 arg01
 	res	1
 arg02

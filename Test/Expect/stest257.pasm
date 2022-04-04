@@ -7,8 +7,8 @@ entry
 _fetch1
 	rdlong	result1, arg01
 	add	arg01, #4
-	rdlong	_var03, arg01
-	mov	_var02, _var03
+	rdlong	arg01, arg01
+	mov	_var02, arg01
 	mov	result2, _var02
 _fetch1_ret
 	ret
@@ -16,8 +16,8 @@ _fetch1_ret
 _fetch2
 	rdlong	result1, arg01
 	add	arg01, #4
-	rdlong	_var03, arg01
-	mov	_var02, _var03
+	rdlong	arg01, arg01
+	mov	_var02, arg01
 	mov	result2, _var02
 _fetch2_ret
 	ret
@@ -32,8 +32,6 @@ COG_BSS_START
 _var01
 	res	1
 _var02
-	res	1
-_var03
 	res	1
 arg01
 	res	1

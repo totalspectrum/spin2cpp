@@ -15,10 +15,10 @@ _checkit
 	mov	checkit_tmp001_, __recvreg
 	rdlong	checkit_tmp002_, checkit_tmp001_
 	add	checkit_tmp001_, #4
-	rdlong	checkit_tmp003_, checkit_tmp001_
+	rdlong	checkit_tmp001_, checkit_tmp001_
 	mov	checkit_tmp005_, objptr
 	mov	objptr, checkit_tmp002_
-	call	checkit_tmp003_
+	call	checkit_tmp001_
 	mov	objptr, checkit_tmp005_
 	mov	outa, result1
 _checkit_ret
@@ -55,8 +55,6 @@ objmem
 checkit_tmp001_
 	res	1
 checkit_tmp002_
-	res	1
-checkit_tmp003_
 	res	1
 checkit_tmp005_
 	res	1

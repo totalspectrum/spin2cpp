@@ -30,9 +30,9 @@ LR__0001
  if_ae	djnz	_tmp001_, #LR__0001
 	sub	_tmp001_, #23
 	mov	__system___float_Unpack_x, _tmp001_
-	mov	__system___float_Unpack__cse__0006, #7
-	sub	__system___float_Unpack__cse__0006, _tmp001_
-	shl	arg01, __system___float_Unpack__cse__0006
+	mov	_tmp002_, #7
+	sub	_tmp002_, _tmp001_
+	shl	arg01, _tmp002_
 LR__0002
 	sub	__system___float_Unpack_x, #127
 	mov	result3, arg01
@@ -74,8 +74,6 @@ result3
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-__system___float_Unpack__cse__0006
-	res	1
 __system___float_Unpack_s
 	res	1
 __system___float_Unpack_x

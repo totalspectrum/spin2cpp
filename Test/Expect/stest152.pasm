@@ -6,9 +6,9 @@ entry
 
 _foo
 	mov	_var01, #99
-	mov	_var02, arg01 wz
+	mov	arg01, arg01 wz
  if_e	jmp	#LR__0001
-	cmp	_var02, #1 wz
+	cmp	arg01, #1 wz
  if_e	jmp	#LR__0002
 	jmp	#LR__0003
 LR__0001
@@ -27,8 +27,6 @@ COG_BSS_START
 	fit	496
 	org	COG_BSS_START
 _var01
-	res	1
-_var02
 	res	1
 arg01
 	res	1

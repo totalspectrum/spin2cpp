@@ -12,21 +12,21 @@ dat
 entry
 
 _set1
-	decod	_var01, arg02
+	decod	arg02, arg02
 	add	objptr, #5
-	rdbyte	_var02, objptr
-	or	_var02, _var01
-	wrbyte	_var02, objptr
+	rdbyte	_var01, objptr
+	or	_var01, arg02
+	wrbyte	_var01, objptr
 	sub	objptr, #5
 _set1_ret
 	ret
 
 _set2
 	add	arg01, objptr
-	decod	_var01, arg02
-	rdbyte	_var02, arg01
-	or	_var02, _var01
-	wrbyte	_var02, arg01
+	decod	arg02, arg02
+	rdbyte	_var01, arg01
+	or	_var01, arg02
+	wrbyte	_var01, arg01
 _set2_ret
 	ret
 builtin_bytefill_
@@ -55,8 +55,6 @@ objmem
 	long	0[2]
 	org	COG_BSS_START
 _var01
-	res	1
-_var02
 	res	1
 arg01
 	res	1

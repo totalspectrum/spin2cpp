@@ -7,10 +7,9 @@ entry
 _setptr2
 	mov	_setptr2_c, arg01
 	call	#_nextidx
-	mov	setptr2_tmp003_, result1
-	shl	setptr2_tmp003_, #2
+	shl	result1, #2
 	mov	setptr2_tmp001_, #44
-	add	setptr2_tmp001_, setptr2_tmp003_
+	add	setptr2_tmp001_, result1
 	mov	arg01, _setptr2_c
 	add	objptr, setptr2_tmp001_
 	call	#_pinobj_tx
@@ -60,7 +59,5 @@ _var02
 arg01
 	res	1
 setptr2_tmp001_
-	res	1
-setptr2_tmp003_
 	res	1
 	fit	496

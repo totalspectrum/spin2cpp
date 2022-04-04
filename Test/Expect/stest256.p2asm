@@ -42,11 +42,11 @@ LR__0003
  if_e	qdiv	__system___waitms_freq, ##1000
 	sub	ptr___system__dat__, #12
 	cmps	__system___waitms_m, #1 wc
- if_e	getqx	__system___waitms__temp__0000
- if_e	mov	__system___waitms_freqms, __system___waitms__temp__0000
+ if_e	getqx	__system___waitms_freq
+ if_e	mov	__system___waitms_freqms, __system___waitms_freq
  if_ae	qmul	__system___waitms_m, __system___waitms_freqms
  if_e	add	ptr___system__dat__, #12
- if_e	wrlong	__system___waitms__temp__0000, ptr___system__dat__
+ if_e	wrlong	__system___waitms_freq, ptr___system__dat__
  if_e	sub	ptr___system__dat__, #12
  if_ae	getqx	arg01
  if_ae	waitx	arg01
@@ -79,8 +79,6 @@ __system__dat_
 	byte	$00[8]
 	byte	$03, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
 	org	COG_BSS_START
-__system___waitms__temp__0000
-	res	1
 __system___waitms_freq
 	res	1
 __system___waitms_freqms

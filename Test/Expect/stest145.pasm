@@ -15,8 +15,8 @@ _msg_ret
 	ret
 
 _init
-	mov	init_tmp001_, #8
-	wrlong	init_tmp001_, ptr__dat__
+	mov	arg01, #8
+	wrlong	arg01, ptr__dat__
 	mov	init_tmp001_, ptr__dat__
 	mov	arg01, #0
 	mov	init_tmp003_, objptr
