@@ -8,13 +8,11 @@ _doit
 	mov	_var01, arg01
 LR__0001
 	cmp	_var01, arg01 wc,wz
- if_a	jmp	#LR__0002
-	mov	_var02, #1
-	shl	_var02, _var01
-	or	outa, _var02
-	sub	_var01, #1
-	jmp	#LR__0001
-LR__0002
+ if_be	mov	_var02, #1
+ if_be	shl	_var02, _var01
+ if_be	or	outa, _var02
+ if_be	sub	_var01, #1
+ if_be	jmp	#LR__0001
 _doit_ret
 	ret
 

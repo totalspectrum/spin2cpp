@@ -6,16 +6,13 @@ entry
 
 __float_fromuns
 	cmp	arg01, #0 wz
- if_e	jmp	#LR__0001
-	mov	_var01, arg01
-	and	_var01, #15
-	shr	arg01, #2
-	mov	result1, #0
-	or	result1, _var01
-	or	result1, arg01
-	jmp	#__float_fromuns_ret
-LR__0001
-	mov	result1, #0
+ if_ne	mov	_var01, arg01
+ if_ne	and	_var01, #15
+ if_ne	shr	arg01, #2
+ if_ne	mov	result1, #0
+ if_ne	or	result1, _var01
+ if_ne	or	result1, arg01
+ if_e	mov	result1, #0
 __float_fromuns_ret
 	ret
 

@@ -10,11 +10,9 @@ LR__0001
 	mov	_var02, ina
 	and	_var02, #255
 	cmp	_var02, #121 wz
- if_e	jmp	#LR__0002
-	cmp	_var02, #89 wz
+ if_ne	cmp	_var02, #89 wz
  if_ne	add	_var01, #1
  if_ne	jmp	#LR__0001
-LR__0002
 	mov	muldiva_, _var01
 	mov	muldivb_, #27
 	call	#unsmultiply_

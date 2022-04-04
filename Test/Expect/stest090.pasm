@@ -13,13 +13,11 @@ _proc1
 	add	_var03, arg01
 LR__0001
 	cmps	_var01, #1 wc
- if_b	jmp	#LR__0002
-	rdlong	_var04, _var03
-	add	_var02, _var04
-	sub	_var01, #1
-	sub	_var03, #4
-	jmp	#LR__0001
-LR__0002
+ if_ae	rdlong	_var04, _var03
+ if_ae	add	_var02, _var04
+ if_ae	sub	_var01, #1
+ if_ae	sub	_var03, #4
+ if_ae	jmp	#LR__0001
 	add	_var02, arg02
 	wrlong	_var02, arg01
 _proc1_ret
