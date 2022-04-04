@@ -773,7 +773,7 @@ static bool ModifiedInRange(IR *start,IR *end,Operand *reg) {
             offset += AddSubVal(ir);
         } else if (ir->opc == OPC_CALL) {
             if (IsArg(reg)||isResult(reg)) return true;
-        } else if (InstrModifies(ir,reg)||IsLabel(ir)) return true;
+        } else if (InstrModifies(ir,reg)||IsBranch(ir)||IsLabel(ir)) return true;
     }
     return offset != 0;
 }
@@ -3775,25 +3775,28 @@ OptimizeLoopPtrOffset(IRList *irl) {
         if (IsLabel(ir) && ir->prev && ir->aux && IsJump(ir->aux) && !IsForwardJump(ir->aux)) {
             IR *end = ir->aux;
             // Find top add/sub
-            for(IR *top=ir->next;top&&top!=end;top=top->next) {
+            IR *nexttop;
+            for(IR *top=ir->next;top&&top!=end;top=nexttop) {
+                nexttop = top->next;
                 if (!IsDummy(top) 
                 && (top->opc == OPC_ADD || top->opc == OPC_SUB) 
                 && top->cond == COND_TRUE && top->src->kind == IMM_INT
                 && !HasSideEffectsOtherThanReg(top)) {
                     // Try to find matching sub/add that's safe to move out of the loop
-                    for(IR *bot=end->prev;bot&&bot!=end;bot=bot->prev) {
+                    for(IR *bot=end->prev;bot&&bot!=top;bot=bot->prev) {
                         if (!IsDummy(bot) && 1
                         && (bot->opc == OPC_ADD || bot->opc == OPC_SUB) 
                         && bot->dst == top->dst && bot->src->kind == IMM_INT
                         && bot->cond == COND_TRUE
                         && !HasSideEffectsOtherThanReg(bot)
                         && AddSubVal(bot) == 0-AddSubVal(top)
-                        && !UsedInRange(ir,top->prev,top->dst) && !UsedInRange(bot->next,end->prev,top->dst)
-                        && !ModifiedInRange(ir,top->prev,top->dst) && !ModifiedInRange(bot->next,end->prev,top->dst)
+                        && !UsedInRange(ir->next,top->prev,top->dst) && !UsedInRange(bot->next,end->prev,top->dst)
+                        && !ModifiedInRange(ir->next,top->prev,top->dst) && !ModifiedInRange(bot->next,end->prev,top->dst)
                         && !ModifiedInRange(top->next,bot->prev,top->dst)) {
                             DoReorderBlock(irl,ir->prev,top,top);
                             DoReorderBlock(irl,end,bot,bot);
                             change++;
+                            break;
                         }
                     }
                 }
