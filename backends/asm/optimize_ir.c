@@ -773,7 +773,7 @@ static bool ModifiedInRange(IR *start,IR *end,Operand *reg) {
             offset += AddSubVal(ir);
         } else if (ir->opc == OPC_CALL) {
             if (IsArg(reg)||isResult(reg)) return true;
-        } else if (InstrModifies(ir,reg)||IsBranch(ir)) return true;
+        } else if (InstrModifies(ir,reg)||IsLabel(ir)) return true;
     }
     return offset != 0;
 }
