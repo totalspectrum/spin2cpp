@@ -6,11 +6,9 @@ entry
 
 __float_fromuns
 	cmp	arg01, #0 wz
- if_ne	mov	_var01, arg01
- if_ne	and	_var01, #15
+ if_ne	mov	result1, arg01
+ if_ne	and	result1, #15
  if_ne	shr	arg01, #2
- if_ne	mov	result1, #0
- if_ne	or	result1, _var01
  if_ne	or	result1, arg01
  if_e	mov	result1, #0
 __float_fromuns_ret
@@ -35,8 +33,6 @@ COG_BSS_START
 	fit	496
 	org	COG_BSS_START
 __float_fromint_negate
-	res	1
-_var01
 	res	1
 arg01
 	res	1
