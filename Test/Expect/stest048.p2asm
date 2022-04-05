@@ -18,11 +18,10 @@ LR__0001
 	testp	arg01 wc
  if_ae	jmp	#LR__0001
 LR__0002
-	getct	_getpulse_delay
+	getct	result1
 	testp	arg01 wc
  if_b	jmp	#LR__0002
-	sub	_getpulse_delay, _getpulse_t0
-	mov	result1, _getpulse_delay
+	sub	result1, _getpulse_t0
 _getpulse_ret
 	ret
 builtin_bytefill_
@@ -48,8 +47,6 @@ COG_BSS_START
 	fit	480
 	orgh
 	org	COG_BSS_START
-_getpulse_delay
-	res	1
 _getpulse_t0
 	res	1
 arg01

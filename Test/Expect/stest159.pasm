@@ -9,8 +9,8 @@ _demo
 	add	sp, #4
 	mov	fp, sp
 	add	sp, #8
-	mov	arg02, #0
-	wrlong	arg02, fp
+	mov	result1, #0
+	wrlong	result1, fp
 	mov	arg02, #1
 	wrbyte	arg02, fp
 	rdlong	result1, fp

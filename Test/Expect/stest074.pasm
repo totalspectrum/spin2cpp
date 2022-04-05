@@ -13,12 +13,12 @@ _get
 	mov	_get__cse__0000, objptr
 	mov	_get_i, #0
 LR__0001
-	mov	_tmp001_, _get_i
-	shl	_tmp001_, #2
+	mov	result1, _get_i
+	shl	result1, #2
 	add	fp, #4
 	rdlong	_tmp003_, _get__cse__0000
-	add	_tmp001_, fp
-	wrlong	_tmp003_, _tmp001_
+	add	result1, fp
+	wrlong	_tmp003_, result1
 	mov	_tmp003_, _get_i
 	shl	_tmp003_, #2
 	add	_tmp003_, fp
@@ -56,8 +56,6 @@ _get__cse__0000
 _get_i
 	res	1
 _get_sum
-	res	1
-_tmp001_
 	res	1
 _tmp003_
 	res	1

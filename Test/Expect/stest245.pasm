@@ -5,13 +5,13 @@ dat
 entry
 
 _get
-	mov	_var01, arg01
-	shl	_var01, #1
-	add	_var01, arg01
-	shl	_var01, #2
-	add	_var01, ptr__dat__
-	add	_var01, #4
-	rdlong	result1, _var01
+	mov	result1, arg01
+	shl	result1, #1
+	add	result1, arg01
+	shl	result1, #2
+	add	result1, ptr__dat__
+	add	result1, #4
+	rdlong	result1, result1
 _get_ret
 	ret
 
@@ -26,8 +26,6 @@ _dat_
 	byte	$01, $02, $00, $00, $03, $00, $00, $00, $04, $00, $00, $00, $11, $12, $00, $00
 	byte	$13, $00, $00, $00, $14, $00, $00, $00
 	org	COG_BSS_START
-_var01
-	res	1
 arg01
 	res	1
 	fit	496

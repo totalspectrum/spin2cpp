@@ -9,8 +9,8 @@ _total
 	mov	_var02, ptr__dat__
 	mov	_var03, #4
 LR__0001
-	rdlong	_var04, _var02
-	add	_var01, _var04
+	rdlong	result1, _var02
+	add	_var01, result1
 	add	_var02, #4
 	djnz	_var03, #LR__0001
 	mov	result1, _var01
@@ -32,7 +32,5 @@ _var01
 _var02
 	res	1
 _var03
-	res	1
-_var04
 	res	1
 	fit	496

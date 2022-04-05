@@ -7,7 +7,7 @@ entry
 _mystrlen
 	mov	_var01, arg01
 LR__0001
-	rdbyte	_var02, _var01 wz
+	rdbyte	result1, _var01 wz
  if_ne	add	_var01, #1
  if_ne	jmp	#LR__0001
 	sub	_var01, arg01
@@ -31,8 +31,6 @@ COG_BSS_START
 	fit	496
 	org	COG_BSS_START
 _var01
-	res	1
-_var02
 	res	1
 arg01
 	res	1

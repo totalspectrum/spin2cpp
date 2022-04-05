@@ -12,11 +12,11 @@ dat
 entry
 
 _xoro_test
-	rdlong	_var01, arg01
-	xoro32	_var01
-	mov	_var02, 0
-	wrlong	_var01, arg01
-	mov	result1, _var02
+	rdlong	result1, arg01
+	xoro32	result1
+	mov	_var01, 0
+	wrlong	result1, arg01
+	mov	result1, _var01
 _xoro_test_ret
 	ret
 builtin_bytefill_
@@ -43,8 +43,6 @@ COG_BSS_START
 	orgh
 	org	COG_BSS_START
 _var01
-	res	1
-_var02
 	res	1
 arg01
 	res	1

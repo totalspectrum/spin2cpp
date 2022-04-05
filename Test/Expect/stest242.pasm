@@ -14,9 +14,9 @@ _lfs_trunc
 	add	result1, arg01
 	wrlong	result1, _lfs_trunc_ctz
 	add	_lfs_trunc_ctz, #4
-	rdlong	arg01, _lfs_trunc_ctz
-	and	arg01, #1
-	wrlong	arg01, _lfs_trunc_ctz
+	rdlong	result1, _lfs_trunc_ctz
+	and	result1, #1
+	wrlong	result1, _lfs_trunc_ctz
 _lfs_trunc_ret
 	ret
 

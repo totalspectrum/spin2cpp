@@ -7,7 +7,7 @@ entry
 _foo
 	mov	_var01, #0
 LR__0001
-	rdbyte	_var02, arg01 wz
+	rdbyte	result1, arg01 wz
  if_ne	add	arg01, #1
  if_ne	add	_var01, #1
  if_ne	jmp	#LR__0001
@@ -33,8 +33,6 @@ LR__0002
 	byte	0
 	org	COG_BSS_START
 _var01
-	res	1
-_var02
 	res	1
 arg01
 	res	1

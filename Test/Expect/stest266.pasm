@@ -5,10 +5,10 @@ dat
 entry
 
 _byteextend1
-	rdlong	_var01, arg01
-	shl	_var01, #16
-	sar	_var01, #16
-	wrlong	_var01, arg01
+	rdlong	result1, arg01
+	shl	result1, #16
+	sar	result1, #16
+	wrlong	result1, arg01
 	add	arg01, #1
 	mov	result1, arg01
 _byteextend1_ret

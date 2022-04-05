@@ -68,8 +68,8 @@ __system____builtin_memmove
 	mov	_var02, arg03 wz
  if_e	jmp	#LR__0007
 LR__0003
-	rdbyte	arg03, arg02
-	wrbyte	arg03, arg01
+	rdbyte	result1, arg02
+	wrbyte	result1, arg01
 	add	arg01, #1
 	add	arg02, #1
 	djnz	_var02, #LR__0003
@@ -126,40 +126,40 @@ __system___gc_ptrs
 	mov	__system___gc_ptrs_base, __heap_ptr
 	mov	__system___gc_ptrs_end, __system___gc_ptrs_base
 	add	__system___gc_ptrs_end, imm_1016_
-	rdlong	_system___gc_ptrs_tmp001_, __system___gc_ptrs_base wz
+	rdlong	result2, __system___gc_ptrs_base wz
  if_ne	jmp	#LR__0009
-	mov	__system___gc_ptrs_size, __system___gc_ptrs_end
-	sub	__system___gc_ptrs_size, __system___gc_ptrs_base
-	mov	_system___gc_ptrs_tmp001_, #1
-	wrword	_system___gc_ptrs_tmp001_, __system___gc_ptrs_base
-	mov	__system___gc_ptrs__cse__0004, __system___gc_ptrs_base
-	add	__system___gc_ptrs__cse__0004, #2
+	mov	result2, __system___gc_ptrs_end
+	sub	result2, __system___gc_ptrs_base
+	mov	result1, #1
+	wrword	result1, __system___gc_ptrs_base
+	mov	result1, __system___gc_ptrs_base
+	add	result1, #2
 	mov	_system___gc_ptrs_tmp001_, imm_27792_
-	wrword	_system___gc_ptrs_tmp001_, __system___gc_ptrs__cse__0004
-	mov	__system___gc_ptrs__cse__0004, __system___gc_ptrs_base
-	add	__system___gc_ptrs__cse__0004, #4
+	wrword	_system___gc_ptrs_tmp001_, result1
+	mov	result1, __system___gc_ptrs_base
+	add	result1, #4
 	mov	_system___gc_ptrs_tmp001_, #0
-	wrword	_system___gc_ptrs_tmp001_, __system___gc_ptrs__cse__0004
-	mov	__system___gc_ptrs__cse__0004, __system___gc_ptrs_base
-	add	__system___gc_ptrs__cse__0004, #6
+	wrword	_system___gc_ptrs_tmp001_, result1
+	mov	result1, __system___gc_ptrs_base
+	add	result1, #6
 	mov	_system___gc_ptrs_tmp001_, #1
-	wrword	_system___gc_ptrs_tmp001_, __system___gc_ptrs__cse__0004
+	wrword	_system___gc_ptrs_tmp001_, result1
 	add	__system___gc_ptrs_base, #16
-	abs	_system___gc_ptrs_tmp001_, __system___gc_ptrs_size wc
+	abs	_system___gc_ptrs_tmp001_, result2 wc
 	shr	_system___gc_ptrs_tmp001_, #4
-	negc	__system___gc_ptrs__cse__0004, _system___gc_ptrs_tmp001_
-	wrword	__system___gc_ptrs__cse__0004, __system___gc_ptrs_base
-	mov	__system___gc_ptrs__cse__0004, __system___gc_ptrs_base
-	add	__system___gc_ptrs__cse__0004, #2
+	negc	_system___gc_ptrs_tmp001_, _system___gc_ptrs_tmp001_
+	wrword	_system___gc_ptrs_tmp001_, __system___gc_ptrs_base
+	mov	result2, __system___gc_ptrs_base
+	add	result2, #2
 	mov	_system___gc_ptrs_tmp001_, imm_27791_
-	wrword	_system___gc_ptrs_tmp001_, __system___gc_ptrs__cse__0004
-	mov	__system___gc_ptrs__cse__0004, __system___gc_ptrs_base
-	add	__system___gc_ptrs__cse__0004, #4
+	wrword	_system___gc_ptrs_tmp001_, result2
+	mov	result2, __system___gc_ptrs_base
+	add	result2, #4
 	mov	_system___gc_ptrs_tmp001_, #0
-	wrword	_system___gc_ptrs_tmp001_, __system___gc_ptrs__cse__0004
-	mov	__system___gc_ptrs__cse__0004, __system___gc_ptrs_base
-	add	__system___gc_ptrs__cse__0004, #6
-	wrword	_system___gc_ptrs_tmp001_, __system___gc_ptrs__cse__0004
+	wrword	_system___gc_ptrs_tmp001_, result2
+	mov	result2, __system___gc_ptrs_base
+	add	result2, #6
+	wrword	_system___gc_ptrs_tmp001_, result2
 	sub	__system___gc_ptrs_base, #16
 LR__0009
 	mov	result2, __system___gc_ptrs_end
@@ -433,8 +433,8 @@ __system___gc_dofree
 	mov	__system___gc_dofree_heapbase, result1
 	mov	__system___gc_dofree__cse__0000, __system___gc_dofree_ptr
 	add	__system___gc_dofree__cse__0000, #2
-	mov	arg01, imm_27791_
-	wrword	arg01, __system___gc_dofree__cse__0000
+	mov	result1, imm_27791_
+	wrword	result1, __system___gc_dofree__cse__0000
 	mov	__system___gc_dofree_prevptr, __system___gc_dofree_ptr
 	mov	arg01, __system___gc_dofree_ptr
 	call	#__system___gc_nextBlockPtr
@@ -884,13 +884,9 @@ __system___gc_nextBlockPtr_ptr
 	res	1
 __system___gc_nextBlockPtr_t
 	res	1
-__system___gc_ptrs__cse__0004
-	res	1
 __system___gc_ptrs_base
 	res	1
 __system___gc_ptrs_end
-	res	1
-__system___gc_ptrs_size
 	res	1
 __system___gc_tryalloc__cse__0000
 	res	1

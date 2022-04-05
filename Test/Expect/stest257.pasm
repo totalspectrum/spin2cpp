@@ -7,8 +7,8 @@ entry
 _fetch1
 	rdlong	result1, arg01
 	add	arg01, #4
-	rdlong	arg01, arg01
-	mov	_var02, arg01
+	rdlong	result2, arg01
+	mov	_var02, result2
 	mov	result2, _var02
 _fetch1_ret
 	ret
@@ -16,8 +16,8 @@ _fetch1_ret
 _fetch2
 	rdlong	result1, arg01
 	add	arg01, #4
-	rdlong	arg01, arg01
-	mov	_var02, arg01
+	rdlong	result2, arg01
+	mov	_var02, result2
 	mov	result2, _var02
 _fetch2_ret
 	ret

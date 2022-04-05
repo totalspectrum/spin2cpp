@@ -5,7 +5,7 @@ dat
 entry
 
 _stepif
-	rdlong	_var01, arg01 wz
+	rdlong	result1, arg01 wz
  if_ne	add	arg01, #4
  if_ne	rdlong	arg01, arg01
 	mov	result1, arg01

@@ -5,11 +5,11 @@ dat
 entry
 
 _blah
-	rdlong	_var01, ptr__dat__
-	mov	_var02, _var01
-	add	_var02, #1
-	wrlong	_var02, ptr__dat__
-	rdbyte	result1, _var01
+	rdlong	result1, ptr__dat__
+	mov	_var01, result1
+	add	_var01, #1
+	wrlong	_var01, ptr__dat__
+	rdbyte	result1, result1
 _blah_ret
 	ret
 
@@ -25,7 +25,5 @@ _dat_
 	byte	$68, $65, $6c, $6c, $6f, $00, $00, $00
 	org	COG_BSS_START
 _var01
-	res	1
-_var02
 	res	1
 	fit	496

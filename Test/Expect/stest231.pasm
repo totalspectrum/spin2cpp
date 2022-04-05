@@ -23,11 +23,11 @@ _i64_ret
 
 _shl64
 	shl	arg01, arg04
-	mov	_var01, #32
-	sub	_var01, arg04
-	mov	_var02, arg02
-	shr	_var02, _var01
-	or	arg01, _var02
+	mov	result1, #32
+	sub	result1, arg04
+	mov	result2, arg02
+	shr	result2, result1
+	or	arg01, result2
 	shl	arg02, arg04
 	mov	result2, arg02
 	mov	result1, arg01
@@ -51,10 +51,6 @@ result2
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_var01
-	res	1
-_var02
-	res	1
 arg01
 	res	1
 arg02

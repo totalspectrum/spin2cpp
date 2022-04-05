@@ -12,12 +12,12 @@ _set
 	add	fp, #4
 	wrlong	arg01, fp
 	sub	fp, #4
-	mov	arg01, #0
-	wrlong	arg01, fp
+	mov	result1, #0
+	wrlong	result1, fp
 	add	fp, #4
-	rdlong	arg01, fp
+	rdlong	result1, fp
 	sub	fp, #4
-	wrlong	arg01, fp
+	wrlong	result1, fp
 	wrlong	fp, objptr
 	rdlong	result1, fp
 	mov	sp, fp
