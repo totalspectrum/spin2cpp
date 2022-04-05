@@ -2930,8 +2930,6 @@ void InitPreprocessor(const char **argv)
         progname = gl_prognamebuf;
     }
     strcpy(progname, "../include");
-    pp_add_to_path(&gl_pp, gl_prognamebuf);
-
     // check for environment variables
     envpath = getenv("FLEXCC_INCLUDE_PATH");
     if (!envpath) {
@@ -2958,6 +2956,11 @@ void SetPreprocessorLanguage(int language)
         pp_setcomments(&gl_pp, "\'", "{", "}");
         //pp_setlinedirective(&gl_pp, "{#line %d %s}");   
     }
+}
+
+char *DefaultIncludeDir()
+{
+    return gl_prognamebuf;
 }
 
 #ifdef NOTUSED

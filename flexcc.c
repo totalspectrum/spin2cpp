@@ -75,6 +75,7 @@ Usage(FILE *f)
     fprintf(f, "  [ --lmm=xxx ]      use alternate LMM implementation for P1\n");
     fprintf(f, "           xxx = orig uses original flexspin LMM\n");
     fprintf(f, "           xxx = slow uses traditional (slow) LMM\n");
+    fprintf(f, "  [ --nostdlib]      skip searching in the standard library location for include files\n");
     fprintf(f, "  [ --verbose ]      print additional diagnostic messages\n");
     fprintf(f, "  [ --version ]      just show compiler version\n");
     
@@ -250,6 +251,9 @@ main(int argc, const char **argv)
         } else if (!strcmp(argv[0], "--nocolor")) {
             gl_colorize_output = false;
             argv++; --argc;
+        } else if (!strcmp(argv[0], "--nostdlib")) {
+            gl_nostdlib = 1;
+            argv++; --argc;
         } else if (!strcmp(argv[0], "--verbose")) {
             gl_verbosity = 1;
             argv++; --argc;
@@ -393,6 +397,11 @@ main(int argc, const char **argv)
             fprintf(stderr, "Unrecognized option: %s\n", argv[0]);
             Usage(stderr);
         }
+    }
+    
+    // add default path, if applicable
+    if (!gl_nostdlib) {
+        pp_add_to_path(&gl_pp, DefaultIncludeDir());
     }
     
     if (!cmd->quiet) {

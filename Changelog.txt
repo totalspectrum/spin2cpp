@@ -1,6 +1,7 @@
 Version 5.9.10
 - Added a LOT of helpful optimizations contributed by Ada Gottensträter
 - Added __HAVE_FCACHE__ define if FCACHE is enabled (also contributed by Ada)
+- Added --nostdlib flag to suppress default include files
 - Actually fail compilation if a preprocessor #error directive is found in Spin
 - Fixed some bugs in time related functions
 - Fixed FCACHE not being enabled during system module compilation

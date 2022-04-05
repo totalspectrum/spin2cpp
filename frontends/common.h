@@ -210,6 +210,7 @@ extern int gl_exit_status;   /* after exit return exit code via special sequence
 extern int gl_relocatable;   /* 1 for position independent output */
 
 extern int gl_useFullPaths;  /* 1 if file name errors should use absolute paths */
+extern int gl_nostdlib;      /* 1 if standard include path should not be checked */
 
 /* LMM kind selected */
 extern int gl_lmm_kind;
@@ -740,6 +741,7 @@ int DoPropellerPostprocess(const char *fname, size_t eepromSize);
 void Init();
 void InitPreprocessor(const char *argv[]);
 void SetPreprocessorLanguage(int language);
+char *DefaultIncludeDir();
 
 // perform various high level optimizations
 void DoHighLevelOptimize(Module *P);

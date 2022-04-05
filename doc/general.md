@@ -486,6 +486,7 @@ There are various command line options for the compiler which may modify the com
   [ --lmm=xxx ]      use alternate LMM implementation for P1
            xxx = orig uses original flexspin LMM
            xxx = slow uses traditional (slow) LMM
+  [ --nostdlib ]     Do not check for include files in the standard place (../include relative to the flexspin binary)
   [ --tabs=N ]       specifify number of spaces between tab stops (default 8)
 ```
 
@@ -517,6 +518,7 @@ There are various command line options for the compiler which may modify the com
   [ --lmm=xxx ]      use alternate LMM implementation for P1
            xxx = orig uses original flexspin LMM
            xxx = slow uses traditional (slow) LMM
+  [ --nostdlib ]     Do not check for include files in the standard place (../include relative to the flexcc binary)
   [ --version ]      just show compiler version
 ```
 

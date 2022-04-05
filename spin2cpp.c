@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2021 Total Spectrum Software Inc.
+ * Copyright 2011-2022 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -536,7 +536,11 @@ main(int argc, const char **argv)
     }
 
     /* add some predefined symbols */
-
+    // add default path, if applicable
+    if (!gl_nostdlib) {
+        pp_add_to_path(&gl_pp, DefaultIncludeDir());
+    }
+    
     if (gl_p2) {
         pp_define(&gl_pp, "__propeller__", "2");
     } else {
