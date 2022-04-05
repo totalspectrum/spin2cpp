@@ -16,8 +16,7 @@ _key
 	shl	result1, #24
 	getbyte	_var01, arg01, #1
 	setbyte	result1, _var01, #2
-	shr	arg01, #16
-	and	arg01, #255
+	getbyte	arg01, arg01, #2
 	setbyte	result1, arg01, #1
 _key_ret
 	ret

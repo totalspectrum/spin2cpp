@@ -12,8 +12,7 @@ dat
 entry
 
 _signex
-	zerox	arg01, #15
-	mov	result1, arg01
+	getword	result1, arg01, #0
 _signex_ret
 	ret
 builtin_bytefill_
