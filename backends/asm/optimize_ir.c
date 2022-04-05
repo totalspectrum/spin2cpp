@@ -4830,6 +4830,13 @@ static PeepholePattern pat_wrc_cmp[] = {
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
+// muxc x,#-1; cmp x, #0 wz
+static PeepholePattern pat_muxc_cmp[] = {
+    { COND_TRUE, OPC_MUXC, PEEP_OP_SET|0, PEEP_OP_CLRMASK(0,0), PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_CMP, PEEP_OP_MATCH|0, PEEP_OP_IMM|0, PEEP_FLAGS_WCZ_OK },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
 // wrc x; and x, #1 -> the AND is redundant
 static PeepholePattern pat_wrc_and[] = {
     { COND_TRUE, OPC_WRC, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
@@ -5241,7 +5248,7 @@ static int ReplaceExtend(int arg, IRList *irl, IR *ir)
 }
 //
 // looks at the sequence
-//   wrc x
+//   wrc x (or muxc x,#-1)
 //   cmp x, #0 wz
 // and if possible deletes it and replaces subsequent uses of C with NZ
 //
@@ -5283,7 +5290,7 @@ static int ReplaceWrcCmp(int arg, IRList *irl, IR *ir)
     if (IsBranch(lastir)) {
         ReplaceZWithNC(lastir);
     }
-    DeleteIR(irl, ir0);
+    if (IsDeadAfter(ir1,ir0->dst)) DeleteIR(irl, ir0);
     DeleteIR(irl, ir1);
     return 1;
 }
@@ -5666,6 +5673,8 @@ struct Peepholes {
     { pat_wrc_cmp, 0, ReplaceWrcCmp },
     { pat_wrc_and, 1, RemoveNFlagged },
     { pat_wrc_test, 0, ReplaceWrcTest },
+
+    { pat_muxc_cmp, 0, ReplaceWrcCmp },
     
     { pat_rdbyte1, 2, RemoveNFlagged },
     { pat_rdword1, 2, RemoveNFlagged },
