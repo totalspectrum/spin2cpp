@@ -701,7 +701,8 @@ isMaskingOp(IR *ir, int32_t *maskout) {
 }
 
 // Is this an op that moves data from S to D in some manner?
-// For all of these InstrReadsDst is false
+// For all of these InstrReadsDst is false, but only if
+// src != dst
 static bool
 isMoveLikeOp(IR *ir) {
     switch (ir->opc) {
@@ -720,11 +721,13 @@ isMoveLikeOp(IR *ir) {
     case OPC_GETNIB:
     case OPC_GETBYTE:
     case OPC_GETWORD:
+        return true;
     // memory reads also count
+    // but only if src != dst
     case OPC_RDBYTE:
     case OPC_RDWORD:
     case OPC_RDLONG:
-        return true;
+        return ir->src != ir->dst;
     default:
         return false;
     }
