@@ -431,7 +431,7 @@ Operand *GetResultReg(int n)
     }
     if (!resultreg[n]) {
         sprintf(rvalname, "result%d", n+1);
-        resultreg[n] = GetOneGlobal(REG_RESULT, strdup(rvalname), 0);
+        resultreg[n] = GetOneGlobal(REG_RESULT, strdup(rvalname), n);
     }
     return resultreg[n];
 }
@@ -445,7 +445,7 @@ Operand *GetArgReg(int n)
     }
     if (!argreg[n]) {
         sprintf(rvalname, "arg%02d", n+1);
-        argreg[n] = GetOneGlobal(REG_ARG, strdup(rvalname), 0);
+        argreg[n] = GetOneGlobal(REG_ARG, strdup(rvalname), n);
     }
     return argreg[n];
 }
