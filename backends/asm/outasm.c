@@ -5180,13 +5180,13 @@ AssignOneFuncName(Function *f)
         }
 
         if (InCog(f)) {
-            FuncData(f)->asmname = NewOperand(IMM_COG_LABEL, fname, 0);
+            FuncData(f)->asmname = NewOperand(IMM_COG_LABEL, fname, (intptr_t)f);
             FuncData(f)->asmretname = NewOperand(IMM_COG_LABEL, frname, 0);
             if (fentername) {
                 FuncData(f)->asmentername = NewOperand(IMM_COG_LABEL, fentername, 0);
             }
         } else {
-            FuncData(f)->asmname = NewOperand(IMM_HUB_LABEL, fname, 0);
+            FuncData(f)->asmname = NewOperand(IMM_HUB_LABEL, fname, (intptr_t)f);
             FuncData(f)->asmretname = NewOperand(IMM_HUB_LABEL, frname, 0);
             if (fentername) {
                 FuncData(f)->asmentername = NewOperand(IMM_HUB_LABEL, fentername, 0);
