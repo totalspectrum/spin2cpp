@@ -5180,7 +5180,7 @@ AssignOneFuncName(Function *f)
         }
 
         if (InCog(f)) {
-            FuncData(f)->asmname = NewOperand(IMM_COG_LABEL, fname, (intptr_t)f);
+            FuncData(f)->asmname = NewOperand(IMM_COG_LABEL, fname, 0/*(intptr_t)f*/);
             FuncData(f)->asmretname = NewOperand(IMM_COG_LABEL, frname, 0);
             if (fentername) {
                 FuncData(f)->asmentername = NewOperand(IMM_COG_LABEL, fentername, 0);

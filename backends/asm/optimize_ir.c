@@ -847,7 +847,7 @@ static bool FuncUsesArg(Operand *func, Operand *arg)
         return true;
     } else if (func == mulfunc || func == unsmulfunc || func == divfunc || func == unsdivfunc) {
         return false;
-    } else if (func && func->val && (func->kind == IMM_COG_LABEL || func->kind == IMM_HUB_LABEL) && ((Function*)func->val)->is_leaf) {
+    } else if (func && func->val && (/*func->kind == IMM_COG_LABEL ||*/ func->kind == IMM_HUB_LABEL) && ((Function*)func->val)->is_leaf) {
         int numparams = ((Function*)func->val)->numparams;
         for (int i=0;i<numparams;i++) if (arg == GetArgReg(i)) return true;
         return false;
