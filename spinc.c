@@ -1125,6 +1125,7 @@ FixupCode(Module *P, int isBinary)
     int changes;
     Function *firstfunc;
     Function *pf;
+    int sawfunc = 0;
     
     // insert sub-classes into the global list after their modules
     // and append the global module to the list
@@ -1132,6 +1133,9 @@ FixupCode(Module *P, int isBinary)
     {
         LastQ = NULL;
         for (Q = allparse; Q; Q = Q->next) {
+            if (Q->functions || Q->subclasses) {
+                sawfunc++;
+            }
             LastQ = Q;
             subQ = Q->subclasses;
             if (subQ) {
@@ -1139,7 +1143,9 @@ FixupCode(Module *P, int isBinary)
                 Q->next = subQ;
             }
         }
-        LastQ->next = systemModule;
+        if (sawfunc) {
+            LastQ->next = systemModule;
+        }
     }
 
     /* perform generic high-level optimizations
@@ -1149,7 +1155,9 @@ FixupCode(Module *P, int isBinary)
     }
     
     for (Q = allparse; Q; Q = Q->next) {
-        DoHighLevelOptimize(Q);
+        if (Q->functions) {
+            DoHighLevelOptimize(Q);
+        }
         if (gl_errors) return;
     }
     
