@@ -6968,6 +6968,23 @@ static int v_close(vfs_file_t *fil)
     return _set_dos_error(r);
 }
 
+static time_t unixtime(unsigned int dosdate, unsigned int dostime)
+{
+    time_t t;
+    unsigned year = (dosdate >> 9) & 0x7f;
+    unsigned month = ((dosdate >> 5) & 0xf) - 1;
+    unsigned day = (dosdate & 0x1f) - 1;
+    unsigned hour = (dostime >> 11) & 0x1f;
+    unsigned minute = (dostime >> 5) & 0x3f;
+    unsigned second = (dostime & 0x1f) << 1;
+
+    t = second + minute*60 + hour * 3600;
+#if 0
+    __builtin_printf(" ... unixtime: year=%u month = %u day = %u t = %u\n", year, month, day, t);
+#endif    
+    return t;
+}
+
 static int v_opendir(DIR *dir, const char *name)
 {
     FFDIR *f = malloc(sizeof(*f));
@@ -7026,21 +7043,14 @@ static int v_readdir(DIR *dir, struct dirent *ent)
 #else
     strcpy(ent->d_name, finfo.fname);
 #endif
+    if (finfo.fattrib & AM_DIR) {
+        ent->d_type = DT_DIR;
+    } else {
+        ent->d_type = DT_REG;
+    }
+    ent->d_size = finfo.fsize;
+    ent->d_mtime = unixtime(finfo.fdate, finfo.ftime);
     return 0;
-}
-
-static time_t unixtime(unsigned int dosdate, unsigned int dostime)
-{
-    time_t t;
-    unsigned year = (dosdate >> 9) & 0x7f;
-    unsigned month = ((dosdate >> 5) & 0xf) - 1;
-    unsigned day = (dosdate & 0x1f) - 1;
-    unsigned hour = (dostime >> 11) & 0x1f;
-    unsigned minute = (dostime >> 5) & 0x3f;
-    unsigned second = (dostime & 0x1f) << 1;
-
-    t = second + minute*60 + hour * 3600;
-    return t;
 }
 
 static int v_stat(const char *name, struct stat *buf)

@@ -21,6 +21,10 @@
 
 #define FS9_OTRUNC 0x10
 
+#ifndef DMDIR
+#define DMDIR 0x80000000
+#endif
+
 static int maxlen = MAXLEN;
 static uint8_t txbuf[MAXLEN];
 
@@ -603,8 +607,9 @@ static int v_readdir(DIR *dir, struct dirent *ent)
     uint8_t *nextbufptr;
     uint8_t typ;
     int r;
-    uint16_t siz;
-
+    uint16_t siz;  // packet size
+    uint32_t mode;
+    
 #ifdef _DEBUG_9P    
     __builtin_printf("v_readdir()\n");
 #endif    
@@ -618,9 +623,21 @@ static int v_readdir(DIR *dir, struct dirent *ent)
 	nextbufptr = bufptr + siz;
 	bufptr += 8; // skip over siz, type, dev
 	typ = bufptr[0];
-	bufptr += 17; // skip over qid and mode
-	bufptr += 8; // skip over atime and mtime
-	bufptr += 8; // skip over length
+	bufptr += 13; // skip over qid
+        mode = FETCH4(bufptr); bufptr += 4;
+
+        if (mode & DMDIR) {
+            ent->d_type = DT_DIR;
+        } else {
+            ent->d_type = DT_REG;
+        }
+	bufptr += 4; // skip over atime
+        // fetch mtime
+        ent->d_mtime = FETCH4(bufptr); bufptr += 4;
+
+        // length provided is 8 bytes, but we only support 4
+        ent->d_size = FETCH4(bufptr); bufptr += 8;
+
         siz = bufptr[0] + (bufptr[1]<<8);
 	bufptr += 2;
 	if (siz >= _NAME_MAX) {

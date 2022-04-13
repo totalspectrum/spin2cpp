@@ -37,6 +37,8 @@ struct vfs {
     int (*deinit)(const char *mountname);
 };
 
+typedef struct vfs vfs_t;
+
 int _openraw(void *f, const char *name, unsigned flags, unsigned perm) _IMPL("libc/unix/posixio.c");
 int _closeraw(void *f) _IMPL("libc/unix/posixio.c");
 
