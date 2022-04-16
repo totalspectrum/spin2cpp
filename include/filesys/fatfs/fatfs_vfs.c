@@ -4,7 +4,7 @@
 #include <dirent.h>
 #include "ff.h"
 
-static struct __using("filesys/fatfs/ff.cc") FFS;
+static struct __using("filesys/fatfs/fatfs.cc") FFS;
 static FATFS FatFs;
 
 struct vfs *
