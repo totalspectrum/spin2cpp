@@ -42,8 +42,8 @@ days_per_mth[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 static int
 mth_start[13] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
 
-static time_t tzoffset(char *s, int *hasdst);
-static int indst(const struct tm *t);
+time_t __tzoffset(char *s, int *hasdst);
+int __indst(const struct tm *t);
 
 static int dst = -1;	/* whether dst holds in current timezone */
 
@@ -106,7 +106,7 @@ DEBUG_TM("mktime", t);
 	_tzset();
 
         s += _timezone;
-        if (dst == 1 && indst(t))
+        if (dst == 1 && __indst(t))
                 s -= SECS_PER_HOUR;
 
         return s;
@@ -173,7 +173,7 @@ struct tm *_localtime_r(const time_t *t, struct tm *stm)
 
         stm->tm_isdst = (dst == -1) ? -1 : 0;
 
-        if (dst == 1 && indst((const struct tm *)stm)) {
+        if (dst == 1 && __indst((const struct tm *)stm)) {
 	   /* daylight savings time in effect */
                 stm->tm_isdst = 1;
                 if (++stm->tm_hour > 23) {
@@ -221,7 +221,7 @@ char *_tzname[2] = {"UCT", "UCT"};
 void
 _tzset(void)
 {
-	_timezone = tzoffset(getenv("TZ"), &dst);
+	_timezone = __tzoffset(getenv("TZ"), &dst);
 }
 
 /*
@@ -249,8 +249,8 @@ _tzset(void)
  */
 #define TZNAMLEN	8	/* max. length of time zone name */
 
-static time_t 
-tzoffset(char *s, int *hasdst)
+time_t 
+__tzoffset(char *s, int *hasdst)
 {
         time_t off;
         int x, sgn = 1;
@@ -325,8 +325,7 @@ tzoffset(char *s, int *hasdst)
  *
  */
 
-static
-int indst(const struct tm *t)
+int __indst(const struct tm *t)
 {
         if (t->tm_mon == 2) {           /* March */
 	  /* see if two sundays have happened yet */
