@@ -54,6 +54,20 @@ __getvfsforfile(char *name, const char *orig_name, char *full_path)
                 strncpy(full_path, name, _PATH_MAX);
             }
             strcpy(name, name+len+1);
+            /* remove trailing /, if any */
+            len = strlen(name);
+            while ( len > 0 ) {
+                if (name[len] == '/') {
+                    name[len] = 0;
+                    --len;
+                } else if (name[len] == '.' && len > 1 && name[len-1] == '/') {
+                    name[len-1] = 0;
+                    len -= 2;
+                } else {
+                    break;
+                }
+            }
+            
 #ifdef _DEBUG
             __builtin_printf("_getvfsforfile: slot %d returning %x for %s\n", i, (unsigned)v, name);
 #endif
