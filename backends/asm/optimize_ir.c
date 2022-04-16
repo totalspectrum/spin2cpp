@@ -1870,7 +1870,10 @@ FindPrevSetterForReplace(IR *irorig, Operand *dst)
             // else that did the set
             return NULL;
         }
-        if (IsBranch(ir)) {
+        if (IsJump(ir)) {
+            return NULL;
+        }
+        if (ir->opc == OPC_CALL && !IsLocal(dst)) {
             return NULL;
         }
         if (ir->dst == dst && (InstrSetsDst(ir) || ir->opc == OPC_TEST || ir->opc == OPC_TESTBN)) {
