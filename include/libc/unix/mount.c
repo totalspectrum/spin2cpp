@@ -21,11 +21,69 @@ char *__getfilebuffer()
     return tmpname;
 }
 
+int __root_opendir(DIR *dir, const char *name)
+{
+    dir->vfsdata = &mounttab[0];
+    return 0;
+}
+
+int __root_readdir(DIR *dir, struct dirent *ent)
+{
+    char **ptr = (char **)dir->vfsdata;
+
+again:
+    if (ptr == &mounttab[MAX_MOUNTS]) {
+        // at end
+        return -1; // EOF
+    }
+    if (!*ptr) {
+        ptr++;
+        goto again;
+    }
+    strncpy(ent->d_name, (*ptr)+1, _NAME_MAX);
+    ent->d_type = DT_DIR; // we only have directories
+    ent->d_size = 0;
+    ent->d_mtime = 0;
+    dir->vfsdata = ++ptr;
+    return 0;
+}
+
+int __root_closedir(DIR *dir) {
+    return 0;
+}
+
+int __root_stat(const char *name, struct stat *buf)
+{
+    memset(buf, 0, sizeof(*buf));
+    buf->st_mode = S_IFDIR | 0777;
+    return 0;
+}
+
+struct vfs __rootvfs =
+{
+    0, 0, 0, 0, /* close, read, write, lseek */
+    0, 0, 0, 0, /* ioctl, flush, reserved, reserved */
+    0, 0,       /* open, creat */
+    
+    &__root_opendir,
+    &__root_closedir,
+    &__root_readdir,
+    &__root_stat,
+
+    0, 0, 0, 0, /* mkdir, rmdir, remove, rename */
+    0, 0,       /* init, deinit */
+};
+
+
 struct vfs *
 __getvfsforfile(char *name, const char *orig_name, char *full_path)
 {
     int i, len;
     struct vfs *v;
+
+    while (orig_name[0] == '/' && orig_name[1] == '/') {
+        orig_name++;
+    }
     if (orig_name[0] == '/') {
         strncpy(name, orig_name, _PATH_MAX);
     } else {
@@ -33,9 +91,14 @@ __getvfsforfile(char *name, const char *orig_name, char *full_path)
         if (orig_name[0] == 0 || (orig_name[0] == '.' && orig_name[1] == 0)) {
             // do nothing, we're looking at the directory
         } else {
-            strncat(name, "/", _PATH_MAX);
+            if (name[0] != '/' || name[1] != 0) {
+                strncat(name, "/", _PATH_MAX);
+            }
             strncat(name, orig_name, _PATH_MAX);
         }
+    }
+    if (name[0] == 0 || (name[0] == '/' && name[1] == 0) ) {
+        return &__rootvfs;
     }
     for (i = 0; i < MAX_MOUNTS; i++) {
         if (!mounttab[i]) continue;
