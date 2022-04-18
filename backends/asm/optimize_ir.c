@@ -799,10 +799,31 @@ static int InstrMaxCycles(IR *ir) {
 #endif
 
 
+
+extern Operand *mulfunc, *unsmulfunc, *divfunc, *unsdivfunc, *muldiva, *muldivb;
+
+
+static bool FuncUsesArg(Operand *func, Operand *arg)
+{
+    if (func == mulfunc || func == unsmulfunc || func == divfunc || func == unsdivfunc) {
+        return (arg == muldiva) || (arg == muldivb);
+    }
+    return true;
+}
+
+
+static bool IsCallThatUsesReg(IR *ir,Operand *op) {
+    if (ir->opc != OPC_CALL) return false;
+    if (IsLocal(op)) return false;
+    if (IsArg(op) && !FuncUsesArg(ir->dst,op)) return false;
+    return true;
+}
+
+
 static bool UsedInRange(IR *start,IR *end,Operand *reg) {
     if (!reg || !IsRegister(reg->kind)) return false;
     for (IR *ir=start;ir!=end->next;ir=ir->next) {
-        if (InstrUses(ir,reg)||IsBranch(ir)) return true;
+        if (InstrUses(ir,reg)||IsJump(ir)||IsCallThatUsesReg(ir,reg)) return true;
         if (InstrModifies(ir,reg) && ir->cond==COND_TRUE) return false; // Has become dead
     }
     return false;
@@ -811,7 +832,7 @@ static bool UsedInRange(IR *start,IR *end,Operand *reg) {
 static bool ModifiedInRange(IR *start,IR *end,Operand *reg) {
     if (!reg || !IsRegister(reg->kind)) return false;
     for (IR *ir=start;ir!=end->next;ir=ir->next) {
-        if (InstrModifies(ir,reg)||IsBranch(ir)) return true;
+        if (InstrModifies(ir,reg)||IsJump(ir)||IsCallThatUsesReg(ir,reg)) return true;
     }
     return false;
 }
@@ -835,18 +856,6 @@ static int MinCyclesInRange(IR *start,IR *end) {
         cyc += InstrMinCycles(ir);
     }
     return cyc;
-}
-
-
-extern Operand *mulfunc, *unsmulfunc, *divfunc, *unsdivfunc, *muldiva, *muldivb;
-
-
-static bool FuncUsesArg(Operand *func, Operand *arg)
-{
-    if (func == mulfunc || func == unsmulfunc || func == divfunc || func == unsdivfunc) {
-        return (arg == muldiva) || (arg == muldivb);
-    }
-    return true;
 }
 
 /*
@@ -1052,7 +1061,10 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
       if (ir->opc == OPC_LIVE) {
           return false;
       }
-      if (IsBranch(ir)) {
+      if (IsJump(ir)) {
+          return false;
+      }
+      if (IsCallThatUsesReg(ir,orig) || IsCallThatUsesReg(ir,replace)) {
           return false;
       }
       if (InstrModifies(ir, orig) && !InstrReadsDst(ir)) {
@@ -1873,7 +1885,7 @@ FindPrevSetterForReplace(IR *irorig, Operand *dst)
         if (IsJump(ir)) {
             return NULL;
         }
-        if (ir->opc == OPC_CALL && !IsLocal(dst)) {
+        if (IsCallThatUsesReg(ir,dst)) {
             return NULL;
         }
         if (ir->dst == dst && (InstrSetsDst(ir) || ir->opc == OPC_TEST || ir->opc == OPC_TESTBN)) {
@@ -3351,7 +3363,9 @@ OptimizeIncDec(IRList *irl)
             IR *stepir = ir_next->next;
             Operand *changedOp = ir_next->dst;
             while (stepir) {
-                if (IsBranch(stepir))
+                if (IsJump(stepir))
+                    break;
+                if (IsCallThatUsesReg(stepir,changedOp))
                     break;
                 if (IsLabel(stepir))
                     break;
@@ -3670,7 +3684,13 @@ static IR* FindNextRead(IR *irorig, Operand *dest, Operand *src)
             return NULL;
         }
         if (IsBranch(ir)) {
-            return NULL;
+            if (ir->opc == OPC_CALL &&
+                (ir->dst == mulfunc || ir->dst == divfunc || ir->dst == unsdivfunc)
+            ) {
+                // Do nothing
+            } else {
+                return NULL;
+            }
         }
         if (ir->cond != irorig->cond) {
             return NULL;
