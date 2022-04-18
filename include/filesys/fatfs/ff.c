@@ -613,15 +613,22 @@ static const BYTE DbcTbl[] = MKCVTBL(TBL_DC, FF_CODE_PAGE);
 
 static WORD ld_word (const BYTE* ptr)	/*	 Load a 2-byte little-endian word */
 {
+	#ifdef __propeller2__
+	return *((WORD*)ptr);
+	#else
 	WORD rv;
 
 	rv = ptr[1];
 	rv = rv << 8 | ptr[0];
 	return rv;
+	#endif
 }
 
 static DWORD ld_dword (const BYTE* ptr)	/* Load a 4-byte little-endian word */
 {
+	#ifdef __propeller2__
+	return *((DWORD*)ptr);
+	#else
 	DWORD rv;
 
 	rv = ptr[3];
@@ -629,6 +636,7 @@ static DWORD ld_dword (const BYTE* ptr)	/* Load a 4-byte little-endian word */
 	rv = rv << 8 | ptr[1];
 	rv = rv << 8 | ptr[0];
 	return rv;
+	#endif
 }
 
 #if FF_FS_EXFAT
@@ -651,16 +659,24 @@ static QWORD ld_qword (const BYTE* ptr)	/* Load an 8-byte little-endian word */
 #if !FF_FS_READONLY
 static void st_word (BYTE* ptr, WORD val)	/* Store a 2-byte word in little-endian */
 {
+	#ifdef __propeller2__
+	*((WORD*)ptr) = val;
+	#else
 	*ptr++ = (BYTE)val; val >>= 8;
 	*ptr++ = (BYTE)val;
+	#endif
 }
 
 static void st_dword (BYTE* ptr, DWORD val)	/* Store a 4-byte word in little-endian */
 {
+	#ifdef __propeller2__
+	*((DWORD*)ptr) = val;
+	#else
 	*ptr++ = (BYTE)val; val >>= 8;
 	*ptr++ = (BYTE)val; val >>= 8;
 	*ptr++ = (BYTE)val; val >>= 8;
 	*ptr++ = (BYTE)val;
+	#endif
 }
 
 #if FF_FS_EXFAT
