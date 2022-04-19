@@ -822,6 +822,15 @@ static bool FuncUsesArg(Operand *func, Operand *arg)
     return true;
 }
 
+
+static bool IsCallThatUsesReg(IR *ir,Operand *op) {
+    if (ir->opc != OPC_CALL) return false;
+    if (IsLocal(op)) return false;
+    if (IsArg(op) && !FuncUsesArg(ir->dst,op)) return false;
+    return true;
+}
+
+
 static bool UsedInRange(IR *start,IR *end,Operand *reg) {
     if (!reg || !IsRegister(reg->kind)) return false;
     for (IR *ir=start;ir!=end->next;ir=ir->next) {
@@ -843,8 +852,8 @@ static bool ModifiedInRange(IR *start,IR *end,Operand *reg) {
         if (ir->cond == COND_TRUE && (ir->opc == OPC_ADD || ir->opc == OPC_SUB) && ir->dst == reg && ir->src->kind == IMM_INT) {
             offset += AddSubVal(ir);
         } else if (ir->opc == OPC_CALL) {
-            if (!IsLocal(reg) && reg->kind != REG_HUBPTR && !(reg->kind == REG_REG && !strcmp(reg->name,"fp"))) return true;
-        } else if (InstrModifies(ir,reg)||IsBranch(ir)||IsLabel(ir)) return true;
+            if (!IsLocal(reg) && !(IsArg(reg) && !FuncUsesArg(ir->dst,reg)) && reg->kind != REG_HUBPTR && !(reg->kind == REG_REG && !strcmp(reg->name,"fp"))) return true;
+        } else if (InstrModifies(ir,reg)||IsJump(ir)||IsLabel(ir)) return true;
     }
     return offset != 0;
 }
@@ -1071,7 +1080,10 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
       if (ir->opc == OPC_LIVE) {
           return false;
       }
-      if (IsBranch(ir)) {
+      if (IsJump(ir)) {
+          return false;
+      }
+      if (IsCallThatUsesReg(ir,orig) || IsCallThatUsesReg(ir,replace)) {
           return false;
       }
       if (InstrModifies(ir, orig) && !InstrReadsDst(ir)) {
@@ -1889,7 +1901,10 @@ FindPrevSetterForReplace(IR *irorig, Operand *dst)
             // else that did the set
             return NULL;
         }
-        if (IsBranch(ir)) {
+        if (IsJump(ir)) {
+            return NULL;
+        }
+        if (IsCallThatUsesReg(ir,dst)) {
             return NULL;
         }
         if (ir->dst == dst && (InstrSetsDst(ir) || ir->opc == OPC_TEST || ir->opc == OPC_TESTBN)) {
@@ -3372,7 +3387,9 @@ OptimizeIncDec(IRList *irl)
             IR *stepir = ir_next->next;
             Operand *changedOp = ir_next->dst;
             while (stepir) {
-                if (IsBranch(stepir))
+                if (IsJump(stepir))
+                    break;
+                if (IsCallThatUsesReg(stepir,changedOp))
                     break;
                 if (IsLabel(stepir))
                     break;
@@ -3691,7 +3708,13 @@ static IR* FindNextRead(IR *irorig, Operand *dest, Operand *src)
             return NULL;
         }
         if (IsBranch(ir)) {
-            return NULL;
+            if (ir->opc == OPC_CALL &&
+                (ir->dst == mulfunc || ir->dst == divfunc || ir->dst == unsdivfunc)
+            ) {
+                // Do nothing
+            } else {
+                return NULL;
+            }
         }
         if (ir->cond != irorig->cond) {
             return NULL;
