@@ -9,7 +9,7 @@ else
 fi
 
 PROG_ASM="$FASTSPIN -I../Lib"
-LOADP1="propeller-load -r"
+LOADP1="proploader -Q -r"
 
 CC=propeller-elf-gcc
 ok="ok"
@@ -31,10 +31,8 @@ do
     
   # now compile with asm
   if $PROG_ASM -o $j.binary $i; then
-    $LOADP1 $j.binary -t -q > $j.out
+    $LOADP1 $j.binary -t -q > $j.txt
   fi
-  # the --lines=+6 skips the first 6 lines that propeller-load printed
-  tail --lines=+6 $j.out >$j.txt
   if diff -ub Expect/$j.txt $j.txt
   then
     echo $j passed for ASM
@@ -56,10 +54,8 @@ do
     
   # now compile with asm
   if $PROG_ASM -o $j.binary $i; then
-    $LOADP1 $j.binary -t -q > $j.out
+    $LOADP1 $j.binary -t -q > $j.txt
   fi
-  # the --lines=+6 skips the first 6 lines that propeller-load printed
-  tail --lines=+6 $j.out >$j.txt
   if diff -ub Expect/$j.txt $j.txt
   then
     echo $j passed for ASM
@@ -82,10 +78,8 @@ do
 
   # now compile with asm
   if $PROG_ASM -o $j.binary $i; then
-    $LOADP1 $j.binary -t -q > $j.out
+    $LOADP1 $j.binary -t -q > $j.txt
   fi
-  # the --lines=+6 skips the first 6 lines that propeller-load printed
-  tail --lines=+6 $j.out >$j.txt
   if diff -ub Expect/$j.txt $j.txt
   then
     echo $j passed for ASM
