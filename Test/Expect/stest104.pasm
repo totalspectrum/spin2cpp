@@ -13,7 +13,7 @@ _onetwo_ret
 result1
 	long	0
 result2
-	long	0
+	long	1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START

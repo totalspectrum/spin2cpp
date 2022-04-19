@@ -748,7 +748,7 @@ ptr__dat__
 result1
 	long	0
 result2
-	long	0
+	long	1
 sp
 	long	@@@stackspace
 COG_BSS_START
