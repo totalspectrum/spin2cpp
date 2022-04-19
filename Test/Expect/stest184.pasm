@@ -449,7 +449,7 @@ LR__0025
  if_e	jmp	#LR__0026
 	mov	arg01, __system___gc_dofree_prevptr
 	call	#__system___gc_isFree
-	mov	arg02, result1 wz
+	cmps	result1, #0 wz
  if_e	jmp	#LR__0025
 LR__0026
 	cmp	__system___gc_dofree_prevptr, #0 wz

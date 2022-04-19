@@ -7,6 +7,7 @@ Version 5.9.10
 - Fixed FCACHE not being enabled during system module compilation
 - Fixed a nasty condition code printing bug (thanks Ada!)
 - Merged Ada's change to support Shift-JIS character encoding
+- Merged Evan's smartpin SD card reading code for much faster SD card access on P2
 
 Version 5.9.9
 - Added special preprocessor comments {$flexspin ... } for FlexSpin specific code.

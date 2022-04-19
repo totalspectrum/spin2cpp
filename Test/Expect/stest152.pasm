@@ -6,7 +6,7 @@ entry
 
 _foo
 	mov	_var01, #99
-	mov	arg01, arg01 wz
+	cmps	arg01, #0 wz
  if_e	jmp	#LR__0001
 	cmp	arg01, #1 wz
  if_e	jmp	#LR__0002

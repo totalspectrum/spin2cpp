@@ -26,6 +26,7 @@
 
 /-------------------------------------------------------------------------*/
 
+// Modified for Prop2 by evanh
 
 #include "ff.h"		/* Obtains integer types for FatFs */
 #include "diskio.h"	/* Common include file for FatFs and disk I/O layer */
@@ -34,7 +35,7 @@
 /* Platform dependent macros and functions needed to be modified           */
 /*-------------------------------------------------------------------------*/
 
-#include <propeller2.h>			/* Include device specific declareation file here */
+#include <propeller.h>			/* Include device specific declareation file here */
 
 #ifdef PIN_CLK
 #error PIN_CLK definition no longer supported, use _vfs_open_sdcardx instead
@@ -47,6 +48,10 @@ static int _pin_clk = 0;
 static int _pin_ss = 0;
 static int _pin_di = 0;
 static int _pin_do = 0;
+
+#ifdef __propeller2__
+#define _smartpins_mode_eh /* enable Evanh's fast smartpin code */
+#endif
 
 /*
 #define PIN_CLK  _pin_clk
@@ -134,12 +139,54 @@ void xmit_mmc (
 	UINT bc				/* Number of bytes to send */
 )
 {
-	BYTE d;
-	int PIN_SS = _pin_ss;
+	int  bc2, d;  // DON'T TOUCH!  Variables are placed in order
 	int PIN_CLK = _pin_clk;
 	int PIN_DI = _pin_di;
+	int PIN_SS = _pin_ss;
 	int PIN_DO = _pin_do;
 
+#ifdef _smartpins_mode_eh
+
+// Smartpin SPI transmitter using "continuous" mode and 32-bit word size
+//   NOTE: data out always has at least a 4 sysclock lag
+	__asm const {		// "const" prevents use of FCACHE
+		dirl	PIN_DI		// reset tx smartpin, clears excess data
+		setq	#1
+		rdlong	bc2, buff	// fetch first data
+		rev	bc2
+		movbyts	bc2, #0x1b	// endian swap
+		wypin	bc2, PIN_DI	// first data to tx shifter
+
+		mov	bc2, bc
+		shr	bc, #2  wz	// longword count (rounded down)
+		shl	bc2, #3		// bit count (exact)
+		wypin	bc2, PIN_CLK	// begin SPI clocks
+
+		dirh	PIN_DI		// liven tx buffer, continuous mode
+		add	buff, #8
+		rev	d
+		movbyts	d, #0x1b	// endian swap
+tx_loop
+	if_nz	wypin	d, PIN_DI	// data to tx buffer
+	if_nz	rdlong	d, buff		// fetch next data
+	if_nz	add	buff, #4
+	if_nz	rev	d
+	if_nz	movbyts	d, #0x1b	// endian swap
+tx_wait
+	if_nz	testp	PIN_DI  wc	// wait for tx buffer empty
+if_nc_and_nz	jmp	#tx_wait
+	if_nz	djnz	bc, #tx_loop
+
+// Wait for completion
+tx_wait2
+		testp	PIN_CLK  wc
+	if_nc	jmp	#tx_wait2
+
+		dirl	PIN_DI		// reset tx smartpin to clear excess data
+		wypin	##-1, PIN_DI	// TX 0xFF, continuous mode
+		dirh	PIN_DI
+	}
+#else        
 	do {
 		d = *buff++;	/* Get a byte to be sent */
 		if (d & 0x80) DI_H(); else DI_L();	/* bit7 */
@@ -159,6 +206,7 @@ void xmit_mmc (
 		if (d & 0x01) DI_H(); else DI_L();	/* bit0 */
 		CK_H(); CK_L();
 	} while (--bc);
+#endif        
 }
 
 
@@ -173,12 +221,66 @@ void rcvr_mmc (
 	UINT bc		/* Number of bytes to receive */
 )
 {
-	BYTE r;
-	int PIN_SS = _pin_ss;
+	int  r, bc2;
 	int PIN_CLK = _pin_clk;
-	int PIN_DI = _pin_di;
 	int PIN_DO = _pin_do;
 
+	int PIN_SS = _pin_ss;
+	int PIN_DI = _pin_di;
+
+#ifdef _smartpins_mode_eh
+
+// Smartpin SPI byte receiver,
+//  SPI clock mode is selected in disk_initialize()
+//  NOTE: Has hard coded mode select for post-clock "late" sampling
+//
+	__asm const {		// "const" prevents use of FCACHE
+//	__asm volatile {	// "volatile" prevents automated optimising
+//		wrfast	#0, buff
+		akpin	PIN_DO			// clear rx buffer
+		mov	bc2, bc  wz
+
+// 32-bit rx (WFLONG), about 10% faster than 8-bit code
+		shr	bc2, #2  wz
+	if_z	jmp	#rx_bytes
+
+		mov	r, bc2
+		shl	r, #5			// bit count
+		wypin	r, PIN_CLK		// begin SPI clocks
+		wxpin	#31 | 32, PIN_DO	// 32 bits, sample after rising clock
+rx_loop2
+rx_wait2
+		testp	PIN_DO  wc		// wait for received byte
+	if_nc	jmp	#rx_wait2
+
+		rdpin	r, PIN_DO		// longword from rx buffer
+		rev	r
+		movbyts	r, #$1b			// endian swap
+//		wflong	r
+		wrlong	r, buff			// store longword
+		add	buff, #4
+		djnz	bc2, #rx_loop2
+
+// 8-bit rx (WFBYTE)
+rx_bytes
+		and	bc, #3  wz		// up to 3 bytes
+	if_z	ret
+
+		wxpin	#7 | 32, PIN_DO		// 8 bits, sample after rising clock
+rx_loop1
+		wypin	#8, PIN_CLK		// begin SPI clocks
+rx_wait1
+		testp	PIN_DO  wc		// wait for received byte
+	if_nc	jmp	#rx_wait1
+
+		rdpin	r, PIN_DO		// byte from rx buffer
+		rev	r
+//		wfbyte	r			// store byte
+		wrbyte	r, buff			// store byte
+		add	buff, #1
+		djnz	bc, #rx_loop1
+	}
+#else
 	DI_H();	/* Send 0xFF */
 
 	do {
@@ -200,6 +302,7 @@ void rcvr_mmc (
 		CK_H(); CK_L();
 		*buff++ = r;			/* Store a received byte */
 	} while (--bc);
+#endif        
 }
 
 
@@ -212,16 +315,15 @@ static
 int wait_ready (void)	/* 1:OK, 0:Timeout */
 {
 	BYTE d;
-	UINT tmr;
+	UINT tmr, tmout;
 
-
-	for (tmr = 5000; tmr; tmr--) {	/* Wait for ready in timeout of 500ms */
-		rcvr_mmc(&d, 1);
-		if (d == 0xFF) break;
-		dly_us(100);
+	tmr = _cnt();
+	tmout = _clockfreq() >> 1;  // 500 ms timeout
+	for(;;) {
+		rcvr_mmc( &d, 1 );
+		if( d == 0xFF )  return 1;
+		if( _cnt() - tmr >= tmout )  return 0;
 	}
-
-	return tmr ? 1 : 0;
 }
 
 
@@ -255,7 +357,15 @@ int select (void)	/* 1:OK, 0:Timeout */
 	BYTE d;
 	int PIN_SS = _pin_ss;
 	
-	CS_L();				/* Set CS# low */
+#ifdef _smartpins_mode_eh
+	int PIN_DO = _pin_do;
+
+	_pinf(PIN_DO);  // disable rx smartpin
+	CS_L();			/* Set CS# low */
+	_dirh(PIN_DO);  // enable rx smartpin
+#else
+	CS_L();			/* Set CS# low */
+#endif
 	rcvr_mmc(&d, 1);	/* Dummy clock (force DO enabled) */
 	if (wait_ready()) return 1;	/* Wait for card ready */
 
@@ -276,20 +386,21 @@ int rcvr_datablock (	/* 1:OK, 0:Failed */
 )
 {
 	BYTE d[2];
-	UINT tmr;
+	UINT tmr, tmout;
 
-
-	for (tmr = 1000; tmr; tmr--) {	/* Wait for data packet in timeout of 100ms */
-		rcvr_mmc(d, 1);
-		if (d[0] != 0xFF) break;
-		dly_us(100);
+	tmr = _cnt();
+	tmout = _clockfreq() >> 3;  // 125 ms timeout
+	for(;;) {
+		rcvr_mmc( &d[0], 1 );
+		if( d[0] != 0xFF )  break;
+		if( _cnt() - tmr >= tmout )  break;
 	}
 	if (d[0] != 0xFE) return 0;		/* If not valid data token, return with error */
 
 	rcvr_mmc(buff, btr);			/* Receive the data block into buffer */
-	rcvr_mmc(d, 2);					/* Discard CRC */
+	rcvr_mmc(d, 2);				/* Discard CRC */
 
-	return 1;						/* Return with success */
+	return 1;				/* Return with success */
 }
 
 
@@ -404,7 +515,7 @@ DSTATUS disk_initialize (
 )
 {
 	BYTE n, ty, cmd, buf[4];
-	UINT tmr;
+	UINT tmr, ck_div, spm_ck, spm_tx, spm_rx;
 	DSTATUS s;
 	int PIN_SS = _pin_ss;
 	int PIN_CLK = _pin_clk;
@@ -421,12 +532,43 @@ DSTATUS disk_initialize (
         }
 
 	dly_us(10000);			/* 10ms */
+
+#ifdef _smartpins_mode_eh
+	_wrpin( PIN_SS, 0 );
+	_wrpin( PIN_CLK, 0 );
+	_wrpin( PIN_DI, 0 );
+	_wrpin( PIN_DO, P_HIGH_15K | P_LOW_15K );
+	_pinh( PIN_SS );  // Deselect SD card
+	_pinh( PIN_CLK );  // CLK idles high
+	_pinh( PIN_DI );  // DI idles 0xff
+	_pinh( PIN_DO );  // 15 k pull-up on DO
+
+// I/O registering (P_SYNC_IO) the SPI clock pin was found to be vital for stability.  Although it
+//   adds extra lag to the tx pin, it also effectively (when rx pin is unregistered) makes a late-late
+//   rx sample point.
+	ck_div = 0x0008_0010;  // sysclock/16
+	spm_ck = P_PULSE | P_OE | P_INVERT_OUTPUT | P_SCHMITT_A;  // CPOL = 1 (SPI mode 3)
+	_pinstart( PIN_CLK, spm_ck | P_SYNC_IO, ck_div, 0 );
+
+	spm_tx = P_SYNC_TX | P_OE | (((PIN_CLK - PIN_DI) & 7) << 24);  // tx smartpin mode and clock pin offset
+	_pinstart( PIN_DI, spm_tx | P_SYNC_IO, 31, -1 );  // rising clock + 5 ticks lag, 32-bit, continuous mode, initial 0xff
+
+	spm_rx = ((PIN_CLK - PIN_DO) & 7) << 24;  // clock pin offset for rx smartpin
+	spm_rx |= P_SYNC_RX | P_OE | P_INVERT_OUTPUT | P_HIGH_15K | P_LOW_15K;  // rx smartpin mode, with 15 k pull-up
+	_pinstart( PIN_DO, spm_rx, 7 | 32, 0 );  // 8-bit, sample after rising clock + 1 tick delay (smartB registration)
+#else        
 	CS_INIT(); CS_H();		/* Initialize port pin tied to CS */
 	CK_INIT(); CK_L();		/* Initialize port pin tied to SCLK */
 	DI_INIT();				/* Initialize port pin tied to DI */
 	DO_INIT();				/* Initialize port pin tied to DO */
+#endif
+        
+	rcvr_mmc(buf, 10);  // Apply 80 dummy clocks and the card gets ready to receive command
+	send_cmd(CMD0, 0);  // Enter Idle state
+	deselect();
+	dly_us(100);
 
-	for (n = 100; n; n--) rcvr_mmc(buf, 1);	/* Apply 80 dummy clocks and the card gets ready to receive command */
+	rcvr_mmc(buf, 10);  // Apply 80 dummy clocks and the card gets ready to receive command
 
 	ty = 0;
 	if (send_cmd(CMD0, 0) == 1) {			/* Enter Idle state */
@@ -444,6 +586,15 @@ DSTATUS disk_initialize (
 					rcvr_mmc(buf, 4);
 					ty = (buf[0] & 0x40) ? CT_SD2 | CT_BLOCK : CT_SD2;	/* SDv2 */
 				}
+#ifdef _smartpins_mode_eh
+				tmr = _clockfreq();
+				spm_tx |= P_INVERT_B;
+				// Performance option for "Default Speed" (Up to 50 MHz SPI clock)
+				if( tmr <= 150_000_000 )  ck_div = 0x0002_0004;  // sysclock/4
+				else if( tmr <= 200_000_000 )  ck_div = 0x0002_0005;  // sysclock/5
+				else if( tmr <= 280_000_000 )  ck_div = 0x0002_0006;  // sysclock/6
+				else  ck_div = 0x0003_0008;  // sysclock/8
+#endif
 			}
 		} else {							/* SDv1 or MMCv3 */
 			if (send_cmd(ACMD41, 0) <= 1) 	{
@@ -459,6 +610,19 @@ DSTATUS disk_initialize (
                             //printf("tmr = %d\n", tmr);
                             ty = 0;
                         }
+#ifdef _smartpins_mode_eh
+			tmr = _clockfreq();
+			if( tmr <= 100_000_000 )  spm_tx |= P_INVERT_B;  // falling clock + 4 tick lag + 1 tick (smartB registration)
+			else if( tmr <= 200_000_000 )  spm_tx |= P_INVERT_B | P_SYNC_IO;  // falling clock + 5 tick lag + 1 tick
+			// else:  spm_tx default, rising clock + 4 tick lag + 1 tick (smartB registration)
+		// Reliable option (Up to 25 MHz SPI clock)
+			if( tmr <= 100_000_000 )  ck_div = 0x0002_0004;  // sysclock/4
+			else if( tmr <= 150_000_000 )  ck_div = 0x0003_0006;  // sysclock/6
+			else if( tmr <= 200_000_000 )  ck_div = 0x0004_0008;  // sysclock/8
+			else if( tmr <= 250_000_000 )  ck_div = 0x0005_000a;  // sysclock/10
+			else if( tmr <= 300_000_000 )  ck_div = 0x0006_000c;  // sysclock/12
+			else  ck_div = 0x0007_000e;  // sysclock/14
+#endif
 		}
 	}
 #ifdef _DEBUG	
@@ -470,6 +634,13 @@ DSTATUS disk_initialize (
 
 	deselect();
 
+#ifdef _smartpins_mode_eh
+	_wxpin( PIN_CLK, ck_div );
+	_wrpin( PIN_DI, spm_tx );
+  #ifdef _DEBUG
+	printf( "SPI clock ratio = sysclock/%d\n", ck_div & 0xffff );
+  #endif
+#endif
 	return s;
 }
 
