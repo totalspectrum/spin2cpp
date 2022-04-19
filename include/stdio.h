@@ -79,6 +79,8 @@ int fileno(FILE *f) _IMPL("libc/stdio/fileno.c");
 int  fseek(FILE *f, long offset, int whence) _IMPL("libc/stdio/fseek.c");
 long ftell(FILE *f)                          _IMPL("libc/stdio/fseek.c");
 
+int remove(const char *pathname) _IMPL("libsys/remove.c");
+
 #if defined(__FLEXC__) && !defined(_NO_BUILTIN_PRINTF)
 // FLEXC can optimize printf
 #define printf __builtin_printf

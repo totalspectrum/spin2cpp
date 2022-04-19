@@ -328,6 +328,7 @@ insert$
 instr
 instrrev
 lcase$
+kill
 left$
 len
 _lockclr
@@ -2391,6 +2392,13 @@ Warning: truncation will sometimes result in surprising results (e.g. `int(23.99
 ### INTEGER
 
 A 32 bit signed integer type. The unsigned 32 bit integer type is `uinteger`.
+
+### KILL
+
+```
+kill(filename$)
+```
+Deletes a file or directory.
 
 ### LCASE$
 

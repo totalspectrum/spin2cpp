@@ -2,12 +2,14 @@ Version 5.9.10
 - Added a LOT of helpful optimizations contributed by Ada Gottensträter
 - Added __HAVE_FCACHE__ define if FCACHE is enabled (also contributed by Ada)
 - Added --nostdlib flag to suppress default include files
+- Added KILL function to delete files in BASIC
 - Actually fail compilation if a preprocessor #error directive is found in Spin
 - Fixed some bugs in time related functions
 - Fixed FCACHE not being enabled during system module compilation
 - Fixed a nasty condition code printing bug (thanks Ada!)
 - Merged Ada's change to support Shift-JIS character encoding
 - Merged Evan's smartpin SD card reading code for much faster SD card access on P2
+- Updated FatFs to newer version
 
 Version 5.9.9
 - Added special preprocessor comments {$flexspin ... } for FlexSpin specific code.

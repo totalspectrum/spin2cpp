@@ -245,6 +245,7 @@ Aliases basicalias[] = {
     { "getms", "_getms" },
     { "getus", "_getus" },
     { "getsec", "_getsec" },
+    { "kill", "_remove" },
     { "len", "__builtin_strlen" },
     { "mount", "_mount" },
     { "pausems", "_waitms" },
