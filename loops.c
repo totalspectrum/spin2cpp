@@ -258,7 +258,8 @@ FindAllAssignments(LoopValueSet *lvs, AST *parent, AST *ast, unsigned flags)
         flags = CheckOperatorForAssignment(lvs, parent, ast, flags);
         break;
     case AST_POSTSET:
-        ERROR(NULL, "Internal error, should not see POSTSET in LVS");
+        //ERROR(NULL, "Internal error, should not see POSTSET in LVS");
+        // bytecode generates POSTSETs, so just invalidate for now
         lvs->valid = false;
         break;
     case AST_IF:
