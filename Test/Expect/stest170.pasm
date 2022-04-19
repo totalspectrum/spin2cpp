@@ -5,12 +5,12 @@ dat
 entry
 
 _setptr2
-	mov	_setptr2_c, arg01
+	mov	setptr2_tmp004_, arg01
 	call	#_nextidx
 	shl	result1, #2
 	mov	setptr2_tmp001_, #44
 	add	setptr2_tmp001_, result1
-	mov	arg01, _setptr2_c
+	mov	arg01, setptr2_tmp004_
 	add	objptr, setptr2_tmp001_
 	call	#_pinobj_tx
 	sub	objptr, setptr2_tmp001_
@@ -50,8 +50,6 @@ COG_BSS_START
 objmem
 	long	0[21]
 	org	COG_BSS_START
-_setptr2_c
-	res	1
 _var01
 	res	1
 _var02
@@ -59,5 +57,7 @@ _var02
 arg01
 	res	1
 setptr2_tmp001_
+	res	1
+setptr2_tmp004_
 	res	1
 	fit	496

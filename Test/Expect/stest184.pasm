@@ -11,11 +11,11 @@ _fetch_ret
 	ret
 
 _fetchv
-	mov	_fetchv__cse__0000, ptr__dat__
+	mov	fetchv_tmp002_, ptr__dat__
 	mov	arg01, #20
 	call	#__system___gc_alloc_managed
 	mov	arg01, result1
-	mov	arg02, _fetchv__cse__0000
+	mov	arg02, fetchv_tmp002_
 	mov	arg03, #20
 	call	#__system____builtin_memmove
 	add	result1, #12
@@ -942,8 +942,6 @@ __system___txraw_c
 	res	1
 __system___txraw_nextcnt
 	res	1
-_fetchv__cse__0000
-	res	1
 _system___gc_doalloc_tmp001_
 	res	1
 _system___gc_docollect_tmp001_
@@ -979,6 +977,8 @@ arg01
 arg02
 	res	1
 arg03
+	res	1
+fetchv_tmp002_
 	res	1
 muldiva_
 	res	1
