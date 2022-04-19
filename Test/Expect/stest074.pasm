@@ -12,10 +12,10 @@ _get
 	mov	_get_sum, #0
 	mov	_get__cse__0000, objptr
 	mov	_get_i, #0
+	add	fp, #4
 LR__0001
 	mov	result1, _get_i
 	shl	result1, #2
-	add	fp, #4
 	rdlong	_tmp003_, _get__cse__0000
 	add	result1, fp
 	wrlong	_tmp003_, result1
@@ -27,8 +27,8 @@ LR__0001
 	add	_get_i, #1
 	add	_get__cse__0000, #4
 	cmps	_get_i, #10 wc
-	sub	fp, #4
  if_b	jmp	#LR__0001
+	sub	fp, #4
 	mov	result1, _get_sum
 	mov	sp, fp
 	sub	sp, #4
