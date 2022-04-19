@@ -817,18 +817,6 @@ static bool FuncUsesArg(Operand *func, Operand *arg)
 }
 
 
-extern Operand *mulfunc, *unsmulfunc, *divfunc, *unsdivfunc, *muldiva, *muldivb;
-
-
-static bool FuncUsesArg(Operand *func, Operand *arg)
-{
-    if (func == mulfunc || func == unsmulfunc || func == divfunc || func == unsdivfunc) {
-        return (arg == muldiva) || (arg == muldivb);
-    }
-    return true;
-}
-
-
 static bool IsCallThatUsesReg(IR *ir,Operand *op) {
     if (ir->opc != OPC_CALL) return false;
     if (IsLocal(op)) return false;
@@ -858,8 +846,8 @@ static bool ModifiedInRange(IR *start,IR *end,Operand *reg) {
         if (ir->cond == COND_TRUE && (ir->opc == OPC_ADD || ir->opc == OPC_SUB) && ir->dst == reg && ir->src->kind == IMM_INT) {
             offset += AddSubVal(ir);
         } else if (ir->opc == OPC_CALL) {
-            if (!IsLocal(reg) && reg->kind != REG_HUBPTR && !(reg->kind == REG_REG && !strcmp(reg->name,"fp"))) return true;
-        } else if (InstrModifies(ir,reg)||IsJump(ir)||IsCallThatUsesReg(ir,reg)||IsLabel(ir)) return true;
+            if (!IsLocal(reg) && !(IsArg(reg) && !FuncUsesArg(ir->dst,reg)) && reg->kind != REG_HUBPTR && !(reg->kind == REG_REG && !strcmp(reg->name,"fp"))) return true;
+        } else if (InstrModifies(ir,reg)||IsJump(ir)||IsLabel(ir)) return true;
     }
     return offset != 0;
 }
