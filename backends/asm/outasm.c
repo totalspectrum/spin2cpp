@@ -431,7 +431,7 @@ Operand *GetResultReg(int n)
     }
     if (!resultreg[n]) {
         sprintf(rvalname, "result%d", n+1);
-        resultreg[n] = GetOneGlobal(REG_RESULT, strdup(rvalname), 0);
+        resultreg[n] = GetOneGlobal(REG_RESULT, strdup(rvalname), n);
     }
     return resultreg[n];
 }
@@ -445,7 +445,7 @@ Operand *GetArgReg(int n)
     }
     if (!argreg[n]) {
         sprintf(rvalname, "arg%02d", n+1);
-        argreg[n] = GetOneGlobal(REG_ARG, strdup(rvalname), 0);
+        argreg[n] = GetOneGlobal(REG_ARG, strdup(rvalname), n);
     }
     return argreg[n];
 }
@@ -5180,13 +5180,13 @@ AssignOneFuncName(Function *f)
         }
 
         if (InCog(f)) {
-            FuncData(f)->asmname = NewOperand(IMM_COG_LABEL, fname, 0);
+            FuncData(f)->asmname = NewOperand(IMM_COG_LABEL, fname, 0/*(intptr_t)f*/);
             FuncData(f)->asmretname = NewOperand(IMM_COG_LABEL, frname, 0);
             if (fentername) {
                 FuncData(f)->asmentername = NewOperand(IMM_COG_LABEL, fentername, 0);
             }
         } else {
-            FuncData(f)->asmname = NewOperand(IMM_HUB_LABEL, fname, 0);
+            FuncData(f)->asmname = NewOperand(IMM_HUB_LABEL, fname, (intptr_t)f);
             FuncData(f)->asmretname = NewOperand(IMM_HUB_LABEL, frname, 0);
             if (fentername) {
                 FuncData(f)->asmentername = NewOperand(IMM_HUB_LABEL, fentername, 0);

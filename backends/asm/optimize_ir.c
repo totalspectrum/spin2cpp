@@ -810,8 +810,14 @@ extern Operand *mulfunc, *unsmulfunc, *divfunc, *unsdivfunc, *muldiva, *muldivb;
 
 static bool FuncUsesArg(Operand *func, Operand *arg)
 {
-    if (func == mulfunc || func == unsmulfunc || func == divfunc || func == unsdivfunc) {
-        return (arg == muldiva) || (arg == muldivb);
+    if (arg == muldiva || arg == muldivb) {
+        return true;
+    } else if (func == mulfunc || func == unsmulfunc || func == divfunc || func == unsdivfunc) {
+        return false;
+    } else if (func && func->val && (/*func->kind == IMM_COG_LABEL ||*/ func->kind == IMM_HUB_LABEL) && ((Function*)func->val)->is_leaf) {
+        if (arg->kind != REG_ARG) return true; // subreg or smth
+        if (arg->val < ((Function*)func->val)->numparams) return true; // Arg used;
+        return false; // Arg not used
     }
     return true;
 }
@@ -863,7 +869,6 @@ static int MinCyclesInRange(IR *start,IR *end) {
     }
     return cyc;
 }
-
 
 /*
  * return TRUE if the operand's value does not need to be preserved
@@ -1026,10 +1031,8 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
 done:  
   /* if we reach the end without seeing any use */
   if (isResult(op)) {
-      int used = curfunc->numresults;
-      for(int i=0;i<used;i++) {
-          if (op == GetResultReg(i)) return false;
-      }
+      if (op->kind != REG_RESULT) return false; // subreg or smth else
+      if (op->val < curfunc->numresults) return false; // This is a defined result of this function
       return true;
   } else {
     return IsLocalOrArg(op);
