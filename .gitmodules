@@ -1,0 +1,3 @@
+[submodule "Test/spinsim"]
+	path = Test/spinsim
+	url = https://github.com/Wuerfel21/spinsim

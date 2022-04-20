@@ -13,7 +13,11 @@ fi
 PROG_C="$SPIN2CPP -I../Lib"
 PROG_ASM="$FASTSPIN -I../Lib"
 #LOADER="loadp2 -b230400"
-LOADER="proploader -Q -D loader-baud-rate=115200 -D baud-rate=115200 -r -t"
+if [ "$2" != "" ]; then
+  LOADER=$2
+else
+  LOADER="proploader -Q -D loader-baud-rate=115200 -D baud-rate=115200 -r -t"
+fi
 
 CC=propeller-elf-gcc
 ok="ok"
@@ -48,7 +52,7 @@ do
 
   # now compile with asm
   if $PROG_ASM -o $j.binary $i; then
-    $LOADER $j.binary -t -q > $j.txt
+    $LOADER $j.binary > $j.txt
   fi
   if diff -ub Expect/$j.txt $j.txt
   then
@@ -69,7 +73,7 @@ do
     
   # now compile with asm
   if $PROG_ASM -o $j.binary $i; then
-    $LOADER $j.binary -t -q > $j.txt
+    $LOADER $j.binary > $j.txt
   fi
   if diff -ub Expect/$j.txt $j.txt
   then
@@ -93,7 +97,7 @@ do
     echo "TEST_C = ($TEST_C)"
     if $PROG_C --binary --ctypes --gas -fpermissive -Os -o $j.binary $i; then
       rm -f $j.out
-      $LOADER $j.binary -t -q > $j.txt
+      $LOADER $j.binary > $j.txt
     fi
     if diff -ub Expect/$j.txt $j.txt
     then
@@ -107,7 +111,7 @@ do
   
   # now compile with asm
   if $PROG_ASM -o $j.binary $i; then
-    $LOADER $j.binary -t -q > $j.txt
+    $LOADER $j.binary > $j.txt
   fi
   if diff -ub Expect/$j.txt $j.txt
   then
