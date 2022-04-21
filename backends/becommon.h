@@ -108,7 +108,8 @@ void PrintStatementList(Flexbuf *f, AST *ast, int indent);
 
 /* function to evaluate an expression and put its address into "addr"
  * returns PASM_EVAL_ISCONST for a constant, PASM_EVAL_ISREG if
- * addr points to a register; otherwise we can't handle it (yet)
+ * addr points to a register; for multiple registers it returns
+ * PASM_EVAL_ISREG_n. Otherwise we can't handle it (yet)
  * but eventually could save result on stack or in hub
  * regNum counts how many register arguments have been seen so far
  * in this DEBUG
@@ -116,6 +117,10 @@ void PrintStatementList(Flexbuf *f, AST *ast, int indent);
 typedef int (*BackendDebugEval)(AST *ast, int regNum, int *addr, void *beArg);
 #define PASM_EVAL_ISCONST 0
 #define PASM_EVAL_ISREG   1
+#define PASM_EVAL_ISREG_2 2
+#define PASM_EVAL_ISREG_3 3
+#define PASM_EVAL_ISREG_4 4
+#define PASM_EVAL_ISREG_MAX PASM_EVAL_ISREG_4
 
 #define MAX_BRK 256
 extern unsigned brkAssigned; // Currently assigned BRK codes

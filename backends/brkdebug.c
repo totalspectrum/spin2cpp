@@ -267,6 +267,15 @@ int AsmDebug_CodeGen(AST *ast, BackendDebugEval evalFunc, void *evalArg) {
                 case PASM_EVAL_ISREG:
                     emitAsmRegref(f, addr);
                     regNum++;
+                case PASM_EVAL_ISREG_2:
+                    emitAsmRegref(f, addr);
+                    regNum++;
+                    addr++;
+                    opcode &= ~DBC_FLAG_NOCOMMA;
+                    opcode |= DBC_FLAG_NOEXPR;
+                    flexbuf_putc(opcode, f);
+                    emitAsmRegref(f, addr);
+                    needcomma = true;
                     break;
                 default:
                     ERROR(arg, "Unknown address kind returned by back end");

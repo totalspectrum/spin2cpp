@@ -1,7 +1,7 @@
 //
 // Pasm data output for spin2cpp
 //
-// Copyright 2016-2021 Total Spectrum Software Inc.
+// Copyright 2016-2022 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -4577,11 +4577,39 @@ static int OutAsm_DebugEval(AST *ast, int regNum, int *addr, void *ourarg) {
     IRList *irl = (IRList *)ourarg;
     Operand *srcop;
     Operand *dstop;
+    int n;
     if (IsConstExpr(ast)) {
         *addr = EvalConstExpr(ast);
         return PASM_EVAL_ISCONST;
     }
+    if (ast && ast->kind == AST_FUNCCALL) {
+        OperandList *oplist = CompileFunccall(irl, ast);
+        OperandList *ptr;
+        if (!oplist) {
+            srcop = NewImmediate(0);
+            goto single_value;
+        }
+        if (!oplist->next) {
+            srcop = oplist->op;
+            goto single_value;
+        }
+        /* multiple values here -- count them */
+        *addr = debugaddr[regNum];
+        n = 0;  /* NOTE: assumes PASM_EVAL_ISREG_n == n ! */
+        for (ptr = oplist; ptr; ptr = ptr->next) {
+            if (n > PASM_EVAL_ISREG_MAX) {
+                WARNING(ast, "brk debug can handle at most %d results from a function; ignoring remaining ones", PASM_EVAL_ISREG_MAX);
+                return PASM_EVAL_ISREG_MAX;
+            }
+            dstop = GetDebugReg(regNum);
+            EmitMove(irl, dstop, ptr->op);
+            regNum++;
+            n++;
+        }
+        return n;
+    }
     srcop = CompileExpression(irl, ast, NULL);
+single_value:    
     dstop = GetDebugReg(regNum);
     EmitMove(irl, dstop, srcop);
     *addr = debugaddr[regNum];
