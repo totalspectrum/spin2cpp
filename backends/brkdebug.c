@@ -268,13 +268,17 @@ int AsmDebug_CodeGen(AST *ast, BackendDebugEval evalFunc, void *evalArg) {
                     emitAsmRegref(f, addr);
                     regNum++;
                 case PASM_EVAL_ISREG_2:
+                case PASM_EVAL_ISREG_3:
+                case PASM_EVAL_ISREG_4:
                     emitAsmRegref(f, addr);
                     regNum++;
                     addr++;
                     opcode &= ~DBC_FLAG_NOCOMMA;
                     opcode |= DBC_FLAG_NOEXPR;
-                    flexbuf_putc(opcode, f);
-                    emitAsmRegref(f, addr);
+                    for (int n = PASM_EVAL_ISREG; n < addrKind; n++) {
+                        flexbuf_putc(opcode, f);
+                        emitAsmRegref(f, addr);
+                    }
                     needcomma = true;
                     break;
                 default:
