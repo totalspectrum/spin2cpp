@@ -1041,6 +1041,54 @@ int _basic_print_unsigned(unsigned h, int x, unsigned fmt, int base)
     return _fmtnum(tf, fmt, x, base);
 }
 
+int _basic_print_unsigned_2(unsigned h, int x1, int x2, unsigned fmt, int base)
+{
+    TxFunc tf;
+    int r;
+    
+    tf = _gettxfunc(h);
+    if (!tf) return 0;
+    fmt |= 3<<SIGNCHAR_BIT;
+    r = _fmtnum(tf, fmt, x1, base);
+    r += _fmtstr(tf, fmt, ", ");
+    r += _fmtnum(tf, fmt, x2, base);
+    return r;
+}
+
+int _basic_print_unsigned_3(unsigned h, int x1, int x2, int x3, unsigned fmt, int base)
+{
+    TxFunc tf;
+    int r;
+    
+    tf = _gettxfunc(h);
+    if (!tf) return 0;
+    fmt |= 3<<SIGNCHAR_BIT;
+    r = _fmtnum(tf, fmt, x1, base);
+    r += _fmtstr(tf, fmt, ", ");
+    r += _fmtnum(tf, fmt, x2, base);
+    r += _fmtstr(tf, fmt, ", ");
+    r += _fmtnum(tf, fmt, x3, base);
+    return r;
+}
+
+int _basic_print_unsigned_4(unsigned h, int x1, int x2, int x3, int x4, unsigned fmt, int base)
+{
+    TxFunc tf;
+    int r;
+    
+    tf = _gettxfunc(h);
+    if (!tf) return 0;
+    fmt |= 3<<SIGNCHAR_BIT;
+    r = _fmtnum(tf, fmt, x1, base);
+    r += _fmtstr(tf, fmt, ", ");
+    r += _fmtnum(tf, fmt, x2, base);
+    r += _fmtstr(tf, fmt, ", ");
+    r += _fmtnum(tf, fmt, x3, base);
+    r += _fmtstr(tf, fmt, ", ");
+    r += _fmtnum(tf, fmt, x4, base);
+    return r;
+}
+
 int _basic_print_integer(unsigned h, int x, unsigned fmt, int base)
 {
     TxFunc tf;
@@ -1048,6 +1096,49 @@ int _basic_print_integer(unsigned h, int x, unsigned fmt, int base)
     tf = _gettxfunc(h);
     if (!tf) return 0;
     return _fmtnum(tf, fmt, x, base);
+}
+
+int _basic_print_integer_2(unsigned h, int x1, int x2, unsigned fmt, int base)
+{
+    TxFunc tf;
+    int r;
+    
+    tf = _gettxfunc(h);
+    if (!tf) return 0;
+    r = _fmtnum(tf, fmt, x1, base);
+    r += _fmtstr(tf, fmt, ", ");
+    r += _fmtnum(tf, fmt, x2, base);
+    return r;
+}
+
+int _basic_print_integer_3(unsigned h, int x1, int x2, int x3, unsigned fmt, int base)
+{
+    TxFunc tf;
+    int r;
+    tf = _gettxfunc(h);
+    if (!tf) return 0;
+    r = _fmtnum(tf, fmt, x1, base);
+    r += _fmtstr(tf, fmt, ", ");
+    r += _fmtnum(tf, fmt, x2, base);
+    r += _fmtstr(tf, fmt, ", ");
+    r += _fmtnum(tf, fmt, x3, base);
+    return r;
+}
+
+int _basic_print_integer_4(unsigned h, int x1, int x2, int x3, int x4, unsigned fmt, int base)
+{
+    TxFunc tf;
+    int r;
+    tf = _gettxfunc(h);
+    if (!tf) return 0;
+    r = _fmtnum(tf, fmt, x1, base);
+    r += _fmtstr(tf, fmt, ", ");
+    r += _fmtnum(tf, fmt, x2, base);
+    r += _fmtstr(tf, fmt, ", ");
+    r += _fmtnum(tf, fmt, x3, base);
+    r += _fmtstr(tf, fmt, ", ");
+    r += _fmtnum(tf, fmt, x4, base);
+    return r;
 }
 
 int _basic_print_longunsigned(unsigned h, unsigned long long x, unsigned fmt, int base)

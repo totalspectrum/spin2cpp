@@ -41,7 +41,13 @@ AST *basic_read_line;
 AST *basic_print_float;
 AST *basic_print_string;
 AST *basic_print_integer;
+AST *basic_print_integer_2;
+AST *basic_print_integer_3;
+AST *basic_print_integer_4;
 AST *basic_print_unsigned;
+AST *basic_print_unsigned_2;
+AST *basic_print_unsigned_3;
+AST *basic_print_unsigned_4;
 AST *basic_print_longinteger;
 AST *basic_print_longunsigned;
 AST *basic_print_char;
@@ -1894,7 +1900,13 @@ InitGlobalFuncs(void)
         basic_read_line = getBasicPrimitive("_basic_read_line");
         
         basic_print_integer = getBasicPrimitive("_basic_print_integer");
+        basic_print_integer_2 = getBasicPrimitive("_basic_print_integer_2");
+        basic_print_integer_3 = getBasicPrimitive("_basic_print_integer_3");
+        basic_print_integer_4 = getBasicPrimitive("_basic_print_integer_4");
         basic_print_unsigned = getBasicPrimitive("_basic_print_unsigned");
+        basic_print_unsigned_2 = getBasicPrimitive("_basic_print_unsigned_2");
+        basic_print_unsigned_3 = getBasicPrimitive("_basic_print_unsigned_3");
+        basic_print_unsigned_4 = getBasicPrimitive("_basic_print_unsigned_4");
         basic_print_longinteger = getBasicPrimitive("_basic_print_longinteger");
         basic_print_longunsigned = getBasicPrimitive("_basic_print_longunsigned");
         basic_print_string = getBasicPrimitive("_basic_print_string");

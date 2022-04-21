@@ -2131,6 +2131,15 @@ CheckFunctionCalls(AST *ast)
             }
         } else {
             if (gotArgs != expectArgs) {
+                if (ast->left == basic_print_integer) {
+                    if (gotArgs - expectArgs == 1) {
+                        ast->left = basic_print_integer_2; goto func_ok;
+                    } else if (gotArgs - expectArgs == 2) {
+                        ast->left = basic_print_integer_3; goto func_ok;
+                    } else if (gotArgs - expectArgs == 3) {
+                        ast->left = basic_print_integer_4; goto func_ok;
+                    }
+                }
                 if (f && IsCLang(f->language)) {
                     if (strcmp(f->name, "main") != 0) {
                         // don't warn for main()
@@ -2142,6 +2151,7 @@ CheckFunctionCalls(AST *ast)
                 return;
             }
         }
+    func_ok:
         if (initseq) {
             // modify the ast to hold the sequence and then the function call
             initseq = NewAST(AST_SEQUENCE, initseq,
