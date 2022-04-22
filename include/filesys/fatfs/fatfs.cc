@@ -8,6 +8,8 @@
 
 #define DIR FFDIR
 #define get_fattime _get_fattime
+
+#include "ffunicode.c"
 #include "ff.c"
 #undef DIR
 
