@@ -642,11 +642,23 @@ realstatementlist:
     { $$ = AddToList($1, $3); }
 ;
 
-ifline:
+iflist:
   statement
     { $$ = NewAST(AST_STMTLIST, $1, NULL); }
-  | ifline ':' statement
+  | iflist ':' statement
     { $$ = AddToList($1, NewAST(AST_STMTLIST, $3, NULL)); }
+;
+
+optelselist:
+  BAS_ELSE iflist
+     { $$ = $2; }
+  | /* nothing */
+    { $$ = NULL; }
+;
+
+ifline:
+  iflist optelselist
+     { $$ = NewAST(AST_THENELSE, $1, $2); }
 ;
 
 statement:
@@ -1151,7 +1163,7 @@ ifstmt:
     }
   | BAS_IF expr BAS_THEN ifline
     {
-        AST *elseblock = NewAST(AST_THENELSE, $4, NULL);
+        AST *elseblock = $4;
         $$ = NewCommentedAST(AST_IF, $2, elseblock, $1);
     }
 ;

@@ -2282,6 +2282,12 @@ if x = y then print "they are equal" : print "they are still equal"
 ```
 which will print "they are equal" followed by "they are still equal" if `x` equals `y`, but which will print nothing if they are not equal. This form of `if` is provided for compatibility with old code, but is not recommended for use in new code.
 
+An `else` clause may be provided by following the last statement in the `if` branch immediately by the `else` keyword (note that no `:` should separate them):
+```
+if x = y then print "x and y are the same" : z = 1 else print "x and y are different" : z = 0
+```
+Nesting `if` and `else` on the same line may produce unexpected results, so do *not* do this (only one `if` should appear on a line).
+
 Compound if statements have a `then` which ends the line. These statements continue on until the next matching `else` or `end if`. If you want to have an `else` condition then you will have to use this form of if:
 ```
 if x = y then
