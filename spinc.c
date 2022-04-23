@@ -136,6 +136,9 @@ InitGlobalModule(void)
             sym = AddSymbol(table, "__interp_abortchain", SYM_VARIABLE, ast_type_ptr_long, NULL);
             sym->flags |= SYMF_GLOBAL;
             sym->offset = -0x1e4; // gives COG address
+            sym = AddSymbol(table, "__interp_abortresult", SYM_VARIABLE, ast_type_ptr_long, NULL);
+            sym->flags |= SYMF_GLOBAL;
+            sym->offset = -0x1e5; // gives COG address
             sym = AddSymbol(table, "__interp_temp1", SYM_VARIABLE, ast_type_generic, NULL);
             sym->flags |= SYMF_GLOBAL;
             sym->offset = -0x1ea; // special flag for COG internal memory

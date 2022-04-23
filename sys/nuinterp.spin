@@ -462,7 +462,9 @@ vbase	res    	1     ' $1e2
 cogsp	res	1     ' $1e3
 __abortchain	      ' $1e4
 	res	1
-	res	3	' 3 more available
+__abortresult
+	res	1     ' $1e5
+	res	2	' 2 more available
 	' reserved:
 	' $1e8 = __sendptr
 	' $1e9 = __recvptr
