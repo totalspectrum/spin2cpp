@@ -60,6 +60,7 @@ static int NuCompileMul(NuIrList *irl, AST *lhs, AST *rhs, int gethi);
 
 static AST *nu_stack_ptr = 0;
 static AST *nu_abortchain_ptr = 0;
+static AST *nu_abortresult_ptr = 0;
 
 typedef struct NuLabelList {
     struct NuLabelList *next;
@@ -1418,15 +1419,31 @@ NuCompileExpression(NuIrList *irl, AST *node) {
     } break;
     case AST_TRYENV: {
         //  allocate space on stack
-        ERROR(node, "Cannot handle tryenv yet");
+        ERROR(node, "Cannot handle tryenv in expressions yet");
         pushed = 1;
     } break;
     case AST_SETJMP: {
-        ERROR(node, "cannot handle setjmp yet");
-        pushed = 2;
+        int needpop = 0;
+        if (node->left) {
+            needpop = 1;
+            ERROR(node, "cannot handle this setjmp in expressions yet");
+        } else {
+            NuCompileLhsAddress(irl, nu_abortchain_ptr);
+            NuEmitCommentedOp(irl, NU_OP_LDREG, "use existing abort chain");
+        }
+        NuEmitCommentedOp(irl, NU_OP_SETJMP, "set jump buffer");
+        NuEmitCommentedOp(irl, NU_OP_SWAP, "put abort result on top");
+        if (needpop) {
+            NuEmitCommentedOp(irl, NU_OP_DROP, "ignore second value");
+        } else {
+            NuCompileLhsAddress(irl, nu_abortresult_ptr);
+            NuEmitCommentedOp(irl, NU_OP_STREG, "save abort result");
+        }
+        pushed = 1;
     } break;
     case AST_CATCHRESULT: {
-        ERROR(node, "cannot handle catchresult yet");
+        NuCompileLhsAddress(irl, nu_abortresult_ptr);
+        NuEmitCommentedOp(irl, NU_OP_LDREG, "load last caught value");
         pushed = 1;
     } break;
     case AST_ALLOCA: {
@@ -1757,6 +1774,24 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
         NuEmitConst(irl, flag);
         NuEmitCommentedOp(irl, NU_OP_LONGJMP, "throw");
     } break;
+    case AST_TRYENV: {
+        NuCompileLhsAddress(irl, nu_abortchain_ptr);
+        NuEmitCommentedOp(irl, NU_OP_LDREG, "save old abortchain ptr");
+        NuCompileAlloca(irl, AstInteger(NU_JMP_BUF_SIZ));
+        NuCompileLhsAddress(irl, nu_abortchain_ptr);
+        NuEmitCommentedOp(irl, NU_OP_STREG, "set new abortchain ptr");
+        if (ast->left && ast->left->kind != AST_STMTLIST) {
+            ERROR(ast, "Nucode internal error: cannot handle expressions yet");
+        } else {
+            NuCompileStmtlist(irl, ast->left);
+        }
+        NuCompileLhsAddress(irl, nu_abortchain_ptr);
+        NuEmitCommentedOp(irl, NU_OP_LDREG, "load abortchain ptr");
+        NuCompileLhsAddress(irl, nu_stack_ptr);
+        NuEmitCommentedOp(irl, NU_OP_STREG, "restore stack");
+        NuCompileLhsAddress(irl, nu_abortchain_ptr);
+        NuEmitCommentedOp(irl, NU_OP_STREG, "pop abortchain ptr");
+    } break;
     case AST_BRKDEBUG: {
         int brkCode = AsmDebug_CodeGen(ast, NuDebugEval, (void *)irl);
         if (brkCode >= 0) {
@@ -1982,6 +2017,7 @@ void OutputNuCode(const char *asmFileName, Module *P)
 
     nu_stack_ptr = AstIdentifier("__interp_sp");
     nu_abortchain_ptr = AstIdentifier("__interp_abortchain");
+    nu_abortresult_ptr = AstIdentifier("__interp_abortresult");
     NuIrInit(&nuContext);
     
     if (!P->functions) {
