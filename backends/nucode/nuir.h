@@ -148,6 +148,7 @@
     X(CBGEU)     /* compare branch if >= unsigned */ \
     \
     X(DUMMY)     /* this and everything following needs no code */ \
+    X(COMMENT)   /* just a comment */ \
     X(ALIGN)     /* align data */ \
     X(LABEL)     /* label for jump target */ \
     X(CBxx)      /* matches any CBxx instruction */ \
@@ -229,6 +230,7 @@ NuIr *NuEmitCommentedAddress(NuIrList *irl, NuIrLabel *label, const char *commen
 NuIr *NuEmitCall(NuIrList *irl, NuIrOpcode op, NuIrLabel *label, const char *comment);
 NuIr *NuEmitLabel(NuIrList *irl, NuIrLabel *label);
 NuIr *NuEmitBranch(NuIrList *irl, NuIrOpcode op, NuIrLabel *label);
+NuIr *NuEmitComment(NuIrList *irl, const char *comment);
 
 NuIrLabel *NuCreateLabel();
 

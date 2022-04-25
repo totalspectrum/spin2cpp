@@ -162,6 +162,10 @@ NuIr *NuEmitCommentedOp(NuIrList *irl, NuIrOpcode op, const char *comment) {
     return r;
 }
 
+NuIr *NuEmitComment(NuIrList *irl, const char *comment) {
+    return NuEmitCommentedOp(irl, NU_OP_COMMENT, comment);
+}
+
 NuIr *NuEmitConst(NuIrList *irl, int32_t val) {
     NuIr *r;
 
