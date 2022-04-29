@@ -717,6 +717,9 @@ void CompileIntermediate(Module *P);
 /* fetch clock frequency settings */
 int GetClkFreq(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr);
 
+/* fetch original CLKMODE setting from adjust setting in binary */
+unsigned CalcOrigClockMode(unsigned int clkreg);
+
 // some string utilities
 
 // find the last directory separator (/ or, for windows, \)

@@ -1,6 +1,7 @@
 con
+	_clkfreq = 200000000
+	_clkmode = 16779771
 	CLOCKFREQ = 200000000
-	_CLKFREQ = 200000000
 dat
 	nop
 	cogid	pa

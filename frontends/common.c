@@ -2028,6 +2028,52 @@ int32_t EvalConstSym(Symbol *sym)
     return EvalConstExpr(ast);
 }
 
+//
+// from the adjusted clock mode register (as stored in the binary)
+// calculate the original _CLKMODE constant
+//
+unsigned CalcOrigClockMode(unsigned int clkreg)
+{
+    unsigned clockmode = 0;
+    
+    if (gl_p2) {
+        return clkreg;
+    }
+    if (clkreg == 0) {
+        return RCFAST;
+    } else if (clkreg == 2) {
+        return RCSLOW;
+    } else if (3 == (clkreg & 0x3)) {
+        return XINPUT;
+    } else {
+        unsigned tmp = (clkreg >> 3) & 3;
+        switch (tmp) {
+        case 1:
+            clockmode |= XTAL1; break;
+        case 2:
+            clockmode |= XTAL2; break;
+        default:
+            clockmode |= XTAL3; break;
+        }
+        tmp = (clkreg & 0x7);
+        switch (tmp) {
+        case 0x3:
+            clockmode |= PLL1X; break;
+        case 0x4:
+            clockmode |= PLL2X; break;
+        case 0x5:
+            clockmode |= PLL4X; break;
+        case 0x6:
+            clockmode |= PLL8X; break;
+        case 0x7:
+            clockmode |= PLL16X; break;
+        default:
+            ERROR(NULL, "unexpected clock register value\n"); break;
+        }
+    }
+    return clockmode;
+}
+
 // find _clkmode and _clkfreq settings for P1
 static int
 CalcClkFreqP1(Module *P)
@@ -2124,7 +2170,8 @@ CalcClkFreqP1(Module *P)
 
     // define built in constants for these
     AddInternalSymbol(&P->objsyms, "__clkfreq_con", SYM_CONSTANT, AstInteger(clkfreq), NULL);
-    AddInternalSymbol(&P->objsyms, "__clkmode_con", SYM_CONSTANT, AstInteger(clkreg), NULL);
+    AddInternalSymbol(&P->objsyms, "__clkreg_con", SYM_CONSTANT, AstInteger(clkreg), NULL);
+    AddInternalSymbol(&P->objsyms, "__clkmode_con", SYM_CONSTANT, AstInteger(clkmode), NULL);
     return 1;
 }
 
@@ -2235,6 +2282,7 @@ set_symbols:
     // define built in constants for these
     AddInternalSymbol(&P->objsyms, "__clkfreq_con", SYM_CONSTANT, AstInteger(finalfreq), NULL);
     AddInternalSymbol(&P->objsyms, "__clkmode_con", SYM_CONSTANT, AstInteger(clkmode), NULL);
+    AddInternalSymbol(&P->objsyms, "__clkreg_con", SYM_CONSTANT, AstInteger(clkmode), NULL);
     
     return 1;
 }
@@ -2247,7 +2295,7 @@ int GetClkFreq(Module *P, unsigned int *clkfreqptr, unsigned int *clkmodeptr)
     Symbol *freqsym, *modesym;
 
     freqsym = P ? FindSymbol(&P->objsyms, "__clkfreq_con") : NULL;
-    modesym = P ? FindSymbol(&P->objsyms, "__clkmode_con") : NULL;
+    modesym = P ? FindSymbol(&P->objsyms, "__clkreg_con") : NULL;
 
     if (!freqsym || !modesym) {
         return 0;

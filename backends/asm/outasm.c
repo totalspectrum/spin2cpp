@@ -107,7 +107,7 @@ static void CompileStatement(IRList *irl, AST *ast); /* forward declaration */
 static Operand *GetAddressOf(IRList *irl, AST *expr);
 static IR *EmitMove(IRList *irl, Operand *dst, Operand *src);
 static void EmitBuiltins(IRList *irl);
-static void CompileConsts(IRList *irl, AST *consts);
+static void CompileConsts(IRList *irl, Module *P);
 static Operand *EmitAddSub(IRList *irl, Operand *dst, int off);
 static Operand *SizedHubMemRef(int size, Operand *addr, int offset);
 Operand *CogMemRef(Operand *addr, int offset);
@@ -5904,12 +5904,21 @@ EmitBuiltins(IRList *irl)
 }
 
 static void
-CompileConstant(IRList *irl, AST *ast)
+CompileConstOperand(IRList *irl, const char *name, AST *expr)
+{
+    int32_t val;
+    Operand *op1, *op2;
+    val = EvalConstExpr(expr);
+    op1 = NewOperand(IMM_STRING, name, val);
+    op2 = NewImmediate(val);
+    EmitOp2(irl, OPC_CONST, op1, op2);
+}
+
+static void
+CompileConstant(IRList *irl, AST *ast, bool skip_clkfreq, bool skip_clkmode)
 {
     Symbol *sym = NULL;
     AST *expr;
-    int32_t val;
-    Operand *op1, *op2;
     const char *name;
 
     if (ast->kind == AST_SYMBOL) {
@@ -5928,17 +5937,32 @@ CompileConstant(IRList *irl, AST *ast)
         return;
     }
     expr = (AST *)sym->val;
-    val = EvalConstExpr(expr);
-    op1 = NewOperand(IMM_STRING, name, val);
-    op2 = NewImmediate(val);
-    EmitOp2(irl, OPC_CONST, op1, op2);
+    if (skip_clkfreq && !strcasecmp(name, "_clkfreq")) {
+        return;
+    }
+    if (skip_clkmode && !strcasecmp(name, "_clkmode")) {
+        return;
+    }
+    CompileConstOperand(irl, name, expr);
 }
 
 static void
-CompileConsts(IRList *irl, AST *conblock)
+CompileConsts(IRList *irl, Module *P)
 {
     AST *ast, *upper;
-
+    AST *conblock = P->conblock;
+    bool skip_clkfreq = false;
+    bool skip_clkmode = false;
+    /* emit special constants */
+    Symbol *sym;
+    if ( 0 != (sym = FindSymbol(&P->objsyms, "__clkfreq_con")) ) {
+        skip_clkfreq = true;
+        CompileConstOperand(irl, "_clkfreq", (AST *)sym->val);
+    }
+    if ( 0 != (sym = FindSymbol(&P->objsyms, "__clkmode_con")) ) {
+        skip_clkmode = true;
+        CompileConstOperand(irl, "_clkmode", (AST *)sym->val);
+    }
     for (upper = conblock; upper; upper = upper->right) {
         ast = upper->left;
         if (ast->kind == AST_COMMENTEDNODE) {
@@ -5947,14 +5971,14 @@ CompileConsts(IRList *irl, AST *conblock)
         }
         switch (ast->kind) {
         case AST_ENUMSKIP:
-            CompileConstant(irl, ast->left);
+            CompileConstant(irl, ast->left, skip_clkfreq, skip_clkmode);
             break;
         case AST_SYMBOL:
         case AST_IDENTIFIER:
-            CompileConstant(irl, ast);
+            CompileConstant(irl, ast, skip_clkfreq, skip_clkmode);
             break;
         case AST_ASSIGN:
-            CompileConstant(irl, ast->left);
+            CompileConstant(irl, ast->left, skip_clkfreq, skip_clkmode);
             break;
         default:
             /* do nothing */
@@ -6462,7 +6486,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     if (emitSpinCode) {
         EmitOp1(&cogbss, OPC_ORG, cog_bss_start);
     }
-    CompileConsts(&cogcode, P->conblock);
+    CompileConsts(&cogcode, P);
 
     // guesstimate how much space we will have for FCACHE, if
     // a dynamic size is requested

@@ -1,3 +1,6 @@
+Version 5.9.11
+- Made it so defining a _clkmode enum in C works as intended
+
 Version 5.9.10
 - Added a LOT of helpful optimizations contributed by Ada Gottensträter
 - Added __HAVE_FCACHE__ define if FCACHE is enabled (also contributed by Ada)

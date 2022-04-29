@@ -1,5 +1,6 @@
 con
 	_clkfreq = 180000000
+	_clkmode = 16779515
 dat
 	nop
 	cogid	pa
