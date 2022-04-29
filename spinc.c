@@ -1206,6 +1206,13 @@ FixupCode(Module *P, int isBinary)
                     sym = sym2;
                 }
             }
+            if (!sym || sym->kind != SYM_CONSTANT) {
+                Symbol *sym2;
+                sym2 = FindSymbol(&P->objsyms, "_heapsize");
+                if (sym2) {
+                    sym = sym2;
+                }
+            }
             if (sym) {
                 if (sym->kind != SYM_CONSTANT) {
                     WARNING(NULL, "heapsize is not a constant");
