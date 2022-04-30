@@ -1835,22 +1835,21 @@ NuCompileFunction(Function *F) {
             AST *allocmem;
             AST *copymem;
             AST *args;
-            int framesize = FuncLocalSize(F);
-            int nuframesize = 16;
+            int framesize = FuncLocalSize(F) + 16;
             AST *tempvar = AstIdentifier("__interp_temp1");
-            // result = _gc_alloc_managed(framesize)
-            args = NewAST(AST_EXPRLIST, AstInteger(framesize + nuframesize), NULL);
+            // tempvar = _gc_alloc_managed(framesize)
+            args = NewAST(AST_EXPRLIST, AstInteger(framesize), NULL);
             allocmem = NewAST(AST_FUNCCALL, AstIdentifier("_gc_alloc_managed"), args);
             allocmem = AstAssign(tempvar, allocmem);
             allocmem = NewAST(AST_STMTLIST, allocmem, NULL);
-            // longcopy(result, dbase - nuframesize, framesize)
+            // longcopy(tempvar, dbase, framesize)
             args = NewAST(AST_EXPRLIST, AstInteger(framesize), NULL);
-            args = NewAST(AST_EXPRLIST, AstOperator('-', AstIdentifier("__interp_dbase"), AstInteger(nuframesize)), args);
+            args = NewAST(AST_EXPRLIST, AstIdentifier("__interp_dbase"), args);
             args = NewAST(AST_EXPRLIST, tempvar, args);
             copymem = NewAST(AST_FUNCCALL, AstIdentifier("bytemove"), args);
             copymem = NewAST(AST_STMTLIST, copymem, NULL);
             // dbase := result
-            args = AstAssign(AstIdentifier("__interp_dbase"), AstOperator('+', tempvar, AstInteger(nuframesize)));
+            args = AstAssign(AstIdentifier("__interp_dbase"), tempvar);
             args = NewAST(AST_STMTLIST, args, F->body);
             allocmem = AddToList(allocmem, copymem);
             allocmem = AddToList(allocmem, args);
