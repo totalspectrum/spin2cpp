@@ -183,6 +183,7 @@ any
 append
 as
 asm
+boolean
 __builtin_alloca
 byref
 byte
@@ -242,12 +243,14 @@ or
 orelse
 output
 pointer
+preserve
 print
 private
 program
 ptr
 put
 read
+redim
 rem
 restore
 return
@@ -1193,6 +1196,10 @@ Returns a string representing the unsigned integer `x` in binary notation. Only 
   x = bitrev(y)
 ```
 Returns the bits of the 32 bit unsigned integer `y` in reverse order. For example, `bitrev(1)` will give `$80000000`, and `bitrev($5555)` will give `$aaaa0000`.
+
+### BOOLEAN
+
+Represents a true or false result. Represented as a 32 bit integer, with TRUE set to all 1's and FALSE set to all 0's. In practice any non-zero value will be accepted as being "true".
 
 ### __BUILTIN_ALLOCA
 
@@ -2814,6 +2821,10 @@ Force a pin to be an output, and invert its current value.
 ```
 declares `x` as a pointer to an unsigned long value.
 
+### PRESERVE
+
+`preserve` is reserved as a keyword for future use.
+
 ### PRINT
 
 `print` is a special subroutine that prints data to a serial port or other stream. The default destination for `print` is the pin 30 (pin 62 on P2) serial port, running at 115_200 baud (230_400 baud on P2).
@@ -2944,6 +2955,10 @@ Several important caveats apply:
 ### _REBOOT
 
 `_reboot` is a built in function which will reset the P2. It is not used very often.
+
+### REDIM
+
+`redim` is reserved as a keyword for future use in the compiler.
 
 ### REM
 

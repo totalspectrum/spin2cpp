@@ -411,6 +411,7 @@ AdjustParamForByVal(AST *param)
 %token BAS_ASC        "asc"
 %token BAS_ASM        "asm"
 %token BAS_ALLOCA     "__builtin_alloca"
+%token BAS_BOOLEAN    "boolean"
 %token BAS_BYREF      "byref"
 %token BAS_BYTE       "byte"
 %token BAS_BYVAL      "byval"
@@ -471,12 +472,14 @@ AdjustParamForByVal(AST *param)
 %token BAS_ORELSE     "orelse"
 %token BAS_OUTPUT     "output"
 %token BAS_POINTER    "pointer"
+%token BAS_PRESERVE   "preserve"
 %token BAS_PRINT      "print"
 %token BAS_PRIVATE    "private"
 %token BAS_PROGRAM    "program"
 %token BAS_PTR        "ptr"
 %token BAS_PUT        "put"
 %token BAS_READ       "read"
+%token BAS_REDIM      "redim"
 %token BAS_RESTORE    "restore"
 %token BAS_RETURN     "return"
 %token BAS_SAMETYPES  "_sametypes"
@@ -2211,6 +2214,8 @@ basetypename:
   | BAS_ULONGINT
     { $$ = ast_type_unsigned_long64; }
   | BAS_INTEGER_KW
+    { $$ = ast_type_long; }
+  | BAS_BOOLEAN
     { $$ = ast_type_long; }
   | BAS_UINTEGER
     { $$ = ast_type_unsigned_long; }
