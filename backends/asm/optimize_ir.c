@@ -638,9 +638,9 @@ isConstMove(IR *ir, int32_t *valout) {
     case OPC_GETNIB:
         val = (val>>(ir->src2->val*4))&0xF;
     case OPC_GETBYTE:
-        val = (val>>(ir->src2->val*4))&0xFF;
+        val = (val>>(ir->src2->val*8))&0xFF;
     case OPC_GETWORD:
-        val = (val>>(ir->src2->val*4))&0xFFFF;
+        val = (val>>(ir->src2->val*16))&0xFFFF;
         break;
     default:
         return false;
