@@ -319,7 +319,7 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
         break;
     case SYM_CLOSURE:
         offset = sym->offset;
-        offsetOp = NU_OP_ADD_VBASE;
+        offsetOp = NU_OP_ADD_DBASE;
         loadOp = LoadStoreOp(sym->val, isLoad);
         break;
     case SYM_VARIABLE:
@@ -1731,7 +1731,11 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
         }
         NuEmitConst(irl, NumArgLongs(curfunc));
         NuEmitConst(irl, n);
-        NuEmitOp(irl, NU_OP_RET);
+        if (curfunc->closure) {
+            NuEmitOp(irl, NU_OP_RET_CLOSURE);
+        } else {
+            NuEmitOp(irl, NU_OP_RET);
+        }
         break;
     case AST_FUNCCALL:
     case AST_OPERATOR:
@@ -1878,14 +1882,14 @@ NuCompileFunction(Function *F) {
                 // just insert RET
                 NuEmitConst(irl, NumArgLongs(curfunc));
                 NuEmitConst(irl, 0);
-                NuEmitOp(irl, NU_OP_RET);
+                NuEmitOp(irl, F->closure ? NU_OP_RET_CLOSURE : NU_OP_RET);
             } else {
                 // FIXME: maybe we don't actually need to do this?
                 // it's possible there are already returns before this
                 int n = NuCompileExpression(irl, F->resultexpr);
                 NuEmitConst(irl, NumArgLongs(curfunc));
                 NuEmitConst(irl, n);
-                NuEmitOp(irl, NU_OP_RET);
+                NuEmitOp(irl, F->closure ? NU_OP_RET_CLOSURE : NU_OP_RET);
             }
         }
     }

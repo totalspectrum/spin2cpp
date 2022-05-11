@@ -348,7 +348,13 @@ do_enter
   _ret_	add	ptra, nlocals	' skip over locals
 
 ' RET gives number of items on stack to pop off, and number of arguments initially
+' RET_CLOSURE is similar, but does not restore the stack
+impl_RET_CLOSURE
+	mov	tmp2, #0
+	jmp	#impl_ret_body
 impl_RET
+	mov	tmp2, #1
+impl_ret_body
 	push	#restart_loop
 	' save # return items to pop
 	mov	nrets, tos
@@ -367,7 +373,8 @@ impl_RET
 .poprets_end
 
 	' restore the stack
-	mov	ptra, dbase
+	cmp	tmp2, #0 wz
+  if_nz	mov	ptra, dbase
 	shl	nargs, #2
 	add	ptra, nargs
 	shr	nargs, #2
@@ -427,7 +434,7 @@ impl_HALT
 end_cog
 
 cogstack
-	res	32
+	res	28
 cogstack_inc
 	res	1
 cogstack_dec
@@ -450,12 +457,15 @@ old_cogsp res	1
 dbg_flag res	1  ' for serial debug
 
 
+#ifndef SERIAL_DEBUG
 '	fit	$1d0  ' inline assembly variables start here
 	fit	$1cc  ' inline assembly variables start here
 	org	$1cc
 inline_vars
 	res	20
-	 org	$1e0  ' special locals here
+#endif
+	fit	$1e0
+	org	$1e0  ' special locals here
 dbase	res    	1     ' $1e0
 new_pc	res	1     ' $1e1
 vbase	res    	1     ' $1e2

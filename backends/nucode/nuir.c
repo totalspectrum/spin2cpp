@@ -87,6 +87,7 @@ void NuIrInit(NuContext *ctxt) {
     impl_ptrs[NU_OP_CALLM] = "";
     impl_ptrs[NU_OP_ENTER] = "";
     impl_ptrs[NU_OP_RET] = "";
+    impl_ptrs[NU_OP_RET_CLOSURE] = "";
     impl_ptrs[NU_OP_PUSHI] = "";
     impl_ptrs[NU_OP_PUSHA] = "";
     impl_ptrs[NU_OP_CALLA] = "";

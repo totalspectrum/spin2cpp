@@ -126,6 +126,7 @@
     /* put all branches together here at the end */ \
     X(JMP)       /* jump to address at tos */ \
     X(RET)       /* return from subroutine */ \
+    X(RET_CLOSURE) /* return from subroutine with closure */ \
     X(CALL)      /* call subroutine */ \
     X(CALLM)     /* call method (changes object pointer) */ \
     X(CALLA)     /* call subroutine direct */ \
