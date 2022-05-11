@@ -2216,10 +2216,6 @@ CalcClkFreqP2(Module *P)
         }
     }
     if (clkmodesym && clkmodesym->kind == SYM_CONSTANT) {
-        if (xinfreqsym || xtlfreqsym) {
-            ERROR(NULL, "_xinfreq and _xtlfreq are redundant with _clkmode");
-            return 0;
-        }
         if (!clkfreqsym) {
             ERROR(NULL, "_clkmode definition requires _clkfreq as well");
             return 0;
