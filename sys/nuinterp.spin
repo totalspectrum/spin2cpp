@@ -543,7 +543,7 @@ impl_ADD_PC
   
 impl_ADD_SUPER
   _ret_	add	tos, __super
-  
+
 impl_ADD_SP
 	add	tos, #8	  ' leave room for nos and tos
   _ret_	add	tos, ptra
