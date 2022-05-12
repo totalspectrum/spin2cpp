@@ -315,11 +315,14 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
     case SYM_PARAMETER:
     case SYM_RESULT:
         offset = sym->offset;
+        if (curfunc->closure) {
+            offsetOp = NU_OP_ADD_VBASE;
+        }
         loadOp = LoadStoreOp(sym->val, isLoad);
         break;
     case SYM_CLOSURE:
         offset = sym->offset;
-        offsetOp = NU_OP_ADD_DBASE;
+        offsetOp = NU_OP_ADD_VBASE;
         loadOp = LoadStoreOp(sym->val, isLoad);
         break;
     case SYM_VARIABLE:
@@ -345,7 +348,11 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
             offsetOp = NU_OP_ILLEGAL;
         } else {
             offset = sym->offset;
-            offsetOp = NU_OP_ADD_VBASE;
+            if (curfunc->closure) {
+                offsetOp = NU_OP_ADD_SUPER;
+            } else {
+                offsetOp = NU_OP_ADD_VBASE;
+            }
         }
         break;
     case SYM_LABEL:
@@ -1731,11 +1738,7 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
         }
         NuEmitConst(irl, NumArgLongs(curfunc));
         NuEmitConst(irl, n);
-        if (curfunc->closure) {
-            NuEmitOp(irl, NU_OP_RET_CLOSURE);
-        } else {
-            NuEmitOp(irl, NU_OP_RET);
-        }
+        NuEmitOp(irl, NU_OP_RET);
         break;
     case AST_FUNCCALL:
     case AST_OPERATOR:
@@ -1839,8 +1842,10 @@ NuCompileFunction(Function *F) {
             AST *allocmem;
             AST *copymem;
             AST *args;
+            AST *newbody;
             int framesize = FuncLocalSize(F) + 16;
             AST *tempvar = AstIdentifier("__interp_temp1");
+            AST *supervar = AstIdentifier("__interp_super");
             // tempvar = _gc_alloc_managed(framesize)
             args = NewAST(AST_EXPRLIST, AstInteger(framesize), NULL);
             allocmem = NewAST(AST_FUNCCALL, AstIdentifier("_gc_alloc_managed"), args);
@@ -1852,12 +1857,18 @@ NuCompileFunction(Function *F) {
             args = NewAST(AST_EXPRLIST, tempvar, args);
             copymem = NewAST(AST_FUNCCALL, AstIdentifier("bytemove"), args);
             copymem = NewAST(AST_STMTLIST, copymem, NULL);
-            // dbase := result
-            args = AstAssign(AstIdentifier("__interp_dbase"), tempvar);
+
+	    // super := vbase
+            supervar = AstAssign(supervar, AstIdentifier("__interp_vbase"));
+            supervar = NewAST(AST_STMTLIST, supervar, NULL);
+            
+            // vbase := result
+            args = AstAssign(AstIdentifier("__interp_vbase"), tempvar);
             args = NewAST(AST_STMTLIST, args, F->body);
-            allocmem = AddToList(allocmem, copymem);
-            allocmem = AddToList(allocmem, args);
-            F->body = allocmem;
+            newbody = AddToList(allocmem, copymem);
+            newbody = AddToList(newbody, supervar);
+            newbody = AddToList(newbody, args);
+            F->body = newbody;
         }
         irl = &FunData(F)->irl;
 
@@ -1882,14 +1893,14 @@ NuCompileFunction(Function *F) {
                 // just insert RET
                 NuEmitConst(irl, NumArgLongs(curfunc));
                 NuEmitConst(irl, 0);
-                NuEmitOp(irl, F->closure ? NU_OP_RET_CLOSURE : NU_OP_RET);
+                NuEmitOp(irl, NU_OP_RET);
             } else {
                 // FIXME: maybe we don't actually need to do this?
                 // it's possible there are already returns before this
                 int n = NuCompileExpression(irl, F->resultexpr);
                 NuEmitConst(irl, NumArgLongs(curfunc));
                 NuEmitConst(irl, n);
-                NuEmitOp(irl, F->closure ? NU_OP_RET_CLOSURE : NU_OP_RET);
+                NuEmitOp(irl, NU_OP_RET);
             }
         }
     }

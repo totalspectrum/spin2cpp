@@ -21,6 +21,7 @@
     \
     X(ADD_VBASE) /* add object base to tos */ \
     X(ADD_DBASE) /* add frame pointer to tos */ \
+    X(ADD_SUPER) /* add super pointer to tos */ \
     X(ADD_SP)    /* add stack pointer to tos */ \
     X(ADD_PC)    /* add program counter to tos */ \
     X(SET_SP)    /* set stack pointer to tos */ \
@@ -126,7 +127,6 @@
     /* put all branches together here at the end */ \
     X(JMP)       /* jump to address at tos */ \
     X(RET)       /* return from subroutine */ \
-    X(RET_CLOSURE) /* return from subroutine with closure */ \
     X(CALL)      /* call subroutine */ \
     X(CALLM)     /* call method (changes object pointer) */ \
     X(CALLA)     /* call subroutine direct */ \
