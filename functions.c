@@ -1126,11 +1126,22 @@ doDeclareFunction(AST *funcblock)
     if (fdef->closure) {
         AST *varlist;
         AST *superclass;
-        if (fdef->numresults > 0) {
-            AddClosureSymbol(fdef, fdef->closure, fdef->resultexpr);
+        if (gl_interp_kind != INTERP_KIND_NUCODE) {
+            if (fdef->numresults > 0) {
+                AddClosureSymbol(fdef, fdef->closure, fdef->resultexpr);
+            }
         }
         for (varlist = fdef->params; varlist; varlist = varlist->right) {
             AddClosureSymbol(fdef, fdef->closure, varlist->left);
+        }
+        if (gl_interp_kind == INTERP_KIND_NUCODE) {
+            AddClosureSymbol(fdef, fdef->closure, AstIdentifier("__interp_reserved1__"));
+            AddClosureSymbol(fdef, fdef->closure, AstIdentifier("__interp_reserved2__"));
+            AddClosureSymbol(fdef, fdef->closure, AstIdentifier("__interp_reserved3__"));
+            AddClosureSymbol(fdef, fdef->closure, AstIdentifier("__interp_reserved4__"));
+            if (fdef->numresults > 0) {
+                AddClosureSymbol(fdef, fdef->closure, fdef->resultexpr);
+            }
         }
         for (varlist = fdef->locals; varlist; varlist = varlist->right) {
             AddClosureSymbol(fdef, fdef->closure, varlist->left);
