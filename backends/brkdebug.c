@@ -267,6 +267,7 @@ int AsmDebug_CodeGen(AST *ast, BackendDebugEval evalFunc, void *evalArg) {
                 case PASM_EVAL_ISREG:
                     emitAsmRegref(f, addr);
                     regNum++;
+                    break;
                 case PASM_EVAL_ISREG_2:
                 case PASM_EVAL_ISREG_3:
                 case PASM_EVAL_ISREG_4:
@@ -278,6 +279,7 @@ int AsmDebug_CodeGen(AST *ast, BackendDebugEval evalFunc, void *evalArg) {
                     for (int n = PASM_EVAL_ISREG; n < addrKind; n++) {
                         flexbuf_putc(opcode, f);
                         emitAsmRegref(f, addr);
+                        addr++; regNum++;
                     }
                     needcomma = true;
                     break;
