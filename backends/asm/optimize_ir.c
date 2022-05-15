@@ -3248,6 +3248,7 @@ OptimizePeepholes(IRList *irl)
         if (opc == OPC_MUXC && IsImmediateVal(ir->src,-1) && !InstrSetsAnyFlags(ir) && !IsHwReg(ir->dst)) {
             ReplaceOpcode(ir,OPC_SUBX);
             ir->src = ir->dst;
+            changed = 1;
             goto done;
         //      mov x,#0
         // if_c neg x,#1
@@ -3259,6 +3260,8 @@ OptimizePeepholes(IRList *irl)
                 ReplaceOpcode(ir,OPC_SUBX);
                 ir->src = ir->dst;
                 ir->cond = COND_TRUE;
+                DeleteIR(irl,previr); // For some reason deadcode doesn't always pick it up.
+                changed = 1;
                 goto done;
             }
         }
