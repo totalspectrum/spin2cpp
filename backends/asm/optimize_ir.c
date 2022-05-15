@@ -91,6 +91,9 @@ InstrReadsDst(IR *ir)
     } else {
         return true;
     }
+  case OPC_SUBX:
+  case OPC_SUBSX:
+    return ir->src != ir->dst;
   default:
     break;
   }
@@ -1887,9 +1890,14 @@ FindPrevSetterForReplace(IR *irorig, Operand *dst)
     IR *ir;
     IR *saveir;
 
+    // W21: Why should this func care about irorig's condition?
+    // Though I feel like I'm inviting the bugs by disabling the check
+    // I think most callers already check for condition though?
+#if 0
     if (irorig->cond != COND_TRUE) {
         return NULL;
     }
+#endif
     if (SrcOnlyHwReg(dst))
         return NULL;
     for (ir = irorig->prev; ir; ir = ir->prev) {
@@ -3235,6 +3243,28 @@ OptimizePeepholes(IRList *irl)
         }
 
         int32_t tmp;
+
+        // MUXC x,#-1 -> SUBX x,x
+        if (opc == OPC_MUXC && IsImmediateVal(ir->src,-1) && !InstrSetsAnyFlags(ir) && !IsHwReg(ir->dst)) {
+            ReplaceOpcode(ir,OPC_SUBX);
+            ir->src = ir->dst;
+            goto done;
+        //      mov x,#0
+        // if_c neg x,#1
+        // ->
+        //      subx x,x
+        } else if (ir->cond == COND_C && isConstMove(ir,&tmp) && tmp == -1 && !InstrSetsAnyFlags(ir) && !IsHwReg(ir->dst)) {
+            NOTE(NULL,"got the thing");
+            previr = FindPrevSetterForReplace(ir,ir->dst);
+            if (previr && isConstMove(previr,&tmp) && tmp == 0) {
+                NOTE(NULL,"previr?");
+                ReplaceOpcode(ir,OPC_SUBX);
+                ir->src = ir->dst;
+                ir->cond = COND_TRUE;
+                goto done;
+            }
+        }
+
         // AND -> GET* optimization
         if (gl_p2 && isMaskingOp(ir,&tmp) && !InstrSetsAnyFlags(ir)) {
             IROpcode getopc;
