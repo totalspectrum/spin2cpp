@@ -4578,6 +4578,8 @@ static int OutAsm_DebugEval(AST *ast, int regNum, int *addr, void *ourarg) {
     Operand *srcop;
     Operand *dstop;
     int n;
+    IR *mvir;
+    
     if (IsConstExpr(ast)) {
         *addr = EvalConstExpr(ast);
         return PASM_EVAL_ISCONST;
@@ -4602,7 +4604,8 @@ static int OutAsm_DebugEval(AST *ast, int regNum, int *addr, void *ourarg) {
                 return PASM_EVAL_ISREG_MAX;
             }
             dstop = GetDebugReg(regNum);
-            EmitMove(irl, dstop, ptr->op);
+            mvir = EmitMove(irl, dstop, ptr->op);
+            if (mvir) mvir->flags |= FLAG_KEEP_INSTR;
             regNum++;
             n++;
         }
@@ -4611,7 +4614,8 @@ static int OutAsm_DebugEval(AST *ast, int regNum, int *addr, void *ourarg) {
     srcop = CompileExpression(irl, ast, NULL);
 single_value:    
     dstop = GetDebugReg(regNum);
-    EmitMove(irl, dstop, srcop);
+    mvir = EmitMove(irl, dstop, srcop);
+    if (mvir) mvir->flags |= FLAG_KEEP_INSTR;
     *addr = debugaddr[regNum];
     return PASM_EVAL_ISREG;
 }
