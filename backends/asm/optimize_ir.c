@@ -3254,10 +3254,8 @@ OptimizePeepholes(IRList *irl)
         // ->
         //      subx x,x
         } else if (ir->cond == COND_C && isConstMove(ir,&tmp) && tmp == -1 && !InstrSetsAnyFlags(ir) && !IsHwReg(ir->dst)) {
-            NOTE(NULL,"got the thing");
             previr = FindPrevSetterForReplace(ir,ir->dst);
             if (previr && isConstMove(previr,&tmp) && tmp == 0) {
-                NOTE(NULL,"previr?");
                 ReplaceOpcode(ir,OPC_SUBX);
                 ir->src = ir->dst;
                 ir->cond = COND_TRUE;
