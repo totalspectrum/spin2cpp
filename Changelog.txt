@@ -1,7 +1,9 @@
 Version 5.9.11
 - Added BOOLEAN keyword to BASIC
+- Fixed -gbrk bug which crept in last release
 - Made it so defining a _clkmode enum in C works as intended
 - Reserved REDIM and PRESERVE keywords in BASIC
+- Some more PASM optimizations from Ada (thanks!)
 
 Version 5.9.10
 - Added a LOT of helpful optimizations contributed by Ada Gottensträter

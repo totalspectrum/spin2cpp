@@ -5,9 +5,8 @@ dat
 entry
 
 _ex
-	mov	_var01, #0
 	cmps	arg01, #0 wc
- if_b	neg	_var01, #1
+	subx	_var01, _var01
 	wrlong	_var01, objptr
 	mov	result1, arg01
 _ex_ret

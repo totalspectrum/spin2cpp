@@ -1896,12 +1896,16 @@ FindPrevSetterForReplace(IR *irorig, Operand *dst)
     IR *ir;
     IR *saveir;
 
+#if 0
     // Sanity check: if the original instruction is conditional then
     // bail (the caller should have already checked for this, but
-    // it doesn't hurt to do it again).
+    // it shouldn't hurt to do it again).
+    // FIXME? actually it does hurt, it blocks an optimization we want
+    // (the if_b neg -> subx optimization
     if (irorig->cond != COND_TRUE) {
         return NULL;
     }
+#endif    
     if (SrcOnlyHwReg(dst))
         return NULL;
     for (ir = irorig->prev; ir; ir = ir->prev) {

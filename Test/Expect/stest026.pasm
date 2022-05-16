@@ -5,9 +5,8 @@ dat
 entry
 
 _test1
-	mov	result1, #0
 	cmps	arg01, arg02 wc
- if_b	neg	result1, #1
+	subx	result1, result1
 _test1_ret
 	ret
 

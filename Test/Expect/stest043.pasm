@@ -5,10 +5,9 @@ dat
 entry
 
 _blah
-	mov	result1, #0
 	cmps	arg01, #0 wc
  if_b	cmps	arg02, #0 wc
- if_b	neg	result1, #1
+	subx	result1, result1
 _blah_ret
 	ret
 
