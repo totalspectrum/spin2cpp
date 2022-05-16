@@ -1896,14 +1896,12 @@ FindPrevSetterForReplace(IR *irorig, Operand *dst)
     IR *ir;
     IR *saveir;
 
-    // W21: Why should this func care about irorig's condition?
-    // Though I feel like I'm inviting the bugs by disabling the check
-    // I think most callers already check for condition though?
-#if 0
+    // Sanity check: if the original instruction is conditional then
+    // bail (the caller should have already checked for this, but
+    // it doesn't hurt to do it again).
     if (irorig->cond != COND_TRUE) {
         return NULL;
     }
-#endif
     if (SrcOnlyHwReg(dst))
         return NULL;
     for (ir = irorig->prev; ir; ir = ir->prev) {
