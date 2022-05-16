@@ -91,6 +91,9 @@ InstrReadsDst(IR *ir)
     } else {
         return true;
     }
+  case OPC_SUBX:
+  case OPC_SUBSX:
+    return ir->src != ir->dst;
   default:
     break;
   }
@@ -1813,6 +1816,10 @@ CanTestZero(int opc)
     case OPC_NEGNC:
     case OPC_NEGZ:
     case OPC_NEGNZ:
+    case OPC_MUXC:
+    case OPC_MUXNC:
+    case OPC_MUXZ:
+    case OPC_MUXNZ:
     case OPC_RDLONG:
     case OPC_RDBYTE:
     case OPC_RDWORD:
@@ -1889,9 +1896,14 @@ FindPrevSetterForReplace(IR *irorig, Operand *dst)
     IR *ir;
     IR *saveir;
 
+    // W21: Why should this func care about irorig's condition?
+    // Though I feel like I'm inviting the bugs by disabling the check
+    // I think most callers already check for condition though?
+#if 0
     if (irorig->cond != COND_TRUE) {
         return NULL;
     }
+#endif
     if (SrcOnlyHwReg(dst))
         return NULL;
     for (ir = irorig->prev; ir; ir = ir->prev) {
@@ -2040,7 +2052,7 @@ OptimizeMoves(IRList *irl)
             } else if (isMoveLikeOp(ir) && (stop_ir = FindPrevSetterForReplace(ir,ir->src)) && stop_ir->opc == OPC_MOV 
                 && !InstrIsVolatile(stop_ir) && !InstrSetsAnyFlags(stop_ir) && (ir->src==ir->dst||IsDeadAfter(ir,ir->src))) {
                 ir->src = stop_ir->src;
-                DeleteIR(irl,stop_ir);
+                if (ir->cond == COND_TRUE) DeleteIR(irl,stop_ir);
                 change = 1;
             }
             ir = ir_next;
@@ -3237,6 +3249,24 @@ OptimizePeepholes(IRList *irl)
         }
 
         int32_t tmp;
+
+        // transform
+        //        mov x,#0
+        //   if_c neg x,#1
+        // to
+        //        subx x,x
+        if (ir->cond == COND_C && isConstMove(ir,&tmp) && tmp == -1 && !InstrSetsAnyFlags(ir) && !IsHwReg(ir->dst)) {
+            previr = FindPrevSetterForReplace(ir,ir->dst);
+            if (previr && isConstMove(previr,&tmp) && tmp == 0) {
+                ReplaceOpcode(ir,OPC_SUBX);
+                ir->src = ir->dst;
+                ir->cond = COND_TRUE;
+                DeleteIR(irl,previr); // For some reason deadcode doesn't always pick it up.
+                changed = 1;
+                goto done;
+            }
+        }
+
         // AND -> GET* optimization
         if (gl_p2 && isMaskingOp(ir,&tmp) && !InstrSetsAnyFlags(ir)) {
             IROpcode getopc;
@@ -3261,7 +3291,7 @@ OptimizePeepholes(IRList *irl)
             previr = FindPrevSetterForReplace(ir,ir->dst);
             if (previr && (previr->opc == OPC_SHR || previr->opc == OPC_SAR) 
             && !InstrSetsAnyFlags(ir) && previr->src->kind == IMM_INT 
-            && (previr->src->val & ((1<<shift)-1)) == 0) {
+            && (previr->src->val & ((1<<shift)-1)) == 0 && ir->cond == COND_TRUE) {
                 which = (previr->src->val&31)>>shift;
                 DeleteIR(irl,previr);
                 changed = 1;
@@ -3603,7 +3633,7 @@ OptimizeP2(IRList *irl)
             ir_next = ir_next->next;
         }
         opc = ir->opc;
-        if (opc == OPC_ADDCT1 && IsImmediateVal(ir->src, 0)) {
+        if (opc == OPC_ADDCT1 && IsImmediateVal(ir->src, 0) && ir->cond == COND_TRUE) {
             previr = FindPrevSetterForReplace(ir, ir->dst);
             if (previr && previr->opc == OPC_ADD && !InstrSetsAnyFlags(previr)) {
                 // add foo, val / addct1 foo, #0 -> addct1 foo, val
@@ -5030,14 +5060,27 @@ static PeepholePattern pat_signex[] = {
 // wrc x; cmp x, #0 wz
 static PeepholePattern pat_wrc_cmp[] = {
     { COND_TRUE, OPC_WRC, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
-    { COND_TRUE, OPC_CMP, PEEP_OP_MATCH|0, PEEP_OP_IMM|0, PEEP_FLAGS_P2|PEEP_FLAGS_WCZ_OK },
+    { COND_TRUE, OPC_CMP, PEEP_OP_MATCH|0, PEEP_OP_IMM|0, PEEP_FLAGS_P2|PEEP_FLAGS_WCZ_OK|PEEP_FLAGS_MUST_WZ },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
 // muxc x,#-1; cmp x, #0 wz
 static PeepholePattern pat_muxc_cmp[] = {
     { COND_TRUE, OPC_MUXC, PEEP_OP_SET|0, PEEP_OP_CLRMASK(0,0), PEEP_FLAGS_NONE },
-    { COND_TRUE, OPC_CMP, PEEP_OP_MATCH|0, PEEP_OP_IMM|0, PEEP_FLAGS_WCZ_OK },
+    { COND_TRUE, OPC_CMP, PEEP_OP_MATCH|0, PEEP_OP_IMM|0, PEEP_FLAGS_WCZ_OK|PEEP_FLAGS_MUST_WZ },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
+// subx x,x; cmp x, #0 wz
+static PeepholePattern pat_subx_cmp[] = {
+    { COND_TRUE, OPC_SUBX, PEEP_OP_SET|0, PEEP_OP_MATCH|0, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_CMP, PEEP_OP_MATCH|0, PEEP_OP_IMM|0, PEEP_FLAGS_WCZ_OK|PEEP_FLAGS_MUST_WZ },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
+// muxc x,#-1 wz
+static PeepholePattern pat_muxc_wz[] = {
+    { COND_TRUE, OPC_MUXC, PEEP_OP_SET|0, PEEP_OP_CLRMASK(0,0), PEEP_FLAGS_WCZ_OK|PEEP_FLAGS_MUST_WZ },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
@@ -5452,9 +5495,11 @@ static int ReplaceExtend(int arg, IRList *irl, IR *ir)
     return 1;
 }
 //
-// looks at the sequence
-//   wrc x (or muxc x,#-1)
+// looks at the sequence (arg = 0)
+//   wrc x (or muxc x,#-1 or subx x,x)
 //   cmp x, #0 wz
+// or (arg = 1)
+//   muxc x,#-1 wz
 // and if possible deletes it and replaces subsequent uses of C with NZ
 //
 static int ReplaceWrcCmp(int arg, IRList *irl, IR *ir)
@@ -5466,7 +5511,7 @@ static int ReplaceWrcCmp(int arg, IRList *irl, IR *ir)
     if (InstrIsVolatile(ir0) || !ir1 || InstrIsVolatile(ir1)) {
         return 0;
     }
-    ir = ir1->next;
+    ir = arg == 0 ? ir1->next : ir0->next;
     for(lastir = ir; lastir; lastir = lastir->next) {
         if (!lastir || InstrIsVolatile(lastir)) {
             return 0;
@@ -5495,8 +5540,12 @@ static int ReplaceWrcCmp(int arg, IRList *irl, IR *ir)
     if (IsBranch(lastir)) {
         ReplaceZWithNC(lastir);
     }
-    if (IsDeadAfter(ir1,ir0->dst)) DeleteIR(irl, ir0);
-    DeleteIR(irl, ir1);
+    if (arg == 0) {
+        if (IsDeadAfter(ir1,ir0->dst)) DeleteIR(irl, ir0);
+        DeleteIR(irl, ir1);
+    } else {
+        if (IsDeadAfter(ir0,ir0->dst)) DeleteIR(irl,ir0);
+    }
     return 1;
 }
 
@@ -5881,6 +5930,8 @@ struct Peepholes {
     { pat_wrc_test, 0, ReplaceWrcTest },
 
     { pat_muxc_cmp, 0, ReplaceWrcCmp },
+    { pat_subx_cmp, 0, ReplaceWrcCmp },
+    { pat_muxc_wz, 1, ReplaceWrcCmp },
     
     { pat_rdbyte1, 2, RemoveNFlagged },
     { pat_rdword1, 2, RemoveNFlagged },
