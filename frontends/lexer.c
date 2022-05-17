@@ -2,7 +2,7 @@
 // Simple lexical analyzer for a language where indentation
 // may be significant (Spin); also contains lexers for BASIC and C
 //
-// Copyright (c) 2011-2021 Total Spectrum Software Inc.
+// Copyright (c) 2011-2022 Total Spectrum Software Inc.
 //
 #include <stdio.h>
 #include <string.h>
@@ -1258,14 +1258,30 @@ static void CheckSrcComment( LexStream *L )
 
 // duplicate a file name, possibly quoted
 static char *
-getFileName(const char *orig)
+getFileName(const char *name, const char *orig)
 {
-    char *ptr = strdup(orig);
+    char *ptr = strdup(name);
+    size_t siz;
     if (*ptr == '"') {
-        size_t siz = strlen(ptr+1);
+        siz = strlen(ptr+1);
         if (siz > 1) {
             memmove(ptr, ptr+1, siz-1);
             ptr[siz-2] = 0;
+        }
+    }
+    // special case: if the original file name matches the last part
+    // of the new one, just return the original
+    if (!strchr(orig, '/')
+#ifdef WINDOWS
+        && !strchr(orig, '\\')
+#endif        
+        )
+    {        
+        siz = strlen(ptr) - strlen(orig);
+        if ( 0L <= (long)siz ) {
+            if (!strcmp(ptr + siz, orig)) {
+                memmove(ptr, ptr+siz, strlen(orig)+1);
+            }
         }
     }
     return ptr;
@@ -1353,7 +1369,7 @@ docomment:
         if (lineno > 0) {
             while (*ptr == ' ') ptr++;
             L->lineCounter = lineno - 1;
-            L->fileName = getFileName(ptr);
+            L->fileName = getFileName(ptr, L->fileName);
         }
     } else if (!strncmp(commentLine, "#pragma ", 8)) {
         handlePragma(L, commentLine);
@@ -1575,7 +1591,7 @@ again:
                 lineno = strtol(ptr, &ptr, 10);
                 if (lineno > 0) {
                     if (*ptr == ' ') ptr++;
-                    L->fileName = getFileName(ptr);
+                    L->fileName = getFileName(ptr, L->fileName);
                     L->lineCounter = lineno;
                 }
             }
