@@ -1,0 +1,1 @@
+/home/ersmith/Parallax/spin2cpp/Test/error21.c:6: warning: incompatible pointer types in assignment: expected function of 2 args returning single precision float  but got function of 2 args returning char

@@ -208,7 +208,7 @@ CombineTypes(AST *first, AST *second, AST **identifier, Module **module)
         return MergePrefix(prefix, CombineTypes(first, second->left, identifier, module));
     case AST_REFTYPE:
     case AST_PTRTYPE:
-        if (identifier) {
+        if (identifier || !IsFunctionType(second->left)) {
             first = NewAST(second->kind, first, NULL);
         }
         second = CombineTypes(first, second->left, identifier, module);
@@ -1888,12 +1888,24 @@ direct_abstract_declarator
             }
 	| '(' parameter_type_list ')'
             {
-                $$ = NULL;
+                AST *parmlist = ProcessParamList($2);
+                $$ = NewAST(AST_FUNCTYPE, ast_type_long, parmlist);
             }
 	| direct_abstract_declarator '(' ')'
             {
                 AST *rettype = $1;
-                $$ = NULL;
+                AST *parmlist = NULL;
+                AST *ftype;
+                bool need_pointer = false;
+                if (IsPointerType(rettype)) {
+                    need_pointer = true;
+                    rettype = BaseType(rettype);
+                }
+                ftype = NewAST(AST_FUNCTYPE, rettype, parmlist);
+                if (need_pointer) {
+                    ftype = NewAST(AST_PTRTYPE, ftype, NULL);
+                }
+                $$ = ftype;
             }
 	| direct_abstract_declarator '(' parameter_type_list ')'
             {
