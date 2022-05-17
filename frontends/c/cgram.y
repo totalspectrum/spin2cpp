@@ -208,7 +208,9 @@ CombineTypes(AST *first, AST *second, AST **identifier, Module **module)
         return MergePrefix(prefix, CombineTypes(first, second->left, identifier, module));
     case AST_REFTYPE:
     case AST_PTRTYPE:
-        first = NewAST(second->kind, first, NULL);
+        if (identifier) {
+            first = NewAST(second->kind, first, NULL);
+        }
         second = CombineTypes(first, second->left, identifier, module);
         return MergePrefix(prefix, second);
         
@@ -1852,7 +1854,12 @@ type_name
 	: specifier_qualifier_list
             { $$ = $1; }
 	| specifier_qualifier_list abstract_declarator
-            { $$ = CombineTypes($1, $2, NULL, NULL); }
+            {
+                AST *lhs = $1;
+                AST *rhs = $2;
+                AST *final = CombineTypes(lhs, rhs, NULL, NULL);
+                $$ = final;
+            }
 	;
 
 abstract_declarator
@@ -1876,13 +1883,34 @@ direct_abstract_declarator
 	| direct_abstract_declarator '[' constant_expression ']'
             { $$ = NewAST(AST_ARRAYTYPE, $1, $3); }
 	| '(' ')'
-            { $$ = NULL; }
+            {
+                $$ = NULL;
+            }
 	| '(' parameter_type_list ')'
-            { $$ = NULL; }
+            {
+                $$ = NULL;
+            }
 	| direct_abstract_declarator '(' ')'
-            { $$ = NULL; }
+            {
+                AST *rettype = $1;
+                $$ = NULL;
+            }
 	| direct_abstract_declarator '(' parameter_type_list ')'
-            { $$ = NULL; }
+            {
+                AST *rettype = $1;
+                AST *parmlist = ProcessParamList($3);
+                AST *ftype;
+                bool need_pointer = false;
+                if (IsPointerType(rettype)) {
+                    need_pointer = true;
+                    rettype = BaseType(rettype);
+                }
+                ftype = NewAST(AST_FUNCTYPE, rettype, parmlist);
+                if (need_pointer) {
+                    ftype = NewAST(AST_PTRTYPE, ftype, NULL);
+                }
+                $$ = ftype;
+            }
 	;
 
 initializer

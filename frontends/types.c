@@ -1275,6 +1275,9 @@ doCast(AST *desttype, AST *srctype, AST *src)
         src = FunctionAddress(src);
         srctype = FunctionPointerType(srctype);
     }
+    if (IsFunctionType(desttype) && !IsPointerType(desttype)) {
+        desttype = FunctionPointerType(desttype);
+    }
     if (IsPointerType(desttype) || IsGenericType(desttype)) {
         if (IsFloatType(srctype)) {
             src = dofloatToInt(src, srctype);
