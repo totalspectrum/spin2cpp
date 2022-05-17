@@ -1680,6 +1680,9 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
         PrintStatementList(f, expr, 0);
         flexbuf_printf(f, "})");
         break;
+    case AST_SELF:
+        flexbuf_printf(f, "this");
+        break;
     default:
         ERROR(expr, "Internal error, bad expression");
         break;
