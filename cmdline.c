@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2021 Total Spectrum Software Inc.
+ * Copyright 2011-2022 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -500,6 +500,8 @@ ParseWFlags(const char *flags)
         gl_warn_flags = WARN_ALL;
     } else if (!strcmp(flags, "error")) {
         gl_warnings_are_errors = 1;
+    } else if (!strcmp(flags, "extra")) {
+        /* ignore for now */
     } else if (!strcmp(flags, "abs-paths")) {
         gl_useFullPaths = 1;
     } else if (!strncmp(flags, "max-errors=", 11)) {

@@ -1,5 +1,7 @@
 Version 5.9.11
 - Added BOOLEAN keyword to BASIC
+- Added some additional optimizations (thanks again, Ada!)
+- Added -Wextra flag (ignored for now) to flexcc
 - Fixed -gbrk bug which crept in last release
 - Made it so defining a _clkmode enum in C works as intended
 - Reserved REDIM and PRESERVE keywords in BASIC
