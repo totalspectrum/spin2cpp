@@ -2372,6 +2372,10 @@ static int IsSafeShortForwardJump(IR *irbase) {
                 if (ir->dst == target) return n;
                 else return 0;
             }
+            // BRK instruction cannot be conditionalized??
+            if (ir->opc == OPC_BREAK) {
+                return 0;
+            }
             unsigned problem_flags = FlagsUsedByCond(newcond) & dirty_flags;
 
             // If flags are dirty, we can only accept instructions whose
