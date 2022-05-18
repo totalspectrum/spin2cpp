@@ -4362,6 +4362,7 @@ OptimizeCORDIC(IRList *irl) {
     // Search for GETQ*
     for (IR *ir=irl->head;ir;ir=ir->next) {
         if(!IsCordicGet(ir)) continue;
+        if(InstrIsVolatile(ir)) continue;
         if(IsHwReg(ir->dst)) continue;
         int cycles = 0;
         // Count min-cycles already inbetween command and get
@@ -4390,7 +4391,7 @@ CORDICconstPropagate(IRList *irl) {
     int32_t const_x=0,const_y=0;
 
     for(IR *ir=irl->head;ir;ir=ir->next) {
-        if (IsCordicCommand(ir) && !IsPrefixOpcode(ir->prev)
+        if (IsCordicCommand(ir) && !InstrIsVolatile(ir) && !IsPrefixOpcode(ir->prev)
         && ir->dst && ir->dst->kind == IMM_INT
         && ir->src && ir->src->kind == IMM_INT) {
             constantCommand = true;
