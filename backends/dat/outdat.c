@@ -1,7 +1,7 @@
 //
 // binary data output for spin2cpp
 //
-// Copyright 2012-2021 Total Spectrum Software Inc.
+// Copyright 2012-2022 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -1159,6 +1159,10 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
     else if ((instr->flags & FLAG_WARN_NOTUSED) && !sawFlagUsed) {
         WARNING(line, "instruction %s used without flags being set", instr->name);
     }
+    if (instr->opc == OPC_BREAK && (*val & mask) != mask) {
+        WARNING(line, "conditional BRK instruction does not work");
+    }
+    
     /* parse operands and put them in place */
     switch (instr->ops) {
     case NO_OPERANDS:
