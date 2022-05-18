@@ -795,6 +795,9 @@ static int IsStatic(AST *ftype) {
 static AST *
 DeclareCTypedFunction(Module *P, AST *ftype, AST *nameAst, int is_public, AST *body, AST *attribute)
 {
+    if (ftype && ftype->kind == AST_EXTERN) {
+        ftype = ftype->left;
+    }
     if (IsStatic(ftype) && nameAst->kind == AST_IDENTIFIER) {
         /* declare a local alias for the name */
         const char *nameString = GetIdentifierName(nameAst);

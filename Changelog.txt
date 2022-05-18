@@ -4,6 +4,8 @@ Version 5.9.11
 - Added -Wextra flag (ignored for now) to flexcc
 - Fixed -gbrk bug which crept in last release
 - Fixed some problems parsing C function pointer type declarations
+- Fixed some optimizations incorrectly happening to ORG/END assembly
+- Fixed "extern" in C function definitions
 - Made it so defining a _clkmode enum in C works as intended
 - Reserved REDIM and PRESERVE keywords in BASIC
 - Some more PASM optimizations from Ada (thanks!)
