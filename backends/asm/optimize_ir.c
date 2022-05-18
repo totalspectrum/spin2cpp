@@ -2479,7 +2479,7 @@ OptimizeCompares(IRList *irl)
 	if (!ir) break;
         // Convert pointless moves into CMPS S,#0
         if (ir->opc == OPC_MOV && !InstrIsVolatile(ir) && !IsHwReg(ir->src) 
-            && (ir->flags & (FLAG_WZ|FLAG_WC)) && (ir->src == ir->dst || (IsDeadAfter(ir,ir->dst) && !IsImmediate(ir->src))) ) {
+            && (ir->flags & (FLAG_WZ|FLAG_WC)) && (ir->src == ir->dst || (IsDeadAfter(ir,ir->dst) && IsRegister(ir->src->kind))) ) {
             ReplaceOpcode(ir,OPC_CMPS);
             ir->dst = ir->src;
             ir->src = NewImmediate(0);
