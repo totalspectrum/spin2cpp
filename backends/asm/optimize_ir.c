@@ -4389,7 +4389,9 @@ static bool
 CORDICconstPropagate(IRList *irl) {
     bool constantCommand=false,change=false,foundX=false,foundY=false;
     int32_t const_x=0,const_y=0;
-
+    uint64_t setq1=0;
+    bool setq1_valid = true;
+    
     for(IR *ir=irl->head;ir;ir=ir->next) {
         if (IsCordicCommand(ir) && !InstrIsVolatile(ir) && !IsPrefixOpcode(ir->prev)
         && ir->dst && ir->dst->kind == IMM_INT
@@ -4405,12 +4407,18 @@ CORDICconstPropagate(IRList *irl) {
                 const_y = (int32_t)(tmp>>32);
             } break;
             case OPC_QDIV: {
-                if (ir->src->val == 0) {
-                    const_x = 0xFFFFFFFF;
-                    const_y = ir->dst->val;
+                uint64_t fullval;
+                if (setq1_valid) {
+                    fullval = (setq1 << 32) | ir->dst->val;
+                    if (ir->src->val == 0) {
+                        const_x = 0xFFFFFFFF;
+                        const_y = (int32_t)fullval;
+                    } else {
+                        const_x = (uint32_t)(fullval / (uint32_t)ir->src->val);
+                        const_y = (uint32_t)(fullval % (uint32_t)ir->src->val);
+                    }
                 } else {
-                    const_x = (uint32_t)ir->dst->val / (uint32_t)ir->src->val;
-                    const_x = (uint32_t)ir->dst->val % (uint32_t)ir->src->val;
+                    constantCommand = false;
                 }
             } break;
             default: // other ops make brain hurt, owie
@@ -4432,12 +4440,17 @@ CORDICconstPropagate(IRList *irl) {
                 ir->src = NewImmediate(const_y);
             }
             ReplaceOpcode(ir,OPC_MOV);
-        } else if (constantCommand&&(IsBranch(ir)||IsLabel(ir))) {
+        } else if (constantCommand&&(IsBranch(ir)||IsLabel(ir)||IsCordicCommand(ir))) {
             if (!foundX && !foundY) WARNING(NULL,"Internal warning, unused CORDIC constant??");
             constantCommand = false;
-        } else if (ir->opc == OPC_SETQ || ir->opc == OPC_SETQ2 || IsCordicCommand(ir)) {
-            // FIXME: actually some setq/setq2 combos might be OK, but for now assume not
-            constantCommand = false;
+            setq1_valid = false;
+        } else if (ir->opc == OPC_SETQ) {
+            if (ir->dst->kind == IMM_INT) {
+                setq1_valid = true;
+                setq1 = (uint32_t)ir->dst->val;
+            } else {
+                setq1_valid = false;
+            }
         }
     }
     if (constantCommand && !foundX && !foundY) WARNING(NULL,"Internal warning, unused CORDIC constant at end of function??");
