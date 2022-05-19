@@ -4435,6 +4435,9 @@ CORDICconstPropagate(IRList *irl) {
         } else if (constantCommand&&(IsBranch(ir)||IsLabel(ir))) {
             if (!foundX && !foundY) WARNING(NULL,"Internal warning, unused CORDIC constant??");
             constantCommand = false;
+        } else if (ir->opc == OPC_SETQ || ir->opc == OPC_SETQ2 || IsCordicCommand(ir)) {
+            // FIXME: actually some setq/setq2 combos might be OK, but for now assume not
+            constantCommand = false;
         }
     }
     if (constantCommand && !foundX && !foundY) WARNING(NULL,"Internal warning, unused CORDIC constant at end of function??");
