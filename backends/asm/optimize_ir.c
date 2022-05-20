@@ -3747,7 +3747,10 @@ static IR* FindNextRead(IR *irorig, Operand *dest, Operand *src)
         }
         if (IsBranch(ir)) {
             if (ir->opc == OPC_CALL &&
-                (ir->dst == mulfunc || ir->dst == divfunc || ir->dst == unsdivfunc)
+                (ir->dst == mulfunc || ir->dst == divfunc || ir->dst == unsdivfunc) &&
+                !FuncUsesArg(ir->dst, src) &&
+                !FuncUsesArg(ir->dst, dest
+                )
             ) {
                 // Do nothing
             } else {
@@ -4340,7 +4343,7 @@ OptimizeCORDIC(IRList *irl) {
     // Search for QMUL/QDIV
     bool change = false;
     for (IR *ir=irl->tail;ir;ir=ir->prev) {
-        if (!IsCordicCommand(ir)) continue;
+        if (!IsCordicCommand(ir) || InstrIsVolatile(ir)) continue;
         if(IsHwReg(ir->dst)||IsHwReg(ir->src)) continue;
         int cycles = 0;
         // Count min-cycles already inbetween command and get
@@ -4391,7 +4394,7 @@ CORDICconstPropagate(IRList *irl) {
     int32_t const_x=0,const_y=0;
     uint64_t setq1=0;
     bool setq1_valid = true;
-    
+
     for(IR *ir=irl->head;ir;ir=ir->next) {
         if (IsCordicCommand(ir) && !InstrIsVolatile(ir) && !IsPrefixOpcode(ir->prev)
         && ir->dst && ir->dst->kind == IMM_INT
