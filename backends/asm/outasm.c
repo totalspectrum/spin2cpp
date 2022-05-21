@@ -4116,8 +4116,18 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       const char *name;
       objtype = ExprType(expr->left);
       name = GetUserIdentifierName(expr->right);
-      if (!IsClassType(objtype)) {
+      if (!objtype) {
+          ERROR(expr, "%s is not accessible in this context", GetIdentifierName(expr->left));
+          return EmptyOperand();
+      }
+      else if (!IsClassType(objtype)) {
           ERROR(expr, "Request for member %s in something that is not a class", name);
+          return EmptyOperand();
+      }
+      if (expr->left && expr->left->kind == AST_OBJECT) {
+          // FIXME: we could potentially support calls of static class
+          // member functions, but for now, punt
+          ERROR(expr, "Use of class name in method references is not supported yet");
           return EmptyOperand();
       }
       base = CompileExpression(irl, expr->left, NULL);
