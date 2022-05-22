@@ -2091,6 +2091,7 @@ classheader:
     P->subclasses = current->subclasses;
     current->subclasses = P;
     P->superclass = current;
+    P->fullname = current->fullname; // for finding "class using"
     current = P;
     $$ = NULL;
   }
