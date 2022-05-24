@@ -1,7 +1,8 @@
 '' read a line of data from handle h
-pri _basic_read_line(h=0) | c, ptr, s, n, maxn
+pri _basic_read_line(h=0) | c, ptr, s, n, maxn, sawcr
   n := 0
   maxn := 24
+  sawcr := 0
   ptr := _gc_alloc_managed(maxn)
   if ptr == 0
     return ptr
@@ -9,11 +10,14 @@ pri _basic_read_line(h=0) | c, ptr, s, n, maxn
     c := _basic_get_char(h)
     if c =< 0
       quit
-    if (c == 13)
-      _basic_print_char(h, 10)
-      quit
     if (c == 10)
+      if sawcr and n > 0
+        --n
       quit
+    if (c == 13)
+      sawcr := 1
+    else
+      sawcr := 0
     if (c == 8) or (c == 127) ' backspace
       if n > 0
         --n

@@ -2341,6 +2341,9 @@ A file handle may be specified after the `input` keyword with a `#` and an integ
   input #2, "enter a string and a number: ", s$, n
 ```
 
+Note that `input` processes the input data as comma seperated values (similar to `read`). To read a whole line of text without any
+processing, use `line input`.
+
 #### Used for accessing pins
 
 `input` may also be used to refer to a pseudo-array of bits representing the state of input pins. On the Propeller 1 this is the 32 bit INA register, but on Propeller 2 it is 64 bits.
@@ -2450,7 +2453,15 @@ Keyword used with DECLARE to define functions in other files.
 
 ### LINE
 
-Reserved for future use.
+Used with `INPUT`, see below.
+
+### LINE INPUT
+
+```
+line input #3, a$
+```
+
+Used to read an entire line of text from a file, without doing any processing on it. Regular `input` treats commas as field seperators, and so typically reading a string with `input` will read only up to the first comma. `line input` will just read the entire line of text without processing.
 
 ### _LOCKCLR
 

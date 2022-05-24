@@ -96,6 +96,27 @@ ClassType(Module *P)
 }
 
 Symbol *
+LookupGlobalSymbol(const char *name)
+{
+    int lang = LANG_DEFAULT;
+    if (curfunc) {
+        lang = curfunc->language;
+    } else if (current) {
+        lang = current->mainLanguage;
+    }
+    if (!IsSpinLang(lang)) {
+        Module *top = GetTopLevelModule();
+        if (top) {
+            Symbol *s = LookupSymbolInTable(&top->objsyms, name);
+            if (s) {
+                return s;
+            }
+        }
+    }
+    return NULL;
+}
+
+Symbol *
 LookupSymbolInFunc(Function *func, const char *name)
 {
     Symbol *sym = NULL;
@@ -104,6 +125,9 @@ LookupSymbolInFunc(Function *func, const char *name)
         sym = LookupSymbolInTable(&func->localsyms, name);
     } else {
         sym = LookupSymbolInTable(&current->objsyms, name);
+    }
+    if (!sym) {
+        sym = LookupGlobalSymbol(name);
     }
     return sym;
 }
@@ -116,18 +140,7 @@ LookupSymbol(const char *name)
     if (!s) {
         // maybe it's a global symbol?
         // only do this for non-Spin languages
-        int lang = LANG_DEFAULT;
-        if (curfunc) {
-            lang = curfunc->language;
-        } else if (current) {
-            lang = current->mainLanguage;
-        }
-        if (!IsSpinLang(lang)) {
-            Module *top = GetTopLevelModule();
-            if (top) {
-                s = LookupSymbolInTable(&top->objsyms, name);
-            }
-        }
+        s = LookupGlobalSymbol(name);
     }
     return s;
 }
@@ -244,6 +257,8 @@ LookupMemberSymbol(AST *expr, AST *objtype, const char *name, Module **Ptr, int 
     sym = FindSymbol(&P->objsyms, name);
     if (!sym) {
         ERROR(expr, "unknown identifier %s in class %s", name, P->classname);
+    } else if (sym->kind == SYM_WEAK_ALIAS) {
+        sym = FindSymbol(&P->objsyms, (const char *)sym->val);
     } else if (sym->kind == SYM_ALIAS) {
         AST *newexpr = (AST *)sym->val;
         if (newexpr && newexpr->kind == AST_METHODREF) {

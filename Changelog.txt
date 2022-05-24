@@ -1,3 +1,6 @@
+Version 5.9.12
+- Added LINE INPUT to BASIC
+
 Version 5.9.11
 - Added BOOLEAN keyword to BASIC
 - Added some additional optimizations (thanks again, Ada!)
