@@ -16,6 +16,9 @@
 #ifndef FILENAME_MAX
 #define FILENAME_MAX _PATH_MAX
 #endif
+#ifndef L_tmpnam
+#define L_tmpnam _PATH_MAX
+#endif
 
 typedef vfs_file_t FILE;
 typedef struct string_file_t {
