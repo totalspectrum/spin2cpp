@@ -1,5 +1,7 @@
 Version 5.9.12
 - Added LINE INPUT to BASIC
+- Added definitions for BUFSIZ and L_tmpnam to stdio.h
+- Fixed "CLASS USING" lookups inside CLASS in BASIC
 
 Version 5.9.11
 - Added BOOLEAN keyword to BASIC

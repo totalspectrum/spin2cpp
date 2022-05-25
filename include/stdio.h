@@ -5,6 +5,7 @@
 #include <sys/size_t.h>
 #include <sys/types.h>
 #include <sys/limits.h>
+#include <sys/vfs.h>
 #include <unistd.h>
 
 #ifndef EOF
@@ -12,6 +13,9 @@
 #endif
 #ifndef NULL
 #define NULL (0)
+#endif
+#ifndef BUFSIZ
+#define BUFSIZ _DEFAULT_BUFSIZ
 #endif
 #ifndef FILENAME_MAX
 #define FILENAME_MAX _PATH_MAX
