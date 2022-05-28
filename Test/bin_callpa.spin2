@@ -1,0 +1,10 @@
+dat
+	org 0
+	nop
+	callpa ##$1000, #label
+	nop
+	nop
+	nop
+label
+	add	2 - 0, 1 - 0
+	

@@ -1584,6 +1584,9 @@ decode_instr:
             }
 
             isrc = (isrc - (int)(curpc+4)) / 4;
+            if (immmask & BIG_IMM_DST) {
+                isrc--;
+            }
             if ( (isrc < -256) || (isrc > 255) ) {
                 ERROR(line, "Source out of range for relative branch %s", instr->name);
                 isrc = 0;

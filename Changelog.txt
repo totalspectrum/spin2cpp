@@ -1,7 +1,8 @@
 Version 5.9.12
 - Added LINE INPUT to BASIC
 - Added definitions for BUFSIZ and L_tmpnam to stdio.h
-- Fixed "CLASS USING" lookups inside CLASS in BASIC
+- Fixed "CLASS USING" file name lookups inside CLASS in BASIC
+- Fixed incorrect address calculation when AUGD is needed for CALLPA
 
 Version 5.9.11
 - Added BOOLEAN keyword to BASIC
