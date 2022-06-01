@@ -139,6 +139,12 @@ char *strncat(char *dest, const char *src, size_t n) __fromfile("libc/string/str
 /* libc/string/strncmp.c */
 int strncmp(const char *scan1, const char *scan2, size_t n) __fromfile("libc/string/strncmp.c");
 
+/* libc/string/strcasecmp.c */
+int strcasecmp(const char *scan1, const char *scan2) __fromfile("libc/string/strcasecmp.c");
+
+/* libc/string/strncasecmp.c */
+int strncasecmp(const char *scan1, const char *scan2, size_t n) __fromfile("libc/string/strncasecmp.c");
+
 /* libc/string/strncpy.c */
 char *strncpy(char *__restrict dst, const char *__restrict src, size_t n) __fromfile("libc/string/strncpy.c");
 
