@@ -757,7 +757,14 @@ AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags)
                 ERROR(ast, "RES with negative storage specifier");
                 delta = 0;
             } else if (delta == 0) {
-                WARNING(ast, "RES has 0 space");
+                // don't issue warning for alignment
+                // unfortunately at this point we've already replaced $, so
+                // we have to guess at intention by looking for &
+                if (ast && ast->left && ast->left->kind == AST_OPERATOR && ast->left->d.ival == '&') {
+                    // no warning
+                } else {
+                    WARNING(ast, "RES has 0 space");
+                }
             }
             cogpc += 4*delta;
 //            hubpc += 4*delta;
