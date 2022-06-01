@@ -239,6 +239,7 @@ Aliases basicalias[] = {
     { "cpuid",   "_cogid" },
     { "cpuwait", "_cogwait" },
     { "cpustop", "_cogstop" },
+    { "freefile", "_freefile" },
     { "getcnt",  "_getcnt" },
     { "geterr", "_geterror" },
     { "getrnd", "_getrnd" },

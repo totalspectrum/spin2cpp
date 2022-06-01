@@ -313,6 +313,7 @@ dira
 dirb
 exp
 false
+freefile
 _gc_alloc
 _gc_alloc_managed
 _gc_collect
@@ -1987,6 +1988,19 @@ function for "lut,opt(all)" fastfunc()
 end function
 ```
 
+### FREEFILE
+
+```
+  f = freefile()
+  if f >= 0 then
+    open "somefile" for input as #f
+  else
+    print "no free files available"
+  endif
+```
+
+`freefile` returns a file handle for use with OPEN, if one is free; otherwise returns -1.
+
 ### FUNCTION
 
 Defines a new function. The type of the function may be given explicitly with an `as` _type_ clause; if no such clause exists the function's type is deduced from its name. For example, a function whose name ends in `$` is assumed to return a string unless an `as` is given.
@@ -2649,7 +2663,7 @@ Open a handle for input and/or output. There are two forms. The most general for
 ```
   open device as #n
 ```
-where `device` is a device driver structure returned by a system function such as `SendRecvDevice`, and `n` evaluates to an integer between 2 and 7. (Handles 0 and 1 also exist, but are reserved for system use.)
+where `device` is a device driver structure returned by a system function such as `SendRecvDevice`, and `n` evaluates to an integer between 2 and 9. (Handles 0 and 1 also exist, but are reserved for system use.) The function `freefile` may be used to obtain a free file handle for use by `open`.
 
 Example (for P1):
 ```
@@ -3119,9 +3133,9 @@ When applied to assembly code, it indicates that the code is "global" code inten
 
 Operator for shifting left. For example:
 ```
-  x shl 3
+  y = x shl 3
 ```
-is the same as `x << 3` and returns x multiplied by 8 (2 raised to the power 3).
+is the same as `y = x << 3` and sets `y` to `x` multiplied by 8 (2 raised to the power 3).
 
 ### SHORT
 
@@ -3131,9 +3145,9 @@ A signed 16 bit integer, occupying two bytes of computer memory. The unsigned ve
 
 Operator for shifting bits right. For example:
 ```
-  x shr 3
+  y = x shr 3
 ```
-is the same as `x >> 3` and returns the bits of `x` shifted right by 3. If `x` is unsigned the new bits are filled with 0, otherwise they are filled with the sign bit of `x`. Note that the original value of `x` is left unchanged.
+is the same as `y = x >> 3` and sets `y` to the bits of `x` shifted right by 3. If `x` is unsigned the new bits are filled with 0, otherwise they are filled with the sign bit of `x`. Note that the original value of `x` is left unchanged.
 
 ### SIN
 

@@ -1,6 +1,7 @@
 Version 5.9.12
 - Added LINE INPUT to BASIC
 - Added definitions for BUFSIZ and L_tmpnam to stdio.h
+- Added FREEFILE function to BASIC
 - Fixed "CLASS USING" file name lookups inside CLASS in BASIC
 - Fixed incorrect address calculation when AUGD is needed for CALLPA
 

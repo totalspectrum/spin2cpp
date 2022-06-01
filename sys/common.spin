@@ -260,9 +260,10 @@ pri {++complexio} file "libc/unix/exec.c" _execve(name=string, argv=0, envp=0)
 pri {++complexio} file "libc/unix/exec.c" _fexecve(h, argv=0, envp=0)
 
 '' I/O functions
-pri {++complexio} file "libsys/fmt.c" _basic_open(h, sendf, recf, closef)
-pri {++complexio} file "libsys/fmt.c" _basic_open_string(h, str, iomode)
+pri {++complexio} file "libsys/fmt.c" _basic_open(h, sendf, recf, closef) : r=long
+pri {++complexio} file "libsys/fmt.c" _basic_open_string(h, str, iomode) : r=long
 pri {++complexio} file "libsys/fmt.c" _basic_close(h)
+pri {++complexio} file "libc/unix/posixio.c" _freefile() : r=long
 pri file "libsys/fmt.c" _basic_print_nl(h)
 pri file "libsys/fmt.c" _basic_print_char(h, c, fmt = 0)
 pri file "libsys/fmt.c" _basic_print_string(h, ptr, fmt = 0)

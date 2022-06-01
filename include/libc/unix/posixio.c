@@ -213,6 +213,16 @@ int _closeraw(void *f_ptr)
     return r;
 }
 
+int _freefile()
+{
+    vfs_file_t *tab = &__filetab[0];
+    int fd;
+    for (fd = 0; fd < _MAX_FILES; fd++) {
+        if (tab[fd].state == 0) return fd;
+    }
+    return -1;
+}
+
 int open(const char *orig_name, int flags, mode_t mode=0644)
 {
     vfs_file_t *tab = &__filetab[0];
