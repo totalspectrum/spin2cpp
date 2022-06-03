@@ -151,6 +151,9 @@ char *strncpy(char *__restrict dst, const char *__restrict src, size_t n) __from
 /* libc/string/strrchr.c */
 char *strrchr(const char *s, int charwanted) __fromfile("libc/string/strrchr.c");
 
+/* libc/string/strerror.c */
+char *strerror(int errnum) __fromfile("libc/string/strerror.c");
+
 /* libc/sys/propeller/clock.c */
 unsigned int clock(void) __fromfile("libc/sys/propeller/clock.c");
 
