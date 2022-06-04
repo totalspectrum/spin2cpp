@@ -6,8 +6,16 @@
 #include <stdlib.h>
 #include <errno.h>
 
-const char **_environ_ptr;
+static const char **_environ_ptr;
 static int _environ_size; // max size of environment table
+
+const char **_get_environ_ptr() {
+    return _environ_ptr;
+}
+
+void _put_environ_ptr(const char **ptr) {
+    _environ_ptr = ptr;
+}
 
 char *
 getenv(const char *tag)

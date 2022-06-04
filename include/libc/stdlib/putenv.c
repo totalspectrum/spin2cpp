@@ -13,12 +13,13 @@ putenv(const char *strng)
     const char **var;
     const char *name;
     size_t len = strlen(strng);
+    char **environ_ptr = _get_environ_ptr();
     
-    if (!_environ_ptr) {
+    if (!environ_ptr) {
         name = 0;
         var = 0;
     } else {
-        for (var = _environ_ptr; (name = *var) != 0; var++) {
+        for (var = environ_ptr; (name = *var) != 0; var++) {
             if (!strncmp(name, strng, len) && name[len] == '=')
                 break;
         }
@@ -28,11 +29,13 @@ putenv(const char *strng)
         *var = strng;
         return 0;
     }
-    idx = (var - _environ_ptr);
-    var = realloc( _environ_ptr, (idx+2) * sizeof(char *) );
+    idx = (var - environ_ptr);
+    var = realloc( environ_ptr, (idx+2) * sizeof(char *) );
     if (!var) {
         return _seterror(ENOMEM);
     }
     var[idx] = strng;
     var[idx+1] = 0;
+    _put_environ_ptr(var);
+    return 0;
 }

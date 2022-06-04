@@ -52,8 +52,9 @@ extern "C" {
   char *_mktemp(char *templ);
   char *mktemp(char *);
 
-    extern const char **_environ_ptr;
-#define environ _environ_ptr    
+  const char **_get_environ_ptr() _IMPL("libc/stdlib/getenv.c");
+  void _put_environ_ptr(const char **ptr) _IMPL("libc/stdlib/getenv.c");
+#define environ _get_environ_ptr()
 #define getuid() (0)
 #define getgid() (0)
 #define getpid() (1)
