@@ -1,6 +1,6 @@
 /*
  * C compiler parser
- * Copyright (c) 2011-2021 Total Spectrum Software Inc.
+ * Copyright (c) 2011-2022 Total Spectrum Software Inc.
  * See the file COPYING for terms of use.
  */
 
@@ -389,7 +389,7 @@ DeclareCGlobalVariables(AST *slist)
         inDat = 1;
     } else {
 //        inDat = 0;
-        inDat = 1;
+        inDat = current->fromUsing ? 0 : 1;
     }
     if (slist && slist->kind == AST_DECLARE_VAR) {
         DeclareTypedGlobalVariables(slist, inDat);
@@ -697,7 +697,7 @@ MakeNewStruct(Module *Parent, AST *skind, AST *identifier, AST *body)
         C->Lptr = current->Lptr;
     } else {
         if (body && body->kind == AST_STRING) {
-            class_type = NewAbstractObject(AstIdentifier(typname), body);
+            class_type = NewAbstractObject(AstIdentifier(typname), body, 1);
             Parent->objblock = AddToList(Parent->objblock, class_type);
             body = NULL;
             C = NULL;
@@ -706,7 +706,7 @@ MakeNewStruct(Module *Parent, AST *skind, AST *identifier, AST *body)
             C->defaultPrivate = is_class;
             C->Lptr = current->Lptr;
             C->isUnion = is_union;
-            class_type = NewAbstractObject(AstIdentifier(typname), NULL);
+            class_type = NewAbstractObject(AstIdentifier(typname), NULL, 0);
             class_type->d.ptr = C;
             AddSymbol(currentTypes, typname, SYM_TYPEDEF, class_type, NULL);
             AddSymbol(&Parent->objsyms, typname, SYM_TYPEDEF, class_type, NULL);

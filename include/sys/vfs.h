@@ -16,8 +16,8 @@ struct vfs {
     off_t (*lseek)(vfs_file_t *fil, off_t offset, int whence);
     int   (*ioctl)(vfs_file_t *fil, unsigned long req, void *argp);
     int (*flush)(vfs_file_t *fil);
-    void *reserved1;
-    void *reserved2;
+    void *vfs_data;   /* data needed for I/O */
+    void *reserved;
     
     int (*open)(vfs_file_t *fil, const char *name, int flags);
     int (*creat)(vfs_file_t *fil, const char *pathname, mode_t mode);

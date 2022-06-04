@@ -2079,7 +2079,7 @@ identlist:
 classdecl:
   BAS_CLASS BAS_IDENTIFIER BAS_USING BAS_STRING
     {
-        AST *newobj = NewAbstractObject( $2, $4 );
+        AST *newobj = NewAbstractObject( $2, $4, 1 );
         current->objblock = AddToList(current->objblock, newobj);
         AddSymbol(currentTypes, $2->d.string, SYM_TYPEDEF, newobj, NULL);
         $$ = NULL;
@@ -2093,7 +2093,7 @@ classheader:
     AST *ident = $2;
     const char *classname = ident->d.string;
     Module *P = NewModule(classname, current->curLanguage);
-    AST *newobj = NewAbstractObject( $2, NULL );
+    AST *newobj = NewAbstractObject( $2, NULL, 0 );
     newobj->d.ptr = P;
     AddSymbol(currentTypes, $2->d.string, SYM_TYPEDEF, newobj, NULL);
     P->Lptr = current->Lptr;
@@ -2263,7 +2263,7 @@ basetypename:
         AST *newobj;
 
         tempnam->d.string = name;
-        newobj = NewAbstractObject( tempnam, $3 );        
+        newobj = NewAbstractObject( tempnam, $3, 1 );        
         current->objblock = AddToList(current->objblock, newobj);
         $$ = newobj;
     }

@@ -654,7 +654,7 @@ TransformSrcCommentsBlock(AST *ast, AST *upper)
 #endif
 
 AST *
-NewObject(AST *identifier, AST *string)
+NewObject(AST *identifier, AST *string, int fromUsing)
 {
     AST *ast;
     const char *filename;
@@ -667,15 +667,17 @@ NewObject(AST *identifier, AST *string)
 
     ast = NewAST(AST_OBJECT, identifier, NULL);
     if (filename) {
-        ast->d.ptr = ParseFile(filename);
+        Module *P = ParseFile(filename);
+        P->fromUsing = fromUsing;
+        ast->d.ptr = (void *)P;
     }
     return ast;
 }
 
 AST *
-NewAbstractObject(AST *identifier, AST *string)
+NewAbstractObject(AST *identifier, AST *string, int fromUsing)
 {
-    return NewObject( NewAST(AST_OBJDECL, identifier, 0), string );
+    return NewObject( NewAST(AST_OBJDECL, identifier, 0), string, fromUsing );
 }
 
 int

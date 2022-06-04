@@ -497,7 +497,8 @@ struct modulestate {
     char isUnion;    // if 1, module actually represents a union
     char defaultPrivate; // if 1, member variables default to private
     char longOnly;   // if 1, all module variables are longs
-    
+    char fromUsing;  // if 1, C code is included via struct __using or similar
+
     /* back end specific flags */
     void *bedata;
 
@@ -659,9 +660,9 @@ void LANGUAGE_WARNING(int lang, AST *ast, const char *msg, ...) __attribute__((f
 void ERRORHEADER(const char *fileName, int lineno, const char *msg);
 
 /* return a new object */
-AST *NewObject(AST *identifier, AST *string);
+AST *NewObject(AST *identifier, AST *string, int fromUsing);
 /* like NewObject, but does not instantiate data */
-AST *NewAbstractObject(AST *identifier, AST *string);
+AST *NewAbstractObject(AST *identifier, AST *string, int fromUsing);
 
 /* different kinds of output functions */
 void OutputCppCode(const char *name, Module *P, int printMain);

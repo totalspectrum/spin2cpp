@@ -608,6 +608,7 @@ doParseFile(const char *name, Module *P, int *is_dup)
     save = current;
     if (!P) {
         P = NewModule(fname, language);
+        P->fromUsing = 1;
         new_module = 1;
     }
     P->curLanguage = language;

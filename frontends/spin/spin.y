@@ -1,6 +1,6 @@
 /*
  * Spin compiler parser
- * Copyright (c) 2011-2021 Total Spectrum Software Inc.
+ * Copyright (c) 2011-2022 Total Spectrum Software Inc.
  * See the file COPYING for terms of use.
  */
 
@@ -1153,14 +1153,14 @@ objline:
     { $$ = NULL; }
   | identdecl ':' string
     {
-        AST *typ = NewObject($1, $3);
+        AST *typ = NewObject($1, $3, 1);
         /* last parameter is 1 for a private member */
         DeclareOneMemberVar(current, $1, typ, 0);
         $$ = typ;
     }
   | identdecl '=' string
     {
-        AST *typ = NewAbstractObject($1, $3);
+        AST *typ = NewAbstractObject($1, $3, 1);
         AST *ident = $1;
         const char *name = GetIdentifierName(ident);
         AddSymbol(&current->objsyms, name, SYM_TYPEDEF, typ, NULL);

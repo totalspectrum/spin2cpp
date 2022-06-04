@@ -44,10 +44,10 @@
 #error PIN_SS definition no longer supported, use _vfs_open_sdcardx instead
 #endif
 
-static int _pin_clk = 0;
-static int _pin_ss = 0;
-static int _pin_di = 0;
-static int _pin_do = 0;
+int _pin_clk;
+int _pin_ss;
+int _pin_di;
+int _pin_do;
 
 #ifdef __propeller2__
 #define _smartpins_mode_eh /* enable Evanh's fast smartpin code */
@@ -121,10 +121,9 @@ void dly_us (UINT n)	/* Delay n microseconds (avr-gcc -Os) */
 #define CMD58	(58)		/* READ_OCR */
 
 
-static
+
 DSTATUS Stat = STA_NOINIT;	/* Disk status */
 
-static
 BYTE CardType;			/* b0:MMC, b1:SDv1, b2:SDv2, b3:Block addressing */
 
 
@@ -521,8 +520,8 @@ DSTATUS disk_initialize (
 	int PIN_CLK = _pin_clk;
 	int PIN_DI = _pin_di;
 	int PIN_DO = _pin_do;
-#ifdef _DEBUG	
-        printf("disk_initialize\n");
+#ifdef _DEBUG
+        __builtin_printf("disk_initialize: PINS=%d %d %d %d\n", PIN_SS, PIN_CLK, PIN_DI, PIN_DO);
 #endif	
 	if (drv) {
 #ifdef _DEBUG	  
@@ -660,6 +659,9 @@ DRESULT disk_read (
 	BYTE cmd;
 	DWORD sect = (DWORD)sector;
 
+#ifdef _DEBUG
+        __builtin_printf("disk_read: PINS=%d %d %d %d\n", _pin_ss, _pin_clk, _pin_di, _pin_do);
+#endif	
 
 	if (disk_status(drv) & STA_NOINIT) return RES_NOTRDY;
 	if (!(CardType & CT_BLOCK)) sect *= 512;	/* Convert LBA to byte address if needed */
@@ -775,4 +777,7 @@ DRESULT disk_setpins(int drv, int pclk, int pss, int pdi, int pdo)
     _pin_ss  = pss;
     _pin_di = pdi;
     _pin_do = pdo;
+#ifdef _DEBUG
+    __builtin_printf("&_pin_clk=%x, _pin_clk = %d\n", (unsigned)&_pin_clk, _pin_clk);
+#endif    
 }

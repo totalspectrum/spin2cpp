@@ -695,7 +695,7 @@ findLocalsAndDeclare(Function *func, AST *ast)
             closure_name = NewTemporaryVariable("__closure__", NULL);
             C = func->closure = NewModule(closure_name, current->curLanguage);
             C->Lptr = current->Lptr;
-            closure_type = NewAbstractObject(AstIdentifier(closure_name), NULL);
+            closure_type = NewAbstractObject(AstIdentifier(closure_name), NULL, 0);
             closure_type->d.ptr = func->closure;
             AddSymbol(&func->localsyms, closure_name, SYM_CLOSURE, closure_type, NULL);
 

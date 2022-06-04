@@ -4,6 +4,7 @@ Version 5.9.12
 - Added FREEFILE function to BASIC
 - Fixed "CLASS USING" file name lookups inside CLASS in BASIC
 - Fixed incorrect address calculation when AUGD is needed for CALLPA
+- Modified SD card code to (I hope) support multiple cards
 
 Version 5.9.11
 - Added BOOLEAN keyword to BASIC
