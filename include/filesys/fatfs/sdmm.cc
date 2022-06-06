@@ -120,9 +120,7 @@ void dly_us (UINT n)	/* Delay n microseconds (avr-gcc -Os) */
 #define CMD55	(55)		/* APP_CMD */
 #define CMD58	(58)		/* READ_OCR */
 
-
-
-DSTATUS Stat = STA_NOINIT;	/* Disk status */
+DSTATUS Stat /*= STA_NOINIT*/;	/* Disk status */
 
 BYTE CardType;			/* b0:MMC, b1:SDv1, b2:SDv2, b3:Block addressing */
 
@@ -520,6 +518,9 @@ DSTATUS disk_initialize (
 	int PIN_CLK = _pin_clk;
 	int PIN_DI = _pin_di;
 	int PIN_DO = _pin_do;
+
+        Stat = STA_NOINIT;
+        
 #ifdef _DEBUG
         __builtin_printf("disk_initialize: PINS=%d %d %d %d\n", PIN_SS, PIN_CLK, PIN_DI, PIN_DO);
 #endif	

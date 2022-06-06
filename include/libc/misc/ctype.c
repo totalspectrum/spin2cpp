@@ -28,7 +28,7 @@ avoid the problem of digressive versions of dLibs.
 
 /* table reduced to 129 entries by Eric Smith */
 
-unsigned char __ctype[129] =
+static unsigned char __ctype[129] =
 	{
 	_CTc, _CTc, _CTc, _CTc,				/* 0x00..0x03 */
 	_CTc, _CTc, _CTc, _CTc,				/* 0x04..0x07 */
@@ -121,10 +121,8 @@ int isblank(int c)
   return __isctype(c, _CTb);
 }
 
-#ifdef __FLEXC__
 unsigned __ctype_get(unsigned int c)
 {
     if (c > 128) c = 128;
     return __ctype[c];
 }
-#endif

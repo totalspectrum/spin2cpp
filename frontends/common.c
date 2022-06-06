@@ -1711,10 +1711,17 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
             }
         }
     }
+    if (IsConstType(type) || (IsArrayType(type) && IsConstType(BaseType(type)))) {
+        inDat = 1;
+    }
     if (!inDat) {
         /* make this a member variable */
-        DeclareOneMemberVar(P, ident, type, 0);
-        return;
+        if (initializer) {
+            ERROR(ident, "Non-const member variable %s cannot be initialized at compile time", GetUserIdentifierName(ident));
+        } else {
+            DeclareOneMemberVar(P, ident, type, 0);
+            return;
+        }
     }
     // look through the globals to see if there's already a definition
     // if there is, and that definition has an initializer, we have a conflict

@@ -34,7 +34,7 @@ DEBUG_TM(const char *nm, struct tm *tm)
 #define START_OF_2012 (1325376000UL)
 #define START_OF_2100 (4102444800UL)
 
-int _timezone = -1;	/* holds # seconds west of GMT */
+static int _timezone = -1;	/* holds # seconds west of GMT */
 
 static int
 days_per_mth[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
@@ -216,7 +216,7 @@ struct tm *gmtime(const time_t *t)
    global variable tzname to the names of the timezones
  */
 
-char *_tzname[2] = {"UCT", "UCT"};
+const char * const _tzname[2] = {"UCT", "UCT"};
 
 void
 _tzset(void)
