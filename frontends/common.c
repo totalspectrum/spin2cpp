@@ -1717,7 +1717,7 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
     if (!inDat) {
         /* make this a member variable */
         if (initializer) {
-            ERROR(ident, "Non-const member variable %s cannot be initialized at compile time", GetUserIdentifierName(ident));
+            WARNING(ident, "Non-const member variable %s cannot be initialized at compile time; assuming variable is shared", GetUserIdentifierName(ident));
         } else {
             DeclareOneMemberVar(P, ident, type, 0);
             return;
