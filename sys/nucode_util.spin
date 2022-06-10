@@ -379,8 +379,11 @@ pri _qexp(v) : r
 pri _qlog(v) : r
   __bytecode__("QLOG")
 
-pri _ones(v) : r
+pri _ones(v = +long) : r = +long
   __bytecode__("ONES")
+
+pri __builtin_parity(v = +long) : r = +long
+  return _ones(v) & 1
 
 pri _rotxy(x, y, angle) : nx, ny
   __bytecode__("ROTXY")

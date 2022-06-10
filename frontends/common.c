@@ -232,7 +232,7 @@ Aliases basicalias[] = {
     { "clkfreq", "__clkfreq_var" },
     { "clkmode", "__clkmode_var" },
     /* the rest of these are OK, I think */
-    { "bitrev", "__builtin_bitrev" },
+    { "bitrev", "__builtin_bitreverse32" },
     { "chain",  "_execve" },
     { "clkset", "_clkset" },
     { "cpuchk",  "_cogchk" },
@@ -305,8 +305,9 @@ Aliases calias[] = {
     { "_pinw", "_drvw" },
 
     /* some math functions */
+    { "__builtin_popcount", "_ones" },
     { "__builtin_round", "_float_round" },
-
+    
     /* useful I/O functions */
     { "mount", "_mount" },
     { "umount", "_umount" },

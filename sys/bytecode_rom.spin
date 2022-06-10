@@ -394,13 +394,16 @@ pri _drvw(pin = long, c = long) | mask
 pri _pinr(pin = long)
   return (ina >> pin) & 1
     
-pri _ones(v) : r
+pri _ones(v = +long) : r = +long
   r := 0
   repeat while v <> 0
     if v & 1
       r++
     v := v >> 1
-    
+
+pri __builtin_parity(v = +long) : r = +long
+  return _ones(v) & 1
+
 ' find 64 bit integer square root (approximate)
 ' not necessarily very accurate, but close enough
 ' for what we want to do with it (floating point)

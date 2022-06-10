@@ -297,6 +297,13 @@ Calculates the absolute value of `y`. This is not like a normal C function in th
 ```
 Allocates `size` bytes of memory on the stack, and returns a pointer to that memory. When the enclosing function returns, the allocated memory will become invalid (so do not attempt to return the result from a function!)
 
+### BITREVERSE32
+
+```
+  x = __builtin_bitreverse32(y)
+```
+Reverse all 32 bits of the unsigned integer `y` and returns the result. This is the same as `__builtin_propeller_rev(y, 32)` and is provided for compatibility with clang.
+
 ### CLZ (Count Leading Zeros)
 
 ```
@@ -341,6 +348,20 @@ Calculates the upper 32 bits of the 64 bit product of (signed) integers `a` and 
 x = __builtin_muluh(a, b)
 ```
 Calculates the upper 32 bits of the 64 bit product of (unsigned) integers `a` and `b`.
+
+### PARITY
+
+```
+x = __builtin_parity(y)
+```
+Returns the parity of the unsigned integer `y` (either 0 or 1).
+
+### POPCOUNT
+
+```
+x = __builtin_popcount(y)
+```
+Returns the number of bits set in the unsigned integer `y` (between 0 and 32).
 
 ### REV
 

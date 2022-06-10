@@ -472,11 +472,17 @@ pri _call(hubaddr)
     call hubaddr
   endasm
 
-pri _ones(v) : r
+pri _ones(v = +long) : r=+long
   asm
     ones r, v
   endasm
 
+pri __builtin_parity(v = +long) : r = +long
+  asm
+    or   v, #0 wc
+    wrc  r
+  endasm
+  
 pri _qexp(v) : r
   asm
     qexp v

@@ -253,13 +253,20 @@ pri _call(hubaddr)
     call hubaddr
   endasm
 
-pri _ones(v) : r
+pri _ones(v = +long) : r = +long
   r := 0
   repeat while v <> 0
     if v & 1
       r++
     v := v >> 1
     
+pri __builtin_parity(v = +long) : r = +long
+  r := 0
+  asm
+    or   v, #0 wc
+    muxc r, #1
+  endasm
+
 pri _getsec() : r = +long
   r := _getcnt()
   return r +/ __clkfreq_var
