@@ -483,6 +483,20 @@ pri __builtin_parity(v = +long) : r = +long
     wrc  r
   endasm
   
+pri __builtin_bswap16(v = +long) : r = +long
+  r := v
+  asm
+    movbyts r, #%%3201
+    zerox   r, #15
+  endasm
+
+pri __builtin_bswap32(v = +long) : r = +long
+  r := v
+  asm
+    movbyts r, #%%0123
+  endasm
+
+
 pri _qexp(v) : r
   asm
     qexp v

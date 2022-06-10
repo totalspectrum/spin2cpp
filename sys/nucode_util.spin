@@ -401,3 +401,13 @@ pri _qcos(len, angle, twopi) : x | y
     angle, x := _sdiv64(angle, 0, twopi)
   x, y := _rotxy(len, 0, angle)
   
+pri __builtin_bswap16(x = +long) : y = +long
+  y := 0
+  y.byte[0] := x.byte[1]
+  y.byte[1] := x.byte[0]
+
+pri __builtin_bswap32(x = +long) : y = +long
+  y.byte[0] := x.byte[3]
+  y.byte[1] := x.byte[2]
+  y.byte[2] := x.byte[1]
+  y.byte[3] := x.byte[0]

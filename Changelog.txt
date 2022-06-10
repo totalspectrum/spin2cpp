@@ -2,6 +2,7 @@ Version 5.9.12
 - Added LINE INPUT to BASIC
 - Added definitions for BUFSIZ and L_tmpnam to stdio.h
 - Added FREEFILE function to BASIC
+- Added new C intrinsics __builtin_bswap16, __builtin_bswap32, __builtin_parity, __builtin_popcount
 - Changed the way C global variables are handled in objects; they used to always be shared between variables, but now can be proper member variables in some circumstances
 - Fixed "CLASS USING" file name lookups inside CLASS in BASIC
 - Fixed incorrect address calculation when AUGD is needed for CALLPA

@@ -304,6 +304,20 @@ Allocates `size` bytes of memory on the stack, and returns a pointer to that mem
 ```
 Reverse all 32 bits of the unsigned integer `y` and returns the result. This is the same as `__builtin_propeller_rev(y, 32)` and is provided for compatibility with clang.
 
+### BSWAP16
+
+```
+  x = __builtin_bswap16(y)
+```
+Swaps the lower two bytes of `y`, clears the upper two bytes, and returns the result.
+
+### BSWAP32
+
+```
+  x = __builtin_bswap32(y)
+```
+Swaps all four bytes of `y` and returns the result.
+
 ### CLZ (Count Leading Zeros)
 
 ```
