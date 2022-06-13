@@ -6,6 +6,7 @@ Version 5.9.12
 - Changed the way C global variables are handled in objects; they used to always be shared between variables, but now can be proper member variables in some circumstances
 - Fixed "CLASS USING" file name lookups inside CLASS in BASIC
 - Fixed incorrect address calculation when AUGD is needed for CALLPA
+- Made clkmode_ and similar symbols accessible in submodules
 - Modified SD card code to (I hope) support multiple cards
 
 Version 5.9.11

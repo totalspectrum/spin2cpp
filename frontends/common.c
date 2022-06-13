@@ -2183,6 +2183,15 @@ CalcClkFreqP1(Module *P)
     AddInternalSymbol(&P->objsyms, "__clkfreq_con", SYM_CONSTANT, AstInteger(clkfreq), NULL);
     AddInternalSymbol(&P->objsyms, "__clkreg_con", SYM_CONSTANT, AstInteger(clkreg), NULL);
     AddInternalSymbol(&P->objsyms, "__clkmode_con", SYM_CONSTANT, AstInteger(clkmode), NULL);
+    // put them in the system module as well, so that they may be
+    // accessed in sub-modules
+    Module *Q = systemModule;
+    if (Q && !LookupSymbolInTable(&Q->objsyms, "__clkfreq_con")) {
+        AddInternalSymbol(&Q->objsyms, "__clkfreq_con", SYM_CONSTANT, AstInteger(clkfreq), NULL);
+        AddInternalSymbol(&Q->objsyms, "__clkreg_con", SYM_CONSTANT, AstInteger(clkreg), NULL);
+        AddInternalSymbol(&Q->objsyms, "__clkmode_con", SYM_CONSTANT, AstInteger(clkmode), NULL);
+    }
+    
     return 1;
 }
 
@@ -2291,6 +2300,14 @@ set_symbols:
     AddInternalSymbol(&P->objsyms, "__clkmode_con", SYM_CONSTANT, AstInteger(clkmode), NULL);
     AddInternalSymbol(&P->objsyms, "__clkreg_con", SYM_CONSTANT, AstInteger(clkmode), NULL);
     
+    // put them in the system module as well, so that they may be
+    // accessed in sub-modules
+    Module *Q = systemModule;
+    if (Q && !LookupSymbolInTable(&Q->objsyms, "__clkfreq_con")) {
+        AddInternalSymbol(&Q->objsyms, "__clkfreq_con", SYM_CONSTANT, AstInteger(finalfreq), NULL);
+        AddInternalSymbol(&Q->objsyms, "__clkmode_con", SYM_CONSTANT, AstInteger(clkmode), NULL);
+        AddInternalSymbol(&Q->objsyms, "__clkreg_con", SYM_CONSTANT, AstInteger(clkmode), NULL);
+    }
     return 1;
 }
 
