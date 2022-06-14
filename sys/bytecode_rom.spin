@@ -395,11 +395,9 @@ pri _pinr(pin = long)
   return (ina >> pin) & 1
     
 pri _ones(v = +long) : r = +long
-  r := 0
-  repeat while v <> 0
-    if v & 1
-      r++
-    v := v >> 1
+  repeat
+    r += v&1
+  while v>>=1
 
 pri __builtin_parity(v = +long) : r = +long
   return _ones(v) & 1
