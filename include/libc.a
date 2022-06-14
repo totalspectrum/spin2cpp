@@ -4,7 +4,7 @@
 #define time_t unsigned int
 #define mode_t unsigned int
 #define off_t long
-#define _FILE struct vfs_file_t
+#define _FILE struct s_vfs_file_t
 #define DIR struct _dir
 #define DIRENT struct dirent
 
@@ -57,8 +57,8 @@ int vfprintf(_FILE *f, const char *format, unsigned long ap) __fromfile("libc/st
 /* libc/stdio/fputs.c */
 int fputc(int c, _FILE *f) __fromfile("libc/stdio/fputs.c");
 int fgetc(_FILE *f) __fromfile("libc/stdio/fputs.c");
-char *fputs(char *data, _FILE *) __fromfile("libc/stdio/fputs.c");
-char *puts(char *data) __fromfile("libc/stdio/fputs.c");
+int fputs(const char *data, _FILE *) __fromfile("libc/stdio/fputs.c");
+int puts(const char *data) __fromfile("libc/stdio/fputs.c");
 
 /* libc/stdio/fopen.c */
 _FILE *fopen(const char *name, const char *mode) __fromfile("libc/stdio/fopen.c");
@@ -113,7 +113,7 @@ void *memchr(const void *s, int ucharwanted, size_t size) __fromfile("libc/strin
 int memcmp(const void *s1, const void *s2, size_t size) __fromfile("libc/string/memcmp.c");
 
 /* libc/string/memcpy.c */
-int memcpy(void *dest, const void *src, size_t n) __fromfile("libc/string/memcpy.c");
+void *memcpy(void *dest, const void *src, size_t n) __fromfile("libc/string/memcpy.c");
 
 /* libc/string/memmove.c */
 void *memmove(void *dest_p, const void *src_p, size_t n) __fromfile("libc/string/memmove.c");
