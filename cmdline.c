@@ -459,7 +459,7 @@ int ParseOptimizeString(AST *line, const char *str, int *flag_ptr)
                 flags = DEFAULT_ASM_OPTS;
                 continue;
             case 's':
-                flags = DEFAULT_ASM_OPTS | OPT_EXTRASMALL;
+                flags = DEFAULT_ASM_OPTS | OPT_EXTRASMALL | OPT_INLINE_SINGLEUSE;
                 continue;
             case '2':
             case '3':
