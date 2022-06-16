@@ -85,6 +85,7 @@ int IsBoolCompatibleType(AST *typ);
 int IsClassType(AST *typ);
 
 int IsConstType(AST *typ);
+int IsConstArrayType(AST *typ);
 
 // number of arguments to a function of this type
 int NumArgsForType(AST *functyp);

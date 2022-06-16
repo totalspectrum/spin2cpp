@@ -1957,7 +1957,7 @@ FoldIfConst(AST *expr)
 AST *
 RemoveTypeModifiers(AST *ast)
 {
-    while(ast && (ast->kind == AST_MODIFIER_CONST || ast->kind == AST_MODIFIER_VOLATILE || ast->kind == AST_MODIFIER_SEND_ARGS)) {
+    while(ast && (ast->kind == AST_MODIFIER_CONST || ast->kind == AST_MODIFIER_VOLATILE || ast->kind == AST_MODIFIER_SEND_ARGS || ast->kind == AST_TYPEDEF)) {
         ast = ast->left;
     }
     return ast;
@@ -1985,6 +1985,7 @@ IsArrayType(AST *ast)
     case AST_FUNCTYPE:
     case AST_OBJECT:
     case AST_TUPLE_TYPE:
+    case AST_BITFIELD:
         return 0;
     default:
         ERROR(ast, "Internal error, unknown type %d passed to IsArrayType",
@@ -2429,6 +2430,15 @@ int
 IsConstType(AST *type)
 {
     return type && type->kind == AST_MODIFIER_CONST;
+}
+
+int
+IsConstArrayType(AST *type)
+{
+    if (IsArrayType(type)) {
+        return IsConstType(BaseType(type));
+    }
+    return 0;
 }
 
 //

@@ -1,3 +1,6 @@
+Version 5.9.13
+- Make C const arrays always go into DAT, to save space
+
 Version 5.9.12
 - Added LINE INPUT to BASIC
 - Added definitions for BUFSIZ and L_tmpnam to stdio.h
