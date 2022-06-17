@@ -221,6 +221,44 @@ IsLabel(IR *ir)
   return ir->opc == OPC_LABEL;
 }
 
+static bool IsPrefixOpcode(IR *ir) {
+    if (!ir) return false;
+    switch (ir->opc) {
+    case OPC_GENERIC_DELAY:
+    case OPC_SETQ:
+    case OPC_SETQ2:
+        return true;
+    default:
+        return false;
+    }
+}
+static bool IsCordicCommand(IR *ir) {
+    if (!ir) return false;
+    switch (ir->opc) {
+    case OPC_QMUL:
+    case OPC_QDIV:
+    case OPC_QFRAC:
+    case OPC_QROTATE:
+    case OPC_QSQRT:
+    case OPC_QVECTOR:
+    case OPC_QLOG:
+    case OPC_QEXP:
+        return true;
+    default:
+        return false;
+    }
+}
+static bool IsCordicGet(IR *ir) {
+    if (!ir) return false;
+    switch (ir->opc) {
+    case OPC_GETQX:
+    case OPC_GETQY:
+        return true;
+    default:
+        return false;
+    }
+}
+
 // return TRUE if an instruction modifies a register
 bool
 InstrModifies(IR *ir, Operand *reg)
@@ -3397,6 +3435,7 @@ OptimizePeepholes(IRList *irl)
 /* special peephole for buf[i++] := n */
 /* look for mov tmp, b; add b, #1; use tmp */
 /* in this case push the add b, #1 as far forward as we can */
+/* but not past any CORDIC instructions... */
 static int
 OptimizeIncDec(IRList *irl)
 {
@@ -3431,6 +3470,9 @@ OptimizeIncDec(IRList *irl)
                     break;
                 if (IsLabel(stepir))
                     break;
+                if (IsCordicGet(stepir)) {
+                    break;
+                }
                 if (stepir->dst == changedOp || stepir->src == changedOp) {
                     // cannot push any further
                     break;
@@ -4052,44 +4094,6 @@ OptimizeJumps(IRList *irl)
         ir = ir->next;
     }
     return change;
-}
-
-static bool IsPrefixOpcode(IR *ir) {
-    if (!ir) return false;
-    switch (ir->opc) {
-    case OPC_GENERIC_DELAY:
-    case OPC_SETQ:
-    case OPC_SETQ2:
-        return true;
-    default:
-        return false;
-    }
-}
-static bool IsCordicCommand(IR *ir) {
-    if (!ir) return false;
-    switch (ir->opc) {
-    case OPC_QMUL:
-    case OPC_QDIV:
-    case OPC_QFRAC:
-    case OPC_QROTATE:
-    case OPC_QSQRT:
-    case OPC_QVECTOR:
-    case OPC_QLOG:
-    case OPC_QEXP:
-        return true;
-    default:
-        return false;
-    }
-}
-static bool IsCordicGet(IR *ir) {
-    if (!ir) return false;
-    switch (ir->opc) {
-    case OPC_GETQX:
-    case OPC_GETQY:
-        return true;
-    default:
-        return false;
-    }
 }
 
 static bool IsReorderBarrier(IR *ir) {
