@@ -64,6 +64,12 @@
     X(ABS)       /* abs value tos */ \
     X(REV)       /* reverse bits of tos */ \
     X(ONES)      /* count one bits of tos */ \
+    X(MERGEW)    /* merge words (pit permute) */ \
+    X(SPLITW)    /* split words (pit permute) */ \
+    X(MERGEB)    /* merge bytes (pit permute) */ \
+    X(SPLITB)    /* split bytes (pit permute) */ \
+    X(SEUSSF)    /* scramble bits forward */ \
+    X(SEUSSR)    /* scramble bits reverse */ \
     X(QEXP)      /* exp2 */ \
     X(QLOG)      /* log2 */ \
     X(ENCODE)    /* tos := ENCODE tos (0-32) */ \

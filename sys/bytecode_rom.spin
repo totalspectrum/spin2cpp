@@ -530,3 +530,69 @@ pri __builtin_movbyts(v = +long, m = +long) : r = +long
   r.byte[1] := v.byte[(m>>2)&3]
   r.byte[2] := v.byte[(m>>4)&3]
   r.byte[3] := v.byte[(m>>6)&3]
+
+pri __builtin_mergew(v = +long) : r = +long
+  r := __builtin_bit_permute_step(v,$0000AAAA,15)
+  r := __builtin_bit_permute_step(r,$0000CCCC,14)
+  r := __builtin_bit_permute_step(r,$0000F0F0,12)
+  r := __builtin_bit_permute_step(r,$0000FF00, 8)
+
+pri __builtin_splitw(v = +long) : r = +long
+  r := __builtin_bit_permute_step(v,$22222222, 1)
+  r := __builtin_bit_permute_step(r,$0C0C0C0C, 2)
+  r := __builtin_bit_permute_step(r,$00F000F0, 4)
+  r := __builtin_bit_permute_step(r,$0000FF00, 8)
+
+pri __builtin_mergeb(v = +long) : r = +long
+  r := __builtin_bit_permute_step(v,$00AA00AA, 7)
+  r := __builtin_bit_permute_step(r,$0000CCCC,14)
+  r := __builtin_bit_permute_step(r,$00F000F0, 4)
+  r := __builtin_bit_permute_step(r,$0000FF00, 8)
+
+pri __builtin_splitb(v = +long) : r = +long
+  r := __builtin_bit_permute_step(v,$0A0A0A0A, 3)
+  r := __builtin_bit_permute_step(r,$00CC00CC, 6)
+  r := __builtin_bit_permute_step(r,$0000F0F0,12)
+  r := __builtin_bit_permute_step(r,$0000FF00, 8)
+
+pri __builtin_seussf(x = +long) : r = +long
+return ( ((x & $0200_0002) <<  4) {
+}      | ((x >> 25) & $0000_0010) {
+}      | ((x & $4180_8000) rol  8) {
+}      | ((x & $0000_0401) << 11) {
+}      | ((x >> 20) & $0000_0002) {
+}      | ((x & $0000_0860) << 14) {
+}      | ((x >> 17) & $0000_0404) {
+}      | ((x & $0000_0004) << 16) {
+}      | ((x & $0000_0200) << 17) {
+}      | ((x >> 14) & $0000_4000) {
+}      | ((x >> 13) & $0000_0200) {
+}      | ((x & $0000_0100) << 20) {
+}      | ((x & $0000_0008) << 21) {
+}      | ((x & $8400_1090) rol  23) {
+}      | ((x >>  7) & $0000_0080) {
+}      | ((x >>  5) & $0000_9100) {
+}      | ((x >>  3) & $0000_2000) {
+}      | ((x >>  2) & $0001_0000) {
+}      ) ^ $354D_AE51
+
+pri __builtin_seussr(x = +long) : r = +long
+return ( ((x & $0001_0000) <<  2) {
+}      | ((x & $0000_2000) <<  3) {
+}      | ((x & $0000_9100) <<  5) {
+}      | ((x & $0000_0080) <<  7) {
+}      | ((x & $4842_0008) rol  9) {
+}      | ((x >> 21) & $0000_0008) {
+}      | ((x >> 20) & $0000_0100) {
+}      | ((x & $0000_0200) << 13) {
+}      | ((x & $0000_4000) << 14) {
+}      | ((x >> 17) & $0000_0200) {
+}      | ((x >> 16) & $0000_0004) {
+}      | ((x & $0000_0404) << 17) {
+}      | ((x >> 14) & $0000_0860) {
+}      | ((x & $0000_0002) << 20) {
+}      | ((x >> 11) & $0000_0401) {
+}      | ((x & $8080_0041) rol  24) {
+}      | ((x & $0000_0010) << 25) {
+}      | ((x >>  4) & $0200_0002) {
+}      ) ^ $EB55_032D
