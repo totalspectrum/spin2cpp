@@ -1,4 +1,5 @@
 Version 5.9.13
+- Fixed incorrect varargs leaf function optimization
 - Make C const arrays always go into DAT, to save space
 
 Version 5.9.12

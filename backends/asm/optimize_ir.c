@@ -860,6 +860,7 @@ static bool FuncUsesArg(Operand *func, Operand *arg)
     } else if (func && func->val && (/*func->kind == IMM_COG_LABEL ||*/ func->kind == IMM_HUB_LABEL) && ((Function*)func->val)->is_leaf) {
         if (arg->kind != REG_ARG) return true; // subreg or smth
         if (arg->val < ((Function*)func->val)->numparams) return true; // Arg used;
+        if ( ((Function *)func->val)->numparams < 0 ) return true; // varargs
         return false; // Arg not used
     }
     return true;
