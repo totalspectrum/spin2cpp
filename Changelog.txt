@@ -1,4 +1,5 @@
 Version 5.9.13
+- Added base 4 and base 8 literals to BASIC
 - Fixed incorrect varargs leaf function optimization
 - Make C const arrays always go into DAT, to save space
 

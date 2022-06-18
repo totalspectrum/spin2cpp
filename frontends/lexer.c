@@ -4131,6 +4131,12 @@ again:
         } else if (c2 == 'b' || c2 == 'B') {
             parseNumber(L, 2, &ast->d.ival);
             c = BAS_INTEGER;
+        } else if (c2 == 'q' || c2 == 'Q') {
+            parseNumber(L, 4, &ast->d.ival);
+            c = BAS_INTEGER;
+        } else if (c2 == 'o' || c2 == 'O') {
+            parseNumber(L, 8, &ast->d.ival);
+            c = BAS_INTEGER;
         } else if (c2 == '=') {
             c = BAS_AND_ASSIGN;
         } else {
@@ -4163,6 +4169,10 @@ again:
                 c = parseNumber(L, 16, &ast->d.ival);
             } else if (c2 == 'b' || c2 == 'B') {
                 c = parseNumber(L, 2, &ast->d.ival);
+            } else if (c2 == 'q' || c2 == 'Q') {
+                c = parseNumber(L, 4, &ast->d.ival);
+            } else if (c2 == 'o' || c2 == 'O') {
+                c = parseNumber(L, 8, &ast->d.ival);
             } else {
                 lexungetc(L, c2);
             }

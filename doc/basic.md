@@ -160,6 +160,10 @@ Hexadecimal (base 16) integers start with the sequence "&h", "0h", or "0x" follo
 
 Binary (base 2) integers start with the sequence "&b" or "0b" followed by the digits 0 and 1.
 
+Base 4 integers start with the sequence "&q" or "0q" followed by digits 0-3.
+
+Octal (base 8) integers start with the sequence "&o" or "0o" followed by digits 0-7.
+
 Numbers may contain underscores anywhere to separate digits; those underscores are ignored.
 
 For example, the following are all ways to represent the decimal number `10`:
@@ -169,6 +173,8 @@ For example, the following are all ways to represent the decimal number `10`:
    0xA
    &h_a
    &B1010
+   &q22
+   &o12
 ```
 
 ### Keywords
