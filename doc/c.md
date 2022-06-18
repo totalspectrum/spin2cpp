@@ -349,6 +349,13 @@ x = __builtin_frac(a, b)
 ```
 Sets `x` to the quotient of `a << 32` and `b`; this is similar to the Spin2 FRAC operator.
 
+### MOVBYTS
+
+```
+x = __builtin_movbyts(a, m)
+```
+Uses bits of `m` to select bytes from `a`, similar to the P2 MOVBYTS instruction. The low byte of the result is the byte of `a` selected by the low 2 bits of `m`; the next byte of the result is selected by bits 2-3 or `m`; and so on.
+
 ### MULH
 
 ```

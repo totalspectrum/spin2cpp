@@ -572,6 +572,11 @@ impl_XOR
 	xor	tos, nos
 	jmp	#\impl_DOWN
 
+impl_MOVBYTS
+	movbyts	nos, tos
+	mov	tos, nos
+	jmp	#\impl_DOWN
+
 impl_SIGNX
 	signx	nos, tos
 	mov	tos, nos

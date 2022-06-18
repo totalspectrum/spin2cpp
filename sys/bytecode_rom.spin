@@ -524,3 +524,9 @@ pri __builtin_bswap32(x = +long) : y = +long
   y.byte[1] := x.byte[2]
   y.byte[2] := x.byte[1]
   y.byte[3] := x.byte[0]
+
+pri __builtin_movbyts(v = +long, m = +long) : r = +long
+  r := v.byte[m&3]
+  r.byte[1] := v.byte[(m>>2)&3]
+  r.byte[2] := v.byte[(m>>4)&3]
+  r.byte[3] := v.byte[(m>>6)&3]

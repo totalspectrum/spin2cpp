@@ -400,14 +400,13 @@ pri _qcos(len, angle, twopi) : x | y
   if twopi
     angle, x := _sdiv64(angle, 0, twopi)
   x, y := _rotxy(len, 0, angle)
-  
+
+pri __builtin_movbyts(v = +long, m = +long) : r = +long
+  __bytecode__("MOVBYTS")
+
 pri __builtin_bswap16(x = +long) : y = +long
-  y := 0
-  y.byte[0] := x.byte[1]
-  y.byte[1] := x.byte[0]
+  y := __builtin_movbyts(x, %%3201)
+  y &= $ffff
 
 pri __builtin_bswap32(x = +long) : y = +long
-  y.byte[0] := x.byte[3]
-  y.byte[1] := x.byte[2]
-  y.byte[2] := x.byte[1]
-  y.byte[3] := x.byte[0]
+  y := __builtin_movbyts(x, %%0123)

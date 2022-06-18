@@ -44,8 +44,8 @@
     X(SAR)       /* tos := nos SAR tos (signed right shift) */ \
     X(ROL)       /* tos := nos ROL tos */ \
     X(ROR)       /* tos := nos ROR tos */ \
-    X(ENCODE)    /* tos := nos ENCODE tos (0-32) */ \
-    X(ENCODE2)   /* tos := nos ENCODE tos (0-31) */ \
+    X(MOVBYTS)   /* execute MOVBYTS tos, nos */ \
+    \
     /* BINARY math operations end here (ones below leave 2 items on stack */ \
     \
     X(MULU)      /* unsigned multiply: leaves low, high on stack */ \
@@ -66,6 +66,8 @@
     X(ONES)      /* count one bits of tos */ \
     X(QEXP)      /* exp2 */ \
     X(QLOG)      /* log2 */ \
+    X(ENCODE)    /* tos := ENCODE tos (0-32) */ \
+    X(ENCODE2)   /* tos := ENCODE tos (0-31) */ \
     /* UNARY math operations end here */ \
     \
     X(DROP)      /* drop element on top of stack */ \

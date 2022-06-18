@@ -496,6 +496,11 @@ pri __builtin_bswap32(v = +long) : r = +long
     movbyts r, #%%0123
   endasm
 
+pri __builtin_movbyts(v = +long, m = +long) : r = +long
+  r := v
+  asm
+    movbyts r, m
+  endasm
 
 pri _qexp(v) : r
   asm
