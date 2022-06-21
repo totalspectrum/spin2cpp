@@ -7,6 +7,11 @@ dat
 '' This is the skeleton from which the actual interpreter is built
 '' (opcodes are assigned at compile time so as to minimize the size)
 ''
+'' NOTE: the compiler expects line feeds (only), not CR+LF. If you are
+'' rebuilding on Windows, take care to use an xxd and sed which will
+'' do CR+LF -> LF conversion, and/or to use an editor that will not
+'' insert any extra CRs into this file.
+''
 '' special characters:
 ''    ^L = end of initial interpreter
 ''    ^A0 = clock frequency
