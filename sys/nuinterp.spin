@@ -706,6 +706,24 @@ impl_ABS
 impl_ONES
   _ret_	ones	tos, tos
 
+impl_MERGEW
+  _ret_	mergew	tos, tos
+
+impl_SPLITW
+  _ret_	splitw	tos, tos
+
+impl_MERGEB
+  _ret_	mergeb	tos, tos
+
+impl_SPLITB
+  _ret_	splitb	tos, tos
+
+impl_SEUSSF
+  _ret_	seussf	tos, tos
+
+impl_SEUSSR
+  _ret_	seussf	tos, tos
+
 impl_REV
   _ret_	rev	tos
 

@@ -514,3 +514,9 @@ pri _int64_divs(nlo, nhi, dlo, dhi) : qlo, qhi | x0, x1
 pri _int64_mods(nlo, nhi, dlo, dhi) : rlo, rhi | x0, x1
   x0, x1, rlo, rhi := _int64_divmods(nlo, nhi, dlo, dhi)
   return rlo, rhi
+
+' Used to implement bit permutations on non-P2 targets
+pri __builtin_bit_permute_step(x = +long,m = +long,shift = +long) : r = +long
+  m &= (x >> shift) ^ x
+  return m ^ (m << shift) ^ x
+

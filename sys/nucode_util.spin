@@ -410,3 +410,21 @@ pri __builtin_bswap16(x = +long) : y = +long
 
 pri __builtin_bswap32(x = +long) : y = +long
   y := __builtin_movbyts(x, %%0123)
+
+pri __builtin_mergew(x = +long) : y = +long
+  __bytecode__("MERGEW")
+
+pri __builtin_splitw(x = +long) : y = +long
+  __bytecode__("SPLITW")
+
+pri __builtin_mergeb(x = +long) : y = +long
+  __bytecode__("MERGEB")
+
+pri __builtin_splitb(x = +long) : y = +long
+  __bytecode__("SPLITB")
+
+pri __builtin_seussf(x = +long) : y = +long
+  __bytecode__("SEUSSF")
+
+pri __builtin_seussr(x = +long) : y = +long
+  __bytecode__("SEUSSR")

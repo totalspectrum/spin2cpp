@@ -502,6 +502,42 @@ pri __builtin_movbyts(v = +long, m = +long) : r = +long
     movbyts r, m
   endasm
 
+pri __builtin_mergew(v = +long) : r = +long
+  r := v
+  asm
+    mergew r
+  endasm
+
+pri __builtin_splitw(v = +long) : r = +long
+  r := v
+  asm
+    splitw r
+  endasm
+
+pri __builtin_mergeb(v = +long) : r = +long
+  r := v
+  asm
+    mergeb r
+  endasm
+
+pri __builtin_splitb(v = +long) : r = +long
+  r := v
+  asm
+    splitb r
+  endasm
+
+pri __builtin_seussf(v = +long) : r = +long
+  r := v
+  asm
+    seussf r
+  endasm
+
+pri __builtin_seussr(v = +long) : r = +long
+  r := v
+  asm
+    seussr r
+  endasm
+  
 pri _qexp(v) : r
   asm
     qexp v
