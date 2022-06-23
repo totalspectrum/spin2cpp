@@ -240,6 +240,8 @@ extern int gl_interp_kind;
 #define NuBytecodeOutput() (gl_output == OUTPUT_BYTECODE && gl_interp_kind == INTERP_KIND_NUCODE)
 #define TraditionalBytecodeOutput() (gl_output == OUTPUT_BYTECODE && gl_interp_kind != INTERP_KIND_NUCODE)
 
+#define NoVarargsOutput() (gl_output == OUTPUT_BYTECODE)
+
 /* flags for output */
 #define OUTFLAG_COG_CODE 0x01
 #define OUTFLAG_COG_DATA 0x02
