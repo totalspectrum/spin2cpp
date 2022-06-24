@@ -1364,6 +1364,19 @@ doCast(AST *desttype, AST *srctype, AST *src)
 }
 
 
+static int PushSize(AST *list)
+{
+    int size = 0;
+    AST *typ;
+    
+    while (list) {
+        typ = ExprType(list->left);
+        size += TypeSize(typ);
+        list = list->right;
+    }
+    return size;
+}
+
 //
 // function for doing type checking and various kinds of
 // type related manipulations. for example:
@@ -1502,10 +1515,15 @@ AST *CheckTypes(AST *ast)
     case AST_FUNCCALL:
         {
             AST *actualParamList = ast->right;
+            AST *actualParamListPrev = ast;
             AST *calledParamList;
             AST *expectType, *passedType;
             AST *functype;
             AST *tupleType = NULL;
+            AST **varArgsPlace = NULL;
+            AST *varArgs = NULL;
+            AST *varArgsList = NULL;
+            int varargsOffset = 0;
             
             functype = RemoveTypeModifiers(ExprType(ast->left));
             if (functype && functype->kind == AST_PTRTYPE) {
@@ -1532,6 +1550,20 @@ AST *CheckTypes(AST *ast)
                         // if the parameter has a type declaration, use it
                         if (paramId->kind == AST_DECLARE_VAR) {
                             expectType = ExprType(paramId);
+                        } else if (paramId->kind == AST_VARARGS) {
+                            /* anything */
+                            if (!varArgsPlace) {
+                                if (NoVarargsOutput()) {
+                                    int bytes = PushSize(actualParamList);
+                                    AST *funcall = NewAST(AST_FUNCCALL, gc_alloc_managed,
+                                                          NewAST(AST_EXPRLIST, AstInteger(bytes), NULL));
+                                    varArgs = AstTempLocalVariable("_varargs_", NULL);
+                                    printf("Need to start varargs stuff\n");
+
+                                    varArgsPlace = &actualParamListPrev->right;
+                                    varArgsList = NewAST(AST_SEQUENCE, AstAssign(varArgs, funcall), NULL);
+                                }
+                            }
                         }
                     }
                     if (!expectType) {
@@ -1555,6 +1587,14 @@ AST *CheckTypes(AST *ast)
                         CoerceAssignTypes(ast, AST_FUNCCALL, &actualParamList->left, expectType, passedType, "parameter passing");
                     }
                     if (!tupleType) {
+                        if (varArgsList) {
+                            AST *assign = AstAssign(NewAST(AST_MEMREF, expectType, AstOperator('+', varArgs, AstInteger(varargsOffset))),
+                                                    actualParamList->left);
+                            varArgsList->right = assign;
+                            varArgsList = NewAST(AST_SEQUENCE, varArgsList, NULL);
+                            varargsOffset += TypeSize(expectType);
+                        }
+                        actualParamListPrev = actualParamList;
                         actualParamList = actualParamList->right;
                     }
                     if (calledParamList) {
@@ -1562,6 +1602,10 @@ AST *CheckTypes(AST *ast)
                     }
                 }
                 ltype = functype ? functype->left : NULL;
+                if (varArgsPlace) {
+                    varArgsList = NewAST(AST_SEQUENCE, varArgsList, varArgs);
+                    *varArgsPlace = NewAST(AST_EXPRLIST, varArgsList, NULL);
+                }
             } else {
                 return NULL;
             }

@@ -1463,6 +1463,22 @@ NuCompileExpression(NuIrList *irl, AST *node) {
       }
       pushed = NuCompileExpression(irl, node->left);
     } break;
+    case AST_VA_ARG: {
+        AST *typ = ExprType(node->left);
+        int siz = TypeSize(typ);
+        AST *args = node->right;
+        AST *incr;
+        AST *fetch;
+        
+        if (siz > 8) {
+            ERROR(node, "large varargs not supported in nucode");
+            siz = 8;
+        }
+        fetch = NewAST(AST_MEMREF, typ, args);
+        pushed = NuCompileExpression(irl, fetch);
+        incr = AstAssign(args, AstOperator('+', args, AstInteger(siz)));
+        NuCompileAssign(irl, incr, 0);
+    } break;
     default:
         ERROR(node, "Unknown expression node %d", node->kind);
         return 1;
@@ -1805,6 +1821,17 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
             NuEmitConst(irl, brkCode);
             NuEmitOp(irl, NU_OP_BREAK);
         }
+    } break;
+    case AST_VA_START: {
+        AST *va_ident = AstIdentifier("__varargs");
+        NuIrOpcode op;
+        int n;
+        n = NuCompileExpression(irl, va_ident);
+        if (n != 1) {
+            ERROR(ast, "Internal error, bad varargs");
+        }
+        op = NuCompileLhsAddress(irl, ast->left);
+        NuEmitOp(irl, op);
     } break;
     default:
         ERROR(ast, "Unhandled node type %d in NuCompileStatement", ast->kind);
