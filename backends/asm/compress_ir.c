@@ -196,7 +196,9 @@ SortPrint(const char *msg, Flexbuf *buf, void (*doprint)(struct flexbuf *, void 
     }
 #ifdef DEBUG    
     printf("total count: %d / %d\n", running, counted);
-#endif    
+#endif
+    (void)counted;
+    (void)running;
 }
 
 static int FindPtr(void **table, void *ptr, int (*matchptr)(void *, void *))
