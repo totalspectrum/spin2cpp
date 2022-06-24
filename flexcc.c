@@ -416,13 +416,6 @@ main(int argc, const char **argv)
     if (result) {
         return result;
     }
-    if (cmd->bstcMode && cmd->compile) {
-        int loc = 0;
-        Module *Q;
-        for (Q = allparse; Q; Q = Q->next) {
-            loc += Q->Lptr->lineCounter;
-        }
-    }
     if (gl_errors > 0) {
         exit(1);
     }

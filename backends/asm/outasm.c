@@ -14,6 +14,8 @@
 #include "becommon.h"
 #include "outasm.h"
 
+#define iabs(x) labs((long)(x))
+
 #define MAX_COGSPIN_ARGS 8
 #define MAX_ARG_REGISTER 32
 #define MAX_LOCAL_REGISTER 150
@@ -2059,7 +2061,7 @@ CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
 #ifdef FAST_IMMEDIATE_DIVIDES
   if (rhs->kind == IMM_INT  && !isfrac64 && ((rhs->val > 0 && isPowerOf2(rhs->val)) || (rhs->val < 0 && isPowerOf2(0-rhs->val)))) {
       IR *ir;
-      int aval = abs(rhs->val);
+      int aval = (int)iabs( rhs->val );
       
       if (rhs->val == 1 || (rhs->val == -1 && getmod)) {
           EmitMove(irl, temp, lhs);
@@ -2118,7 +2120,7 @@ CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
   if (gl_p2 && isSigned && rhs->kind == IMM_INT) {
     IR *ir;
     lhs = Dereference(irl,lhs);
-    Operand *rhs2 = NewOperand(IMM_INT,rhs->name,abs(rhs->val));
+    Operand *rhs2 = NewOperand(IMM_INT,rhs->name,iabs(rhs->val));
     ir = EmitOp2(irl, OPC_ABS, temp, lhs);
     ir->flags |= FLAG_WC;
     EmitOp2(irl, OPC_QDIV, temp, rhs2);
@@ -2133,7 +2135,7 @@ CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
   if (gl_p2 && isSigned && lhs->kind == IMM_INT) {
     IR *ir;
     rhs = Dereference(irl,rhs);
-    Operand *lhs2 = NewOperand(IMM_INT,lhs->name,abs(lhs->val));
+    Operand *lhs2 = NewOperand(IMM_INT,lhs->name,iabs(lhs->val));
     ir = EmitOp2(irl, OPC_ABS, temp, rhs);
     if (!getmod) ir->flags |= FLAG_WC;
     EmitOp2(irl, OPC_QDIV, lhs2, temp);
