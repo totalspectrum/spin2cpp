@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2019 Total Spectrum Software Inc.
+ * Copyright 2011-2022 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling functions
@@ -47,7 +47,7 @@ PrintParameterList(Flexbuf *f, Function *func)
             ast = AstTempIdentifier("param");
         }
         if (ast->kind == AST_VARARGS) {
-            flexbuf_printf(f, "...");
+            flexbuf_printf(f, "intptr_t __vaargs");
         } else if (IsIdentifier(ast)) {
             sym = FindSymbol(&func->localsyms, ast->d.string);
             if (sym && sym->kind == SYM_PARAMETER && sym->val) {

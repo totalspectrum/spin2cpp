@@ -57,6 +57,8 @@ AST *basic_put;
 AST *basic_lock_io;
 AST *basic_unlock_io;
 
+AST *varargs_ident;
+
 static AST *float_add;
 static AST *float_sub;
 static AST *float_mul;
@@ -1558,7 +1560,6 @@ AST *CheckTypes(AST *ast)
                                     AST *funcall = NewAST(AST_FUNCCALL, gc_alloc_managed,
                                                           NewAST(AST_EXPRLIST, AstInteger(bytes), NULL));
                                     varArgs = AstTempLocalVariable("_varargs_", NULL);
-                                    printf("Need to start varargs stuff\n");
 
                                     varArgsPlace = &actualParamListPrev->right;
                                     varArgsList = NewAST(AST_SEQUENCE, AstAssign(varArgs, funcall), NULL);
@@ -1588,7 +1589,9 @@ AST *CheckTypes(AST *ast)
                     }
                     if (!tupleType) {
                         if (varArgsList) {
-                            AST *assign = AstAssign(NewAST(AST_MEMREF, expectType, AstOperator('+', varArgs, AstInteger(varargsOffset))),
+                            AST *memref = NewAST(AST_MEMREF, expectType, AstOperator('+', varArgs, AstInteger(varargsOffset)));
+                            memref = NewAST(AST_ARRAYREF, memref, AstInteger(0));
+                            AST *assign = AstAssign(memref,
                                                     actualParamList->left);
                             varArgsList->right = assign;
                             varArgsList = NewAST(AST_SEQUENCE, varArgsList, NULL);
@@ -1865,10 +1868,37 @@ AST *CheckTypes(AST *ast)
         return ltype;
     case AST_SEQUENCE:
     case AST_CONSTANT:
-    case AST_VA_ARG:
         return ExprType(ast);
     case AST_SIMPLEFUNCPTR:
         return ast_type_generic;
+    case AST_VA_START:
+        if (NoVarargsOutput()) {
+            ast->kind = AST_ASSIGN;
+            ast->d.ival = K_ASSIGN;
+            ast->right = varargs_ident;
+        }
+        break;
+    case AST_VA_ARG:
+        if (NoVarargsOutput()) {
+            AST *typ = ExprType(ast->left);
+            int siz = TypeSize(typ);
+            AST *args = ast->right;
+            AST *fetch;
+            AST *incr;
+            
+            if (siz > 8) {
+                ERROR(ast, "large varargs not supported with this output type");
+                siz = 8;
+            }
+            incr = AstAssign(args, AstOperator('+', args, AstInteger(siz)));
+            fetch = NewAST(AST_MEMREF, typ,
+                           NewAST(AST_POSTSET, args, incr));
+            ast->kind = AST_ARRAYREF;
+            ast->left = fetch;
+            ast->right = AstInteger(0);
+            return typ;
+        }
+        return ExprType(ast);
     default:
         break;
     }
@@ -1971,5 +2001,7 @@ InitGlobalFuncs(void)
         gc_free = getBasicPrimitive("_gc_free");
 
         funcptr_cmp = getBasicPrimitive("_funcptr_cmp");
+
+        varargs_ident = AstIdentifier("__varargs");
     }
 }

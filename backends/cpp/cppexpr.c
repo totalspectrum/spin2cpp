@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2021 Total Spectrum Software Inc.
+ * Copyright 2011-2022 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling expressions
@@ -943,6 +943,7 @@ PrintLHS(Flexbuf *f, AST *expr, int flags)
         break;
     case AST_IDENTIFIER:
     case AST_LOCAL_IDENTIFIER:
+    case AST_SYMBOL:
         sym = LookupAstSymbol(expr, NULL);
         if (flags & PRINTEXPR_DEBUG) {
             flexbuf_addstr(f, GetUserIdentifierName(expr));
@@ -1668,13 +1669,19 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
         PrintExpr(f, expr->left, flags);
         flexbuf_printf(f, ")");
         break;
+#if 0        
+    case AST_VA_START:
+        PrintLHS(f, expr->left, flags | PRINTEXPR_ASSIGNMENT);
+        flexbuf_printf(f, " = __vaargs");
+        break;
     case AST_VA_ARG:
-        flexbuf_printf(f, "va_arg(");
+        flexbuf_printf(f, "(*(");
         PrintExpr(f, expr->left, flags);
-        flexbuf_printf(f, ",");
+        flexbuf_printf(f, "*)");
         PrintExpr(f, expr->right, flags);
         flexbuf_printf(f, ")");
         break;
+#endif        
     case AST_STMTLIST:
         flexbuf_printf(f, "({");
         PrintStatementList(f, expr, 0);
@@ -1682,6 +1689,15 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
         break;
     case AST_SELF:
         flexbuf_printf(f, "this");
+        break;
+    case AST_POSTSET:
+        flexbuf_printf(f, "( {intptr_t __tmp = ");
+        PrintExpr(f, expr->left, flags);
+        flexbuf_printf(f, "; ");
+        PrintExpr(f, expr->left, flags | PRINTEXPR_ASSIGNMENT);
+        flexbuf_printf(f, " = ");
+        PrintExpr(f, expr->right, flags);
+        flexbuf_printf(f, "; __tmp; } )");
         break;
     default:
         ERROR(expr, "Internal error, bad expression");

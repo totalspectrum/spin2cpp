@@ -1463,6 +1463,7 @@ NuCompileExpression(NuIrList *irl, AST *node) {
       }
       pushed = NuCompileExpression(irl, node->left);
     } break;
+#if 0        
     case AST_VA_ARG: {
         AST *typ = ExprType(node->left);
         int siz = TypeSize(typ);
@@ -1479,6 +1480,7 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         incr = AstAssign(args, AstOperator('+', args, AstInteger(siz)));
         NuCompileAssign(irl, incr, 0);
     } break;
+#endif        
     default:
         ERROR(node, "Unknown expression node %d", node->kind);
         return 1;
@@ -1822,6 +1824,7 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
             NuEmitOp(irl, NU_OP_BREAK);
         }
     } break;
+#if 0        
     case AST_VA_START: {
         AST *va_ident = AstIdentifier("__varargs");
         NuIrOpcode op;
@@ -1833,6 +1836,7 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
         op = NuCompileLhsAddress(irl, ast->left);
         NuEmitOp(irl, op);
     } break;
+#endif        
     default:
         ERROR(ast, "Unhandled node type %d in NuCompileStatement", ast->kind);
         break;

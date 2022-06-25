@@ -240,7 +240,7 @@ extern int gl_interp_kind;
 #define NuBytecodeOutput() (gl_output == OUTPUT_BYTECODE && gl_interp_kind == INTERP_KIND_NUCODE)
 #define TraditionalBytecodeOutput() (gl_output == OUTPUT_BYTECODE && gl_interp_kind != INTERP_KIND_NUCODE)
 
-#define NoVarargsOutput() (gl_output == OUTPUT_BYTECODE)
+#define NoVarargsOutput() (gl_output == OUTPUT_BYTECODE || gl_output <= OUTPUT_C)
 
 /* flags for output */
 #define OUTFLAG_COG_CODE 0x01
@@ -956,5 +956,7 @@ extern AST *basic_print_longinteger;
 extern AST *basic_print_longunsigned;
 extern AST *basic_lock_io;
 extern AST *basic_unlock_io;
+
+extern AST *varargs_ident;
 
 #endif
