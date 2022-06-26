@@ -1890,7 +1890,7 @@ AST *CheckTypes(AST *ast)
                 ERROR(ast, "large varargs not supported with this output type");
                 siz = 8;
             }
-            incr = AstAssign(args, AstOperator('+', args, AstInteger(siz)));
+            incr = AstOperator('+', args, AstInteger(siz));
             fetch = NewAST(AST_MEMREF, typ,
                            NewAST(AST_POSTSET, args, incr));
             ast->kind = AST_ARRAYREF;

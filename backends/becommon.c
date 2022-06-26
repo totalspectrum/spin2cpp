@@ -81,14 +81,21 @@ BuildMethodPointer(AST *ast)
     return result;
 }
 
+// get number of parameters
+// adjust for possible varargs (indicated by negative)
+static int BCGetNumParams(Function *F) {
+    int n = F->numparams;
+    return n >= 0 ? n : (-n)+1;
+}
+
 // find base for result variables
 static int resultOffset(Function *F, int offset) {
     switch(gl_interp_kind) {
     case INTERP_KIND_P1ROM:
         if (offset == 0) return 0;
-        return 4+F->numparams*4 + (offset-1)*4;
+        return 4+ (BCGetNumParams(F)*4) + (offset-1)*4;
     case INTERP_KIND_NUCODE:
-        return offset + (F->numparams+4)*LONG_SIZE ;
+        return offset + (BCGetNumParams(F)+4)*LONG_SIZE ;
     default:
         return offset;
     }
@@ -122,11 +129,11 @@ static int paramOffset(Function *F, int offset) {
 static int localOffset(Function *F, int offset) {
     switch(gl_interp_kind) {
     case INTERP_KIND_P1ROM:
-        return offset + (BCGetNumResults(F)+F->numparams)*4; // FIXME small variables
+        return offset + (BCGetNumResults(F)+ BCGetNumParams(F))*4; // FIXME small variables
     case INTERP_KIND_NUCODE:
-        return offset + (DefaultGetNumResults(F)+F->numparams+4)*4;
+        return offset + (DefaultGetNumResults(F)+BCGetNumParams(F)+4)*4;
     default:
-        return offset + (DefaultGetNumResults(F) + F->numparams)*4;
+        return offset + (DefaultGetNumResults(F) + BCGetNumParams(F))*4;
     }
 }
 
