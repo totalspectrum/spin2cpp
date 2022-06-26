@@ -1845,7 +1845,7 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
         Function *func;
         int funid;
         if (!IsFunctionType(funcType)) {
-            ERROR(node,"Unhandled FUNCALL symbol (name is %s and sym kind is %d)",sym->our_name,sym->kind);
+            ERROR(node,"Unhandled indirect FUNCALL symbol");
             return;
         }
         indirect_call_expr = ident;

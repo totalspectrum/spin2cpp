@@ -1535,7 +1535,7 @@ expr:
     { $$ = NewAST(AST_CONDRESULT, $1, NewAST(AST_THENELSE, $3, $5)); }
   | '(' expr ')'
     { $$ = $2; }
-  | '\\' expr
+  | '\\' expr %prec SP_TRIPLEAT
     { $$ = AstCatch($2); }
   | funccall
     { $$ = $1; }

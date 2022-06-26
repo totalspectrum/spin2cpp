@@ -1,7 +1,9 @@
 Version 5.9.13
 - Added base 4 and base 8 literals to BASIC
 - Added __builtin_movbyts() intrinsic
+- Added varargs support to bytecode backends
 - Fixed incorrect varargs leaf function optimization
+- Fixed precedence of '\' in Spin when used for catching
 - Make C const arrays always go into DAT, to save space
 
 Version 5.9.12
