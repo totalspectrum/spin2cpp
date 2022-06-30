@@ -2733,13 +2733,14 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
                 return typ;
             }
             return ExprTypeRelative(&subclass->objsyms, (AST *)sym->val, P);
-#if 0            
         case SYM_LABEL:
         {
             Label *lref = (Label *)sym->val;
-            return lref->type;
+            if (lref && lref->type) {
+                return lref->type;
+            }
+            /* fall through to default */
         }
-#endif        
         default:
             ERROR(expr, "Unable to handle member %s", methodname);
             return NULL;
