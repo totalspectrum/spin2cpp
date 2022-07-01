@@ -1139,6 +1139,10 @@ static Operand *
 ValidateDatBase(Module *P)
 {
     AsmModData *PD = ModData(P);
+    if (!PD) {
+        P->bedata = calloc(sizeof(AsmModData), 1);
+        PD = ModData(P);
+    }
     if (!PD->datbase) {
         PD->datlabel = NewOperand(IMM_HUB_LABEL, IdentifierModuleName(P, "dat_"), 0);
         PD->datbase = NewImmediatePtr(NULL, PD->datlabel);
@@ -4110,7 +4114,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   case AST_METHODREF:
   {
       Symbol *sym;
-      Operand *base;
+      Operand *base = NULL;
       AST *finaltype;
       AST *objtype;
       int off = 0;
@@ -4132,12 +4136,15 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
           ERROR(expr, "Use of class name in method references is not supported yet");
           return EmptyOperand();
       }
-      base = CompileExpression(irl, expr->left, NULL);
       sym = LookupMemberSymbol(expr, objtype, name, &P, NULL);
       if (sym) {
           switch (sym->kind) {
           case SYM_VARIABLE:
+              base = CompileExpression(irl, expr->left, NULL);
               off = sym->offset;
+              break;
+          case SYM_LABEL:
+              base = LabelRef(irl, sym);
               break;
           default:
               ERROR(expr, "Unable to dereference symbol %s in %s", name, P->classname);

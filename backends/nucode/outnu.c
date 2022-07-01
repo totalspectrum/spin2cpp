@@ -652,6 +652,24 @@ static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs)
             op = LoadStoreOp(ast_type_long, 0);
             return op;
         }
+        case SYM_LABEL: {
+            Label *lab = sym->val;
+            NuIrLabel *nulabel = NULL;
+            uint32_t labelval = lab->hubval;
+            Module *Q = sym->module;
+            if (!Q) {
+                Q = current;
+            }
+            int offset = labelval;
+            op = LoadStoreOp(lab->type, 0);
+            if (!ModData(Q)) {
+                NuPrepareModuleBedata(Q);
+            }
+            nulabel = ModData(Q)->datLabel;
+            nulabel = NuIrOffsetLabel(nulabel, offset);
+            NuEmitCommentedAddress(irl, nulabel, memberName);
+            return op;
+        }
         default:
             ERROR(lhs, "Wrong kind of symbol (%d) in method reference", sym->kind);
             break;
