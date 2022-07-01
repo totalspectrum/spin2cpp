@@ -796,6 +796,9 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
             }
             ERROR(node, "Unhandled memory operation on function");
             break;
+        case SYM_LABEL:
+            ERROR(node,"Method references for labels not supported in bytecode");
+            return;
         default:
             ERROR(node,"Wrong kind of symbol (%d) in method reference", sym->kind);
             break;
@@ -869,6 +872,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         ERROR(ident,"Can't get symbol");
         return;
     } else {
+    gotSymbol:        
         //printf("got symbol with name %s and kind %d\n",sym->our_name,sym->kind);
         if (!type) type = ExprType(ident);
         switch (sym->kind) {
@@ -883,7 +887,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
                 labelval += BCgetDAToffset(current,false,node,true);
                 memOp.data.int32 = labelval;
             } else {
-                //WARNING(ident, "bytecode may not always support cross-module label references");
+                WARNING(ident, "bytecode may not always support cross-module label references");
                 labelval += BCgetDAToffset(sym->module, true,node,true);
                 memOp.attr.memop.base = MEMOP_BASE_POP;
                 if (baseExpr) ERROR(node,"baseExpr already set?!?!");
