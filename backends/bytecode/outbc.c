@@ -749,13 +749,13 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         .attr.memop = {.modifyReverseMath = modifyReverseMath,.pushModifyResult = pushModifyResult,.repeatPopStep=repeatPopStep},
         .jumpTo=jumpTo};
 
-    AST *type = NULL;
+    AST *type = ExprType(node);
     AST *typeoverride = NULL;
     Symbol *sym = NULL;
     HwReg *hwreg;
     AST *baseExpr = NULL;
     AST *indexExpr = NULL;
-    AST *typeForIndex = NULL;
+    AST *typeAfterIndex = NULL;
     AST *bitExpr1 = NULL;
     AST *bitExpr2 = NULL;
     AST *ident;
@@ -845,7 +845,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
     if (node->kind == AST_ARRAYREF) {
         ident = node->left;
         indexExpr = node->right;
-        typeForIndex = BaseType(ExprType(ident));
+        typeAfterIndex = BaseType(ExprType(ident));
     } else ident = node;
 
     try_ident_again:
@@ -1127,9 +1127,9 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
 
     memOp.attr.memop.modSize = memOp.attr.memop.memSize; // Let's just assume these are the same
 
-    if (indexExpr && TypeSize(typeForIndex) != TypeSize(type)) {
-        indexExpr = AstOperator('*', indexExpr, AstInteger(TypeSize(typeForIndex) / TypeSize(type)));
-        typeForIndex = NULL;
+    if (indexExpr && TypeSize(typeAfterIndex) != TypeSize(type)) {
+        indexExpr = AstOperator('*', indexExpr, AstInteger(TypeSize(typeAfterIndex) / TypeSize(type)));
+        type = typeAfterIndex;
     }
     switch(targetKind) {
     case MOT_MEM: {
@@ -1163,7 +1163,13 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         if (bitExpr1) ERROR(node,"Bit1 expression on memory op!");
         if (bitExpr2) ERROR(node,"Bit2 expression on memory op!");
 
-        if (baseExpr) BCCompileExpression(irbuf,baseExpr,context,false);
+        if (baseExpr) {
+            AST *addrExpr = baseExpr;
+            if (baseExpr->kind == AST_METHODREF) {
+                addrExpr = NewAST(AST_ADDROF, baseExpr, NULL);
+            }
+            BCCompileExpression(irbuf,addrExpr,context,false);
+        }
 
         // handle index
         if (indexExpr) {
