@@ -18,12 +18,13 @@ typedef struct {
     int total_size;
 } ByteOutputBuffer;
 
-typedef void (*BCRelocFunc)(uint8_t *where, uint32_t addr);
+typedef void (*BCRelocFunc)(Module *P, uint8_t *where, uint32_t addr);
 
 typedef struct BCRelocList {
     struct BCRelocList *next;
     BCRelocFunc func;
     uint8_t *pos;
+    Module *M;
 } BCRelocList;
 
 OutputSpan *BOB_PushSpan(ByteOutputBuffer *buf,OutputSpan *span);

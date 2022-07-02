@@ -117,7 +117,15 @@ static enum Spin1ConstEncoding GetSpin1ConstEncoding(int32_t imm) {
     else return S1ConEn_4B;
 }
 
-static void Spin1RelocFuncAddr(uint8_t *dataptr, uint32_t addr) {
+static void Spin1RelocFuncAddr(Module *P, uint8_t *dataptr, uint32_t addr) {
+    dataptr[0] = (addr>>8) & 0xff;
+    dataptr[1] = (addr>>0) & 0xff;
+}
+
+static void Spin1RelocDatAddr(Module *P, uint8_t *dataptr, uint32_t addr) {
+    uint32_t off = (dataptr[0]<<8) + dataptr[1];
+    addr += off;
+    addr += BCgetDAToffset(P, false, NULL, true);
     dataptr[0] = (addr>>8) & 0xff;
     dataptr[1] = (addr>>0) & 0xff;
 }
@@ -171,6 +179,9 @@ void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsLeft) {
         } else {
             *min = *max = 5;
         }
+        break;
+    case BOK_CONSTANT_DATREF:
+        *min = *max = 3;
         break;
     // Jump ops
     case BOK_JUMP:
@@ -389,9 +400,25 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
         }
         // add a relocation for this
         reloc->pos = &buf[pos];
+        reloc->M = P;
         
         buf[pos++] = 0;          // module address
         buf[pos++] = 0;          // module address
+    } break;
+    case BOK_CONSTANT_DATREF: {
+        int32_t off = ir->data.int32;
+        Module *P = ir->attr.datval.modref;
+        BCRelocList *reloc = calloc(1, sizeof(*reloc));
+        reloc->next = ModData(P)->relocList;
+
+        ModData(P)->relocList = reloc;
+        reloc->func = Spin1RelocDatAddr;
+        buf[pos++] = 0b00111001; // 2 byte immediate
+        // add a relocation for this
+        reloc->pos = &buf[pos];
+        reloc->M = P;
+        buf[pos++] = (off>>8) & 255;
+        buf[pos++] = (off>>0) & 255;
     } break;
     case BOK_CONSTANT: {
         int32_t imm = ir->data.int32;

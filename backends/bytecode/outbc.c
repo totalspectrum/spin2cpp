@@ -615,6 +615,16 @@ BCCompilePushModuleFuncRef(BCIRBuffer *irbuf,Module *M,int32_t funcid)
 }
 
 static void
+BCCompilePushModuleDatRef(BCIRBuffer *irbuf,Module *M,int32_t offset)
+{
+    ByteOpIR opc = {0};
+    opc.kind = BOK_CONSTANT_DATREF;
+    opc.attr.datval.modref = M;
+    opc.data.int32 = offset;
+    BIRB_PushCopy(irbuf,&opc);
+}
+
+static void
 BCCompileDatModuleFuncRef(uint8_t *where,Module *M,int32_t funcid)
 {
     ERROR(NULL, "Unable to put data reloc");
@@ -797,8 +807,36 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
             ERROR(node, "Unhandled memory operation on function");
             break;
         case SYM_LABEL:
-            ERROR(node,"Method references for labels not supported in bytecode");
+        {
+            Module *M = sym->module;
+            if (!M) {
+                ERROR(node,"Method reference for unknown module");
+                return;
+            }
+            if (M->bedata == NULL) {
+                ERROR(node, "Cannot find address for field %s (no module info)",  sym->user_name);
+                return;
+            }
+            Label *lab = (Label *)sym->val;
+            BCCompilePushModuleDatRef(irbuf, M, lab->hubval);
+            switch (kind) {
+            case MEMOP_ADDRESS:  break; /* nothing more to do */
+            case MEMOP_READ:
+            case MEMOP_WRITE:
+                break;
+                type = lab->type;
+                typeoverride = BaseType(type);
+                targetKind = MOT_MEM;
+                memOp.attr.memop.base = MEMOP_BASE_POP;
+                baseExpr = NULL;
+                memberOffset = 0;
+                goto nosymbol_memref;
+            default:
+                ERROR(node, "Unsupported operation on object DAT field");
+                break;
+            }
             return;
+        }
         default:
             ERROR(node,"Wrong kind of symbol (%d) in method reference", sym->kind);
             break;
@@ -872,7 +910,6 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         ERROR(ident,"Can't get symbol");
         return;
     } else {
-    gotSymbol:        
         //printf("got symbol with name %s and kind %d\n",sym->our_name,sym->kind);
         if (!type) type = ExprType(ident);
         switch (sym->kind) {
@@ -1122,7 +1159,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
             }
         }
 
-        if (!!baseExpr != !!(memOp.attr.memop.base == MEMOP_BASE_POP)) ERROR(node,"Internal Error: baseExpr condition mismatch");
+        //if (!!baseExpr != !!(memOp.attr.memop.base == MEMOP_BASE_POP)) ERROR(node,"Internal Error: baseExpr condition mismatch");
         if (bitExpr1) ERROR(node,"Bit1 expression on memory op!");
         if (bitExpr2) ERROR(node,"Bit2 expression on memory op!");
 
@@ -3254,7 +3291,7 @@ BCEmitModuleRelocations(ByteOutputBuffer *bob,Module *P) {
     uint32_t addr = ModData(P)->compiledAddress;
     while (list) {
         if (list->func) {
-            (*list->func)(list->pos, addr);
+            (*list->func)(P, list->pos, addr);
         } else {
             ERROR(NULL, "No relocation function provided");
         } 

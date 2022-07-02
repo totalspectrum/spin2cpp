@@ -17,6 +17,8 @@
     \
     X(CONSTANT)  /* Push immediate */\
     X(CONSTANT_FUNCREF)  /* Push immediate function reference */\
+    X(CONSTANT_DATREF)   /* Push immediate DAT reference */\
+    \
     X(POP)  /* Pop N/4 values */\
     \
     X(RETURN_PLAIN)  /* Plain return (keep set results)*/\
@@ -222,6 +224,9 @@ typedef struct bcirstruct {
         struct {
             Module *modref;
         } funcval;
+        struct {
+            Module *modref;
+        } datval;
         int stringLength;
         int labelHiddenVars; // Not used by the actual IR step
     } attr;
