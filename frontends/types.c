@@ -195,10 +195,11 @@ static AST *donarrow(AST *expr, int A, int B, int isSigned)
 
     if (A == 8 && B <= 4) {
         // have to narrow
-        if (expr->kind != AST_EXPRLIST) {
-            return expr;
+        if (expr->kind == AST_EXPRLIST) {
+            expr = expr->left;
+        } else {
+            expr = NewAST(AST_GETLOW, expr, NULL);
         }
-        expr = expr->left;
         A = 4;
     }
     shiftbits = (A - B) * 8;
@@ -1387,7 +1388,7 @@ static int PushSize(AST *list)
 //                                   unsigned otherwise
 // returns the most recent type signature
 //
-AST *CheckTypes(AST *ast)
+static AST *doCheckTypes(AST *ast)
 {
     AST *ltype, *rtype;
     if (!ast) return NULL;
@@ -1396,16 +1397,16 @@ AST *CheckTypes(AST *ast)
     if (ast->kind == AST_CAST) {
         AST *cast;
         ltype = ast->left;
-        rtype = CheckTypes(ast->right);
+        rtype = doCheckTypes(ast->right);
         cast = doCast(ltype, rtype, ast->right);
         if (cast) {
             ast->right = cast;
         }
         return ltype;
     }        
-    ltype = CheckTypes(ast->left);
+    ltype = doCheckTypes(ast->left);
     if (ast->kind != AST_METHODREF) {
-        rtype = CheckTypes(ast->right);
+        rtype = doCheckTypes(ast->right);
     } else {
         rtype = NULL;
     }
@@ -1906,6 +1907,11 @@ AST *CheckTypes(AST *ast)
         ActivateFeature(FEATURE_FLOAT_USED);
     }
     return ltype;
+}
+
+AST *CheckTypes(AST *ast)
+{
+    return doCheckTypes(ast);
 }
 
 ////////////////////////////////////////////////////////////////
