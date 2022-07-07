@@ -759,11 +759,12 @@ asmdebug_exprlist_continue:
    ;
 
 asmdebug_expritem_first:
-  SP_BACKTICK_STRING
+/*  SP_BACKTICK_STRING
     {
         $$ = NewAST(AST_EXPRLIST, $1, NULL);
     }
-  | asmdebug_expritem
+    | */
+asmdebug_expritem
     {
         AST *list = $1;
         AST *note = NewAST(AST_LABEL, NULL, NULL);
@@ -1936,13 +1937,36 @@ datexprlist:
    { $$ = AddToList($1, $3); }
  ;
 
+optcatch:
+/* nothing */
+    { $$ = NULL; }
+ | '\\'
+    { $$ = NewAST(AST_CATCH, NULL, NULL); }
+ ;
+
 operand:
   expr
    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
- | '#' expr
-   { $$ = NewAST(AST_EXPRLIST, NewAST(AST_IMMHOLDER, $2, NULL), NULL); }
- | '#' '#' expr
-   { $$ = NewAST(AST_EXPRLIST, NewAST(AST_BIGIMMHOLDER, $3, NULL), NULL); }
+ | '#' optcatch expr
+   {
+       AST *catch = $2;
+       AST *expr = $3;
+       if (catch) {
+           catch->left = expr;
+           expr = catch;
+       }
+       $$ = NewAST(AST_EXPRLIST, NewAST(AST_IMMHOLDER, expr, NULL), NULL);
+   }
+ | '#' '#' optcatch expr
+   {
+       AST *catch = $3;
+       AST *expr = $4;
+       if (catch) {
+           catch->left = expr;
+           expr = catch;
+       }
+       $$ = NewAST(AST_EXPRLIST, NewAST(AST_BIGIMMHOLDER, expr, NULL), NULL);
+   }
  | expr '[' expr ']'
    {
        /* this is an extra rule for LONG, BYTE, etc. */
