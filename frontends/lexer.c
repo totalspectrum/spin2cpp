@@ -321,7 +321,7 @@ lexgetc(LexStream *L)
         L->lineCounter++;
         L->pendingLine = 0;
         L->colCounter = 0;
-        L->sawInstruction = 0;
+        L->sawInstruction = L->sawDataDirective = 0;
         L->backtick_state = 0;
     }
     c = (L->getcf(L));
@@ -843,7 +843,10 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             case SP_WORDFIT:
                 if (InDatBlock(L)) {
                     gatherComments = 1;
-                    L->sawInstruction = 1;
+                    if (!L->sawInstruction) {
+                        L->sawInstruction = 1;
+                        L->sawDataDirective = 1;
+                    }
                 } else {
                     gatherComments = 0;
                 }
@@ -1813,6 +1816,10 @@ getSpinToken(LexStream *L, AST **ast_ptr)
         }
     } else if (gl_p2 && c == '.' && isIdentifierStart(lexpeekc(L)) && InDatBlock(L)) {
             c = parseSpinIdentifier(L, &ast, L->lastGlobal ? L->lastGlobal : "");
+    } else if (InDatBlock(L) && L->sawDataDirective && c == '[') {
+        c = SP_DAT_LBRACK;
+    } else if (InDatBlock(L) && L->sawDataDirective && c == ']') {
+        c = SP_DAT_RBRACK;
     } else if (strchr(operator_chars, c) != NULL) {
         char op[6];
         int i;

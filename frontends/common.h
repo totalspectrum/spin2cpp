@@ -86,6 +86,9 @@ struct lexstream {
     /* flag for Spin2 if we saw an instruction on the line */
     char sawInstruction;
 
+    /* flag for Spin2 if we saw LONG, BYTE, or similar directives on the line */
+    char sawDataDirective;
+    
     /* another Spin2 flag for backtick */
     char backtick_state;
 

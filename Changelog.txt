@@ -6,6 +6,7 @@ Version 5.9.13
 - Fixed incorrect varargs leaf function optimization
 - Fixed precedence of '\' in Spin when used for catching
 - Fixed missing downcast when 64 bit arguments are passed to 32 bit parameters
+- Fixed operator precedence of long @addr[n] in Spin DAT sections
 - Make C const arrays always go into DAT, to save space
 
 Version 5.9.12

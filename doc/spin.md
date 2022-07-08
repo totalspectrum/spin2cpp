@@ -206,7 +206,7 @@ Modifying member variables of another object directly is not permitted, and will
 
 ### Alternate string notation
 
-Flexspin interprets the notation `@"some chars"` to mean the same thing as `STRING("some chars")`. This provides a shorter way to write some messages.
+Flexspin interprets the notation `@"some chars"` to mean the same thing as `STRING("some chars")`. This provides a shorter way to write some messages. Newer versions of PNut / PropTool allow this for Spin2.
 
 ### Bitfield access
 
@@ -658,19 +658,6 @@ instead of
 
 ## Known Bugs
 
-### `@` precedence
-
-The parser has the wrong precedence for `@`, so a DAT section declaration like:
-```
-   long @foo[3]
-```
-will produce a single value of `@foo+12`, rather than 3 values of `@foo`.
-
-As a workaround, enclose the value in parentheses:
-```
-   long (@foo)[3]
-```
-
 ### Type narrowing in assignment
 
 A series of assignments like:
@@ -684,9 +671,11 @@ is evaluated by flexspin as
 ```
 This is sometimes different from how the official Spin1 interpreter does it. In particular, if `b` is a byte or word then the result of `b:=512` is truncated to 8 or 16 bits, whereas in the official interpreter the full 32 bit result is assigned to `a`. Thus, if `b` is a byte then flexspin sets `a` to `0` whereas Spin1 sets `a` to `512`.
 
+There are some work-arounds to reduce the impact of this, so it probably will only be noticed in edge cases.
+
 ### Second argument to ORG is ignored
 
-In Spin the `org` pseudo-instruction has an optional second parameter giving a limit to the size of the assembly code (like an implied `fit` at the end). Flexspin ignores this second parameter.
+In Spin the `org` pseudo-instruction has an optional second parameter giving a limit to the size of the assembly code (like an implied `fit` at the end). Flexspin silently ignores this second parameter.
 
 # P2 Considerations
 

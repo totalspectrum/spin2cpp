@@ -476,6 +476,9 @@ BuildDebugList(AST *exprlist)
 %token SP_FGE    ">=."
 %token SP_FNEGATE "float negate"
 
+%token SP_DAT_LBRACK "[ in DAT"
+%token SP_DAT_RBRACK "] in DAT"
+
 /* operator precedence */
 %right SP_ASSIGN
 %left '\\'
@@ -1906,28 +1909,30 @@ exprlist:
  ;
 
 datexpritem:
-   expritem
-       { $$ = $1; }
-   | SP_LONG expritem
+  expr
+       { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+   | expr SP_DAT_LBRACK expr SP_DAT_RBRACK
+       { $$ = NewAST(AST_EXPRLIST, NewAST(AST_ARRAYDECL, $1, $3), NULL); }
+   | SP_LONG datexpritem
        { $$ = NewAST(AST_EXPRLIST, NewAST(AST_LONGLIST, $2, NULL), NULL); }
-   | SP_WORD expritem
+   | SP_WORD datexpritem
        { $$ = NewAST(AST_EXPRLIST, NewAST(AST_WORDLIST, $2, NULL), NULL); }
-   | SP_BYTE expritem
+   | SP_BYTE datexpritem
        { $$ = NewAST(AST_EXPRLIST, NewAST(AST_BYTELIST, $2, NULL), NULL); }
-   | SP_WORDFIT expritem
+   | SP_WORDFIT datexpritem
        {
            AST *dat = NewAST(AST_EXPRLIST, NewAST(AST_WORDFITLIST, $2, NULL), NULL);
            dat->d.ival = 1; // make it fit
            $$ = dat;
        }
-   | SP_BYTEFIT expritem
+   | SP_BYTEFIT datexpritem
        {
            AST *dat = NewAST(AST_EXPRLIST, NewAST(AST_BYTEFITLIST, $2, NULL), NULL);
            $$ = dat;
        }
-   | SP_FVAR expritem
+   | SP_FVAR datexpritem
        { $$ = NewAST(AST_EXPRLIST, NewAST(AST_FVAR_LIST, $2, NULL), NULL); }
-   | SP_FVARS expritem
+   | SP_FVARS datexpritem
        { $$ = NewAST(AST_EXPRLIST, NewAST(AST_FVARS_LIST, $2, NULL), NULL); }
 ;
 
@@ -1969,7 +1974,7 @@ operand:
    }
  | expr '[' expr ']'
    {
-       /* this is an extra rule for LONG, BYTE, etc. */
+       /* this is an extra rule for ptra++[Y] */
        $$ = NewAST(AST_EXPRLIST, NewAST(AST_ARRAYREF, $1, $3), NULL);
    }
 ;
