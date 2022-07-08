@@ -1,0 +1,5 @@
+dat
+    orgh
+    long ((0*64)+(1*64)<<16)+2[2*14 - 4] 
+args
+    long @args[4]
