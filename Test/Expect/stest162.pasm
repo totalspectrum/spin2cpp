@@ -6,8 +6,12 @@ entry
 
 _blah
 	cmp	arg01, #99 wz
- if_e	cmps	arg02, #0 wc
- if_nc_or_nz	mov	arg02, #0
+ if_ne	jmp	#LR__0001
+	cmps	arg02, #0 wc
+ if_b	jmp	#LR__0002
+LR__0001
+	mov	arg02, #0
+LR__0002
 	mov	result1, arg02
 _blah_ret
 	ret

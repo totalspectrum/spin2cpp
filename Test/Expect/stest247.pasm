@@ -14,6 +14,7 @@ _toReal_ret
 	ret
 
 __system___float_tointeger
+	mov	__system___float_tointeger_r, arg02
 	mov	__system___float_Unpack_s, arg01
 	shr	__system___float_Unpack_s, #31
 	mov	__system___float_Unpack_x, arg01
@@ -35,23 +36,21 @@ LR__0001
 	shl	arg01, _tmp002_
 LR__0002
 	sub	__system___float_Unpack_x, #127
-	mov	result3, arg01
-	mov	result1, __system___float_Unpack_s
-	mov	result2, __system___float_Unpack_x
-	mov	__system___float_tointeger_m, result3
-	cmps	result2, imm_4294967295_ wc
+	mov	__system___float_tointeger_m, arg01
+	cmps	__system___float_Unpack_x, imm_4294967295_ wc
  if_b	jmp	#LR__0003
-	cmps	result2, #31 wc
- if_b	shl	__system___float_tointeger_m, #2
- if_b	mov	__system___float_tointeger__cse__0001, #30
- if_b	sub	__system___float_tointeger__cse__0001, result2
- if_b	shr	__system___float_tointeger_m, __system___float_tointeger__cse__0001
- if_b	add	__system___float_tointeger_m, arg02
- if_b	shr	__system___float_tointeger_m, #1
- if_b	cmp	result1, #0 wz
- if_c_and_nz	neg	__system___float_tointeger_m, __system___float_tointeger_m
- if_b	mov	result1, __system___float_tointeger_m
- if_b	jmp	#__system___float_tointeger_ret
+	cmps	__system___float_Unpack_x, #31 wc
+ if_ae	jmp	#LR__0003
+	shl	__system___float_tointeger_m, #2
+	mov	result1, #30
+	sub	result1, __system___float_Unpack_x
+	shr	__system___float_tointeger_m, result1
+	add	__system___float_tointeger_m, __system___float_tointeger_r
+	shr	__system___float_tointeger_m, #1
+	cmp	__system___float_Unpack_s, #0 wz
+ if_ne	neg	__system___float_tointeger_m, __system___float_tointeger_m
+	mov	result1, __system___float_tointeger_m
+	jmp	#__system___float_tointeger_ret
 LR__0003
 	mov	result1, #0
 __system___float_tointeger_ret
@@ -78,9 +77,9 @@ __system___float_Unpack_s
 	res	1
 __system___float_Unpack_x
 	res	1
-__system___float_tointeger__cse__0001
-	res	1
 __system___float_tointeger_m
+	res	1
+__system___float_tointeger_r
 	res	1
 _tmp001_
 	res	1
