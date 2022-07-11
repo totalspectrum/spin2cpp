@@ -142,7 +142,7 @@ pri _txraw(c) | val, nextcnt, bitcycles
     val >>= 1
   waitcnt(nextcnt += bitcycles)
   outa[_txpin] := 1
-  dira[_txpin] := 0
+  dira[_txpin] := 0  ' release DIR so other COGs can print
   return 1
 
 ' timeout is in 1024ths of a second (roughly milliseconds)
