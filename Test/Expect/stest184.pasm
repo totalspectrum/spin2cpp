@@ -230,10 +230,9 @@ LR__0011
  if_ne	mov	__system___gc_tryalloc__cse__0001, _system___gc_tryalloc_tmp001_
  if_ne	rdword	__system___gc_tryalloc_availsize, __system___gc_tryalloc__cse__0001
 	cmp	__system___gc_tryalloc_ptr, #0 wz
- if_e	jmp	#LR__0012
-	cmps	__system___gc_tryalloc_ptr, __system___gc_tryalloc_heap_end wc
- if_ae	jmp	#LR__0012
-	cmps	__system___gc_tryalloc_size, __system___gc_tryalloc_availsize wc,wz
+ if_ne	cmps	__system___gc_tryalloc_ptr, __system___gc_tryalloc_heap_end wc
+ if_a	jmp	#LR__0012
+ if_ne	cmps	__system___gc_tryalloc_size, __system___gc_tryalloc_availsize wc,wz
  if_a	jmp	#LR__0011
 LR__0012
 	cmp	__system___gc_tryalloc_ptr, #0 wz
@@ -636,10 +635,8 @@ LR__0036
 LR__0037
 LR__0038
 	cmp	__system___gc_docollect_nextptr, #0 wz
- if_e	jmp	#LR__0039
-	cmps	__system___gc_docollect_nextptr, __system___gc_docollect_endheap wc
- if_b	jmp	#LR__0036
-LR__0039
+ if_ne	cmps	__system___gc_docollect_nextptr, __system___gc_docollect_endheap wc
+ if_c_and_nz	jmp	#LR__0036
 __system___gc_docollect_ret
 	ret
 
@@ -649,16 +646,16 @@ __system___gc_markhub
 	call	#__system___gc_ptrs
 	mov	__system___gc_markhub_heap_base, result1
 	mov	__system___gc_markhub_heap_end, result2
-LR__0040
+LR__0039
 	cmps	__system___gc_markhub_startaddr, __system___gc_markhub_endaddr wc
- if_ae	jmp	#LR__0041
+ if_ae	jmp	#LR__0040
 	rdlong	arg03, __system___gc_markhub_startaddr
 	add	__system___gc_markhub_startaddr, #4
 	mov	arg02, __system___gc_markhub_heap_end
 	mov	arg01, __system___gc_markhub_heap_base
 	call	#__system___gc_isvalidptr
 	mov	__system___gc_markhub_ptr, result1 wz
- if_e	jmp	#LR__0040
+ if_e	jmp	#LR__0039
 	mov	arg01, __system___gc_markhub_ptr
 	call	#__system___gc_isFree
 	cmp	result1, #0 wz
@@ -669,8 +666,8 @@ LR__0040
  if_e	or	_system___gc_markhub_tmp001_, #46
  if_e	mov	__system___gc_markhub_flags, _system___gc_markhub_tmp001_
  if_e	wrword	__system___gc_markhub_flags, __system___gc_markhub__cse__0001
-	jmp	#LR__0040
-LR__0041
+	jmp	#LR__0039
+LR__0040
 __system___gc_markhub_ret
 	ret
 ' code originally from spin interpreter, modified slightly
@@ -739,11 +736,11 @@ itmp1_
 itmp2_
 	long	0
 ptr_L__0031_
-	long	@@@LR__0042
+	long	@@@LR__0041
 ptr_L__0043_
-	long	@@@LR__0043
+	long	@@@LR__0042
 ptr_L__0069_
-	long	@@@LR__0044
+	long	@@@LR__0043
 ptr___system__dat__
 	long	@@@__system__dat_
 ptr__dat__
@@ -757,13 +754,13 @@ sp
 COG_BSS_START
 	fit	496
 
-LR__0042
+LR__0041
 	byte	" !!! corrupted heap??? !!! "
 	byte	0
-LR__0043
+LR__0042
 	byte	" !!! out of heap memory !!! "
 	byte	0
-LR__0044
+LR__0043
 	byte	" !!! corrupted heap !!! "
 	byte	0
 	long

@@ -1045,7 +1045,7 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
             // we know of some special cases where argN is not used
             if (IsArg(op) && !FuncUsesArg(ir->dst, op)) {
                 /* OK to continue */
-            } else if (isResult(op)) {
+            } else if (isResult(op) && ir->cond == COND_TRUE) {
                 return true; // Results get set by functions
             } else {
                 return false;
@@ -2397,16 +2397,13 @@ static int IsSafeShortForwardJump(IR *irbase) {
     IR *ir;
     int limit = (curfunc->optimize_flags & OPT_EXTRASMALL) ? 10 : (gl_p2 ? 5 : 3);
     unsigned dirty_flags = 0;
-    unsigned known_flags;
-    
+
     if (irbase->opc != OPC_JUMP) return 0;
     if (InstrIsVolatile(irbase)) return 0;
     target = irbase->dst;
     if (IsRegister(target->kind)) return 0;
     ir = irbase->next;
     IRCond newcond = InvertCond(irbase->cond);
-    known_flags = FlagsUsedByCond(newcond);
-    
     while (ir) {
         if (!IsDummy(ir)) {
             //if (ir->cond != COND_TRUE) return 0;
@@ -2418,51 +2415,28 @@ static int IsSafeShortForwardJump(IR *irbase) {
             if (ir->opc == OPC_BREAK) {
                 return 0;
             }
+            unsigned problem_flags = FlagsUsedByCond(newcond) & dirty_flags;
 
             // If flags are dirty, we can only accept instructions whose
             // condition is already a subset of our new condition
-            // and whose flags are fully known
-            unsigned need_flags = FlagsUsedByCond(ir->cond);
-            if (dirty_flags) {
-                if ( (need_flags&known_flags) != need_flags) {
-                    //printf("blah\n");
-                    return 0;
-                }
-                unsigned problem_flags = FlagsUsedByCond(newcond) & dirty_flags;
-                if (problem_flags != 0 && !CondIsSubset(newcond, ir->cond)) {
-                    return 0;
-                }
+            if (problem_flags != 0 && !CondIsSubset(newcond,ir->cond)) {
+                return 0;
             }
-            // also note that 
             // If you're wondering about instrs with inherent flag use (NEGC etc),
             // Those are not an issue, since if they aren't already conditional,
             // they're either using the initial flag value or will be cought by the subset check
             
-            if (ir->flags & FLAG_CSET) {
-                dirty_flags |= FLAG_WC;
-                if (need_flags & FLAG_WZ) {
-                    known_flags &= ~FLAG_WC;
-                }
-            }
-            if (ir->flags & FLAG_ZSET) {
-                dirty_flags |= FLAG_WZ;
-                if (need_flags & FLAG_WC) {
-                    known_flags &= ~FLAG_WZ;
-                }
-            }
+            if (ir->flags & FLAG_CSET) dirty_flags |= FLAG_WC;
+            if (ir->flags & FLAG_ZSET) dirty_flags |= FLAG_WZ;
             if (ir->opc == OPC_CALL) {
                 // calls do not preserve condition codes
                 dirty_flags |= FLAG_WC|FLAG_WZ;
-                known_flags = 0;
             }
             if (ir->opc == OPC_DJNZ && !gl_p2) {
                 // DJNZ does not work conditionally in LMM
                 return 0;
             }
-            if (++n > limit) {
-                //printf("oof\n");
-                return 0;
-            }
+            if (++n > limit) return 0;
         }
         ir = ir->next;
     }
