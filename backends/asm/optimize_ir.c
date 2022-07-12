@@ -1045,8 +1045,8 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
             // we know of some special cases where argN is not used
             if (IsArg(op) && !FuncUsesArg(ir->dst, op)) {
                 /* OK to continue */
-            } else if (isResult(op) && ir->cond == COND_TRUE) {
-                return true; // Results get set by functions
+            } else if (isResult(op)) {
+                if (ir->cond == COND_TRUE) return true; // Results get set by functions
             } else {
                 return false;
             }
