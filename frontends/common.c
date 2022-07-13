@@ -269,6 +269,7 @@ Aliases basicalias[] = {
     { "strerror$", "_strerror" },
     { "val", "__builtin_atof" },
     { "val%", "__builtin_atoi" },
+    { "varptr", "__addr" },
     { "wrpin", "_wrpin" },
     { "wxpin", "_wxpin" },
     { "wypin", "_wypin" },

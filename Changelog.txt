@@ -2,7 +2,7 @@ Version 5.9.13
 - Added base 4 and base 8 literals to BASIC
 - Added __builtin_movbyts() intrinsic
 - Added varargs support to bytecode backends
-- Added PEEK, POKE, DPEEK, and DPOKE to BASIC
+- Added PEEK, POKE, DPEEK, DPOKE, and VARPTR to BASIC
 - Allow looking up static member variables and labels
 - Fixed incorrect varargs leaf function optimization
 - Fixed precedence of '\' in Spin when used for catching

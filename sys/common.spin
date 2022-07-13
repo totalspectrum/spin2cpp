@@ -249,6 +249,9 @@ pri __poke(addr = long, val = long)
 pri __wpoke(addr = long, val = long)
   word[addr] := val
 
+' @@@ means a reference to any type of variable
+pri __addr(x = @@@)
+  return x
 
 '' get some random bits 0-$FFFFFF
 pri file "libsys/random.c" _randbits : r=long

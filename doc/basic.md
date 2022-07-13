@@ -317,6 +317,8 @@ delete$
 dir$
 dira
 dirb
+dpeek
+dpoke
 exp
 false
 freefile
@@ -360,6 +362,7 @@ outb
 pausems
 pausesec
 pauseus
+peek
 pi
 pinfloat
 pinhi
@@ -369,6 +372,7 @@ pinrnd
 pinset
 pinstart
 pintoggle
+poke
 rdpin
 _reboot
 removechar$
@@ -392,6 +396,7 @@ true
 ucase$
 val
 val%
+varptr
 waitcnt
 waitpeq
 waitpne
@@ -1846,6 +1851,20 @@ Executes the loop body at least once, and continues to execute it as long as the
 
 The type for a double precision (64 bit) floating point number. `double` is not actually implemented in the compiler, and is treated the same as `single` (so it occupies only 32 bits).
 
+### DPEEK
+
+```
+  val = dpeek(addr)
+```
+Returns the 16 bit value at the given address in memory.
+
+### DPOKE
+
+```
+dpoke(addr, val)
+```
+Changes the 16 bits of memory at `addr` to have the value `val`.
+
 ### ELSE
 
 See IF
@@ -2786,6 +2805,13 @@ A built-in subroutine to pause for a number of microseconds. For example, to pau
   pauseus 500
 ```
 
+### PEEK
+
+```
+  val = peek(addr)
+```
+Returns the 8 bit value at the given address in memory.
+
 ### PI
 
 Predefined single precision constant 3.1415926.
@@ -2851,6 +2877,13 @@ Force a pin to be an output, and invert its current value.
    dim x as ulong pointer
 ```
 declares `x` as a pointer to an unsigned long value.
+
+### POKE
+
+```
+poke(addr, val)
+```
+Changes the 8 bits of memory at `addr` to have the value `val`.
 
 ### PRESERVE
 
@@ -3391,6 +3424,15 @@ VAR msg$ = "hello"
 `var` creates and initializes a new local variable (only available inside the function in which it is declared). The type of the new variable is inferred from the type of the expression used to initialize it; if for some reason that cannot be determined, the type is set according to the variable suffix (if any is present).
 
 `var` is somewhat similar to `dim`, except that the type isn't given explicitly (it is determined by the initializer expression) and the variables created are always local, even if the `var` is in the main program (in the main program `dim` creates member variables that may be used by functions or subroutines in this file).
+
+### VARPTR
+
+Finds the address of a variable (similar to the `@` operator, but returns a plain integer rather than a pointer):
+```
+dim x as uinteger
+dim y as uinteger
+x = varptr(y)
+```
 
 ### WAITCNT
 

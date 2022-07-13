@@ -1296,6 +1296,12 @@ paramidentdecl:
       LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a flexspin extension");
       $$ = NewAST(AST_DECLARE_VAR, ast_type_string, $1);
   }
+  | identifier '=' SP_TRIPLEAT
+  {
+      AST *anyref = NewAST(AST_REFTYPE, ast_type_generic, NULL);
+      LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a flexspin extension");
+      $$ = NewAST(AST_DECLARE_VAR, anyref, $1);
+  }
   ;
 
 paramidentlist:
