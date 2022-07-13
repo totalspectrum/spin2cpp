@@ -238,6 +238,18 @@ pri _clz(x) : r
   else
     r := 31 - _encod(x)
 
+'' peek/poke
+pri __peek(x = long) : r
+  r := byte[x]
+pri __wpeek(x = long) : r
+  r := word[x]
+
+pri __poke(addr = long, val = long)
+  byte[addr] := val
+pri __wpoke(addr = long, val = long)
+  word[addr] := val
+
+
 '' get some random bits 0-$FFFFFF
 pri file "libsys/random.c" _randbits : r=long
 
