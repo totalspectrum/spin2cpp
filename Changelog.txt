@@ -1,3 +1,6 @@
+Version 5.9.14
+- Removed some bad debug printfs from sdmm.cc
+
 Version 5.9.13
 - Added base 4 and base 8 literals to BASIC
 - Added __builtin_movbyts() intrinsic

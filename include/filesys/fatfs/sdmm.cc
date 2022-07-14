@@ -521,12 +521,12 @@ DSTATUS disk_initialize (
 
         Stat = STA_NOINIT;
         
-#ifdef _DEBUG
+#ifdef _DEBUG_SDMM
         __builtin_printf("disk_initialize: PINS=%d %d %d %d\n", PIN_SS, PIN_CLK, PIN_DI, PIN_DO);
 #endif	
 	if (drv) {
-#ifdef _DEBUG	  
-            printf("bad drv %d\n", drv);
+#ifdef _DEBUG_SDMM
+            __builtin_printf("bad drv %d\n", drv);
 #endif	    
             return RES_NOTRDY;
         }
@@ -572,8 +572,8 @@ DSTATUS disk_initialize (
 
 	ty = 0;
 	if (send_cmd(CMD0, 0) == 1) {			/* Enter Idle state */
-#ifdef _DEBUG	  
-            printf("idle OK\n");
+#ifdef _DEBUG_SDMM
+            __builtin_printf("idle OK\n");
 #endif	    
 		if (send_cmd(CMD8, 0x1AA) == 1) {	/* SDv2? */
 			rcvr_mmc(buf, 4);							/* Get trailing return value of R7 resp */
@@ -625,8 +625,8 @@ DSTATUS disk_initialize (
 #endif
 		}
 	}
-#ifdef _DEBUG	
-        printf("ty = %d\n", ty);
+#ifdef _DEBUG_SDMM
+        __builtin_printf("ty = %d\n", ty);
 #endif	
 	CardType = ty;
 	s = ty ? 0 : STA_NOINIT;
@@ -637,8 +637,8 @@ DSTATUS disk_initialize (
 #ifdef _smartpins_mode_eh
 	_wxpin( PIN_CLK, ck_div );
 	_wrpin( PIN_DI, spm_tx );
-  #ifdef _DEBUG
-	printf( "SPI clock ratio = sysclock/%d\n", ck_div & 0xffff );
+  #ifdef _DEBUG_SDMM
+	__builtin_printf( "SPI clock ratio = sysclock/%d\n", ck_div & 0xffff );
   #endif
 #endif
 	return s;
