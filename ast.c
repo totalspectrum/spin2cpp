@@ -800,18 +800,18 @@ static void doASTDump(AST *ast, int indent)
         leaf = 1;
         break;
     case AST_INTEGER:
-        sprintf(buf, "<integer %d/>", ast->d.ival);
+        sprintf(buf, "<integer %ld/>", (long)ast->d.ival);
         leaf = 1;
         break;
     case AST_INLINEASM:
         sprintf(buf, "<inlineasm%s>", ast->d.ival ? " const" : " optimized");
         break;
     case AST_BITVALUE:
-        sprintf(buf, "<bitvalue 0x%x/>", ast->d.ival);
+        sprintf(buf, "<bitvalue 0x%lx/>", (unsigned long)ast->d.ival);
         leaf = 1;
         break;
     case AST_FLOAT:
-        sprintf(buf, "<float %x/>", ast->d.ival);
+        sprintf(buf, "<float %lx/>", (unsigned long)ast->d.ival);
         leaf = 1;
         break;
     case AST_STRING:
@@ -851,7 +851,7 @@ static void doASTDump(AST *ast, int indent)
     case AST_OPERATOR:
         astname = "operator";
         if (ast->d.ival >= 32 && ast->d.ival <= 126) {
-            sprintf(buf, "<operator '%c'>", ast->d.ival);
+            sprintf(buf, "<operator '%c'>", (int)ast->d.ival);
         } else {
             const char *opString = NULL;
             switch(ast->d.ival) {
@@ -922,7 +922,7 @@ static void doASTDump(AST *ast, int indent)
                 opString = "power";
                 break;
             default:
-                sprintf(buf, "<operator #0x%x>", ast->d.ival);
+                sprintf(buf, "<operator #0x%lx>", (long)ast->d.ival);
                 break;
             }
             if (opString) {
@@ -940,7 +940,7 @@ static void doASTDump(AST *ast, int indent)
         leaf = 1;
         break;        
     case AST_THROW:
-        sprintf(buf, "<throw %d>", ast->d.ival);
+        sprintf(buf, "<throw %ld>", (long)ast->d.ival);
         break;        
     default:
         idx = (unsigned int)ast->kind;

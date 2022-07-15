@@ -473,7 +473,7 @@ RangeXor(AST *dst, AST *src)
          * a single bit is enough
          */
         if (IsConstExpr(src) && !IsConstExpr(loexpr)) {
-            int32_t srcval = EvalConstExpr(src);
+            ExprInt srcval = EvalConstExpr(src);
             AST *maskexpr;
             if (srcval == -1 || srcval == 0) {
                 maskexpr = AstOperator(K_SHL, AstInteger(1), loexpr);
@@ -1046,8 +1046,8 @@ TransformRangeUse(AST *src)
     return FixupInits(val, inits);
 }
 
-static float
-EvalFloatOperator(int op, float lval, float rval, int *valid)
+static ExprFloat
+EvalFloatOperator(int op, ExprFloat lval, ExprFloat rval, int *valid)
 {
     
     switch (op) {
@@ -1075,9 +1075,9 @@ EvalFloatOperator(int op, float lval, float rval, int *valid)
     case K_SHL:
         return intAsFloat(floatAsInt(lval) << floatAsInt(rval));
     case K_SHR:
-        return intAsFloat(((uint32_t)floatAsInt(lval)) >> floatAsInt(rval));
+        return intAsFloat(((UExprInt)floatAsInt(lval)) >> floatAsInt(rval));
     case K_SAR:
-        return intAsFloat(((int32_t)floatAsInt(lval)) >> floatAsInt(rval));
+        return intAsFloat(((ExprInt)floatAsInt(lval)) >> floatAsInt(rval));
     case '<':
     case K_LTU:
     case K_FLT:
@@ -1120,8 +1120,8 @@ EvalFloatOperator(int op, float lval, float rval, int *valid)
     }
 }
 
-static int32_t
-EvalFixedOperator(int op, int32_t lval, int32_t rval, int *valid)
+static ExprInt
+EvalFixedOperator(int op, ExprInt lval, ExprInt rval, int *valid)
 {
     
     switch (op) {
@@ -1130,7 +1130,7 @@ EvalFixedOperator(int op, int32_t lval, int32_t rval, int *valid)
     case '-':
         return lval - rval;
     case '/':
-        return (int32_t)( (1<<G_FIXPOINT) * (float)lval / (float)rval);
+        return (int32_t)( (1<<G_FIXPOINT) * (ExprFloat)lval / (ExprFloat)rval);
     case '*':
         return (lval * (int64_t)rval) >> G_FIXPOINT;
     case '|':
@@ -1198,7 +1198,7 @@ BoolValue(int v)
 }
 
 static int32_t
-EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
+EvalIntOperator(int op, ExprInt lval, ExprInt rval, int *valid)
 {
     
     switch (op) {
@@ -1214,13 +1214,13 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
         return lval % rval;
     case K_UNS_DIV:
         if (rval == 0) return rval;
-        return (int32_t)((uint32_t) lval / (uint32_t) rval);
+        return (ExprInt)((UExprInt) lval / (UExprInt) rval);
     case K_UNS_MOD:
         if (rval == 0) return rval;
-        return (int32_t)((uint32_t) lval % (uint32_t) rval);
+        return (ExprInt)((UExprInt) lval % (UExprInt) rval);
     case K_FRAC64:
         if (rval == 0) return rval;
-        return (int32_t)( (((uint64_t)lval)<<32) / (uint64_t)rval );
+        return (ExprInt)( (((uint64_t)lval)<<32) / (UExprInt)rval );
     case '*':
         return lval * rval;
     case '|':
@@ -1238,9 +1238,9 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
     case K_SHL:
         return lval << (rval & 0x1f);
     case K_SHR:
-        return ((uint32_t)lval) >> (rval & 0x1f);
+        return ((UExprInt)lval) >> (rval & 0x1f);
     case K_SAR:
-        return ((int32_t)lval) >> (rval & 0x1f);
+        return ((ExprInt)lval) >> (rval & 0x1f);
     case K_ROTL:
         return ((uint32_t)lval << rval) | ((uint32_t) lval) >> (32-rval);
     case K_ROTR:
@@ -1254,13 +1254,13 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
     case K_GE:
         return BoolValue(lval >= rval);
     case K_LTU:
-        return BoolValue(((uint32_t)lval < (uint32_t)rval));
+        return BoolValue(((UExprInt)lval < (UExprInt)rval));
     case K_GTU:
-        return BoolValue(((uint32_t)lval > (uint32_t)rval));
+        return BoolValue(((UExprInt)lval > (UExprInt)rval));
     case K_LEU:
-        return BoolValue(((uint32_t)lval <= (uint32_t)rval));
+        return BoolValue(((UExprInt)lval <= (UExprInt)rval));
     case K_GEU:
-        return BoolValue(((uint32_t)lval >= (uint32_t)rval));
+        return BoolValue(((UExprInt)lval >= (UExprInt)rval));
     case K_NE:
         return BoolValue(lval != rval);
     case K_EQ:
@@ -1286,7 +1286,7 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
     case K_ABS:
         return (rval < 0) ? -rval : rval;
     case K_SQRT:
-        return (uint32_t)sqrtf((float)(uint32_t)rval);
+        return (UExprInt)sqrt((ExprFloat)(uint32_t)rval);
     case K_DECODE:
         return 1L << (rval&0x1f);
     case K_ENCODE:
@@ -1298,9 +1298,9 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
     case K_LIMITMAX:
         return (lval > rval) ? rval : lval;
     case K_LIMITMIN_UNS:
-        return ((uint32_t)lval < (uint32_t)rval) ? rval : lval;
+        return ((UExprInt)lval < (UExprInt)rval) ? rval : lval;
     case K_LIMITMAX_UNS:
-        return ((uint32_t)lval > (uint32_t)rval) ? rval : lval;
+        return ((UExprInt)lval > (UExprInt)rval) ? rval : lval;
     case K_REV:
         return ReverseBits(lval, rval);
     case K_ZEROEXTEND:
@@ -1312,7 +1312,7 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
     case K_SIGNEXTEND:
         {
             int shift = 32 - rval;
-            return ((int32_t)lval << shift) >> shift;
+            return ((ExprInt)lval << shift) >> shift;
         }
         break;
     case K_DECREMENT:

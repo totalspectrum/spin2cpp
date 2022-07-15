@@ -3249,7 +3249,7 @@ BCPrepareObject(Module *P) {
                 arrsize = 1;
             } else if (var->right->left->kind == AST_ARRAYDECL) {
                 ASSERT_AST_KIND(var->right->left->right,AST_INTEGER,return;);
-                DEBUG(NULL,"Got obj array of type %s, size %d named %s",((Module*)var->left->d.ptr)->classname,var->right->left->right->d.ival,var->right->left->left->d.string);
+                DEBUG(NULL,"Got obj array of type %s, size %ld named %s",((Module*)var->left->d.ptr)->classname,var->right->left->right->d.ival,var->right->left->left->d.string);
                 arrsize = var->right->left->right->d.ival;
             } else {
                 ERROR(var->right,"Unhandled OBJ AST kind %d",var->right->left->kind);

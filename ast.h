@@ -14,7 +14,7 @@ typedef struct LineInfo {
  */
 
 union ASTdata {
-    uint32_t ival;      /* unsigned integer value */
+    uint64_t ival;      /* unsigned integer value */
     const char *string; /* string value */
     void *ptr;          /* generic pointer */
 };

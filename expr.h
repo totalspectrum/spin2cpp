@@ -1,16 +1,20 @@
 #ifndef EXPR_H
 #define EXPR_H
 
+typedef int32_t ExprInt;
+typedef uint32_t UExprInt;
+typedef float ExprFloat;
+
 typedef struct exprval {
     AST *type;
-    int32_t  val;
+    ExprInt  val;
 } ExprVal;
 
 /* evaluate a constant expression */
-int32_t EvalConstExpr(AST *expr);
+ExprInt EvalConstExpr(AST *expr);
 
 /* similar but for PASM */
-int32_t EvalPasmExpr(AST *expr);
+ExprInt EvalPasmExpr(AST *expr);
 
 /* determine whether an expression is constant */
 /* note that strings, as pointers to memory, are not "constant"
@@ -38,15 +42,15 @@ const char *ObjClassName(AST *objtype);
 
 /* expression utility functions */
 union float_or_int {
-    int32_t i;
-    float   f;
+    ExprInt i;
+    ExprFloat   f;
 };
 
-ExprVal intExpr(int32_t x);
-ExprVal floatExpr(float f);
-ExprVal fixedExpr(int32_t f);
-int32_t  floatAsInt(float f);
-float    intAsFloat(int32_t i);
+ExprVal intExpr(ExprInt x);
+ExprVal floatExpr(ExprFloat f);
+ExprVal fixedExpr(ExprInt f);
+ExprInt   floatAsInt(ExprFloat f);
+ExprFloat intAsFloat(ExprInt i);
 
 AST *RemoveTypeModifiers(AST *typ);
 

@@ -721,8 +721,8 @@ AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags)
             if (ast->d.ival <= hubpc) {
                 ast->d.ival = hubpc - ast->d.ival;
             } else {
-                ERROR(ast, "orgh address %x is less than previous address %x",
-                      hubpc, ast->d.ival);
+                ERROR(ast, "orgh address %lx is less than previous address %lx",
+                      (long)hubpc, (unsigned long)ast->d.ival);
                 ast->d.ival = 0;
             }
             lasttype = ast_type_long;
