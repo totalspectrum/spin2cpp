@@ -1228,7 +1228,7 @@ FixupCode(Module *P, int isBinary)
                 }
             } else if (gl_p2) {
                 // if no symbol and we are on p2 change the default heap size
-                heapsize = 4096;
+                heapsize = 6000; // 4096;
             }
             if (heapsize != 0) {
                 // user changed heap size
