@@ -211,7 +211,15 @@ static void lstStartAst(Flexbuf *f, AST *ast)
     switch (ast->kind) {
     case AST_ORG:
         inCog = 1;
-        cogPc = 4*EvalPasmExpr(ast->left);
+        if (ast->left) {
+            AST *addr = ast->left;
+            if (addr->kind == AST_RANGE) {
+                addr = addr->left;
+            }
+            cogPc = 4*EvalPasmExpr(addr);
+        } else {
+            cogPc = 0;
+        }
         break;
     case AST_ORGH:
         inCog = 0;

@@ -1099,13 +1099,20 @@ basedatline:
   | SP_ORG expr ',' expr SP_EOLN
     {
         AST *src = $2;
-        WARNING(src, "second parameter of ORG is ignored");
+        AST *limit = $4;
+        LANGUAGE_WARNING(LANG_SPIN_SPIN1, NULL, "second parameter for ORG is only valid in Spin2");
+        src = NewAST(AST_RANGE, src, limit);
         $$ = NewCommentedAST(AST_ORG, src, NULL, $1);
     }
   | SP_ORGH SP_EOLN
     { $$ = NewCommentedAST(AST_ORGH, NULL, NULL, $1); }
   | SP_ORGH expr SP_EOLN
     { $$ = NewCommentedAST(AST_ORGH, $2, NULL, $1); }
+  | SP_ORGH expr ',' expr SP_EOLN
+    {
+        AST *addr = NewAST(AST_RANGE, $2, $4);
+        $$ = NewCommentedAST(AST_ORGH, addr, NULL, $1);
+    }
   | SP_ORGF expr SP_EOLN
     { $$ = NewCommentedAST(AST_ORGF, $2, NULL, $1); }
   | SP_RES expr SP_EOLN

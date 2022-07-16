@@ -1,5 +1,29 @@
 /*
  * PASM and data compilation
+ * Copyright 2011-2022 Total Spectrum Software Inc.
+ * 
+ * +--------------------------------------------------------------------
+ * ¦  TERMS OF USE: MIT License
+ * +--------------------------------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files
+ * (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge,
+ * publish, distribute, sublicense, and/or sell copies of the Software,
+ * and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * +--------------------------------------------------------------------
  */
 #include <stdio.h>
 #include <string.h>
@@ -605,6 +629,8 @@ AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags)
 {
     unsigned cogpc = 0;
     unsigned hubpc = 0;
+    unsigned coglimit = 0;
+    unsigned hublimit = 0;
     unsigned datoff = 0;
     unsigned inc = 0;
     unsigned delta;
@@ -630,6 +656,17 @@ AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags)
             ast = ast->left;
         }
         if (!ast) continue;
+        if (inHub) {
+            if (hublimit && hubpc >= hublimit) {
+                ERROR(ast, "HUB PC of $%lx exceeds limit of $%lx\n", (long)hubpc, (long)hublimit);
+                hublimit = 0;
+            }
+        } else {
+            if (coglimit && cogpc >= coglimit) {
+                ERROR(ast, "COG PC of $%lx exceeds limit of $%lx\n", (long)cogpc/4, (long)coglimit/4);
+                coglimit = 0;
+            }
+        }
         switch (ast->kind) {
         case AST_BYTELIST:
         case AST_BYTEFITLIST:
@@ -697,8 +734,15 @@ AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags)
             MAYBEALIGNPC(4);
             pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub, label_flags);
             if (ast->left) {
-                replaceHeres(ast->left, HEREPC, lastOrg);
-                cogpc = 4*EvalPasmExpr(ast->left);
+                AST *addr = ast->left;
+                if (addr->kind == AST_RANGE) {
+                    coglimit = 4 * EvalPasmExpr(addr->right);
+                    addr = addr->left;
+                } else {
+                    coglimit = 0;
+                }
+                replaceHeres(addr, HEREPC, lastOrg);
+                cogpc = 4*EvalPasmExpr(addr);
             } else {
                 cogpc = 0;
             }
@@ -713,8 +757,15 @@ AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags)
             pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub, label_flags);
             ast->d.ival = hubpc; // temporary
             if (ast->left) {
-                replaceHeres(ast->left, hubpc, lastOrg);
-                hubpc = EvalPasmExpr(ast->left);
+                AST *addr = ast->left;
+                if (addr->kind == AST_RANGE) {
+                    hublimit = EvalPasmExpr(addr->right);
+                    addr = addr->left;
+                } else {
+                    hublimit = 0;
+                }
+                replaceHeres(addr, hubpc, lastOrg);
+                hubpc = EvalPasmExpr(addr);
             }
             cogpc = hubpc;
             // calculate padding amount

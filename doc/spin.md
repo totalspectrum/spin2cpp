@@ -673,10 +673,6 @@ This is sometimes different from how the official Spin1 interpreter does it. In 
 
 There are some work-arounds to reduce the impact of this, so it probably will only be noticed in edge cases.
 
-### Second argument to ORG is ignored
-
-In Spin the `org` pseudo-instruction has an optional second parameter giving a limit to the size of the assembly code (like an implied `fit` at the end). Flexspin silently ignores this second parameter.
-
 # P2 Considerations
 
 ## Spin1 on P2
