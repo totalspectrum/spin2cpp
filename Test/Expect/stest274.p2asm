@@ -15,8 +15,7 @@ dat
 entry
 
 _Main
-	abs	result1, ##1234 wc
-	negc	result1, #123
+	mov	result1, #123
 _Main_ret
 	ret
 
