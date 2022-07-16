@@ -329,7 +329,7 @@ AstModifiesIdentifier(AST *body, AST *id)
 
 /* create an integer */
 AST *
-AstInteger(long ival)
+AstInteger(int64_t ival)
 {
     AST *ast = NewAST(AST_INTEGER, NULL, NULL);
     ast->d.ival = ival;
@@ -338,7 +338,7 @@ AstInteger(long ival)
 
 /* create an untyped bitvalue */
 AST *
-AstBitValue(long ival)
+AstBitValue(int64_t ival)
 {
     AST *ast = NewAST(AST_BITVALUE, NULL, NULL);
     ast->d.ival = ival;

@@ -1186,7 +1186,7 @@ EvalFixedOperator(int op, ExprInt lval, ExprInt rval, int *valid)
     }
 }
 
-static int32_t
+static ExprInt
 BoolValue(int v)
 {
     if (!v) return 0;
@@ -1198,7 +1198,7 @@ BoolValue(int v)
     }
 }
 
-static int32_t
+static ExprInt
 EvalIntOperator(int op, ExprInt lval, ExprInt rval, int *valid)
 {
     
