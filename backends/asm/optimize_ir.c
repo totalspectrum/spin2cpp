@@ -2063,6 +2063,8 @@ OptimizeMoves(IRList *irl)
                     // because this is a mov immediate, we know how
                     // WZ will be set
                     change |= ApplyConditionAfter(ir, cval);
+                } else if (ir->flags != 0 && ir->opc == OPC_ABS) {
+                    change |= ApplyConditionAfter(ir,ir->src->val);
                 }
                 change |= (sawchange = PropagateConstForward(irl, ir, ir->dst, ir->src));
                 if (sawchange && !InstrSetsAnyFlags(ir) && IsDeadAfter(ir, ir->dst)) {
