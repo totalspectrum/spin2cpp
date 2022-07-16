@@ -888,6 +888,12 @@ static void doASTDump(AST *ast, int indent)
             case K_SHR:
                 opString = "+>>";
                 break;
+            case K_ROTL:
+                opString = "ROTL";
+                break;
+            case K_ROTR:
+                opString = "ROTR";
+                break;
             case K_NEGATE:
                 opString = "~-";
                 break;
