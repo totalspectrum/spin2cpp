@@ -1,0 +1,14 @@
+PUB Main() | temp, tscl
+
+    temp := tempdata()
+    tscl := tempscale()    ' comment me out: code runs OK
+    return (temp/10)
+
+
+PUB TempData(): t
+
+    return 1234
+
+PUB TempScale(): s
+
+    return 1
