@@ -13,6 +13,7 @@
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>
+#include <limits.h>
 
 /* get the internal identifier name from an identifier */
 const char *
@@ -2509,10 +2510,18 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         if ( IsCLang(P->curLanguage) && expr->d.ival == 0) {
             return ast_type_generic;
         }
-        if (expr->left) {
+        if (expr->left) {  /* explicit cast */
             return expr->left;
         }
-        return ast_type_long;
+        /* go based on the size */
+        {
+            int64_t x = expr->d.ival;
+            if (x >= INT_MIN && x <= INT_MAX)
+                return ast_type_long;
+            if (x >= 0 && x <= UINT_MAX)
+                return ast_type_unsigned_long;
+            return ast_type_long64;
+        }
     case AST_CONSTANT:
     case AST_CONSTREF:
     case AST_HWREG:

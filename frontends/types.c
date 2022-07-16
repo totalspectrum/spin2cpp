@@ -1235,12 +1235,20 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
                 } else {
                     WARNING(line, "Unable to widen function result");
                 }
-            } else if (rsize == 8 && lsize < rsize) {
-                // narrowing cast
-                if (astptr) {
-                    *astptr = donarrow(expr, rsize, lsize, IsUnsignedType(srctype));
-                } else {
-                    ERROR(line, "Unable to narrow parameter");
+            } else if (rsize == 8) {
+                if (lsize < rsize) {
+                    // narrowing cast
+                    if (astptr) {
+                        *astptr = donarrow(expr, rsize, lsize, IsUnsignedType(srctype));
+                    } else {
+                        ERROR(line, "Unable to narrow parameter");
+                    }
+                } else if (lsize == 8 && expr->kind == AST_INTEGER) {
+                    *astptr = NewAST(AST_EXPRLIST,
+                                     NewAST(AST_GETLOW, expr, NULL),
+                                     NewAST(AST_EXPRLIST,
+                                            NewAST(AST_GETHIGH, expr, NULL),
+                                            NULL));
                 }
             }
         }
@@ -1629,7 +1637,7 @@ static AST *doCheckTypes(AST *ast)
         if (ast->left) {
             return ast->left;
         }
-        return  ast_type_long;
+        return ExprType(ast); //ast_type_long;
     case AST_ISBETWEEN:
     case AST_HWREG:
     case AST_CONSTREF:

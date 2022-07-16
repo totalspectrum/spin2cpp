@@ -4190,11 +4190,17 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   {
       Operand *base;
       int off = expr->kind == AST_GETLOW ? 0 : 4;
-      base = CompileExpression(irl, expr->left, NULL);
-      r = OffsetMemory(irl, base, NewImmediate(off), ast_type_long);
-      if (dest) {
-          EmitMove(irl, dest, r);
-          r = dest;
+      if (IsConstExpr(expr->left)) {
+          uint64_t bigval = EvalConstExpr(expr->left);
+          uint32_t val = (off == 0) ? bigval : (bigval >> 32);
+          r = NewImmediate(val);
+      } else {
+          base = CompileExpression(irl, expr->left, NULL);
+          r = OffsetMemory(irl, base, NewImmediate(off), ast_type_long);
+          if (dest) {
+              EmitMove(irl, dest, r);
+              r = dest;
+          }
       }
       return r;
   }
