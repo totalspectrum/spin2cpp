@@ -1982,15 +1982,8 @@ FindPrevSetterForReplace(IR *irorig, Operand *dst)
     // until irorig
     saveir = ir;
     ir = ir->next;
-    while (ir && ir != irorig) {
-        if (IsDummy(ir)) {
-            ir = ir->next;
-            continue;
-        }
-        if (ir->dst == saveir->src && InstrSetsDst(ir)) {
-            return NULL;
-        }
-        ir = ir->next;
+    if (ModifiedInRange(ir, irorig->prev, saveir->src)) {
+        return false;
     }
     return saveir;
 }
@@ -2092,11 +2085,9 @@ OptimizeMoves(IRList *irl)
                 }
             } else if (isMoveLikeOp(ir) && (stop_ir = FindPrevSetterForReplace(ir,ir->src)) && stop_ir->opc == OPC_MOV 
                 && !InstrIsVolatile(stop_ir) && !InstrSetsAnyFlags(stop_ir) && (ir->src==ir->dst||IsDeadAfter(ir,ir->src))) {
-                if (!ModifiedInRange(stop_ir, ir, stop_ir->src)) {
-                    ir->src = stop_ir->src;
-                    if (ir->cond == COND_TRUE) DeleteIR(irl,stop_ir);
-                    change = 1;
-                }
+                ir->src = stop_ir->src;
+                if (ir->cond == COND_TRUE) DeleteIR(irl,stop_ir);
+                change = 1;
             }
             ir = ir_next;
         }
