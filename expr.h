@@ -1,9 +1,15 @@
 #ifndef EXPR_H
 #define EXPR_H
 
+#if 0
 typedef int32_t ExprInt;
 typedef uint32_t UExprInt;
-typedef float ExprFloat;
+#else
+typedef int64_t ExprInt;
+typedef uint64_t UExprInt;
+#endif
+
+typedef float ExprFloat;  // changing this from "float" probably will not work
 
 typedef struct exprval {
     AST *type;

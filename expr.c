@@ -745,7 +745,7 @@ TransformRangeAssign(AST *dst, AST *src, int optoken, int toplevel)
     if (src->kind == AST_OPERATOR && src->d.ival == K_BIT_NOT
         && AstMatch(dst, src->right))
     {
-        result = RangeXor(dst, AstInteger(0xffffffff));
+        result = RangeXor(dst, AstInteger(-1));
         AstReportDone(&saveinfo);
         return result;
     }
@@ -761,7 +761,7 @@ TransformRangeAssign(AST *dst, AST *src, int optoken, int toplevel)
             && IsConstExpr(src->right)
             && EvalConstExpr(src->right) == 1)
         {
-            result = RangeXor(dst, AstInteger(0xffffffff));
+            result = RangeXor(dst, AstInteger(-1));
             AstReportDone(&saveinfo);
             return result;
         }
