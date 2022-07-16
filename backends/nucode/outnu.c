@@ -1376,6 +1376,18 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         NuCompileDrop(irl, n);
         return NuCompileExpression(irl, node->right);
     } break;
+    case AST_GETLOW:
+    case AST_GETHIGH: {
+        int n = NuCompileExpression(irl, node->left);
+        if (n != 2) {
+            WARNING(node, "Expected 64 bit value");
+        }
+        if (node->kind == AST_GETHIGH) {
+            NuEmitCommentedOp(irl, NU_OP_SWAP, "get high word");
+        }
+        NuCompileDrop(irl, n-1);
+        pushed = 1;
+    } break;
     case AST_ASSIGN:
         pushed = NuCompileAssign(irl, node, 1);
         break;

@@ -3038,13 +3038,13 @@ appendType(const char *base, AST *typ)
   case AST_MODIFIER_VOLATILE:
     return appendType(base, typ->left);
   case AST_INTTYPE:
-    sprintf(buf, "i%d", EvalConstExpr(typ->left));
+    sprintf(buf, "i%ld", (long)EvalConstExpr(typ->left));
     return concatstr(base, buf);
   case AST_UNSIGNEDTYPE:
-    sprintf(buf, "u%d", EvalConstExpr(typ->left));
+    sprintf(buf, "u%ld", (long)EvalConstExpr(typ->left));
     return concatstr(base, buf);
   case AST_FLOATTYPE:
-    sprintf(buf, "f%d", EvalConstExpr(typ->left));
+    sprintf(buf, "f%ld", (long)EvalConstExpr(typ->left));
     return concatstr(base, buf);
   case AST_GENERICTYPE:
     return concatstr(base, "g");
@@ -3056,7 +3056,7 @@ appendType(const char *base, AST *typ)
     base = concatstr(base, "m");
     return appendType(base, typ->left);
   case AST_ARRAYTYPE:
-    sprintf(buf, "a%d", EvalConstExpr(typ->right));
+    sprintf(buf, "a%ld", (long)EvalConstExpr(typ->right));
     base = concatstr(base, buf);
     return appendType(base, typ->left);
   case AST_OBJECT:

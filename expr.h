@@ -42,8 +42,8 @@ const char *ObjClassName(AST *objtype);
 
 /* expression utility functions */
 union float_or_int {
-    ExprInt i;
-    ExprFloat   f;
+    int32_t i;
+    float   f;
 };
 
 ExprVal intExpr(ExprInt x);

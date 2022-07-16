@@ -1520,6 +1520,20 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
         }
         return intExpr(val);
     }
+    case AST_GETLOW:
+    case AST_GETHIGH:
+    {
+        AST *subexpr = expr->left;
+        int64_t xval;
+        if (!subexpr || subexpr->kind != AST_INTEGER) {
+            goto invalid_const_expr;
+        }
+        xval = subexpr->d.ival;
+        if (expr->kind == AST_GETHIGH) {
+            xval = xval >> 32;
+        }
+        return intExpr(xval);
+    }
     case AST_TOFLOAT:
         lval = EvalExpr(expr->left, flags, valid, depth+1);
         if ( !IsIntOrGenericType(lval.type)) {
@@ -1817,14 +1831,14 @@ invalid_const_expr:
     return intExpr(0);
 }
 
-int32_t
+ExprInt
 EvalConstExpr(AST *expr)
 {
     ExprVal e = EvalExpr(expr, 0, NULL, 0);
     return e.val;
 }
 
-int32_t
+ExprInt
 EvalPasmExpr(AST *expr)
 {
     ExprVal e = EvalExpr(expr, PASM_FLAG, NULL, 0);
@@ -1882,7 +1896,7 @@ FuncParameterNum(Function *func, AST *var)
 }
 
 /* expression utility functions */
-ExprVal intExpr(int32_t x)
+ExprVal intExpr(ExprInt x)
 {
     ExprVal e;
     e.type = ast_type_long;
@@ -1890,7 +1904,7 @@ ExprVal intExpr(int32_t x)
     return e;
 }
 
-ExprVal floatExpr(float f)
+ExprVal floatExpr(ExprFloat f)
 {
     ExprVal e;
     e.type = ast_type_float;
@@ -1898,7 +1912,7 @@ ExprVal floatExpr(float f)
     return e;
 }
 
-ExprVal fixedExpr(int32_t f)
+ExprVal fixedExpr(ExprInt f)
 {
     ExprVal e;
     e.type = ast_type_float;
@@ -1906,7 +1920,7 @@ ExprVal fixedExpr(int32_t f)
     return e;
 }
 
-int32_t  floatAsInt(float f)
+ExprInt  floatAsInt(ExprFloat f)
 {
     union float_or_int v;
 
@@ -1914,7 +1928,7 @@ int32_t  floatAsInt(float f)
     return v.i;
 }
 
-float intAsFloat(int32_t i)
+ExprFloat intAsFloat(ExprInt i)
 {
     union float_or_int v;
 
