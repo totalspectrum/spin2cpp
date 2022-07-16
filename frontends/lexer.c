@@ -442,7 +442,8 @@ isCIdentifierChar(int c)
 static int
 parseNumber(LexStream *L, unsigned int base, uint64_t *num)
 {
-    uint32_t uval, digit;
+    uint64_t uval;
+    uint32_t digit;
     uint64_t tenval;
     unsigned int c;
     int sawdigit = 0;
