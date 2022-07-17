@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 #include "spinc.h"
 
 static LexStream *s_reportas_lexdata;
@@ -800,18 +801,18 @@ static void doASTDump(AST *ast, int indent)
         leaf = 1;
         break;
     case AST_INTEGER:
-        sprintf(buf, "<integer %ld/>", (long)ast->d.ival);
+        sprintf(buf, "<integer %" PRId64 "/>", ast->d.ival);
         leaf = 1;
         break;
     case AST_INLINEASM:
         sprintf(buf, "<inlineasm%s>", ast->d.ival ? " const" : " optimized");
         break;
     case AST_BITVALUE:
-        sprintf(buf, "<bitvalue 0x%lx/>", (unsigned long)ast->d.ival);
+        sprintf(buf, "<bitvalue 0x%" PRIx64 "/>", ast->d.ival);
         leaf = 1;
         break;
     case AST_FLOAT:
-        sprintf(buf, "<float %lx/>", (unsigned long)ast->d.ival);
+        sprintf(buf, "<float %" PRIx64 "/>", ast->d.ival);
         leaf = 1;
         break;
     case AST_STRING:
@@ -928,7 +929,7 @@ static void doASTDump(AST *ast, int indent)
                 opString = "power";
                 break;
             default:
-                sprintf(buf, "<operator #0x%lx>", (long)ast->d.ival);
+                sprintf(buf, "<operator #0x%" PRIx64 ">", ast->d.ival);
                 break;
             }
             if (opString) {
@@ -946,7 +947,7 @@ static void doASTDump(AST *ast, int indent)
         leaf = 1;
         break;        
     case AST_THROW:
-        sprintf(buf, "<throw %ld>", (long)ast->d.ival);
+        sprintf(buf, "<throw %" PRId64 ">", ast->d.ival);
         break;        
     default:
         idx = (unsigned int)ast->kind;
