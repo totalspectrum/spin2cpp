@@ -1887,7 +1887,8 @@ NuCompileFunction(Function *F) {
     if (!F->body) {
         DEBUG(NULL,"compiling function %s with no body...",F->name);
     } else if (F->body->kind == AST_STRING) {
-        WARNING(NULL,"compiling function %s which is just a reference",F->name);
+        //WARNING(NULL,"compiling function %s which is just a reference",F->name);
+        return;
     } else if (F->body->kind == AST_BYTECODE) {
         // do nothing
         curfunc = saveFunc;
