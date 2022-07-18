@@ -994,7 +994,7 @@ primary_expression
             { $$ = NewAST(AST_HERE, NULL, NULL); }
 	| '(' expression ')'
             { $$ = $2; }
-	| '(' '{' block_item_list '}' ')'
+	| '(' compound_statement_open block_item_list compound_statement_close ')'
             { $$ = $3; }
 	;
 
