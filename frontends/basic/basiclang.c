@@ -1063,7 +1063,7 @@ BasicTransform(Function *func)
 {
     InitGlobalFuncs();
 
-    SimplifyAssignments(&func->body, 1); // insert casts in assignment chains
+    DoHLTransforms(func);
     doBasicTransform(&func->body, true);
     CheckTypes(func->body);
 }

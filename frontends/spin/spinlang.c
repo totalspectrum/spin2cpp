@@ -934,7 +934,7 @@ SpinTransform(Function *func)
     
     // simplify assignments: this is required for some of
     // the other passes to work
-    SimplifyAssignments(&func->body, 0);  // do not insert casts
+    DoHLTransforms(func);
     
     // spin specific stuff
     doSpinTransform(&func->body, 1, func->body);

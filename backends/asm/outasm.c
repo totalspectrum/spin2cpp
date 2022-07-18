@@ -4116,7 +4116,13 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       //  x = *(type *)vl;
       //  vl += sizeof(type)
       int incsize = TypeSize(expr->left);
-      Operand *temp = dest ? dest : NewFunctionTempRegister();
+      Operand *temp;
+      if (incsize <= LONG_SIZE) {
+          temp = dest ? dest : NewFunctionTempRegister();
+      } else {
+          temp = NewFunctionTempRegister();
+          WARNING(expr, "cannot properly handle large va_arg");
+      }
       r = CompileMemref(irl, expr);
       EmitMove(irl, temp, r);
       (void)CompileExpression(irl,

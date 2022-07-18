@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2020 Total Spectrum Software Inc.
+ * Copyright 2011-2022 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for C specific features
@@ -166,7 +166,7 @@ CTransform(Function *func)
 {
     InitGlobalFuncs();
 
-    SimplifyAssignments(&func->body, 1); // insert casts in assignment chains
+    DoHLTransforms(func);
     doCTransform(&func->body, 0);
     CheckTypes(func->body);
 }

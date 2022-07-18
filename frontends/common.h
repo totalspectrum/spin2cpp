@@ -759,10 +759,14 @@ void DoHighLevelOptimize(Module *P);
 void PerformCSE(Module *P);
 void PerformLoopOptimization(Module *P);
 
-// simplify statments like a^=b to a = a^b
-void SimplifyAssignments(AST **astptr, int insertCasts);
+// perform high level transformations on a function
+void DoHLTransforms(Function *F);
 
-// helper for SimplifyAssignments
+// simplify statments like a^=b to a = a^b
+// (merged into DoHLTransforms)
+//void SimplifyAssignments(AST **astptr, int insertCasts);
+
+// helper for SimplifyAssignments and for some Spin parsing
 AST *ExtractSideEffects(AST *expr, AST **preseq);
 
 // start of HUB memory

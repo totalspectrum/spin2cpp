@@ -340,8 +340,9 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
 }
 
 void
-SimplifyAssignments(AST **astptr, int insertCasts)
+DoHLTransforms(Function *F)
 {
-    return doSimplifyAssignments(astptr, insertCasts, 1);
+    int insertCasts = !IsSpinLang(F->language);
+    doSimplifyAssignments(&F->body, insertCasts, 1);
 }
 
