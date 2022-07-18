@@ -2530,9 +2530,9 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         /* go based on the size */
         {
             int64_t x = expr->d.ival;
-            if (x >= INT_MIN && x <= INT_MAX)
+            if (x >= INT32_MIN && x <= INT32_MAX)
                 return ast_type_long;
-            if (x >= 0 && x <= UINT_MAX)
+            if (x >= 0 && x <= UINT32_MAX)
                 return ast_type_unsigned_long;
             return ast_type_long64;
         }

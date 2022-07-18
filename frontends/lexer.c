@@ -4470,7 +4470,6 @@ getCToken(LexStream *L, AST **ast_ptr)
     int c, c2;
     AST *ast = NULL;
     int at_startofline = (L->eoln == 1);
-    int is_binary = 0;
     
     c = skipSpace(L, &ast, LANG_CFAMILY_C);
 
@@ -4486,10 +4485,8 @@ parse_number:
         if (c == '0') {
             // 0ddd is an octal number in C
             c = parseNumber(L, 8, &ast->d.ival);
-            is_binary = 1;
         } else {
             c = parseNumber(L, 10, &ast->d.ival);
-            is_binary = 0;
         }
         if (c == SP_FLOATNUM) {
             int c2;
@@ -4525,10 +4522,6 @@ parse_number:
                 // unsigned flag; add in an unsigned type
                 ast->left = ast_type_unsigned_long;
                 c2 = lexgetc(L);
-            } else if (is_binary) {
-                if (((int32_t)ast->d.ival) < 0) {
-                    ast->left = ast_type_unsigned_long;
-                }
             }
             if (c2 == 'L' || c2 == 'l') {
                 // long constant flag, ignore for now

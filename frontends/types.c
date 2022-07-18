@@ -1587,6 +1587,8 @@ static AST *doCheckTypes(AST *ast)
                         } else if (TypeGoesOnStack(passedType)) {
                             // need to emit a copy
                             expectType = NewAST(AST_COPYREFTYPE, passedType, NULL);
+                        } else if (TypeSize(passedType) > LONG_SIZE) {
+                            expectType = passedType;
                         } else {
                             // we use const generic to avoid lots of warning
                             // messages about passing strings to printf
