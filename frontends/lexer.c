@@ -4526,6 +4526,15 @@ parse_number:
             if (c2 == 'L' || c2 == 'l') {
                 // long constant flag, ignore for now
                 c2 = lexgetc(L);
+                if (c2 == 'L' || c2 == 'l') {
+                    // check for already used U
+                    if (ast->left) {
+                        ast->left = ast_type_unsigned_long64;
+                    } else {
+                        ast->left = ast_type_long64;
+                    }
+                    c2 = lexgetc(L);
+                }
             }
             lexungetc(L, c2);
         done_number:            
