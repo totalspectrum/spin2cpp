@@ -1,5 +1,6 @@
 Version 5.9.14
 - Added check for limit in ORG and ORGH
+- Added warning for incompatible types in comparisons
 - Fixed an incorrect optimization across calls
 - Increased default heap size on P2 to 6000 bytes
 - Removed some bad debug printfs from sdmm.cc

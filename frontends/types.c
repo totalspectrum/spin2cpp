@@ -784,6 +784,9 @@ void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
         }
     }
 
+    if (!CompatibleTypes(lefttype, righttype)) {
+        WARNING(ast, "incompatible types in comparison");
+    }
 }
 
 static AST *ScalePointer(AST *type, AST *val)
