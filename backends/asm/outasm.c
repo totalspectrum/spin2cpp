@@ -114,6 +114,7 @@ static Operand *EmitAddSub(IRList *irl, Operand *dst, int off);
 static Operand *SizedHubMemRef(int size, Operand *addr, int offset);
 Operand *CogMemRef(Operand *addr, int offset);
 static Operand *ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset, int size);
+static Operand *OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type);
 
 static void AssignOneFuncName(Function *f);
 static void ValidatePushregs(void);
@@ -2770,7 +2771,7 @@ CompileExprList(IRList *irl, AST *fromlist)
 {
   AST *from;
   Operand *opfrom = NULL;
-  Operand *opto = NULL;
+  Operand *opto[MAX_TUPLE] = { 0 };
   OperandList *ret = NULL;
   OperandList *fresults = NULL;
   int starttempreg;
@@ -2783,12 +2784,25 @@ CompileExprList(IRList *irl, AST *fromlist)
         fresults = CompileFunccall(irl, from);
         AppendOperandList(&ret, fresults);
     } else {
-        opto = NewFunctionTempRegister();
+        int siz = TypeSize(ExprType(from));
+        int i;
+        int off = 0;
+        for (i = 0; i < siz; i += LONG_SIZE) {
+            opto[i] = NewFunctionTempRegister();
+        }
         starttempreg = FuncData(curfunc)->curtempreg;
         opfrom = CompileExpression(irl, from, NULL);
         if (!opfrom) break;
-        EmitMove(irl, opto, opfrom);
-        AppendOperand(&ret, opto);
+        for (i = 0; i < siz; i += LONG_SIZE) {
+            Operand *tmpfrom;
+            if (off) {
+                tmpfrom = OffsetMemory(irl, opfrom, NewImmediate(off), NULL);
+            } else {
+                tmpfrom = opfrom;
+            }
+            EmitMove(irl, opto[i], tmpfrom);
+            AppendOperand(&ret, opto[i]);
+        }
         FreeTempRegisters(irl, starttempreg);
     }
   }
