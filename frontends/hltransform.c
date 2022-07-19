@@ -171,11 +171,32 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
     AST *ast = *astptr;
     AST *preseq = NULL;
     AST *lhs, *rhs;
+    AST *typ;
+    AST *chain;
+    int siz;
     int lhsTopLevel, rhsTopLevel;
     if (!ast) return;
 
     lhsTopLevel = rhsTopLevel = atTopLevel;
     switch (ast->kind) {
+    case AST_VA_ARG:
+        lhsTopLevel = rhsTopLevel = 0;
+        // transform va_arg(a, typ) to
+        //  { tmp = *(typ *)a; a += sizeof(typ); tmp; }
+        typ = ast->left;
+        lhs = ast->right;
+        siz = TypeSize(typ);
+        rhs = AstTempLocalVariable("_arg_", typ);
+        chain = AstAssign(lhs, AstOperator('+', lhs, AstInteger(siz)));
+        chain = NewAST(AST_SEQUENCE, chain, rhs);
+        chain = NewAST(AST_SEQUENCE,
+                       AstAssign(rhs,
+                                 NewAST(AST_ARRAYREF,
+                                        NewAST(AST_CAST, NewAST(AST_PTRTYPE, typ, NULL), lhs),
+                                        AstInteger(0))),
+                       chain);
+        *astptr = ast = chain;
+        break;
     case AST_SEQUENCE:
     case AST_STMTLIST:
     case AST_OTHER:
