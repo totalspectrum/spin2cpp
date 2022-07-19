@@ -1528,7 +1528,7 @@ AstTempLocalVariable(const char *prefix, AST *type)
         name = NewTemporaryVariable(prefix, &curfunc->local_var_counter);
         type = ast_type_generic; /* make it untyped so it can be re-used */
     } else {
-        name = NewTemporaryVariable(NULL, NULL);
+        name = NewTemporaryVariable(prefix, NULL);
     }
     ast->d.string = name;
     AddLocalVariable(curfunc, ast, type, SYM_TEMPVAR);
