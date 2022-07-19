@@ -2802,6 +2802,7 @@ CompileExprList(IRList *irl, AST *fromlist)
             }
             EmitMove(irl, opto[i], tmpfrom);
             AppendOperand(&ret, opto[i]);
+            off += LONG_SIZE;
         }
         FreeTempRegisters(irl, starttempreg);
     }
