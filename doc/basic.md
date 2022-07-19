@@ -675,11 +675,11 @@ There are a number of data types built in to the FlexBASIC language.
 
 `ubyte`, `ushort`, and `uinteger` are the names for 8 bit, 16 bit, and 32 bit unsigned integers, respectively. The Propeller load instructions do not sign extend by default, so `ubyte` and `ushort` are the preferred names for 8 and 16 bit integers on the Propeller.
 
-`ulong` is an alias for `uinteger`. `ulongint` is reserved for 64 bit integers (which are not implemented yet).
+`ulong` is an alias for `uinteger`. `ulongint` is used for 64 bit integers (which are experimental).
 
 #### Signed integer types
 
-`byte`, `short`, and `integer` are 8 bit, 16 bit, and 32 bit signed integers. `long` is an alias for `integer`. `longint` is reserved for 64 bit integers (which are not implemented yet).
+`byte`, `short`, and `integer` are 8 bit, 16 bit, and 32 bit signed integers. `long` is an alias for `integer`. `longint` is used for 64 bit integers (which are experimental).
 
 #### Floating point types
 
@@ -707,7 +707,7 @@ double  |     8 bytes      |  2.3E-308 to 1.7E+308     (~15 decimal places of pr
 Notes:
 Types INTEGER and LONG are synonyms and may be used interchangably.
 Types UINTEGER and ULONG are synonyms and may be used interchangably.
-Types LONGINT, and ULONGINT are not yet fully unimplemented/reserved for future use.
+Types LONGINT, and ULONGINT are experimental.
 Type DOUBLE is not implemented yet, instead being a synonym for the SINGLE type at this time
 
 
@@ -2543,7 +2543,7 @@ A signed 32 bit integer. An alias for `integer`. The unsigned version of this is
 
 ### LONGINT
 
-A signed 64 bit integer. The unsigned version of this is `ulongint`. This type is not yet fully implemented.
+A signed 64 bit integer. The unsigned version of this is `ulongint`. This type is implemented, but the implementation is new; please report any bugs.
 
 ### LONGFILL
 
@@ -3391,7 +3391,7 @@ An unsigned 32 bit integer, occupying four bytes of computer memory. The signed 
 
 ### ULONGINT
 
-An unsigned 64 bit integer, occupying eight bytes of computer memory. The signed version of this is `longint`. This type is not yet fully implemented.
+An unsigned 64 bit integer, occupying eight bytes of computer memory. The signed version of this is `longint`.
 
 ### USHORT
 
