@@ -3345,6 +3345,10 @@ BuildExprlistFromObject(AST *origexpr, AST *typ)
         exprlist = NewAST(AST_EXPRLIST, NewAST(AST_GETLOW, expr, NULL), NULL);
         temp = NewAST(AST_EXPRLIST, NewAST(AST_GETHIGH, expr, NULL), NULL);
         exprlist = AddToList(exprlist, temp);
+        if (exprptr) {
+            *exprptr = exprlist;
+            return origexpr;
+        }
         return exprlist;
     }
     if (!IsClassType(typ)) {
