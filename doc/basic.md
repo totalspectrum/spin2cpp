@@ -351,6 +351,8 @@ log
 longfill
 longmove
 lpad$
+lpeek
+lpoke
 ltrim$
 mid$
 mkdir
@@ -2569,6 +2571,20 @@ Marks the end of a loop introduced by `do`. See DO for details.
 y$ = lpad$(x$, w, ch$)
 ```
 Returns a new string which is like the original string but padded on the left so that it has length `w`. If `w` is less than the current length of the string, the function returns the rightmost `w` characters, otherwise it prepends enough copies of `ch$` to make the string `w` characters long.
+
+### LPEEK
+
+```
+  val = lpeek(addr)
+```
+Returns the 32 bit value at the given address in memory. `addr` is a simple unsigned integer address.
+
+### LPOKE
+
+```
+lpoke(addr, val)
+```
+Changes the 32 bits of memory at `addr` to have the value `val`. `addr` is a simple unsigned integer address.
 
 ### LTRIM$
 

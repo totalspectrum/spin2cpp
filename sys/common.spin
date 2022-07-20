@@ -243,11 +243,15 @@ pri __peek(x = long) : r
   r := byte[x]
 pri __wpeek(x = long) : r
   r := word[x]
+pri __lpeek(x = long) : r
+  r := long[x]
 
 pri __poke(addr = long, val = long)
   byte[addr] := val
 pri __wpoke(addr = long, val = long)
   word[addr] := val
+pri __lpoke(addr = long, val = long)
+  long[addr] := val
 
 ' @@@ means a reference to any type of variable
 pri __addr(x = @@@)
