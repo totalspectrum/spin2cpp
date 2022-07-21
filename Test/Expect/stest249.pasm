@@ -20,7 +20,6 @@ _main
 	mov	arg03, #99
 	call	#_insertstr
 	mov	outb, result1
-	mov	_main_q_0008_01, result2
 	mov	outa, _main_p_0007
 _main_ret
 	ret

@@ -941,10 +941,12 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
       // hardware registers are never dead
       return false;
   }
+#if 0
   if (op->kind == REG_SUBREG) {
       // cannot handle sub registers properly yet
       return false;
   }
+#endif  
   if (level >= MAX_FOLLOWED_JUMPS) {
       // give up!
       return false;
@@ -975,6 +977,7 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
             // assume live
             return false;
         }
+#if 0        
         if (op->kind == REG_SUBREG) {
             return false;
         }
@@ -984,6 +987,7 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
         if (ir->src && ir->src->kind == REG_SUBREG) {
             return false;
         }
+#endif        
     }
     for (i = 0; i < level; i++) {
         if (ir == stack[i]) {
@@ -3932,6 +3936,13 @@ restart_check:
                     goto get_next;
                 }
             }
+#if 0            
+            // bit of a hacky optimization for some tests
+            else if (next_ir && next_ir->opc == OPC_MOV && next_ir->src == ir->dst && CondIsSubset(ir->cond,next_ir->cond) && IsDeadAfter(next_ir, ir->dst)) {
+                ir->dst = next_ir->dst;
+                next_ir->opc = OPC_DUMMY;
+            }
+#endif            
         } 
         if (ir->opc == OPC_RDBYTE || ir->opc == OPC_RDWORD) {
             int32_t mval;
