@@ -78,6 +78,10 @@ testread
 testread
 testread
 
+' some basic 64 bit stuff
+test64bits
+
+' and exit
 doexit 0
 
 sub testread
@@ -101,3 +105,14 @@ sub doexit(status)
   loop
 end sub
 
+''
+'' test for 64 bit arithmetic and printing
+''
+sub test64bits()
+  dim as longint x, y
+  x = 123456780012
+  x = (x/100) + 90
+  y = (x * 1000) - 1
+  print
+  print "64 bits: x="; x; " y="; y
+end sub
