@@ -35,10 +35,6 @@ _main_p_0007
 	res	1
 _main_p_0007_01
 	res	1
-_main_q_0008
-	res	1
-_main_q_0008_01
-	res	1
 _var01
 	res	1
 _var02

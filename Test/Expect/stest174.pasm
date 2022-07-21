@@ -25,8 +25,7 @@ _Proc_2_ret
 	ret
 
 _Proc_5
-	rdlong	arg01, arg01
-	mov	ina, arg01
+	rdlong	ina, arg01
 _Proc_5_ret
 	ret
 

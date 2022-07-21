@@ -8,8 +8,6 @@ _fetch1
 	rdlong	result1, arg01
 	add	arg01, #4
 	rdlong	result2, arg01
-	mov	_var02, result2
-	mov	result2, _var02
 _fetch1_ret
 	ret
 
@@ -17,8 +15,6 @@ _fetch2
 	rdlong	result1, arg01
 	add	arg01, #4
 	rdlong	result2, arg01
-	mov	_var02, result2
-	mov	result2, _var02
 _fetch2_ret
 	ret
 
@@ -29,10 +25,6 @@ result2
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_var01
-	res	1
-_var02
-	res	1
 arg01
 	res	1
 	fit	496

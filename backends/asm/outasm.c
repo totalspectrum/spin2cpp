@@ -1714,10 +1714,13 @@ MarkUsedOneReg(Operand *reg)
     }
 }
 static void
-MarkUsedSubregs(IRList *irl)
+MarkUsedAsmVars(IRList *irl)
 {
     IR *ir;
     for (ir = irl->head; ir; ir = ir->next) {
+        if (ir->opc == OPC_CONST) {
+            continue;
+        }
         MarkUsedOneReg(ir->dst);
         MarkUsedOneReg(ir->src);
     }
@@ -1775,10 +1778,10 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
         if (NeedToSaveLocals(func)) {
             n = RenameLocalRegs(FuncIRL(func), IS_LEAF(func));
         } else {
-            MarkUsedSubregs(FuncIRL(func));
+            MarkUsedAsmVars(FuncIRL(func));
         }
     } else {
-        MarkUsedSubregs(FuncIRL(func));
+        MarkUsedAsmVars(FuncIRL(func));
     }
     if (needFrame == FRAME_MAYBE) {
         needFrame = (n > 0) ? FRAME_YES : FRAME_NO;
@@ -5164,6 +5167,18 @@ static int EmitAsmVars(struct flexbuf *fb, IRList *datairl, IRList *bssirl, int 
     return count;
 }
 
+// parameter is an AsmVariable array stored in a flexbuf
+static void ClearUseCounts(struct flexbuf *fb)
+{
+    size_t siz = flexbuf_curlen(fb) / sizeof(AsmVariable);
+    size_t i;
+    AsmVariable *g = (AsmVariable *)flexbuf_peek(fb);
+
+    for (i = 0; i < siz; i++) {
+        g[i].op->used = 0;
+    }
+}
+
 static void EmitGlobals(IRList *cogdata, IRList *cogbss, IRList *hubdata)
 {
     EmitAsmVars(&cogGlobalVars, cogdata, cogbss, SORT_ALPHABETICALLY);
@@ -6616,6 +6631,11 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         // we have to optimize all code before emitting any variables
         OptimizeIRGlobal(&cogcode);
 
+        // mark used variables (only)
+        ClearUseCounts(&cogGlobalVars);
+        ClearUseCounts(&hubGlobalVars);
+        MarkUsedAsmVars(&cogcode);
+        
         // cog data
         EmitGlobals(&cogdata, &cogbss, &hubdata);
     
