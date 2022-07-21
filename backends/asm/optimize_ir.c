@@ -288,6 +288,18 @@ InstrModifies(IR *ir, Operand *reg)
     return false;
 }
 
+// return TRUE if a and b are the same register
+bool
+SameRegister(Operand *A, Operand *B)
+{
+    if (A == B) return true;
+    if (A->kind != REG_SUBREG || B->kind != REG_SUBREG) {
+        return false;
+    }
+    if (A->val != B->val) return false;
+    return SameRegister((Operand *)A->name, (Operand *)B->name);
+}
+
 // return TRUE if an instruction uses a register
 bool
 InstrUses(IR *ir, Operand *reg)
@@ -3936,13 +3948,18 @@ restart_check:
                     goto get_next;
                 }
             }
-#if 0            
+#if 1
             // bit of a hacky optimization for some tests
-            else if (next_ir && next_ir->opc == OPC_MOV && next_ir->src == ir->dst && CondIsSubset(ir->cond,next_ir->cond) && IsDeadAfter(next_ir, ir->dst)) {
+            // rdlong a, b + mov c, a -> rdlong c, b if a is dead
+            else if (IsRead(ir) && next_ir && next_ir->opc == OPC_MOV && SameRegister(next_ir->src, ir->dst) && IsLocalOrArg(next_ir->src) && ir->cond == next_ir->cond && IsDeadAfter(next_ir, ir->dst)) {
+                Operand *tmp = ir->dst;
                 ir->dst = next_ir->dst;
-                next_ir->opc = OPC_DUMMY;
+                next_ir->dst = tmp;
+                ReplaceOpcode(next_ir, OPC_MOV);
+                change = 1;
+                goto get_next;
             }
-#endif            
+#endif
         } 
         if (ir->opc == OPC_RDBYTE || ir->opc == OPC_RDWORD) {
             int32_t mval;
