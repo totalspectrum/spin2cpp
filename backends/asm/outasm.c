@@ -6691,9 +6691,9 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         int cog_limit;
         Operand *limitop;
         if (gl_p2) {
-            cog_limit = 480;
+            cog_limit = 480; // 0x1e0
         } else {
-            cog_limit = 496;
+            cog_limit = 496; // 0x1f0
         }
         limitop = NewImmediate(cog_limit);
         // now insert the cog data after the cog code, before the orgh

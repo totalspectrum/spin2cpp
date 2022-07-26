@@ -3661,6 +3661,15 @@ HwReg interpreg_p1rom[] = {
 };
 
 HwReg hwreg_p2[] = {
+    { "pr0", 0x1e0, "_PR0" },
+    { "pr1", 0x1e1, "_PR1" },
+    { "pr2", 0x1e2, "_PR2" },
+    { "pr3", 0x1e3, "_PR3" },
+    { "pr4", 0x1e4, "_PR4" },
+    { "pr5", 0x1e5, "_PR5" },
+    { "pr6", 0x1e6, "_PR6" },
+    { "pr7", 0x1e7, "_PR7" },
+    
     { "ijmp3", 0x1f0, "_IJMP3" },
     { "iret3", 0x1f1, "_IRET3" },
     { "ijmp2", 0x1f2, "_IJMP2" },
