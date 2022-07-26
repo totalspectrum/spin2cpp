@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2016-2021 Total Spectrum Software Inc.
+ * Copyright 2016-2022 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -1219,8 +1219,10 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                 flexbuf_addstr(fb, "@");
             }
             PrintOperand(fb, ir->dst);
-            flexbuf_addstr(fb, ", ");
-            PrintOperandSrc(fb, ir->src, ir->srceffect);
+            if (ir->src) {
+                flexbuf_addstr(fb, ", ");
+                PrintOperandSrc(fb, ir->src, ir->srceffect);
+            }
             if (ir->src2) {
                 flexbuf_addstr(fb, ", ");
                 PrintOperandSrc(fb, ir->src2, OPEFFECT_NONE);
