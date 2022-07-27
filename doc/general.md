@@ -161,7 +161,9 @@ Pretty much all of COG RAM is used by the compiler. No specific hardware registe
 
 Most of COG RAM is used by the compiler, except that $1e0-$1ef are left free for application use. COG RAM from $00 to $ff is used for FCACHE, and so when you are sure no FCACHE is in use you may use this for scratch. 
 
-The second half of LUT memory (from $300 to $3ff) may be used by compiler internal functions.
+The first 16 registers of LUT memory ($200 to $20f) are always left free. The remainder of the first half of LUT ($210 to $2ff) are used for functions that the user explicitly asks to put in LUT. If no such functions exist they are free for user use.
+
+The second half of LUT memory (from $300 to $3ff) may be used by compiler internal functions, and so should not be used by assembly code.
 
 `ptra` is used for the stack pointer. Applications should avoid using it.
 
@@ -179,7 +181,7 @@ Most of COG RAM is used by the compiler, except that $1e0-$1ef is left free for 
 
 ### LUT
 
-The first part of LUT memory (from $200 to $300) is used for any functions explicitly placed into LUT. The LUT memory from $300 to $400 (the second half of LUT) is used for internal purposes.
+The first 16 registers of LUT memory (from $200 to $20f) is left free for use by user PASM code, e.g. for the streamer. The remainder of the first half of LUT memory (from $210 to $300) is used for any functions explicitly placed into LUT. The LUT memory from $300 to $400 (the second half of LUT) is used for internal purposes.
 
 ## Optimizations
 

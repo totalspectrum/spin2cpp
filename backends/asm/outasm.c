@@ -6567,7 +6567,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         EmitLabel(&cogcode, entrylabel);
         if (gl_have_lut) {
             lutstart = NewOperand(STRING_DEF, "lutentry", 0);
-            EmitOp1(&lutcode, OPC_ORG, NewImmediate(0x200));
+            EmitOp1(&lutcode, OPC_ORG, NewImmediate(0x210)); // leave 16 longs free for streamer
             EmitLabel(&lutcode, lutstart);
         }
         if (gl_output == OUTPUT_COGSPIN) {
