@@ -4260,10 +4260,13 @@ FindBlockForReorderingDownward(IR *after) {
             // Can only reorder reads with reads
             if (IsWrite(top) && ReadWriteInRange(bottom->next,after)) break;
             if (IsRead(top) && WriteInRange(bottom->next,after)) break;
-            // Can't reorder over dependent code
-            if (InstrSetsDst(top) && UsedInRange(bottom->next,after,top->dst)) break;
-            // Check if this instruction meets some dependencies
+            
             if (InstrSetsDst(top)) {
+                // Can't reorder over dependent code
+                if (UsedInRange(bottom->next,after,top->dst)) break;
+                // Can't reorder over code that sets a non-dead value
+                if (ModifiedInRange(bottom->next,after,top->dst) && !IsDeadAfter(after,top->dst)) break;
+                // Check if this instruction meets some dependencies
                 DeleteDependencies(&depends,top->dst);
             }
             // Does _this_ depend on anything that we can't take through reorder?
