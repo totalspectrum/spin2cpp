@@ -961,6 +961,12 @@ repeatstmt:
         $$ = ast;
         LANGUAGE_WARNING(LANG_ANY, NULL, "asm/endasm is a flexspin extension");
     }
+  | SP_ORGH datblock SP_END
+    {
+        // flag 1 means const (do not optimize) & no FCACHE
+        AST *ast = NewCommentedAST(AST_INLINEASM, $2, AstInteger(1), $1);
+        $$ = ast;
+    }
   | SP_ORG datblock SP_END
     {
         // flag 3 means const (do not optimize) & FCACHE
