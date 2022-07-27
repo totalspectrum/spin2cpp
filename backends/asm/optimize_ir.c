@@ -4260,7 +4260,7 @@ FindBlockForReorderingDownward(IR *after) {
             // Can only reorder reads with reads
             if (IsWrite(top) && ReadWriteInRange(bottom->next,after)) break;
             if (IsRead(top) && WriteInRange(bottom->next,after)) break;
-            // Can't reorder over dependent code
+            
             if (InstrSetsDst(top)) {
                 // Can't reorder over dependent code
                 if (UsedInRange(bottom->next,after,top->dst)) break;
