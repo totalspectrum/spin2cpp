@@ -1541,7 +1541,7 @@ sub blink(pin, freq)
   loop
 end sub
 ...
-dim stack(8) ' small stack, blink does not call many other functions
+dim stack(16) ' small stack, blink does not call many other functions
 
 ' start the blinking up on another CPU
 var a = cpu(blink(LED, 80_000_000), @stack(1))
