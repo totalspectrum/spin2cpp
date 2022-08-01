@@ -52,7 +52,7 @@ pri _float_fromuns64(lo, hi) : m = float | s, x
     s := 31 - x
     if s
       m <<= s
-      lo >>= x
+      lo >>= (-s)
       m |= lo
     x += 32
 
