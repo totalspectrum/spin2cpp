@@ -37,6 +37,49 @@ pri _float_fromint(integer = long) : single = float | negate
   if (negate)  
     single := _float_negate(single)
    
+pri _float_fromuns64(lo, hi) : m = float | s, x
+
+''Convert integer to float
+  if hi == 0
+    m := lo
+    if m == 0
+      return m
+    x := >|m - 1                'get exponent
+    m <<= 31 - x                'msb-justify mantissa
+  else
+    m := hi
+    x := >|m - 1
+    s := 31 - x
+    if s
+      m <<= s
+      lo >>= x
+      m |= lo
+    x += 32
+
+  s := 0                      'get sign
+  m >>= 2                     'bit29-justify mantissa
+  m := _float_Pack(s, x, m)
+  return m
+    
+pri _float_fromint64(lo, hi) : single = float | negate, tmplo, tmphi
+
+''Convert integer to float    
+  if hi < 0
+    tmplo := lo
+    tmphi := hi
+    lo := 0
+    hi := 0
+    asm
+      sub lo, tmplo wc
+      subx hi, tmphi
+    endasm
+    negate := 1
+  else
+    negate := 0
+  single := _float_fromuns64(lo, hi)
+  if (negate)  
+    single := _float_negate(single)
+
 pri _float_round(single = float) : integer = long
 
 ''Convert float to rounded integer

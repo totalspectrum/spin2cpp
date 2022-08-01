@@ -66,6 +66,8 @@ static AST *float_div;
 static AST *float_cmp;
 static AST *float_fromuns;
 static AST *float_fromint;
+static AST *float_fromuns64;
+static AST *float_fromint64;
 static AST *float_toint;
 static AST *float_todouble;
 static AST *float_abs;
@@ -81,6 +83,8 @@ static AST *double_div;
 static AST *double_cmp;
 static AST *double_fromuns;
 static AST *double_fromint;
+static AST *double_fromuns64;
+static AST *double_fromint64;
 static AST *double_toint;
 static AST *double_abs;
 static AST *double_sqrt;
@@ -93,7 +97,7 @@ static AST *int64_muls;
 static AST *int64_mulu;
 static AST *int64_divs, *int64_divu;
 static AST *int64_mods, *int64_modu;
-static AST *int64_neg;
+static AST *int64_neg, *int64_abs;
 static AST *int64_cmpu, *int64_cmps;
 static AST *int64_shl, *int64_shr, *int64_sar;
 static AST *int64_and, *int64_or, *int64_xor;
@@ -326,10 +330,11 @@ domakedouble(AST *typ, AST *ast)
         return ast;
     }
     ast = forcepromote(typ, ast);
+    int siz = TypeSize(typ);
     if (IsUnsignedType(typ)) {
-        ret = MakeOperatorCall(double_fromuns, ast, NULL, NULL);
+        ret = MakeOperatorCall( siz == 8 ? double_fromuns64 : double_fromuns, ast, NULL, NULL);
     } else {
-        ret = MakeOperatorCall(double_fromint, ast, NULL, NULL);
+        ret = MakeOperatorCall( siz == 8 ? double_fromint64 : double_fromint, ast, NULL, NULL);
     }
     return ret;
 }
@@ -351,15 +356,16 @@ domakefloat(AST *typ, AST *ast)
     ast = forcepromote(typ, ast);
     if (IsConstExpr(ast)) {
         // FIXME: assumes 32 bit floats only
-        int x = EvalConstExpr(ast);
+        int64_t x = EvalConstExpr(ast);
         float f;
-        f = (IsUnsignedType(typ)) ? (float)(unsigned)x : (float) x;
+        f = (IsUnsignedType(typ)) ? (float)(uint64_t)x : (float) x;
         return AstFloat(f);
     }
+    int siz = TypeSize(typ);
     if (IsUnsignedType(typ)) {
-        ret = MakeOperatorCall(float_fromuns, ast, NULL, NULL);
+        ret = MakeOperatorCall( (siz == 8) ? float_fromuns64 : float_fromuns, ast, NULL, NULL);
     } else {
-        ret = MakeOperatorCall(float_fromint, ast, NULL, NULL);
+        ret = MakeOperatorCall( (siz == 8) ? float_fromint64 : float_fromint, ast, NULL, NULL);
     }
     return ret;
 }
@@ -1020,7 +1026,20 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
                 *ast = *ast->right; // ignore the ABS
                 return (tsize <= LONG_SIZE) ? ast_type_unsigned_long : ast_type_unsigned_long64;
             }
-            return (tsize <= LONG_SIZE) ? ast_type_long : ast_type_long64;
+            if (tsize > LONG_SIZE) {
+                switch (op) {
+                case K_NEGATE:
+                    *ast = *MakeOperatorCall(int64_neg, ast->right, NULL, NULL);
+                    break;
+                case K_ABS:
+                    *ast = *MakeOperatorCall(int64_abs, ast->right, NULL, NULL);
+                    break;
+                default:
+                    ERROR(ast, "operator not supported for 64 bits");
+                }
+                return rettype;
+            }
+            return rettype; // was ast_type_long
         }
     case K_ASC:
         if (!CompatibleTypes(righttype, ast_type_string)) {
@@ -1957,6 +1976,8 @@ InitGlobalFuncs(void)
             float_div = getBasicPrimitive("_float_div");
             float_fromuns = getBasicPrimitive("_float_fromuns");
             float_fromint = getBasicPrimitive("_float_fromint");
+            float_fromuns64 = getBasicPrimitive("_float_fromuns64");
+            float_fromint64 = getBasicPrimitive("_float_fromint64");
             float_toint = getBasicPrimitive("_float_trunc");
             float_todouble = getBasicPrimitive("_double_fromfloat");
             float_abs = getBasicPrimitive("_float_abs");
@@ -1972,6 +1993,7 @@ InitGlobalFuncs(void)
         int64_mods = getBasicPrimitive("_int64_mods");
         int64_modu = getBasicPrimitive("_int64_modu");
         int64_neg = getBasicPrimitive("_int64_neg");
+        int64_abs = getBasicPrimitive("_int64_abs");
         int64_cmps = getBasicPrimitive("_int64_cmps");
         int64_cmpu = getBasicPrimitive("_int64_cmpu");
         int64_shl = getBasicPrimitive("_int64_shl");

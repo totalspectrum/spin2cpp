@@ -396,6 +396,14 @@ pri _int64_sub(alo, ahi, blo, bhi) : rlo, rhi
     subx rhi, bhi
   endasm
 
+pri _int64_neg(alo, ahi) : rlo, rhi
+  return _int64_sub(0, 0, alo, ahi)
+  
+pri _int64_abs(alo, ahi) : rlo, rhi
+  if (ahi < 0)
+    return _int64_sub(0, 0, alo, ahi)
+  return alo, ahi
+
 pri _int64_and(alo, ahi, blo, bhi) : rlo, rhi
   rlo := alo
   rhi := ahi
