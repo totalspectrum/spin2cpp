@@ -1796,6 +1796,7 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
     case AST_COGINIT:
     case AST_SETJMP:
     case AST_CATCH:
+    case AST_MEMREF:
         n = NuCompileExpression(irl, ast);
         NuCompileDrop(irl, n);
         break;
