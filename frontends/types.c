@@ -174,7 +174,7 @@ static AST *dopromote(AST *expr, int srcbytes, int destbytes, int operatr)
     }
     AstReportAs(expr, &saveinfo);
     promote = AstOperator(operatr, expr, AstInteger(shiftbits));
-    if (destbytes == 8) {
+    if (destbytes == 8 && !IsConstExpr(promote)) {
         // at this point "promote" will contain a 4 byte value
         // now we need to convert it to an 8 byte value
         AST *convfunc;
@@ -526,15 +526,29 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
         }
     }
             
-    if (lefttype == righttype && IsConstExpr(ast)) {
-        AST *newast = FoldIfConst(ast);
-        *ast = *newast;
-        if (IsFloatType(lefttype)) {
-            ast->kind = AST_FLOAT;
+    if (IsConstExpr(ast)) {
+        AST *finaltype = NULL;
+        if (lefttype == righttype) {
+            finaltype = lefttype;
+        } else if (IsIntType(lefttype) && IsIntType(righttype)) {
+            int lsiz  = TypeSize(lefttype);
+            int rsiz = TypeSize(righttype);
+            if (lsiz > LONG_SIZE || rsiz > LONG_SIZE) {
+                finaltype = ast_type_long64;
+            } else {
+                finaltype = ast_type_long;
+            }
         }
-        lefttype = ExprType(ast);
-        AstReportDone(&saveinfo);
-        return lefttype;
+        if (finaltype) {
+            AST *newast = FoldIfConst(ast);
+            *ast = *newast;
+            if (IsFloatType(finaltype)) {
+                ast->kind = AST_FLOAT;
+            }
+            finaltype = ExprType(ast);
+            AstReportDone(&saveinfo);
+            return finaltype;
+        }
     }
     if (isfloat) {
         switch (op) {
@@ -583,7 +597,7 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
             ast->d.ival = op = K_UNS_DIV;
         }
     }
-    if (IsInt64Type(lefttype)) {
+    if (IsInt64Type(lefttype) && !IsConstExpr(ast)) {
         switch(op) {
         case '+':
             *ast = *MakeOperatorCall(int64_add, ast->left, ast->right, NULL);
