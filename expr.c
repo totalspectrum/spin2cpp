@@ -1461,6 +1461,23 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
 
     kind = expr->kind;
     switch (kind) {
+    case AST_EXPRLIST:
+        // some 64 bit expressions come back as low/high pairs
+        if (!expr->left || !expr->right || expr->right->right) {
+            goto invalid_const_expr;
+        }
+        if (expr->left->kind != AST_GETLOW || expr->right->left->kind != AST_GETHIGH) {
+            goto invalid_const_expr;
+        }
+        lval = EvalExpr(expr->left->left, flags, valid, depth+1);
+        if (valid && !*valid) return intExpr(0);
+        rval = EvalExpr(expr->right->left->left, flags, valid, depth+1);
+        if (valid && !*valid) return intExpr(1);
+        if (!CompatibleTypes(lval.type, rval.type)) goto invalid_const_expr;
+        if (lval.val != rval.val) {
+            goto invalid_const_expr;
+        }
+        return lval;
     case AST_INTEGER:
     case AST_BITVALUE:
         return intExpr(expr->d.ival);

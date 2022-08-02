@@ -379,7 +379,7 @@ IsRelocatable(AST *sub, Symbol **symptr, int32_t *offptr, bool isInitVal)
     return 0;
 }
 
-int32_t
+int64_t
 EvalRelocPasmExpr(AST *expr, Flexbuf *f, Flexbuf *relocs, int *relocOff, bool isInitVal, int relocKind)
 {
     int checkReloc;

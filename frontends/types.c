@@ -174,17 +174,39 @@ static AST *dopromote(AST *expr, int srcbytes, int destbytes, int operatr)
     }
     AstReportAs(expr, &saveinfo);
     promote = AstOperator(operatr, expr, AstInteger(shiftbits));
-    if (destbytes == 8 && !IsConstExpr(promote)) {
-        // at this point "promote" will contain a 4 byte value
-        // now we need to convert it to an 8 byte value
-        AST *convfunc;
-        
-        if (operatr == K_ZEROEXTEND) {
-            convfunc = int64_zerox;
+    if (destbytes == 8) {
+        if ( IsConstExpr(promote)) {
+            AST *typ = ExprType(expr);
+            AST *val;
+            int64_t result = EvalConstExpr(expr);
+            if (IsUnsignedType(typ)) {
+                typ = ast_type_unsigned_long64;
+            } else {
+                typ = ast_type_long64;
+            }
+            val = AstInteger(result);
+            val->left = typ;
+#if 1            
+            promote = NewAST(AST_EXPRLIST,
+                             NewAST(AST_GETLOW, val, NULL),
+                             NewAST(AST_EXPRLIST,
+                                    NewAST(AST_GETHIGH, val, NULL),
+                                    NULL));
+#else
+            promote = val;
+#endif            
         } else {
-            convfunc = int64_signx;
+            // at this point "promote" will contain a 4 byte value
+            // now we need to convert it to an 8 byte value
+            AST *convfunc;
+        
+            if (operatr == K_ZEROEXTEND) {
+                convfunc = int64_zerox;
+            } else {
+                convfunc = int64_signx;
+            }
+            promote = MakeOperatorCall(convfunc, promote, NULL, NULL);
         }
-        promote = MakeOperatorCall(convfunc, promote, NULL, NULL);
     }
     AstReportDone(&saveinfo);
     return promote;
