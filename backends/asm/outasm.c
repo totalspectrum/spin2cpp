@@ -2544,6 +2544,9 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
       return temp;
     // commutative ops 
   case '+':
+      // check for unary op
+      if (!lhs) return CompileExpression(irl, rhs, temp);
+      // fall through
   case '^':
   case '&':
   case '|':

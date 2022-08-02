@@ -1,6 +1,8 @@
 Version 5.9.15
 - Added definitions for PR0-PR7 registers in Spin2
 - Added ORGH/END inline assembly in Spin2 for non-optimized hub based inline asm.
+- Fixed several missing 64 bit arithmetic operations.
+- Fixed evaluation of unary `+`.
 - Made first 16 LUT registers reserved for user code.
 
 Version 5.9.14
