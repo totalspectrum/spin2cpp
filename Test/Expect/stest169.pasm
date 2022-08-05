@@ -7,8 +7,9 @@ entry
 _main1
 	mov	_var01, #2
 LR__0001
-	abs	outb, _var01
+	mov	_var02, _var01
 	add	_var01, #1
+	abs	outb, _var02
 	jmp	#LR__0001
 _main1_ret
 	ret
