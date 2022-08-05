@@ -15,6 +15,7 @@
 
 // forward declarations
 static int OptimizePeephole2(IRList *irl);
+static bool IsReorderBarrier(IR *ir);
 
 // fcache size in longs; -1 means take a guess
 int gl_fcache_size = -1;
@@ -3476,7 +3477,7 @@ OptimizeIncDec(IRList *irl)
             IR *stepir = ir_next->next;
             Operand *changedOp = ir_next->dst;
             while (stepir) {
-                if (IsJump(stepir))
+                if (IsJump(stepir) || IsReorderBarrier(stepir))
                     break;
                 if (IsCallThatUsesReg(stepir,changedOp))
                     break;

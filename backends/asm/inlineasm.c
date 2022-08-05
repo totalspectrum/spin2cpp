@@ -505,6 +505,7 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
             fcache = NewIR(OPC_FCACHE);
             fcache->src = startdst;
             fcache->dst = enddst;
+            fcache->flags |= FLAG_KEEP_INSTR;
             startlabel = NewIR(OPC_LABEL);
             startlabel->dst = startdst;
             startlabel->flags |= FLAG_LABEL_NOJUMP;
