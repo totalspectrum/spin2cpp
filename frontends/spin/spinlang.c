@@ -803,6 +803,9 @@ doSpinTransform(AST **astptr, int level, AST *parent)
             }
         } else if (ast->left && ast->left->kind == AST_MEMREF && IsConstExpr(ast->right)) {
             switch (parent->kind) {
+            default:
+                /* default used to be to do nothing, and only the cases below
+                   were accepted; not sure why, but revert if problems */
             case AST_EXPRLIST:
             case AST_ASSIGN:
             case AST_OPERATOR:
@@ -815,7 +818,11 @@ doSpinTransform(AST **astptr, int level, AST *parent)
                 }
                 break;
             }
-            default:
+            case AST_ARRAYREF:
+                /* the default used to be to not apply the transformation */
+                /* I suspect the transform was interfering with array optimizations */
+                /* so for now suppress it in ARRAYREFs, but I'm not certain
+                   even that is required */
                 break;
             }
         }
