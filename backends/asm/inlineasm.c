@@ -528,7 +528,7 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
         while (ast && ast->kind == AST_COMMENTEDNODE) {
             ast = ast->left;
         }
-        if (ast->kind == AST_IDENTIFIER) {
+        if (ast && ast->kind == AST_IDENTIFIER) {
             void *labelop = (void *)GetLabelOperand(ast->d.string, isInFcache);
             AddSymbol(&curfunc->localsyms, ast->d.string, SYM_LOCALLABEL, labelop, NULL);
         }
@@ -554,7 +554,9 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
         while (ast && ast->kind == AST_COMMENTEDNODE) {
             ast = ast->left;
         }
-        if (ast->kind == AST_INSTRHOLDER) {
+        if (!ast) {
+            /* do nothing */
+        } else if (ast->kind == AST_INSTRHOLDER) {
             IR *ir = CompileInlineInstr_only(irl, ast->left);
             if (!ir) break;
 

@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2021 Total Spectrum Software Inc.
+ * Copyright 2011-2022 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -37,7 +37,10 @@ void
 AddSymbolForLabel(AST *ast)
 {
     AST *ident = ast->left;
-    if (!ident || !IsIdentifier(ident)) {
+    if (!ident) {
+        return; /* can arise due to DEBUG statements */
+    }
+    if (!IsIdentifier(ident)) {
         ERROR(ast, "Label is not an identifier");
     } else {
         // labels occupy a different namespace from ordinary identifiers

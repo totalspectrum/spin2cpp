@@ -14,6 +14,8 @@
 #include "frontends/common.h"
 #include "frontends/lexer.h"
 
+    extern AST *BuildDebugList(AST *); /* in spin.y */
+    
 #define CGRAMYYSTYPE AST*
 #undef  YYSTYPE
 #define YYSTYPE CGRAMYYSTYPE
@@ -910,6 +912,7 @@ ConstructDefaultValue(AST *decl, AST *val)
 
 %token C_ASM "__asm"
 %token C_PASM "__pasm"
+%token C_DEBUG "__debug"
 %token C_INSTR "asm instruction"
 %token C_INSTRMODIFIER "instruction modifier"
 %token C_HWREG "hardware register"
@@ -2189,7 +2192,52 @@ asm_baseline:
     { $$ = NewCommentedAST(AST_FIT, AstInteger(0x1f0), NULL, $1); }
   | C_FILE C_STRING_LITERAL asm_eoln
     { $$ = NewCommentedAST(AST_FILE, GetFullFileName($2), NULL, $1); }
+  | C_DEBUG '(' ')' asm_eoln
+    {
+        AST *ast = NULL;
+        AST *comment = $1;
+        if (comment) {
+            ast = NewAST(AST_COMMENTEDNODE, ast, comment);
+        }
+        $$ = ast;
+    }
+  | C_DEBUG '(' asm_debug_exprlist ')' asm_eoln
+    {
+        AST *ast = BuildDebugList($3);
+        AST *comment = $1;
+        if (comment) {
+            ast = NewAST(AST_COMMENTEDNODE, ast, comment);
+        }
+        $$ = ast;
+    }
   ;
+
+asm_debug_exprlist:
+   asm_debug_expritem_first
+     { $$ = $1; }
+   | asm_debug_expritem_first ',' asm_debug_exprlist_continue
+     { $$ = AddToList($1, $3); }
+;
+
+asm_debug_expritem_first:
+  asm_debug_expritem
+    {
+        AST *list = $1;
+        AST *note = NewAST(AST_LABEL, NULL, NULL);
+
+        $$ = NewAST(AST_EXPRLIST, note, list);
+    }
+;
+   
+asm_debug_exprlist_continue:
+   asm_debug_expritem
+     { $$ = $1; }
+   | asm_debug_exprlist_continue ',' asm_debug_expritem
+     { $$ = AddToList($1, $3); }
+;
+
+asm_debug_expritem: asm_operand
+;
 
 asm_operand:
   asmexpr
@@ -2645,7 +2693,52 @@ pasm_baseline:
     { $$ = NewCommentedAST(AST_FIT, AstInteger(0x1f0), NULL, $1); }
   | C_FILE C_STRING_LITERAL asm_eoln
     { $$ = NewCommentedAST(AST_FILE, GetFullFileName($2), NULL, $1); }
+  | C_DEBUG '(' ')' asm_eoln
+    {
+        AST *ast = NULL;
+        AST *comment = $1;
+        if (comment) {
+            ast = NewAST(AST_COMMENTEDNODE, ast, comment);
+        }
+        $$ = ast;
+    }
+  | C_DEBUG '(' pasm_debug_exprlist ')' asm_eoln
+    {
+        AST *ast = BuildDebugList($3);
+        AST *comment = $1;
+        if (comment) {
+            ast = NewAST(AST_COMMENTEDNODE, ast, comment);
+        }
+        $$ = ast;
+    }
   ;
+
+pasm_debug_exprlist:
+   pasm_debug_expritem_first
+     { $$ = $1; }
+   | pasm_debug_expritem_first ',' pasm_debug_exprlist_continue
+     { $$ = AddToList($1, $3); }
+;
+
+pasm_debug_expritem_first:
+  pasm_debug_expritem
+    {
+        AST *list = $1;
+        AST *note = NewAST(AST_LABEL, NULL, NULL);
+
+        $$ = NewAST(AST_EXPRLIST, note, list);
+    }
+;
+   
+pasm_debug_exprlist_continue:
+   pasm_debug_expritem
+     { $$ = $1; }
+   | pasm_debug_exprlist_continue ',' pasm_debug_expritem
+     { $$ = AddToList($1, $3); }
+;
+
+pasm_debug_expritem: pasm_operand
+;
 
 pasm_operand:
   pasmexpr
