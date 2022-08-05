@@ -3,7 +3,7 @@
 //
 // See the debugger code for more insight.
 //
-// Copyright 2021 Ada Gottensträter and Total Spectrum Software Inc.
+// Copyright 2021-2022 Ada Gottensträter and Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 
@@ -195,6 +195,10 @@ int AsmDebug_CodeGen(AST *ast, BackendDebugEval evalFunc, void *evalArg) {
         if(!item) {
             WARNING(exprlist,"NULL item in debug exprlist?!?!");
             continue;
+        }
+        if (item->kind == AST_EXPRLIST && !item->right) {
+            // single item expression list is OK
+            item = item->left;
         }
         switch (item->kind) {
         case AST_STRING: {

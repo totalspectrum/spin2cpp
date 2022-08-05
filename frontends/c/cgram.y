@@ -2799,6 +2799,8 @@ pasmatom
             { $$ = AstOperator(K_INCREMENT, $1, NULL); }
       | pasmatom C_DEC_OP
             { $$ = AstOperator(K_DECREMENT, $1, NULL); }
+      | pasmatom '(' pasm_operandlist ')'
+            { $$ = NewAST(AST_FUNCCALL, $1, $3); }
 ;
 
 pasmunary
