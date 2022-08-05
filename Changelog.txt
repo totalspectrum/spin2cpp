@@ -5,6 +5,7 @@ Version 5.9.15
 - Fixed evaluation of unary `+`.
 - Fixed incorrect optimization around FCACHE.
 - Made first 16 LUT registers reserved for user code.
+- Prevent REP loop optimization in ORG and volatile asm
 
 Version 5.9.14
 - Added check for limit in ORG and ORGH

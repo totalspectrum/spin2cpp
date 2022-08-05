@@ -3694,7 +3694,7 @@ OptimizeP2(IRList *irl)
             ir_next = ir_next->next;
         }
         opc = ir->opc;
-        if (opc == OPC_ADDCT1 && IsImmediateVal(ir->src, 0) && ir->cond == COND_TRUE) {
+        if (opc == OPC_ADDCT1 && IsImmediateVal(ir->src, 0) && ir->cond == COND_TRUE && !InstrIsVolatile(ir)) {
             previr = FindPrevSetterForReplace(ir, ir->dst);
             if (previr && previr->opc == OPC_ADD && !InstrSetsAnyFlags(previr)) {
                 // add foo, val / addct1 foo, #0 -> addct1 foo, val
@@ -3703,7 +3703,7 @@ OptimizeP2(IRList *irl)
                 changed = 1;
             }
         }
-        if ( (opc == OPC_DJNZ || opc == OPC_JUMP) && ir->cond == COND_TRUE) {
+        if ( (opc == OPC_DJNZ || opc == OPC_JUMP) && ir->cond == COND_TRUE && !InstrIsVolatile(ir)) {
             // see if we can change the loop to use "repeat"
             Operand *var;
             Operand *dst;
