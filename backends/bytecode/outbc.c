@@ -2632,7 +2632,7 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         AST *stepExpression = step->left;
         AST *body = step->right;
 
-        if (fromExpression == NULL && IsConstExpr(stepExpression) && abs(EvalConstExpr(stepExpression))==1) {
+        if (fromExpression == NULL && IsConstExpr(stepExpression) && llabs(EvalConstExpr(stepExpression))==1) {
             // REPEAT N loop
             bool isConst = IsConstExpr(toExpression);
             uint32_t constVal = isConst ? EvalConstExpr(toExpression) : 0;
