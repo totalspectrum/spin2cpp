@@ -1,6 +1,6 @@
 /*
  * Spin to Pasm converter
- * Copyright 2016-2020 Total Spectrum Software Inc.
+ * Copyright 2016-2022 Total Spectrum Software Inc.
  * Intermediate representation definitions
  */
 
@@ -126,6 +126,7 @@ typedef enum IROpcode {
     OPC_QROTATE,
     OPC_QSQRT,
     OPC_QVECTOR,
+    OPC_MUXQ,
     OPC_SETBYTE,
     OPC_SETWORD,
     OPC_SETQ,

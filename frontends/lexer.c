@@ -3296,7 +3296,7 @@ instr_p2[] = {
     
     { "muxnits", 0x09e00000, TWO_OPERANDS, OPC_GENERIC, 0 },
     { "muxnibs", 0x09e80000, TWO_OPERANDS, OPC_GENERIC, 0 },
-    { "muxq",   0x09f00000, TWO_OPERANDS, OPC_GENERIC_NOFLAGS, 0 },
+    { "muxq",   0x09f00000, TWO_OPERANDS, OPC_MUXQ, /*OPC_GENERIC_NOFLAGS,*/ 0 },
     { "movbyts", 0x09f80000, TWO_OPERANDS, OPC_GENERIC_NOFLAGS, 0 },
 
     { "mul",    0x0a000000, TWO_OPERANDS, OPC_MULU, FLAG_WZ },

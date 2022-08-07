@@ -1,0 +1,4 @@
+PUB {++opt(1)} setpins(start, num, val)
+    pinwrite( start addpins (num-1), val)
+
+  

@@ -149,15 +149,15 @@ pri {++specialfunc(pinw)} _pinwrite(pingrp, val) | mask, basepin, reg
   reg := pingrp & $20
   mask := (pingrp >> 6)
   mask := (1<<(mask+1)) - 1
-  mask := mask << basepin
-  val := (val << basepin) & mask
+  mask <<= basepin
+  val <<= basepin
   if reg
     dirb |= mask
-    outb := (outb & !mask) | val 
+    outb := (outb & !mask) | (val & mask) 
   else
     dira |= mask
-    outa := (outa & !mask) | val
-
+    outa := (outa & !mask) | (val & mask)
+    
 pri {++specialfunc(pinr)} _pinread(pingrp) : y
   y := (pingrp & $20) ? inb : ina
   y >>= pingrp   ' implicitly relies on only bottom 5 bits being used

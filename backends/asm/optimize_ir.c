@@ -4165,6 +4165,7 @@ static bool IsReorderBarrier(IR *ir) {
     case OPC_FCACHE:
     case OPC_RCL:
     case OPC_RCR:
+    case OPC_MUXQ:
         return true;
     default:
         return false;
@@ -5944,6 +5945,84 @@ static int FixupQdivSigned3(int arg, IRList *irl, IR *ir0)
     return 1;
 }
 
+// bit mux
+//   and val_2, mask_1
+//   mov tmp_3, orig_0
+//   andn tmp_3. mask_1
+//   or   tmp_3, val_2
+//   mov  orig_0, tmp_3
+//
+//   where "val" and "tmp" are dead after the sequence
+//
+// becomes
+//   setq mask_1
+//   muxq orig_0, val_2
+//
+
+static PeepholePattern pat_mux_qmux_1p[] = {
+    { COND_ANY, OPC_AND, PEEP_OP_SET|2, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
+    { COND_ANY, OPC_MOV, PEEP_OP_SET|3, PEEP_OP_SET|0, PEEP_FLAGS_P2 },
+    { COND_ANY, OPC_ANDN, PEEP_OP_MATCH|3, PEEP_OP_MATCH|1, PEEP_FLAGS_P2 },
+    { COND_ANY, OPC_OR, PEEP_OP_MATCH|3, PEEP_OP_MATCH_DEAD|2, PEEP_FLAGS_P2 },
+    { COND_ANY, OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_MATCH_DEAD|3, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
+static PeepholePattern pat_mux_qmux_2p[] = {
+    { COND_ANY, OPC_MOV, PEEP_OP_SET|3, PEEP_OP_SET|0, PEEP_FLAGS_P2 },
+    { COND_ANY, OPC_AND, PEEP_OP_SET|2, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
+    { COND_ANY, OPC_ANDN, PEEP_OP_MATCH|3, PEEP_OP_MATCH|1, PEEP_FLAGS_P2 },
+    { COND_ANY, OPC_OR, PEEP_OP_MATCH|3, PEEP_OP_MATCH_DEAD|2, PEEP_FLAGS_P2 },
+    { COND_ANY, OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_MATCH_DEAD|3, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
+// "arg" indicates which of the patterns above matched
+static int FixupQMux(int arg, IRList *irl, IR *ir)
+{
+    IR *andir, *andnotir, *orir;
+    IR *getir;
+    IR *setir;
+    Operand *mask_1, *orig_0, *val_2;
+    IR *muxir;
+
+    if (arg == 1) {
+        andir = ir;
+        getir = andir->next;
+        andnotir = getir->next;
+    } else if (arg == 2) {
+        getir = ir;
+        andir = ir->next;
+        andnotir = andir->next;
+    } else {
+        ERROR(NULL, "internal peephole error");
+        return 0;
+    }
+    orir = andnotir->next;
+    setir = orir->next;
+
+    val_2 = andir->dst;
+    mask_1 = andir->src;
+    orig_0 = getir->src;
+
+    muxir = setir;
+    
+    DeleteIR(irl, getir);
+    DeleteIR(irl, andnotir);
+    DeleteIR(irl, orir);
+
+    // change ir to be setq
+    ReplaceOpcode(ir, OPC_SETQ);
+    ir->dst = mask_1;
+    // change setir
+    ReplaceOpcode(muxir, OPC_MUXQ);
+    muxir->dst = orig_0;
+    muxir->src = val_2;
+    
+    //printf("qmux\n");
+    
+    return 1;
+}
 
 struct Peepholes {
     PeepholePattern *check;
@@ -6038,6 +6117,9 @@ struct Peepholes {
     { pat_qdiv_qdiv_signed3, 0, FixupQdivSigned2},
     { pat_qdiv_qdiv_signed4, 0, FixupQdivSigned2},
     { pat_qdiv_qdiv_signed5, 0, FixupQdivSigned3},
+
+    { pat_mux_qmux_1p, 1, FixupQMux },
+    { pat_mux_qmux_2p, 2, FixupQMux },
 };
 
 

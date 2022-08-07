@@ -1,0 +1,71 @@
+con
+	_clkfreq = 20000000
+	_clkmode = 16779595
+dat
+	nop
+	cogid	pa
+	coginit	pa,##$404
+	orgh	$10
+	long	0	'reserved
+	long	0 ' clock frequency: will default to 20000000
+	long	0 ' clock mode: will default to $100094b
+	orgh	$400
+ _ret_	mov	result1, #0
+	org	0
+entry
+
+_setpins
+	sub	arg02, #1
+	shl	arg02, #6
+	or	arg01, arg02
+	mov	arg02, arg03
+	call	#__system___pinwrite
+_setpins_ret
+	ret
+
+__system___pinwrite
+	mov	_var01, arg01
+	and	_var01, #31
+	test	arg01, #32 wz
+	shr	arg01, #6
+	bmask	arg01, arg01
+	shl	arg01, _var01
+	shl	arg02, _var01
+ if_ne	or	dirb, arg01
+ if_ne	setq	arg01
+ if_ne	muxq	outb, arg02
+ if_e	or	dira, arg01
+ if_e	setq	arg01
+ if_e	muxq	outa, arg02
+__system___pinwrite_ret
+	ret
+builtin_bytefill_
+        shr	arg03, #1 wc
+ if_c   wrbyte	arg02, arg01
+ if_c   add	arg01, #1
+        movbyts	arg02, #0
+builtin_wordfill_
+        shr	arg03, #1 wc
+ if_c   wrword	arg02, arg01
+ if_c   add	arg01, #2
+        setword	arg02, arg02, #1
+builtin_longfill_
+        wrfast	#0,arg01
+        cmp	arg03, #0 wz
+ if_nz  rep	#1, arg03
+ if_nz  wflong	arg02
+        ret
+
+COG_BSS_START
+	fit	480
+	orgh
+	org	COG_BSS_START
+_var01
+	res	1
+arg01
+	res	1
+arg02
+	res	1
+arg03
+	res	1
+	fit	480
