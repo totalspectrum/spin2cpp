@@ -18,26 +18,20 @@ _setpins
 	sub	arg02, #1
 	shl	arg02, #6
 	or	arg01, arg02
-	mov	arg02, arg03
-	call	#__system___pinwrite
-_setpins_ret
-	ret
-
-__system___pinwrite
-	mov	_var01, arg01
-	and	_var01, #31
+	mov	arg02, arg01
+	and	arg02, #31
 	test	arg01, #32 wz
 	shr	arg01, #6
 	bmask	arg01, arg01
-	shl	arg01, _var01
-	shl	arg02, _var01
+	shl	arg01, arg02
+	shl	arg03, arg02
  if_ne	or	dirb, arg01
  if_ne	setq	arg01
- if_ne	muxq	outb, arg02
+ if_ne	muxq	outb, arg03
  if_e	or	dira, arg01
  if_e	setq	arg01
- if_e	muxq	outa, arg02
-__system___pinwrite_ret
+ if_e	muxq	outa, arg03
+_setpins_ret
 	ret
 builtin_bytefill_
         shr	arg03, #1 wc
@@ -60,8 +54,6 @@ COG_BSS_START
 	fit	480
 	orgh
 	org	COG_BSS_START
-_var01
-	res	1
 arg01
 	res	1
 arg02

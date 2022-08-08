@@ -413,7 +413,7 @@ LR__0023
 LR__0024
 	mov	_var02, _var03
 	xor	_var02, arg01
-	and	_var02, #15 wz
+	test	_var02, #15 wz
  if_ne	mov	result1, #0
  if_ne	jmp	#__system___gc_isvalidptr_ret
 	mov	_var02, _var03

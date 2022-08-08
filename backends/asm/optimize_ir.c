@@ -4586,12 +4586,12 @@ again:
             change |= OptimizeAddSub(irl);
             change |= OptimizeLoopPtrOffset(irl);
         }
-        if (flags & OPT_BRANCHES) {
-            change |= OptimizeShortBranches(irl);
-        }
         if (flags & OPT_PEEPHOLE) {
             change |= OptimizePeepholes(irl);
             change |= OptimizePeephole2(irl);
+        }
+        if (flags & OPT_BRANCHES) {
+            change |= OptimizeShortBranches(irl);
         }
         if (flags & OPT_BASIC_REGS) {
             change |= OptimizeIncDec(irl);
