@@ -1,3 +1,6 @@
+Version 5.9.16
+- Added UNION classes to BASIC
+
 Version 5.9.15
 - Added definitions for PR0-PR7 registers in Spin2
 - Added ORGH/END inline assembly in Spin2 for non-optimized hub based inline asm.

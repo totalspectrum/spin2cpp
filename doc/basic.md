@@ -282,6 +282,7 @@ ubyte
 uinteger
 ulong
 ulongint
+union
 until
 ushort
 using
@@ -3408,6 +3409,36 @@ An unsigned 32 bit integer, occupying four bytes of computer memory. The signed 
 ### ULONGINT
 
 An unsigned 64 bit integer, occupying eight bytes of computer memory. The signed version of this is `longint`.
+
+### UNION
+
+A union is a special kind of inline class in which all of the variables use the same storage. That is, all of the class members in a union have the same memory address, and assigning a value to any of them will change the value of all of them. This is just like C unions. There are a few cases where this might be useful, although often the same effect can be achieved by using casts.
+
+Unlike C unions, member functions are allowed in FlexBASIC unions.
+```
+  union float_or_int
+    dim i as integer
+    dim s as single
+
+    sub zero
+      i = 0
+    end sub
+
+    function asint()
+      return i
+    end function
+
+    function asfloat()
+      return s
+    end function
+  end union
+
+  dim x as float_or_int
+
+  x.s = -1.0
+  print hex$(x.asint())  ' prints hex representation of floating point -1
+```
+
 
 ### USHORT
 

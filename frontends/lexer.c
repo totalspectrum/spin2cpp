@@ -2208,6 +2208,7 @@ struct reservedword basic_keywords[] = {
   { "uinteger", BAS_UINTEGER },
   { "ulong", BAS_ULONG },
   { "ulongint", BAS_ULONGINT },
+  { "union", BAS_UNION },
   { "until", BAS_UNTIL },
   { "ushort", BAS_USHORT },
   { "using", BAS_USING },

@@ -504,6 +504,7 @@ AdjustParamForByVal(AST *param)
 %token BAS_UINTEGER   "uinteger"
 %token BAS_ULONG      "ulong"
 %token BAS_ULONGINT   "ulongint"
+%token BAS_UNION      "union"
 %token BAS_UNTIL      "until"
 %token BAS_USHORT     "ushort"
 %token BAS_USING      "using"
@@ -2089,21 +2090,38 @@ classdecl:
 
 classheader:
   BAS_CLASS BAS_IDENTIFIER eoln
-  {
-    AST *ident = $2;
-    const char *classname = ident->d.string;
-    Module *P = NewModule(classname, current->curLanguage);
-    AST *newobj = NewAbstractObject( $2, NULL, 0 );
-    newobj->d.ptr = P;
-    AddSymbol(currentTypes, $2->d.string, SYM_TYPEDEF, newobj, NULL);
-    P->Lptr = current->Lptr;
-    P->subclasses = current->subclasses;
-    current->subclasses = P;
-    P->superclass = current;
-    P->fullname = current->fullname; // for finding "class using"
-    current = P;
-    $$ = NULL;
-  }
+    {
+      AST *ident = $2;
+      const char *classname = ident->d.string;
+      Module *P = NewModule(classname, current->curLanguage);
+      AST *newobj = NewAbstractObject( $2, NULL, 0 );
+      newobj->d.ptr = P;
+      AddSymbol(currentTypes, $2->d.string, SYM_TYPEDEF, newobj, NULL);
+      P->Lptr = current->Lptr;
+      P->subclasses = current->subclasses;
+      current->subclasses = P;
+      P->superclass = current;
+      P->fullname = current->fullname; // for finding "class using"
+      current = P;
+      $$ = NULL;
+    }
+  | BAS_UNION BAS_IDENTIFIER eoln
+    {
+      AST *ident = $2;
+      const char *classname = ident->d.string;
+      Module *P = NewModule(classname, current->curLanguage);
+      AST *newobj = NewAbstractObject( $2, NULL, 0 );
+      newobj->d.ptr = P;
+      AddSymbol(currentTypes, $2->d.string, SYM_TYPEDEF, newobj, NULL);
+      P->Lptr = current->Lptr;
+      P->subclasses = current->subclasses;
+      current->subclasses = P;
+      P->superclass = current;
+      P->fullname = current->fullname; // for finding "class using"
+      P->isUnion = 1;
+      current = P;
+      $$ = NULL;
+    }  
   ;
 
 classdecllist:
@@ -2111,14 +2129,23 @@ classdecllist:
   | classdeclitem eoln classdecllist
   ;
 
-classend: BAS_END BAS_CLASS
-{
-  if (!current->superclass) {
-    SYNTAX_ERROR("END CLASS not inside class");
-  } else {
-    current = current->superclass;
-  }
-} 
+classend:
+  BAS_END BAS_CLASS
+    {
+      if (!current->superclass || current->isUnion) {
+        SYNTAX_ERROR("END CLASS not inside class");
+      } else {
+        current = current->superclass;
+      }
+    }
+  | BAS_END BAS_UNION
+    {
+      if (!current->superclass || !current->isUnion) {
+        SYNTAX_ERROR("END UNION not inside union");
+      } else {
+        current = current->superclass;
+      }
+    }  
 ;
 
 classdeclitem:
