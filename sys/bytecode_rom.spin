@@ -619,13 +619,9 @@ pri _int64_cmpu(alo, ahi, blo, bhi) : r
     return -1
   return 1
 
-{{
 ' compare signed alo, ahi, return -1, 0, or +1
-pri _int64_cmps(alo, ahi, blo, bhi) : r
-  asm
-      cmp  alo, blo wc,wz
-      cmpsx ahi, bhi wc,wz
-if_z  mov  r, #0
-if_nz negc r, #1
-  endasm
-}}
+pri _int64_cmps(alo, ahi, blo, bhi) : r | s
+  s,r := _int64_sub(alo, ahi, blo, bhi)
+  if (r < 0)
+    return -1
+  r := - ((r|s) <> 0)
