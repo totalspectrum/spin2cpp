@@ -338,6 +338,45 @@ The amount of space required for the stack depends on the complexity of the code
 
 `__builtin_cogstart` returns the identifier of the new COG, or -1 if no COGs are free.
 
+Example:
+```
+#include <stdio.h>
+#include <propeller2.h>
+
+// define the pin to blink
+#ifdef __P2__
+#define BASEPIN 56
+#else
+#define BASEPIN 16
+#endif
+
+// define the delay between toggles
+#define TOGGLE_DELAY 40'000'000
+
+// stack for other COG to run in (must be at least 64 bytes)
+unsigned char stack[128];
+
+// function to blink a pin with a delay
+void blink(int pin, unsigned delay) {
+    // now just loop toggling the pin
+    for(;;) {
+        _pinnot(pin);
+        _waitx(delay);
+    }
+}
+
+// and now the main program
+void main() {
+    // start blink(BASEPIN, TOGGLE_DELAY) in another COG
+    int cog = __builtin_cogstart(blink(BASEPIN, TOGGLE_DELAY, stack);
+    printf("started cog %d to blink pin %d\n", cog, x.pin);
+
+    // we could do other things here (like blink a different pin)
+    for(;;)
+        ;
+}
+```
+
 ### EXPECT
 
 Indicates the expected value for an expression. `__builtin_expect(x, y)` evaluates `x`, and indicates to the optimizer that the value will normally be `y`. This is provided for GCC compatibility, and the expected value is ignored by FlexC (so `__builtin_expect(x, y)` is treated the same as `(x)`).
@@ -564,6 +603,8 @@ int _cogstart_C(void (*func)(void *), void *arg, void *stack_base, uint32_t stac
 ```
 Starts C code in another COG. `func` is the address of a C function which expects one argument, and which will run in another COG (cpu core). `arg` is the argument to pass to the function for this invocation. `stack_base` is the base address of a block of memory to use for the stack. `stack_size` is the size in bytes of the memory.
 
+This code is a wrapper around `__builtin_cogstart`, which is somewhat easier to use, but is not portable to other C compilers.
+
 Example:
 ```
 #include <stdio.h>
@@ -579,10 +620,8 @@ Example:
 // define the delay between toggles
 #define TOGGLE_DELAY 40'000'000
 
-// size of stack for other COG bytes (should be at least 128)
-#define STACKSIZE 256
-
-unsigned char stack[256];
+// stack for use by new COG
+unsigned char stack[128];
 
 // arguments passed to the new COG
 // in this case, we pass a pin number and delay
