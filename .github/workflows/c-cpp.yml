@@ -36,3 +36,14 @@ jobs:
        run: make
      - name: test
        run: make test_offline
+  test_spinsim:
+    runs-on: ubuntu-18.04
+    steps:
+     - uses: actions/checkout@v2
+       with:
+        submodules: recursive
+     - name: make
+       run: make
+     - name: test
+       run: make test_spinsim
+

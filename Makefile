@@ -178,7 +178,6 @@ clean:
 test_offline: lextest asmtest cpptest errtest p2test
 test: test_offline runtest
 #test: lextest asmtest cpptest errtest runtest
-
 lextest: $(PROGS)
 	$(BUILD)/testlex
 
@@ -196,6 +195,9 @@ p2test: $(PROGS)
 
 runtest: $(PROGS)
 	(cd Test; ./runtests_p2.sh)
+
+test_spinsim:  $(PROGS)
+	(cd Test/spinsim; make; cd ..; ./runtests_p1.sh "" "./spinsim/build/spinsim -b -q"; ./runtests_bc.sh "" "./spinsim/build/spinsim -b -q")
 
 $(BUILD)/spin2cpp$(EXT): spin2cpp.c cmdline.c $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)

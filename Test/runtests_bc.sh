@@ -9,7 +9,12 @@ else
 fi
 
 PROG_ASM="$FASTSPIN -I../Lib"
-LOADP1="proploader -Q -r"
+#LOADP1="proploader -Q -r"
+if [ "$2" != "" ]; then
+  LOADP1=$2
+else
+  LOADER="proploader -Q -D loader-baud-rate=115200 -D baud-rate=115200 -r -t"
+fi
 
 CC=propeller-elf-gcc
 ok="ok"
@@ -31,11 +36,11 @@ do
     
   # now compile with asm
   if $PROG_ASM -o $j.binary $i; then
-    $LOADP1 $j.binary -t -q > $j.txt
+    $LOADP1 $j.binary > $j.txt
   fi
   if diff -ub Expect/$j.txt $j.txt
   then
-    echo $j passed for ASM
+    echo $j passed for BC
     rm -f $j.out $j.txt $j.binary $j.pasm
   else
     echo $j failed
@@ -54,11 +59,11 @@ do
     
   # now compile with asm
   if $PROG_ASM -o $j.binary $i; then
-    $LOADP1 $j.binary -t -q > $j.txt
+    $LOADP1 $j.binary > $j.txt
   fi
   if diff -ub Expect/$j.txt $j.txt
   then
-    echo $j passed for ASM
+    echo $j passed for BC
     rm -f $j.out $j.txt $j.binary $j.pasm
   else
     echo $j failed
@@ -78,11 +83,11 @@ do
 
   # now compile with asm
   if $PROG_ASM -o $j.binary $i; then
-    $LOADP1 $j.binary -t -q > $j.txt
+    $LOADP1 $j.binary > $j.txt
   fi
   if diff -ub Expect/$j.txt $j.txt
   then
-    echo $j passed for ASM
+    echo $j passed for BC
     rm -f $j.out $j.txt $j.binary $j.pasm
   else
     echo $j failed
@@ -93,3 +98,6 @@ done
 # clean up
 rm -f FullDuplexSerial.cpp FullDuplexSerial.h
 echo $endmsg
+if [ "$endmsg" != "$ok" ]; then
+  exit 1
+fi
