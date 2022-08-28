@@ -379,6 +379,36 @@ static uint8_t GetModifyByte_Spin1(ByteOpIR *ir, bool *sizedOpReturn) {
     return modifyCode;
 }
 
+static const char *Spin1RegNames[32] = {
+    // Interpreter oopsies
+    "???",
+    "???",
+    "???",
+    "???",
+    "???",
+    "???",
+    "???",
+    "???",
+    // Interpreter registers
+    "LSB",
+    "ID",
+    "DCALL",
+    "PBASE",
+    "VBASE",
+    "DBASE",
+    "PCURR", 
+    "DCURR",
+    // Hardware registers
+    "PAR","CNT",
+    "INA","INB",
+    "OUTA","OUTB",
+    "DIRA","DIRB",
+    "CTRA","CTRB",
+    "FRQA","FRQB",
+    "PHSA","PHSB",
+    "VCFG","VSCL",
+};
+
 const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
     int pos = 0;
     const char *comment = NULL;
@@ -540,10 +570,10 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
         buf[pos++] = regop;
         if (isModify) {
             buf[pos++] = GetModifyByte_Spin1(ir,NULL);
-            comment = auto_printf(128,"%s %03X %s %s%s",byteOpKindNames[ir->kind],reg+0x1E0,
+            comment = auto_printf(128,"%s %03X(%s) %s %s%s",byteOpKindNames[ir->kind],reg+0x1E0,Spin1RegNames[reg&31],
                 mathOpKindNames[ir->mathKind],ir->attr.memop.modifyReverseMath?"(REVERSE)":"",ir->attr.memop.pushModifyResult?"(PUSH RESULT)":"");
         } else {
-            comment = auto_printf(40,"%s %03X",byteOpKindNames[ir->kind],reg+0x1E0);
+            comment = auto_printf(40,"%s %03X(%s)",byteOpKindNames[ir->kind],reg+0x1E0,Spin1RegNames[reg&31]);
         }
         #pragma GCC diagnostic pop
     } break;
