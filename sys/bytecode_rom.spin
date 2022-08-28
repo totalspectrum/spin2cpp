@@ -596,3 +596,38 @@ return ( ((x & $0001_0000) <<  2) {
 }      | ((x & $0000_0010) << 25) {
 }      | ((x >>  4) & $0200_0002) {
 }      ) ^ $EB55_032D
+
+''
+'' 64 bit operations
+''
+pri _int64_add(alo, ahi, blo, bhi) : rlo, rhi, c
+  rlo := alo + blo
+  rhi := ahi + bhi
+  if rlo <+ blo
+    rhi++
+
+pri _int64_sub(alo, ahi, blo, bhi) : rlo, rhi
+  rlo, rhi := _int64_add(alo, ahi, _int64_neg(blo, bhi))
+
+' compare unsigned alo, ahi, return -1, 0, or +1
+pri _int64_cmpu(alo, ahi, blo, bhi) : r
+  if ahi == bhi
+      return 0
+    if alo <+ blo
+      return -1
+    return 1
+
+  if ahi <+ bhi
+    return -1
+  return 1
+
+{{
+' compare signed alo, ahi, return -1, 0, or +1
+pri _int64_cmps(alo, ahi, blo, bhi) : r
+  asm
+      cmp  alo, blo wc,wz
+      cmpsx ahi, bhi wc,wz
+if_z  mov  r, #0
+if_nz negc r, #1
+  endasm
+}}

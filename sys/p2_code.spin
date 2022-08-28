@@ -635,4 +635,41 @@ pri longfill(ptr, val, count)
   asm
     call #\builtin_longfill_
   endasm
+
+''
+'' 64 bit operations
+''
+pri _int64_add(alo, ahi, blo, bhi) : rlo, rhi
+  rlo := alo
+  rhi := ahi
+  asm
+    add  rlo, blo wc
+    addx rhi, bhi
+  endasm
+
+pri _int64_sub(alo, ahi, blo, bhi) : rlo, rhi
+  rlo := alo
+  rhi := ahi
+  asm
+    sub  rlo, blo wc
+    subx rhi, bhi
+  endasm
+
+' compare unsigned alo, ahi, return -1, 0, or +1
+pri _int64_cmpu(alo, ahi, blo, bhi) : r
+  asm
+      cmp  alo, blo wc,wz
+      cmpx ahi, bhi wc,wz
+if_z  mov  r, #0
+if_nz negc r, #1
+  endasm
   
+' compare signed alo, ahi, return -1, 0, or +1
+pri _int64_cmps(alo, ahi, blo, bhi) : r
+  asm
+      cmp  alo, blo wc,wz
+      cmpsx ahi, bhi wc,wz
+if_z  mov  r, #0
+if_nz negc r, #1
+  endasm
+

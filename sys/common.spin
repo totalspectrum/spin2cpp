@@ -351,50 +351,25 @@ pri file "libc/string/strerror.c" _strerror(e=long): r=string
 
 pri file "libsys/c_startup.c" _c_startup()
 
-' compare unsigned alo, ahi, return -1, 0, or +1
-pri _int64_cmpu(alo, ahi, blo, bhi) : r
-  asm
-      cmp  alo, blo wc,wz
-      cmpx ahi, bhi wc,wz
-if_z  mov  r, #0
-if_nz negc r, #1
-  endasm
-  
-' compare signed alo, ahi, return -1, 0, or +1
-pri _int64_cmps(alo, ahi, blo, bhi) : r
-  asm
-      cmp  alo, blo wc,wz
-      cmpsx ahi, bhi wc,wz
-if_z  mov  r, #0
-if_nz negc r, #1
-  endasm
-
 pri _int64_signx(x = long) : rlo, rhi
   rlo := x
-  rhi := x
-  asm
-    sar rhi, #31
-  endasm
+  rhi := x ~> 31  ' sar 31
 
 pri _int64_zerox(x = long) : rlo, rhi
   rlo := x
   rhi := 0
 
-pri _int64_add(alo, ahi, blo, bhi) : rlo, rhi
-  rlo := alo
-  rhi := ahi
-  asm
-    add  rlo, blo wc
-    addx rhi, bhi
-  endasm
+pri _int64_and(alo, ahi, blo, bhi) : rlo, rhi
+  rlo := alo & blo
+  rhi := ahi & bhi
 
-pri _int64_sub(alo, ahi, blo, bhi) : rlo, rhi
-  rlo := alo
-  rhi := ahi
-  asm
-    sub  rlo, blo wc
-    subx rhi, bhi
-  endasm
+pri _int64_or(alo, ahi, blo, bhi) : rlo, rhi
+  rlo := alo | blo
+  rhi := ahi | bhi
+
+pri _int64_xor(alo, ahi, blo, bhi) : rlo, rhi
+  rlo := alo ^ blo
+  rhi := ahi ^ bhi
 
 pri _int64_neg(alo, ahi) : rlo, rhi
   return _int64_sub(0, 0, alo, ahi)
@@ -403,30 +378,6 @@ pri _int64_abs(alo, ahi) : rlo, rhi
   if (ahi < 0)
     return _int64_sub(0, 0, alo, ahi)
   return alo, ahi
-
-pri _int64_and(alo, ahi, blo, bhi) : rlo, rhi
-  rlo := alo
-  rhi := ahi
-  asm
-    and  rlo, blo
-    and rhi, bhi
-  endasm
-
-pri _int64_or(alo, ahi, blo, bhi) : rlo, rhi
-  rlo := alo
-  rhi := ahi
-  asm
-    or  rlo, blo
-    or  rhi, bhi
-  endasm
-
-pri _int64_xor(alo, ahi, blo, bhi) : rlo, rhi
-  rlo := alo
-  rhi := ahi
-  asm
-    xor  rlo, blo
-    xor  rhi, bhi
-  endasm
 
 pri _int64_shl(alo, ahi, count, counthi) : rlo, rhi | tmp
   rlo := alo
