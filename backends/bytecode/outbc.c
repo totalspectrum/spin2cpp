@@ -2466,6 +2466,23 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 AST *expr = BCAllocaExpr(node->right);
                 BCCompileExpression(irbuf, expr, context, asStatement);
             } break;
+            case AST_GETLOW: {
+                AST *expr = node->left;
+                expr = NewAST(AST_MEMREF,
+                              ast_type_long,
+                              NewAST(AST_ADDROF, expr, NULL));
+                BCCompileExpression(irbuf, expr, context, asStatement);
+            } break;
+            case AST_GETHIGH: {
+                AST *expr = node->left;
+                expr = NewAST(AST_MEMREF,
+                              ast_type_long,
+                              AstOperator('+',
+                                          NewAST(AST_ADDROF, expr, NULL),
+                                          AstInteger(4) )
+                                  );
+                BCCompileExpression(irbuf, expr, context, asStatement);
+            } break;
             default:
                 ERROR(node,"Unhandled node kind %d in expression",node->kind);
                 return;
