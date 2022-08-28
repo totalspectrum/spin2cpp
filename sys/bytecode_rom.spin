@@ -600,11 +600,9 @@ return ( ((x & $0001_0000) <<  2) {
 ''
 '' 64 bit operations
 ''
-pri _int64_add(alo, ahi, blo, bhi) : rlo, rhi, c
-  rlo := alo + blo
-  rhi := ahi + bhi
-  if rlo <+ blo
-    rhi++
+pri _int64_add(alo, ahi, blo, bhi) : rlo, rhi
+  ' the minus sign is because in Spin TRUE is -1
+  rhi := (ahi + bhi) - ((rlo := alo + blo) +< blo)
 
 pri _int64_sub(alo, ahi, blo, bhi) : rlo, rhi
   rlo, rhi := _int64_add(alo, ahi, _int64_neg(blo, bhi))
@@ -613,11 +611,11 @@ pri _int64_sub(alo, ahi, blo, bhi) : rlo, rhi
 pri _int64_cmpu(alo, ahi, blo, bhi) : r
   if ahi == bhi
       return 0
-    if alo <+ blo
+    if alo +< blo
       return -1
     return 1
 
-  if ahi <+ bhi
+  if ahi +< bhi
     return -1
   return 1
 
