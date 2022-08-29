@@ -610,10 +610,9 @@ pri _int64_sub(alo, ahi, blo, bhi) : rlo, rhi
 ' compare unsigned alo, ahi, return -1, 0, or +1
 pri _int64_cmpu(alo, ahi, blo, bhi) : r
   if ahi == bhi
-      return 0
     if alo +< blo
       return -1
-    return 1
+    return -(alo <> blo)
 
   if ahi +< bhi
     return -1

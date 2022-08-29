@@ -188,13 +188,8 @@ pri _gc_errmsg(s) | c
     _tx(c)
   return 0
 
-pri _gc_errhex(h) | c
-  repeat 8
-    h := (h<-4)
-    c := h & $f
-    c := (c < 10) ? c + "0" : (c-10) + "A"
-    _tx(c)
-  _tx(" ")
+pri _gc_errhex(h)
+  _txhex(h)
   
 pri _gc_alloc(size)
   return _gc_doalloc(size, GC_FLAG_RESERVED)

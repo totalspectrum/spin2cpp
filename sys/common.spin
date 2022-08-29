@@ -110,6 +110,14 @@ pri _tx(c)
     _txraw(13)
   _txraw(c)
 
+pri _txhex(h) | c
+  repeat 8
+    h := (h<-4)
+    c := h & $f
+    c := (c < 10) ? c + "0" : (c-10) + "A"
+    _txraw(c)
+  _txraw(" ")
+
 pri _rx : r
   repeat
     r := _rxraw()
@@ -372,7 +380,9 @@ pri _int64_xor(alo, ahi, blo, bhi) : rlo, rhi
   rhi := ahi ^ bhi
 
 pri _int64_neg(alo, ahi) : rlo, rhi
-  return _int64_sub(0, 0, alo, ahi)
+  rlo := !alo + 1
+  rhi := !ahi + (rlo +< alo)
+
   
 pri _int64_abs(alo, ahi) : rlo, rhi
   if (ahi < 0)
@@ -433,7 +443,8 @@ pri _int64_divmodu(nlo, nhi, dlo, dhi) : qlo, qhi, rlo, rhi | i, mask
     return qlo, qhi, rlo, rhi
 
   mask := $8000_0000
-  repeat i from 63 to 32
+  'repeat i from 63 to 32
+  repeat i from 31 to 0
     rlo,rhi := _int64_add(rlo, rhi, rlo, rhi)
     if nhi & mask
       rlo |= 1
@@ -441,6 +452,7 @@ pri _int64_divmodu(nlo, nhi, dlo, dhi) : qlo, qhi, rlo, rhi | i, mask
       rlo, rhi := _int64_sub(rlo, rhi, dlo, dhi)
       qhi |= mask
     mask := mask>>1
+
   mask := $8000_0000
   repeat i from 31 to 0
     rlo,rhi := _int64_add(rlo, rhi, rlo, rhi)
@@ -461,29 +473,19 @@ pri _int64_modu(nlo, nhi, dlo, dhi) : rlo, rhi | x0, x1
   return rlo, rhi
 
 pri _int64_divmods(nlo, nhi, dlo, dhi) : qlo, qhi, rlo, rhi | sign
-  asm
-          cmps nhi,#0 wc
-          muxc sign,#%11
-    if_c  neg nhi,nhi
-    if_c  neg nlo,nlo wz
-    if_nz_and_c sub nhi,#1
-          cmps dhi,#0 wc
-    if_c  xor sign,#%10
-    if_c  neg dhi,dhi
-    if_c  neg dlo,dlo wz
-    if_nz_and_c sub dhi,#1
-  endasm
+  if (nhi < 0)
+    sign := 3
+    nlo,nhi := _int64_neg(nlo, nhi)
+  else
+    sign := 1
+  if (dhi < 0)
+    sign ^= 2
+    dlo,dhi := _int64_neg(dlo, dhi)
   qlo, qhi, rlo, rhi := _int64_divmodu(nlo,nhi,dlo,dhi)
-  asm
-          test sign,#%10 wc
-    if_c  neg qhi,qhi
-    if_c  neg qlo,qlo wz
-    if_nz_and_c sub qhi,#1
-          test sign,#%01 wc
-    if_c  neg rhi,rhi
-    if_c  neg rlo,rlo wz
-    if_nz_and_c sub rhi,#1
-  endasm
+  if (sign & 2)
+    qlo,qhi := _int64_neg(qlo, qhi)
+  if (sign & 1)
+    rlo,rhi := _int64_neg(rlo, rhi)
 
 pri _int64_divs(nlo, nhi, dlo, dhi) : qlo, qhi | x0, x1
   qlo, qhi, x0, x1 := _int64_divmods(nlo, nhi, dlo, dhi)
