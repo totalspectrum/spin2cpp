@@ -2110,8 +2110,15 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
     }
     if (IsConstExpr(node)) {
         if (!asStatement) {
-            int32_t val = EvalConstExpr(node);
-            BCCompileInteger(irbuf,val);
+            // check for 64 bit values here
+            int siz = TypeSize(ExprType(node));
+            int64_t val = EvalConstExpr(node);
+            if (siz == 8) {
+                BCCompileInteger(irbuf,val);
+                BCCompileInteger(irbuf,val>>32);
+            } else {
+                BCCompileInteger(irbuf,val);
+            }
         }
     } else {
         unsigned popResults = asStatement ? 1 : 0;
@@ -2468,10 +2475,16 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
             } break;
             case AST_GETLOW: {
                 AST *expr = node->left;
-                expr = NewAST(AST_MEMREF,
-                              ast_type_long,
-                              NewAST(AST_ADDROF, expr, NULL));
-                BCCompileExpression(irbuf, expr, context, asStatement);
+                if (IsIdentifier(expr)) {
+                    expr = NewAST(AST_MEMREF,
+                                  ast_type_long,
+                                  NewAST(AST_ADDROF, expr, NULL));
+                    BCCompileExpression(irbuf, expr, context, asStatement);
+                } else {
+                    BCCompileExpression(irbuf, expr, context, asStatement);
+                    // pop the high word off the stack
+                    BCCompilePopN(irbuf, 1);
+                }
             } break;
             case AST_GETHIGH: {
                 AST *expr = node->left;
