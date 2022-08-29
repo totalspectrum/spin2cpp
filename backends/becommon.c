@@ -93,7 +93,7 @@ static int resultOffset(Function *F, int offset) {
     switch(gl_interp_kind) {
     case INTERP_KIND_P1ROM:
         if (offset == 0) return 0;
-        return 4+ (BCGetNumParams(F)*4) + (offset-1)*4;
+        return 4 + (BCGetNumParams(F)*4) + (offset-4);
     case INTERP_KIND_NUCODE:
         return offset + (BCGetNumParams(F)+4)*LONG_SIZE ;
     default:
