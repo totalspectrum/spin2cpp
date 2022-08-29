@@ -2828,6 +2828,12 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
                 //printf("Got AST_OTHER\n");
                 if (othercase) ERROR(item,"Multiple OTHER cases");
                 othercase = item;
+                AST *stmt = othercase->left;
+                // ignore cases if there's a default
+                while (stmt && stmt->kind == AST_CASEITEM) {
+                    stmt = stmt->right;
+                }
+                othercase->left = stmt;
             } else {
                 // Do nothing
             }
