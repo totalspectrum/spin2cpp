@@ -255,6 +255,7 @@ AST *AddToList(AST *list, AST *newelement);
 AST *AddToLeftList(AST *list, AST *newelement);
 AST *AddToListEx(AST *list, AST *newelement, AST **tail);
 AST *ListInsertBefore(AST *list, AST *member, AST *newelem);
+AST *AppendList(AST *list, AST *newlist);
 void RemoveFromList(AST **listptr, AST *newelement);
 AST *DupAST(AST *ast);
 AST *DupASTTypeSafe(AST *ast);

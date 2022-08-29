@@ -57,6 +57,21 @@ AddToList(AST *list, AST *newelement)
     return list;
 }
 /*
+ * append two lists
+ */
+AST *
+AppendList(AST *first, AST *last)
+{
+    AST *orig = first;
+    if (!first) {
+        return last;
+    }
+    while (first->right) first = first->right;
+    first->right = last;
+    return orig;
+}
+
+/*
  * add an AST to a "left" list
  * this is one where everything is on the left pointers,
  * e.g. a list of type modifiers
