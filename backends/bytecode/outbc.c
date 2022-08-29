@@ -851,7 +851,13 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
 
     try_ident_again:
     if (IsIdentifier(ident) || ident->kind == AST_SYMBOL) sym = LookupAstSymbol(ident,NULL);
-    else if (ident->kind == AST_RESULT) sym = LookupSymbol("result");
+    else if (ident->kind == AST_RESULT) {
+        if (curfunc && IsIdentifier(curfunc->resultexpr)) {
+            sym = LookupAstSymbol(curfunc->resultexpr, NULL);
+        } else {
+            sym = LookupSymbol("result");
+        }
+    }
     else if (ident->kind == AST_MEMREF) {
         if (!typeoverride && ident->right->kind == AST_ADDROF && 
         ident->right->left && ident->right->left->kind == AST_ARRAYREF && (!indexExpr || IsConstZero(indexExpr) || IsConstZero(ident->right->left->right))) {
@@ -2788,6 +2794,36 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
             } else if (item->kind == AST_CASEITEM) {
                 //printf("Got AST_CASEITEM\n");
                 cases++;
+                if (item->right && (item->right->kind == AST_CASEITEM || item->right->kind == AST_OTHER)) {
+                    // consolidate series of cases
+                    AST *origitem = item;
+                    AST *list = (item->right->kind == AST_CASEITEM) ? item->left : NULL;
+                    bool isDefault = false;
+                    AST *stmt = NULL;
+                    while (item->right) {
+                        if (item->right->kind == AST_CASEITEM) {
+                            list = AppendList(list, item->right->left);
+                        } else if (item->right->kind == AST_OTHER) {
+                            isDefault = true;
+                        } else {
+                            stmt = item->right;
+                            break;
+                        }
+                        item = item->right;
+                    }
+                    if (isDefault) {
+                        WARNING(origitem, "Potentially dodgy case statement compilation in bytecode\n");
+                        origitem->kind = AST_OTHER;
+                        origitem->left = stmt;
+                        origitem->right = NULL;
+                        if (othercase) ERROR(item,"Multiple OTHER cases");
+                        othercase = origitem;
+                    } else {
+                        origitem->kind = AST_CASEITEM;
+                        origitem->left = list;
+                        origitem->right = item->right;
+                    }
+                }
             } else if (item->kind == AST_OTHER) {
                 //printf("Got AST_OTHER\n");
                 if (othercase) ERROR(item,"Multiple OTHER cases");
@@ -3101,7 +3137,7 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
     if (!F->body) {
         DEBUG(NULL,"compiling function %s with no body...",F->name);
     } else if (F->body->kind == AST_STRING) {
-        WARNING(NULL,"compiling function %s which is just a reference",F->name);
+        DEBUG(NULL,"compiling function %s which is just a reference",F->name);
     } else if (F->body->kind != AST_STMTLIST) {
         ERROR(F->body,"Internal Error: Expected AST_STMTLIST, got id %d",F->body->kind);
         return;
