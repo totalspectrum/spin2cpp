@@ -576,6 +576,12 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
             }
             subtype = ExprType(varlist->left);
             varlist = varlist->right;
+            while (thisval && thisval->kind == AST_CAST) {
+                if (Q->isUnion) {
+                    subtype = thisval->left;
+                }
+                thisval = thisval->right;
+            }
             if (Q->isUnion) varlist = NULL;
             if ( (IsArrayType(subtype) || IsClassType(subtype)) && thisval && (thisval->kind != AST_EXPRLIST && thisval->kind != AST_STRINGPTR)) {
                 AST *newsub;

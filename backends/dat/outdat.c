@@ -534,6 +534,7 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
     //initval = FixupInitList(type, initval);
     
     switch(type->kind) {
+    case AST_GENERICTYPE:
     case AST_INTTYPE:
     case AST_UNSIGNEDTYPE:
     case AST_FLOATTYPE:

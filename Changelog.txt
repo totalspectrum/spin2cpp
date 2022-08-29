@@ -1,5 +1,7 @@
 Version 5.9.16
 - Added UNION classes to BASIC
+- Fixed some problems with 64 bit variables in bytecode
+- Fixed an initializer bug in unions
 
 Version 5.9.15
 - Added definitions for PR0-PR7 registers in Spin2
