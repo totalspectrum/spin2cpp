@@ -74,6 +74,10 @@
     X(QLOG)      /* log2 */ \
     X(ENCODE)    /* tos := ENCODE tos (0-32) */ \
     X(ENCODE2)   /* tos := ENCODE tos (0-31) */ \
+    X(ADD64)     /* 64 bit add of 4 items on stack */ \
+    X(SUB64)     /* 64 bit add of 4 items on stack */ \
+    X(CMP64S)    /* 64 bit add of 4 items on stack */      \
+    X(CMP64U)    /* 64 bit add of 4 items on stack */ \
     /* UNARY math operations end here */ \
     \
     X(DROP)      /* drop element on top of stack */ \

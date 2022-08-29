@@ -937,6 +937,40 @@ impl_ROTXY
   _ret_	getqy	tos
 
 
+impl_ADD64
+	mov	tmp, tos	' bhi
+	mov	tmp2, nos	' blo
+	call	#\impl_DROP2
+	add	nos, tmp2 wc
+  _ret_	addx	tos, tmp
+
+impl_SUB64
+	mov	tmp, tos	' bhi
+	mov	tmp2, nos	' blo
+	call	#\impl_DROP2
+	sub	nos, tmp2 wc
+  _ret_	subx	tos, tmp
+
+impl_CMP64U
+	mov	tmp, tos	' bhi
+	mov	tmp2, nos	' blo
+	call	#\impl_DROP2
+	cmp	nos, tmp2 wcz
+	cmpx	tos, tmp  wcz
+  if_z  mov	nos, #0
+  if_nz negc	nos, #1
+  	jmp	#\impl_DROP
+
+impl_CMP64S
+	mov	tmp, tos	' bhi
+	mov	tmp2, nos	' blo
+	call	#\impl_DROP2
+	cmp	nos, tmp2 wcz
+	cmpsx	tos, tmp  wcz
+  if_z  mov	nos, #0
+  if_nz negc	nos, #1
+  	jmp	#\impl_DROP
+
 ' setjmp/longjmp
 ' these are called like:
 '   pub setjmp(jmpbuf) : rval, wasjmp

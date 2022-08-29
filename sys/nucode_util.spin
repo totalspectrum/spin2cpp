@@ -428,3 +428,16 @@ pri __builtin_seussf(x = +long) : y = +long
 
 pri __builtin_seussr(x = +long) : y = +long
   __bytecode__("SEUSSR")
+
+pri _int64_add(alo, ahi, blo, bhi) : rlo, rhi
+  __bytecode__("ADD64")
+
+pri _int64_sub(alo, ahi, blo, bhi) : rlo, rhi
+  __bytecode__("SUB64")
+
+pri _int64_cmpu(alo, ahi, blo, bhi) : r
+  __bytecode__("CMP64U")
+
+pri _int64_cmps(alo, ahi, blo, bhi) : r
+  __bytecode__("CMP64S")
+
