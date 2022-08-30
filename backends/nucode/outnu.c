@@ -1279,9 +1279,19 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         return pushed;
     }
     if (IsConstExpr(node)) {
-        int32_t val = EvalConstExpr(node);
-        NuEmitConst(irl, val);
-        return 1;
+        int64_t val = EvalConstExpr(node);
+        int siz = TypeSize(ExprType(node));
+        if (siz <= 4) {
+            NuEmitConst(irl, (int32_t)val);
+            return 1;
+        } else {
+            siz = (siz + 3) / 4;
+            for (int i = 0; i < siz; i++) {
+                NuEmitConst(irl, (int32_t)val);
+                val = val >> 32;
+            }
+            return siz;
+        }
     }
     switch(node->kind) {
     case AST_SYMBOL:
