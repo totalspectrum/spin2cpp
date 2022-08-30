@@ -137,12 +137,15 @@ int _uitoall(char *orig_str, unsigned long long num, unsigned base, unsigned min
         letterdigit = 'a' - 10;
     }
     do {
-        digit = num % base;
+        digit = num % base;        
         if (digit < 10) {
             digit += '0';
         } else {
             digit += letterdigit;
         }
+#ifdef _DEBUG_PRINTF
+        __builtin_printf("uitoall: num=%x::%x digit=%c\n", (unsigned)(num>>32), (unsigned)(num), digit);
+#endif        
         *str++ = digit;
         num = num / base;
         width++;
