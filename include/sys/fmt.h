@@ -2,6 +2,12 @@
 
 #pragma once
 
+#if defined(__FEATURE_COMPLEXIO__) && !defined(SIMPLE_IO)
+//#error "complexio" // debug
+#else
+#define SIMPLE_IO
+#endif
+
 #ifndef _COMPLEXIO
 #ifdef __FLEXC__
 #define _COMPLEXIO __attribute__((complexio))
@@ -22,6 +28,12 @@
 #define FTYPE double
 #endif
 #define BITCOUNT (8*sizeof(UITYPE))
+
+#ifdef SIMPLE_IO
+#define PUTC(fn, c) (_tx(c), 1)
+#else
+#define PUTC(fn, c) (*fn)(c)
+#endif
 
 //
 // string formatting functions

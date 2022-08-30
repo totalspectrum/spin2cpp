@@ -11,12 +11,6 @@
 
 #ifdef __FLEXC__
 
-#if defined(__FEATURE_COMPLEXIO__) && !defined(SIMPLE_IO)
-//#error "complexio" // debug
-#else
-#define SIMPLE_IO
-#endif
-
 #define SMALL_INT
 #define strlen __builtin_strlen
 #define strcpy __builtin_strcpy
@@ -41,12 +35,6 @@
 #define DEFAULT_PREC 6
 #define DEFAULT_BASIC_FLOAT_FMT ((1<<UPCASE_BIT)|((4+1)<<PREC_BIT))
 #define DEFAULT_FLOAT_FMT ((1<<UPCASE_BIT))
-
-#ifdef SIMPLE_IO
-#define PUTC(c) (_tx(c), 1)
-#else
-#define PUTC(c) (*fn)(c)
-#endif
 
 //
 // reverse a string in-place
@@ -97,7 +85,7 @@ int _fmtpad(putfunc fn, unsigned fmt, int width, unsigned leftright)
         width = (width + (leftright==PAD_ON_RIGHT)) / 2;
     }
     for (i = 0; i < width; i++) {
-        r = PUTC(' ');
+        r = PUTC(fn, ' ');
         if (r < 0) return r;
         n += r;
     }
@@ -117,7 +105,7 @@ int _fmtstr(putfunc fn, unsigned fmt, const char *str)
     n = _fmtpad(fn, fmt, width, PAD_ON_LEFT);
     if (n < 0) return n;
     for (i = 0; i < width; i++) {
-        r = PUTC(*str++);
+        r = PUTC(fn, *str++);
         if (r < 0) return r;
         n += r;
     }
@@ -1015,7 +1003,7 @@ int _basic_print_char(unsigned h, int c, unsigned fmt)
 {
     TxFunc fn = _gettxfunc(h);
     if (!fn) return 0;
-    PUTC(c);
+    PUTC(fn, c);
     return 1;
 }
 

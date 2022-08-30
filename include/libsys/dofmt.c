@@ -154,7 +154,7 @@ int _dofmt(putfunc fn, const char *fmtstr, va_list *args)
         c = *fmtstr++;
         if (!c) break;
         if (c != '%') {
-            q = (*fn)(c);
+            q = PUTC(fn, c);
             if (q < 0) return q;
             bytes_written++;
             continue;
