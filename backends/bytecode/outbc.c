@@ -1171,11 +1171,10 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         if (bitExpr2) ERROR(node,"Bit2 expression on memory op!");
 
         if (baseExpr) {
-            AST *addrExpr = baseExpr;
             if (baseExpr->kind == AST_METHODREF) {
-                addrExpr = NewAST(AST_ADDROF, baseExpr, NULL);
+                baseExpr = NewAST(AST_ADDROF, baseExpr, NULL);
             }
-            BCCompileExpression(irbuf,addrExpr,context,false);
+            BCCompileExpression(irbuf,baseExpr,context,false);
         }
 
         // handle index
@@ -1191,6 +1190,8 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
                 if (memOp.attr.memop.memSize == MEMOP_SIZE_BYTE) memOp.data.int32 += constIndexVal;
                 else if (memOp.attr.memop.memSize == MEMOP_SIZE_WORD) memOp.data.int32 += constIndexVal << 1;
                 else if (memOp.attr.memop.memSize == MEMOP_SIZE_LONG) memOp.data.int32 += constIndexVal << 2;
+            } else if (baseExpr && pushMultiple) {
+                ERROR(indexExpr, "Cannot handle indices with large values");
             } else {
                 // dynamic index
                 memOp.attr.memop.popIndex = true;
@@ -1264,6 +1265,10 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         if (kind == MEMOP_READ) {
             // push in regular order
             for (int i = 0; i < pushMultiple; i++) {
+                if (i > 0 && baseExpr) {
+                    AST *newbase = AstOperator('+', baseExpr, AstInteger(i*LONG_SIZE));
+                    BCCompileExpression(irbuf,newbase,context,false);
+                }
                 BIRB_PushCopy(irbuf,&memOp);
                 memOp.data.int32 += LONG_SIZE;
             }
@@ -2114,10 +2119,11 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
         ERROR(NULL,"Internal Error: Null expression!!");
         return;
     }
+    int siz = TypeSize(ExprType(node));
+    int numLongs = (siz+LONG_SIZE-1)/LONG_SIZE;
     if (IsConstExpr(node)) {
         if (!asStatement) {
             // check for 64 bit values here
-            int siz = TypeSize(ExprType(node));
             int64_t val = EvalConstExpr(node);
             if (siz == 8) {
                 BCCompileInteger(irbuf,val);
@@ -2127,7 +2133,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
             }
         }
     } else {
-        unsigned popResults = asStatement ? 1 : 0;
+        unsigned popResults = asStatement ? numLongs : 0;
         switch(node->kind) {
             case AST_EXPRLIST: {
                 AST *list = node;
