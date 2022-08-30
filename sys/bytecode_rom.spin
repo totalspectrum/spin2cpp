@@ -620,7 +620,13 @@ pri _int64_cmpu(alo, ahi, blo, bhi) : r
 
 ' compare signed alo, ahi, return -1, 0, or +1
 pri _int64_cmps(alo, ahi, blo, bhi) : r | s
-  s,r := _int64_sub(alo, ahi, blo, bhi)
-  if (r < 0)
-    return -1
-  r := - ((r|s) <> 0)
+  if (ahi == bhi)
+    if alo == blo
+      return 0
+    if ahi => 0
+      return (alo < blo) | 1
+    return (alo < blo) | 1
+
+  if (ahi < bhi)
+      return -1
+  return 1
