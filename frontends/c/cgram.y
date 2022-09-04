@@ -152,8 +152,12 @@ FindClassByAst(AST *astName)
 static AST *MergePrefix(AST *prefix, AST *first)
 {
     if (prefix) {
-        // make sure we migrate STATIC to the front of the list
-        if (first && first->kind == AST_STATIC) {
+        // make sure we migrate STATIC, REGISTER, and EXTERN to the front of the list
+        if (first && first->kind == AST_REGISTER) {
+            first = first->left;
+            prefix = AddToLeftList(prefix, NewAST(AST_REGISTER, NULL, NULL));
+        }
+        if (first && (first->kind == AST_STATIC || first->kind == AST_EXTERN || first->kind == AST_REGISTER)) {
             first->left = AddToLeftList(prefix, first->left);
         } else {
             first = AddToLeftList(prefix, first);
@@ -177,7 +181,7 @@ CombineTypes(AST *first, AST *second, AST **identifier, Module **module)
     if (!second || first == second) {
         return first;
     }
-    if (first && (first->kind == AST_STATIC || first->kind == AST_TYPEDEF || first->kind == AST_EXTERN)) {
+    while (first && (first->kind == AST_STATIC || first->kind == AST_TYPEDEF || first->kind == AST_EXTERN || first->kind == AST_REGISTER)) {
         prefix = DupAST(first);
         first = first->left;
         prefix->left = NULL;
@@ -327,6 +331,19 @@ DeclareStatics(Module *P, AST *basetype, AST *decllist)
     return results;
 }
 
+static AST *IsGlobalRegisterDecl(AST *type)
+{
+    if (!type || !type->left) return NULL;
+    
+    if ( (type->kind == AST_EXTERN && type->left->kind == AST_REGISTER)
+         || (type->kind == AST_REGISTER && type->left->kind == AST_EXTERN) )
+    {
+        type = type->left->left;
+        return type;
+    }
+    return NULL;
+}
+
 static AST *
 MultipleDeclareVar(AST *first, AST *second)
 {
@@ -334,6 +351,7 @@ MultipleDeclareVar(AST *first, AST *second)
     AST *stmtlist = NULL;
     AST *item;
     Module *module = NULL;
+    AST *regtype = NULL;
     
     while (second) {
         if (second->kind != AST_LISTHOLDER) {
@@ -348,12 +366,19 @@ MultipleDeclareVar(AST *first, AST *second)
         }
         if (type && type->kind == AST_STATIC) {
             stmtlist = AddToList(stmtlist, DeclareStatics(current, type->left, ident));
+        } else if ( NULL != (regtype = IsGlobalRegisterDecl(type)) ) {
+            /* declare a register global variable */
+            ident = NewAST(AST_DECLARE_VAR, regtype, ident);
+            DeclareTypedGlobalVariables(ident, 1); // "extern register" variables are always shared
         } else if (type && (type->kind == AST_EXTERN || IsConstArrayType(type)) ) {
             if (type->kind == AST_EXTERN) type = type->left;
             /* declare a global variable */
             ident = NewAST(AST_DECLARE_VAR, type, ident);
             DeclareTypedGlobalVariables(ident, 1); // "extern" variables are always in DAT
         } else {
+            while (type && type->kind == AST_REGISTER) {
+                type = type->left;
+            }
             ident = NewAST(AST_DECLARE_VAR, type, ident);
             stmtlist = AddToList(stmtlist, NewAST(AST_STMTLIST, ident, NULL));
         }
@@ -378,6 +403,9 @@ SingleDeclareVar(AST *decl_spec, AST *declarator)
     }
     if (module) {
         ERROR(declarator, ":: not supported for variable declarations yet");
+    }
+    while (type && type->kind == AST_REGISTER) {
+        type = type->left;
     }
     return NewAST(AST_DECLARE_VAR, type, ident);
 }
@@ -1443,7 +1471,7 @@ storage_class_specifier
 	| C_INLINE
             { $$ = NULL; }
 	| C_REGISTER
-            { $$ = NULL; }
+            { $$ = NewAST(AST_REGISTER, NULL, NULL); }
 	;
 
 type_specifier

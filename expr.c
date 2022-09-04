@@ -1989,7 +1989,7 @@ FoldIfConst(AST *expr)
 AST *
 RemoveTypeModifiers(AST *ast)
 {
-    while(ast && (ast->kind == AST_MODIFIER_CONST || ast->kind == AST_MODIFIER_VOLATILE || ast->kind == AST_MODIFIER_SEND_ARGS || ast->kind == AST_TYPEDEF)) {
+    while(ast && (ast->kind == AST_MODIFIER_CONST || ast->kind == AST_MODIFIER_VOLATILE || ast->kind == AST_MODIFIER_SEND_ARGS || ast->kind == AST_TYPEDEF || ast->kind == AST_REGISTER)) {
         ast = ast->left;
     }
     return ast;

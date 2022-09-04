@@ -227,7 +227,8 @@ enum astkind {
     AST_BRKDEBUG = 161, // Opaque debug break.
     AST_BYTEFITLIST = 162,
     AST_WORDFITLIST = 163,
-    
+    AST_REGISTER = 164,
+
 };
 
 /* forward reference */

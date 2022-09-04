@@ -781,6 +781,9 @@ static const char *astnames[] = {
     "_hasmethod",
 
     "brk_debug",
+    "bytefit",
+    "wordfit",
+    "register",
 };
 
 //
