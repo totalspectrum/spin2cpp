@@ -2921,6 +2921,8 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         }
         return NULL;
     }
+    case AST_ASSIGN:
+        return ExprTypeRelative(table, expr->left, P);
     default:
         return NULL;
     }
