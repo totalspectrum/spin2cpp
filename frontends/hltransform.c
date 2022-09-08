@@ -165,6 +165,43 @@ TransformAssignChainNoCasts(AST **astptr)
     return tmp;
 }
 
+// transform an assignment chain like a := b := expr
+// into (b := expr, a := b)
+// we do this recursively:
+//    b := expr  -> (tmp := expr, b:=tmp) if expr is not an assign
+//    a := (tmp := expr, b:=tmp) -> ( (tmp := expr, b:=tmp), a:=tmp)
+
+static AST *
+TransformAssignChainWithCasts(AST **astptr)
+{
+    AST *ast = *astptr;
+    AST *tmp = NULL;
+    AST *lhs, *rhs;
+    AST *newseq;
+    if (!ast) return tmp;
+    if (ast->kind != AST_ASSIGN) return tmp;
+    lhs = ast->left;
+    rhs = ast->right;
+    // watch out for Spin function calls masquerading as identifiers
+    if (curfunc->language == LANG_SPIN_SPIN1 && rhs->kind == AST_IDENTIFIER) {
+        AST *typ = ExprType(rhs);
+        if (IsFunctionType(typ)) {
+            rhs = ast->right = NewAST(AST_FUNCCALL, rhs, NULL);
+        }
+        //printf("typ->kind == %d\n", typ->kind);
+    }
+    if (rhs->kind != AST_ASSIGN) {
+        tmp = lhs;
+    } else {
+        tmp = TransformAssignChainWithCasts(&ast->right);
+        if (!tmp) return tmp;
+        newseq = NewAST(AST_SEQUENCE, ast->right, AstAssign(lhs, tmp));
+        *astptr = newseq;
+        tmp = lhs;
+    }
+    return tmp;
+}
+
 void
 doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
 {
@@ -304,8 +341,16 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
             }
         }
         if (!atTopLevel) {
-            if (gl_output != OUTPUT_BYTECODE && !insertCasts) {
-                AST *tmp = TransformAssignChainNoCasts(astptr);
+            // some special cases
+            AST *typ = ExprType(*astptr);
+            bool needTransform = false;
+            if (TypeSize(typ) > LONG_SIZE) {
+                needTransform = true;
+            } else {
+                needTransform = (gl_output == OUTPUT_BYTECODE) ? insertCasts : !insertCasts;
+            }
+            if (needTransform) {
+                AST *tmp = insertCasts ? TransformAssignChainWithCasts(astptr) : TransformAssignChainNoCasts(astptr);
                 if (tmp) {
                     // we probably have something like a := b := expr
                     // which got transformed to (tmp := expr, b := tmp, a := tmp);
