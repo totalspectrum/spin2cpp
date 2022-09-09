@@ -477,7 +477,7 @@ pri _int64_divmods(nlo, nhi, dlo, dhi) : qlo, qhi, rlo, rhi | sign
     sign := 3
     nlo,nhi := _int64_neg(nlo, nhi)
   else
-    sign := 1
+    sign := 0
   if (dhi < 0)
     sign ^= 2
     dlo,dhi := _int64_neg(dlo, dhi)

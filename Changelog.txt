@@ -1,5 +1,6 @@
 Version 5.9.17
 - Fixed ++ and -- operators for 64 bit variables
+- Fixed signed modulus for 64 bit integers
 
 Version 5.9.16
 - Added UNION classes to BASIC
