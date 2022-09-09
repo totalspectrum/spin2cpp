@@ -399,6 +399,35 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
                 }
             }
             break;
+        case K_INCREMENT:
+        case K_DECREMENT:
+            /* for ++ and --, handle floats and 64 bit integers by turning into i = i+1 */
+            /* specifically: i++ -> (tmp = i, i = i+1, tmp)
+               ++i -> (i = i+1, i) */
+            if (ast->left) {
+                /* i++ case */
+                AST *typ = ExprType(ast->left);
+                if (typ) {
+                    if (IsFloatType(typ) || IsInt64Type(typ)) {
+                        AST *temp = AstTempLocalVariable("_temp_", typ);
+                        AST *save = AstAssign(temp, ast->left);
+                        AST *update = AstAssign(ast->left, AstOperator('+', ast->left, AstInteger(1)));
+                        
+                        ast = *astptr = NewAST(AST_SEQUENCE,
+                                               NewAST(AST_SEQUENCE, save, update),
+                                               temp);
+                    }
+                }
+            } else {
+                AST *typ = ExprType(ast->right);
+                if (typ) {
+                    if (IsFloatType(typ) || IsInt64Type(typ)) {
+                        ast->kind = AST_ASSIGN;
+                        ast->d.ival = K_ASSIGN;
+                        ast->right = AstOperator('+', ast->left, AstInteger(1));
+                    }
+                }
+            }
         default:
             break;
         }

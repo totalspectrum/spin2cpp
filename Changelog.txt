@@ -1,3 +1,6 @@
+Version 5.9.17
+- Fixed ++ and -- operators for 64 bit variables
+
 Version 5.9.16
 - Added UNION classes to BASIC
 - Fixed a number of problems with 64 bit variables in bytecode
