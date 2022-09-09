@@ -1729,13 +1729,10 @@ static AST *doCheckTypes(AST *ast)
     case AST_ARRAYREF:
         {
             AST *lefttype = ltype;
-            AST *righttype;
+            AST *righttype = rtype ? rtype : ExprType(ast->right);
             AST *basetype;
 
-            righttype = ExprType(ast->right);
-            if (IsFloatType(righttype)) {
-                righttype = CoerceAssignTypes(ast, AST_ARRAYREF, &ast->right, ast_type_long, righttype, "array indexing");
-            }
+            righttype = CoerceAssignTypes(ast, AST_ARRAYREF, &ast->right, ast_type_long, righttype, "array indexing");
             if (!lefttype) {
                 lefttype = ExprType(ast->left);
             }
