@@ -104,7 +104,7 @@ static const char *RemappedName(const char *name)
 
 // helper function for printing operands
 static void
-doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect effect)
+doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect effect_orig)
 {
     char temp[128];
     const char *regname;
@@ -112,6 +112,7 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
     int useabsaddr;
     int opoffset;
     int skipimm;
+    unsigned effect = (unsigned)effect_orig;
     
     opoffset = ((int)effect) >> OPEFFECT_OFFSET_SHIFT;
     effect &= ~(OPEFFECT_OFFSET_MASK);
@@ -1076,7 +1077,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                     flexbuf_addstr(fb, "sub\t");
                     PrintOperand(fb, ir->dst);
                     flexbuf_addstr(fb,", #1 wz\n");
-                    PrintCond(fb, jmp_cond);
+                    PrintCond(fb, (IRCond)jmp_cond);
                     flexbuf_addstr(fb, "call\t#LMM_JUMP\n");
                 } else {
                     PrintCond(fb, ir->cond);

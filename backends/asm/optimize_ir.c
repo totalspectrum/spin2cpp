@@ -1438,7 +1438,7 @@ int
 ApplyConditionAfter(IR *instr, int val)
 {
     IR *ir;
-    IRCond newcond;
+    unsigned newcond;
     int change = 0;
     int setz = instr->flags & FLAG_WZ;
     int setc = instr->flags & FLAG_WC;
@@ -1449,7 +1449,7 @@ ApplyConditionAfter(IR *instr, int val)
   
     for (ir = instr->next; ir; ir = ir->next) {
         if (IsDummy(ir)) continue;
-        newcond = ir->cond;
+        newcond = (unsigned)ir->cond;
 
         // Bit-magic on the condition values.
         // (Basically, take the half that's selected by the constant flag
@@ -1457,9 +1457,9 @@ ApplyConditionAfter(IR *instr, int val)
         if (setc) newcond = ((newcond >> cval)&0b0011)*0b0101;
         if (setz) newcond = ((newcond >> zval)&0b0101)*0b0011;
 
-        if (ir->cond != newcond) {
+        if (ir->cond != (IRCond)newcond) {
             change = 1;
-            ir->cond = newcond;
+            ir->cond = (IRCond)newcond;
         }
         switch(ir->opc) {
         case OPC_NEGC : if (setc) {ReplaceOpcode(ir, cval ? OPC_NEG  : OPC_MOV );change=1;} break;
@@ -2465,7 +2465,7 @@ static void ConditionalizeInstructions(IR *ir, IRCond cond, int n)
 	ERROR(NULL, "Internal error bad conditionalize");
 	return;
       }
-      ir->cond |= cond;
+      ir->cond = (IRCond)((unsigned)cond | (unsigned)ir->cond);
       --n;
     }
     ir = ir->next;
@@ -4031,8 +4031,8 @@ OptimizeLoopPtrOffset(IRList *irl) {
 
     // Find loops
     for (IR *ir=irl->head;ir;ir=ir->next) {
-        if (IsLabel(ir) && ir->prev && ir->aux && IsJump(ir->aux) && !IsForwardJump(ir->aux)) {
-            IR *end = ir->aux;
+        if (IsLabel(ir) && ir->prev && ir->aux && IsJump((IR *)ir->aux) && !IsForwardJump((IR *)ir->aux)) {
+            IR *end = (IR *)ir->aux;
             // Find top add/sub
             IR *nexttop;
             for(IR *top=ir->next;top&&top!=end;top=nexttop) {
@@ -4194,7 +4194,7 @@ static void DeleteDependencyList(struct dependency **list) {
 }
 
 static void PrependDependency(struct dependency **list,Operand *reg) {
-    struct dependency *tmp = malloc(sizeof(struct dependency));
+    struct dependency *tmp = (struct dependency *)malloc(sizeof(struct dependency));
     tmp->link = *list;
     tmp->reg = reg;
     *list = tmp;

@@ -177,7 +177,7 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
                 break;
             case SYM_HWREG:
             {
-                HwReg *hw = sym->val;
+                HwReg *hw = (HwReg *)sym->val;
                 r = GetOneGlobal(REG_HW, hw->name, 0);
                 break;
             }
@@ -212,7 +212,7 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
         }
         return r;
     } else if (expr->kind == AST_HWREG) {
-        HwReg *hw = expr->d.ptr;
+        HwReg *hw = (HwReg *)expr->d.ptr;
         return GetOneGlobal(REG_HW, hw->name, 0);
     } else if (expr->kind == AST_CATCH) {
         r = CompileInlineOperand(irl, expr->left, effects, 0);
@@ -229,7 +229,7 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
     } else if (expr->kind == AST_RANGEREF && expr->left && expr->left->kind == AST_HWREG) {
         // something like ptrb[4]
         AST *rhs = expr->right;
-        HwReg *hw = expr->left->d.ptr;
+        HwReg *hw = (HwReg *)expr->left->d.ptr;
         int32_t offset;
         if (!rhs || rhs->kind != AST_RANGE || rhs->right) {
             ERROR(rhs, "bad ptra/ptrb expression");
@@ -391,11 +391,11 @@ CompileInlineInstr_only(IRList *irl, AST *ast)
         switch(i) {
         case 0:
             ir->dst = op;
-            ir->dsteffect = effects[0];
+            ir->dsteffect = (enum OperandEffect)effects[0];
             break;
         case 1:
             ir->src = op;
-            ir->srceffect = effects[1];
+            ir->srceffect = (enum OperandEffect)effects[1];
             break;
         case 2:
             ir->src2 = op;
