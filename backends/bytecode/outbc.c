@@ -220,8 +220,10 @@ HWReg2Index(HwReg *reg) {
 // Get math op for AST operator token
 // Returns 0 if it is not a simple binary operator
 static enum MathOpKind
-Optoken2MathOpKind(int token,bool *unaryOut) {
+Optoken2MathOpKind(int token,bool *unaryOut,bool *needsAbsOut) {
     bool unary = false;
+    bool needsAbs = false;
+    
     enum MathOpKind mok = 0;
     //printf("In Optoken2MathOpKind, optoken %03X\n",token);
     switch (token) {
@@ -239,12 +241,12 @@ Optoken2MathOpKind(int token,bool *unaryOut) {
     case K_LIMITMAX: mok = MOK_MAX; break;
     case K_LIMITMIN: mok = MOK_MIN; break;
 
-    case '<': mok = MOK_CMP_B; break;
-    case '>': mok = MOK_CMP_A; break;
-    case K_LE: mok = MOK_CMP_BE; break;
-    case K_GE: mok = MOK_CMP_AE; break;
-    case K_EQ: mok = MOK_CMP_E; break;
-    case K_NE: mok = MOK_CMP_NE; break;
+    case '<': mok = MOK_CMP_B; needsAbs = true; break;
+    case '>': mok = MOK_CMP_A; needsAbs = true; break;
+    case K_LE: mok = MOK_CMP_BE; needsAbs = true; break;
+    case K_GE: mok = MOK_CMP_AE; needsAbs = true; break;
+    case K_EQ: mok = MOK_CMP_E; needsAbs = true; break;
+    case K_NE: mok = MOK_CMP_NE; needsAbs = true; break;
 
     case K_SHL: mok = MOK_SHL; break;
     case K_SHR: mok = MOK_SHR; break;
@@ -269,6 +271,10 @@ Optoken2MathOpKind(int token,bool *unaryOut) {
     }
 
     if (unaryOut) *unaryOut = unary;
+    if (needsAbsOut) {
+        needsAbs = needsAbs && curfunc && LangBoolIsOne(curfunc->language);
+        *needsAbsOut = needsAbs;
+    }
     return mok;
 }
 
@@ -1306,7 +1312,8 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
     AST *left = node->left, *right = node->right;
     AST *type;
     bool modifyReverseMath = false;
-
+    bool needsAbs = false;
+    
     // check for left hand side needing multiple assignments
     if (left->kind != AST_EXPRLIST) {
         int size = LONG_SIZE;
@@ -1354,7 +1361,7 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
             }
             break;
         default: 
-            mok = Optoken2MathOpKind(optoken,&isUnary);
+            mok = Optoken2MathOpKind(optoken,&isUnary,&needsAbs);
             break;
         }
 
@@ -1388,9 +1395,9 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
                 }
             }
             break;
-        default: mok = Optoken2MathOpKind(optoken,&isUnary); break;
+        default: mok = Optoken2MathOpKind(optoken,&isUnary,&needsAbs); break;
         }
-        if (mok == 0) goto nocontract; // Can't handle this operator
+        if (mok == 0 || needsAbs) goto nocontract; // Can't handle this operator
 
         AST *operand;
         
@@ -1521,7 +1528,7 @@ redoLeft:
 
     
 
-    if (modifyMathKind == 0) {
+    if (modifyMathKind == 0 || needsAbs) {
         if (asExpression) ERROR(node,"Internal Error: shouldn't happen");
         BCCompileExpression(irbuf,right,context,false);
         BCCompileMemOp(irbuf,memopNode,context,MEMOP_WRITE);
@@ -2121,6 +2128,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
     }
     int siz = TypeSize(ExprType(node));
     int numLongs = (siz+LONG_SIZE-1)/LONG_SIZE;
+    bool needsAbs = false;
     if (IsConstExpr(node)) {
         if (!asStatement) {
             // check for 64 bit values here
@@ -2264,7 +2272,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 case '?':
                     goto modifyOp;
                 default:
-                    mok = Optoken2MathOpKind(optoken,&unary);    
+                    mok = Optoken2MathOpKind(optoken,&unary,&needsAbs);
                     if (!mok) {
                         ERROR(node,"Unhandled operator 0x%03X",optoken);
                         return;
@@ -2278,7 +2286,11 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 mathOp.kind = BOK_MATHOP;
                 mathOp.mathKind = mok;
                 BIRB_PushCopy(irbuf,&mathOp);
-
+                if (needsAbs) {
+                    mathOp.kind = BOK_MATHOP;
+                    mathOp.mathKind = MOK_ABS;
+                    BIRB_PushCopy(irbuf,&mathOp);
+                }
                 break;
 
                 noOp: {

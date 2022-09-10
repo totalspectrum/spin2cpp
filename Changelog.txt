@@ -2,6 +2,7 @@ Version 5.9.17
 - Fixed ++ and -- operators for 64 bit variables
 - Fixed signed modulus for 64 bit integers
 - Fixed a bug in varargs handling for 64 bit values in bytecode
+- Fixed output of C boolean operators in bytecode
 
 Version 5.9.16
 - Added UNION classes to BASIC
