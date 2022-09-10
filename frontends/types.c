@@ -1594,6 +1594,7 @@ static AST *doCheckTypes(AST *ast)
             AST *varArgs = NULL;
             AST *varArgsList = NULL;
             int varargsOffset = 0;
+            int tupleCount;
             
             functype = RemoveTypeModifiers(ExprType(ast->left));
             if (functype && functype->kind == AST_PTRTYPE) {
@@ -1614,6 +1615,9 @@ static AST *doCheckTypes(AST *ast)
                             // a tuple substitutes for multiple parameters
                             tupleType = passedType;
                             passedType = passedType->left;
+                            tupleCount = TypeSize(tupleType)/LONG_SIZE;
+                        } else {
+                            tupleCount = 0;
                         }
                     }
                     if (paramId) {
@@ -1660,8 +1664,19 @@ static AST *doCheckTypes(AST *ast)
                     if (!tupleType) {
                         if (varArgsList) {
                             AST *memref = NewAST(AST_MEMREF, expectType, AstOperator('+', varArgs, AstInteger(varargsOffset)));
-                            memref = NewAST(AST_ARRAYREF, memref, AstInteger(0));
-                            AST *assign = AstAssign(memref,
+                            AST *assignref = NULL;
+
+                            if (tupleCount) {
+                                int tupleOffset;
+                                for (tupleOffset = tupleCount-1; tupleOffset >= 0; tupleOffset--) {
+                                    assignref = NewAST(AST_EXPRLIST,
+                                                       NewAST(AST_ARRAYREF, memref, AstInteger(tupleOffset)),
+                                                       assignref);
+                                }
+                            } else {
+                                assignref = NewAST(AST_ARRAYREF, memref, AstInteger(0));
+                            }
+                            AST *assign = AstAssign(assignref,
                                                     actualParamList->left);
                             varArgsList->right = assign;
                             varArgsList = NewAST(AST_SEQUENCE, varArgsList, NULL);
