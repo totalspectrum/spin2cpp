@@ -381,7 +381,7 @@ pri _int64_xor(alo, ahi, blo, bhi) : rlo, rhi
 
 pri _int64_neg(alo, ahi) : rlo, rhi
   rlo := !alo + 1
-  rhi := !ahi + (rlo +< alo)
+  rhi := !ahi - (rlo == 0)
 
   
 pri _int64_abs(alo, ahi) : rlo, rhi
