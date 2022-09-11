@@ -605,7 +605,11 @@ pri _int64_add(alo, ahi, blo, bhi) : rlo, rhi
   rhi := (ahi + bhi) - ((rlo := alo + blo) +< blo)
 
 pri _int64_sub(alo, ahi, blo, bhi) : rlo, rhi
-  rlo, rhi := _int64_add(alo, ahi, _int64_neg(blo, bhi))
+  ' negate blo, bhi
+  blo := !blo + 1
+  bhi := !bhi - (blo == 0)
+  ' now add them
+  rlo, rhi := _int64_add(alo, ahi, blo, bhi)
 
 ' compare unsigned alo, ahi, return -1, 0, or +1
 pri _int64_cmpu(alo, ahi, blo, bhi) : r
@@ -620,13 +624,9 @@ pri _int64_cmpu(alo, ahi, blo, bhi) : r
 
 ' compare signed alo, ahi, return -1, 0, or +1
 pri _int64_cmps(alo, ahi, blo, bhi) : r | s
-  if (ahi == bhi)
-    if alo == blo
-      return 0
-    if ahi => 0
-      return (alo < blo) | 1
-    return (alo < blo) | 1
+  alo, ahi := _int64_sub(alo, ahi, blo, bhi)
+  r := (ahi ~> 31)
+  if (alo)
+    r |= 1
 
-  if (ahi < bhi)
-      return -1
-  return 1
+  
