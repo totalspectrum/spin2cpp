@@ -5,6 +5,11 @@
 char pattern[] = { '.','-','+','x','o','X','O','#' };
 #define patterns (sizeof pattern)
 
+#ifdef __OUTPUT_BYTECODE__
+#undef putchar
+#define putchar(x) _tx(x)
+#endif
+
 int64_t c4=4<<28;
 
 void myexit(int n)
