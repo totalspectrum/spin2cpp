@@ -3128,6 +3128,9 @@ CompileMultipleAssign(IRList *irl, AST *lhs, AST *rhs)
             rhs = NULL;
         }
     }
+    while (rhs && rhs->kind == AST_CAST) {
+        rhs = rhs->right;
+    }
     if (!rhs) {
         ERROR(lhs, "Unexpected end of multiple assignment list");
         return OPERAND_DUMMY;

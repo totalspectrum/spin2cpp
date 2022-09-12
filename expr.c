@@ -3355,6 +3355,11 @@ BuildExprlistFromObject(AST *origexpr, AST *typ)
         }
         expr = *exprptr;
     }
+    /* discard casts */
+    while (expr && expr->kind == AST_CAST) {
+        exprptr = &expr->right;
+        expr = expr->right;
+    }
     if (!expr || expr->kind == AST_EXPRLIST || expr->kind == AST_FUNCCALL) {
         /* already an expression list */
         return origexpr;
