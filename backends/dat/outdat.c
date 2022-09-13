@@ -1763,7 +1763,7 @@ decode_instr:
             dst &= 0x1ff;
             outputInstrLong(f, augval);
             immmask &= ~BIG_IMM_DST;
-        } else if (dstRelocOff >= 0) {
+        } else if (dstRelocOff >= 0 && gl_p2) {
             ERROR(line, "Use of immediate hub address in dest requires ##");
         }
         if (immmask & BIG_IMM_SRC) {
@@ -1780,7 +1780,7 @@ decode_instr:
             src &= 0x1ff;
             outputInstrLong(f, augval);
             immmask &= ~BIG_IMM_SRC;
-        } else if (srcRelocOff >= 0) {
+        } else if (srcRelocOff >= 0 && gl_p2) {
             ERROR(line, "Use of immediate hub address in src requires ##");
         }
         if (src > 511) {
