@@ -1900,8 +1900,6 @@ struct reservedword {
 } init_spin_words[] = {
     { "abort", SP_ABORT },
     { "abs", SP_ABS },
-    { "alignl", SP_ALIGNL }, // NON-STANDARD
-    { "alignw", SP_ALIGNW }, // NON-STANDARD
     { "and", SP_AND },
     { "__andthen__", SP_ANDTHEN },
     { "asm", SP_ASM },  // NON-STANDARD
@@ -2063,6 +2061,8 @@ struct reservedword init_spin2_words[] = {
     { "<>.", SP_FNE },
     { "addbits", SP_ADDBITS },
     { "addpins", SP_ADDPINS },
+    { "alignl", SP_ALIGNL },
+    { "alignw", SP_ALIGNW },
     { "asmclk", SP_ASMCLK },
     { "bmask", SP_BMASK },
     { "bytefit", SP_BYTEFIT },
