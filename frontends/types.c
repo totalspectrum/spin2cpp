@@ -1594,7 +1594,7 @@ static AST *doCheckTypes(AST *ast)
             AST *varArgs = NULL;
             AST *varArgsList = NULL;
             int varargsOffset = 0;
-            int tupleCount;
+            int tupleCount = 0;
             
             functype = RemoveTypeModifiers(ExprType(ast->left));
             if (functype && functype->kind == AST_PTRTYPE) {
