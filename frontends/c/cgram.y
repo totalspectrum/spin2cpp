@@ -182,9 +182,14 @@ CombineTypes(AST *first, AST *second, AST **identifier, Module **module)
         return first;
     }
     while (first && (first->kind == AST_STATIC || first->kind == AST_TYPEDEF || first->kind == AST_EXTERN || first->kind == AST_REGISTER)) {
-        prefix = DupAST(first);
+        AST *dup = DupAST(first);
         first = first->left;
-        prefix->left = NULL;
+        dup->left = NULL;
+        if (prefix) {
+            prefix->left = dup;
+        } else {
+            prefix = dup;
+        }
     }
     switch (second->kind) {
     case AST_DECLARE_VAR:
@@ -369,7 +374,7 @@ MultipleDeclareVar(AST *first, AST *second)
         } else if ( NULL != (regtype = IsGlobalRegisterDecl(type)) ) {
             /* declare a register global variable */
             ident = NewAST(AST_DECLARE_VAR, regtype, ident);
-            DeclareTypedGlobalVariables(ident, 1); // "extern register" variables are always shared
+            DeclareTypedRegisterVariables(ident);
         } else if (type && (type->kind == AST_EXTERN || IsConstArrayType(type)) ) {
             if (type->kind == AST_EXTERN) type = type->left;
             /* declare a global variable */

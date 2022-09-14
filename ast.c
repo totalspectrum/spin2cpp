@@ -784,6 +784,8 @@ static const char *astnames[] = {
     "bytefit",
     "wordfit",
     "register",
+
+    "global_registers",
 };
 
 //

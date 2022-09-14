@@ -257,6 +257,7 @@ ptr
 put
 read
 redim
+register
 rem
 restore
 return
@@ -3040,6 +3041,10 @@ Several important caveats apply:
 ### REDIM
 
 `redim` is reserved as a keyword for future use in the compiler.
+
+### REGISTER
+
+`register` is reserved as a keyword. `DIM REGISTER` will eventually declare register based variables, in much the same way that `DIM SHARED` declares shared variables.
 
 ### REM
 

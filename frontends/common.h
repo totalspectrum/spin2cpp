@@ -825,6 +825,9 @@ void DeclareOneGlobalVar(Module *P, AST *ident, AST *typ, int inDat);
 /* declare a single member variable of P */
 AST *DeclareOneMemberVar(Module *P, AST *ident, AST *typ, int is_private);
 
+/* declare a single global register variable */
+void DeclareOneRegisterVar(Module *P, AST *ident, AST *typ);
+
 /* declare a member variable of P if it does not already exist */
 /* "flags" is HIDDEN_VAR (for a dummy bitfield holder) or NORMAL_VAR */
 /* returns a pointer to the P->varlist entry for it */
@@ -898,6 +901,9 @@ void DeclareMemberVariables(Module *);
  * DAT, otherwise make them member variables
  */
 void DeclareTypedGlobalVariables(AST *ast, int inDat);
+
+/* declare some global register variables */
+void DeclareTypedRegisterVariables(AST *ast);
 
 /* add a symbol for a label in the current function */
 void AddSymbolForLabel(AST *ast);

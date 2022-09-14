@@ -1520,6 +1520,50 @@ DeclareTypedGlobalVariables(AST *ast, int inDat)
     return;
 }
 
+// Declare typed register variables
+// "ast" is a list of declarations
+void
+DeclareTypedRegisterVariables(AST *ast)
+{
+    AST *idlist, *typ;
+    AST *ident;
+
+    if (!ast) return;
+    if (ast->kind == AST_SEQUENCE) {
+        ERROR(ast, "Internal error, unexpected sequence");
+        return;
+    }
+    idlist = ast->right;
+    typ = ast->left;
+    if (!idlist) {
+        return;
+    }
+    if (typ && typ->kind == AST_EXTERN) {
+        return;
+    }
+    if (IsBasicLang(current->curLanguage)) {
+        // BASIC does not require pointer notation for pointers to functions
+        AST *subtype = RemoveTypeModifiers(typ);
+        if (subtype && subtype->kind == AST_FUNCTYPE) {
+            typ = NewAST(AST_PTRTYPE, typ, NULL);
+        }
+    }
+    if (TypeSize(typ) > LONG_SIZE) {
+        ERROR(ast, "Only 32 bit variables may be placed in registers");
+        typ = ast_type_generic;
+    }
+    if (idlist->kind == AST_LISTHOLDER) {
+        while (idlist) {
+            ident = idlist->left;
+            DeclareOneRegisterVar(current, ident, typ);
+            idlist = idlist->right;
+        }
+    } else {
+        DeclareOneRegisterVar(current, idlist, typ);
+    }
+    return;
+}
+
 // returns true if P is the top level module for this project
 int
 IsTopLevel(Module *P)
@@ -1753,6 +1797,16 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
         P->datblock = AddToList(P->datblock, ast);
     }
     return;
+}
+
+void
+DeclareOneRegisterVar(Module *P, AST *ident, AST *typ)
+{
+    if (TypeSize(typ) > LONG_SIZE) {
+        ERROR(ident, "Only 32 bit variables may be placed in registers");
+        typ = ast_type_generic;
+    }
+    ERROR(ident, "register variables are not implemented yet");
 }
 
 #define SIZEFLAG_BYTE 0x01

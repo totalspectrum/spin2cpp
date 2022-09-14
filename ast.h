@@ -229,6 +229,7 @@ enum astkind {
     AST_WORDFITLIST = 163,
     AST_REGISTER = 164,
 
+    AST_REGISTERVARS = 165,
 };
 
 /* forward reference */

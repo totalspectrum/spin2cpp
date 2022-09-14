@@ -2180,6 +2180,7 @@ struct reservedword basic_keywords[] = {
   { "put", BAS_PUT },
   { "read", BAS_READ },
   { "redim", BAS_REDIM },
+  { "register", BAS_REGISTER },
   { "restore", BAS_RESTORE },
   { "return", BAS_RETURN },
   { "_sametypes", BAS_SAMETYPES },

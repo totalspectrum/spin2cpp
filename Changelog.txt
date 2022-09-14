@@ -6,6 +6,7 @@ Version 5.9.17
 - Fixed some problems with 32 to 64 bit casts in ASM output
 - Made ALIGNW and ALIGNL keywords Spin2 only (some older Spin1 programs used these)
 - Fixed a bad check for immediate values in P1 rdlong/rdbyte/etc.
+- Added REGISTER keyword to BASIC
 
 Version 5.9.16
 - Added UNION classes to BASIC

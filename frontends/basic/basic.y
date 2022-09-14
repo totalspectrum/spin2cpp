@@ -263,6 +263,13 @@ DeclareBASICSharedVariables(AST *ast)
     DeclareTypedGlobalVariables(ast, 1);
 }
 
+void
+DeclareBASICRegisterVariables(AST *ast)
+{
+    // declare globals in DAT section
+    DeclareTypedRegisterVariables(ast);
+}
+
 AST *BASICArrayRef(AST *id, AST *expr)
 {
     AST *ast;
@@ -480,6 +487,7 @@ AdjustParamForByVal(AST *param)
 %token BAS_PUT        "put"
 %token BAS_READ       "read"
 %token BAS_REDIM      "redim"
+%token BAS_REGISTER   "register"
 %token BAS_RESTORE    "restore"
 %token BAS_RETURN     "return"
 %token BAS_SAMETYPES  "_sametypes"
@@ -1495,6 +1503,8 @@ topdecl:
         AST *ast = $1;
         if (ast->kind == AST_GLOBALVARS) {
             DeclareBASICSharedVariables(ast->left);
+        } else if (ast->kind == AST_REGISTERVARS) {
+            DeclareBASICRegisterVariables(ast->left);
         } else {
             DeclareBASICMemberVariables(ast);
         }
@@ -2348,6 +2358,12 @@ dimension:
     { $$ = NewAST(AST_GLOBALVARS, NewAST(AST_DECLARE_VAR, $5, $3), NULL); }
   | BAS_DIM BAS_SHARED BAS_AS typename dimlist
     { $$ = NewAST(AST_GLOBALVARS, NewAST(AST_DECLARE_VAR, $4, $5), NULL); }
+  | BAS_DIM BAS_REGISTER dimlist
+    { $$ = NewAST(AST_REGISTERVARS, NewAST(AST_DECLARE_VAR, NULL, $3), NULL); }
+  | BAS_DIM BAS_REGISTER dimlist BAS_AS typename
+    { $$ = NewAST(AST_REGISTERVARS, NewAST(AST_DECLARE_VAR, $5, $3), NULL); }
+  | BAS_DIM BAS_REGISTER BAS_AS typename dimlist
+    { $$ = NewAST(AST_REGISTERVARS, NewAST(AST_DECLARE_VAR, $4, $5), NULL); }
   | BAS_DECLARE BAS_IDENTIFIER BAS_ALIAS BAS_IDENTIFIER opt_type_as
     {
         AST *newname = $2;
