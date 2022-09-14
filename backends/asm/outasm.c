@@ -1202,6 +1202,11 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func, AST *ast)
                       lockreg = GetOneGlobal(REG_REG, "__lockreg", 0);
                   }
                   return lockreg;
+              } else if (off == -9999) {
+                  // internal register
+                  return GetOneGlobal(REG_REG, sym->our_name, 0);
+              } else if (off < 0) {
+                  ERROR(ast, "Internal error, unkknown global symbol\n");
               }
               addr = NewImmediate(off);
               ref = NewOperand(HUBMEM_REF, (char *)addr, 0);

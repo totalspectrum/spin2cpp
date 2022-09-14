@@ -1799,16 +1799,6 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
     return;
 }
 
-void
-DeclareOneRegisterVar(Module *P, AST *ident, AST *typ)
-{
-    if (TypeSize(typ) > LONG_SIZE) {
-        ERROR(ident, "Only 32 bit variables may be placed in registers");
-        typ = ast_type_generic;
-    }
-    ERROR(ident, "register variables are not implemented yet");
-}
-
 #define SIZEFLAG_BYTE 0x01
 #define SIZEFLAG_WORD 0x02
 #define SIZEFLAG_LONG 0x04
@@ -2070,6 +2060,34 @@ DeclareMemberVariables(Module *P)
     }
 }
 
+
+void
+DeclareOneRegisterVar(Module *P, AST *ident, AST *typ)
+{
+    const char *name = GetIdentifierName(ident);
+    Symbol *sym;
+    AST *oldtyp;
+    if (!typ) {
+        typ = InferTypeFromName(ident);
+    }
+    if (TypeSize(typ) > LONG_SIZE) {
+        ERROR(ident, "Only 32 bit variables may be placed in registers");
+        typ = ast_type_generic;
+    }
+    if (0 != (oldtyp = AlreadyDeclared(P->pendingvarblock, ident))) {
+        if (!SameTypes(oldtyp, typ)) {
+            ERROR(ident, "Incompatible re-definition of %s", name);
+        }
+        return;
+    }
+    if (gl_output == OUTPUT_BYTECODE) {
+        ERROR(ident, "register variables are not supported in bytecode");
+        return;
+    }
+    sym = AddSymbol(&P->objsyms, name, SYM_VARIABLE, typ, NULL);
+    sym->flags |= SYMF_GLOBAL;
+    sym->offset = -9999;
+}
 
 //
 // AddSymbolPlaced adds a symbol, but uses the last parameter "def" to identify where
