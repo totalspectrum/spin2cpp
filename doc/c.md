@@ -142,6 +142,19 @@ Example:
 ```
 Note the necessity of placing a semicolon at the end of each line, even before the final bracket!
 
+There is one significant restriction to using inline assembly in macros, and that is that the `#' character has special meaning to the C preprocessor, and hence cannot be included in the inline assembly. This means that it's very difficult to put immediate values in macros.
+
+### Global Register variables
+
+Global variables are normally placed in HUB memory, and local variables in COG memory (registers). The assembly backends permit variables to be declared as `extern register`, in which case they are placed in COG memory. Such variables cannot be initialized.
+```
+extern register int *interpreter_pc;
+
+int fetch() {
+    return *interpreter_pc++;
+}
+```
+
 ### Classes
 
 The C `struct` declaration is extended slightly to allow functions (methods) to be declared. All methods must be defined in the struct definition itself; there is at present no way to declare a method outside of the definition.

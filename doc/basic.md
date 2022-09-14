@@ -484,9 +484,9 @@ For two dimensional arrays both dimensions must have the same lower bound.
 
 Note that pointer dereferences (using array notation) always use the last value set for `option base` in the file, since we cannot know at run time what the actual base of the pointed to object was. So it is best to set this just once.
 
-#### Global, Member, and Local variables.
+#### Global, Register, Member, and Local variables.
 
-There are three kinds of variables: global variables, member variables, and local variables.
+There are four kinds of variables: global variables, register variables, member variables, and local variables.
 
 Global (shared) variables may be accessed from anywhere in the program, and exist for the duration of the program. They are created with the `dim shared` declaration, and may be given an initial value. For example,
 ```
@@ -520,6 +520,11 @@ then a program like:
    print x.get_ctr()
 ```
 will print 1 and then 2, because `x.ctr` and `y.ctr` are the same (shared) global variable.
+
+Register variables are similar to global variables, and are declared as `dim register` instead of `dim shared`. These variables are placed inside the local CPU memory, and hence are faster than usual variables, but (a) cannot be initialized, and (b) cannot be shared across CPUs. They also can be at most 32 bits long. For example:
+```
+   dim register pc as integer
+```
 
 Member variables, on the other hand, are unique to each instance of a class. They are created with regular `dim` outside of any function or subroutine. If we modified the sample above to remove the `shared` from the declaration of `ctr`, then the program would print 1 and then 0, because the `y.inc_ctr()`  invocation would not affect the value of `x.ctr`.
 
