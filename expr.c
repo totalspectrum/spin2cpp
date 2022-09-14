@@ -2691,15 +2691,16 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
             case SYM_LOCALVAR:
             case SYM_TEMPVAR:
                 typexpr = (AST *)sym->val;
+                AST *old_typexpr = typexpr;
                 if (typexpr && (typexpr->kind == AST_PTRTYPE || typexpr->kind == AST_REFTYPE || typexpr->kind == AST_COPYREFTYPE)) {
                     typexpr = RemoveTypeModifiers(typexpr->left);
                 }
                 if (typexpr && typexpr->kind == AST_FUNCTYPE) {
                     return typexpr->left;
                 }
-                if ( (IsArrayType(typexpr) || IsPointerType(typexpr)) && curfunc && IsBasicLang(curfunc->language)) {
+                if ( (IsArrayType(old_typexpr) || IsPointerType(old_typexpr)) && curfunc && IsBasicLang(curfunc->language)) {
                     // in BASIC we may not have converted x(i) into an array reference yet
-                    return BaseType(typexpr);
+                    return BaseType(old_typexpr);
                 }
                 ERROR(expr, "Object called is not a function");
                 break;
