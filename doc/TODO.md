@@ -7,11 +7,9 @@ Finish porting simpletools.h
 
 virtual methods?
 
-allow method declarations outside classes
-
 C++ lambdas
 
-Implement "long long"
+Implement 64 bit doubles
 
 Implement variable sized local arrays
 

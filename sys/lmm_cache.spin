@@ -2,8 +2,8 @@
 	'' caching LMM
 	''
 LMM_LOOP
-	rdlong	instr, pc
-	add	pc, #4
+	rdlong	instr, __pc
+	add	__pc, #4
 	mov	LMM_IN_HUB, #1
 instr
 	nop
@@ -32,7 +32,7 @@ LMM_CALL_PTR
 	'' call from cache
 	jmp	#LMM_do_call_from_cache
 LMM_CALL_PTR_FROM_HUB
-	wrlong	pc, sp
+	wrlong	__pc, sp
 	add	sp, #4
 	jmp	#LMM_do_jump
 	
@@ -53,7 +53,7 @@ LMM_do_call_from_cache
 	add	sp, #4
 	jmp	#LMM_set_pc
 LMM_CALL_FROM_HUB
-	wrlong	pc, sp
+	wrlong	__pc, sp
 	add	sp, #4
 	jmp	#LMM_JUMP_FROM_HUB
 
@@ -105,8 +105,8 @@ not_in_cache
 	'' and go set the new pc
 	jmp	#LMM_set_pc
 LMM_JUMP_FROM_HUB
-	rdlong	LMM_NEW_PC, pc
-	add	pc, #4
+	rdlong	LMM_NEW_PC, __pc
+	add	__pc, #4
 LMM_do_jump
 	'' see if we want to change the cache
 	'' we do that only for backwards branches
@@ -124,13 +124,13 @@ LMM_do_jump
 	'' calculate size needed in cache
 	'' if we cache from LMM_NEW_PC up to and including pc
 	'' NOTE: we expect LMM_NEW_PC < pc
-  	mov	LMM_tmp, pc
+  	mov	LMM_tmp, __pc
 	sub	LMM_tmp, LMM_NEW_PC wc, wz
 	cmp	LMM_tmp, LMM_CACHE_SIZE_BYTES wc,wz
   if_ae	jmp	#no_recache
 
   	mov	LMM_cache_basepc, LMM_NEW_PC
-	mov	LMM_cache_endpc, pc
+	mov	LMM_cache_endpc, __pc
 
 	call	#LMM_load_cache
 
@@ -148,7 +148,7 @@ no_recache
 LMM_set_pc
 	'' OK, actually set the new pc here
 	'' really should check here to see if we're jumping into cache
-	mov    pc, LMM_NEW_PC
+	mov    __pc, LMM_NEW_PC
 	jmp    #nextinstr
 
 LMM_JUMP_PTR_ret
@@ -201,7 +201,7 @@ LMM_jmptop
 LMM_end_cache
 	'' if we run off the end of the cache we have to jump back
 	mov	LMM_IN_HUB, #1
-	mov    	pc, LMM_cache_endpc
+	mov    	__pc, LMM_cache_endpc
 	jmp    	#nextinstr
 	
 FCOUNT_

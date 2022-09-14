@@ -2,12 +2,12 @@ LMM_RET
 	muxnz	save_cz, #2			' save Z
 	muxc	save_cz, #1			' save C
 	sub	sp, #4
-	rdlong	newpc, sp
+	rdlong	__newpc, sp
 	jmp	#lmm_set_newpc
 	
 LMM_LOOP
-	rdlong	instr, pc
-	add	pc, #4
+	rdlong	instr, __pc
+	add	__pc, #4
 	mov	lmm_flags, #0
 _trmov	mov	LMM_FCACHE_START, instr	' DEST is updated as needed
 	add	_trmov, inc_dest1
@@ -51,8 +51,8 @@ LMM_RA
 
 cache_end_seq
 	call #LMM_JUMP
-newpc	long 0
-pc	long 0
+__newpc	long 0
+__pc	long 0
 
 inc_dest1
 	long  (1<<9)
@@ -77,8 +77,8 @@ LMM_PUSH
   if_nz	jmp	#push_from_cache
 
   	'' push from HUB code; need to copy to cache
-  	rdlong	instr, pc
-	add	pc, #4
+  	rdlong	instr, __pc
+	add	__pc, #4
 	call	#emit_instr
 	jmp	#do_push
 push_from_cache
@@ -95,7 +95,7 @@ do_push
 LMM_JUMP_PTR
 	muxnz save_cz, #2
 	muxc  save_cz, #1
-	mov   newpc, LMM_NEW_PC
+	mov   __newpc, LMM_NEW_PC
 	jmp   #lmm_set_newpc
 	
 LMM_JUMP
@@ -110,10 +110,10 @@ LMM_JUMP
 
 	'' here we were running in ordinary LMM mode
 	'' so we need to fetch the new PC from HUB memory
-	rdlong	newpc, pc
-	add	pc, #4
+	rdlong	__newpc, __pc
+	add	__pc, #4
 	'' and copy it to cache
-	mov    instr, newpc
+	mov    instr, __newpc
 	call   #emit_instr
 	
 	'' we can skip the check for running in cache, we already
@@ -126,13 +126,13 @@ LMM_JUMP
 lmm_set_newpc
 	cmp	LMM_RA, #nextinstr wz
   if_z	jmp	#close_cache_and_set_pc
-  	mov	pc, newpc
+  	mov	__pc, __newpc
 	jmp	#lmm_set_pc
 	
 close_cache_and_set_pc
 	'' close out the current trace cache line
 	call	 #close_cache_line	
-	mov   pc, newpc
+	mov   __pc, __newpc
 
 	'' finally go set the new pc
 	jmp   #lmm_set_pc
@@ -143,7 +143,7 @@ already_in_cache
 	movs	I_getpc_from_cache, LMM_RA
 	add	LMM_RA, #1
 I_getpc_from_cache
-	mov	pc, 0-0
+	mov	__pc, 0-0
 
 	' now, here's an interesting thing we could do: if the jump target
 	' is in cache, we can re-write the jmp instruction itself to
@@ -153,7 +153,7 @@ I_getpc_from_cache
 
 lmm_set_pc
 	'' see if the pc is already in the trace cache
-	mov	lmm_cptr, pc
+	mov	lmm_cptr, __pc
 	shr	lmm_cptr, #2	' ignore low bits of pc, these will always be 0
 	and	lmm_cptr, #$F	' 16 trace cache tags
 	add	lmm_cptr, #trace_cache_tags
@@ -171,7 +171,7 @@ lmm_set_pc
 
 
 I_lmm_cmp1
-	cmp	pc, 0-0 wz	' compare against current cache tag
+	cmp	__pc, 0-0 wz	' compare against current cache tag
 
 if_z	jmp	#cache_hit
 
@@ -181,7 +181,7 @@ if_z	jmp	#cache_hit
 	shr   cacheptr, #9		' extract current cache pointer from instruction in loop
 	and   cacheptr, #$1ff		' FIXME? probably only needed to make reg contents pretty for debug
 I_lmm_savetag
-	mov	0-0, pc		' save pc as new cache tag
+	mov	0-0, __pc		' save pc as new cache tag
 I_lmm_savetracestart
 	mov	0-0, cacheptr	' save pointer to cache data
 
@@ -240,7 +240,7 @@ emit_instr_ret
 close_cache_line
 	mov	instr, cache_end_seq
 	call	#emit_instr
-	mov	instr, pc
+	mov	instr, __pc
 	call	#emit_instr
 close_cache_line_ret
 	ret

@@ -1,22 +1,22 @@
 LMM_RET
 	sub	sp, #4
-	rdlong	pc, sp
+	rdlong	__pc, sp
 	jmp	#LMM_LOOP
 
 LMM_CALL_PTR
-	wrlong	pc, sp
+	wrlong	__pc, sp
 	add	sp, #4
 LMM_JUMP_PTR
-	mov	pc, LMM_NEW_PC
+	mov	__pc, LMM_NEW_PC
 	jmp	#LMM_LOOP
 LMM_CALL
-	wrlong	pc, sp
+	wrlong	__pc, sp
 	add	sp, #4
 LMM_JUMP
-	rdlong	pc, pc
+	rdlong	__pc, __pc
 LMM_LOOP
-	rdlong	instr, pc
-	add	pc, #4
+	rdlong	instr, __pc
+	add	__pc, #4
 instr
 	nop
 	jmp	#LMM_LOOP
@@ -35,7 +35,7 @@ LMM_CALL_PTR_ret
 LMM_RET_ret
 LMM_ra
 	long	0	' return address for LMM subroutine calls
-pc	long 0
+__pc	long 0
 inc_dest1
 	long  (1<<9)
 hubretptr
