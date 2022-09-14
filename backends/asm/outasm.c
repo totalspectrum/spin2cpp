@@ -5693,11 +5693,11 @@ const char *builtin_pushregs_p1 =
 
 const char *builtin_gosub_p1 =
     "gosub_\n"
-    "      wrlong pc, sp\n"
+    "      wrlong __pc, sp\n"
     "      add    sp, #4\n"
     "      mov    COUNT_, #0\n"
     "      call   #pushregs_\n"
-    "      mov    pc, arg01\n"
+    "      mov    __pc, arg01\n"
     "      jmp    #LMM_LOOP\n"
     "gosub__ret\n"
     "      ret\n"
@@ -5773,7 +5773,7 @@ static const char *builtin_abortcode_p1 =
     "    mov abortchain, arg01\n"
     "    wrlong fp, arg01\n"
     "    add arg01, #4\n"
-    "    wrlong pc, arg01\n"
+    "    wrlong __pc, arg01\n"
     "    add arg01, #4\n"
     "    wrlong sp, arg01\n"
     "    add arg01, #4\n"
@@ -5802,7 +5802,7 @@ static const char *builtin_abortcode_p1 =
     "    mov result2, #1\n"
     "    rdlong arg02, arg01\n"  // new target for fp
     "    add arg01, #4\n"
-    "    rdlong pc, arg01\n"
+    "    rdlong __pc, arg01\n"
     "    add arg01, #4\n"
     "    rdlong sp, arg01\n"
     "    add arg01, #4\n"
@@ -5970,7 +5970,7 @@ EmitBuiltins(IRList *irl)
         if (COG_CODE) {
             // abort saves the pc, which we don't have in COG mode, so
             // add a dummy pc register
-            (void)GetOneGlobal(REG_REG, "pc", 0);
+            (void)GetOneGlobal(REG_REG, "__pc", 0);
         }
     }
     if (putcogreg) {
@@ -6140,7 +6140,7 @@ EmitMain_P1(IRList *irl, Module *P)
     const char *firstfuncname;
     Operand *spinlabel;
     Operand *const4 = NewImmediate(4);
-    Operand *pc = NewOperand(REG_REG, "pc", 0);
+    Operand *pc = NewOperand(REG_REG, "__pc", 0);
     Operand *objptr = NewOperand(REG_REG, "objptr", 0);
     Operand *arg1;
     int maxArgs = max_coginit_args;

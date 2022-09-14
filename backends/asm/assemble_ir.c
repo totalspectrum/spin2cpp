@@ -987,7 +987,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                 if (!lmmMode) {
                     // call of hub function from COG
                     PrintCond(fb, ir->cond);
-                    flexbuf_addstr(fb, "mov\tpc, $+2\n");
+                    flexbuf_addstr(fb, "mov\t__pc, $+2\n");
                     PrintCond(fb, ir->cond);
                     flexbuf_addstr(fb, "call\t#LMM_CALL_FROM_COG\n");
                     flexbuf_addstr(fb, "\tlong\t");
@@ -1135,13 +1135,13 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                     dest = (IR *)ir->aux;
                     offset = dest->addr - ir->addr;
                     if ( offset > 0 && offset < MAX_REL_JUMP_OFFSET) {
-                        flexbuf_printf(fb, "add\tpc, #4*(");
+                        flexbuf_printf(fb, "add\t__pc, #4*(");
                         PrintOperand(fb, ir->dst);
                         flexbuf_printf(fb, " - ($+1))\n");
                         return;
                     }
                     if ( offset < 0 && offset > -MAX_REL_JUMP_OFFSET) {
-                        flexbuf_printf(fb, "sub\tpc, #4*(($+1) - ");
+                        flexbuf_printf(fb, "sub\t__pc, #4*(($+1) - ");
                         PrintOperand(fb, ir->dst);
                         flexbuf_printf(fb, ")\n");
                         return;
@@ -1152,7 +1152,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                     PrintOperandAsValue(fb, ir->dst);
                 } else {
                     if (gl_lmm_kind == LMM_KIND_ORIG) {
-                        flexbuf_addstr(fb, "rdlong\tpc,pc\n");
+                        flexbuf_addstr(fb, "rdlong\t__pc,__pc\n");
                     } else {
                         flexbuf_addstr(fb, "call\t#LMM_JUMP\n");
                     }
