@@ -142,7 +142,7 @@ Example:
 ```
 Note the necessity of placing a semicolon at the end of each line, even before the final bracket!
 
-There is one significant restriction to using inline assembly in macros, and that is that the `#' character has special meaning to the C preprocessor, and hence cannot be included in the inline assembly. This can make it difficult to put immediate values in macros. As a work-around, FlexC allows the character `=' to be used in place of `#' in inline assembly, so e.g. to move a constant value of 1 into a local variable `x` one may write either of the two forms below:
+There is one significant restriction to using inline assembly in macros, and that is that the `#` character has special meaning to the C preprocessor, and hence cannot be included in the inline assembly. This can make it difficult to put immediate values in macros. As a work-around, FlexC allows the character `=` to be used in place of `#` in inline assembly, so e.g. to move a constant value of 1 into a local variable `x` one may write either of the two forms below:
 ```
     mov x, #1 /* traditional PASM form for immediate 1 */
     mov x, =1 /* alternate FlexC form for immediate 1 */
