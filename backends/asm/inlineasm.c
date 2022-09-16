@@ -147,6 +147,7 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
             case SYM_RESULT:
             case SYM_LOCALVAR:
             case SYM_TEMPVAR:
+            case SYM_VARIABLE:
                 r = CompileIdentifier(irl, expr);
                 if (!r) {
                     ERROR(expr, "Bad identifier expression %s", sym->user_name);
@@ -154,7 +155,11 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
                 }
                 r_address = immflag;
                 if (r->kind == HUBMEM_REF) {
-                    ERROR(expr, "Variable %s must be placed in memory (probably due to an @ expression) and hence cannot be accessed in inline assembly", sym->user_name);
+                    if (sym->kind == SYM_VARIABLE) {
+                        ERROR(expr, "Variable %s is placed in hub memory and hence cannot be accessed in inline assembly", sym->user_name);
+                    } else {
+                        ERROR(expr, "Variable %s must be placed in memory (probably due to an @ expression) and hence cannot be accessed in inline assembly", sym->user_name);
+                    }
                 }
                 break;
             case SYM_CONSTANT:
@@ -171,7 +176,7 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
                 break;
             case SYM_LABEL:
                 if (!immflag) {
-                    ERROR(expr, "must use an immediate with global labels in inline asm");
+                    ERROR(expr, "Variable %s is a hub label", sym->user_name);
                 }
                 r = LabelRef(irl, sym);
                 break;
