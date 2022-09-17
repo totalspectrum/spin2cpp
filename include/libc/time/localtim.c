@@ -34,7 +34,7 @@ DEBUG_TM(const char *nm, struct tm *tm)
 #define START_OF_2012 (1325376000UL)
 #define START_OF_2100 (4102444800UL)
 
-int _timezone = -1;	/* holds # seconds west of GMT */
+static int _timezone = -1;	/* holds # seconds west of GMT */
 
 static int
 days_per_mth[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
@@ -352,3 +352,6 @@ int __indst(const struct tm *t)
 struct tm *gmtime_r(const time_t *t, struct tm *stm) __attribute__((weak,alias("_gmtime_r")));
 struct tm *localtime_r(const time_t *t, struct tm *stm) __attribute__((weak,alias("_localtime_r")));
 #endif
+
+/* utility function */
+int _gettimezone() { return _timezone; }

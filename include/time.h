@@ -56,6 +56,7 @@ struct tm {
     struct tm *localtime(const time_t *) _IMPL("libc/time/localtim.c");
 #define localtime_r _localtime_r
 #define gmtime_r    _gmtime_r
+    int _gettimezone(void) _IMPL("libc/time/localtim.c");
     
     __SIZE_TYPE__ strftime(char *s, __SIZE_TYPE__ max, const char *format, const struct tm *stm) _STRINGIO _IMPL("libc/time/strftime.c");
 
