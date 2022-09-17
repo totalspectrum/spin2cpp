@@ -1750,7 +1750,7 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
         // insert a dummy function header that just changes the return address
         EmitLabel(irl, FuncData(func)->asmaltname);
         if (!gl_p2) {
-            EmitOp2(irl, OPC_MOVS, FuncData(func)->asmretname, linkreg);
+            EmitOp2(irl, OPC_MOVS, FuncData(func)->asmretregister, linkreg);
         }
     }
 
@@ -1759,7 +1759,7 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
 
     // push return address, if we are in cog mode
     if (func->is_recursive && InCog(func) && !gl_p2) {
-        EmitPush(irl, FuncData(func)->asmretname);
+        EmitPush(irl, FuncData(func)->asmretregister);
     }
     
     // if SEND is set in function, save it
@@ -1859,7 +1859,7 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
     }
     if (func->is_recursive && InCog(func) && !gl_p2) {
         IR *ir;
-        EmitPop(irl, FuncData(func)->asmretname);
+        EmitPop(irl, FuncData(func)->asmretregister);
         // WARNING: 
         // we need at least 1 instruction between the pop
         // and the actual return
@@ -3595,8 +3595,12 @@ CompileCoginit(IRList *irl, AST *expr)
             return OPERAND_DUMMY;
         }
         if (remote && InCog(remote)) {
-            ERROR(expr, "Coginit target must be in hub memory.");
-            return OPERAND_DUMMY;
+            if (gl_p2) {
+                //WARNING(expr, "target in cog memory");
+            } else {
+                ERROR(expr, "Coginit target must be in hub memory.");
+                return OPERAND_DUMMY;
+            }
         }
         
         // we have to build the call into the new stack
@@ -4439,7 +4443,7 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
         // the "STRING_DEF" case is missed above on p2, where
         // we can deliberately refer to memory; but mem-mem moves
         // do not work out well
-        if (src->kind == IMM_INT || SrcOnlyHwReg(src) || (off && src == dst) || src->kind == STRING_DEF) {
+        if (src->kind == IMM_INT || src->kind == IMM_COG_LABEL || SrcOnlyHwReg(src) || (off && src == dst) || src->kind == STRING_DEF) {
             temp2 = NewFunctionTempRegister();
             EmitMove(irl, temp2, src);
             src = temp2;
@@ -5286,12 +5290,14 @@ AssignOneFuncName(Function *f)
         if (InCog(f)) {
             FuncData(f)->asmname = NewOperand(IMM_COG_LABEL, fname, 0/*(intptr_t)f*/);
             FuncData(f)->asmretname = NewOperand(IMM_COG_LABEL, frname, 0);
+            FuncData(f)->asmretregister = NewOperand(REG_REG, frname, 0);
             if (fentername) {
                 FuncData(f)->asmentername = NewOperand(IMM_COG_LABEL, fentername, 0);
             }
         } else {
             FuncData(f)->asmname = NewOperand(IMM_HUB_LABEL, fname, (intptr_t)f);
             FuncData(f)->asmretname = NewOperand(IMM_HUB_LABEL, frname, 0);
+            FuncData(f)->asmretregister = FuncData(f)->asmretname;
             if (fentername) {
                 FuncData(f)->asmentername = NewOperand(IMM_HUB_LABEL, fentername, 0);
             }

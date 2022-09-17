@@ -93,7 +93,7 @@ typedef struct ir_bedata {
     /* assembly output name */
     Operand *asmname;
     Operand *asmretname;
-
+    Operand *asmretregister; /* register version of this for push/pop */
     /* label to go to for "return" instruction; this may simply
        be asmretname, but may be something else if there is a need
        for function cleanup

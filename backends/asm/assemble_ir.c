@@ -1219,7 +1219,11 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
             if (ir->opc == OPC_REPEAT && ir->dst->kind != IMM_INT) {
                 flexbuf_addstr(fb, "@");
             }
-            PrintOperand(fb, ir->dst);
+            if (ir->instr->ops == P2_RDWR_OPERANDS) {
+                PrintOperandSrc(fb, ir->dst, ir->dsteffect);
+            } else {
+                PrintOperand(fb, ir->dst);
+            }
             if (ir->src) {
                 flexbuf_addstr(fb, ", ");
                 PrintOperandSrc(fb, ir->src, ir->srceffect);

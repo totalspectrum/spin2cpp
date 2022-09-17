@@ -1,13 +1,15 @@
 Version 5.9.17
+- Added '=' as alternate immediate syntax for use in C macros.
+- Added REGISTER keyword to BASIC
 - Fixed ++ and -- operators for 64 bit variables
 - Fixed signed modulus for 64 bit integers
 - Fixed a bug in varargs handling for 64 bit values in bytecode
 - Fixed output of C boolean operators in bytecode
 - Fixed some problems with 32 to 64 bit casts in ASM output
-- Made ALIGNW and ALIGNL keywords Spin2 only (some older Spin1 programs used these)
 - Fixed a bad check for immediate values in P1 rdlong/rdbyte/etc.
-- Added REGISTER keyword to BASIC
-- Added '=' as alternate immediate syntax for use in C macros.
+- Fixed a warning in BASIC about the _timezone variable.
+- Made ALIGNW and ALIGNL keywords Spin2 only (some older Spin1 programs used these)
+- On P2, allow coginit() of COG and LUT functions.
 - Support register variables in C and BASIC
 - Renamed LMM pc to __pc to avoid conflict with user code
 
