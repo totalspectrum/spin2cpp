@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
     - name: install-mingw
       run: "sudo apt-get install gcc-mingw-w64-i686"
@@ -29,7 +29,7 @@ jobs:
         name: spin2cpp-git
         path: "spin2cpp-zip/*"
   test:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
      - uses: actions/checkout@v2
      - name: make
@@ -37,7 +37,8 @@ jobs:
      - name: test
        run: make test_offline
   test_spinsim:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
+    timeout-minutes: 10
     steps:
      - uses: actions/checkout@v2
        with:
