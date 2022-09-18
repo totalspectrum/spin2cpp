@@ -3598,7 +3598,7 @@ CompileCoginit(IRList *irl, AST *expr)
             if (gl_p2) {
                 //WARNING(expr, "target in cog memory");
             } else {
-                ERROR(expr, "Coginit target must be in hub memory.");
+                ERROR(expr, "For technical reasons, COG memory functions cannot be launched by a different COG. To work around this, create a stub function (in HUB memory) which calls the COG function, and launch the stub.");
                 return OPERAND_DUMMY;
             }
         }
