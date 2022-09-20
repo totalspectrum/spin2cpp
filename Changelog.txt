@@ -1,3 +1,6 @@
+Version 5.9.18
+- Minor tweak to preprocessor to better handle files that do not end with a newline
+
 Version 5.9.17
 - Added '=' as alternate immediate syntax for use in C macros.
 - Added REGISTER keyword to BASIC

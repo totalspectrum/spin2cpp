@@ -352,7 +352,7 @@ pp_init(struct preprocess *pp)
     pp->warnfunc = default_errfunc;
     pp->errarg = (void *)"error";
     pp->warnarg = (void *)"warning";
-    pp->linechange = "#line %d \"%s\"\n";
+    pp->linechange = "\n#line %d \"%s\"\n";
 }
 
 /*
