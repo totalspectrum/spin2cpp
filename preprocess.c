@@ -352,7 +352,7 @@ pp_init(struct preprocess *pp)
     pp->warnfunc = default_errfunc;
     pp->errarg = (void *)"error";
     pp->warnarg = (void *)"warning";
-    pp->linechange = "\n#line %d \"%s\"\n";
+    pp->linechange = "#line %d \"%s\"\n";
 }
 
 /*
@@ -428,7 +428,8 @@ void pp_pop_file(struct preprocess *pp)
         A = pp->fil;
         if (A && A->name) {
             char temp[128];
-            snprintf(temp, sizeof(temp), pp->linechange, A->lineno, A->name);
+            temp[0] = '\n'; // force a newline
+            snprintf(temp+1, sizeof(temp)-1, pp->linechange, A->lineno, A->name);
             temp[127] = 0; /* make sure it is 0 terminated */
             flexbuf_addstr(&pp->whole, temp);
         }
