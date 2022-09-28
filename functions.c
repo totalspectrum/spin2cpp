@@ -1368,8 +1368,10 @@ ModifyLookup(AST *top)
  * Returns an AST that should be printed before the function body, e.g.
  * to declare temporary arrays.
  */
+enum SetKind { SETFLAG_NEVER = 0, SETFLAG_ALWAYS = 3 };
+
 static AST *
-NormalizeFunc(AST *ast, Function *func, int setflag)
+NormalizeFunc(AST *ast, Function *func, enum SetKind setflag)
 {
     AST *ldecl;
     AST *rdecl;
@@ -1382,12 +1384,12 @@ NormalizeFunc(AST *ast, Function *func, int setflag)
     switch (ast->kind) {
     case AST_RETURN:
         if (ast->left) {
-            return NormalizeFunc(ast->left, func, 0);
+            return NormalizeFunc(ast->left, func, SETFLAG_NEVER);
         }
         return NULL;
     case AST_ADDROF:
     case AST_ABSADDROF:
-        return NormalizeFunc(ast->left, func, 1);
+        return NormalizeFunc(ast->left, func, SETFLAG_ALWAYS);
     case AST_RESULT:
         func->result_used = 1;
         return NULL;
@@ -1403,12 +1405,17 @@ NormalizeFunc(AST *ast, Function *func, int setflag)
             func->result_used = 1;
         sym = LookupSymbol(GetIdentifierName(ast));
         if (sym && sym->kind == SYM_LOCALVAR) {
-            if (setflag) {
+            switch (setflag) {
+            case SETFLAG_ALWAYS:
                 sym->flags |= SYMF_INITED;
-            } else if (!(sym->flags & SYMF_INITED)) {
-                if (gl_warn_flags & WARN_UNINIT_VARS) {
-                    WARNING(ast, "%s is possibly used before initialization", sym->user_name);
+                break;
+            default:
+                if (!(sym->flags & SYMF_INITED)) {
+                    if (gl_warn_flags & WARN_UNINIT_VARS) {
+                        WARNING(ast, "%s is possibly used before initialization", sym->user_name);
+                    }
                 }
+                break;
             }
         }
         return NULL;
@@ -1423,26 +1430,26 @@ NormalizeFunc(AST *ast, Function *func, int setflag)
         return NULL;
     case AST_LOOKUP:
     case AST_LOOKDOWN:
-        ldecl = NormalizeFunc(ast->left, func, 0);
-        rdecl = NormalizeFunc(ast->right, func, 0);
+        ldecl = NormalizeFunc(ast->left, func, SETFLAG_NEVER);
+        rdecl = NormalizeFunc(ast->right, func, SETFLAG_NEVER);
         return ModifyLookup(ast);
     case AST_VA_START:
     case AST_ASSIGN:
-        rdecl = NormalizeFunc(ast->right, func, 0);
+        rdecl = NormalizeFunc(ast->right, func, SETFLAG_NEVER);
         if (0 != (name = GetIdentifierName(ast->left))) {
             sym = LookupSymbol(name);
             if (sym) {
                 sym->flags |= SYMF_INITED;
             }
         }
-        ldecl = NormalizeFunc(ast->left, func, 1);
+        ldecl = NormalizeFunc(ast->left, func, SETFLAG_ALWAYS);
         return AddToList(ldecl, rdecl);
     case AST_DOWHILE:
         rdecl = NormalizeFunc(ast->right, func, setflag);
         ldecl = NormalizeFunc(ast->left, func, setflag);
         return AddToList(ldecl, rdecl);
     case AST_COUNTREPEAT:
-        ldecl = NormalizeFunc(ast->left, func, 1); // in a COUNTREPEAT the variable is initialized
+        ldecl = NormalizeFunc(ast->left, func, SETFLAG_ALWAYS); // in a COUNTREPEAT the variable is initialized
         rdecl = NormalizeFunc(ast->right, func, setflag);
         return AddToList(ldecl, rdecl);
     case AST_FOR:
@@ -1467,7 +1474,7 @@ NormalizeFunc(AST *ast, Function *func, int setflag)
         if (func->result_declared) {
             func->result_used = 1;
         }
-        setflag = 1;  /* assume stuff gets set before use in inline assembly */
+        setflag = SETFLAG_ALWAYS;  /* assume stuff gets set before use in inline assembly */
         /* otherwise, fall through */
     default:
         ldecl = NormalizeFunc(ast->left, func, setflag);
@@ -2215,7 +2222,7 @@ ProcessOneFunc(Function *pf)
     if (last_errors != gl_errors && gl_errors >= gl_max_errors) return;
     
     CheckRecursive(pf);  /* check for recursive functions */
-    decls = NormalizeFunc(pf->body, pf, 0);
+    decls = NormalizeFunc(pf->body, pf, SETFLAG_NEVER);
     pf->extradecl = AddToList(pf->extradecl, decls);
 
     /* check for void functions */
