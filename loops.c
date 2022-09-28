@@ -992,6 +992,9 @@ CheckSimpleIncrementLoop(AST *stmt)
         || updateTestOp == K_LEU || updateTestOp == K_LTU)
     {
         newInitial = GetRevisedLimit(updateTestOp, updateLimit);
+        if (!newInitial) {
+            return;
+        }
     } else {
         return;
     }
