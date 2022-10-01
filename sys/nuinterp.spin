@@ -184,6 +184,15 @@ impl_PUSHI16
   _ret_	rfword	tos
 #endif
 
+impl_PUSHI8
+	call	#\impl_DUP
+#ifdef SERIAL_DEBUG	
+       rfbyte	tos
+ _ret_ getptr	pb
+#else
+  _ret_	rfbyte	tos
+#endif
+
 impl_PUSHA
 	call	#\impl_DUP
 	rfword	tos

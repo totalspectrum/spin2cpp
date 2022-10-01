@@ -9,7 +9,8 @@
 #define PUSHA_BYTECODE  2
 #define CALLA_BYTECODE  3
 #define PUSHI16_BYTECODE 4
-#define FIRST_BYTECODE  5
+#define PUSHI8_BYTECODE 5
+#define FIRST_BYTECODE  6
 #define MAX_BYTECODE 0xf8
 
 static const char *NuOpName[] = {
@@ -435,7 +436,9 @@ static NuBytecode *NuFindCompressBytecode(NuIrList *irl, int *savings) {
             // cost of each invocation is 5 bytes normally (PUSHI + data)
             // so we save 4 bytes by replacing with a singleton
             int invoke_cost = 4;
-            if (bc->value >= 0 && bc->value <= 0xffff) {
+            if (bc->value >= 0 && bc->value <= 0xff) {
+                invoke_cost = 1;
+            } else if (bc->value >= 0 && bc->value <= 0xffff) {
                 invoke_cost = 2;
             }
             if (bc->value >= -511 && bc->value <= 511) {
@@ -789,6 +792,7 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     flexbuf_printf(fb, "\tlong\timpl_PUSHA\n");
     flexbuf_printf(fb, "\tlong\timpl_CALLA\n");
     flexbuf_printf(fb, "\tlong\timpl_PUSHI16\n");
+    flexbuf_printf(fb, "\tlong\timpl_PUSHI8\n");
     
     for (i = 0; i < num_bytecodes; i++) {
         NuBytecode *bc = globalBytecodes[i];
@@ -812,6 +816,7 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     flexbuf_printf(fb, "\tNU_OP_PUSHA = %d\n", PUSHA_BYTECODE);
     flexbuf_printf(fb, "\tNU_OP_CALLA = %d\n", CALLA_BYTECODE);
     flexbuf_printf(fb, "\tNU_OP_PUSHI16 = %d\n", PUSHI16_BYTECODE);
+    flexbuf_printf(fb, "\tNU_OP_PUSHI8 = %d\n", PUSHI8_BYTECODE);
     // others
     for (i = 0; i < num_bytecodes; i++) {
         NuBytecode *bc = globalBytecodes[i];
@@ -916,6 +921,9 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
                         flexbuf_printf(fb, "\tbyte\tlong %s | (", name);
                         NuOutputLabel(fb, ir->label);
                         flexbuf_printf(fb, "<< 8)");
+                    } else if (ir->val >= 0 && ir->val <= 0xff) {
+                        name = "NU_OP_PUSHI8";
+                        flexbuf_printf(fb, "\tbyte\t%s, %d", name, ir->val);
                     } else if (ir->val >= 0 && ir->val <= 0xffff) {
                         name = "NU_OP_PUSHI16";
                         flexbuf_printf(fb, "\tbyte\t%s, word %d", name, ir->val);

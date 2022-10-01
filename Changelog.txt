@@ -1,4 +1,5 @@
 Version 5.9.18
+- Made some nucode code generation improvements
 - Minor tweak to preprocessor to better handle files that do not end with a newline
 
 Version 5.9.17
