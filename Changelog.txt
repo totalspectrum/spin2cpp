@@ -1,4 +1,5 @@
 Version 5.9.18
+- Fixed missing # on output of jint style inline asm instructions
 - Made some nucode code generation improvements
 - Minor tweak to preprocessor to better handle files that do not end with a newline
 

@@ -1210,6 +1210,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         case DST_OPERAND_ONLY:
         case CALL_OPERAND:
         case P2_JUMP:
+        case P2_JINT_OPERANDS:
         case P2_DST_CONST_OK:
             flexbuf_addstr(fb, "\t");
             PrintOperandSrc(fb, ir->dst, ir->dsteffect);
