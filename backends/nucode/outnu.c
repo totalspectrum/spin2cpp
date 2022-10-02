@@ -2000,6 +2000,7 @@ static int NuOptimizeFunction(Function *pf, NuIrList *irl) {
     do {
         change = NuOptimizePeephole(irl);
         change += NuRemoveDupDrop(irl);
+        change += NuRemoveDeadCode(irl);
         all_changes += change;
     } while (change > 0);
     return all_changes;

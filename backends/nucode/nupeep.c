@@ -221,3 +221,27 @@ int NuRemoveDupDrop(NuIrList *irl) {
     }
     return changes;
 }
+
+//
+// remove unreachable code
+//
+int NuRemoveDeadCode(NuIrList *irl)
+{
+    int changes = 0;
+    NuIr *ir;
+    bool inDeadCode = false;
+    bool inJumpTable = false;
+    for (ir = irl->head; ir; ir = ir->next) {
+        if (ir->op == NU_OP_LABEL) {
+            inDeadCode = inJumpTable = false;
+        } else if (inDeadCode && ir->op < NU_OP_DUMMY) {
+            ir->op = NU_OP_DUMMY;
+            changes++;
+        } else if (ir->op == NU_OP_JMPREL) {
+            inJumpTable = true;
+        } else if (ir->op == NU_OP_BRA) {
+            if (!inJumpTable) inDeadCode = true;
+        }
+    }    
+    return changes;
+}
