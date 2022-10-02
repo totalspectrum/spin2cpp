@@ -347,7 +347,7 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
             if (TypeSize(typ) > LONG_SIZE) {
                 needTransform = true;
             } else {
-                needTransform = (gl_output == OUTPUT_BYTECODE) ? insertCasts : !insertCasts;
+                needTransform = TraditionalBytecodeOutput() ? insertCasts : !insertCasts;
             }
             if (needTransform) {
                 AST *tmp = insertCasts ? TransformAssignChainWithCasts(astptr) : TransformAssignChainNoCasts(astptr);
