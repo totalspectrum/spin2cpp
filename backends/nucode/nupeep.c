@@ -108,6 +108,39 @@ static int NuReplaceCbnz(int arg, NuIrList *irl, NuIr *ir) {
     return 1;
 }
 
+// replace PUSHI 0; CBNE x -> BNZ x
+static NuPeepholePattern pat_djnz[] = {
+    { NU_OP_PUSHI,      PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_ADD_DBASE,  PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_LDL,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },         // del 1
+    { NU_OP_PUSHI,      1,            PEEP_FLAGS_MATCH_IMM },    // del 2
+    { NU_OP_SUB,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },         // del 3
+    { NU_OP_DUP,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },         // del 4
+    { NU_OP_PUSHI,      0,            PEEP_FLAGS_MATCH_ARG },    // del 5
+    { NU_OP_ADD_DBASE,  PEEP_ARG_ANY, PEEP_FLAGS_NONE },         // del 6
+    { NU_OP_STL,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },         // del 7
+    { NU_OP_BNZ,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { 0, 0, PEEP_FLAGS_DONE }
+};
+
+static int NuReplaceDjnz(int arg, NuIrList *irl, NuIr *ir) {
+    NuIr *delir;
+
+    // preserve first two ir's (PUSHI, ADD_DBASE)
+    ir = ir->next;
+    ir = ir->next;
+
+    // delete the next 7 ir's
+    for (int i = 0; i < 7; i++) {
+        delir = ir;
+        ir = ir->next;
+        NuDeleteIr(irl, delir);
+    }
+    // make next ir the djnz
+    ir->op = arg;
+    return 1;
+}
+
 // replace ST / LD with DUP / ST
 static NuPeepholePattern pat_st_ld[] = {
     { NU_OP_PUSHI,     PEEP_ARG_ANY, PEEP_FLAGS_NONE },
@@ -138,7 +171,9 @@ struct nupeeps {
     { pat_cbxx, 0, NuReplaceCBxx },
     { pat_cbnz, NU_OP_BNZ, NuReplaceCbnz },
     { pat_cbz,  NU_OP_BZ,  NuReplaceCbnz },
+    { pat_djnz, NU_OP_DJNZ, NuReplaceDjnz },
     { pat_st_ld, 0, NuReplaceStLd },
+    
 };
 
 //
@@ -157,6 +192,11 @@ int NuOptimizePeephole(NuIrList *irl) {
         }
         if (!ir) break;
         for (i = 0; i < sizeof(nupeep) / sizeof(nupeep[0]); i++) {
+#if 0            
+            if (nupeep[i].check == pat_djnz && ir->op == NU_OP_PUSHI && ir->next && ir->next->op == NU_OP_ADD_DBASE && ir->next->next && ir->next->next->op == NU_OP_LDL) {
+                printf("??\n");
+            }
+#endif            
             match = NuMatchPattern(nupeep[i].check, ir);
             if (match) {
                 match = (*nupeep[i].replace)(nupeep[i].arg, irl, ir);

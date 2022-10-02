@@ -899,6 +899,7 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
         case NU_OP_BRA:
         case NU_OP_BZ:
         case NU_OP_BNZ:
+        case NU_OP_DJNZ:
         case NU_OP_CBEQ:
         case NU_OP_CBNE:
         case NU_OP_CBLTS:
@@ -940,5 +941,18 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
             flexbuf_printf(fb, "\t' %s", ir->comment);
         }
         flexbuf_addchar(fb, '\n');
+    }
+}
+
+void
+DumpNuIr(NuIrList *irl)
+{
+    NuIr *ir = irl->head;
+    while (ir) {
+        switch (ir->op) {
+        default:
+            printf("\t%s\n", NuOpName[ir->op]);
+        }
+        ir = ir->next;
     }
 }

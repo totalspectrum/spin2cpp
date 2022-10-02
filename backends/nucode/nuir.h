@@ -151,6 +151,7 @@
     X(CBNE)      /* compare branch if not equal */ \
     X(BZ)        /* branch if tos is zero */ \
     X(BNZ)       /* branch if tos is non-zero */ \
+    X(DJNZ)      /* decrement *tos, branch if result non-zero */ \
     X(CBLTS)     /* compare branch if < signed */ \
     X(CBLES)     /* compare branch if <= signed */ \
     X(CBLTU)     /* compare branch if < unsigned */ \

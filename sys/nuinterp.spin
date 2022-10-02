@@ -19,7 +19,7 @@ dat
 ''    ^A2 = initial PC
 ''    ^A3 = initial object pointer
 ''    ^A4 = initial frame pointer
-''    ^A5 = initial stack pointer
+''    ^A5 = initial stack pointer (probably not valid any more)
 ''    ^A6 = heap size in longs
 ''    ^A7 = variable size in longs
 
@@ -1067,6 +1067,15 @@ impl_BNZ
 	cmp	tos, #0 wcz
   if_z	mov	tmp, #0
 	jmp	#do_relbranch_drop1
+
+impl_DJNZ
+	rfword	tmp
+	signx	tmp, #15
+	rdlong	tmp2, tos
+	sub	tmp2, #1 wz
+	wrlong	tmp2, tos
+ if_nz	jmp	#\do_relbranch_drop1
+ 	ret
 
 impl_CBEQ
 	rfword	tmp
