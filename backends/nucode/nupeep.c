@@ -271,12 +271,21 @@ int NuRemoveDeadCode(NuIrList *irl)
     NuIr *ir;
     bool inDeadCode = false;
     bool inJumpTable = false;
+
+    return 0;
+    
     for (ir = irl->head; ir; ir = ir->next) {
-        if (ir->op == NU_OP_LABEL) {
-            inDeadCode = inJumpTable = false;
-        } else if (inDeadCode && ir->op < NU_OP_DUMMY) {
-            ir->op = NU_OP_DUMMY;
-            changes++;
+        if (inDeadCode) {
+            if (ir->op < NU_OP_DUMMY) {
+                ir->op = NU_OP_DUMMY;
+                changes++;
+            } else if (ir->op == NU_OP_LABEL) {
+                inDeadCode = false;
+            }
+        } else if (inJumpTable) {
+            if (ir->op < NU_OP_DUMMY && ir->op != NU_OP_BRA) {
+                inJumpTable = false;
+            }
         } else if (ir->op == NU_OP_JMPREL) {
             inJumpTable = true;
         } else if (ir->op == NU_OP_BRA) {
