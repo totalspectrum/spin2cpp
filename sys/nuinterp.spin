@@ -42,9 +42,10 @@ entry_vbase
 entry_dbase
 	long	4	' initial frame pointer
 entry_sp
-	long	5 + 8	' initial stack pointer (plus pop space)
+''	long	5 + 8	' initial stack pointer (plus pop space)
+	long	3 + 4*(7+6) + 8 ' initial stack pointer, plus pop space
 heap_base
-	long	@__heap_base	' heap base ($30)
+	long	3 + 4*(7)	' heap base ($30)
 	orgh	$80	' $40-$80 reserved
 	
 	org	0
@@ -68,12 +69,17 @@ real_init
 	mov	pa, ##0	' clock frequency
 	wrlong	pa, #@clock_freq
 skip_clock
+	' zero out variables and heap
+	loc	ptrb, #3
+	loc	pb, #(7 + 6)
+	rep	@.endclr, pb
+	wrlong	#0, ptrb++
+.endclr
 	' set up initial registers
 	rdlong	pb, #@entry_pc	' pb serves as PC
 	rdlong	vbase, #@entry_vbase
 	rdlong	ptra, #@entry_sp
 	rdlong	dbase, #@entry_dbase
-
 	jmp	#continue_startup
 spininit
 	' for Spin startup, stack should contain args, pc, vbase in that order
@@ -1292,6 +1298,7 @@ dump_buf
 
 ' labels at and of code/data
 	alignl
+#ifdef OLDWAY	
 ' variable space
 3	long	0[7]
 
@@ -1301,3 +1308,7 @@ __heap_base
 
 ' stack space
 5	long	0	' stack
+
+#else
+3
+#endif
