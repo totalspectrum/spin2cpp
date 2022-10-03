@@ -272,8 +272,6 @@ int NuRemoveDeadCode(NuIrList *irl)
     bool inDeadCode = false;
     bool inJumpTable = false;
 
-    return 0;
-    
     for (ir = irl->head; ir; ir = ir->next) {
         if (inDeadCode) {
             if (ir->op < NU_OP_DUMMY) {

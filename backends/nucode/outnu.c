@@ -1996,11 +1996,17 @@ static int NuOptimizeFunction(Function *pf, NuIrList *irl) {
     // for now, do nothing
     int change;
     int all_changes = 0;
+    unsigned flags = pf->optimize_flags;
     
     do {
-        change = NuOptimizePeephole(irl);
-        change += NuRemoveDupDrop(irl);
-        change += NuRemoveDeadCode(irl);
+        change = 0;
+        if (flags & OPT_PEEPHOLE) {
+            change += NuOptimizePeephole(irl);
+            change += NuRemoveDupDrop(irl);
+        }
+        if (flags & OPT_DEADCODE) {
+            change += NuRemoveDeadCode(irl);
+        }
         all_changes += change;
     } while (change > 0);
     return all_changes;
