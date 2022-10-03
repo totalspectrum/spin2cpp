@@ -372,8 +372,8 @@ impl_RET
 impl_ret_body
 	push	#restart_loop
 	' save # return items to pop
-	mov	nrets, tos
-	mov	nargs, nos
+	mov	nrets, nos
+	mov	nargs, tos
 	call	#\impl_DROP2
 
 	' save the return values in 0..N
