@@ -202,6 +202,8 @@ typedef struct NuBytecode {
     unsigned is_const:1;
     unsigned is_label:1;
     unsigned in_hub:1;
+    unsigned is_binary_op:1;
+    unsigned is_small_const:1;
 } NuBytecode;
 
 typedef struct nuir {

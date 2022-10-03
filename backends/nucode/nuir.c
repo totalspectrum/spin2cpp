@@ -1,6 +1,7 @@
 #include "common.h"
 #include "nuir.h"
 #include <stdio.h>
+#include <ctype.h>
 #include "sys/nuinterp.spin.h"
 #include "becommon.h"
 
@@ -309,6 +310,9 @@ GetBytecodeFor(NuIr *ir)
                 b->is_rel_branch = 1;
             }
         }
+        if (ir->op >= NU_OP_ADD && ir->op <= NU_OP_MOVBYTS) {
+            b->is_binary_op = 1;
+        }
         if (ir->op == NU_OP_INLINEASM) {
             b->is_inline_asm = 1;
         }
@@ -492,15 +496,39 @@ const char *NuMergeBytecodes(const char *bcname, NuBytecode *first, NuBytecode *
     fb = &fb_s;
     flexbuf_init(fb, 256);
     flexbuf_printf(fb, "impl_%s\n", bcname);
-    if (first->impl_size < 2) {
-        NuCopyImpl(fb, first->impl_ptr, 1);
+
+    if (first->is_small_const && second->is_binary_op && first->value >= 0 && first->value <= 511) {
+        char *opname = strdup(second->name);
+        char *s;
+
+        if (!strcmp(opname, "MINS")) {
+            strcpy(opname, "fges");
+        } else if (!strcmp(opname, "MAXS")) {
+            strcpy(opname, "fles");
+        } else if (!strcmp(opname, "MINU")) {
+            strcpy(opname, "fge");
+        } else if (!strcmp(opname, "MAXU")) {
+            strcpy(opname, "fle");
+        } else if (!strcmp(opname, "IOR")) {
+            strcpy(opname, "or");
+        } else {
+            for (s = opname; *s; s++) {
+                *s = tolower(*s);
+            }
+        }
+        flexbuf_printf(fb, " _ret_\t%s\ttos, #%d\n", opname, first->value);
+        free(opname);
     } else {
-        flexbuf_printf(fb, "\tcall\t#\\impl_%s\n", first->name);
-    }
-    if (second->impl_size < 2) {
-        NuCopyImpl(fb, second->impl_ptr, 0);
-    } else {
-        flexbuf_printf(fb, "\tjmp\t#\\impl_%s\n", second->name);
+        if (first->impl_size < 2) {
+            NuCopyImpl(fb, first->impl_ptr, 1);
+        } else {
+            flexbuf_printf(fb, "\tcall\t#\\impl_%s\n", first->name);
+        }
+        if (second->impl_size < 2) {
+            NuCopyImpl(fb, second->impl_ptr, 0);
+        } else {
+            flexbuf_printf(fb, "\tjmp\t#\\impl_%s\n", second->name);
+        }
     }
     flexbuf_addchar(fb, '\n');
     flexbuf_addchar(fb, 0);
@@ -635,6 +663,7 @@ void NuCreateBytecodes(NuIrList *lists)
                     immflag = "";
                 }
                 valstr = namestr = auto_printf(32, "%u", val);
+                bc->is_small_const = 1;
             }
             bc->name = auto_printf(32, "%s%s", opname, namestr);
             // impl_PUSH_0
