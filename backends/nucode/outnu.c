@@ -1997,7 +1997,9 @@ static int NuOptimizeFunction(Function *pf, NuIrList *irl) {
     int change;
     int all_changes = 0;
     unsigned flags = pf->optimize_flags;
-    
+    Function *savefunc = curfunc;
+
+    curfunc = pf;
     do {
         change = 0;
         if (flags & OPT_PEEPHOLE) {
@@ -2009,6 +2011,7 @@ static int NuOptimizeFunction(Function *pf, NuIrList *irl) {
         }
         all_changes += change;
     } while (change > 0);
+    curfunc = savefunc;
     return all_changes;
 }
 

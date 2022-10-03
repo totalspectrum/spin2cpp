@@ -194,7 +194,27 @@ static int NuDeleteInst(int arg, NuIrList *irl, NuIr *ir) {
         NuDeleteIr(irl, ir->next);
         --arg;
     }
-    ir->op = NU_OP_DUMMY;
+    NuDeleteIr(irl, ir);
+    return 1;
+}
+
+// elimiinate DUP / ST / DROP sequence
+static NuPeepholePattern pat_dup_st_drop[] = {
+    { NU_OP_DUP,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_PUSHI,     PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_ADD_DBASE, PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_STL,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_DROP,      PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { 0, 0, PEEP_FLAGS_DONE }
+};
+static int NuDeletePair(int arg, NuIrList *irl, NuIr *ir) {
+    NuIr *delir = ir->next;
+    while (arg > 0) {
+        delir = delir->next;
+        --arg;
+    }
+    NuDeleteIr(irl, delir);
+    NuDeleteIr(irl, ir);
     return 1;
 }
 
@@ -204,13 +224,14 @@ struct nupeeps {
     int arg;
     int (*replace)(int arg, NuIrList *irl, NuIr *ir);
 } nupeep[] = {
+    { pat_dup_st_drop, 3, NuDeletePair },
+    { pat_dup_drop, 2, NuDeleteInst },
     { pat_cbxx, 0, NuReplaceCBxx },
     { pat_cbnz, NU_OP_BNZ, NuReplaceCbnz },
     { pat_cbz,  NU_OP_BZ,  NuReplaceCbnz },
     { pat_djnz, NU_OP_DJNZ, NuReplaceDjnz },
     { pat_st_ld, 0, NuReplaceStLd },
     { pat_dead_st, 3, NuReplaceWithDrop },
-    { pat_dup_drop, 2, NuDeleteInst },
 };
 
 //
