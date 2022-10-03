@@ -108,7 +108,7 @@ static int NuReplaceCbnz(int arg, NuIrList *irl, NuIr *ir) {
     return 1;
 }
 
-// replace PUSHI 0; CBNE x -> BNZ x
+// pattern for DJNZ
 static NuPeepholePattern pat_djnz[] = {
     { NU_OP_PUSHI,      PEEP_ARG_ANY, PEEP_FLAGS_NONE },
     { NU_OP_ADD_DBASE,  PEEP_ARG_ANY, PEEP_FLAGS_NONE },
@@ -162,6 +162,42 @@ static int NuReplaceStLd(int arg, NuIrList *irl, NuIr *ir) {
     return 1;
 }
 
+// eliminate local ST before RET
+static NuPeepholePattern pat_dead_st[] = {
+    { NU_OP_PUSHI,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_ADD_DBASE,   PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_STL,         PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_PUSHI,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_PUSHI,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_RET,         PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { 0, 0, PEEP_FLAGS_DONE }
+};
+// replace "arg" instructions starting at ir with a DROP
+static int NuReplaceWithDrop(int arg, NuIrList *irl, NuIr *ir) {
+    ir->op = NU_OP_DROP;
+    --arg;
+    while (arg > 0) {
+        NuDeleteIr(irl, ir->next);
+        --arg;
+    }
+    return 1;
+}
+
+// elimiinate DUP / DROP sequence
+static NuPeepholePattern pat_dup_drop[] = {
+    { NU_OP_DUP,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_DROP,      PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { 0, 0, PEEP_FLAGS_DONE }
+};
+static int NuDeleteInst(int arg, NuIrList *irl, NuIr *ir) {
+    while (arg > 1) {
+        NuDeleteIr(irl, ir->next);
+        --arg;
+    }
+    ir->op = NU_OP_DUMMY;
+    return 1;
+}
+
 // list of patterns and functions to invoke when the patterns are matched
 struct nupeeps {
     NuPeepholePattern *check;
@@ -173,7 +209,8 @@ struct nupeeps {
     { pat_cbz,  NU_OP_BZ,  NuReplaceCbnz },
     { pat_djnz, NU_OP_DJNZ, NuReplaceDjnz },
     { pat_st_ld, 0, NuReplaceStLd },
-    
+    { pat_dead_st, 3, NuReplaceWithDrop },
+    { pat_dup_drop, 2, NuDeleteInst },
 };
 
 //
