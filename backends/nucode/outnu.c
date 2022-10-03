@@ -1794,8 +1794,7 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
         if (n != curfunc->numresults) {
             ERROR(ast, "number of items returned does not match function signature");
         }
-        NuEmitConst(irl, n);
-        NuEmitConst(irl, NumArgLongs(curfunc));
+        NuEmitConst(irl, (n<<8) | NumArgLongs(curfunc));
         NuEmitOp(irl, NU_OP_RET);
         break;
     case AST_FUNCCALL:
@@ -1949,10 +1948,10 @@ NuCompileFunction(Function *F) {
         NuEmitLabel(irl, FunData(F)->entryLabel);
         // ENTER needs on stack:
         //  number of return values
-        //  number of arguments
+        //      number of arguments
         //  number of locals
-        NuEmitConst(irl, NumRetLongs(F));
-        NuEmitConst(irl, NumArgLongs(F));
+        NuEmitConst(irl, (NumRetLongs(F) << 8) | (NumArgLongs(F)) );
+        //NuEmitConst(irl, NumArgLongs(F));
         NuEmitConst(irl, NumLocalLongs(F));
         NuEmitOp(irl, NU_OP_ENTER);
         
@@ -1964,15 +1963,13 @@ NuCompileFunction(Function *F) {
         if (irl->tail && irl->tail->op != NU_OP_RET) {
             if (NumRetLongs(F) == 0) {
                 // just insert RET
-                NuEmitConst(irl, 0);
                 NuEmitConst(irl, NumArgLongs(curfunc));
                 NuEmitOp(irl, NU_OP_RET);
             } else {
                 // FIXME: maybe we don't actually need to do this?
                 // it's possible there are already returns before this
                 int n = NuCompileExpression(irl, F->resultexpr);
-                NuEmitConst(irl, n);
-                NuEmitConst(irl, NumArgLongs(curfunc));
+                NuEmitConst(irl, (n<<8) | NumArgLongs(curfunc));
                 NuEmitOp(irl, NU_OP_RET);
             }
         }

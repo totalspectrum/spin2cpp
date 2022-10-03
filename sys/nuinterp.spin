@@ -327,9 +327,10 @@ impl_CALLM
 '
 impl_ENTER
 	mov	nlocals, tos	' number of locals
-	call	#\impl_DROP	' now tos is number of args, nos is # ret values
-	mov	nargs, tos
+	mov	nargs, nos
+	and	nargs, #$ff
 	mov	nrets, nos
+	shr	nrets, #8
 do_enter
 	' find the "stack base" (where return values will go)
 	mov	old_dbase, dbase
@@ -372,9 +373,11 @@ impl_RET
 impl_ret_body
 	push	#restart_loop
 	' save # return items to pop
-	mov	nrets, nos
+	mov	nrets, tos
+	shr	nrets, #8
 	mov	nargs, tos
-	call	#\impl_DROP2
+	and	nargs, #$ff
+	call	#\impl_DROP
 
 	' save the return values in 0..N
 	mov	tmp, nrets wz
