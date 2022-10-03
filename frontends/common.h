@@ -182,7 +182,7 @@ extern int gl_optimize_flags; /* flags for optimization */
 #define EXTRA_ASM_OPTS          (OPT_INLINE_SINGLEUSE|OPT_PERFORM_CSE|OPT_PERFORM_LOOPREDUCE|OPT_REMOVE_HUB_BSS)
 
 // default optimization (-O1) for bytecode output; defaults to much less optimization than asm
-#define DEFAULT_BYTECODE_OPTS   (OPT_REMOVE_UNUSED_FUNCS|OPT_REMOVE_FEATURES|OPT_DEADCODE|OPT_MAKE_MACROS|OPT_SPECIAL_FUNCS)
+#define DEFAULT_BYTECODE_OPTS   (OPT_REMOVE_UNUSED_FUNCS|OPT_REMOVE_FEATURES|OPT_DEADCODE|OPT_MAKE_MACROS|OPT_SPECIAL_FUNCS|OPT_PEEPHOLE)
 
 extern int gl_warn_flags;     /* flags for warnings */
 #define WARN_LANG_EXTENSIONS    0x01
