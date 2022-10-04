@@ -13,7 +13,7 @@ PROG_ASM="$FASTSPIN -I../Lib"
 if [ "$2" != "" ]; then
   LOADP1=$2
 else
-  LOADER="proploader -q -Q -D loader-baud-rate=115200 -D baud-rate=115200 -r -t"
+  LOADP1="proploader -q -Q -D loader-baud-rate=115200 -D baud-rate=115200 -r -t"
 fi
 
 CC=propeller-elf-gcc
@@ -36,7 +36,9 @@ do
     
   # now compile with asm
   if $PROG_ASM -o $j.binary $i; then
-    $LOADP1 $j.binary > $j.txt
+      $LOADP1 $j.binary > $j.txt
+  else
+      echo "build $PROG_ASM -o $j.binary $i failed"
   fi
   if diff -ub Expect/$j.txt $j.txt
   then
