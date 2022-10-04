@@ -893,8 +893,10 @@ int __unlockio(int h) { return 0; }
 typedef struct _bas_wrap_sender {
     TxFunc ftx;
     RxFunc frx;
+    CloseFunc fclose;
     int tx(int c, void *arg) { ftx(c); return 1; }
     int rx(void *arg) { return frx(); }
+    int close(void *arg) { return fclose(); }
 } BasicWrapper;
 
 TxFunc _gettxfunc(unsigned h) {
@@ -945,7 +947,7 @@ int _basic_open(unsigned h, TxFunc sendf, RxFunc recvf, CloseFunc closef)
     if (v->state) {
         _closeraw(v);
     }
-    if (sendf || recvf) {
+    if (sendf || recvf || closef) {
         wrapper = _gc_alloc_managed(sizeof(BasicWrapper));
         if (!wrapper) {
             THROW_RETURN(ENOMEM); /* out of memory */
@@ -954,22 +956,24 @@ int _basic_open(unsigned h, TxFunc sendf, RxFunc recvf, CloseFunc closef)
         wrapper->frx = 0;
     }
     if (sendf) {
-        wrapper = _gc_alloc_managed(sizeof(BasicWrapper));
-        if (!wrapper) {
-            THROW_RETURN(ENOMEM); /* out of memory */
-        }
         wrapper->ftx = sendf;
         v->putcf = (putcfunc_t)&wrapper->tx;
     } else {
         v->putcf = 0;
     }
-    v->state = _VFS_STATE_INUSE|_VFS_STATE_RDOK|_VFS_STATE_WROK;
     if (recvf) {
+        wrapper->frx = recvf;
         v->getcf = &wrapper->rx;
     } else {
         v->getcf = 0;
     }
-    v->close = (VFS_CloseFunc)closef;
+    if (closef) {
+        wrapper->fclose = closef;
+        v->close = (VFS_CloseFunc)&wrapper->close;
+    } else {
+        v->close = 0;
+    }
+    v->state = _VFS_STATE_INUSE|_VFS_STATE_RDOK|_VFS_STATE_WROK;
     return 0;
 #endif    
 }
