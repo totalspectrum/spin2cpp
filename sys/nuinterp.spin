@@ -271,17 +271,8 @@ do_relbranch_drop2
 	call	#\impl_DROP2
 do_relbranch
   	getptr	pb
-	cmp	tmp, #16 wcz	' short forward branch?
-  if_be	jmp	#\.doskip
 	add	pb, tmp
 	jmp	#\restart_loop
-.doskip
-	cmp	tmp, #0 wz
-  if_z	ret
-	rep	@.skipbytes, tmp
-	rfbyte	tmp2
-.skipbytes
-  _ret_	getptr	pb
 
 '
 ' call/enter/ret
