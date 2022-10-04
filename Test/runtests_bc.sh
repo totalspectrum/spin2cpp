@@ -13,7 +13,7 @@ PROG_ASM="$FASTSPIN -I../Lib"
 if [ "$2" != "" ]; then
   LOADP1=$2
 else
-  LOADER="proploader -Q -D loader-baud-rate=115200 -D baud-rate=115200 -r -t"
+  LOADER="proploader -q -Q -D loader-baud-rate=115200 -D baud-rate=115200 -r -t"
 fi
 
 CC=propeller-elf-gcc
