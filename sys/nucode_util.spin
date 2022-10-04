@@ -313,6 +313,24 @@ pri _getus() : freq = +long | lo, hi
   lo, hi := _div64(lo, hi, freq)
   return lo
 
+pri _getms() : freq = +long | lo, hi
+  lo,hi := _getcnthl()
+  freq := __clkfreq_ms
+  if freq == 0
+    __clkfreq_ms := freq := __clkfreq_var +/ 1000
+  hi := hi +// freq
+  lo, hi := _div64(lo, hi, freq)
+  return lo
+
+pri _getsec() : freq = +long | lo, hi
+  lo,hi := _getcnthl()
+  freq := __clkfreq_var
+  if freq == 0
+    freq := 22_000_000
+  hi := hi +// freq
+  lo, hi := _div64(lo, hi, freq)
+  return lo
+
 pri _hubset(x)
   __bytecode__("HUBSET")
   
