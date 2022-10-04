@@ -1058,15 +1058,15 @@ impl_BZ
 	rfword	tmp
 	signx	tmp, #15
 	cmp	tos, #0 wcz
-  if_nz	mov	tmp, #0
-	jmp	#do_relbranch_drop1
+  if_z	jmp	#\do_relbranch_drop1
+	jmp	#\impl_DROP
 
 impl_BNZ
 	rfword	tmp
 	signx	tmp, #15
 	cmp	tos, #0 wcz
-  if_z	mov	tmp, #0
-	jmp	#do_relbranch_drop1
+  if_nz	jmp	#\do_relbranch_drop1
+	jmp	#\impl_DROP
 
 impl_DJNZ
 	rfword	tmp
@@ -1075,77 +1075,77 @@ impl_DJNZ
 	sub	tmp2, #1 wz
 	wrlong	tmp2, tos
  if_nz	jmp	#\do_relbranch_drop1
- 	ret
+ 	jmp	#\impl_DROP
 
 impl_CBEQ
 	rfword	tmp
 	signx	tmp, #15
 	cmp	nos, tos wcz
-  if_ne	mov	tmp, #0
-	jmp	#\do_relbranch_drop2
+  if_z	jmp	#\do_relbranch_drop2
+  	jmp	#\impl_DROP2
 
 impl_CBNE
 	rfword	tmp
 	signx	tmp, #15
 	cmp	nos, tos wcz
-  if_e	mov	tmp, #0
-  	jmp	#\do_relbranch_drop2
+  if_nz	jmp	#\do_relbranch_drop2
+  	jmp	#\impl_DROP2
 
 impl_CBLTS
 	rfword	tmp
 	signx	tmp, #15
 	cmps	nos, tos wcz
-  if_ae	mov	tmp, #0
-  	jmp	#\do_relbranch_drop2
+  if_b	jmp	#\do_relbranch_drop2
+  	jmp	#\impl_DROP2
 
 impl_CBLES
 	rfword	tmp
 	signx	tmp, #15
 	cmps	nos, tos wcz
-  if_a	mov	tmp, #0
-  	jmp	#\do_relbranch_drop2
+  if_be	jmp	#\do_relbranch_drop2
+  	jmp	#\impl_DROP2
 
 impl_CBGTS
 	rfword	tmp
 	signx	tmp, #15
 	cmps	nos, tos wcz
-  if_be	mov	tmp, #0
-  	jmp	#\do_relbranch_drop2
+  if_a	jmp	#\do_relbranch_drop2
+  	jmp	#\impl_DROP2
 
 impl_CBGES
 	rfword	tmp
 	signx	tmp, #15
 	cmps	nos, tos wcz
-  if_b	mov	tmp, #0
-  	jmp	#\do_relbranch_drop2
+  if_ae	jmp	#\do_relbranch_drop2
+  	jmp	#\impl_DROP2
 
 impl_CBLTU
 	rfword	tmp
 	signx	tmp, #15
 	cmp	nos, tos wcz
-  if_ae	mov	tmp, #0
-  	jmp	#\do_relbranch_drop2
+  if_b	jmp	#\do_relbranch_drop2
+  	jmp	#\impl_DROP2
 
 impl_CBLEU
 	rfword	tmp
 	signx	tmp, #15
 	cmp	nos, tos wcz
-  if_a	mov	tmp, #0
-  	jmp	#\do_relbranch_drop2
+  if_be	jmp	#\do_relbranch_drop2
+  	jmp	#\impl_DROP2
 
 impl_CBGTU
 	rfword	tmp
 	signx	tmp, #15
 	cmp	nos, tos wcz
-  if_be	mov	tmp, #0
-  	jmp	#\do_relbranch_drop2
+  if_a	jmp	#\do_relbranch_drop2
+  	jmp	#\impl_DROP2
 
 impl_CBGEU
 	rfword	tmp
 	signx	tmp, #15
 	cmp	nos, tos wcz
-  if_b	mov	tmp, #0
-  	jmp	#\do_relbranch_drop2
+  if_ae	jmp	#\do_relbranch_drop2
+  	jmp	#\impl_DROP2
 
 '
 ' GOSUB:
