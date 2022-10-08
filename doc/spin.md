@@ -593,9 +593,9 @@ developers left out delay loops in time critical code because the Spin
 interpreter is so slow they weren't necessary. Watch out for this when porting
 I2C, SPI and similar functions.
 
-### @@ Operator
+### @ and @@ Operator address truncation
 
-The Spin1 `@@` operator always truncates its result to 16 bits; flexspin does not do this. This won't matter in typical use (on the P1 addresses always fit in 16 bits anyway) but may be noticeable for some exotic uses.
+The Spin1 `@` and `@@` operators always truncate their result to 16 bits; flexspin does not do this. This won't matter in typical use (on the P1 addresses always fit in 16 bits anyway) but may be noticeable for some exotic uses.
 
 ### CHIPVER
 
