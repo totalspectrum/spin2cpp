@@ -4741,6 +4741,7 @@ ExpandInlines(IRList *irl)
     Function *f;
     IR *ir, *ir_next;
     int change = 0;
+    int non_inline_calls = 0;
     
     ir = irl->head;
     while (ir) {
@@ -4750,10 +4751,18 @@ ExpandInlines(IRList *irl)
             if (f && FuncData(f)->isInline) {
                 ReplaceIRWithInline(irl, ir, f);
                 FuncData(f)->actual_callsites--;
+                if (!f->is_leaf) non_inline_calls++; // Non-leaf inline may contain call
                 change = 1;
+            } else {
+                non_inline_calls++;
             }
         }
         ir = ir_next;
+    }
+    // If inlining (or previous dead-code optimization...) removed all external calls, mark as leaf.
+    if (non_inline_calls==0 && !curfunc->is_leaf) {
+        curfunc->is_leaf = true;
+        change = true;
     }
     return change;
 }
