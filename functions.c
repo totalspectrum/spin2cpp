@@ -2669,7 +2669,7 @@ MarkUsedBody(AST *body, const char *caller)
             //not a direct object reference
         } else {
             P = GetClassPtr(objtype);
-            sym = FindSymbol(&P->objsyms, GetUserIdentifierName(body->right));
+            sym = LookupSymbolInTable(&P->objsyms, GetUserIdentifierName(body->right));
             if (sym && sym->kind == SYM_FUNCTION) {
                 MarkUsed((Function *)sym->val, sym->our_name);
                 return;
