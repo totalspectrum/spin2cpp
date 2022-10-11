@@ -870,11 +870,15 @@ static bool FuncUsesArg(Operand *func, Operand *arg)
         return true;
     } else if (func == mulfunc || func == unsmulfunc || func == divfunc || func == unsdivfunc) {
         return false;
-    } else if (func && func->val && (/*func->kind == IMM_COG_LABEL ||*/ func->kind == IMM_HUB_LABEL) && ((Function*)func->val)->is_leaf) {
-        if (arg->kind != REG_ARG) return true; // subreg or smth
-        if (arg->val < ((Function*)func->val)->numparams) return true; // Arg used;
-        if ( ((Function *)func->val)->numparams < 0 ) return true; // varargs
-        return false; // Arg not used
+    } else if (func && func->val) {
+        Function *funcObj = (Function *)func->val;
+        if ((/*func->kind == IMM_COG_LABEL ||*/ func->kind == IMM_HUB_LABEL) && (funcObj->is_leaf || FuncData(funcObj)->effectivelyLeaf)) {
+            if (arg->kind != REG_ARG) return true; // subreg or smth
+            if (arg->val < funcObj->numparams) return true; // Arg used;
+            if (arg->val < FuncData(funcObj)->maxInlineArg) return true; // Arg clobbered
+            if ( ((Function *)func->val)->numparams < 0 ) return true; // varargs
+            return false; // Arg not used
+        }
     }
     return true;
 }
@@ -4732,6 +4736,10 @@ ShouldBeInlined(Function *f)
     return n <= (threshold + paramfactor);
 }
 
+static inline void updateMax(int *dst, int src) {
+    if (*dst < src) *dst = src;
+}
+
 //
 // expand function calls inline if appropriate
 // returns 1 if anything was expanded
@@ -4751,7 +4759,9 @@ ExpandInlines(IRList *irl)
             if (f && FuncData(f)->isInline) {
                 ReplaceIRWithInline(irl, ir, f);
                 FuncData(f)->actual_callsites--;
-                if (!f->is_leaf) non_inline_calls++; // Non-leaf inline may contain call
+                updateMax(&FuncData(curfunc)->maxInlineArg,f->numparams);
+                updateMax(&FuncData(curfunc)->maxInlineArg,FuncData(f)->maxInlineArg);
+                if (!f->is_leaf && !FuncData(f)->effectivelyLeaf) non_inline_calls++; // Non-leaf inline may contain call
                 change = 1;
             } else {
                 non_inline_calls++;
@@ -4760,8 +4770,8 @@ ExpandInlines(IRList *irl)
         ir = ir_next;
     }
     // If inlining (or previous dead-code optimization...) removed all external calls, mark as leaf.
-    if (non_inline_calls==0 && !curfunc->is_leaf) {
-        curfunc->is_leaf = true;
+    if (non_inline_calls==0 && !curfunc->is_leaf && !FuncData(curfunc)->effectivelyLeaf) {
+        FuncData(curfunc)->effectivelyLeaf = true;
         change = true;
     }
     return change;
