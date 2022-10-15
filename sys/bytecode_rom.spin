@@ -486,9 +486,9 @@ pri _make_methodptr(o, func) | ptr
 ' run into problems
 '
 pri __call_methodptr
-  __interp_vbase := long[INB]
-  result := word[INB+6]<<1  ' function offset as words
-  __interp_pbase := word[INB+4]       ' new pbase
+  __interp_vbase := long[OUTB]
+  result := word[OUTB+6]<<1  ' function offset as words
+  __interp_pbase := word[OUTB+4]       ' new pbase
   __interp_dcurr += word[__interp_pbase][result+1]
   __interp_pcurr := word[__interp_pbase][result~] + __interp_pbase ' new pc
 

@@ -42,7 +42,7 @@ static AST *BCAllocaExpr(AST *siz) {
         ERROR(siz, "Interpreter does not support __builtin_alloca");
         return siz;
     }
-    AST *tmp = AstIdentifier("INB");
+    AST *tmp = AstIdentifier("OUTB");
     AST *dcurr = AstIdentifier("__interp_dcurr");
     AST *assign = AstAssign(tmp, dcurr);
     AST *expr = AstOperator('+', siz, AstInteger(3));
@@ -176,13 +176,14 @@ OutputSpinBCHeader(ByteOutputBuffer *bob, Module *P)
 static int
 HWRegRetval(int n) {
     if (gl_interp_kind == INTERP_KIND_P1ROM) {
+        static const int reg_addr[] = { 0x1f5, 0x1f7, 0x1f3 };
         if (n < 1 || n > 3) {
             ERROR(NULL, "Return value index %d is out of range", n);
             return 0;
         }
-        // return index for INB, DIRB, OUTB
-        // these are $1f3, $1f5, $1f7 respectively
-        return (0x1f3 + ((n-1)*2)) - 0x1e0;
+        // return index for OUTB, DIRB, INB
+        // these are $1f5, $1f7, $1f3 respectively
+        return reg_addr[n-1] - 0x1e0;
     }
     ERROR(NULL, "Internal error, interpreter does not need return registers");
     return 0;
@@ -1125,6 +1126,10 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         if (size == 4) {
             memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
         } else if (kind == MEMOP_ADDRESS) {
+            // we're creating a pointer, need to offset appropriately
+            if (indexExpr) {
+                indexExpr = AstOperator('*', indexExpr, AstInteger(size / LONG_SIZE));
+            }
             memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
         } else {
             // need to push multiple values here
@@ -2493,7 +2498,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 BCCompileMemOp(irbuf,newNode,context,MEMOP_READ);
             } break;
             case AST_ALLOCA: {
-                // compile as "INB = __interp_dcurr; __interp_dcurr += ((n+3)&~3); INB"
+                // compile as "OUTB = __interp_dcurr; __interp_dcurr += ((n+3)&~3); OUTB"
                 AST *expr = BCAllocaExpr(node->right);
                 BCCompileExpression(irbuf, expr, context, asStatement);
             } break;

@@ -2,6 +2,7 @@ Version 5.9.18
 - Fixed missing # on output of jint style inline asm instructions
 - Fixed some bugs in the BASIC open wrapper (handling of close and recv were dodgy)
 - Fixed use of function aliases in submodules
+- Fixed an address calculation bug in bytecode
 - Made some nucode code generation improvements
 - Minor tweak to preprocessor to better handle files that do not end with a newline
 
