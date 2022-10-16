@@ -1107,13 +1107,10 @@ AstCatch(AST *expr)
 }
 
 AST *
-AstSprRef(AST *index, int offset, int mask)
+AstSprRef(AST *index, int ormask)
 {
-    if (mask) {
-        index = AstOperator('&',index,AstInteger(mask));
-    }
-    if (offset) {
-        index = AstOperator('+', index, AstInteger(offset));
+    if (ormask) {
+        index = AstOperator('|',index,AstInteger(ormask));
     }
     return NewAST(AST_SPRREF, index, NULL);
 }

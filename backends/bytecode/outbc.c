@@ -907,12 +907,10 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         targetKind = MOT_REGIDX;
         baseExpr = ident->left; // Perhaps a bit odd to use baseExpr instead of indexExpr
         memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
-        // AST for SPR[n] somewhat rightfully is ((n&15)+496).
+        // AST for SPR[n] somewhat rightfully is (n|496).
         // The Spin1 interpreter does this internally
-        // (though in actuality it doesn't matter since it masks the index to 4 bits)
         if (gl_interp_kind == INTERP_KIND_P1ROM) {
-            if (baseExpr->kind == AST_OPERATOR && baseExpr->d.ival == '+' && IsConstEqual(baseExpr->right,496)) baseExpr = baseExpr->left;
-            if (baseExpr->kind == AST_OPERATOR && baseExpr->d.ival == '&' && IsConstEqual(baseExpr->right,15)) baseExpr = baseExpr->left;
+            if (baseExpr->kind == AST_OPERATOR && baseExpr->d.ival == '|' && IsConstEqual(baseExpr->right,496)) baseExpr = baseExpr->left;
         }
         goto after_typeinfer;
     } else if (ident->kind == AST_RANGEREF) {
