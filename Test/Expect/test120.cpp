@@ -26,6 +26,6 @@ extern "C" int32_t _cog_xfer(int32_t dst, int32_t src, int32_t retval);
 
 void test120::Flip0(int32_t I)
 {
-  cogmem_put__((I + 496), (cogmem_get__((I + 496)) ^ 0x1));
+  cogmem_put__((I | 0x1f0), (cogmem_get__((I | 0x1f0)) ^ 0x1));
 }
 

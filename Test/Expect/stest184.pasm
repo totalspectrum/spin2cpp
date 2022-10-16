@@ -580,13 +580,10 @@ LR__0033
 	call	#__system___gc_ptrs
 	mov	__system___gc_markcog_heap_base, result1
 	mov	__system___gc_markcog_heap_end, result2
-	mov	__system___gc_markcog_cogaddr, #0
+	mov	__system___gc_markcog_cogaddr, #495
 LR__0034
-	mov	_system___gc_markcog_tmp001_, #496
-	sub	_system___gc_markcog_tmp001_, __system___gc_markcog_cogaddr
-	add	_system___gc_markcog_tmp001_, #496
 	'.live	__system___gc_markcog_ptr
-	movs	wrcog, _system___gc_markcog_tmp001_
+	movs	wrcog, __system___gc_markcog_cogaddr
 	movd	wrcog, #__system___gc_markcog_ptr
 	call	#wrcog
 	mov	arg02, __system___gc_markcog_heap_end
@@ -599,9 +596,9 @@ LR__0034
  if_ne	rdword	__system___gc_markcog__cse__0001, __system___gc_markcog__cse__0000
  if_ne	or	__system___gc_markcog__cse__0001, #32
  if_ne	wrword	__system___gc_markcog__cse__0001, __system___gc_markcog__cse__0000
-	add	__system___gc_markcog_cogaddr, #1
-	cmps	__system___gc_markcog_cogaddr, #496 wc
- if_b	jmp	#LR__0034
+	sub	__system___gc_markcog_cogaddr, #1
+	cmps	__system___gc_markcog_cogaddr, #0 wc
+ if_ae	jmp	#LR__0034
 	mov	arg01, __system___gc_docollect_startheap
 	call	#__system___gc_nextBlockPtr
 	mov	__system___gc_docollect_nextptr, result1 wz
@@ -951,8 +948,6 @@ _system___gc_docollect_tmp002_
 _system___gc_dofree_tmp001_
 	res	1
 _system___gc_dofree_tmp002_
-	res	1
-_system___gc_markcog_tmp001_
 	res	1
 _system___gc_markhub_tmp001_
 	res	1
