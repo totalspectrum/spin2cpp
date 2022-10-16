@@ -1636,7 +1636,7 @@ RenameSubregs(IRList *irl, Operand *base, int numlocals, int isLeaf)
  */
 
 static int
-RenameLocalRegs(IRList *irl, int isLeaf)
+RenameLocalRegs(IRList *irl, bool isLeaf)
 {
     IR *ir;
     Operand *replace = NULL;
@@ -1781,7 +1781,7 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     needFrame = NeedFramePointer(func);
     if (needFrame == FRAME_YES || needFrame == FRAME_MAYBE) {
         if (NeedToSaveLocals(func)) {
-            n = RenameLocalRegs(FuncIRL(func), IS_LEAF(func));
+            n = RenameLocalRegs(FuncIRL(func), false);
         } else {
             MarkUsedAsmVars(FuncIRL(func));
         }
@@ -1805,8 +1805,9 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
             EmitPush(irl, frameptr);
             EmitMove(irl, frameptr, stackptr);
         }
-    } else if (IS_LEAF(func)) {
-        RenameLocalRegs(FuncIRL(func), 1);
+    }
+    if (IS_LEAF(func)) {
+        RenameLocalRegs(FuncIRL(func), true);
     }
     if (ANY_VARS_ON_STACK(func)) {
         int localsize;
