@@ -1107,16 +1107,15 @@ AstCatch(AST *expr)
 }
 
 AST *
-AstSprRef(AST *index, int offset)
+AstSprRef(AST *index, int offset, int mask)
 {
-    AST *expr;
-
-    if (offset) {
-        expr = AstOperator('+', index, AstInteger(offset));
-    } else {
-        expr = index;
+    if (mask) {
+        index = AstOperator('&',index,AstInteger(mask));
     }
-    return NewAST(AST_SPRREF, expr, NULL);
+    if (offset) {
+        index = AstOperator('+', index, AstInteger(offset));
+    }
+    return NewAST(AST_SPRREF, index, NULL);
 }
 
 //

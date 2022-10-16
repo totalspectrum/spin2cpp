@@ -342,7 +342,7 @@ static bool OptimizeOperator(int *optoken, AST **left,AST **right) {
     int32_t addValue;
 
     // Try special cases first
-    if (*optoken == K_SHL && left && IsConstExpr(*left) && EvalConstExpr(*left) == 1) {
+    if (*optoken == K_SHL && left && IsConstEqual(*left,1)) {
         // 1<<x can be |<x
         *left = NULL;
         *optoken = K_DECODE;
@@ -907,11 +907,13 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         targetKind = MOT_REGIDX;
         baseExpr = ident->left; // Perhaps a bit odd to use baseExpr instead of indexExpr
         memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
-        // AST for SPR[n] somewhat rightfully is (n+496).
+        // AST for SPR[n] somewhat rightfully is ((n&15)+496).
         // The Spin1 interpreter does this internally
         // (though in actuality it doesn't matter since it masks the index to 4 bits)
-        if (gl_interp_kind == INTERP_KIND_P1ROM && baseExpr->kind == AST_OPERATOR && baseExpr->d.ival == '+'
-        && IsConstExpr(baseExpr->right) && EvalConstExpr(baseExpr->right) == 496) baseExpr = baseExpr->left;
+        if (gl_interp_kind == INTERP_KIND_P1ROM) {
+            if (baseExpr->kind == AST_OPERATOR && baseExpr->d.ival == '+' && IsConstEqual(baseExpr->right,496)) baseExpr = baseExpr->left;
+            if (baseExpr->kind == AST_OPERATOR && baseExpr->d.ival == '&' && IsConstEqual(baseExpr->right,15)) baseExpr = baseExpr->left;
+        }
         goto after_typeinfer;
     } else if (ident->kind == AST_RANGEREF) {
         ASSERT_AST_KIND(ident->left,AST_HWREG,return;);
@@ -1401,7 +1403,7 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
         }
 
         // Handle no-ops
-        if (mok == MOK_ADD && IsConstExpr(right) && EvalConstExpr(right) == 0) {
+        if (mok == MOK_ADD && IsConstZero(right)) {
             if (asExpression || ExprHasSideEffects(left)) BCCompileExpression(irbuf,left,context,!asExpression);
             return;
         }
@@ -1443,7 +1445,7 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
             operand = opright;
             modifyReverseMath = false;
             // Handle no-ops
-            if (mok == MOK_ADD && IsConstExpr(opright) && EvalConstExpr(opright) == 0) {
+            if (mok == MOK_ADD && IsConstZero(opright)) {
                 if (asExpression || ExprHasSideEffects(opleft)) BCCompileExpression(irbuf,opleft,context,!asExpression);
                 return;
             }
@@ -2261,7 +2263,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
 
                 case '+': 
                     // OptimizeOpertor turns no-ops into val + 0, so handle that here
-                    if (IsConstExpr(right) && EvalConstExpr(right) == 0) goto noOp;
+                    if (IsConstZero(right)) goto noOp;
                     mok = MOK_ADD;
                     break;
 

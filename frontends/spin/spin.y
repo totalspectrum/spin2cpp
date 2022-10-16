@@ -1750,9 +1750,9 @@ lhs: identifier
   | memref
     { $$ = NewAST(AST_ARRAYREF, $1, AstInteger(0)); }
   | SP_SPR '[' expr ']'
-    { $$ = AstSprRef($3, 0x1f0); }
+    { $$ = AstSprRef($3, 0x1f0, 0x00f); }
   | SP_COGREG '[' expr ']'
-    { $$ = AstSprRef($3, 0x0); }
+    { $$ = AstSprRef($3, 0x0, 0x0); }
   | identifier '.' '[' range ']'
     { $$ = NewAST(AST_RANGEREF, $1, $4);
     }

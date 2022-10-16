@@ -3857,6 +3857,10 @@ const char *TypeName(AST *typ)
 }
 
 bool IsConstZero(AST *ast) {
-    return IsConstExpr(ast) && EvalConstExpr(ast) == 0;
+    return IsConstEqual(ast,0);
+}
+
+bool IsConstEqual(AST *ast, ExprInt val) {
+    return IsConstExpr(ast) && EvalConstExpr(ast) == val;
 }
 
