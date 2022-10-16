@@ -859,10 +859,15 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
     try_ident_again:
     if (IsIdentifier(ident) || ident->kind == AST_SYMBOL) sym = LookupAstSymbol(ident,NULL);
     else if (ident->kind == AST_RESULT) {
-        if (curfunc && IsIdentifier(curfunc->resultexpr)) {
+        if (curfunc && curfunc->resultexpr && IsIdentifier(curfunc->resultexpr)) {
             sym = LookupAstSymbol(curfunc->resultexpr, NULL);
         } else {
             sym = LookupSymbol("result");
+            if (!sym) {
+                WARNING(node, "unable to find result variable");
+                sym = calloc(sizeof(*sym), 1);
+                sym->kind = SYM_RESULT;
+            }
         }
     }
     else if (ident->kind == AST_MEMREF) {
@@ -1468,46 +1473,47 @@ redoLeft:
     case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER: {
         Symbol *sym = LookupAstSymbol(left,NULL);
-        if (!sym) {
-            ERROR(node,"Internal Error: no symbol in identifier assign");
-            return;
-        }
-        switch (sym->kind) {
-        case SYM_TEMPVAR: DEBUG(node,"temp variable %s used",sym->our_name); // fall through
-        case SYM_LABEL:
-        case SYM_VARIABLE:
-        case SYM_LOCALVAR:
-        case SYM_PARAMETER:
-        case SYM_RESULT:
-            memopNode = left;
-            break;
-        case SYM_RESERVED:
-            if (!strcmp(sym->our_name,"result")) {
-                // FIXME the parser should give AST_RESULT here, I think
-                memopNode = NewAST(AST_RESULT,left->left,left->right);
-            } else {
-                ERROR(node,"Unhandled reserved word %s in assignment",sym->our_name);
+        if (sym) {
+            switch (sym->kind) {
+            case SYM_TEMPVAR: DEBUG(node,"temp variable %s used",sym->our_name); // fall through
+            case SYM_LABEL:
+            case SYM_VARIABLE:
+            case SYM_LOCALVAR:
+            case SYM_PARAMETER:
+            case SYM_RESULT:
+                memopNode = left;
+                break;
+            case SYM_RESERVED:
+                if (!strcmp(sym->our_name,"result")) {
+                    // FIXME the parser should give AST_RESULT here, I think
+                    memopNode = NewAST(AST_RESULT,left->left,left->right);
+                } else {
+                    ERROR(node,"Unhandled reserved word %s in assignment",sym->our_name);
+                }
+                break;
+            case SYM_HWREG:
+                memopNode = NewAST(AST_HWREG, NULL, NULL);
+                memopNode->d.ptr = sym->val;
+                break;
+            case SYM_ALIAS: {
+                // this is an alias for an expression, so compile the expression
+                AST *expr = (AST *)sym->val;
+                while (expr && expr->kind == AST_CAST) {
+                    expr = expr->right;
+                }
+                if (!expr || !IsIdentifier(expr)) {
+                    ERROR(left, "Non-identifier ALIAS in assignments not handled yet");
+                    return;
+                }
+                left = expr;
+                goto redoLeft;
             }
-            break;
-        case SYM_HWREG:
-            memopNode = NewAST(AST_HWREG, NULL, NULL);
-            memopNode->d.ptr = sym->val;
-            break;
-        case SYM_ALIAS: {
-            // this is an alias for an expression, so compile the expression
-            AST *expr = (AST *)sym->val;
-            while (expr && expr->kind == AST_CAST) {
-                expr = expr->right;
-            }
-            if (!expr || !IsIdentifier(expr)) {
-                ERROR(left, "Non-identifier ALIAS in assignments not handled yet");
+            default:
+                ERROR(left,"Unhandled Identifier symbol kind %d in assignment",sym->kind);
                 return;
             }
-            left = expr;
-            goto redoLeft;
-        }
-        default:
-            ERROR(left,"Unhandled Identifier symbol kind %d in assignment",sym->kind);
+        } else {
+            ERROR(node,"Internal Error: no symbol in identifier assign");
             return;
         }
     } break;
@@ -2361,8 +2367,11 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
             } break;
             case AST_ABSADDROF: // Same thing in Spin code, I guess.
             case AST_ADDROF: {
-                // Right always empty?
-                if (node->right) WARNING(node->right,"right side of AST_ADDROF not empty???");
+                if (node->right) {
+                    // right side describes the type
+                    // is it OK to ignore this??
+                    //WARNING(node->right,"right side of AST_ADDROF not empty???");
+                }
                 BCCompileMemOp(irbuf,node->left,context,MEMOP_ADDRESS);
             } break;
             case AST_LOCAL_IDENTIFIER:
@@ -3178,24 +3187,32 @@ BCCompileFunction(ByteOutputBuffer *bob,Function *F) {
             AST *allocmem;
             AST *copymem;
             AST *args;
+            AST *nodeInfo = F->body;
             int framesize = FuncLocalSize(F);
+            ASTReportInfo save;
+
+            WARNING(nodeInfo, "Closures are not fully supported in bytecode yet");
+            AstReportAs(nodeInfo, &save);
+            AST *ident_temp = NewAST(AST_RESULT, NULL, NULL);
+            
             // result = _gc_alloc_managed(framesize)
             args = NewAST(AST_EXPRLIST, AstInteger(framesize), NULL);
             allocmem = NewAST(AST_FUNCCALL, AstIdentifier("_gc_alloc_managed"), args);
-            allocmem = AstAssign(AstIdentifier("result"), allocmem);
+            allocmem = AstAssign(ident_temp, allocmem);
             allocmem = NewAST(AST_STMTLIST, allocmem, NULL);
             // longcopy(result, dbase, framesize)
             args = NewAST(AST_EXPRLIST, AstInteger(framesize), NULL);
             args = NewAST(AST_EXPRLIST, AstIdentifier("__interp_dbase"), args);
-            args = NewAST(AST_EXPRLIST, AstIdentifier("result"), args);
+            args = NewAST(AST_EXPRLIST, ident_temp, args);
             copymem = NewAST(AST_FUNCCALL, AstIdentifier("bytemove"), args);
             copymem = NewAST(AST_STMTLIST, copymem, NULL);
             // dbase := result
-            args = AstAssign(AstIdentifier("__interp_vbase"), AstIdentifier("result"));
+            args = AstAssign(AstIdentifier("__interp_vbase"), ident_temp);
             args = NewAST(AST_STMTLIST, args, F->body);
             allocmem = AddToList(allocmem, copymem);
             allocmem = AddToList(allocmem, args);
             F->body = allocmem;
+            AstReportDone(&save);
         }
     
         BCCompileStmtlist(&irbuf,F->body,context);
