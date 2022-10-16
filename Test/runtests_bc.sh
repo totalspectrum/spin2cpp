@@ -51,11 +51,14 @@ do
 done
 fi  # end of C tests
 
-if false; then
+if true; then
 #
 # BASIC tests
 #
-for i in basexec*.bas
+# only some of these work in bytecode as of 2022-10-16    
+#for i in basexec*.bas
+echo "WARNING: only some BASIC tests work in bytecode"    
+for i in basexec0[123].bas
 do
   j=`basename $i .bas`
     
