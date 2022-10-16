@@ -1,0 +1,255 @@
+00 B4 C4 04                   ' CLKFREQ
+6F                            ' CLKMODE
+00                            ' Placeholder for checksum
+10 00                         ' PBASE
+5C 01                         ' VBASE
+6C 01                         ' DBASE
+2C 00                         ' PCURR
+74 01                         ' DCURR
+'--- Object Header for bctest002
+4C 01                         ' Object size
+07                            ' Method count + 1
+00                            ' OBJ count
+1C 00 04 00                   ' Function assign_value @002C (local size 4)
+25 00 10 00                   ' Function normal_binary @0035 (local size 16)
+8A 00 0C 00                   ' Function normal_unary @009A (local size 12)
+9D 00 10 00                   ' Function binary_assign_fuse @00AD (local size 16)
+AC 00 10 00                   ' Function binary_emulated @00BC (local size 16)
+E3 00 10 00                   ' Function selfmodify @00F3 (local size 16)
+'--- Function assign_value
+34                            ' CONSTANT -1
+8A 06 80                      ' MEM_MODIFY BYTE VBASE+$0006  MOD_WRITE (PUSH RESULT)
+AA 04 80                      ' MEM_MODIFY WORD VBASE+$0004  MOD_WRITE (PUSH RESULT)
+41                            ' MEM_WRITE LONG VBASE+$0000 (short)
+32                            ' RETURN_PLAIN
+'--- Function normal_binary
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+EC                            ' MATHOP: ADD
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+ED                            ' MATHOP: SUB
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+F4                            ' MATHOP: MULLOW
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+F5                            ' MATHOP: MULHIGH
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+F6                            ' MATHOP: DIVIDE
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+F7                            ' MATHOP: REMAINDER
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+E8                            ' MATHOP: BITAND
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+EA                            ' MATHOP: BITOR
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+EB                            ' MATHOP: BITXOR
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+F0                            ' MATHOP: LOGICAND
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+F2                            ' MATHOP: LOGICOR
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+E3                            ' MATHOP: SHL
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+E2                            ' MATHOP: SHR
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+E0                            ' MATHOP: ROR
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+E1                            ' MATHOP: ROL
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+EE                            ' MATHOP: SAR
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+EF                            ' MATHOP: REV
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+FC                            ' MATHOP: CMP_E
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+FB                            ' MATHOP: CMP_NE
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+F9                            ' MATHOP: CMP_B
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+FD                            ' MATHOP: CMP_BE
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+FA                            ' MATHOP: CMP_A
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+FE                            ' MATHOP: CMP_AE
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+E5                            ' MATHOP: MAX
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+E4                            ' MATHOP: MIN
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+32                            ' RETURN_PLAIN
+'--- Function normal_unary
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+E6                            ' MATHOP: NEG
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+FF                            ' MATHOP: BOOLNOT
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+E9                            ' MATHOP: ABS
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+F8                            ' MATHOP: SQRT
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+F3                            ' MATHOP: DECODE
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+F1                            ' MATHOP: ENCODE
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+32                            ' RETURN_PLAIN
+'--- Function binary_assign_fuse
+36                            ' CONSTANT 1
+6E 4D                         ' MEM_MODIFY LONG DBASE+$000C (short) SUB 
+36                            ' CONSTANT 1
+6A 6D                         ' MEM_MODIFY LONG DBASE+$0008 (short) SUB (REVERSE)
+38 19                         ' CONSTANT 25
+66 74                         ' MEM_MODIFY LONG DBASE+$0004 (short) MULLOW (REVERSE)
+38 02                         ' CONSTANT 2
+66 43                         ' MEM_MODIFY LONG DBASE+$0004 (short) SHL 
+32                            ' RETURN_PLAIN
+'--- Function binary_emulated
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+35                            ' CONSTANT 0
+FB                            ' MATHOP: CMP_NE
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+35                            ' CONSTANT 0
+FB                            ' MATHOP: CMP_NE
+EB                            ' MATHOP: BITXOR
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+38 1F                         ' CONSTANT 31
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+ED                            ' MATHOP: SUB
+E3                            ' MATHOP: SHL
+38 1F                         ' CONSTANT 31
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+ED                            ' MATHOP: SUB
+E2                            ' MATHOP: SHR
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+38 1F                         ' CONSTANT 31
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+ED                            ' MATHOP: SUB
+E3                            ' MATHOP: SHL
+38 1F                         ' CONSTANT 31
+6C                            ' MEM_READ LONG DBASE+$000C (short)
+ED                            ' MATHOP: SUB
+EE                            ' MATHOP: SAR
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+35                            ' CONSTANT 0
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+0A 06                         ' JUMP_IF_Z +6
+3F D2 AE                      ' REG_MODIFY 1F2(INA) MOD_POSTINC (PUSH RESULT)
+0A 01                         ' JUMP_IF_Z +1
+FF                            ' MATHOP: BOOLNOT
+'LABEL
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+34                            ' CONSTANT -1
+68                            ' MEM_READ LONG DBASE+$0008 (short)
+0B 06                         ' JUMP_IF_NZ +6
+3F D2 AE                      ' REG_MODIFY 1F2(INA) MOD_POSTINC (PUSH RESULT)
+0B 01                         ' JUMP_IF_NZ +1
+FF                            ' MATHOP: BOOLNOT
+'LABEL
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+32                            ' RETURN_PLAIN
+'--- Function selfmodify
+6E 10                         ' MEM_MODIFY LONG DBASE+$000C (short) MOD_SIGNX_BYTE 
+6E 14                         ' MEM_MODIFY LONG DBASE+$000C (short) MOD_SIGNX_WORD 
+8A 06 10                      ' MEM_MODIFY BYTE VBASE+$0006  MOD_SIGNX_BYTE 
+8A 06 14                      ' MEM_MODIFY BYTE VBASE+$0006  MOD_SIGNX_WORD 
+AA 04 10                      ' MEM_MODIFY WORD VBASE+$0004  MOD_SIGNX_BYTE 
+AA 04 14                      ' MEM_MODIFY WORD VBASE+$0004  MOD_SIGNX_WORD 
+42 10                         ' MEM_MODIFY LONG VBASE+$0000 (short) MOD_SIGNX_BYTE 
+42 14                         ' MEM_MODIFY LONG VBASE+$0000 (short) MOD_SIGNX_WORD 
+AA 02 10                      ' MEM_MODIFY WORD VBASE+$0002  MOD_SIGNX_BYTE 
+6E 2E                         ' MEM_MODIFY LONG DBASE+$000C (short) MOD_POSTINC (LONG)
+6E 3E                         ' MEM_MODIFY LONG DBASE+$000C (short) MOD_POSTDEC (LONG)
+8A 06 2A                      ' MEM_MODIFY BYTE VBASE+$0006  MOD_POSTINC (BYTE)
+8A 06 3A                      ' MEM_MODIFY BYTE VBASE+$0006  MOD_POSTDEC (BYTE)
+AA 04 2C                      ' MEM_MODIFY WORD VBASE+$0004  MOD_POSTINC (WORD)
+AA 04 3C                      ' MEM_MODIFY WORD VBASE+$0004  MOD_POSTDEC (WORD)
+42 2E                         ' MEM_MODIFY LONG VBASE+$0000 (short) MOD_POSTINC (LONG)
+42 3E                         ' MEM_MODIFY LONG VBASE+$0000 (short) MOD_POSTDEC (LONG)
+8A 04 2A                      ' MEM_MODIFY BYTE VBASE+$0004  MOD_POSTINC (BYTE)
+8A 05 3A                      ' MEM_MODIFY BYTE VBASE+$0005  MOD_POSTDEC (BYTE)
+42 0C                         ' MEM_MODIFY LONG VBASE+$0000 (short) MOD_RANDBACKWARD 
+42 08                         ' MEM_MODIFY LONG VBASE+$0000 (short) MOD_RANDFORWARD 
+37 2F                         ' CONSTANT 65535
+6E 48                         ' MEM_MODIFY LONG DBASE+$000C (short) BITAND 
+6E 14                         ' MEM_MODIFY LONG DBASE+$000C (short) MOD_SIGNX_WORD 
+38 FF                         ' CONSTANT 255
+6E 48                         ' MEM_MODIFY LONG DBASE+$000C (short) BITAND 
+6E 10                         ' MEM_MODIFY LONG DBASE+$000C (short) MOD_SIGNX_BYTE 
+38 0F                         ' CONSTANT 15
+6E C8                         ' MEM_MODIFY LONG DBASE+$000C (short) BITAND (PUSH RESULT)
+38 1C                         ' CONSTANT 28
+E3                            ' MATHOP: SHL
+38 1C                         ' CONSTANT 28
+EE                            ' MATHOP: SAR
+6E 80                         ' MEM_MODIFY LONG DBASE+$000C (short) MOD_WRITE (PUSH RESULT)
+38 18                         ' CONSTANT 24
+E3                            ' MATHOP: SHL
+38 18                         ' CONSTANT 24
+EE                            ' MATHOP: SAR
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+AA 04 90                      ' MEM_MODIFY WORD VBASE+$0004  MOD_SIGNX_BYTE (PUSH RESULT)
+6D                            ' MEM_WRITE LONG DBASE+$000C (short)
+8A 06 AA                      ' MEM_MODIFY BYTE VBASE+$0006  MOD_POSTINC (BYTE)(PUSH RESULT)
+36                            ' CONSTANT 1
+ED                            ' MATHOP: SUB
+69                            ' MEM_WRITE LONG DBASE+$0008 (short)
+42 88                         ' MEM_MODIFY LONG VBASE+$0000 (short) MOD_RANDFORWARD (PUSH RESULT)
+38 0F                         ' CONSTANT 15
+E8                            ' MATHOP: BITAND
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+42 94                         ' MEM_MODIFY LONG VBASE+$0000 (short) MOD_SIGNX_WORD (PUSH RESULT)
+33                            ' RETURN_POP
+00 00                         ' (padding)

@@ -1,0 +1,194 @@
+00 B4 C4 04                   ' CLKFREQ
+6F                            ' CLKMODE
+00                            ' Placeholder for checksum
+10 00                         ' PBASE
+1C 01                         ' VBASE
+2C 01                         ' DBASE
+28 00                         ' PCURR
+3C 01                         ' DCURR
+'--- Object Header for bctest003
+0C 01                         ' Object size
+06                            ' Method count + 1
+00                            ' OBJ count
+18 00 08 00                   ' Function looks @0028 (local size 8)
+78 00 04 00                   ' Function repeatn @0088 (local size 4)
+90 00 08 00                   ' Function repeatcount @00A0 (local size 8)
+C5 00 04 00                   ' Function oddities @00D5 (local size 4)
+D9 00 04 00                   ' Function cases @00E9 (local size 4)
+'--- Function looks
+36                            ' CONSTANT 1
+38 37                         ' FUNDATA_PUSHADDRESS +55
+64                            ' MEM_READ LONG DBASE+$0004 (short)
+3F 92                         ' REG_READ 1F2(INA)
+10                            ' LOOKUP
+3F 94                         ' REG_READ 1F4(OUTA)
+10                            ' LOOKUP
+38 7B                         ' CONSTANT 123
+10                            ' LOOKUP
+64                            ' MEM_READ LONG DBASE+$0004 (short)
+10                            ' LOOKUP
+38 02                         ' CONSTANT 2
+10                            ' LOOKUP
+3F 94                         ' REG_READ 1F4(OUTA)
+36                            ' CONSTANT 1
+EC                            ' MATHOP: ADD
+10                            ' LOOKUP
+88 06                         ' MEM_READ BYTE VBASE+$0006 
+10                            ' LOOKUP
+A8 04                         ' MEM_READ WORD VBASE+$0004 
+40                            ' MEM_READ LONG VBASE+$0000 (short)
+12                            ' LOOKUP_RANGE
+0F                            ' LOOKEND
+'LABEL
+41                            ' MEM_WRITE LONG VBASE+$0000 (short)
+35                            ' CONSTANT 0
+38 47                         ' FUNDATA_PUSHADDRESS +71
+64                            ' MEM_READ LONG DBASE+$0004 (short)
+3F 92                         ' REG_READ 1F2(INA)
+3F 94                         ' REG_READ 1F4(OUTA)
+12                            ' LOOKUP_RANGE
+34                            ' CONSTANT -1
+10                            ' LOOKUP
+38 3A                         ' CONSTANT 58
+10                            ' LOOKUP
+0F                            ' LOOKEND
+'LABEL
+41                            ' MEM_WRITE LONG VBASE+$0000 (short)
+36                            ' CONSTANT 1
+38 62                         ' FUNDATA_PUSHADDRESS +98
+64                            ' MEM_READ LONG DBASE+$0004 (short)
+35                            ' CONSTANT 0
+11                            ' LOOKDOWN
+36                            ' CONSTANT 1
+11                            ' LOOKDOWN
+38 02                         ' CONSTANT 2
+11                            ' LOOKDOWN
+38 03                         ' CONSTANT 3
+11                            ' LOOKDOWN
+3F 92                         ' REG_READ 1F2(INA)
+11                            ' LOOKDOWN
+88 06                         ' MEM_READ BYTE VBASE+$0006 
+11                            ' LOOKDOWN
+A8 04                         ' MEM_READ WORD VBASE+$0004 
+11                            ' LOOKDOWN
+40                            ' MEM_READ LONG VBASE+$0000 (short)
+11                            ' LOOKDOWN
+0F                            ' LOOKEND
+'LABEL
+89 06                         ' MEM_WRITE BYTE VBASE+$0006 
+35                            ' CONSTANT 0
+38 75                         ' FUNDATA_PUSHADDRESS +117
+64                            ' MEM_READ LONG DBASE+$0004 (short)
+35                            ' CONSTANT 0
+38 03                         ' CONSTANT 3
+13                            ' LOOKDOWN_RANGE
+3F 92                         ' REG_READ 1F2(INA)
+11                            ' LOOKDOWN
+3F 9F                         ' REG_READ 1FF(VSCL)
+3F 95                         ' REG_READ 1F5(OUTB)
+13                            ' LOOKDOWN_RANGE
+0F                            ' LOOKEND
+'LABEL
+89 06                         ' MEM_WRITE BYTE VBASE+$0006 
+32                            ' RETURN_PLAIN
+'--- Function repeatn
+38 05                         ' CONSTANT 5
+'LABEL
+3F D4 AE                      ' REG_MODIFY 1F4(OUTA) MOD_POSTINC (PUSH RESULT)
+0B 02                         ' JUMP_IF_NZ +2
+0B 02                         ' JUMP_IF_NZ +2
+'LABEL
+09 77                         ' JUMP_DJNZ -9
+'LABEL
+88 06                         ' MEM_READ BYTE VBASE+$0006 
+08 08                         ' JUMP_TJZ +8
+'LABEL
+3F D4 AE                      ' REG_MODIFY 1F4(OUTA) MOD_POSTINC (PUSH RESULT)
+0B 01                         ' JUMP_IF_NZ +1
+32                            ' RETURN_PLAIN
+'LABEL
+09 78                         ' JUMP_DJNZ -8
+'LABEL
+32                            ' RETURN_PLAIN
+'--- Function repeatcount
+36                            ' CONSTANT 1
+65                            ' MEM_WRITE LONG DBASE+$0004 (short)
+'LABEL
+A8 04                         ' MEM_READ WORD VBASE+$0004 
+3F B4                         ' REG_WRITE 1F4(OUTA)
+36                            ' CONSTANT 1
+38 0A                         ' CONSTANT 10
+66 02 76                      ' MEM_MODIFY LONG DBASE+$0004 (short) MOD_REPEATSTEP -10
+36                            ' CONSTANT 1
+41                            ' MEM_WRITE LONG VBASE+$0000 (short)
+'LABEL
+A8 04                         ' MEM_READ WORD VBASE+$0004 
+3F B4                         ' REG_WRITE 1F4(OUTA)
+36                            ' CONSTANT 1
+38 0A                         ' CONSTANT 10
+42 02 76                      ' MEM_MODIFY LONG VBASE+$0000 (short) MOD_REPEATSTEP -10
+36                            ' CONSTANT 1
+A9 04                         ' MEM_WRITE WORD VBASE+$0004 
+'LABEL
+A8 04                         ' MEM_READ WORD VBASE+$0004 
+3F B4                         ' REG_WRITE 1F4(OUTA)
+36                            ' CONSTANT 1
+38 0A                         ' CONSTANT 10
+AA 04 02 75                   ' MEM_MODIFY WORD VBASE+$0004  MOD_REPEATSTEP -11
+36                            ' CONSTANT 1
+89 06                         ' MEM_WRITE BYTE VBASE+$0006 
+'LABEL
+A8 04                         ' MEM_READ WORD VBASE+$0004 
+3F B4                         ' REG_WRITE 1F4(OUTA)
+36                            ' CONSTANT 1
+38 0A                         ' CONSTANT 10
+8A 06 02 75                   ' MEM_MODIFY BYTE VBASE+$0006  MOD_REPEATSTEP -11
+32                            ' RETURN_PLAIN
+'--- Function oddities
+35                            ' CONSTANT 0
+38 10                         ' CONSTANT 16
+38 05                         ' CONSTANT 5
+3D 92                         ' REGBIT_READ 1F2(INA)
+EC                            ' MATHOP: ADD
+3E D4 28                      ' REGBITRANGE_MODIFY 1F4(OUTA) MOD_POSTINC 
+35                            ' CONSTANT 0
+24                            ' REGIDX_READ
+38 0F                         ' CONSTANT 15
+25                            ' REGIDX_WRITE
+34                            ' CONSTANT -1
+26 14                         ' REGIDX_MODIFY MOD_SIGNX_WORD 
+32                            ' RETURN_PLAIN
+'--- Function cases
+38 14                         ' CONSTANT 20
+'LABEL
+39 01 04                      ' FUNDATA_PUSHADDRESS +260
+3F 92                         ' REG_READ 1F2(INA)
+35                            ' CONSTANT 0
+0D 0E                         ' CASE +14
+38 05                         ' CONSTANT 5
+0D 0E                         ' CASE +14
+38 7B                         ' CONSTANT 123
+0D 0E                         ' CASE +14
+39 03 E7                      ' CONSTANT 999
+3F B4                         ' REG_WRITE 1F4(OUTA)
+0C                            ' CASE_DONE
+'LABEL
+3F D4 2E                      ' REG_MODIFY 1F4(OUTA) MOD_POSTINC 
+0C                            ' CASE_DONE
+'LABEL
+3F D4 3E                      ' REG_MODIFY 1F4(OUTA) MOD_POSTDEC 
+0C                            ' CASE_DONE
+'LABEL
+38 05                         ' CONSTANT 5
+3D 9F                         ' REGBIT_READ 1FF(VSCL)
+0A 00                         ' JUMP_IF_Z +0
+'LABEL
+38 0C                         ' CONSTANT 12
+14                            ' POP
+04 02                         ' JUMP +2
+'LABEL
+09 55                         ' JUMP_DJNZ -43
+'LABEL
+3F DE 2E                      ' REG_MODIFY 1FE(VCFG) MOD_POSTINC 
+32                            ' RETURN_PLAIN
+00 00                         ' (padding)
