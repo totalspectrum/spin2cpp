@@ -3749,7 +3749,10 @@ void OutputByteCode(const char *fname, Module *P) {
                 int listPosition = 0;
                 while (listPosition < span->size) {
                     int listPosition_curline = listPosition; // Position at beginning of line
-                    int list_linelen = fprintf(lst_file,gl_p2 ? "%05X: " : "%04X: ",outPosition+listPosition_curline);
+                    int list_linelen = 0;
+                    if (gl_listing > 0) { // check for --test-listing
+                        list_linelen += fprintf(lst_file,gl_p2 ? "%05X: " : "%04X: ",outPosition+listPosition_curline);
+                    }
                     // Print up to 8 bytes per line
                     for (;(listPosition-listPosition_curline) < maxBytesPerLine && listPosition<span->size;listPosition++) {
                         list_linelen += fprintf(lst_file,"%02X ",span->data[listPosition]);
