@@ -342,7 +342,7 @@ static bool OptimizeOperator(int *optoken, AST **left,AST **right) {
     int32_t addValue;
 
     // Try special cases first
-    if (*optoken == K_SHL && left && IsConstExpr(*left) && EvalConstExpr(*left) == 1) {
+    if (*optoken == K_SHL && left && IsConstEqual(*left,1)) {
         // 1<<x can be |<x
         *left = NULL;
         *optoken = K_DECODE;
@@ -738,7 +738,7 @@ BCCompileConditionalJump(BCIRBuffer *irbuf,AST *condition, bool ifNotZero, ByteO
 }
 
 enum MemOpTargetKind {
-   MOT_UHHH,MOT_MEM,MOT_REG,MOT_REGBIT,MOT_REGBITRANGE
+   MOT_UHHH,MOT_MEM,MOT_REG,MOT_REGBIT,MOT_REGBITRANGE,MOT_REGIDX
 };
 
 static void
@@ -869,8 +869,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
                 sym->kind = SYM_RESULT;
             }
         }
-    }
-    else if (ident->kind == AST_MEMREF) {
+    } else if (ident->kind == AST_MEMREF) {
         if (!typeoverride && ident->right->kind == AST_ADDROF && 
         ident->right->left && ident->right->left->kind == AST_ARRAYREF && (!indexExpr || IsConstZero(indexExpr) || IsConstZero(ident->right->left->right))) {
             // Handle weird AST representation of "var.byte[x]""
@@ -903,6 +902,16 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         hwreg = (HwReg *)ident->d.ptr;
         memOp.data.int32 = HWReg2Index(hwreg);
         memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
+        goto after_typeinfer;
+    } else if (ident->kind == AST_SPRREF) {
+        targetKind = MOT_REGIDX;
+        baseExpr = ident->left; // Perhaps a bit odd to use baseExpr instead of indexExpr
+        memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
+        // AST for SPR[n] somewhat rightfully is (n|496).
+        // The Spin1 interpreter does this internally
+        if (gl_interp_kind == INTERP_KIND_P1ROM) {
+            if (baseExpr->kind == AST_OPERATOR && baseExpr->d.ival == '|' && IsConstEqual(baseExpr->right,496)) baseExpr = baseExpr->left;
+        }
         goto after_typeinfer;
     } else if (ident->kind == AST_RANGEREF) {
         ASSERT_AST_KIND(ident->left,AST_HWREG,return;);
@@ -1272,6 +1281,22 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         default: ERROR(node,"Unknown memop kind %d",kind); break;
         }
     } break;
+    case MOT_REGIDX: {
+        if (indexExpr) ERROR(node,"Index expression on indexed register op!");
+        if (bitExpr1) ERROR(node,"Bit1 expression on indexed register op!");
+        if (bitExpr2) ERROR(node,"Bit2 expression on indexed register op!");
+        if (memOp.attr.memop.memSize != MEMOP_SIZE_LONG) ERROR(node,"Non-long size on indexed register op!");
+
+        BCCompileExpression(irbuf,baseExpr,context,false);
+
+        switch (kind) {
+        case MEMOP_READ: memOp.kind = BOK_REGIDX_READ; break;
+        case MEMOP_WRITE: memOp.kind = BOK_REGIDX_WRITE; break;
+        case MEMOP_MODIFY: memOp.kind = BOK_REGIDX_MODIFY; break;
+        case MEMOP_ADDRESS: ERROR(node,"Trying to get address of register"); break;
+        default: ERROR(node,"Unknown memop kind %d",kind); break;
+        }
+    } break;
     default: {
         ERROR(node,"Internal Error: memop targetKind not set/unhandled");
     } break;
@@ -1376,7 +1401,7 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
         }
 
         // Handle no-ops
-        if (mok == MOK_ADD && IsConstExpr(right) && EvalConstExpr(right) == 0) {
+        if (mok == MOK_ADD && IsConstZero(right)) {
             if (asExpression || ExprHasSideEffects(left)) BCCompileExpression(irbuf,left,context,!asExpression);
             return;
         }
@@ -1418,7 +1443,7 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
             operand = opright;
             modifyReverseMath = false;
             // Handle no-ops
-            if (mok == MOK_ADD && IsConstExpr(opright) && EvalConstExpr(opright) == 0) {
+            if (mok == MOK_ADD && IsConstZero(opright)) {
                 if (asExpression || ExprHasSideEffects(opleft)) BCCompileExpression(irbuf,opleft,context,!asExpression);
                 return;
             }
@@ -1516,6 +1541,9 @@ redoLeft:
             ERROR(node,"Internal Error: no symbol in identifier assign");
             return;
         }
+    } break;
+    case AST_SPRREF: {
+        memopNode = left;
     } break;
     case AST_EXPRLIST: {
         if (asExpression) {
@@ -2233,7 +2261,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
 
                 case '+': 
                     // OptimizeOpertor turns no-ops into val + 0, so handle that here
-                    if (IsConstExpr(right) && EvalConstExpr(right) == 0) goto noOp;
+                    if (IsConstZero(right)) goto noOp;
                     mok = MOK_ADD;
                     break;
 
@@ -2362,7 +2390,8 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 BIRB_PushCopy(irbuf,&and_op);
             } break;
             case AST_RANGEREF:
-            case AST_HWREG: {
+            case AST_HWREG:
+            case AST_SPRREF: {
                 BCCompileMemOp(irbuf,node,context,MEMOP_READ);
             } break;
             case AST_ABSADDROF: // Same thing in Spin code, I guess.

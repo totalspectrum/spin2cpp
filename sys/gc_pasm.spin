@@ -15,8 +15,8 @@ pri _gc_markhub(startaddr, endaddr) | ptr, flags, heap_base, heap_end
 
 pri _gc_markcog | cogaddr, ptr, heap_base, heap_end
   (heap_base, heap_end) := _gc_ptrs
-  repeat cogaddr from 0 to 495
-    ptr := spr[496 - cogaddr]
+  repeat cogaddr from 495 to 0
+    ptr := __reg__[cogaddr]
     ptr := _gc_isvalidptr(heap_base, heap_end, ptr)
       if ptr
         word[ptr + OFF_FLAGS] |= GC_FLAG_INUSE

@@ -30,6 +30,9 @@ int IsConstExpr(AST *expr);
 /* determine whether an expression is a constant zero */
 bool IsConstZero(AST *ast);
 
+/* same but check for any value */
+bool IsConstEqual(AST *ast, ExprInt val);
+
 /* determine whether an expression is a float constant */
 int IsFloatConst(AST *expr);
 /* determine whether an expression is a string constant

@@ -317,6 +317,8 @@ void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsLeft) {
     case BOK_CLKSET:
     case BOK_ANCHOR:
     case BOK_POP:
+    case BOK_REGIDX_READ:
+    case BOK_REGIDX_WRITE:
         *min = *max = 1; break;
     // Two byte ops
     case BOK_REG_READ:
@@ -325,6 +327,7 @@ void GetSizeBound_Spin1(ByteOpIR *ir, int *min, int *max, int recursionsLeft) {
     case BOK_REGBIT_WRITE:
     case BOK_REGBITRANGE_READ:
     case BOK_REGBITRANGE_WRITE:
+    case BOK_REGIDX_MODIFY:
         *min = *max = 2; break;
     // Three byte ops
     case BOK_REG_MODIFY:
@@ -574,6 +577,22 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
                 mathOpKindNames[ir->mathKind],ir->attr.memop.modifyReverseMath?"(REVERSE)":"",ir->attr.memop.pushModifyResult?"(PUSH RESULT)":"");
         } else {
             comment = auto_printf(40,"%s %03X(%s)",byteOpKindNames[ir->kind],reg+0x1E0,Spin1RegNames[reg&31]);
+        }
+    } break;
+    case BOK_REGIDX_READ:
+    case BOK_REGIDX_WRITE:
+    case BOK_REGIDX_MODIFY: {
+        switch(ir->kind) {
+        case BOK_REGIDX_READ:   buf[pos++] = 0b00100100; break;
+        case BOK_REGIDX_WRITE:  buf[pos++] = 0b00100101; break;
+        case BOK_REGIDX_MODIFY: buf[pos++] = 0b00100110; break;
+        }
+        if (ir->kind == BOK_REGIDX_MODIFY) {
+            buf[pos++] = GetModifyByte_Spin1(ir,NULL);
+            comment = auto_printf(128,"%s %s %s%s",byteOpKindNames[ir->kind],
+                mathOpKindNames[ir->mathKind],ir->attr.memop.modifyReverseMath?"(REVERSE)":"",ir->attr.memop.pushModifyResult?"(PUSH RESULT)":"");
+        } else {
+            comment = byteOpKindNames[ir->kind];
         }
         #pragma GCC diagnostic pop
     } break;
