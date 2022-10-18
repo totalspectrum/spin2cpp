@@ -1,3 +1,8 @@
+Version 5.9.19
+- Implemented SPR[] in bytecode (thanks Ada)
+- Made SPR[] work more like Spin1 (thanks Ada)
+
+
 Version 5.9.18
 - Fixed missing # on output of jint style inline asm instructions
 - Fixed some bugs in the BASIC open wrapper (handling of close and recv were dodgy)
