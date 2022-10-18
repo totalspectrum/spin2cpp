@@ -175,7 +175,7 @@ preproc: preprocess.c $(UTIL)
 clean:
 	$(RM) $(PROGS) $(BUILD)/* *.zip
 
-test_offline: lextest asmtest cpptest errtest p2test
+test_offline: lextest asmtest bctest cpptest errtest p2test
 test: test_offline runtest
 #test: lextest asmtest cpptest errtest runtest
 lextest: $(PROGS)
@@ -183,6 +183,9 @@ lextest: $(PROGS)
 
 asmtest: $(PROGS)
 	(cd Test; ./asmtests.sh)
+
+bctest: $(PROGS)
+	(cd Test; ./bctests.sh)
 
 cpptest: $(PROGS)
 	(cd Test; ./cpptests.sh)

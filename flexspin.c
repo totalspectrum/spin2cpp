@@ -328,6 +328,9 @@ main(int argc, const char **argv)
         } else if (!strcmp(argv[0], "-l")) {
             gl_listing = 1;
             argv++; --argc;
+        } else if (!strcmp(argv[0], "--test-listing")) {
+            gl_listing = -1;
+            argv++; --argc;
         } else if (!strcmp(argv[0], "-f")) {
             cmd->outputFiles = 1;
             cmd->quiet = 1;

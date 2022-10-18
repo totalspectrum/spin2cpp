@@ -1,0 +1,7 @@
+*.pasm
+*.out
+*.p2asm
+*.binary
+*.txt
+*.lst
+!*/*

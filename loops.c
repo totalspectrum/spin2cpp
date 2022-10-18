@@ -1345,7 +1345,7 @@ TransformCountRepeat(AST *ast)
             return origast;
         }
         // Leave REPEAT i from X to Y (STEP Z) kinda loops alone for bytecode
-        if (loopvar && fromval && isIntegerLoop && !isUnsignedLoop) {
+        if (loopvar && fromval && isIntegerLoop && (!isUnsignedLoop || (looptype && TypeSize(looptype) <= 2))) {
             AstReportDone(&saveinfo);
             return origast;
         }

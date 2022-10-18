@@ -1,0 +1,16 @@
+00 B4 C4 04                   ' CLKFREQ
+6F                            ' CLKMODE
+00                            ' Placeholder for checksum
+10 00                         ' PBASE
+1C 00                         ' VBASE
+24 00                         ' DBASE
+18 00                         ' PCURR
+2C 00                         ' DCURR
+'--- Object Header for bctest001
+0C 00                         ' Object size
+02                            ' Method count + 1
+00                            ' OBJ count
+08 00 04 00                   ' Function main @0018 (local size 4)
+'--- Function main
+32                            ' RETURN_PLAIN
+00 00 00                      ' (padding)
