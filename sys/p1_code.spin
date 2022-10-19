@@ -291,14 +291,14 @@ pri _getus() : r = +long | freq
 '' coginit to start helpers until no more are left
 '' returns -1 if running, 0 if not
 dat
-	org 0
+        org 0
 _cogchk_helper
-	rdlong	_cogchk_tmp, par wz
-  if_z	jmp	#_cogchk_helper
-  	cogid	_cogchk_tmp
-	cogstop	_cogchk_tmp
+        rdlong  _cogchk_tmp, par wz
+  if_z  jmp     #_cogchk_helper
+        cogid   _cogchk_tmp
+        cogstop _cogchk_tmp
 _cogchk_tmp
-	long	0
+        long    0
 
 pri _cogchk(id) | flag, n
   flag := 0
@@ -364,14 +364,14 @@ pri _div64(n, nlo, dlo) : qlo, rlo | q, r, d
         shl qlo, #1 wc
         rcl q, #1
         ' R <<= 1
-        shl rlo, #1 wc	' r := r<<1
+        shl rlo, #1 wc  ' r := r<<1
         rcl r, #1
-	' bit 0 of r gets hi bit of n
-	shl nlo, #1 wc
-        rcl n, #1 wc		' bit 0 of r gets hi bit of n
+        ' bit 0 of r gets hi bit of n
+        shl nlo, #1 wc
+        rcl n, #1 wc            ' bit 0 of r gets hi bit of n
         muxc rlo, #1
-	
-        cmp  rlo, dlo wc,wz	' check for r <= d (r-d >= 0)
+        
+        cmp  rlo, dlo wc,wz     ' check for r <= d (r-d >= 0)
         cmpx r, d wc,wz
  if_b   jmp  #zz_skipfrac
         sub  rlo, dlo wc

@@ -8,14 +8,14 @@
 '' coginit to start helpers until no more are left
 '' returns -1 if running, 0 if not
 dat
-	org 0
+        org 0
 _cogchk_helper
-	rdlong	_cogchk_tmp, par wz
-  if_z	jmp	#_cogchk_helper
-  	cogid	_cogchk_tmp
-	cogstop	_cogchk_tmp
+        rdlong  _cogchk_tmp, par wz
+  if_z  jmp     #_cogchk_helper
+        cogid   _cogchk_tmp
+        cogstop _cogchk_tmp
 _cogchk_tmp
-	long	0
+        long    0
 
 pri _cogchk(id) | flag, n
   flag := 0
@@ -46,226 +46,226 @@ __lockreg    byte $ff
 
         org 0
 __helper_entry
-        mov	:cmdptr, par
+        mov     :cmdptr, par
 :loop
-	rdlong	:timeout, #0		' fetch clock frequency from HUB 0
-	shr	:timeout, #5		' loop takes around 16 cycles, check every half second
+        rdlong  :timeout, #0            ' fetch clock frequency from HUB 0
+        shr     :timeout, #5            ' loop takes around 16 cycles, check every half second
 :waitcmd
-	rdlong	:cmd, :cmdptr wz
-  if_nz	jmp	#:docmd
-  	djnz	:timeout, #:waitcmd
-	
-	'
-	' if we get here, there have been no commands for a while
-	' check to see if we are the only cog left alive
-	'
-	call	#:check_all_cogs
-	cmp	:cog_count, #1 wz
-  if_nz	jmp	#:loop
-  	' we are the only cog left, halt
-	cogid	 :cog_count
-	cogstop	 :cog_count
-	
+        rdlong  :cmd, :cmdptr wz
+  if_nz jmp     #:docmd
+        djnz    :timeout, #:waitcmd
+        
+        '
+        ' if we get here, there have been no commands for a while
+        ' check to see if we are the only cog left alive
+        '
+        call    #:check_all_cogs
+        cmp     :cog_count, #1 wz
+  if_nz jmp     #:loop
+        ' we are the only cog left, halt
+        cogid    :cog_count
+        cogstop  :cog_count
+        
 :docmd
-  	add	:cmdptr, #4
-	rdlong	:arg0, :cmdptr
-	add	:cmdptr, #4
-	rdlong	:arg1, :cmdptr
-	add	:cmdptr, #4
-	rdlong	:arg2, :cmdptr
-	sub	:cmdptr, #4
+        add     :cmdptr, #4
+        rdlong  :arg0, :cmdptr
+        add     :cmdptr, #4
+        rdlong  :arg1, :cmdptr
+        add     :cmdptr, #4
+        rdlong  :arg2, :cmdptr
+        sub     :cmdptr, #4
 
-	' commands:
-	' #1 == _setbaud
-	' #2 == _txraw
-	' #3 == _rxraw
-	' #4 == _div64
-	add	:cmd, #:cmdtable
-	jmp	:cmd
+        ' commands:
+        ' #1 == _setbaud
+        ' #2 == _txraw
+        ' #3 == _rxraw
+        ' #4 == _div64
+        add     :cmd, #:cmdtable
+        jmp     :cmd
 :cmddone
-	' write back results (at most 2 results)
-	wrlong	:arg1, :cmdptr
-	sub	:cmdptr, #4
-	wrlong	:arg0, :cmdptr
-	sub	:cmdptr, #4
-	mov	:cmd, #0
-	wrlong	:cmd, :cmdptr
-	jmp	#:loop
+        ' write back results (at most 2 results)
+        wrlong  :arg1, :cmdptr
+        sub     :cmdptr, #4
+        wrlong  :arg0, :cmdptr
+        sub     :cmdptr, #4
+        mov     :cmd, #0
+        wrlong  :cmd, :cmdptr
+        jmp     #:loop
 
 :setbaud
-	mov	:baud_delay, :arg0
-	jmp	#:cmddone
+        mov     :baud_delay, :arg0
+        jmp     #:cmddone
 
 :txraw
-	or	outa, :txmask
-	or	dira, :txmask
-	or	:arg0, #$100
-	shl	:arg0, #1
-	mov	:nextcycle, cnt
-	add	:nextcycle, :baud_delay
-	mov	:arg2, #10
+        or      outa, :txmask
+        or      dira, :txmask
+        or      :arg0, #$100
+        shl     :arg0, #1
+        mov     :nextcycle, cnt
+        add     :nextcycle, :baud_delay
+        mov     :arg2, #10
 :txloop
-	waitcnt :nextcycle, :baud_delay
-	shr	:arg0, #1 wc
-  	muxc	outa, :txmask
-  	djnz	:arg2, #:txloop
-	jmp	#:cmddone
+        waitcnt :nextcycle, :baud_delay
+        shr     :arg0, #1 wc
+        muxc    outa, :txmask
+        djnz    :arg2, #:txloop
+        jmp     #:cmddone
 
 :rxraw
-	andn	dira, :rxmask
-	
-	cmp	:arg0, #0 wz
-  if_z  jmp	#:rxnowait
-  	add	:arg0, cnt	' final timeout time
+        andn    dira, :rxmask
+        
+        cmp     :arg0, #0 wz
+  if_z  jmp     #:rxnowait
+        add     :arg0, cnt      ' final timeout time
 :rxwait
-	mov	:r, ina
-	test	:r, :rxmask wz
-  if_z  jmp	#:do_rx
-  	mov	:arg1, :arg0	' timeout wait cycle
-	sub	:arg1, cnt wc	' check count
-  if_ae	jmp	#:rxwait
-  	neg	:arg0, #1	' return -1
-	jmp	#:cmddone
+        mov     :r, ina
+        test    :r, :rxmask wz
+  if_z  jmp     #:do_rx
+        mov     :arg1, :arg0    ' timeout wait cycle
+        sub     :arg1, cnt wc   ' check count
+  if_ae jmp     #:rxwait
+        neg     :arg0, #1       ' return -1
+        jmp     #:cmddone
 :rxnowait
-	mov	:r, ina
-	test	:r, :rxmask wz
-  if_nz jmp	#:rxnowait
+        mov     :r, ina
+        test    :r, :rxmask wz
+  if_nz jmp     #:rxnowait
   
 :do_rx
-	mov	:arg0, #0
-	mov	:arg1, :baud_delay
-	shr	:arg1, #1
-	add	:arg1, cnt
-	mov	:counter, #8
+        mov     :arg0, #0
+        mov     :arg1, :baud_delay
+        shr     :arg1, #1
+        add     :arg1, cnt
+        mov     :counter, #8
 :rxloop
-	add	:arg1, :baud_delay
-	waitcnt	:arg1, #0
-	shr	:arg0, #1
-	mov	:r, ina
-	test	:r, :rxmask wz
-  if_nz	or	:arg0, #1<<7
-	djnz	:counter, #:rxloop
+        add     :arg1, :baud_delay
+        waitcnt :arg1, #0
+        shr     :arg0, #1
+        mov     :r, ina
+        test    :r, :rxmask wz
+  if_nz or      :arg0, #1<<7
+        djnz    :counter, #:rxloop
 
-	add	:arg1, :baud_delay
-	waitcnt	:arg1, #0
+        add     :arg1, :baud_delay
+        waitcnt :arg1, #0
 
-	jmp	#:cmddone
+        jmp     #:cmddone
 
 '
 ' divide 64 bit unsigned by 32 bit unsigned
 '
 :div64
-	mov	:n, :arg0
-	mov	:nlo, :arg1
-	mov	:dlo, :arg2
+        mov     :n, :arg0
+        mov     :nlo, :arg1
+        mov     :dlo, :arg2
 
-	mov	:r, #0
-	mov	:rlo, #0
-	mov	:q, #0
-	mov	:qlo, #0
-	mov	:counter, #64
+        mov     :r, #0
+        mov     :rlo, #0
+        mov     :q, #0
+        mov     :qlo, #0
+        mov     :counter, #64
 
-	' FIXME: could optimize case of :n == 0
+        ' FIXME: could optimize case of :n == 0
 :divloop
         ' Q <<= 1
         shl :qlo, #1 wc
         rcl :q, #1
         ' R <<= 1
-        shl :rlo, #1 wc	' r := r<<1
+        shl :rlo, #1 wc ' r := r<<1
         rcl :r, #1
-	' bit 0 of r gets hi bit of n
-	shl :nlo, #1 wc
-        rcl :n, #1 wc		' bit 0 of r gets hi bit of n
+        ' bit 0 of r gets hi bit of n
+        shl :nlo, #1 wc
+        rcl :n, #1 wc           ' bit 0 of r gets hi bit of n
         muxc :rlo, #1
-	
-        cmp  :rlo, :dlo wc,wz	' check for r <= d (r-d >= 0)
+        
+        cmp  :rlo, :dlo wc,wz   ' check for r <= d (r-d >= 0)
         cmpx :r, #0 wc,wz
-  if_b	jmp  #:skipset
+  if_b  jmp  #:skipset
         sub  :rlo, :dlo wc
         subx :r, #0
         or   :qlo, #1
 :skipset
-	djnz	:counter, #:divloop
-	
-	mov	:arg0, :qlo
-	mov	:arg1, :rlo
+        djnz    :counter, #:divloop
+        
+        mov     :arg0, :qlo
+        mov     :arg1, :rlo
 
-	jmp	#:cmddone
-	
-	
+        jmp     #:cmddone
+        
+        
 '
 ' function to count number of cogs running
 ' works by starting as many cogs as we can with a helper
 '
 :check_all_cogs
-	mov	:cogchk_arg, :flag_ptr	' parameter for call
-	shl	:cogchk_arg, #14
-	or	:cogchk_arg, :helper_ptr ' code for call
-	shl	:cogchk_arg, #2
-	or	:cogchk_arg, #$f	' start any cog
-	
-	mov	:arg0, #0
-	wrlong	:arg0, :flag_ptr
-	mov	:cog_count, #8		' assume all cogs free (this will be false :))
+        mov     :cogchk_arg, :flag_ptr  ' parameter for call
+        shl     :cogchk_arg, #14
+        or      :cogchk_arg, :helper_ptr ' code for call
+        shl     :cogchk_arg, #2
+        or      :cogchk_arg, #$f        ' start any cog
+        
+        mov     :arg0, #0
+        wrlong  :arg0, :flag_ptr
+        mov     :cog_count, #8          ' assume all cogs free (this will be false :))
 :check_loop
-	coginit	:cogchk_arg wc, nr	' don't care which cog we started, just whether it did start
-  if_nc sub	:cog_count, #1
-  if_nc	jmp	#:check_loop
-  	wrlong	:cog_count, :flag_ptr	' shut down extra cogs (cog_count will be at least 1!)
+        coginit :cogchk_arg wc, nr      ' don't care which cog we started, just whether it did start
+  if_nc sub     :cog_count, #1
+  if_nc jmp     #:check_loop
+        wrlong  :cog_count, :flag_ptr   ' shut down extra cogs (cog_count will be at least 1!)
 :check_all_cogs_ret
-	ret
+        ret
 
-	' coginit argument
+        ' coginit argument
 :cogchk_arg
-	long 0
+        long 0
 
-	' 
+        ' 
 :cmd    long 0
-:arg0	long 0
-:arg1	long 0
-:arg2	long 0
+:arg0   long 0
+:arg1   long 0
+:arg2   long 0
 :arg3   long 0
 
 :cmdtable
-	jmp	#:cmddone	' 0 == nop
-	jmp	#:setbaud	' 1 == setbaud
-	jmp	#:txraw		' 2 == txraw
-	jmp	#:rxraw		' 3 == rxraw
-	jmp	#:div64		' 4 == unsigned 64 / 32 division
-	
+        jmp     #:cmddone       ' 0 == nop
+        jmp     #:setbaud       ' 1 == setbaud
+        jmp     #:txraw         ' 2 == txraw
+        jmp     #:rxraw         ' 3 == rxraw
+        jmp     #:div64         ' 4 == unsigned 64 / 32 division
+        
 :baud_delay
-	long 80_000_000 / 115_200
+        long 80_000_000 / 115_200
 
 :timeout
-	long 80_000_000
+        long 80_000_000
 
 :dira_init
         long (1<<30)
 :outa_init
         long -1
 :txmask
-	long (1<<30)
+        long (1<<30)
 :rxmask
-	long (1<<31)
-	
+        long (1<<31)
+        
 :nextcycle
-	long 0
+        long 0
 :cmdptr long 0
 :cog_count long 0
 :helper_ptr
-	long @@@_cogchk_helper
+        long @@@_cogchk_helper
 :flag_ptr
-	long @@@__helper_arg
+        long @@@__helper_arg
 
-	' temporary variables
-:n	res 1
-:nlo	res 1
-:dlo	res 1
-:d	res 1
-:qlo	res 1
-:q	res 1
-:rlo	res 1
-:r	res 1
+        ' temporary variables
+:n      res 1
+:nlo    res 1
+:dlo    res 1
+:d      res 1
+:qlo    res 1
+:q      res 1
+:rlo    res 1
+:r      res 1
 :counter res 1
 
 __helper_done

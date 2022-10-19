@@ -63,9 +63,9 @@ INTERNALS
 
 con
   __real_heapsize__ = 256 ' size of heap in longs, may be overridden by user
-  pagesize = 16		' size of page in bytes
-  pagesizeshift = 4	' log2(pagesize)
-  headersize = 8 	' length of block header
+  pagesize = 16         ' size of page in bytes
+  pagesizeshift = 4     ' log2(pagesize)
+  headersize = 8        ' length of block header
   pagemask = pagesize - 1
   GC_MAGIC = $6c80
   GC_MAGIC_MASK = $ffc0
@@ -376,9 +376,9 @@ pri _gc_docollect | ptr, nextptr, startheap, endheap, flags, ourid, size
     nextptr := _gc_nextBlockPtr(ptr)
     flags := word[ptr + OFF_FLAGS]
     if ( (not (flags & GC_FLAG_INUSE)) and (not (flags & GC_FLAG_RESERVED)) )
-	 flags &= GC_OWNER_MASK
-	 if (flags == ourid) or (flags == GC_OWNER_HUB)
-	   nextptr := _gc_dofree(ptr)  ' dofree returns address of next block
-	   
+         flags &= GC_OWNER_MASK
+         if (flags == ourid) or (flags == GC_OWNER_HUB)
+           nextptr := _gc_dofree(ptr)  ' dofree returns address of next block
+           
   while (nextptr <> 0) and (nextptr < endheap)
   

@@ -1472,7 +1472,9 @@ skipSpace(LexStream *L, AST **ast_ptr, int language)
     int startline = 0;
     int eoln_token;
     int eof_token;
-
+    int numspaces = 0;
+    int numtabs = 0;
+    
     if (IsBasicLang(language)) {
       eoln_token = BAS_EOLN;
       eof_token = BAS_EOF;
@@ -1490,15 +1492,27 @@ skipSpace(LexStream *L, AST **ast_ptr, int language)
     
     flexbuf_init(&cb, INCSTR);
 refetch:
+    numspaces = numtabs = 0;
     c = lexgetc(L);
 again:
     if (gl_srccomments && L->eoln) {
         CheckSrcComment(L);
     }
     while (c == ' ' || c == '\t') {
+        if (L->eoln && (L->block_type == BLOCK_PUB || L->block_type == BLOCK_PRI) ) {
+            numspaces += (c == ' ');
+            numtabs += (c == '\t');
+        }
         c = lexgetc(L);
     }
-
+    if (numspaces || numtabs) {
+        if (0 && !strcmp(L->fileName, "foo.spin")) {
+            printf("    line %d col %d numspaces==%d numtabs==%d\n", L->lineCounter, L->colCounter, numspaces, numtabs);
+        }
+        if (numspaces && numtabs) {
+            WARNING(DummyLineAst(L->lineCounter), "mixing tabs and spaces for indentation");
+        }
+    }
     /* ignore completely empty lines or ones with just comments */
     c = checkCommentedLine(&cb, L, c, language);
     if (commentBlockStart(language, c, L)) {

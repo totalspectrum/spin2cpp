@@ -93,8 +93,8 @@ pri _clkset(mode, freq) | oldmode, xsel
   __clkmode_var := mode
   mode := mode & !3
   asm
-    hubset oldmode	' go to RCFAST using known prior mode
-    hubset mode		' setup for new mode, still RCFAST
+    hubset oldmode      ' go to RCFAST using known prior mode
+    hubset mode         ' setup for new mode, still RCFAST
     waitx ##20_000_000/100 ' wait ~10ms
     or  mode, xsel
     hubset mode         ' activate new mode
@@ -194,7 +194,7 @@ pri _rxraw(timeout = 0) : rxbyte = long | z, endtime, temp2, rxpin
     asm
           testb  temp2, #8 wc     ' check framing of prior character for valid character   
           testbn temp2, #9 andc   ' more framing check (1 then 0)
-	  shr    temp2, #10       ' shift down next character, if any
+          shr    temp2, #10       ' shift down next character, if any
   if_c    mov    z, #1
   if_c    jmp    #.breakone
           testp  rxpin wz
@@ -211,11 +211,11 @@ pri _rxraw(timeout = 0) : rxbyte = long | z, endtime, temp2, rxpin
 pri _call_method(o, f, x=0) | r
   asm
     wrlong objptr, ptra
-    add	   ptra, #4
+    add    ptra, #4
     mov    objptr, o
     mov    arg01, x
     call   f
-    sub	   ptra, #4
+    sub    ptra, #4
     rdlong objptr, ptra
     mov    r, result1
   endasm
