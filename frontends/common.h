@@ -92,6 +92,9 @@ struct lexstream {
     /* another Spin2 flag for backtick */
     char backtick_state;
 
+    /* marker for whether we need to report a warning about mixing tabs and spaces */
+    char mixed_tab_warning;
+    
     /* current expression state stack */
 #define MAX_EXPR_STACK 64
     int exprSp;

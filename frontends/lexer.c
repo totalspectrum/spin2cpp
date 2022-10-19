@@ -299,6 +299,12 @@ static void startNewLine(LexStream *L)
     lineInfo.fileName = L->fileName;
     lineInfo.lineno = L->lineCounter;
     flexbuf_addmem(&L->lineInfo, (char *)&lineInfo, sizeof(lineInfo));
+
+    if (L->mixed_tab_warning) {
+        WARNING(DummyLineAst(L->lineCounter), "mixing tabs and spaces for indentation");
+        L->mixed_tab_warning = 0;
+    }
+    
     ResetExprState(L);
 }
 
@@ -1510,7 +1516,7 @@ again:
             printf("    line %d col %d numspaces==%d numtabs==%d\n", L->lineCounter, L->colCounter, numspaces, numtabs);
         }
         if (numspaces && numtabs) {
-            WARNING(DummyLineAst(L->lineCounter), "mixing tabs and spaces for indentation");
+            L->mixed_tab_warning = 1;
         }
     }
     /* ignore completely empty lines or ones with just comments */
