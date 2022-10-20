@@ -301,10 +301,16 @@ static void startNewLine(LexStream *L)
     flexbuf_addmem(&L->lineInfo, (char *)&lineInfo, sizeof(lineInfo));
 
     if (L->mixed_tab_warning) {
-        WARNING(DummyLineAst(L->lineCounter), "mixing tabs and spaces for indentation");
+        switch (L->mixed_tab_warning) {
+        case MIXED_TAB_SAME_LINE:
+            WARNING(DummyLineAst(L->lineCounter), "mixing tabs and spaces for indentation on same line"); break;
+        case MIXED_TAB_CHANGED_TO_SPACES:
+            WARNING(DummyLineAst(L->lineCounter), "used spaces for indentation (previous lines used tabs)"); break;
+        case MIXED_TAB_CHANGED_TO_TABS:
+            WARNING(DummyLineAst(L->lineCounter), "used tabs for indentation (previous lines used spaces)"); break;
+        }
         L->mixed_tab_warning = 0;
     }
-    
     ResetExprState(L);
 }
 
@@ -803,6 +809,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                 L->block_type = MapSpinBlock(c);
                 L->block_firstline = L->lineCounter;
                 //EstablishIndent(L, 1);
+                L->indent_saw_tabs = L->indent_saw_spaces = 0;
                 break;
             case SP_ORGH:
             case SP_RES:
@@ -1505,20 +1512,32 @@ again:
         CheckSrcComment(L);
     }
     while (c == ' ' || c == '\t') {
-        if (L->eoln && (L->block_type == BLOCK_PUB || L->block_type == BLOCK_PRI) ) {
+        if (L->eoln && (L->block_type == BLOCK_PUB || L->block_type == BLOCK_PRI) && IsSpinLang(language)) {
             numspaces += (c == ' ');
             numtabs += (c == '\t');
         }
         c = lexgetc(L);
     }
     if (numspaces || numtabs) {
-        if (0 && !strcmp(L->fileName, "foo.spin")) {
-            printf("    line %d col %d numspaces==%d numtabs==%d\n", L->lineCounter, L->colCounter, numspaces, numtabs);
-        }
+//        if (1 && !strcmp(L->fileName, "foo.spin")) {
+//            printf("    line %d col %d numspaces==%d numtabs==%d sawspaces=%d sawtabs=%d\n", L->lineCounter, L->colCounter, numspaces, numtabs, L->indent_saw_spaces, L->indent_saw_tabs);
+//        }
         if (numspaces && numtabs) {
-            L->mixed_tab_warning = 1;
+            L->mixed_tab_warning = MIXED_TAB_SAME_LINE;
+        } else if (numspaces) {
+            if (L->indent_saw_tabs) {
+                L->mixed_tab_warning = MIXED_TAB_CHANGED_TO_SPACES;
+                L->indent_saw_tabs = 0;
+            }
+            L->indent_saw_spaces = 1;
+        } else if (numtabs) {
+            if (L->indent_saw_spaces) {
+                L->mixed_tab_warning = MIXED_TAB_CHANGED_TO_TABS;
+                L->indent_saw_spaces = 0;
+            }
+            L->indent_saw_tabs = 1;
         }
-    }
+    }   
     /* ignore completely empty lines or ones with just comments */
     c = checkCommentedLine(&cb, L, c, language);
     if (commentBlockStart(language, c, L)) {

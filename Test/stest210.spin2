@@ -11,5 +11,3 @@ pub {++cog} syncsend(a) | val, c
         pinh(57)
       else
         pinl(57)
-	
-  

@@ -6,7 +6,7 @@ pub start()
 
   djnftest(8)
 
-	repeat
+      repeat
 
 
 pub djnfTest(numbytes)

@@ -1,6 +1,6 @@
-	''
-	'' verify errors inside include files
-	''
+''
+'' verify errors inside include files
+''
 
 PUB foo | x
 #include "notfound.h"

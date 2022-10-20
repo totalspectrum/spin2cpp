@@ -94,7 +94,13 @@ struct lexstream {
 
     /* marker for whether we need to report a warning about mixing tabs and spaces */
     char mixed_tab_warning;
-    
+#define MIXED_TAB_SAME_LINE         1
+#define MIXED_TAB_CHANGED_TO_SPACES 2
+#define MIXED_TAB_CHANGED_TO_TABS   3
+    /* flags for seen tabs or spaces */
+    char indent_saw_spaces;
+    char indent_saw_tabs;
+
     /* current expression state stack */
 #define MAX_EXPR_STACK 64
     int exprSp;

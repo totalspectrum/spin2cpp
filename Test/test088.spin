@@ -4,5 +4,5 @@
 PUB sum | r, x
     r := 0
     repeat x from 0 to 4
-	r += x
+        r += x
     return r
