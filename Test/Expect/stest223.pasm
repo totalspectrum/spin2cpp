@@ -8,13 +8,13 @@ dat
 entry
 
 _demo
-	mov	_blah_i, #1
+	mov	_var01, #1
 	mov	arg01, #4
 LR__0001
-	mov	outb, _blah_i
+	mov	outb, _var01
 	mov	outb, ptr_L__0011_
-	add	_blah_i, #1
-	cmp	_blah_i, arg01 wz
+	add	_var01, #1
+	cmp	_var01, arg01 wz
  if_ne	jmp	#LR__0001
 _demo_ret
 	ret
@@ -28,7 +28,7 @@ LR__0002
 	byte	"hello"
 	byte	0
 	org	COG_BSS_START
-_blah_i
+_var01
 	res	1
 arg01
 	res	1

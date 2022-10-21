@@ -123,47 +123,47 @@ __system___tx_ret
 	ret
 
 __system___gc_ptrs
-	mov	__system___gc_ptrs_base, __heap_ptr
-	mov	__system___gc_ptrs_end, __system___gc_ptrs_base
-	add	__system___gc_ptrs_end, imm_1016_
-	rdlong	result2, __system___gc_ptrs_base wz
+	mov	_var01, __heap_ptr
+	mov	_var02, _var01
+	add	_var02, imm_1016_
+	rdlong	result2, _var01 wz
  if_ne	jmp	#LR__0009
-	mov	result2, __system___gc_ptrs_end
-	sub	result2, __system___gc_ptrs_base
+	mov	result2, _var02
+	sub	result2, _var01
 	mov	result1, #1
-	wrword	result1, __system___gc_ptrs_base
-	mov	result1, __system___gc_ptrs_base
+	wrword	result1, _var01
+	mov	result1, _var01
 	add	result1, #2
-	mov	_system___gc_ptrs_tmp001_, imm_27792_
-	wrword	_system___gc_ptrs_tmp001_, result1
-	mov	result1, __system___gc_ptrs_base
+	mov	_var03, imm_27792_
+	wrword	_var03, result1
+	mov	result1, _var01
 	add	result1, #4
-	mov	_system___gc_ptrs_tmp001_, #0
-	wrword	_system___gc_ptrs_tmp001_, result1
-	mov	result1, __system___gc_ptrs_base
+	mov	_var03, #0
+	wrword	_var03, result1
+	mov	result1, _var01
 	add	result1, #6
-	mov	_system___gc_ptrs_tmp001_, #1
-	wrword	_system___gc_ptrs_tmp001_, result1
-	add	__system___gc_ptrs_base, #16
-	abs	_system___gc_ptrs_tmp001_, result2 wc
-	shr	_system___gc_ptrs_tmp001_, #4
-	negc	_system___gc_ptrs_tmp001_, _system___gc_ptrs_tmp001_
-	wrword	_system___gc_ptrs_tmp001_, __system___gc_ptrs_base
-	mov	result2, __system___gc_ptrs_base
+	mov	_var03, #1
+	wrword	_var03, result1
+	add	_var01, #16
+	abs	_var03, result2 wc
+	shr	_var03, #4
+	negc	_var03, _var03
+	wrword	_var03, _var01
+	mov	result2, _var01
 	add	result2, #2
-	mov	_system___gc_ptrs_tmp001_, imm_27791_
-	wrword	_system___gc_ptrs_tmp001_, result2
-	mov	result2, __system___gc_ptrs_base
+	mov	_var03, imm_27791_
+	wrword	_var03, result2
+	mov	result2, _var01
 	add	result2, #4
-	mov	_system___gc_ptrs_tmp001_, #0
-	wrword	_system___gc_ptrs_tmp001_, result2
-	mov	result2, __system___gc_ptrs_base
+	mov	_var03, #0
+	wrword	_var03, result2
+	mov	result2, _var01
 	add	result2, #6
-	wrword	_system___gc_ptrs_tmp001_, result2
-	sub	__system___gc_ptrs_base, #16
+	wrword	_var03, result2
+	sub	_var01, #16
 LR__0009
-	mov	result2, __system___gc_ptrs_end
-	mov	result1, __system___gc_ptrs_base
+	mov	result2, _var02
+	mov	result1, _var01
 __system___gc_ptrs_ret
 	ret
 
@@ -881,10 +881,6 @@ __system___gc_nextBlockPtr_ptr
 	res	1
 __system___gc_nextBlockPtr_t
 	res	1
-__system___gc_ptrs_base
-	res	1
-__system___gc_ptrs_end
-	res	1
 __system___gc_tryalloc__cse__0000
 	res	1
 __system___gc_tryalloc__cse__0001
@@ -950,8 +946,6 @@ _system___gc_dofree_tmp001_
 _system___gc_dofree_tmp002_
 	res	1
 _system___gc_markhub_tmp001_
-	res	1
-_system___gc_ptrs_tmp001_
 	res	1
 _system___gc_tryalloc_tmp001_
 	res	1

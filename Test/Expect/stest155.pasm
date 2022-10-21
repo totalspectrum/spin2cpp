@@ -13,8 +13,8 @@ _ident_ret
 
 _test
 	mov	result1, #0
-	mov	_ident_x_01, #0
-	mov	result2, _ident_x_01
+	mov	_var02, #0
+	mov	result2, _var02
 	wrlong	result1, ptr__dat__
 	add	ptr__dat__, #4
 	wrlong	result2, ptr__dat__
@@ -34,10 +34,6 @@ COG_BSS_START
 _dat_
 	byte	$00, $00, $00, $00, $00, $00, $00, $00
 	org	COG_BSS_START
-_ident_x
-	res	1
-_ident_x_01
-	res	1
 _var01
 	res	1
 _var02

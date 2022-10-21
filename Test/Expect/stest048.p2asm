@@ -17,14 +17,14 @@ entry
 _getpulse
 	fltl	arg01
 LR__0001
-	getct	_getpulse_t0
+	getct	_var01
 	testp	arg01 wc
  if_ae	jmp	#LR__0001
 LR__0002
 	getct	result1
 	testp	arg01 wc
  if_b	jmp	#LR__0002
-	sub	result1, _getpulse_t0
+	sub	result1, _var01
 _getpulse_ret
 	ret
 builtin_bytefill_
@@ -50,7 +50,7 @@ COG_BSS_START
 	fit	480
 	orgh
 	org	COG_BSS_START
-_getpulse_t0
+_var01
 	res	1
 arg01
 	res	1

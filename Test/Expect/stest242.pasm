@@ -5,18 +5,18 @@ dat
 entry
 
 _lfs_trunc
-	mov	_lfs_trunc_ctz, arg01
-	rdlong	result1, _lfs_trunc_ctz
+	mov	_var01, arg01
+	rdlong	result1, _var01
 	and	result1, #255
 	add	ptr__dat__, #4
 	rdlong	arg01, ptr__dat__
 	sub	ptr__dat__, #4
 	add	result1, arg01
-	wrlong	result1, _lfs_trunc_ctz
-	add	_lfs_trunc_ctz, #4
-	rdlong	result1, _lfs_trunc_ctz
+	wrlong	result1, _var01
+	add	_var01, #4
+	rdlong	result1, _var01
 	and	result1, #1
-	wrlong	result1, _lfs_trunc_ctz
+	wrlong	result1, _var01
 _lfs_trunc_ret
 	ret
 
@@ -30,7 +30,7 @@ COG_BSS_START
 _dat_
 	byte	$00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
 	org	COG_BSS_START
-_lfs_trunc_ctz
+_var01
 	res	1
 arg01
 	res	1

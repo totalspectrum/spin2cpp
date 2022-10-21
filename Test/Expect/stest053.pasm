@@ -12,20 +12,20 @@ dat
 entry
 
 _serchar
-	mov	_serchar_val, arg01
+	mov	_var01, arg01
 	or	outa, imm_1073741824_
 	or	dira, imm_1073741824_
-	or	_serchar_val, #256
-	shl	_serchar_val, #1
-	mov	_serchar_waitcycles, cnt
-	mov	_serchar__idx__0001, #10
+	or	_var01, #256
+	shl	_var01, #1
+	mov	_var02, cnt
+	mov	_var03, #10
 LR__0001
-	add	_serchar_waitcycles, imm_694_
-	mov	arg01, _serchar_waitcycles
+	add	_var02, imm_694_
+	mov	arg01, _var02
 	waitcnt	arg01, #0
-	shr	_serchar_val, #1 wc
+	shr	_var01, #1 wc
 	muxc	outa, imm_1073741824_
-	djnz	_serchar__idx__0001, #LR__0001
+	djnz	_var03, #LR__0001
 _serchar_ret
 	ret
 
@@ -36,11 +36,11 @@ imm_694_
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_serchar__idx__0001
+_var01
 	res	1
-_serchar_val
+_var02
 	res	1
-_serchar_waitcycles
+_var03
 	res	1
 arg01
 	res	1

@@ -16,11 +16,11 @@ entry
 
 _syncsend
 LR__0001
-	rdlong	_syncsend_val, arg01
+	rdlong	_var01, arg01
 	add	arg01, #4
 	rep	@LR__0003, #32
 LR__0002
-	shr	_syncsend_val, #1 wc
+	shr	_var01, #1 wc
 	drvc	#57
 LR__0003
 	jmp	#LR__0001
@@ -47,7 +47,7 @@ COG_BSS_START
 	fit	480
 	orgh
 	org	COG_BSS_START
-_syncsend_val
+_var01
 	res	1
 arg01
 	res	1

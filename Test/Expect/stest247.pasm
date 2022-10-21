@@ -14,43 +14,43 @@ _toReal_ret
 	ret
 
 __system___float_tointeger
-	mov	__system___float_Unpack_s, arg01
-	shr	__system___float_Unpack_s, #31
-	mov	__system___float_Unpack_x, arg01
-	shl	__system___float_Unpack_x, #1
-	shr	__system___float_Unpack_x, #24 wz
+	mov	_var01, arg01
+	shr	_var01, #31
+	mov	_var02, arg01
+	shl	_var02, #1
+	shr	_var02, #24 wz
 	and	arg01, imm_8388607_
  if_ne	shl	arg01, #6
  if_ne	or	arg01, imm_536870912_
  if_ne	jmp	#LR__0002
-	mov	_tmp002_, arg01
-	mov	_tmp001_, #32
+	mov	_var03, arg01
+	mov	_var04, #32
 LR__0001
-	shl	_tmp002_, #1 wc
- if_ae	djnz	_tmp001_, #LR__0001
-	sub	_tmp001_, #23
-	mov	__system___float_Unpack_x, _tmp001_
-	mov	_tmp002_, #7
-	sub	_tmp002_, _tmp001_
-	shl	arg01, _tmp002_
+	shl	_var03, #1 wc
+ if_ae	djnz	_var04, #LR__0001
+	sub	_var04, #23
+	mov	_var02, _var04
+	mov	_var03, #7
+	sub	_var03, _var04
+	shl	arg01, _var03
 LR__0002
-	sub	__system___float_Unpack_x, #127
+	sub	_var02, #127
 	mov	result3, arg01
-	mov	result1, __system___float_Unpack_s
-	mov	result2, __system___float_Unpack_x
-	mov	__system___float_tointeger_m, result3
+	mov	result1, _var01
+	mov	result2, _var02
+	mov	_var05, result3
 	cmps	result2, imm_4294967295_ wc
  if_b	jmp	#LR__0003
 	cmps	result2, #31 wc
- if_b	shl	__system___float_tointeger_m, #2
- if_b	mov	__system___float_tointeger__cse__0001, #30
- if_b	sub	__system___float_tointeger__cse__0001, result2
- if_b	shr	__system___float_tointeger_m, __system___float_tointeger__cse__0001
- if_b	add	__system___float_tointeger_m, arg02
- if_b	shr	__system___float_tointeger_m, #1
+ if_b	shl	_var05, #2
+ if_b	mov	_var06, #30
+ if_b	sub	_var06, result2
+ if_b	shr	_var05, _var06
+ if_b	add	_var05, arg02
+ if_b	shr	_var05, #1
  if_b	cmp	result1, #0 wz
- if_c_and_nz	neg	__system___float_tointeger_m, __system___float_tointeger_m
- if_b	mov	result1, __system___float_tointeger_m
+ if_c_and_nz	neg	_var05, _var05
+ if_b	mov	result1, _var05
  if_b	jmp	#__system___float_tointeger_ret
 LR__0003
 	mov	result1, #0
@@ -74,17 +74,17 @@ result3
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-__system___float_Unpack_s
+_var01
 	res	1
-__system___float_Unpack_x
+_var02
 	res	1
-__system___float_tointeger__cse__0001
+_var03
 	res	1
-__system___float_tointeger_m
+_var04
 	res	1
-_tmp001_
+_var05
 	res	1
-_tmp002_
+_var06
 	res	1
 arg01
 	res	1

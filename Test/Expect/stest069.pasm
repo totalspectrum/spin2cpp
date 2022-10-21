@@ -5,12 +5,12 @@ dat
 entry
 
 _demo
-	mov	_demo__idx__0000, #7
+	mov	_var01, #7
 LR__0001
 	mov	arg01, imm_40000000_
 	add	arg01, cnt
 	waitcnt	arg01, #0
-	djnz	_demo__idx__0000, #LR__0001
+	djnz	_var01, #LR__0001
 LR__0002
 	jmp	#LR__0002
 _demo_ret
@@ -34,7 +34,7 @@ imm_40000000_
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_demo__idx__0000
+_var01
 	res	1
 arg01
 	res	1
