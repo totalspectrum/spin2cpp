@@ -125,6 +125,11 @@ typedef struct ir_bedata {
     
     /* flag for whether we should inline the function */
     bool isInline;
+
+    /* set after inlining if the function has no external calls left */
+    bool effectivelyLeaf;
+    /* Highest arg count of all inlined functions */
+    int maxInlineArg;
     
     /* type of calling convention */
     CallConvention convention;
