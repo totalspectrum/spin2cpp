@@ -9,11 +9,11 @@ _main
 	add	sp, #4
 	mov	fp, sp
 	add	sp, #104
-	mov	_tmp001_, fp
+	mov	_var01, fp
 	add	fp, #100
-	wrlong	_tmp001_, fp
-	mov	_tmp003_, #65
-	wrbyte	_tmp003_, _tmp001_
+	wrlong	_var01, fp
+	mov	_var02, #65
+	wrbyte	_var02, _var01
 	rdlong	outa, fp
 	sub	fp, #100
 	mov	sp, fp
@@ -31,8 +31,8 @@ COG_BSS_START
 stackspace
 	long	0[1]
 	org	COG_BSS_START
-_tmp001_
+_var01
 	res	1
-_tmp003_
+_var02
 	res	1
 	fit	496

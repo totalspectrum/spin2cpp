@@ -9,27 +9,27 @@ _get
 	add	sp, #4
 	mov	fp, sp
 	add	sp, #60
-	mov	_get_sum, #0
-	mov	_get__cse__0000, objptr
-	mov	_get_i, #0
+	mov	_var01, #0
+	mov	_var02, objptr
+	mov	_var03, #0
 	add	fp, #4
 LR__0001
-	mov	result1, _get_i
+	mov	result1, _var03
 	shl	result1, #2
-	rdlong	_tmp003_, _get__cse__0000
+	rdlong	_var04, _var02
 	add	result1, fp
-	wrlong	_tmp003_, result1
-	mov	_tmp003_, _get_i
-	shl	_tmp003_, #2
-	add	_tmp003_, fp
-	rdlong	_tmp003_, _tmp003_
-	add	_get_sum, _tmp003_
-	add	_get_i, #1
-	add	_get__cse__0000, #4
-	cmps	_get_i, #10 wc
+	wrlong	_var04, result1
+	mov	_var04, _var03
+	shl	_var04, #2
+	add	_var04, fp
+	rdlong	_var04, _var04
+	add	_var01, _var04
+	add	_var03, #1
+	add	_var02, #4
+	cmps	_var03, #10 wc
  if_b	jmp	#LR__0001
 	sub	fp, #4
-	mov	result1, _get_sum
+	mov	result1, _var01
 	mov	sp, fp
 	sub	sp, #4
 	rdlong	fp, sp
@@ -51,12 +51,12 @@ objmem
 stackspace
 	long	0[1]
 	org	COG_BSS_START
-_get__cse__0000
+_var01
 	res	1
-_get_i
+_var02
 	res	1
-_get_sum
+_var03
 	res	1
-_tmp003_
+_var04
 	res	1
 	fit	496
