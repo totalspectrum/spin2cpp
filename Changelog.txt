@@ -1,5 +1,6 @@
 Version 5.9.19
 - Added a warning for mixing tabs and spaces in Spin code
+- Fixed some incorrect C array declarations
 - Implemented SPR[] in bytecode (thanks to Ada Gottensträter)
 - Improved register allocation in leaf functions (thanks Ada)
 - Made SPR[] work more like Spin1 (thanks Ada)

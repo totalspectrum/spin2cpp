@@ -616,6 +616,9 @@ findLocalsAndDeclare(Function *func, AST *ast)
             if (ident->kind == AST_ASSIGN) {
                 // check for x[] = {a, b, c} type initializers here
                 if (IsArrayType(basetype) && basetype->right == NULL) {
+                    AST *tmp = FixupInitList(basetype, ident->right);
+                    ident->right = tmp;
+                    //fixupInitializer(current, ident->right, basetype);
                     if (ident->right->kind == AST_EXPRLIST) {
                         basetype->right = AstInteger(AstListLen(ident->right));
                     } else if (ident->right->kind == AST_STRINGPTR) {

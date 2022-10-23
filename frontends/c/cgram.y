@@ -392,7 +392,7 @@ MultipleDeclareVar(AST *first, AST *second)
 }
 
 AST *
-SingleDeclareVar(AST *decl_spec, AST *declarator)
+SingleDeclareInitedVar(AST *decl_spec, AST *declarator, AST *initval)
 {
     AST *type, *ident;
     Module *module = NULL;
@@ -412,7 +412,16 @@ SingleDeclareVar(AST *decl_spec, AST *declarator)
     while (type && type->kind == AST_REGISTER) {
         type = type->left;
     }
+    if (initval) {
+        ident = NewAST(AST_ASSIGN, ident, initval);
+    }
     return NewAST(AST_DECLARE_VAR, type, ident);
+}
+
+AST *
+SingleDeclareVar(AST *decl_spec, AST *declarator)
+{
+    return SingleDeclareInitedVar(decl_spec, declarator, NULL);
 }
 
 static void
@@ -1198,10 +1207,8 @@ postfix_expression
                 AST *decl;
                 AST *stmt;
 
-                decl = SingleDeclareVar(typ, id);
-                stmt = NewAST(AST_STMTLIST, decl, NULL);
-                stmt = AddToList(stmt,
-                                 NewAST(AST_STMTLIST, AstAssign(id, initlist), NULL));
+                decl = SingleDeclareInitedVar(typ, id, initlist);
+                stmt = NewAST(AST_STMTLIST, decl, NULL);                
                 stmt = AddToList(stmt, NewAST(AST_STMTLIST, id, NULL));
                 $$ = stmt;
             }
@@ -1270,7 +1277,11 @@ cast_expression
 	: unary_expression
             { $$ = $1; }
 	| '(' type_name ')' cast_expression
-            { $$ = NewAST(AST_CAST, $2, $4); }
+            {
+                AST *typ = $2;
+                AST *expr = $4;
+                $$ = NewAST(AST_CAST, typ, expr);
+            }
 /*
 	| type_name '(' unary_expression ')'
             {
