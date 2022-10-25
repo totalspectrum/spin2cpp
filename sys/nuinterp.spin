@@ -1,7 +1,22 @@
 con
   _clkfreq = 0
-
+  clock_freq_addr = $14
+  clock_mode_addr = $28
+  
 dat
+	org 0
+	' dummy init code
+	nop
+	cogid	pa
+	coginit	pa, ##@real_init
+	orgh	$10
+	long	0	' reserved (crystal frequency on Taqoz)
+	long	0	' clock frequency ($14)
+	long	0	' clock mode	  ($18)
+	long	0	' reserved for baud ($1c)
+
+	orgh	$80	' $40-$80 reserved
+	
 ''
 '' Nu code interpreter
 '' This is the skeleton from which the actual interpreter is built
@@ -23,28 +38,6 @@ dat
 ''    ^A6 = heap size in longs
 ''    ^A7 = variable size in longs
 
-	org 0
-	' dummy init code
-	nop
-	cogid	pa
-	coginit	pa, ##@real_init
-	orgh	$10
-	long	0	' reserved (crystal frequency on Taqoz)
-clock_freq
-	long	0	' clock frequency ($14)
-clock_mode
-	long	0	' clock mode	  ($18)
-	long	0	' reserved for baud ($1c)
-entry_vbase
-	long	3	' initial object pointer
-entry_dbase
-	long	4	' initial frame pointer
-entry_sp
-''	long	5 + 8	' initial stack pointer (plus pop space)
-	long	3 + 4*(7+6) + 8 ' initial stack pointer, plus pop space
-
-	orgh	$80	' $40-$80 reserved
-	
 	org	0
 real_init
 	' check for coginit startup
@@ -53,7 +46,7 @@ real_init
   
   	' first time run
 	' set clock if frequency is not known
-	rdlong	pa, #@clock_freq wz
+	rdlong	pa, #clock_freq_addr wz
   if_nz	jmp	#skip_clock
   	mov	pa, ##1	' clock mode
 	mov	tmp, pa
@@ -62,9 +55,9 @@ real_init
 	hubset	tmp
 	waitx	##200000
 	hubset	pa
-	wrlong	pa, #@clock_mode
+	wrlong	pa, #clock_mode_addr
 	mov	pa, ##0	' clock frequency
-	wrlong	pa, #@clock_freq
+	wrlong	pa, #clock_freq_addr
 skip_clock
 	' zero out variables and heap
 	loc	ptrb, #3
@@ -74,9 +67,9 @@ skip_clock
 .endclr
 	' set up initial registers
 	loc	pb, #2	' pb serves as PC, set it to entry pc
-	rdlong	vbase, #@entry_vbase
-	rdlong	ptra, #@entry_sp
-	rdlong	dbase, #@entry_dbase
+	loc	ptra, #3 + 4*(7+6) + 8   ' initial stack pointer, plus pop space
+	mov	vbase, ##3	' set initial vbase from interpreter parameters
+	mov	dbase, ##4	' set initial dbase from interpreter parameters
 	jmp	#continue_startup
 spininit
 	' for Spin startup, stack should contain args, pc, vbase in that order
