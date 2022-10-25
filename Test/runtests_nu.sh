@@ -59,7 +59,7 @@ do
   cp $j.out $j.txt
   if diff -ub Expect/$j.txt $j.txt
   then
-    echo $j passed for ASM
+    echo $j passed for bytecode
     rm -f $j.out $j.txt $j.binary $j.p2asm
   else
     echo $j failed
@@ -89,7 +89,7 @@ do
   cp $j.out $j.txt
   if diff -ub Expect/$j.txt $j.txt
   then
-    echo $j passed for ASM
+    echo $j passed for bytecode
     rm -f $j.out $j.txt $j.binary $j.p2asm
   else
     echo $j failed
@@ -119,7 +119,7 @@ do
   cp $j.out $j.txt
   if diff -ub Expect/$j.txt $j.txt
   then
-    echo $j passed for ASM
+    echo $j passed for bytecode
     rm -f $j.out $j.txt $j.binary $j.p2asm
   else
     echo $j failed
