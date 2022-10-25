@@ -4,7 +4,7 @@ Version 5.9.19
 - Implemented SPR[] in bytecode (thanks to Ada Gottensträter)
 - Improved register allocation in leaf functions (thanks Ada)
 - Made SPR[] work more like Spin1 (thanks Ada)
-- Reimplemented TYPEOF in C to be more useful
+- Reimplemented TYPEOF to be more useful
 
 Version 5.9.18
 - Fixed missing # on output of jint style inline asm instructions
