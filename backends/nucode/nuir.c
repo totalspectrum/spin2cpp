@@ -758,8 +758,28 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     int saw_orgh = 0;
     heapsize = (heapsize+3)&~3; // long align
     nu_heap_size = heapsize;
+
+    // output lead in
+    flexbuf_printf(fb, "con\n");
+    flexbuf_printf(fb, "  _clkfreq = %d\n", ctxt->clockFreq);
+    flexbuf_printf(fb, "  clock_freq_addr = $14\n");
+    flexbuf_printf(fb, "  clock_mode_addr = $18\n\n");
     
-    // copy until ^L
+    flexbuf_printf(fb, "dat\n");
+    if (!gl_no_coginit && gl_output != OUTPUT_COGSPIN) {
+        flexbuf_addstr(fb, "\torg 0\n");
+        flexbuf_addstr(fb, "\tnop\n");
+        flexbuf_addstr(fb, "\tcogid\tpa\n");
+        flexbuf_addstr(fb, "\tcoginit\tpa, ##@real_init\n");
+        flexbuf_printf(fb, "\torgh\t$%x\n", P2_CONFIG_BASE);
+        flexbuf_addstr(fb, "\tlong\t0\t' reserved (crystal frequency on Taqoz)\n");
+        flexbuf_addstr(fb, "\tlong\t0\t' clock frequency ($14)\n");
+        flexbuf_addstr(fb, "\tlong\t0\t' clock mode      ($18)\n");
+        flexbuf_addstr(fb, "\tlong\t0\t' reserved for baud ($1c)\n");
+        flexbuf_addstr(fb, "\torgh\t$80\t' $40-$80 reserved\n");
+    }
+    
+    // copy interpreter source until ^L
     for(;;) {
         c = *ptr++;
         if (c == 0 || c == '\014') break;

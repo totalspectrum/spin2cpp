@@ -1,7 +1,8 @@
+{
 con
   _clkfreq = 0
   clock_freq_addr = $14
-  clock_mode_addr = $28
+  clock_mode_addr = $18
   
 dat
 	org 0
@@ -16,7 +17,7 @@ dat
 	long	0	' reserved for baud ($1c)
 
 	orgh	$80	' $40-$80 reserved
-	
+}	
 ''
 '' Nu code interpreter
 '' This is the skeleton from which the actual interpreter is built
