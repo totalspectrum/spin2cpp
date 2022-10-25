@@ -2019,6 +2019,8 @@ IsArrayType(AST *ast)
     case AST_TUPLE_TYPE:
     case AST_BITFIELD:
         return 0;
+    case AST_TYPEOF:
+        return IsArrayType(ExprType(ast->left));
     default:
         ERROR(ast, "Internal error, unknown type %d passed to IsArrayType",
               ast->kind);
@@ -2122,6 +2124,8 @@ int TypeSize(AST *typ)
     {
         return 1;
     }
+    case AST_TYPEOF:
+        return TypeSize(ExprType(typ->left));
     default:
         ERROR(typ, "Internal error, unknown type %d passed to TypeSize",
               typ->kind);
@@ -2537,6 +2541,8 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         P = current;
     }
     switch (expr->kind) {
+    case AST_TYPEOF:
+        return ExprTypeRelative(table, expr->left, P);
     case AST_INTEGER:
         if ( IsCLang(P->curLanguage) && expr->d.ival == 0) {
             return ast_type_generic;
@@ -3862,5 +3868,13 @@ bool IsConstZero(AST *ast) {
 
 bool IsConstEqual(AST *ast, ExprInt val) {
     return IsConstExpr(ast) && EvalConstExpr(ast) == val;
+}
+
+// dereference any AST_TYPEOF
+AST *DerefType(AST *typ) {
+    if (typ && typ->kind == AST_TYPEOF) {
+        return ExprType(typ->left);
+    }
+    return typ;
 }
 

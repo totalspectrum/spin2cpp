@@ -113,7 +113,7 @@ static AST *funcptr_cmp;
 
 static AST * getBasicPrimitive(const char *name);
 
-/* check that "typ" is an integer type */
+// check that "typ" is an integer type
 bool VerifyIntegerType(AST *astForError, AST *typ, const char *opname)
 {
     if (!typ)
@@ -1463,7 +1463,7 @@ static AST *doCheckTypes(AST *ast)
     
     if (ast->kind == AST_CAST) {
         AST *cast;
-        ltype = ast->left;
+        ltype = DerefType(ast->left);
         rtype = doCheckTypes(ast->right);
         cast = doCast(ltype, rtype, ast->right);
         if (cast) {
@@ -1865,7 +1865,7 @@ static AST *doCheckTypes(AST *ast)
             ERROR(ast, "expected identifier after `.'");
             return NULL;
         }
-        return ExprType(ast);
+        return DerefType(ExprType(ast));
     }
     case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER:
@@ -1881,14 +1881,14 @@ static AST *doCheckTypes(AST *ast)
                 return NULL;
             }
             AstReportAs(ast, &saveinfo);
-            ltype = ExprType(ast);
+            ltype = DerefType(ExprType(ast));
             if (!ltype && sym->kind == SYM_HWREG) {
                 ltype = ast_type_unsigned_long;
             }
             // if this is a REFTYPE then dereference it
             if (ltype && IsRefType(ltype)) {
                 AST *deref;
-                AST *basetype = BaseType(ltype);
+                AST *basetype = DerefType(BaseType(ltype));
                 deref = DupAST(ast);
                 deref = NewAST(AST_MEMREF, basetype, deref);
                 deref = NewAST(AST_ARRAYREF, deref, AstInteger(0));
@@ -1951,7 +1951,7 @@ static AST *doCheckTypes(AST *ast)
     case AST_SEQUENCE:
     case AST_STMTLIST:
     case AST_CONSTANT:
-        return ExprType(ast);
+        return DerefType(ExprType(ast));
     case AST_SIMPLEFUNCPTR:
         return ast_type_generic;
     case AST_VA_START:
@@ -1981,14 +1981,14 @@ static AST *doCheckTypes(AST *ast)
             ast->right = AstInteger(0);
             return typ;
         }
-        return ExprType(ast);
+        return DerefType(ExprType(ast));
     default:
         break;
     }
     if (IsFloatType(ltype)) {
         ActivateFeature(FEATURE_FLOAT_USED);
     }
-    return ltype;
+    return DerefType(ltype);
 }
 
 AST *CheckTypes(AST *ast)

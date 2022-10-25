@@ -135,6 +135,10 @@ AST *ExprTypeRelative(SymbolTable *table, AST *ast, Module *P);
 // the type underlying an array or pointer
 AST *BaseType(AST *ast);
 
+// dereference any Typeof()
+AST *DerefType(AST *ast);
+
+// others
 AST *TransformRangeAssign(AST *dst, AST *src, int optoken, int toplevel);
 AST *TransformRangeUse(AST *src);
 AST *TransformCaseExprList(AST *var, AST *list);

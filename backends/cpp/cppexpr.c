@@ -812,6 +812,11 @@ doPrintType(Flexbuf *f, AST *typedecl, int addspace, int flags)
         flexbuf_printf(f, "const ");
     }
     switch (typedecl->kind) {
+    case AST_TYPEOF:
+        flexbuf_printf(f, "typeof(");
+        PrintExpr(f, typedecl->left, PRINTEXPR_DEFAULT);
+        flexbuf_printf(f, ")%s", space);
+        return;
     case AST_GENERICTYPE:
     case AST_INTTYPE:
     case AST_UNSIGNEDTYPE:

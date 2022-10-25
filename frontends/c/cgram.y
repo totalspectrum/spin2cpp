@@ -1542,11 +1542,8 @@ type_specifier
             }
         | C_TYPEOF '(' unary_expression ')'
             {
-                AST *typ = ExprType($2);
-                if (!typ) {
-                    WARNING($1, "Unable to find type of expression, assuming generic");
-                    typ = NULL;
-                }
+                AST *expr = $3;
+                AST *typ = NewAST(AST_TYPEOF, expr, NULL);
                 $$ = typ;
             }
 	;

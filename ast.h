@@ -230,6 +230,7 @@ enum astkind {
     AST_REGISTER = 164,
 
     AST_REGISTERVARS = 165,
+    AST_TYPEOF = 166,
 };
 
 /* forward reference */
