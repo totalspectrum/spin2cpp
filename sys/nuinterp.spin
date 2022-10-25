@@ -35,8 +35,6 @@ clock_freq
 clock_mode
 	long	0	' clock mode	  ($18)
 	long	0	' reserved for baud ($1c)
-entry_pc
-	long	2	' initial pc ($20)
 entry_vbase
 	long	3	' initial object pointer
 entry_dbase
@@ -44,8 +42,9 @@ entry_dbase
 entry_sp
 ''	long	5 + 8	' initial stack pointer (plus pop space)
 	long	3 + 4*(7+6) + 8 ' initial stack pointer, plus pop space
-heap_base
+__heap_base__
 	long	3 + 4*(7)	' heap base ($30)
+
 	orgh	$80	' $40-$80 reserved
 	
 	org	0
@@ -76,7 +75,7 @@ skip_clock
 	wrlong	#0, ptrb++
 .endclr
 	' set up initial registers
-	rdlong	pb, #@entry_pc	' pb serves as PC
+	loc	pb, #2	' pb serves as PC, set it to entry pc
 	rdlong	vbase, #@entry_vbase
 	rdlong	ptra, #@entry_sp
 	rdlong	dbase, #@entry_dbase
@@ -782,6 +781,11 @@ impl_COGINIT
 impl_COGATN
 	cogatn	tos
 	jmp	#\impl_DROP
+
+impl_GETHEAP
+	call	#\impl_DUP
+	mov	tos, ##@__heap_base__
+  _ret_	rdlong	tos, tos
 
 impl_POLLATN
 	call	#\impl_DUP

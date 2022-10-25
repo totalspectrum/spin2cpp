@@ -74,11 +74,12 @@
     X(QLOG)      /* log2 */ \
     X(ENCODE)    /* tos := ENCODE tos (0-32) */ \
     X(ENCODE2)   /* tos := ENCODE tos (0-31) */ \
+    /* UNARY math operations end here */ \
+    \
     X(ADD64)     /* 64 bit add of 4 items on stack */ \
     X(SUB64)     /* 64 bit add of 4 items on stack */ \
     X(CMP64S)    /* 64 bit add of 4 items on stack */      \
     X(CMP64U)    /* 64 bit add of 4 items on stack */ \
-    /* UNARY math operations end here */ \
     \
     X(DROP)      /* drop element on top of stack */ \
     X(DROP2)     /* drop two elements on top of stack */ \
@@ -110,6 +111,7 @@
     X(AKPIN)     /* smart pin acknowledge */ \
     \
     X(GETCTHL)   /* get current cycle counter */ \
+    X(GETHEAP)   /* get current heap base */ \
     X(WAITX)     /* delay for tos cycles */ \
     X(WAITCNT)   /* wait for a particular cycle */ \
     X(HUBSET)    /* hubset instruction */ \

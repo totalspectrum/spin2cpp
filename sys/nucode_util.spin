@@ -278,7 +278,7 @@ pri __topofstack(ptr) : r
   return @ptr
 
 pri __get_heap_base() : r
-  return long[$30]
+  __bytecode__("GETHEAP")
 
 pri _lookup(x, b, arr, n) | i
   i := x - b
