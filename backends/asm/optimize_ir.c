@@ -131,7 +131,10 @@ InstrSetsDst(IR *ir)
   case OPC_SETQ2:
   case OPC_TESTB:
   case OPC_TESTBN:
+  case OPC_LOCKTRY:
       return false;
+  case OPC_LOCKREL:
+      return (ir->flags & FLAG_WC) && ir->dst->kind != IMM_INT;
   case OPC_CMP:
   case OPC_CMPS:
   case OPC_TEST:
@@ -139,6 +142,9 @@ InstrSetsDst(IR *ir)
   case OPC_GENERIC_NR:
   case OPC_GENERIC_NR_NOFLAGS:
   case OPC_PUSH:
+  case OPC_LOCKRET:
+  case OPC_LOCKSET:
+  case OPC_LOCKCLR:
       return (ir->flags & FLAG_WR) != 0;
   default:
       return (ir->flags & FLAG_NR) == 0;
@@ -1537,7 +1543,7 @@ TransformConstDst(IR *ir, Operand *imm)
   int32_t val1, val2;
   int setsResult = 1;
 
-  if (gl_p2 && !InstrSetsDst(ir)) {
+  if (gl_p2 && (!InstrSetsDst(ir) || (ir->opc == OPC_LOCKREL && IsDeadAfter(ir,ir->dst)))) {
       // this may be a case where we can replace dst with src
       if (ir->instr) {
           switch (ir->instr->ops) {
@@ -4788,7 +4794,7 @@ ExpandInlines(IRList *irl)
 // convert loops to FCACHE when we can
 //
 
-static bool isWaitLoopInstr(IR *ir) {
+static bool IsWaitLoopInstr(IR *ir) {
     switch(ir->opc) {
     case OPC_JUMP:
     case OPC_RDBYTE:
@@ -4822,6 +4828,7 @@ LoopCanBeFcached(IRList *irl, IR *root, int size_left)
     IR *ir = root;
 
     bool non_wait = false;
+    int loopsize = 0;
     
     if (!IsHubDest(ir->dst)) {
         // this loop is not in HUB memory
@@ -4872,12 +4879,13 @@ LoopCanBeFcached(IRList *irl, IR *root, int size_left)
                 return 0;
         }
         if (!IsDummy(ir) && ir->opc != OPC_LABEL) {
-            --size_left;
-            if (size_left <= 0) {
+            if (--size_left <= 0) {
                 return 0;
             }
+            if (++loopsize > 3 || !IsWaitLoopInstr(ir)) {
+                non_wait = true;
+            }
         }
-        if (!isWaitLoopInstr(ir)) non_wait = true;
         ir = ir->next;
     }
 
@@ -4913,7 +4921,7 @@ LoopCanBeFcached(IRList *irl, IR *root, int size_left)
     }
 
     // Don't fcache if we got a wait loop
-    if (!non_wait && (gl_fcache_size - size_left) <= 3) return 0;
+    if (!non_wait) return 0;
 
     Operand *dst = NewHubLabel();
     newlabel = NewIR(OPC_LABEL);
