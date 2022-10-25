@@ -1,23 +1,3 @@
-{
-con
-  _clkfreq = 0
-  clock_freq_addr = $14
-  clock_mode_addr = $18
-  
-dat
-	org 0
-	' dummy init code
-	nop
-	cogid	pa
-	coginit	pa, ##@real_init
-	orgh	$10
-	long	0	' reserved (crystal frequency on Taqoz)
-	long	0	' clock frequency ($14)
-	long	0	' clock mode	  ($18)
-	long	0	' reserved for baud ($1c)
-
-	orgh	$80	' $40-$80 reserved
-}	
 ''
 '' Nu code interpreter
 '' This is the skeleton from which the actual interpreter is built
