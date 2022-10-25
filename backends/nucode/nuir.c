@@ -93,6 +93,7 @@ void NuIrInit(NuContext *ctxt) {
     impl_ptrs[NU_OP_PUSHA] = "";
     impl_ptrs[NU_OP_CALLA] = "";
     impl_ptrs[NU_OP_BREAK] = "";
+    impl_ptrs[NU_OP_GETHEAP] = "";
     
     // find the other implementations that we may need
     while (c) {

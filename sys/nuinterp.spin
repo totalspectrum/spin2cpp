@@ -42,8 +42,6 @@ entry_dbase
 entry_sp
 ''	long	5 + 8	' initial stack pointer (plus pop space)
 	long	3 + 4*(7+6) + 8 ' initial stack pointer, plus pop space
-__heap_base__
-	long	3 + 4*(7)	' heap base ($30)
 
 	orgh	$80	' $40-$80 reserved
 	
@@ -209,6 +207,10 @@ impl_PUSHA
 #else  
   _ret_	or	tos, tmp
 #endif
+
+impl_GETHEAP
+	call	#\impl_DUP
+  _ret_	mov	tos, ##3 + 4*(7)	' set heap base
 
 impl_DUP2
 	' A B -> A B A B
@@ -781,11 +783,6 @@ impl_COGINIT
 impl_COGATN
 	cogatn	tos
 	jmp	#\impl_DROP
-
-impl_GETHEAP
-	call	#\impl_DUP
-	mov	tos, ##@__heap_base__
-  _ret_	rdlong	tos, tos
 
 impl_POLLATN
 	call	#\impl_DUP
