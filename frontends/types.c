@@ -1949,6 +1949,7 @@ static AST *doCheckTypes(AST *ast)
         }
         return ltype;
     case AST_SEQUENCE:
+    case AST_STMTLIST:
     case AST_CONSTANT:
         return ExprType(ast);
     case AST_SIMPLEFUNCPTR:
