@@ -2174,6 +2174,8 @@ HasSideEffectsOtherThanReg(IR *ir)
     case OPC_LOCKNEW:
     case OPC_LOCKRET:
     case OPC_LOCKSET:
+    case OPC_LOCKTRY:
+    case OPC_LOCKREL:
     case OPC_SETQ:
     case OPC_SETQ2:
     case OPC_WAITCNT:
@@ -2882,16 +2884,19 @@ ReplaceZWithNC(IR *ir)
     case OPC_GENERIC:
     case OPC_GENERIC_DELAY:
     case OPC_GENERIC_NR:
+    case OPC_RCL:
+    case OPC_RCR:
+    // Are the below really needed here?
     case OPC_LOCKNEW:
     case OPC_LOCKSET:
     case OPC_LOCKCLR:
     case OPC_LOCKRET:
+    case OPC_LOCKTRY:
+    case OPC_LOCKREL:
     case OPC_SETQ:
     case OPC_SETQ2:
     case OPC_PUSH:
     case OPC_POP:
-    case OPC_RCL:
-    case OPC_RCR:
         ERROR(NULL, "Internal error, unexpected use of C");
         break;
     default:
@@ -4140,6 +4145,8 @@ static bool IsReorderBarrier(IR *ir) {
     case OPC_LOCKNEW:
     case OPC_LOCKRET:
     case OPC_LOCKSET:
+    case OPC_LOCKTRY:
+    case OPC_LOCKREL:
     case OPC_WAITCNT:
     case OPC_WAITX:
     case OPC_COGSTOP:
