@@ -4788,6 +4788,26 @@ ExpandInlines(IRList *irl)
 // convert loops to FCACHE when we can
 //
 
+static bool isWaitLoopInstr(IR *ir) {
+    switch(ir->opc) {
+    case OPC_JUMP:
+    case OPC_RDBYTE:
+    case OPC_RDWORD:
+    case OPC_RDLONG:
+    case OPC_LOCKSET:
+    case OPC_LOCKTRY:
+    case OPC_CMP:
+    case OPC_CMPS:
+    case OPC_TEST:
+    case OPC_TESTN:
+    case OPC_TESTB:
+    case OPC_TESTBN:
+        return true;
+    default:
+        return false;
+    }
+}
+
 // see if a loop can be cached
 // "root" is a label
 // returns NULL if no fcache, otherwise
@@ -4800,6 +4820,8 @@ LoopCanBeFcached(IRList *irl, IR *root, int size_left)
     IR *endlabel;
     IR *newlabel;
     IR *ir = root;
+
+    bool non_wait = false;
     
     if (!IsHubDest(ir->dst)) {
         // this loop is not in HUB memory
@@ -4855,6 +4877,7 @@ LoopCanBeFcached(IRList *irl, IR *root, int size_left)
                 return 0;
             }
         }
+        if (!isWaitLoopInstr(ir)) non_wait = true;
         ir = ir->next;
     }
 
@@ -4888,6 +4911,10 @@ LoopCanBeFcached(IRList *irl, IR *root, int size_left)
             ir = ir->next;
         }
     }
+
+    // Don't fcache if we got a wait loop
+    if (!non_wait && (gl_fcache_size - size_left) <= 3) return 0;
+
     Operand *dst = NewHubLabel();
     newlabel = NewIR(OPC_LABEL);
     newlabel->dst = dst;
