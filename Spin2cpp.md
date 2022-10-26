@@ -28,12 +28,12 @@ It has grown considerably past that now, and can perform conversions like:
 spin2cpp should be able to deal with any Spin program; please report
 any that it cannot convert.
 
-fastspin
+flexspin
 --------
 
-There is also an alternate front end `fastspin` which mimics the command
+There is also an alternate front end `flexspin` which mimics the command
 line of the `openspin` compiler, but which produces LMM binaries instead
-of spin bytecode binaries. `fastspin` compiled programs will typically be
+of spin bytecode binaries. `flexspin` compiled programs will typically be
 about 4-10 times faster than `openspin` ones, but will be 2-3 times as large.
 
 Languages
@@ -53,8 +53,8 @@ to wherever your propeller-elf-gcc.exe file is installed.  (In fact
 spin2cpp.exe doesn't usually care where it is located, but putting it
 with propeller-elf-gcc is convenient.)
 
-If you only want to use the Openspin compatible fastspin frontend, you
-only need fastspin.exe, and can ignore the other executables. In this
+If you only want to use the Openspin compatible flexspin frontend, you
+only need flexspin.exe, and can ignore the other executables. In this
 case you do not need a C compiler.
 
 Similarly, if you only want to use the `--asm` option of spin2cpp to
@@ -74,27 +74,27 @@ cp -r include $INSTALLDIR
 COMMAND LINE USAGE
 ==================
 
-fastspin
+flexspin
 --------
 
-fastspin is a simple interface to the SPIN -> PASM converter. It acts very
+flexspin is a simple interface to the SPIN -> PASM converter. It acts very
 much like openspin, including mimicking its console output, so that it
 can easily be used in IDEs in place of openspin. The basic usage is
 ```
-    fastspin file.spin
+    flexspin file.spin
 ```
 which will produce `file.binary`, an executable which may be downloaded
-to the Propeller. There are various options, use `fastspin -h` to see them
+to the Propeller. There are various options, use `flexspin -h` to see them
 all. Probably the most significant is `-2` to compile a Propeller 2
 executable:
 ```
-   fastspin -2 file.spin
+   flexspin -2 file.spin
 ```
 produces a `file.binary` which can be run on a Prop2 FPGA.
 
-As an alternative, fastspin can also mimic the bstc command line
+As an alternative, flexspin can also mimic the bstc command line
 compiler, if it is named something that starts with the letters "bstc"
-(e.g. "bstc.fastspin").
+(e.g. "bstc.flexspin").
 
 spin2cpp
 --------
@@ -198,7 +198,7 @@ to produce a binary with code in HUB (LMM mode) do:
 This will produce demo.pasm (the converted assembly code) and demo.binary (the
 compiled binary suitable for download to the device).
 
-The alternate frontend `fastspin` is a more direct interface to the PASM compiler.
+The alternate frontend `flexspin` is a more direct interface to the PASM compiler.
 
 OPTIONS
 =======
@@ -374,11 +374,11 @@ Spin2cpp accepts the following options:
 EXTENSIONS
 ==========
 
-spin2cpp (and fastspin, which is just a different interface to spin2cpp)
+spin2cpp (and flexspin, which is just a different interface to spin2cpp)
 supports a number of extensions to the Spin language. These are documented
 in the file "spin.md".
 
-spin2cpp and fastspin support compiling BASIC files. The BASIC language
+spin2cpp and flexspin support compiling BASIC files. The BASIC language
 is based on QuickBasic/FreeBasic, and is documented in the file "basic.md".
 
 LIMITATIONS
