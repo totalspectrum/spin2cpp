@@ -680,6 +680,16 @@ static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs)
         NuEmitConst(irl, hwreg->addr);
         op = NU_OP_STREG;
     } break;
+    case AST_SEQUENCE:
+    case AST_STMTLIST: {
+        if (lhs->right) {
+            NuCompileExpression(irl, lhs->left);
+            lhs = lhs->right;
+        } else {
+            lhs = lhs->left;
+        }
+        return NuCompileLhsAddress(irl, lhs);
+    }
     default:
         ERROR(lhs, "Address type not handled yet");
         break;

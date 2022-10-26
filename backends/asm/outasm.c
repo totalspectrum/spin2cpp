@@ -3794,6 +3794,16 @@ GetAddressOf(IRList *irl, AST *expr)
         }
         return res;
     }
+    case AST_SEQUENCE:
+    case AST_STMTLIST:
+    {
+        if (expr->right) {
+            CompileExpression(irl, expr->left, NULL);
+            return GetAddressOf(irl, expr->right);
+        } else {
+            return GetAddressOf(irl, expr->left);
+        }
+    }
     default:
         ERROR(expr, "Cannot take address of expression");
         break;
