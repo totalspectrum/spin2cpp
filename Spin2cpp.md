@@ -1,7 +1,7 @@
 OVERVIEW
 ========
 
-`spin2cpp` and `fastspin` are tools for converting Spin to C++ and for compiling Spin to native Propeller binaries, respectively. They can also accept a FreeBASIC-like dialect and C code as input, so the names are no longer really appropriate.
+`spin2cpp` and `flexspin` are tools for converting Spin to C++ and for compiling Spin to native Propeller binaries, respectively. They can also accept a FreeBASIC-like dialect and C code as input, so the names are no longer really appropriate.
 
 Background
 ----------

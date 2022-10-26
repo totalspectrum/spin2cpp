@@ -1,6 +1,6 @@
 Flexspin
 ========
-(Flexspin is copyright 2011-2020 Total Spectrum Software Inc.,
+(Flexspin is copyright 2011-2022 Total Spectrum Software Inc.,
 and is distributed under the terms of the MIT License (see the
 end of this file for details)
 
