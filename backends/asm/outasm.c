@@ -4254,6 +4254,13 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       }
       return r;
   }
+  case AST_EXPRLIST: {
+      /* a singleton expression list is just like an expression */
+      if (!expr->right) {
+          return CompileExpression(irl, expr->left, dest);
+      }
+      /* otherwise fall through */
+  }
   default:
     ERROR(expr, "Cannot handle expression yet");
     return NewOperand(REG_REG, "???", 0);
@@ -4455,9 +4462,13 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
         // we can deliberately refer to memory; but mem-mem moves
         // do not work out well
         if (src->kind == IMM_INT || src->kind == IMM_COG_LABEL || SrcOnlyHwReg(src) || (off && src == dst) || src->kind == STRING_DEF) {
+            num_tmp_regs = origdst->size;
             temp2 = NewFunctionTempRegister();
             EmitMove(irl, temp2, src);
             src = temp2;
+            for (i = 0; i < num_tmp_regs; i++) {
+                temps[i] = src;
+            }
         }
         if (off) {
             if (dst->kind == IMM_INT) {
