@@ -112,6 +112,8 @@ typedef enum IROpcode {
     OPC_GETWORD,
     OPC_HUBSET,
     OPC_JMPREL,
+    OPC_LOCKTRY,
+    OPC_LOCKREL,
     OPC_MULS,
     OPC_MULU,
     OPC_NOT,

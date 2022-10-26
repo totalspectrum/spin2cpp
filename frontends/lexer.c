@@ -3471,9 +3471,9 @@ instr_p2[] = {
     { "cogid",  0x0d600001, P2_DST_CONST_OK,  OPC_COGID, FLAG_WC },
     { "cogstop",0x0d600003, P2_DST_CONST_OK,  OPC_COGSTOP, 0 },
     { "locknew",0x0d600004, DST_OPERAND_ONLY, OPC_LOCKNEW, FLAG_WC },
-    { "lockret",0x0d600005, P2_DST_CONST_OK, OPC_GENERIC_NR_NOFLAGS, 0 },
-    { "locktry",0x0d600006, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WC },
-    { "lockrel",0x0d600007, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WC },
+    { "lockret",0x0d600005, P2_DST_CONST_OK, OPC_LOCKRET, 0 },
+    { "locktry",0x0d600006, P2_DST_CONST_OK, OPC_LOCKTRY, FLAG_WC },
+    { "lockrel",0x0d600007, P2_DST_CONST_OK, OPC_LOCKREL, FLAG_WC },
 
     { "qlog",   0x0d60000e, P2_DST_CONST_OK, OPC_QLOG, 0 },
     { "qexp",   0x0d60000f, P2_DST_CONST_OK, OPC_QEXP, 0 },
