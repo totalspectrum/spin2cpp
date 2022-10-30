@@ -167,6 +167,8 @@ int _dofmt(putfunc fn, const char *fmtstr, va_list *args)
             fmtstr++;
             prec = parseint(&fmtstr, args) + 1;
             c = *fmtstr; if (c == 0) break;
+        } else {
+            prec = 0;
         }
         fmtstr = parsesize(fmtstr, &size);
         c = *fmtstr++; if (c == 0) break;
