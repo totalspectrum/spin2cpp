@@ -642,7 +642,8 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
         varlen = (varlen + 3) & ~3; // round up to long boundary
         if (varlen < 1) varlen = 1;
         Function *f;
-        
+        const char *noargs = gl_p2 ? "()" : "";
+
         flexbuf_addstr(fb, "var\n");
         flexbuf_addstr(fb, "  long __mbox[__MBOX_SIZE]   ' mailbox for communicating with remote COG\n");
         flexbuf_printf(fb, "  long __objmem[%d]          ' space for hub data in COG code\n", varlen / 4);
@@ -651,7 +652,7 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
 
         flexbuf_addstr(fb, "'' Code to start the object running in its own COG\n");
         flexbuf_addstr(fb, "'' This must always be called before any other methods\n");
-        flexbuf_addstr(fb, "pub __coginit(id)\n");
+        flexbuf_addstr(fb, "pub __coginit(id) : r\n");
         flexbuf_addstr(fb, "  if (__cognum == 0) ' if the cog isn't running yet\n");
         flexbuf_addstr(fb, "    __fixup_addresses\n");
         flexbuf_addstr(fb, "    longfill(@__mbox, 0, __MBOX_SIZE)\n");
@@ -669,13 +670,13 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
         flexbuf_addstr(fb, "    __cognum := id + 1\n");
         flexbuf_addstr(fb, "  return id\n\n");
 
-        flexbuf_addstr(fb, "pub __cognew\n");
+        flexbuf_printf(fb, "pub __cognew%s : r\n", noargs);
         flexbuf_addstr(fb, "  return __coginit(-1)\n\n");
                        
         flexbuf_addstr(fb, "'' Code to stop the remote COG\n");
-        flexbuf_addstr(fb, "pub __cogstop\n");
+        flexbuf_printf(fb, "pub __cogstop%s\n", noargs);
         flexbuf_addstr(fb, "  if __cognum\n");
-        flexbuf_addstr(fb, "    __lock  ' wait until everyone else is finished\n");
+        flexbuf_printf(fb, "    __lock%s  ' wait until everyone else is finished\n", noargs);
         flexbuf_addstr(fb, "    cogstop(__cognum~ - 1)\n");
 	flexbuf_addstr(fb, "    __mbox[0] := 0\n");
 	flexbuf_addstr(fb, "    __cognum := 0\n\n");
@@ -684,7 +685,7 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
         flexbuf_addstr(fb, "'' The idea here is that (in theory) multiple Spin bytecode threads might\n");
         flexbuf_addstr(fb, "'' want access to the PASM COG, so this lock makes sure they don't step on each other.\n");
         flexbuf_addstr(fb, "'' This method also makes sure the remote COG is idle and ready to receive commands.\n");
-        flexbuf_addstr(fb, "pri __lock\n");
+        flexbuf_printf(fb, "pri __lock%s\n", noargs);
         flexbuf_addstr(fb, "  repeat\n");
         flexbuf_addstr(fb, "    repeat until __mbox[0] == 0   ' wait until no other Spin code is using remote\n");
         flexbuf_addstr(fb, "    __mbox[0] := __cognum         ' try to claim it\n");
@@ -692,11 +693,11 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
         flexbuf_addstr(fb, "  repeat until __mbox[1] == 0     ' now wait for the COG itself to be idle\n\n");
 
         flexbuf_addstr(fb, "'' Code to release access to the PASM COG\n");
-        flexbuf_addstr(fb, "pri __unlock\n");
+        flexbuf_printf(fb, "pri __unlock%s\n", noargs);
         flexbuf_addstr(fb, "  __mbox[0] := 0\n\n");
 
         flexbuf_addstr(fb, "'' Check to see if the PASM COG is busy (still working on something)\n");
-        flexbuf_addstr(fb, "pub __busy\n");
+        flexbuf_printf(fb, "pub __busy%s : r\n", noargs);
         flexbuf_addstr(fb, "  return __mbox[1] <> 0\n\n");
 
         flexbuf_addstr(fb, "'' Code to send a message to the remote COG asking it to perform a method\n");
@@ -709,7 +710,7 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
         flexbuf_addstr(fb, "  if getresult                   ' if we should wait for an answer\n");
         flexbuf_addstr(fb, "    repeat until __mbox[1] == 0  ' wait for remote COG to be idle\n");
         flexbuf_addstr(fb, "    r := __mbox[2]               ' pick up remote COG result\n");
-        flexbuf_addstr(fb, "  __unlock                       ' release to other COGs\n");
+        flexbuf_printf(fb, "  __unlock%s                     ' release to other COGs\n", noargs);
         flexbuf_addstr(fb, "  return r\n\n");
 
         flexbuf_addstr(fb, "'' Code to convert Spin relative addresses to absolute addresses\n");
@@ -720,7 +721,7 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
         flexbuf_addstr(fb, "'' relative address in the low word, and a pointer to the next fixup in the high word.\n");
         flexbuf_addstr(fb, "'' This code follows that chain and adjusts the relative addresses to absolute ones.\n");
         
-        flexbuf_addstr(fb, "pri __fixup_addresses | ptr, nextptr, temp\n");
+        flexbuf_printf(fb, "pri __fixup_addresses%s | ptr, nextptr, temp\n", noargs);
         flexbuf_addstr(fb, "  ptr := __fixup_ptr[0]\n");
         flexbuf_addstr(fb, "  repeat while (ptr)      ' the fixup chain is terminated with a 0 pointer\n");
         flexbuf_addstr(fb, "    ptr := @@ptr          ' point to next fixup\n");
@@ -765,7 +766,7 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
                     }
                 }
                 flexbuf_addstr(fb, "\n");
-                flexbuf_addstr(fb, "  __lock\n");
+                flexbuf_printf(fb, "  __lock%s\n", noargs);
                 list = f->params;
                 while (list) {
                     flexbuf_printf(fb, "  __mbox[%d] := %s\n", paramnum, VarName(list->left));
@@ -788,7 +789,7 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
                     for (i = 0; i < f->numresults; i++) {
                         flexbuf_printf(fb, "  r%d := __mbox[%d]\n", i, 2+i);
                     }
-                    flexbuf_printf(fb, "  __unlock\n\n");
+                    flexbuf_printf(fb, "  __unlock%s\n\n", noargs);
                 }
             }
         }
@@ -1358,7 +1359,9 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         break;
     case OPC_ORG:
         flexbuf_printf(fb, "\torg\t");
-        PrintOperandAsValue(fb, ir->dst);
+        if (ir->dst) {
+            PrintOperandAsValue(fb, ir->dst);
+        }            
         flexbuf_printf(fb, "\n");
         break;
     case OPC_ORGF:
