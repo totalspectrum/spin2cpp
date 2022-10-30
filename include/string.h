@@ -35,7 +35,7 @@ extern "C" {
     char * strrchr(const char *, int) _IMPL("libc/string/strrchr.c");
     size_t strspn(const char *, const char *);
     char * strstr(const char *src, const char *pattern) _IMPL("libc/string/strstr.c");
-    char * strtok(char * __restrict str, const char * __restrict delim);
+    char * strtok(char * __restrict str, const char * __restrict delim) _IMPL("libc/string/strtok.c");
 
 
     void * memset(void *dest, int c, size_t n) _IMPL("libc/string/memset.c");

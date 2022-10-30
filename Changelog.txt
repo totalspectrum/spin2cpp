@@ -1,5 +1,6 @@
 Version 5.9.19
 - Added a warning for mixing tabs and spaces in Spin code
+- Added strtok() function to C library
 - Fixed some incorrect C array declarations
 - Fixed precision not being reset in printf
 - Implemented -E and -H flags for nu bytecode
