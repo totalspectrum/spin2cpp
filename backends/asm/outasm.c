@@ -1060,6 +1060,8 @@ NewFunctionTempRegister()
     return GetFunctionTempRegister(f, fdata->curtempreg);
 }
 
+#define GetTempRegisterStack() (FuncData(curfunc)->curtempreg)
+
 void
 FreeTempRegisters(IRList *irl, int starttempreg)
 {
@@ -1529,7 +1531,7 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
         ValidateStackptr();
         tmp = GetResultReg(5); // we know this won't be used in the system functions
         tmp = NewFunctionTempRegister();
-        int starttempreg = FuncData(curfunc)->curtempreg;
+        int starttempreg = GetTempRegisterStack(); //FuncData(curfunc)->curtempreg;
         // tmp = _gc_alloc_managed(framesize)
         EmitMove(irl, GetArgReg(0), framesize);
         EmitOp1(irl, OPC_CALL, allocfunc);
@@ -3936,11 +3938,15 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       return temp;
   }
   case AST_SEQUENCE:
+  {
+      int starttemp = GetTempRegisterStack();
       r = CompileExpression(irl, expr->left, NULL);
       if (expr->right) {
+          FreeTempRegisters(irl, starttemp);
           r = CompileExpression(irl, expr->right, NULL);
       }
       return r;
+  }
   case AST_INTEGER:
   case AST_FLOAT:
     r = NewImmediate((int32_t)expr->d.ival);
@@ -4718,7 +4724,7 @@ static void CompileStatement(IRList *irl, AST *ast)
     
     if (!ast) return;
 
-    starttempreg = FuncData(curfunc)->curtempreg;
+    starttempreg = GetTempRegisterStack(); // FuncData(curfunc)->curtempreg;
     switch (ast->kind) {
     case AST_COMMENTEDNODE:
         EmitComments(irl, ast->right);

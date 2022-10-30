@@ -15,9 +15,10 @@ _show_ret
 	ret
 
 _main
-	mov	arg01, #1
+	mov	_main_s__0001, #1
 	mov	_main_s__0001_01, #2
 	mov	_main_s__0001_02, #3
+	mov	arg01, _main_s__0001
 	mov	arg02, _main_s__0001_01
 	mov	arg03, _main_s__0001_02
 	call	#_show

@@ -8,6 +8,7 @@ Version 5.9.19
 - Improved register allocation in leaf functions (thanks Ada)
 - Improved optimization for small wait loops (also thanks to Ada)
 - Made SPR[] work more like Spin1 (thanks Ada)
+- Reduced register usage in local array initialization
 - Reimplemented TYPEOF to be more useful
 
 Version 5.9.18
