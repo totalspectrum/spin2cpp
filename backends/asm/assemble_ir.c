@@ -706,7 +706,11 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
         flexbuf_addstr(fb, "'' if getresult is 0 then we continue without waiting (the remote COG runs in parallel\n");
         flexbuf_addstr(fb, "'' We must always call __lock before this, and set up the parameters starting in __mbox[2]\n");
         flexbuf_addstr(fb, "pri __invoke(func, getresult) : r\n");
-        flexbuf_addstr(fb, "  __mbox[1] := func - @entry     ' set the function to perform (NB: this is a HUB address)\n");
+        if (gl_p2) {
+            flexbuf_addstr(fb, "  __mbox[1] := func              ' set the function to perform (NB: this is a HUB address)\n");
+        } else {
+            flexbuf_addstr(fb, "  __mbox[1] := func - @entry     ' set the function to perform (NB: this is a HUB address)\n");
+        }
         flexbuf_addstr(fb, "  if getresult                   ' if we should wait for an answer\n");
         flexbuf_addstr(fb, "    repeat until __mbox[1] == 0  ' wait for remote COG to be idle\n");
         flexbuf_addstr(fb, "    r := __mbox[2]               ' pick up remote COG result\n");
@@ -780,11 +784,13 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
                     synchronous = 0;
                 else
                     synchronous = 1;
+                Operand *callLabel = FuncData(f)->asmaltname ? FuncData(f)->asmaltname : FuncData(f)->asmname;
+                const char *callname = callLabel->name;
                 if (f->numresults < 2) {
-                    flexbuf_printf(fb, "  return __invoke(@pasm_%s, %d)\n\n", f->name, synchronous);
+                    flexbuf_printf(fb, "  return __invoke(@%s, %d)\n\n", callname, synchronous);
                 } else {
                     // synchronous call, fetch all results
-                    flexbuf_printf(fb, "  __mbox[1] := @pasm_%s - @entry\n", f->name);
+                    flexbuf_printf(fb, "  __mbox[1] := @%s - @entry\n", callname);
                     flexbuf_printf(fb, "  repeat until __mbox[1] == 0\n");
                     for (i = 0; i < f->numresults; i++) {
                         flexbuf_printf(fb, "  r%d := __mbox[%d]\n", i, 2+i);

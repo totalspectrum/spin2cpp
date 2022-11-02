@@ -5267,7 +5267,7 @@ AssignOneFuncName(Function *f)
 {
     const char *fname;
     char *frname;
-    char *faltname;
+    char *faltname = NULL;
     char *fentername = NULL;
     Module *P = f->module;
     Function *savecur = curfunc;
@@ -5294,11 +5294,9 @@ AssignOneFuncName(Function *f)
         fname = IdentifierModuleName(P, f->name);
 	frname = (char *)malloc(strlen(fname) + 5);
 	sprintf(frname, "%s_ret", fname);
-        if (gl_output == OUTPUT_COGSPIN && InCog(f) && f->is_public) {
+        if (gl_output == OUTPUT_COGSPIN && InCog(f) && f->is_public && !gl_p2) {
             faltname = (char *)malloc(strlen(fname) + 6);
             sprintf(faltname, "pasm%s", fname);
-        } else {
-            faltname = NULL;
         }
         if (f->is_recursive) {
             fentername = (char *)malloc(strlen(fname) + 16);

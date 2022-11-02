@@ -648,7 +648,11 @@ main(int argc, const char **argv)
             }
             if (!asmname) {
                 if (gl_output == OUTPUT_COGSPIN) {
-                    asmname = ReplaceExtension(P->fullname, ".cog.spin");
+                    if (gl_p2) {
+                        asmname = ReplaceExtension(P->fullname, ".cog.spin2");
+                    } else {
+                        asmname = ReplaceExtension(P->fullname, ".cog.spin");
+                    }
                 } else {
                     asmname = ReplaceExtension(P->fullname, gl_p2 ? ".p2asm" : ".pasm");
                 }

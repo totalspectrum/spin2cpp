@@ -305,7 +305,6 @@ main(int argc, const char **argv)
             gl_verbosity = 1;
             argv++; --argc;
         } else if (!strcmp(argv[0], "-w")) {
-            gl_outputflags |= OUTFLAG_COG_CODE;
             gl_output = OUTPUT_COGSPIN;
             gl_debug = 1;
             cmd->compile = 0;
@@ -521,6 +520,9 @@ main(int argc, const char **argv)
         }
     }
 
+    if (gl_output == OUTPUT_COGSPIN && !gl_p2) {
+        gl_outputflags |= OUTFLAG_COG_CODE;
+    }
     // add default path, if applicable
     if (!gl_nostdlib) {
         pp_add_to_path(&gl_pp, DefaultIncludeDir());
