@@ -6327,7 +6327,7 @@ EmitMain_P2(IRList *irl, Module *P, Operand *lutstart)
     if (lutstart) {
         ir = EmitOp2(irl, OPC_MOV, pa_reg, lutstart);
         EmitOp1(irl, OPC_SETQ2, NewImmediate(255));
-        EmitOp2(irl, OPC_RDLONG, NewOperand(REG_HW, "0", 0), pa_reg);
+        EmitOp2(irl, OPC_RDLONG, NewOperand(REG_HW, "16", 0), pa_reg);
     }
     if (InCog(firstfunc)) {
         EmitOp1(irl, OPC_CALL, NewOperand(IMM_COG_LABEL, firstfuncname, 0));

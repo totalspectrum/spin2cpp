@@ -3,6 +3,7 @@ Version 5.9.19
 - Added strtok() function to C library
 - Fixed some incorrect C array declarations
 - Fixed precision not being reset in printf
+- Fixed lut function bug that crept in when memory was reserved at start of LUT
 - Implemented -E and -H flags for nu bytecode
 - Implemented SPR[] in bytecode (thanks to Ada Gottensträter)
 - Improved register allocation in leaf functions (thanks Ada)
