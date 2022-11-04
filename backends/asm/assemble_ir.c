@@ -654,7 +654,7 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
         flexbuf_addstr(fb, "'' This must always be called before any other methods\n");
         flexbuf_addstr(fb, "pub __coginit(id) : r\n");
         flexbuf_addstr(fb, "  if (__cognum == 0) ' if the cog isn't running yet\n");
-        flexbuf_addstr(fb, "    __fixup_addresses\n");
+        flexbuf_printf(fb, "    __fixup_addresses%s\n", noargs);
         flexbuf_addstr(fb, "    longfill(@__mbox, 0, __MBOX_SIZE)\n");
         if (gl_p2) {
             flexbuf_addstr(fb, "    __mbox[1] := @entry\n");

@@ -6372,8 +6372,10 @@ EmitMain_CogSpin(IRList *irl, Module *p, int maxArgs, int maxResults)
     Operand *pasm__init;
     Operand *arg1 = GetArgReg(0);
     Operand *arg2 = GetArgReg(1);
-    
+
     int i;
+
+    (void)GetArgReg(2); // for builtin_memcopy
     if (maxArgs > MAX_COGSPIN_ARGS) {
         ERROR(NULL, ".cog.spin functions may not have more than %d arguments", MAX_COGSPIN_ARGS);
         maxArgs = MAX_COGSPIN_ARGS;
