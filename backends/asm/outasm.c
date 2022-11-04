@@ -6420,12 +6420,12 @@ EmitMain_CogSpin(IRList *irl, Module *p, int maxArgs, int maxResults)
     } else if (maxArgs == 0) {
         EmitOp2(irl, OPC_ADD, mboxptr, const4);
     }
-    // divide address by 4 to convert from cog to hub
-    EmitOp2(irl, OPC_SHR, mboxcmd, NewImmediate(2));
     // call command
     if (gl_p2) {
         EmitOp1(irl, OPC_CALL, mboxcmd);
     } else {
+        // divide address by 4 to convert from hub to cog
+        EmitOp2(irl, OPC_SHR, mboxcmd, NewImmediate(2));
         //EmitJump(irl, COND_TRUE, mboxcmd);
         EmitOp2(irl, OPC_JMPRET, linkreg, mboxcmd);
     }
