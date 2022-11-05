@@ -2576,6 +2576,7 @@ UseInternal(const char *name)
     if (sym && sym->kind == SYM_FUNCTION) {
         Function *func = (Function *)sym->val;
         MarkUsed(func, "internal");
+        curfunc->is_leaf = 0; // caller is not a leaf function
         return true;
     } else {
         // don't actually error here, if we are in some modes the global modules
@@ -2603,6 +2604,7 @@ ConvertInternal(AST *body, const char *fname, AST *arg1, AST *arg2, AST *arg3)
         }
         arg1 = NewAST(AST_EXPRLIST, arg1, arg2);
         fcall = NewAST(AST_FUNCCALL, ident, arg1);
+        curfunc->is_leaf = 0; // caller is not a lear function
         AstReportDone(&saveinfo);
         return fcall;
     }
