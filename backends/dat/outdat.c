@@ -509,7 +509,7 @@ outputInitList(Flexbuf *f, int elemsize, AST *initval, int numelems, Flexbuf *re
 }
 
 void
-outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
+outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs, bool needAlign)
 {
     int elemsize;
     int typealign, typesize;
@@ -523,6 +523,9 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
     elemsize = typesize = TypeSize(type);
     numelems  = 1;
 
+    if (needAlign) {
+        typealign = LONG_SIZE;
+    }
     AlignPc(f, typealign);
     if (!initval) {
         // just fill with 0s
@@ -546,13 +549,14 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
         type = RemoveTypeModifiers(BaseType(type));
         elemsize = TypeSize(type);
         numelems = typesize / elemsize;
+        //printf("...typesize = %d typealign = %d\n", typesize, typealign);
         if (initval && initval->kind != AST_EXPRLIST) {
             ERROR(initval, "Internal compiler error, expected initializer list");
             break;
         }
         while (numelems > 0 && initval) {
             --numelems;
-            outputInitializer(f, type, initval->left, relocs);
+            outputInitializer(f, type, initval->left, relocs, false);
             initval = initval->right;
         }
         if (numelems > 0) {
@@ -594,7 +598,7 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
             } else {
                 subtype = ExprType(varlist->left);
             }
-            outputInitializer(f, subtype, subinit, relocs);
+            outputInitializer(f, subtype, subinit, relocs, true);
             varlist = varlist->right;
             if (initval) initval = initval->right;
             if (is_union) {
@@ -1901,6 +1905,7 @@ outputVarDeclare(Flexbuf *f, AST *ast, Flexbuf *relocs)
 {
     AST *initval = NULL;
     AST *type = ast->left;
+    bool needAlign = false;
     
     ast = ast->right;
     if (ast->kind == AST_ASSIGN) {
@@ -1910,8 +1915,9 @@ outputVarDeclare(Flexbuf *f, AST *ast, Flexbuf *relocs)
     while (ast && ast->kind == AST_ARRAYDECL) {
         type = NewAST(AST_ARRAYTYPE, type, ast->right);
         ast = ast->left;
+        needAlign = true;
     }
-    outputInitializer(f, type, initval, relocs);
+    outputInitializer(f, type, initval, relocs, needAlign);
 }
 
 /*

@@ -5,6 +5,7 @@ Version 5.9.19
 - Fixed precision not being reset in printf
 - Fixed incorrect leaf function analysis in Spin functions using floats
 - Fixed lut function bug that crept in when memory was reserved at start of LUT
+- Fixed padding while initializing structures
 - Implemented -E and -H flags for nu bytecode
 - Implemented SPR[] in bytecode (thanks to Ada Gottensträter)
 - Improved register allocation in leaf functions (thanks Ada)
