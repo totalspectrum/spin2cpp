@@ -34,7 +34,7 @@
 #define ALL_VARS_ON_STACK(f) ( IS_STACK_CALL(f) || f->local_address_taken || f->closure)
 #define ANY_VARS_ON_STACK(f) ( ALL_VARS_ON_STACK(f) || f->stack_local )
 
-#define IS_LEAF(func) ((gl_compress == 0) && ((func)->is_leaf || FuncData(func)->effectivelyLeaf))
+#define IS_LEAF(func) ((gl_compress == 0) && ((func)->is_leaf || (FuncData(func) && FuncData(func)->effectivelyLeaf)))
 
 /* lists of instructions in hub and cog */
 static IRList cogcode;
