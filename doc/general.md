@@ -388,7 +388,7 @@ The C version is a little unexpected; one would expect HEAPSIZE to be declared a
 
 The garbage collector works by scanning memory for tagged pointers into the heap area; these pointers are assumed to be in use, whereas memory in the heap that is allocated but has no pointers to it in RAM are assumed to be garbage and are automatically freed during collection.
 
-Garbage collection happens automatically when the `_gc_alloc()` function finds there is not enough memory to fulfil are request. This can take quite a bit of time, so it is best to avoid memory allocation requests (e.g. BASIC string operations) inside time critical code.
+Garbage collection happens automatically when the `_gc_alloc()` function finds there is not enough memory to fulfil a request. This can take quite a bit of time, so it is best to avoid memory allocation requests (e.g. BASIC string operations) inside time critical code.
 
 It is also possible to manually trigger a garbage collection request by calling `_gc_collect()`. After this as much memory as possible is freed.
 
@@ -399,11 +399,16 @@ Temporary memory may be allocated on the stack by means of the call `__builtin_a
 
 ## Terminal Control
 
-The FlexProp system uses the default system terminal, configured when possible to accept VT100 (ANSI) escape sequences.
+The FlexProp system uses the default system terminal, configured when possible to accept VT100 (ANSI) escape sequences. The default serial pins (63 and 62 on P2, 31 and 30 on P1) are used.
 
 ### Changing baud rate
 
 All languages have a `_setbaud(N)` function to set the baud rate to `N`.
+
+### Sending and receiving characters
+
+All languages support some functions for doing basic serial I/O.
+`_tx(ch)` sends a character to the serial port, with appropriate carriage return mapping (see below for how this is changed). `_txraw(ch)` sends the character with no interpretation. `_rx()` reads a character from the serial port, waiting until one is available. `_rxraw(tim)` attempts to read a character, waiting for up to `tim` milliseconds (actually 1/1024ths of a second) for one to be available; if no character is received before the timeout, returns -1.
 
 ### Changing echo and CR/LF interpretation
 
