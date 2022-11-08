@@ -14,24 +14,24 @@ jobs:
     steps:
     - name: install-mingw
       run: "sudo apt-get install gcc-mingw-w64-i686"
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: make
       run: make zip
     - name: succ
       run: unzip flexptools.zip -d flexptools-zip
     - run: unzip spin2cpp.zip -d spin2cpp-zip
-    - uses: actions/upload-artifact@v2.1.3
+    - uses: actions/upload-artifact@v3
       with:
         name: flexptools-git
         path: "flexptools-zip/*"
-    - uses: actions/upload-artifact@v2.1.3
+    - uses: actions/upload-artifact@v3
       with:
         name: spin2cpp-git
         path: "spin2cpp-zip/*"
   test:
     runs-on: ubuntu-20.04
     steps:
-     - uses: actions/checkout@v2
+     - uses: actions/checkout@v3
      - name: make
        run: make
      - name: test
@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-20.04
     timeout-minutes: 10
     steps:
-     - uses: actions/checkout@v2
+     - uses: actions/checkout@v3
        with:
         submodules: recursive
      - name: make
