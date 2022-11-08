@@ -539,11 +539,15 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
     elemsize = typesize = TypeSize(type);
     numelems  = 1;
 
-    AlignPc(f, typealign);
+    siz = AlignPc(f, typealign);
     
     if (!initval) {
         // just fill with 0s
         siz += outputInitList(f, elemsize, initval, numelems, relocs, type);
+        while (siz < typesize) {
+            outputByte(f, 0);
+            siz++;
+        }
         return siz;
     }
 
@@ -581,7 +585,7 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
         break;
     }
     
-    case AST_OBJECT:
+    case AST_OBJECT: {
         P = GetClassPtr(type);
         is_union = P->isUnion;
         varlist = P->finalvarblock;
@@ -590,6 +594,7 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
         }
         while (varlist) {
             AST *subtype;
+            int subsiz, r;
             AST *subinit = initval ? initval->left : NULL;
             if (varlist->left->kind == AST_DECLARE_BITFIELD) {
                 varlist = varlist->right;
@@ -612,7 +617,16 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
             } else {
                 subtype = ExprType(varlist->left);
             }
-            siz += outputInitializer(f, subtype, subinit, relocs);
+            subsiz = TypeSize(subtype);
+            if (subsiz >= LONG_SIZE) {
+                subsiz = (subsiz + LONG_SIZE - 1) & ~(LONG_SIZE-1);
+            }
+            r = outputInitializer(f, subtype, subinit, relocs);
+            while (r < subsiz) {
+                outputByte(f, 0);
+                r++;
+            }
+            siz += r;
             varlist = varlist->right;
             if (initval) initval = initval->right;
             if (is_union) {
@@ -623,6 +637,7 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
             WARNING(initval, "too many initializers");
         }
         break;
+    }
     default:    
         ERROR(initval, "Unable to initialize elements of this type");
         initval = NULL;
@@ -1936,6 +1951,7 @@ outputVarDeclare(Flexbuf *f, AST *ast, Flexbuf *relocs)
         ast = ast->left;
     }
     typsiz = TypeSize(type);
+    AlignPc(f, TypeAlign(type));
     siz = outputInitializer(f, type, initval, relocs);
     if (siz != typsiz) {
         ERROR(initval, "Bad initialization size: expected %d got %d", typsiz, siz);
