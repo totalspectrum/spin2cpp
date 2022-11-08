@@ -418,16 +418,20 @@ EvalRelocPasmExpr(AST *expr, Flexbuf *f, Flexbuf *relocs, int *relocOff, bool is
     return EvalPasmExpr(expr);
 }
 
-static void
+static int
 AlignPc(Flexbuf *f, int size)
 {
-        while ((datacount % size) != 0) {
-            outputByte(f, 0);
-        }
+    int n = 0;
+    while ((datacount % size) != 0) {
+        outputByte(f, 0);
+        n++;
+    }
+    return n;
 }
 
 /* output a single data item element */
-void
+/* returns the number of bytes output */
+int
 outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs, AST *type)
 {
     uintptr_t origval, val;
@@ -435,9 +439,10 @@ outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs, A
     Reloc *rptr;
     int relocOff;
     AST *exprType;
+    int siz = 0;
     
     if (elemsize == 0) {
-        return;
+        return siz;
     }
     if (item) {
         if (item->kind == AST_SIMPLEFUNCPTR) {
@@ -474,21 +479,30 @@ outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs, A
         val = origval;
         for (i = 0; i < elemsize; i++) {
             outputByte(f, val & 0xff);
+            siz++;
             val = val >> 8;
         }
         --reps;
     }
+    // align if necessary
+    while (siz < elemsize) {
+        outputByte(f, 0);
+        siz++;
+    }
+    return siz;
 }
 
 /* output a variable initializer list */
-/* returns the number of elements output */
+/* returns the number of bytes output */
 int
 outputInitList(Flexbuf *f, int elemsize, AST *initval, int numelems, Flexbuf *relocs, AST *type)
 {
     int n = 0;
+    int siz = 0;
+    
     if (!initval) {
-        outputInitItem(f, elemsize, NULL, numelems, relocs, type);
-        return numelems;
+        siz = outputInitItem(f, elemsize, NULL, numelems, relocs, type);
+        return siz;
     }
     if (initval->kind == AST_EXPRLIST) {
         AST *item;
@@ -498,18 +512,19 @@ outputInitList(Flexbuf *f, int elemsize, AST *initval, int numelems, Flexbuf *re
             item = initval->left;
             initval = initval->right;
             r = outputInitList(f, elemsize, item, 1, relocs, type);
+            siz += r;
+            if (elemsize) r = r / elemsize;  // convert to number of items
             n += r;
             elemsleft -= r;
         }
     } else {
-        outputInitItem(f, elemsize, initval, 1, relocs, type);
-        return 1;
+        return outputInitItem(f, elemsize, initval, 1, relocs, type);
     }
-    return n;
+    return siz;
 }
 
-void
-outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs, bool needAlign)
+int
+outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
 {
     int elemsize;
     int typealign, typesize;
@@ -517,20 +532,19 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs, bool nee
     AST *varlist;
     Module *P;
     int is_union = 0;
+    int siz = 0;
     
     type = RemoveTypeModifiers(type);
     typealign = TypeAlign(type);
     elemsize = typesize = TypeSize(type);
     numelems  = 1;
 
-    if (needAlign) {
-        typealign = LONG_SIZE;
-    }
     AlignPc(f, typealign);
+    
     if (!initval) {
         // just fill with 0s
-        outputInitList(f, elemsize, initval, numelems, relocs, type);
-        return;
+        siz += outputInitList(f, elemsize, initval, numelems, relocs, type);
+        return siz;
     }
 
     // done in pasm.c now
@@ -542,7 +556,7 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs, bool nee
     case AST_UNSIGNEDTYPE:
     case AST_FLOATTYPE:
     case AST_PTRTYPE:
-        outputInitList(f, elemsize, initval, numelems, relocs, type);
+        siz += outputInitList(f, elemsize, initval, numelems, relocs, type);
         break;
     case AST_ARRAYTYPE:
     {
@@ -556,11 +570,11 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs, bool nee
         }
         while (numelems > 0 && initval) {
             --numelems;
-            outputInitializer(f, type, initval->left, relocs, false);
+            siz += outputInitializer(f, type, initval->left, relocs);
             initval = initval->right;
         }
         if (numelems > 0) {
-            outputInitList(f, elemsize, NULL, numelems, relocs, type);
+            siz += outputInitList(f, elemsize, NULL, numelems, relocs, type);
         } else if (initval) {
             WARNING(initval, "too many elements found in initializer");
         }
@@ -598,7 +612,7 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs, bool nee
             } else {
                 subtype = ExprType(varlist->left);
             }
-            outputInitializer(f, subtype, subinit, relocs, true);
+            siz += outputInitializer(f, subtype, subinit, relocs);
             varlist = varlist->right;
             if (initval) initval = initval->right;
             if (is_union) {
@@ -608,14 +622,18 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs, bool nee
         if (initval) {
             WARNING(initval, "too many initializers");
         }
-        // objects are padded to a long boundary
-        AlignPc(f, LONG_SIZE);
-        return;
+        break;
     default:    
         ERROR(initval, "Unable to initialize elements of this type");
         initval = NULL;
         break;
     }
+    // apply padding if necessary
+    while (siz < typesize) {
+        outputByte(f, 0);
+        siz++;
+    }
+    return siz;
 }
 
 /* output an FVAR or FVARS item */
@@ -1905,7 +1923,8 @@ outputVarDeclare(Flexbuf *f, AST *ast, Flexbuf *relocs)
 {
     AST *initval = NULL;
     AST *type = ast->left;
-    bool needAlign = false;
+    int siz;
+    int typsiz;
     
     ast = ast->right;
     if (ast->kind == AST_ASSIGN) {
@@ -1915,9 +1934,12 @@ outputVarDeclare(Flexbuf *f, AST *ast, Flexbuf *relocs)
     while (ast && ast->kind == AST_ARRAYDECL) {
         type = NewAST(AST_ARRAYTYPE, type, ast->right);
         ast = ast->left;
-        needAlign = true;
     }
-    outputInitializer(f, type, initval, relocs, needAlign);
+    typsiz = TypeSize(type);
+    siz = outputInitializer(f, type, initval, relocs);
+    if (siz != typsiz) {
+        ERROR(initval, "Bad initialization size: expected %d got %d", typsiz, siz);
+    }
 }
 
 /*
