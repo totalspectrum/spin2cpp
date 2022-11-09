@@ -6380,13 +6380,11 @@ EmitMain_CogSpin(IRList *irl, Module *p, int maxArgs, int maxResults)
         ERROR(NULL, ".cog.spin functions may not have more than %d arguments", MAX_COGSPIN_ARGS);
         maxArgs = MAX_COGSPIN_ARGS;
     }
+    ValidateStackptr();
+    ValidateObjbase();
     if (gl_p2) {
-        stackptr = GetOneGlobal(REG_HW, "ptra", 0);
-        objbase = GetOneGlobal(REG_REG, "objptr", 0);
         par = GetOneGlobal(REG_HW, "ptra", 0);
     } else {
-        stackptr = GetOneGlobal(REG_REG, "sp", 0);
-        objbase = GetOneGlobal(REG_REG, "objptr", 0);
         linkreg = GetOneGlobal(REG_REG, "linkreg", 0);
         par = GetOneGlobal(REG_HW, "par", 0);
     }
