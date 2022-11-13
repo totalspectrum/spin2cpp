@@ -1,4 +1,5 @@
 Version 5.9.20
+- Fixed swapping 64 bit variables
 - More fixes to C struct initialization
 
 Version 5.9.19

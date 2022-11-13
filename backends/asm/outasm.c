@@ -3153,11 +3153,25 @@ CompileMultipleAssign(IRList *irl, AST *lhs, AST *rhs)
     }
     ptr = opList;
     while (lhs && ptr) {
+        AST *target, *typ;
+        int siz;
         if (lhs->kind != AST_EXPRLIST) {
             ERROR(lhs, "Illegal left hand side for multiple assignment");
             return OPERAND_DUMMY;
         }
-        r = CompileExpression(irl, lhs->left, NULL);
+        target = lhs->left;
+        typ = ExprType(target);
+        siz = TypeSize(typ);
+        if (siz <= LONG_SIZE) {
+            r = CompileExpression(irl, target, NULL);
+        } else if (siz == 8) {
+            Operand *rlo = CompileExpression(irl, NewAST(AST_GETLOW, target, NULL), NULL);
+            EmitMove(irl, rlo, ptr->op);
+            ptr = ptr->next;
+            r = CompileExpression(irl, NewAST(AST_GETHIGH, target, NULL), NULL);
+        } else {
+            ERROR(lhs, "Unable to multiply assign this target");
+        }
         EmitMove(irl, r, ptr->op);
         lhs = lhs->right;
         ptr = ptr->next;
