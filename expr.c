@@ -3584,13 +3584,17 @@ FixupInitList(AST *type, AST *initval)
                     val->left = newval;
                 }
             }
-            if (astarr[curelem]) {
-                // C99 says the last definition applies, so this probably isn't
-                // an error
-                WARNING(val, "Duplicate definition for element %d of array", curelem);
+            if (curelem < numelems) {
+                if (astarr[curelem]) {
+                    // C99 says the last definition applies, so this probably isn't
+                    // an error
+                    WARNING(val, "Duplicate definition for element %d of array", curelem);
+                }
+                astarr[curelem] = val;
+                curelem++;
+            } else {
+                WARNING(val, "Extra initializers for array");
             }
-            astarr[curelem] = val;
-            curelem++;
         }
         break;
     }
