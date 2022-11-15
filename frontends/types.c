@@ -1441,8 +1441,12 @@ static AST *doCheckTypes(AST *ast)
             ast->right = cast;
         }
         return ltype;
-    }        
-    ltype = doCheckTypes(ast->left);
+    }
+    if (IsIdentifier(ast)) {
+        ltype = NULL;
+    } else {
+        ltype = doCheckTypes(ast->left);
+    }
     if (ast->kind != AST_METHODREF) {
         rtype = doCheckTypes(ast->right);
     } else {
