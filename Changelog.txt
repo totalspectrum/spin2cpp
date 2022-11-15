@@ -1,5 +1,6 @@
 Version 5.9.20
 - Fixed swapping 64 bit variables
+- Fixed failure to change arrays to pointers in some C expressions
 - More fixes to C struct initialization
 
 Version 5.9.19

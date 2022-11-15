@@ -2501,6 +2501,35 @@ WidestType(AST *left, AST *right)
     return left;
 }
 
+//
+// cast an array to a pointer type;
+//
+AST *ArrayToPointerType(AST *type)
+{
+    AST *modifier;
+    if (type->kind == AST_ARRAYTYPE) {
+        type = NewAST(AST_PTRTYPE, type->left, NULL);
+    } else {
+        modifier = NewAST(type->kind, NULL, NULL);
+        modifier->left = ArrayToPointerType(type->left);
+        type = modifier;
+    }
+    return type;
+}
+
+AST *ClassToPointerType(AST *type)
+{
+    AST *modifier;
+    if (type->kind == AST_OBJECT) {
+        type = NewAST(AST_PTRTYPE, type, NULL);
+    } else {
+        modifier = NewAST(type->kind, NULL, NULL);
+        modifier->left = ClassToPointerType(type->left);
+        type = modifier;
+    }
+    return type;
+}
+
 // for historical reasons SetFunctionReturnType is in functions.c
 AST *
 GetFunctionReturnType(Function *f)
@@ -2823,6 +2852,13 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
                 }
                 return WidestType(ltype, rtype);
             }
+            if (IsArrayType(ltype)) {
+                ltype = ArrayToPointerType(ltype);
+            }
+            if (IsArrayType(rtype)) {
+                rtype = ArrayToPointerType(rtype);
+            }
+            
             if (IsPointerType(ltype) && IsPointerType(rtype)) {
                 if (expr->d.ival == '-') {
                     return ast_type_long;

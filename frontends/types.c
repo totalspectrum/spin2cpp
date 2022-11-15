@@ -887,35 +887,6 @@ AST *FunctionPointerType(AST *typ)
     return NewAST(AST_PTRTYPE, typ, NULL);
 }
 
-//
-// cast an array to a pointer type;
-//
-AST *ArrayToPointerType(AST *type)
-{
-    AST *modifier;
-    if (type->kind == AST_ARRAYTYPE) {
-        type = NewAST(AST_PTRTYPE, type->left, NULL);
-    } else {
-        modifier = NewAST(type->kind, NULL, NULL);
-        modifier->left = ArrayToPointerType(type->left);
-        type = modifier;
-    }
-    return type;
-}
-
-AST *ClassToPointerType(AST *type)
-{
-    AST *modifier;
-    if (type->kind == AST_OBJECT) {
-        type = NewAST(AST_PTRTYPE, type, NULL);
-    } else {
-        modifier = NewAST(type->kind, NULL, NULL);
-        modifier->left = ClassToPointerType(type->left);
-        type = modifier;
-    }
-    return type;
-}
-
 AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
 {
     AST *rettype = lefttype;

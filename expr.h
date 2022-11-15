@@ -91,6 +91,9 @@ int IsRefType(AST *typ);
 int IsInt64Type(AST *typ);
 int IsFloat64Type(AST *typ);
 
+AST *ArrayToPointerType(AST *type);
+AST *ClassToPointerType(AST *type);
+
 #define IsScalar64Type(t) (IsInt64Type(t) || IsFloat64Type(t))
 
 #define IsIntOrGenericType(t) (!t || IsGenericType(t) || IsIntType(t))
