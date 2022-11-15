@@ -3407,6 +3407,10 @@ BuildExprlistFromObject(AST *origexpr, AST *typ)
         /* already an expression list */
         return origexpr;
     }
+    if (expr->kind == AST_ASSIGN) {
+        exprlist = NewAST(AST_SEQUENCE, expr, expr->left);
+        return BuildExprlistFromObject(exprlist, typ);
+    }
     exprlist = NULL;
     if (IsScalar64Type(typ)) {
         exprlist = NewAST(AST_EXPRLIST, NewAST(AST_GETLOW, expr, NULL), NULL);
