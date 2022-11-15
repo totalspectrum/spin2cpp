@@ -1102,15 +1102,19 @@ DoPropellerPostprocess(const char *fname, size_t eepromSize)
 
     // check for special symbols
     current = GetTopLevelModule();
+
+    if (!current) {
+        WARNING(NULL, "no functions found");
+    }
     // we are at the end of compilation, check for stack info in a
     // case insensitive manner
     save_casesensitive = gl_caseSensitive;
     gl_caseSensitive = 0;
-    sym = FindSymbol(&current->objsyms, "_STACK");
+    sym = current ? FindSymbol(&current->objsyms, "_STACK") : NULL;
     if (sym && sym->kind == SYM_CONSTANT) {
         reserveSize += LONG_SIZE * EvalConstExpr((AST *)sym->val);
     }
-    sym = FindSymbol(&current->objsyms, "_FREE");
+    sym = current ? FindSymbol(&current->objsyms, "_FREE") : NULL;
     if (sym && sym->kind == SYM_CONSTANT) {
         reserveSize += LONG_SIZE * EvalConstExpr((AST *)sym->val);
     }

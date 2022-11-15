@@ -1,4 +1,5 @@
 Version 5.9.20
+- Fixed a crash when trivial C programs are submitted
 - Fixed swapping 64 bit variables
 - Fixed failure to change arrays to pointers in some C expressions
 - Fixed 64 bit integer preincrement
