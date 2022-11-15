@@ -56,6 +56,10 @@ Inline assembly within a function follows a different path through the compiler 
 
 Only hardware registers and variables local to the function may be used in inline assembly. Global or method variables may not be referenced.
 
+#### 64 bit variables
+
+If a local variable needs more than 4 bytes (e.g. 64 bit integers) then the longs of that variable may be referenced by `x+0`, `x+1`, and so on. For a 64 bit variable, `x+0` is the low long, and `x+1` is the high one.
+
 #### Local variables not usable in some functions
 
 If a function takes the address of a parameter, or of a local variable, then its local variables are placed on the stack and may not be referred to in inline assembly.

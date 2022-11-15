@@ -1,4 +1,5 @@
 Version 5.9.20
+- Inline assembly can now access multiple longs of large local variables.
 - Fixed a crash when trivial C programs are submitted
 - Fixed swapping 64 bit variables
 - Fixed failure to change arrays to pointers in some C expressions
