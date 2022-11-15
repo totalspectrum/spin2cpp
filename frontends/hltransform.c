@@ -419,12 +419,14 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
                     }
                 }
             } else {
-                AST *typ = ExprType(ast->right);
+                AST *ident = ast->right;
+                AST *typ = ExprType(ident);
                 if (typ) {
                     if (IsFloatType(typ) || IsInt64Type(typ)) {
                         ast->kind = AST_ASSIGN;
                         ast->d.ival = K_ASSIGN;
-                        ast->right = AstOperator('+', ast->left, AstInteger(1));
+                        ast->left = ident;
+                        ast->right = AstOperator('+', ident, AstInteger(1));
                     }
                 }
             }
