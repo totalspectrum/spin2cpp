@@ -287,10 +287,11 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
                 }
             }
             // handle a+n where a is an array
-            if (expr->left && expr->left->kind == AST_ARRAYREF && IsConstExpr(expr->left->right) && IsConstExpr(expr->right)) {
+            if (expr->left && (expr->left->kind == AST_ARRAYREF || IsIdentifier(expr->left)) && IsConstExpr(expr->left->right) && IsConstExpr(expr->right)) {
                 int offset = EvalConstExpr(expr->left->right);
+                AST *ref = (expr->left->kind == AST_ARRAYREF) ? expr->left->left : expr->left;
                 offset = offset + sign * EvalConstExpr(expr->right);
-                r = CompileInlineOperand(irl, expr->left->left, effects, 0);
+                r = CompileInlineOperand(irl, ref, effects, 0);
                 r = SubRegister(r, offset * LONG_SIZE);
                 return r;
             }

@@ -352,6 +352,18 @@ isResult(Operand *op)
     return op->kind == REG_RESULT;
 }
 
+bool
+IsSubReg(Operand *reg)
+{
+    return reg && reg->kind == REG_SUBREG;
+}
+
+bool
+IsHwReg(Operand *reg)
+{
+    return reg && reg->kind == REG_HW;
+}
+
 // returns TRUE if an operand represents a local register
 bool
 IsLocal(Operand *op)
@@ -1187,11 +1199,6 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
   return IsLocal(orig);
 }
 
-bool
-IsHwReg(Operand *reg)
-{
-    return reg && reg->kind == REG_HW;
-}
 //
 // returns true if orig is a source only
 // hardware register (CNT, INA, INB)
@@ -4395,6 +4402,8 @@ OptimizeCORDIC(IRList *irl) {
     for (IR *ir=irl->tail;ir;ir=ir->prev) {
         if (!IsCordicCommand(ir) || InstrIsVolatile(ir)) continue;
         if(IsHwReg(ir->dst)||IsHwReg(ir->src)) continue;
+        if(IsSubReg(ir->dst)||IsSubReg(ir->src)) continue;
+        
         int cycles = 0;
         // Count min-cycles already inbetween command and get
         for (IR *ir2=ir->next;ir2;ir2=ir2->next) {
@@ -4417,6 +4426,7 @@ OptimizeCORDIC(IRList *irl) {
         if(!IsCordicGet(ir)) continue;
         if(InstrIsVolatile(ir)) continue;
         if(IsHwReg(ir->dst)) continue;
+        if(IsSubReg(ir->dst)) continue;
         int cycles = 0;
         // Count min-cycles already inbetween command and get
         for (IR *ir2=ir->prev;ir2;ir2=ir2->prev) {
