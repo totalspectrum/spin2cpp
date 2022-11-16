@@ -104,6 +104,7 @@ static AST *int64_and, *int64_or, *int64_xor;
 static AST *int64_signx, *int64_zerox;
 
 static AST *struct_copy;
+static AST *struct_memset;
 static AST *string_cmp;
 static AST *string_concat;
 static AST *gc_alloc_managed;
@@ -862,6 +863,9 @@ AST *StructAddress(AST *expr)
     if (expr->kind == AST_FUNCCALL) {
         return expr;
     }
+    if (expr->kind == AST_INTEGER) {
+        ERROR(expr, "taking address of integer");
+    }
     return NewAST(AST_ABSADDROF, expr, NULL);
 }
 
@@ -1550,12 +1554,23 @@ static AST *doCheckTypes(AST *ast)
         if (ltype && IsClassType(ltype)) {
             int siz = TypeSize(ltype);
             if (TypeGoesOnStack(ltype)) {
-                // convert the assignment to a memcpy
-                AST *lptr = StructAddress(ast->left);
-                AST *rptr = StructAddress(ast->right);
-                AST *copy = MakeOperatorCall(struct_copy, lptr, rptr, AstInteger(siz));
-                *ast = *NewAST(AST_MEMREF, NULL, copy);
+                AST *lhs = ast->left;
+                AST *rhs = ast->right;
+                // convert the assignment to a memcpy (or memset in some cases)
+                AST *lptr = StructAddress(lhs);
+                if (!rhs) rhs = AstInteger(0);
+                if (rhs->kind == AST_INTEGER) {
+                    AST *zero = MakeOperatorCall(struct_memset, lptr, rhs, AstInteger(siz));
+                    *ast = *NewAST(AST_MEMREF, NULL, zero);
+                    if (rhs->d.ival != 0) {
+                        WARNING(ast, "filling memory with non-zero value may not work properly");
+                    }
+                } else {
+                    AST *rptr = StructAddress(rhs);
+                    AST *copy = MakeOperatorCall(struct_copy, lptr, rptr, AstInteger(siz));
+                    *ast = *NewAST(AST_MEMREF, NULL, copy);
 //                WARNING(ast, "Need to convert to memcpy");
+                }
             }
         }
         break;
@@ -2069,7 +2084,8 @@ InitGlobalFuncs(void)
         basic_unlock_io = getBasicPrimitive("__unlockio");
         
         struct_copy = getBasicPrimitive("bytemove");
-
+        struct_memset = getBasicPrimitive("__builtin_memset");
+        
         string_cmp = getBasicPrimitive("_string_cmp");
         string_concat = getBasicPrimitive("_string_concat");
         gc_alloc_managed = getBasicPrimitive("_gc_alloc_managed");
