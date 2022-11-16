@@ -270,6 +270,10 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
                 return r;
             }
         }
+        if (IsConstExpr(expr)) {
+            int x = EvalPasmExpr(expr);
+            return ImmediateRef(immflag, x);
+        }
         /* handle $+x / $-x */
         if (expr->d.ival == '+' || expr->d.ival == '-') {
             int sign = expr->d.ival == '-' ? -1 : +1;
@@ -287,18 +291,14 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
                 }
             }
             // handle a+n where a is an array
-            if (expr->left && (expr->left->kind == AST_ARRAYREF || IsIdentifier(expr->left)) && IsConstExpr(expr->left->right) && IsConstExpr(expr->right)) {
-                int offset = EvalConstExpr(expr->left->right);
+            if (expr->left && ( (expr->left->kind == AST_ARRAYREF && IsConstExpr(expr->left->right)) || IsIdentifier(expr->left) ) && IsConstExpr(expr->right) ) {
+                int offset = (expr->left->kind == AST_ARRAYREF) ? EvalConstExpr(expr->left->right) : 0;
                 AST *ref = (expr->left->kind == AST_ARRAYREF) ? expr->left->left : expr->left;
                 offset = offset + sign * EvalConstExpr(expr->right);
                 r = CompileInlineOperand(irl, ref, effects, 0);
                 r = SubRegister(r, offset * LONG_SIZE);
                 return r;
             }
-        }
-        if (IsConstExpr(expr)) {
-            int x = EvalPasmExpr(expr);
-            return ImmediateRef(immflag, x);
         }
     }
     
