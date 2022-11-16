@@ -1534,7 +1534,16 @@ static AST *doCheckTypes(AST *ast)
         break;
     case AST_ASSIGN:
         if (rtype) {
-            if (!IsAstTempVariable(ast->left)) {
+            AST *lhs = ast->left;
+            if (!IsAstTempVariable(lhs)) {
+                if (ast->right && ast->right->kind == AST_CAST && IsRefType(ast->right->left)) {
+                    // undo dereference of lhs, if it happened
+                    if (lhs->kind == AST_ARRAYREF && lhs->left->kind == AST_MEMREF && IsIdentifier(lhs->left->right)) {
+                        lhs = lhs->left->right;
+                        ast->left = lhs;
+                        ltype = ExprType(lhs);
+                    }
+                }
                 ltype = CoerceAssignTypes(ast, AST_ASSIGN, &ast->right, ltype, rtype, "assignment");
             }
         }

@@ -554,6 +554,7 @@ AddInitializers(AST *seq, AST *ident, AST *expr, AST *basetype)
         ident = NewAST(AST_CAST, RemoveTypeModifiers(basetype), ident);
     }
     assign = AstAssign(ident, expr);
+    assign->kind = AST_ASSIGN_INIT;
     seq = AddToList(seq, NewAST(AST_SEQUENCE, assign, NULL));
     AstReportDone(&saveinfo);
     return seq;

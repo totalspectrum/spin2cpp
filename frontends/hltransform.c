@@ -262,6 +262,16 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
     doSimplifyAssignments(&ast->left, insertCasts, lhsTopLevel);
     doSimplifyAssignments(&ast->right, insertCasts, rhsTopLevel);
 
+    if (ast->kind == AST_ASSIGN_INIT) {
+        AST *typ = ExprType(ast->left);
+        if (IsRefType(typ)) {
+            if (ast->right && (ast->right->kind != AST_CAST || !IsRefType(ast->right->left))) {
+                AST *base = ast->right;
+                ast->right = NewAST(AST_CAST, typ, NewAST(AST_ADDROF, base, NULL));
+            }
+        }
+        ast->kind = AST_ASSIGN;
+    }
     if (ast->kind == AST_ASSIGN) {
         int op = ast->d.ival;
         lhs = ast->left;

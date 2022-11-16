@@ -787,6 +787,7 @@ static const char *astnames[] = {
 
     "global_registers",
     "typeof",
+    "assign_init",
 };
 
 //
