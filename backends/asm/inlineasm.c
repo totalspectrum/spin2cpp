@@ -296,7 +296,9 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
                 AST *ref = (expr->left->kind == AST_ARRAYREF) ? expr->left->left : expr->left;
                 offset = offset + sign * EvalConstExpr(expr->right);
                 r = CompileInlineOperand(irl, ref, effects, 0);
-                r = SubRegister(r, offset * LONG_SIZE);
+                if (offset != 0) {
+                    r = SubRegister(r, offset * LONG_SIZE);
+                }
                 return r;
             }
         }
