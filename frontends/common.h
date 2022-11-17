@@ -185,6 +185,10 @@ extern int gl_optimize_flags; /* flags for optimization */
 
 #define OPT_ASM_BASIC  (OPT_BASIC_REGS|OPT_BRANCHES|OPT_PEEPHOLE|OPT_CONST_PROPAGATE|OPT_REMOVE_FEATURES|OPT_MAKE_MACROS)
 
+// minimal optimization (-O0)
+// in practice much of the compiler assumes unused functions are removed
+#define MINIMAL_ASM_OPTS (OPT_REMOVE_UNUSED_FUNCS)
+
 // default optimization (-O1) for ASM output
 #define DEFAULT_ASM_OPTS        (OPT_ASM_BASIC|OPT_DEADCODE|OPT_REMOVE_UNUSED_FUNCS|OPT_INLINE_SMALLFUNCS|OPT_AUTO_FCACHE|OPT_LOOP_BASIC|OPT_TAIL_CALLS|OPT_SPECIAL_FUNCS|OPT_CORDIC_REORDER|OPT_LOCAL_REUSE)
 // extras added with -O2

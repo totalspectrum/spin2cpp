@@ -103,9 +103,9 @@ int ProcessCommandLine(CmdLineOptions *cmd)
     Module *P;
     const char *listFile = NULL;
     
-    if (gl_output == OUTPUT_COGSPIN) {
-        gl_optimize_flags &= ~OPT_REMOVE_UNUSED_FUNCS;
-    }
+//    if (gl_output == OUTPUT_COGSPIN) {
+//        gl_optimize_flags &= ~OPT_REMOVE_UNUSED_FUNCS;
+//    }
     if (gl_relocatable) {
         if (!gl_p2) {
             fprintf(stderr, "ERROR: relocatable output only supported for P2\n");
@@ -457,7 +457,7 @@ int ParseOptimizeString(AST *line, const char *str, int *flag_ptr)
         if (buf[1] == 0) {
             switch(buf[0]) {
             case '0':
-                flags = 0;
+                flags = MINIMAL_ASM_OPTS;
                 continue;
             case '1':
                 flags = DEFAULT_ASM_OPTS;
