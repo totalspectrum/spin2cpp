@@ -1297,8 +1297,6 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
       } else {
           name = "result";
       }
-  } else if (expr->kind == AST_VARARGS || expr->kind == AST_VA_START) {
-      name = "__varargs";
   } else {
       name = VarName(expr);
       if (!name) {
@@ -1340,6 +1338,9 @@ GetSystemFunction(const char *name)
 const char *
 VarName(AST *ast)
 {
+    if (ast->kind == AST_VARARGS || ast->kind == AST_VA_START) {
+        return "__varargs";
+    }
     if (ast->kind == AST_DECLARE_VAR) {
         // left is type, right is name
         ast = ast->right;
@@ -1678,7 +1679,7 @@ NeedToSaveLocals(Function *func)
     if (func->is_recursive) {
         return true;
     }
-    if (gl_output == OUTPUT_COGSPIN) {
+    if (gl_output == OUTPUT_COGSPIN && !gl_p2) {
         return false;
     }
     if (InCog(func)) {
