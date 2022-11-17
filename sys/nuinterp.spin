@@ -890,9 +890,6 @@ impl_WYPIN
 	wypin	tos, nos
 	jmp	#\impl_DROP2
 
-impl_RDPIN
-  _ret_	rdpin	tos, tos
-
 impl_RQPIN
   _ret_	rqpin	tos, tos
 
@@ -909,6 +906,12 @@ impl_XYPOL
 	getqx	nos
   _ret_	getqy	tos
 
+impl_RDPINX
+	call	#\impl_DUP
+	rdpin	nos, nos wc
+   	neg	tos, #1
+  _ret_	muxc	tos, tos
+	
 impl_ROTXY
 	mov	tmp, tos	' tmp = angle
 	call	#\impl_DROP	' tos = y, nos = x

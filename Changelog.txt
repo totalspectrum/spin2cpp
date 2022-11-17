@@ -6,6 +6,7 @@ Version 5.9.20
 - Fixed 64 bit integer preincrement
 - Fixed initializing local reference variables
 - More fixes to C struct initialization
+- Made debug output and C library output work better together
 - Remove unused methods even at -O0 optimization
 
 Version 5.9.19

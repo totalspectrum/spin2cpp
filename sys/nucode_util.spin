@@ -58,12 +58,15 @@ pri _wxpin(pin = long, val = long)
   __bytecode__("WXPIN")
 pri _wypin(pin = long, val = long)
   __bytecode__("WYPIN")
-pri _rdpin(pin = long) : r
-  __bytecode__("RDPIN")
+pri _rdpinx(pin = long) : r, c
+  __bytecode__("RDPINX")
 pri _rqpin(pin = long) : r
   __bytecode__("RQPIN")
 pri _akpin(pin = long)
   __bytecode__("AKPIN")
+
+pri _rdpin(pin = long) : r | c
+  r,c := _rdpinx(pin)
 
 ' clear a smart pin
 pri _pinclear(pin)
@@ -98,7 +101,14 @@ con
   _txmode       = %0000_0000_000_0000000000000_01_11110_0 'async tx mode, output enabled for smart output
   _rxmode       = %0000_0000_000_0000000000000_00_11111_0 'async rx mode, input  enabled for smart input
 
+' utility function: check for tx finished
+pri _txwait | w, c
+  repeat
+    w,c := _rdpinx(_txpin)
+  while c <> 0
+
 pri _setbaud(baudrate) | bitperiod, bit_mode
+  _txwait()
   bitperiod := (__clkfreq_var / baudrate)
   _fltl(_txpin)
   _fltl(_rxpin)
@@ -112,12 +122,10 @@ pri _setbaud(baudrate) | bitperiod, bit_mode
   _drvl(_rxpin)
   
 pri _txraw(c) | z
+  _txwait()
   if long[$1c] == 0
     _setbaud(__default_baud__)  ' set up in common.c
   _wypin(_txpin, c)
-  repeat
-    z := _pinr(_txpin)
-  while z == 0
   return 1
 
 ' timeout is approximately in milliseconds (actually in 1024ths of a second)

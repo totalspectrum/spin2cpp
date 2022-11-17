@@ -236,7 +236,10 @@ iret		mov	iret,$1FF	'save debug interrupt return address
 
 		brk	##$800		'show ina/inb (must be disabled before RETI0)
 
-w		fltl	_txpin_		'reset and configure the tx pin
+w		nop
+.wait		rdpin	w, _txpin_ wc   'wait for tx not busy
+	if_c	jmp	#.wait
+		fltl	_txpin_		'reset and configure the tx pin
 x		wrpin	#%01_11110_0,_txpin_
 y		wxpin	_txmode_,_txpin_
 z		drvl	_txpin_
