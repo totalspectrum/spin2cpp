@@ -538,6 +538,12 @@ struct modulestate {
 
     /* type of this class */
     AST *type;
+
+    /* size used in a declaration in another module */
+    int varsize_used;
+    
+    /* varsize_used is valid */
+    bool varsize_used_valid;
 };
 
 /* maximum number of items in a multiple assignment */

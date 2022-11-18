@@ -1864,10 +1864,20 @@ DeclareMemberVariablesOfSizeFlag(Module *P, int sizeRequest, int offset)
             curtype = ast->left;
             idlist = ast->right;
             curtypesize = CheckedTypeSize(curtype); // make sure module variables are declared
-            if (IsClassType(curtype) || curtypesize == 0) {
+            if (IsClassType(curtype)) {
+                Module *Q = GetClassPtr(curtype);
                 curSizeFlag = SIZEFLAG_OBJ;
+                if (Q) {
+                    if (Q->varsize_used_valid) {
+                        if (Q->varsize_used != curtypesize) {
+                            ERROR(ast, "mismatched sizes for object %s: used %d before, but %d now", Q->classname, Q->varsize_used, curtypesize);
+                        }
+                    }
+                    Q->varsize_used = curtypesize;
+                    Q->varsize_used_valid = true;
+                }
             } else {
-                curSizeFlag = SIZEFLAG_VAR;
+                curSizeFlag = (curtypesize == 0) ? SIZEFLAG_OBJ : SIZEFLAG_VAR;
             }
             if (ast->d.ival) {
                 // variable should be private

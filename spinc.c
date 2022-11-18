@@ -1270,6 +1270,12 @@ FixupCode(Module *P, int isBinary)
             }
         }
     }
+    /* sanity check */
+    for (Q = allparse; Q; Q = Q->next) {
+        if (Q->varsize_used_valid && Q->varsize_used != Q->varsize) {
+            ERROR(NULL, "Internal error in module %s: varsize=%d but was %d when used in OBJ", Q->classname, Q->varsize, Q->varsize_used);
+        }
+    }
 }
 
 Module *
