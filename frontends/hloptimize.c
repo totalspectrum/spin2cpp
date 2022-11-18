@@ -124,8 +124,7 @@ HandleSpecialFunction(AST *ast, const char *spfunc)
         // if we get here, convert to _drvw
         ast->left = AstIdentifier("_drvw");
         return;
-    }
-    if (!strcmp(spfunc, "pinr")) {
+    } else if (!strcmp(spfunc, "pinr")) {
         arglist = ast->right;
         if (!arglist) {
             return;
@@ -134,6 +133,35 @@ HandleSpecialFunction(AST *ast, const char *spfunc)
         if (IsConstExpr(pin_expr) && (64 > (unsigned)EvalConstExpr(pin_expr))) {
             /* yes, do the switch */
             ast->left = AstIdentifier("_pinr");
+            return;
+        }
+    } else if (!strcmp(spfunc,"memset")) {
+        arglist = ast->right;
+        if (!arglist || !arglist->right || !arglist->right->right) {
+            return;
+        }
+        //AST **setptr = &arglist->left;
+        AST **setval = &arglist->right->left;
+        AST **setlen = &arglist->right->right->left;
+        bool const_val = IsConstExpr(*setval);
+        bool const_len = IsConstExpr(*setlen);
+        uint32_t tmp;
+        // If on P2 and doing a long-sized memset, convert to faster function
+        if (gl_p2 && const_len && ((tmp = (uint32_t)EvalConstExpr(*setlen)) & 3) == 0) {
+            ASTReportInfo save;
+            AstReportAs(ast,&save);
+            *setlen = AstInteger(tmp>>2);
+            if (const_val) {
+                tmp = EvalConstExpr(*setval);
+                if (tmp!=0) {
+                    tmp &= 255;
+                    *setval = AstInteger((tmp<<24)|(tmp<<16)|(tmp<<8)|(tmp<<0));
+                }
+            } else {
+                *setval = NewAST(AST_FUNCCALL,AstIdentifier("__builtin_movbyts"),NewAST(AST_EXPRLIST,*setval,NewAST(AST_EXPRLIST,AstInteger(0),NULL)));
+            }
+            ast->left = AstIdentifier("__builtin_longset"); // Subject to further optimization in ASM backend after inlining
+            AstReportDone(&save);
             return;
         }
     }

@@ -315,11 +315,17 @@ pri _cogchk(id) | flag, n
 '' because on P2 we can optimize them (long operations do
 '' not have to be aligned)
 ''
-pri __builtin_memset(ptr, val, count) : r
+pri {++specialfunc(memset)} __builtin_memset(ptr, val, count) : r
   r := ptr
   repeat count
     byte[ptr] := val
     ptr += 1
+
+pri __builtin_longset() : r
+  r := ptr
+  repeat count
+    long[ptr] := val
+    ptr += 4
     
 pri __builtin_memmove(dst, src, count) : origdst
   origdst := dst
@@ -337,9 +343,7 @@ pri __builtin_memmove(dst, src, count) : origdst
       byte[dst] := byte[src]
 
 pri longfill(ptr, val, count)
-  repeat count
-    long[ptr] := val
-    ptr += 4
+  __builtin_longset(ptr, val, count)
 pri wordfill(ptr, val, count)
   repeat count
     word[ptr] := val

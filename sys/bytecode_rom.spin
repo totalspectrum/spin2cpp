@@ -495,9 +495,9 @@ pri __call_methodptr
 '
 ' memset(): we may want to optimize this to use longfill in special cases?
 '
-pri __builtin_memset(ptr, val, count) : r
-  r := ptr
+pri {++specialfunc(memset)} __builtin_memset(ptr, val, count) : r
   bytefill(ptr, val, count)
+  return ptr
 
 pri _lockmem(addr) | oldlock, oldmem, lockreg
   lockreg := __getlockreg
