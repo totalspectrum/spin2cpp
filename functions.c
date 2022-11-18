@@ -2291,8 +2291,14 @@ ProcessOneFunc(Function *pf)
             // (i.e. that don't really exist)
             pf->overalltype = NewAST(AST_FUNCTYPE, NULL, NULL);
         }
-        pf->overalltype->left = ast_type_void;
-        pf->numresults = 0;
+        if (IsCLang(pf->language) && GetFunctionReturnType(pf) == NULL) {
+            // C functions declared without explicit types default to "int"
+            pf->overalltype->left = ast_type_long;
+            pf->numresults = 1;
+        } else {
+            pf->overalltype->left = ast_type_void;
+            pf->numresults = 0;
+        }
         pf->resultexpr = NULL;
     } else {
         if (!pf->result_used) {

@@ -1238,7 +1238,20 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
                 WARNING(line, "incompatible pointer types in %s: expected %s but got %s", msg, desttype_name, srctype_name);
             }
         } else {
-            ERROR(line, "incompatible types in %s: expected %s but got %s", msg, desttype_name, srctype_name);
+            // in C, we can coerce int to pointer and vice-versa
+            bool onlyWarn = false;
+            if (curfunc && IsCLang(curfunc->language)) {
+                if (IsPointerType(srctype) && IsIntType(desttype) && TypeSize(desttype) >= LONG_SIZE) {
+                    onlyWarn = true;
+                } else if (IsPointerType(desttype) && IsIntType(srctype) && TypeSize(srctype) == LONG_SIZE) {
+                    onlyWarn = true;
+                }
+            }
+            if (onlyWarn) {
+                WARNING(line, "mixing pointer and integer types in %s: expected %s but got %s", msg, desttype_name, srctype_name);
+            } else {
+                ERROR(line, "incompatible types in %s: expected %s but got %s", msg, desttype_name, srctype_name);
+            }
             return desttype;
         }
     }
