@@ -451,6 +451,19 @@ UndoLocalIdentifier(AST *body, AST *ident)
     }
 }
 
+static bool AllZeros(AST *expr) {
+    if (!expr) return true;
+    if (expr->kind == AST_INTEGER && expr->d.ival == 0) return true;
+    if (expr->kind == AST_STRINGPTR) {
+        return AstStringLen(expr) == 0;
+    }
+    if (expr->kind == AST_EXPRLIST) {
+        if (!AllZeros(expr->left)) return false;
+        return AllZeros(expr->right);
+    }
+    return false;
+}
+
 //
 // add initializers of the form "ident = expr" to a given sequence "seq"
 // the type of ident is "basetype"
@@ -459,6 +472,7 @@ static AST *
 AddInitializers(AST *seq, AST *ident, AST *expr, AST *basetype)
 {
     AST *assign;
+    AST *params;
     AST *sub;
     AST *subtype;
     int i;
@@ -468,8 +482,36 @@ AddInitializers(AST *seq, AST *ident, AST *expr, AST *basetype)
     if (!expr) return seq;
     AstReportAs(expr, &saveinfo);
 
+    if (TypeGoesOnStack(basetype)) {
+        if (AllZeros(expr)) {
+            params = NewAST(AST_EXPRLIST,
+                            NewAST(AST_ABSADDROF, ident, NULL),
+                            NewAST(AST_EXPRLIST, AstInteger(0),
+                                   NewAST(AST_EXPRLIST, AstInteger(TypeSize(basetype)), NULL)));
+            assign = NewAST(AST_FUNCCALL,
+                            AstIdentifier("__builtin_memset"),
+                            params);
+            seq = AddToList(seq, NewAST(AST_SEQUENCE, assign, NULL));
+            AstReportDone(&saveinfo);
+            return seq;
+        } else {
+            AST *tmpname = AstTempIdentifier("_init_");
+            AST *tmpvar = NewAST(AST_ASSIGN, tmpname, expr);
+            DeclareOneGlobalVar(current, tmpvar, basetype, 1);
+            
+            params = NewAST(AST_EXPRLIST,
+                            NewAST(AST_ABSADDROF, ident, NULL),
+                            NewAST(AST_EXPRLIST, NewAST(AST_ABSADDROF, tmpname, NULL),
+                                   NewAST(AST_EXPRLIST, AstInteger(TypeSize(basetype)), NULL)));
+            assign = NewAST(AST_FUNCCALL,
+                            AstIdentifier("__builtin_memcpy"),
+                            params);
+            seq = AddToList(seq, NewAST(AST_SEQUENCE, assign, NULL));
+            AstReportDone(&saveinfo);
+            return seq;
+        }
+    }
     if (expr->kind == AST_STRINGPTR && IsArrayType(basetype)) {
-        AST *params;
         int srclen, dstlen;
         srclen = AstStringLen(expr);
         dstlen = TypeSize(basetype);
