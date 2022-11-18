@@ -17,6 +17,10 @@ extern "C" {
 #define S_IWOTH   0002
 #define S_IXOTH   0001
 
+#define S_IRWXU  (S_IRUSR|S_IWUSR|S_IXUSR)
+#define S_IRWXG  (S_IRGRP|S_IWGRP|S_IXGRP)
+#define S_IRWXO  (S_IROTH|S_IWOTH|S_IXOTH)
+    
 #define S_IWRITE S_IWUSR
 #define S_IREAD  S_IRUSR
 #define S_IEXEC  S_IXUSR
