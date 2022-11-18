@@ -321,7 +321,7 @@ pri {++specialfunc(memset)} __builtin_memset(ptr, val, count) : r
     byte[ptr] := val
     ptr += 1
 
-pri __builtin_longset() : r
+pri __builtin_longset(ptr, val, count) : r
   r := ptr
   repeat count
     long[ptr] := val
