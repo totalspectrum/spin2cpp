@@ -1980,6 +1980,10 @@ initializer
             { $$ = $2; }
 	| '{' initializer_list ',' '}'
             { $$ = $2; }
+        | '{' '}'
+            {
+                $$ = NewAST(AST_EXPRLIST, AstInteger(0), NULL);
+            }
 	;
 
 initializer_list
