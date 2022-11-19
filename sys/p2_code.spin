@@ -604,10 +604,16 @@ pri _getus() : freq = +long | lo, hi
 '' because on P2 we can optimize them (long operations do
 '' not have to be aligned)
 ''
-pri __builtin_memset(ptr, val, count) : r | lval
+pri {++specialfunc(memset)} __builtin_memset(ptr, val, count) : r | lval
   r := ptr
   asm
     call #\builtin_bytefill_
+  endasm
+
+pri __builtin_longset(ptr, val, count) : r | lval
+  r := ptr
+  asm
+    call #\builtin_longfill_
   endasm
 
 pri __builtin_memmove(dst, src, count) : origdst

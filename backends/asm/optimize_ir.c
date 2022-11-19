@@ -882,23 +882,27 @@ AddSubVal(IR *ir)
 
 extern Operand *mulfunc, *unsmulfunc, *divfunc, *unsdivfunc, *muldiva, *muldivb;
 
-static bool FuncUsesArg(Operand *func, Operand *arg)
+// Set "actually" if you only care about the call actually using the current value
+static bool FuncUsesArgEx(Operand *func, Operand *arg, bool actually)
 {
-    if (arg == muldiva || arg == muldivb) {
-        return true;
-    } else if (func == mulfunc || func == unsmulfunc || func == divfunc || func == unsdivfunc) {
-        return false;
+    if (func == mulfunc || func == unsmulfunc || func == divfunc || func == unsdivfunc) {
+        return (arg == muldiva || arg == muldivb);
+    } else if (arg == muldiva || arg == muldivb) {
+        return !actually;
     } else if (func && func->val) {
         Function *funcObj = (Function *)func->val;
-        if ((/*func->kind == IMM_COG_LABEL ||*/ func->kind == IMM_HUB_LABEL) && (funcObj->is_leaf || FuncData(funcObj)->effectivelyLeaf)) {
+        if ((/*func->kind == IMM_COG_LABEL ||*/ func->kind == IMM_HUB_LABEL) && (actually || funcObj->is_leaf || FuncData(funcObj)->effectivelyLeaf)) {
             if (arg->kind != REG_ARG) return true; // subreg or smth
             if (arg->val < funcObj->numparams) return true; // Arg used;
-            if (arg->val < FuncData(funcObj)->maxInlineArg) return true; // Arg clobbered
+            if (!actually && arg->val < FuncData(funcObj)->maxInlineArg) return true; // Arg clobbered
             if ( ((Function *)func->val)->numparams < 0 ) return true; // varargs
             return false; // Arg not used
         }
     }
     return true;
+}
+static bool FuncUsesArg(Operand *func, Operand *arg) {
+    return FuncUsesArgEx(func,arg,false);
 }
 
 
@@ -915,7 +919,7 @@ static bool UsedInRange(IR *start,IR *end,Operand *reg) {
     for (IR *ir=start;ir!=end->next;ir=ir->next) {
         if (InstrUses(ir,reg)||IsJump(ir)) return true;
         if (ir->opc == OPC_CALL) {
-            if (IsArg(reg) && FuncUsesArg(ir->dst,reg)) return true;
+            if (IsArg(reg) && FuncUsesArgEx(ir->dst,reg,true)) return true;
             if (IsArg(reg)||isResult(reg)) return false; // Becomes dead
             if (!IsLocal(reg)) return true;
         }
@@ -1084,6 +1088,8 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
             // we know of some special cases where argN is not used
             if (IsArg(op) && !FuncUsesArg(ir->dst, op)) {
                 /* OK to continue */
+            } else if (IsArg(op) && !FuncUsesArgEx(ir->dst,op,true)) {
+                return true; // Value not actually used, goes dead.
             } else if (isResult(op)) {
                 if (ir->cond == COND_TRUE) return true; // Results get set by functions
             } else {
@@ -1449,18 +1455,18 @@ ReplaceForward(IR *instr, Operand *orig, Operand *replace, IR *stop_ir)
 }
 
 //
-// Apply a new condition code based on val being compared to 0
+// Apply a new condition code based on cval/zval being compared to 0
 //
 int
-ApplyConditionAfter(IR *instr, int val)
+ApplyConditionAfter(IR *instr, int cval, int zval)
 {
     IR *ir;
     unsigned newcond;
     int change = 0;
     int setz = instr->flags & FLAG_WZ;
     int setc = instr->flags & FLAG_WC;
-    int cval = val  < 0 ? 2 : 0;
-    int zval = val == 0 ? 1 : 0;
+    cval = cval  < 0 ? 2 : 0;
+    zval = zval == 0 ? 1 : 0;
 
 
   
@@ -1547,7 +1553,7 @@ SameOperand(Operand *a, Operand *b)
 static int
 TransformConstDst(IR *ir, Operand *imm)
 {
-  int32_t val1, val2;
+  int32_t val1, val2, cval;
   int setsResult = 1;
 
   if (gl_p2 && (!InstrSetsDst(ir) || (ir->opc == OPC_LOCKREL && IsDeadAfter(ir,ir->dst)))) {
@@ -1594,22 +1600,20 @@ TransformConstDst(IR *ir, Operand *imm)
   }
   if (ir->flags & FLAG_WC) {
     // we don't know how to set the WC flag for anything other
-    // than cmps
-    if (ir->opc != OPC_CMPS && ir->opc != OPC_CMP) {
+    // than cmps/cmp/sub
+    if (ir->opc != OPC_CMPS && ir->opc != OPC_CMP && ir->opc != OPC_SUB) {
       return 0;
     }
   }
 
   val1 = imm->val;
   val2 = ir->src->val;
+  cval = 0;
 
   switch (ir->opc)
     {
     case OPC_ADD:
       val1 += val2;
-      break;
-    case OPC_SUB:
-      val1 -= val2;
       break;
     case OPC_TEST:
       setsResult = false;
@@ -1648,17 +1652,20 @@ TransformConstDst(IR *ir, Operand *imm)
       break;
     case OPC_CMPS:
       val1 -= val2;
+      cval = val1;
       setsResult = 0;
       break;
     case OPC_CMP:
-      if ((uint32_t)val1 < (uint32_t)val2) {
-          val1 = -1;
-      } else if (val1 == val2) {
-          val1 = 0;
-      } else {
-          val1 = 1;
-      }
       setsResult = 0;
+    case OPC_SUB:
+      if ((uint32_t)val1 < (uint32_t)val2) {
+          cval = -1;
+      } else if (val1 == val2) {
+          cval = 0;
+      } else {
+          cval = 1;
+      }
+      val1 -= val2;
       break;
     case OPC_TESTBN:
       setsResult = false;
@@ -1674,7 +1681,8 @@ TransformConstDst(IR *ir, Operand *imm)
       return 0;
     }
   if (InstrSetsAnyFlags(ir)) {
-      ApplyConditionAfter(ir, val1);
+      ApplyConditionAfter(ir, cval, val1);
+      ir->flags &= !FLAG_CZSET;
   }
   if (setsResult) {
       if (val1 < 0) {
@@ -2096,9 +2104,9 @@ OptimizeMoves(IRList *irl)
                 if (ir->flags == FLAG_WZ && CanTestZero(ir->opc)) {
                     // because this is a mov immediate, we know how
                     // WZ will be set
-                    change |= ApplyConditionAfter(ir, cval);
+                    change |= ApplyConditionAfter(ir, cval, cval);
                 } else if (ir->flags != 0 && ir->opc == OPC_ABS) {
-                    change |= ApplyConditionAfter(ir, ir->src->val);
+                    change |= ApplyConditionAfter(ir, ir->src->val, ir->src->val);
                 }
                 change |= (sawchange = PropagateConstForward(irl, ir, ir->dst, ir->src));
                 if (sawchange && !InstrSetsAnyFlags(ir) && IsDeadAfter(ir, ir->dst)) {
@@ -2565,7 +2573,7 @@ OptimizeCompares(IRList *irl)
              && ir->src == ir->dst)
         {
             // this compare always sets Z and clears C
-            ApplyConditionAfter(ir, 0);
+            ApplyConditionAfter(ir, 0, 0);
             DeleteIR(irl, ir);
             change |= 1;
         }
@@ -2576,7 +2584,7 @@ OptimizeCompares(IRList *irl)
             )
         {
             // this compare always clears C
-            ApplyConditionAfter(ir, 1);
+            ApplyConditionAfter(ir, 1, 1);
             DeleteIR(irl, ir);
             change |= 1;
         }
@@ -4580,6 +4588,48 @@ ReuseLocalRegisters(IRList *irl) {
 }
 
 
+// Change calls to builtin_longfill_ on P2 to SETQ+WRLONG
+int
+OptimizeLongfill(IRList *irl) {
+    int change = 0;
+    if (!gl_p2) return 0;
+    for (IR *ir=irl->head;ir;ir=ir->next) {
+        IR *prevset;
+        int32_t setval;
+        if (IsDummy(ir)) continue;
+        if (ir->opc == OPC_CALL && !CondIsSubset(COND_C,ir->cond) && !strcmp(ir->dst->name,"builtin_longfill_") 
+        && (prevset = FindPrevSetterForReplace(ir,GetArgReg(1))) 
+        && isConstMove(prevset,&setval)) {
+            NOTE(NULL,"lmaooo");
+            int addr = ir->addr; // Some opts require addresses to be sorta-correct;
+            // Since we replace a funccall, we can clobber flags and args
+            IR *sub = NewIR(OPC_SUB);
+            sub->dst = GetArgReg(2);
+            sub->src = NewImmediate(1);
+            sub->flags = FLAG_WC;
+            sub->addr = addr;
+            sub->cond = ir->cond;
+            IR *setq = NewIR(OPC_SETQ);
+            setq->cond = COND_NC;
+            setq->dst = GetArgReg(2);
+            setq->cond = COND_NC | ir->cond;;
+            setq->addr = addr;
+            IR *wrlong = NewIR(OPC_WRLONG);
+            wrlong->cond = COND_NC | ir->cond;;
+            wrlong->dst = NewImmediate(setval);
+            wrlong->src = GetArgReg(0);
+            wrlong->addr = addr;
+
+            InsertAfterIR(irl,ir,wrlong);
+            InsertAfterIR(irl,ir,setq);
+            InsertAfterIR(irl,ir,sub);
+            DeleteIR(irl,ir);
+            change++;
+        }
+    }
+    return change;
+}
+
 // optimize an isolated piece of IRList
 // (typically a function)
 void
@@ -4593,6 +4643,8 @@ OptimizeIRLocal(IRList *irl, Function *f)
     // multiply divide optimization need only be performed once,
     // and should be done before other optimizations confuse things
     OptimizeMulDiv(irl);
+    // Similarily for longfill (opt can only become available from inlining)
+    OptimizeLongfill(irl);
 again:
     do {
         change = 0;
