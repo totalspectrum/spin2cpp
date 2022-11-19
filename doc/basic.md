@@ -1151,11 +1151,11 @@ Predefined function. `asin(x)` returns the inverse sine of `x`. The result is a 
 
 ### ASM
 
-Introduces inline assembly. The block between `asm` and `end asm` is parsed slightly differently than usual; in particular, instruction names are treated as reserved identifiers. There are two kinds of `asm` blocks. A regular `asm` block introduces some assembly code to be executed when the block is reached. An `asm shared` block declares some assembly code and/or data that exists outside of any function. Such code is typically executed with a `cpu` directive. Another use for `asm shared` is to declare static data.
+Creates inline assembly code. The block between `asm` and `end asm` is parsed slightly differently than usual; in particular, instruction names are treated as reserved identifiers. There are two kinds of `asm` blocks. A regular `asm` block introduces some assembly code to be executed when the block is reached. An `asm shared` block declares some assembly code and/or data that exists outside of any function. Such code is typically executed with a `cpu` directive. Another use for `asm shared` is to declare static data.
 
 #### ASM 
 
-A normal ASM block specifies some code to be executed when the block is reached. If it is outside of any function or subroutine, then it 
+A normal ASM block specifies some code to be executed when the block is reached. If it is outside of any function or subroutine, then it will be placed in the top level program. 
 Inside inline assembly any instructions may be used, but the only legal operands are integer constants, registers, and local variables (or parameters) to the function which contains the inline assembly. Labels may be defined, and may be used as the target for `goto` elsewhere in the function. Any attempt to leave the function, either by jumping out of it or returning, will cause undefined behavior. In other words, don't do that!
 
 If you need temporary variables inside some inline assembly, `dim` them as locals in the enclosing function.
