@@ -1141,7 +1141,7 @@ FixupCode(Module *P, int isBinary)
     Function *firstfunc;
     Function *pf;
     int sawfunc = 0;
-    
+
     // insert sub-classes into the global list after their modules
     // and append the global module to the list
     if (allparse)
@@ -1270,6 +1270,10 @@ FixupCode(Module *P, int isBinary)
             }
         }
     }
+    /* reset object offsets now that object sizes are all known */
+    current = GetTopLevelModule();
+    FixupOffsets(allparse);
+    
     /* sanity check */
     for (Q = allparse; Q; Q = Q->next) {
         if (Q->varsize_used_valid && Q->varsize_used != Q->varsize) {

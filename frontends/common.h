@@ -781,6 +781,9 @@ void PerformLoopOptimization(Module *P);
 // perform high level transformations on a function
 void DoHLTransforms(Function *F);
 
+// fix up variable offsets within a module
+void FixupOffsets(Module *P);
+
 // simplify statments like a^=b to a = a^b
 // (merged into DoHLTransforms)
 //void SimplifyAssignments(AST **astptr, int insertCasts);

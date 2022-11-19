@@ -2548,3 +2548,96 @@ void DeclareAnonymousAliases(Module *Parent, Module *sub, AST *prefix)
     
     IterateOverSymbols(&sub->objsyms, makeAnonAlias, (void *)&A); 
 }
+
+//#define DEBUG_OFFSETS
+
+//
+// routines for fixing up symbol offsets; when we first declared variables
+// we assigned them storage based on sizes as found at the time, but symbol resolution
+// may have pulled in additional functions/variables which changed the size
+// needed for objects; so we go back and re-visit them all
+//
+void FixupOffsets(Module *P) {
+    AST *ast, *item;
+    AST *list, *ident;
+    Module *savecurrent = current;
+    int offset = 0;
+    int maxsize = 0;
+    int siz;
+    int align;
+    bool isUnion;
+    
+    const char *name;
+    Symbol *sym;
+    if (!P) return;
+    FixupOffsets(P->next);
+
+    current = P;
+    isUnion = P->isUnion;
+    for (ast = P->finalvarblock; ast; ast = ast->right) {
+        item = ast->left;
+        while (item && item->kind == AST_COMMENTEDNODE) item = item->left;
+        if (!item) continue;
+        list = NULL;
+        switch (item->kind) {
+        case AST_DECLARE_VAR:
+            list = item->right; break;
+        case AST_LONGLIST:
+        case AST_WORDLIST:
+        case AST_BYTELIST:
+            list = item->left; break;
+        case AST_DECLARE_BITFIELD:
+            break;
+        default:
+            WARNING(item, "Unexpected item in variable parsing"); break;
+        }
+        if (!list) continue;
+        for (; list; list = list->right) {
+            ident = list->left;
+            while (ident && ident->kind == AST_ARRAYDECL) {
+                ident = ident->left;
+            }
+            AST *ityp = ExprType(ident);
+            siz = TypeSize(ityp);
+            align = TypeAlign(ityp);
+
+            offset = (offset + (align-1)) & ~(align-1);
+        
+            name = GetIdentifierName(ident);
+            sym = LookupSymbolInTable(&P->objsyms, name);
+            if (sym) {
+#ifdef DEBUG_OFFSETS                
+                if (sym->offset != offset) {
+                    printf("DEBUG: %s   \tname: %s offset: %d -> %d\n", P->classname, sym->our_name, sym->offset, offset);
+                }
+#endif                
+                if (sym->offset < offset) {
+                    sym->offset = offset;
+                } else {
+                    offset = sym->offset;
+                }
+                if (isUnion) {
+                    if (maxsize < siz) maxsize = siz;
+                } else {
+                    offset += siz;
+                    maxsize = offset;
+                }
+            }
+            if (IsClassType(ityp)) {
+                maxsize = (maxsize + 3) & ~3;
+            }
+        }
+    }
+    // round up to next long boundary
+    maxsize = (maxsize + 3) & ~3;
+    
+    if (P->varsize != maxsize || isUnion) {
+#ifdef DEBUG_OFFSETS        
+        printf("Adjusting size for %s %s from %d to %d\n", P->classname, isUnion ? "union" : "struct", P->varsize, maxsize);
+#endif
+    }
+    P->varsize_used = maxsize;
+    P->varsize = maxsize;
+
+    current = savecurrent;
+}
