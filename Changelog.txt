@@ -1,13 +1,14 @@
 Version 5.9.20
-- Inline assembly can now access multiple longs of large local variables.
 - Fixed a crash when trivial C programs are submitted
 - Fixed swapping 64 bit variables
 - Fixed failure to change arrays to pointers in some C expressions
 - Fixed 64 bit integer preincrement
 - Fixed initializing local reference variables
+- Inline assembly can now access multiple longs of large local variables.
 - More fixes to C struct initialization
 - Made debug output and C library output work better together
 - Optimized initializers of large local variables
+- Optimized long fills on P2 with SETQ (thanks to Ada Gottensträter again!)
 - Remove unused methods even at -O0 optimization
 - Relax type checking in C for pointer/integer conversion
 
