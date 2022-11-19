@@ -4600,7 +4600,6 @@ OptimizeLongfill(IRList *irl) {
         if (ir->opc == OPC_CALL && !CondIsSubset(COND_C,ir->cond) && !strcmp(ir->dst->name,"builtin_longfill_") 
         && (prevset = FindPrevSetterForReplace(ir,GetArgReg(1))) 
         && isConstMove(prevset,&setval)) {
-            NOTE(NULL,"lmaooo");
             int addr = ir->addr; // Some opts require addresses to be sorta-correct;
             // Since we replace a funccall, we can clobber flags and args
             IR *sub = NewIR(OPC_SUB);
