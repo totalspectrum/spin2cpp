@@ -12,6 +12,10 @@ At the moment there is no stand-alone BASIC compiler, but both the C compiler (f
 
 Because Spin has similar comment structures to BASIC, the flexspin compiler front end is generally a good choice for BASIC development.
 
+### See also
+
+Please see also the general compiler features documentation ("general.pdf" or "general.md") which describes common features of the compiler and of the other languages supported by the compiler.
+
 ## Preprocessor
 
 flexspin has a pre-processor that understands basic directives like `#include`, `#define`, and`#ifdef / #ifndef / #else / #endif`.

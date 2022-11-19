@@ -8,6 +8,10 @@ Flexspin is able to produce binaries for both the P1 and P2 chips. Any assembly 
 
 Flexspin also supports many of the features of the Spin2 language as extensions to Spin 1. It can also accept Spin2 programs as input. Spin1 and Spin2 are not completely compatible. Spin2 features which are not compatible with Spin1 are enabled if the file extension is `.spin2`.
 
+### See also
+
+Please see also the general compiler features documentation ("general.pdf" or "general.md") which describes common features of the compiler and of the other languages supported by the compiler.
+
 ## Preprocessor
 
 flexspin has a pre-processor that understands basic directives like `#include`, `#define`, and`#ifdef / #ifndef / #else / #endif`.

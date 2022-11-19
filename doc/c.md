@@ -8,6 +8,10 @@ flexcc recognizes the language by the extension of the file being compiled. If a
 
 This document assumes that you are familiar with programming in C and with the Parallax Propeller chip. It mostly covers the differences between standard C and FlexC.
 
+### See also
+
+Please see also the general compiler features documentation ("general.pdf" or "general.md") which describes common features of the compiler and of the other languages supported by the compiler.
+
 ## DEVELOPMENT STATUS
 
 The C compiler is mostly implemented and could probably be considered "beta" software now, but there are a few missing features.
