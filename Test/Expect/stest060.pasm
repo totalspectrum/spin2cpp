@@ -5,7 +5,6 @@ dat
 entry
 
 _demo
-	add	objptr, #4
 	rdlong	result1, objptr
 	add	result1, #4
 	wrlong	result1, objptr
@@ -13,7 +12,7 @@ _demo
 	rdlong	result1, objptr
 	add	result1, #3
 	wrlong	result1, objptr
-	sub	objptr, #8
+	sub	objptr, #4
 _demo_ret
 	ret
 

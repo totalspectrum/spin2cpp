@@ -1966,7 +1966,14 @@ DeclareOneMemberVar(Module *P, AST *ident, AST *type, int is_private)
             // add a symbol for this because constants like x.foo can be accessed
             // in declarations of other variables
             const char *name = GetIdentifierName(ident);
-            AddSymbol(&P->objsyms, name, SYM_VARIABLE, (void *)type, NULL);
+            Symbol *sym;
+            unsigned flags = 0;
+            if (!strcmp(name, "expression") && ident->kind == AST_ARRAYDECL ) {
+                name = "__dummy__";
+                flags = SYMF_NOALLOC;
+            }
+            sym = AddSymbol(&P->objsyms, name, SYM_VARIABLE, (void *)type, NULL);
+            sym->flags |= flags;
         }
     }
     return r;
@@ -2529,10 +2536,12 @@ static int makeAnonAlias(Symbol *sym, void *arg)
     AST *symident;
     AST *expr;
     const char *newname = sym->our_name;
-
+    Symbol *newsym;
+    
     symident = AstIdentifier(newname);
     expr = NewAST(AST_METHODREF, prefix, symident);
-    AddSymbolPlaced(&P->objsyms, newname, SYM_ALIAS, expr, NULL, symident); 
+    newsym = AddSymbolPlaced(&P->objsyms, newname, SYM_ALIAS, expr, NULL, symident);
+    newsym->flags |= SYMF_NOALLOC;
     return 1;
 }
 
@@ -2557,87 +2566,64 @@ void DeclareAnonymousAliases(Module *Parent, Module *sub, AST *prefix)
 // may have pulled in additional functions/variables which changed the size
 // needed for objects; so we go back and re-visit them all
 //
-void FixupOffsets(Module *P) {
-    AST *ast, *item;
-    AST *list, *ident;
-    Module *savecurrent = current;
-    int offset = 0;
-    int maxsize = 0;
-    int siz;
-    int align;
+typedef struct OffsetStruct {
+    int curOffset;
+    int maxOffset;
     bool isUnion;
+} OffsetStruct;
+
+static int fixupVarOffset(Symbol *sym, void *arg)
+{
+    OffsetStruct *A = (OffsetStruct *)arg;
     
-    const char *name;
-    Symbol *sym;
+    if (sym->kind == SYM_VARIABLE && !(sym->flags & (SYMF_GLOBAL|SYMF_NOALLOC))) {
+        AST *typ = (AST *)sym->val;
+        int siz = TypeSize(typ);
+        int align = PaddedTypeAlign(typ);
+        if ((A->curOffset & (align-1)) != 0) {
+            A->curOffset = (A->curOffset + (align-1)) & ~(align-1);
+        }
+#ifdef DEBUG_OFFSETS
+            printf("  symbol %s orig offset %d new offset %d\n", sym->our_name, sym->offset, A->curOffset);
+#endif
+        if (sym->offset != A->curOffset) {
+            sym->offset = A->curOffset;
+        }
+        if (A->isUnion) {
+            if (A->maxOffset < siz) {
+                A->maxOffset = siz;
+            }
+        } else {
+            A->curOffset += siz;
+            if (A->maxOffset < A->curOffset) {
+                A->maxOffset = A->curOffset;
+            }
+        }
+    }
+    return 1;
+}
+
+void FixupOffsets(Module *P) {
+    Module *savecurrent = current;
+    OffsetStruct A;
+
     if (!P) return;
     FixupOffsets(P->next);
 
-    current = P;
-    isUnion = P->isUnion;
-    for (ast = P->finalvarblock; ast; ast = ast->right) {
-        item = ast->left;
-        while (item && item->kind == AST_COMMENTEDNODE) item = item->left;
-        if (!item) continue;
-        list = NULL;
-        switch (item->kind) {
-        case AST_DECLARE_VAR:
-            list = item->right; break;
-        case AST_LONGLIST:
-        case AST_WORDLIST:
-        case AST_BYTELIST:
-            list = item->left; break;
-        case AST_DECLARE_BITFIELD:
-            break;
-        default:
-            WARNING(item, "Unexpected item in variable parsing"); break;
-        }
-        if (!list) continue;
-        for (; list; list = list->right) {
-            ident = list->left;
-            while (ident && ident->kind == AST_ARRAYDECL) {
-                ident = ident->left;
-            }
-            AST *ityp = ExprType(ident);
-            siz = TypeSize(ityp);
-            align = TypeAlign(ityp);
+    A.curOffset = 0;
+    A.maxOffset = 0;
+    A.isUnion = P->isUnion;
 
-            offset = (offset + (align-1)) & ~(align-1);
-        
-            name = GetIdentifierName(ident);
-            sym = LookupSymbolInTable(&P->objsyms, name);
-            if (sym) {
-#ifdef DEBUG_OFFSETS                
-                if (sym->offset != offset) {
-                    printf("DEBUG: %s   \tname: %s offset: %d -> %d\n", P->classname, sym->our_name, sym->offset, offset);
-                }
-#endif                
-                if (sym->offset < offset) {
-                    sym->offset = offset;
-                } else {
-                    offset = sym->offset;
-                }
-                if (isUnion) {
-                    if (maxsize < siz) maxsize = siz;
-                } else {
-                    offset += siz;
-                    maxsize = offset;
-                }
-            }
-            if (IsClassType(ityp)) {
-                maxsize = (maxsize + 3) & ~3;
-            }
-        }
-    }
-    // round up to next long boundary
-    maxsize = (maxsize + 3) & ~3;
-    
-    if (P->varsize != maxsize || isUnion) {
-#ifdef DEBUG_OFFSETS        
-        printf("Adjusting size for %s %s from %d to %d\n", P->classname, isUnion ? "union" : "struct", P->varsize, maxsize);
-#endif
-    }
-    P->varsize_used = maxsize;
-    P->varsize = maxsize;
+#ifdef DEBUG_OFFSETS    
+    printf("%s\n", P->classname);
+#endif    
+    IterateOverSymbols(&P->objsyms, fixupVarOffset, (void *)&A);
 
+    if (P->varsize < A.maxOffset) {
+//        NOTE(NULL, "Increasing size of %s from %d to %d", P->classname, P->varsize, A.maxOffset);
+        P->varsize = A.maxOffset;
+        P->varsize_used = P->varsize;
+        P->varsize_used_valid = true;
+    }
     current = savecurrent;
 }

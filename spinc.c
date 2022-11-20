@@ -1273,13 +1273,15 @@ FixupCode(Module *P, int isBinary)
     /* reset object offsets now that object sizes are all known */
     current = GetTopLevelModule();
     FixupOffsets(allparse);
-    
-    /* sanity check */
+
+#if 0    
+    /* sanity check: obsolete now that FixupOffsets is done */
     for (Q = allparse; Q; Q = Q->next) {
         if (Q->varsize_used_valid && Q->varsize_used != Q->varsize) {
             ERROR(NULL, "Internal error in module %s: varsize=%d but was %d when used in OBJ", Q->classname, Q->varsize, Q->varsize_used);
         }
     }
+#endif    
 }
 
 Module *
