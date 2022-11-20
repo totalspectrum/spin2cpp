@@ -360,8 +360,8 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
                         WARNING(body, "Applying @ to RES memory `%s' is not supported in standard Spin", GetIdentifierName(ast));
                     }
                     if (upper->kind == AST_MEMREF) {
-                        int refalign = TypeAlignment(upper->left);
-                        int labalign = TypeAlignment(lab->type);
+                        int refalign = TypeAlign(upper->left);
+                        int labalign = TypeAlign(lab->type);
                         if ( (refalign > labalign) && !gl_p2 ) {
                             lab->flags |= (LABEL_NEEDS_EXTRA_ALIGN|LABEL_USED_IN_SPIN);
                             WARNING(body, "Label is dereferenced with greater alignment than it was declared with");

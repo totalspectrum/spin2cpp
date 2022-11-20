@@ -2150,32 +2150,21 @@ AST *BaseType(AST *typ)
     }
 }
 
-/* find alignment for a type */
-/* returns size of 1 item for non-array types */
-int TypeAlignment(AST *typ)
+/* find size for a type that's a member of an object */
+/* generally like TypeSize, but pads arrays out to
+ * long boundaries
+ */
+int PaddedTypeAlign(AST *typ)
 {
-    if (!typ) return 4;
-    switch (typ->kind) {
-    case AST_MODIFIER_CONST:
-    case AST_MODIFIER_VOLATILE:
-        return TypeAlignment(typ->left);
-    case AST_ARRAYTYPE:
-    case AST_PTRTYPE:
-    case AST_REFTYPE:
-    case AST_COPYREFTYPE:
-        return TypeAlignment(typ->left);
-    case AST_INTTYPE:
-    case AST_UNSIGNEDTYPE:
-    case AST_GENERICTYPE:
-    case AST_FLOATTYPE:
-        return EvalConstExpr(typ->left);
-    case AST_VOIDTYPE:
-        return LONG_SIZE; // "void" type is used for res statements
-    default:
-        ERROR(typ, "Internal error, unknown type %d passed to TypeAlignment",
-              typ->kind);
-        return 1;
+    int siz;
+    int align;
+    if (!typ) return LONG_SIZE;
+    align = TypeAlign(typ);
+    siz = TypeSize(typ);
+    if (siz >= LONG_SIZE) {
+        align = (align+3)&~3;
     }
+    return align;
 }
 
 int

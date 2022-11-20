@@ -66,12 +66,13 @@ AST *RemoveTypeModifiers(AST *typ);
 int TypeSize(AST *typ);
 int TypeAlign(AST *typ);
 int CheckedTypeSize(AST *typ); // like TypeSize, but declares members if necessary
+int PaddedTypeAlign(AST *typ);  // pads to long boundary if necessary
 
 int IsArray(AST *expr);
 int IsArrayType(AST *typ);
 int IsArraySymbol(Symbol *);
 int IsArrayOrPointerSymbol(Symbol *);
-int TypeAlignment(AST *typ);
+
 int PointerTypeIncrement(AST *typ);
 // get base of an array type
 AST *GetArrayBase(AST *type);

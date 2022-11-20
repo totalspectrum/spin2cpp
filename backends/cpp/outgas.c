@@ -487,7 +487,7 @@ outputGasLabel(Flexbuf *f, AST *id, int inlineAsm)
             ERROR(id, "expected label symbol");
         } else {
             lab = (Label *)sym->val;
-            align = TypeAlignment(lab->type);
+            align = TypeAlign(lab->type);
         }
     }
     forceAlign(f, align, inlineAsm);
