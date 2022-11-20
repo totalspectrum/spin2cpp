@@ -458,12 +458,6 @@ pri __builtin_strcpy(dst, src) : r=@byte | n
   bytemove(dst, src, n)
   return dst
 
-pri __builtin_strncpy(dst, src, maxn) : r=@byte | n
-  n := __builtin_strlen(src)+1
-  n := n <# maxn
-  bytemove(dst, src, n)
-  return dst
-
 pri __getlockreg : r
   r := __lockreg
   if r == $ff

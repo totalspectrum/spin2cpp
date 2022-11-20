@@ -83,6 +83,12 @@ pri _string_concat(x, y) : ptr = @byte | lenx, leny
     bytemove(ptr + lenx, y, leny+1)
   return ptr
 
+pri __builtin_strncpy(dst, src, maxn) : r=@byte | n
+  n := __builtin_strlen(src) <# maxn
+  bytemove(dst, src, n)
+  byte[dst][n] := 0
+  return dst
+
 pri SendRecvDevice(sendf, recvf = 0, closef = 0)
   return (sendf, recvf, closef)
 
