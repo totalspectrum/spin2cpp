@@ -145,16 +145,10 @@ void
 IterateOverSymbols(SymbolTable *table, SymbolFunc func, void *arg)
 {
     Symbol *sym;
-    int hash;
     int more;
-    
-    for (hash = 0; hash < SYMTABLE_HASH_SIZE; hash++) {
-        sym = table->hash[hash];
-        while (sym) {
-            more = func(sym, arg);
-            if (!more) return;
-            sym = sym->next;
-        }
+    for (sym = table->i_first; sym; sym = sym->i_next) {
+        more = func(sym, arg);
+        if (!more) return;
     }
 }
 
@@ -214,6 +208,14 @@ AddSymbol(SymbolTable *table, const char *name, int type, void *val, const char 
     sym->kind = (Symtype)type;
     sym->val = val;
     sym->module = 0;
+    
+    // now link into global list
+    if (table->i_last) {
+        table->i_last->i_next = sym;
+        table->i_last = sym;
+    } else {
+        table->i_last = table->i_first = sym;
+    }
     return sym;
 }
 

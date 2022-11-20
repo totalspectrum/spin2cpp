@@ -49,12 +49,14 @@ typedef struct symbol {
     int           offset;  /* extra value recording symbol order within a function */
     void         *module;  /* module info */
     void         *def;     /* info about original definition */
+    struct symbol *i_next; /* next in overal symbol list (for iteration) */
 } Symbol;
 
 /* symbol flags */
 #define SYMF_GLOBAL   0x01  /* used for some special system globals */
 #define SYMF_PRIVATE  0x02  /* symbol should not be used from other modules */
 #define SYMF_INTERNAL 0x04  /* symbol is created by flexspin itself, should not be shown in listings */
+#define SYMF_NOALLOC  0x08  /* symbol should not be allocated */
 
 #define SYMF_INITED   0x100 /* symbol was initialized */
 
@@ -77,6 +79,8 @@ typedef struct symtab {
     Symbol *hash[SYMTABLE_HASH_SIZE];
     struct symtab *next;
     unsigned flags;
+    Symbol *i_first;  // for iterating over symbols
+    Symbol *i_last;
 } SymbolTable;
 #define SYMTAB_FLAG_NOCASE 0x01  /* do case insensitive comparisons */
 
