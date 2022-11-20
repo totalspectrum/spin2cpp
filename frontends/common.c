@@ -211,6 +211,8 @@ Aliases spin2alias[] = {
     
     { "recv", "__recvptr" },    
     { "send", "__sendptr" },
+
+    { "strcopy", "__builtin_strncpy" },
     
     /* obsolete aliases */
     { "outl_", "_outl" },

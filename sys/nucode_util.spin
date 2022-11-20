@@ -250,6 +250,16 @@ pri __builtin_strcpy(dst, src) : r=@byte | c
     c := byte[src++]
     byte[dst++] := c
   until c==0
+
+pri __builtin_strncpy(dst, src, n) : r=@byte | c
+  if n > 0
+    r := dst
+    repeat
+      c := byte[src++]
+      byte[dst++] := c
+      n--
+    until c==0 or n==0
+
 pri strcomp(s1, s2) | c1, c2
   repeat
     c1 := byte[s1++]
