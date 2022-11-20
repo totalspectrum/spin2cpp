@@ -329,9 +329,9 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
                 ast = AstAssign(lhs, rhs);
             } else {
                 if (rhs) {
-                    ast = AstAssign(lhs, AstOperator(op, lhs, rhs));
+                    ast = AstAssign(lhs, AstOperator(op, DupAST(lhs), rhs));
                 } else {
-                    ast = AstAssign(lhs, AstOperator(op, NULL, lhs));
+                    ast = AstAssign(lhs, AstOperator(op, NULL, DupAST(lhs)));
                 }                    
             } 
             if (preseq) {
