@@ -437,6 +437,7 @@ BuildDebugList(AST *exprlist)
 %token SP_ABS        "ABS (||)"
 %token SP_FSQRT      "FSQRT"
 %token SP_FABS       "FABS"
+%token SP_FIELD      "FIELD"
 %token SP_DECODE     "DECOD (|<)"
 %token SP_ENCODE     ">|"
 %token SP_ENCODE2    "ENCOD"
@@ -446,6 +447,7 @@ BuildDebugList(AST *exprlist)
 %token SP_DECREMENT  "--"
 %token SP_DOUBLEAT   "@@"
 %token SP_TRIPLEAT   "@@@"
+%token SP_FIELDPTR   "^@"
 %token SP_FLOAT      "floating point number"
 %token SP_TRUNC      "TRUNC"
 %token SP_ROUND      "ROUND"
@@ -499,7 +501,7 @@ BuildDebugList(AST *exprlist)
 %left '&' /* priority 4 */
 %left SP_ROTL SP_ROTR SP_SHL SP_SHR SP_SAR SP_REV SP_REV2 SP_SIGNX SP_ZEROX /* priority 3 */
 %left SP_NEGATE SP_FNEGATE SP_BIT_NOT SP_ABS SP_FABS SP_SQRT SP_FSQRT SP_DECODE SP_ENCODE SP_ENCODE2 SP_ALLOCA SP_ONES SP_BMASK SP_QLOG SP_QEXP /* priority 2 in Spin2 */
-%left '@' '~' '?' SP_RANDOM SP_DOUBLETILDE SP_INCREMENT SP_DECREMENT SP_DOUBLEAT SP_TRIPLEAT  /* priority 1 in Spin2 */
+%left '@' '~' '?' SP_RANDOM SP_DOUBLETILDE SP_INCREMENT SP_DECREMENT SP_DOUBLEAT SP_TRIPLEAT  SP_FIELDPTR /* priority 1 in Spin2 */
 %left SP_CONSTANT SP_FLOAT SP_TRUNC SP_ROUND SP_NAN
 
 %%
@@ -1352,6 +1354,12 @@ expr:
     { $$ = NewAST(AST_DATADDROF, $2, NULL); }
   | SP_TRIPLEAT expr
     { $$ = NewAST(AST_ABSADDROF, $2, NULL); }
+  | SP_FIELDPTR expr
+    {
+        AST *ref = $2;
+        SYNTAX_ERROR("^@ is not supported by flexspin");
+        $$ = NewAST(AST_ABSADDROF, ref, NULL); // placeholder
+    }
   | lhs SP_ASSIGN expr
     { $$ = AstAssign($1, $3); }
   | identifier '#' identifier
@@ -1755,6 +1763,12 @@ lhs: identifier
     { $$ = AstSprRef($3, 0x0); }
   | identifier '.' '[' range ']'
     { $$ = NewAST(AST_RANGEREF, $1, $4);
+    }
+  | SP_FIELD '[' expr ']'
+    {
+        AST *ref = $3;
+        SYNTAX_ERROR("FIELD is not supported by flexspin yet");
+        $$ = AstSprRef(ref, 0x0); // placeholder
     }
   ;
 
