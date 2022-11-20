@@ -1,4 +1,5 @@
 Version 5.9.20
+- Added a new pass to re-calculate object sizes after symbol resolution (fixes some problems with memory overruns in C code used as Spin object)
 - Fixed a crash when trivial C programs are submitted
 - Fixed swapping 64 bit variables
 - Fixed failure to change arrays to pointers in some C expressions
