@@ -762,6 +762,8 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
                         list = list->right;
                     }
                     flexbuf_addstr(fb, ")");
+                } else if (gl_p2) {
+                    flexbuf_addstr(fb, "()");
                 }
                 if (f->numresults > 1) {
                     flexbuf_addstr(fb, " : r0");
