@@ -2612,6 +2612,8 @@ void FixupOffsets(Module *P) {
     if (!P) return;
     FixupOffsets(P->next);
 
+    current = P;
+    
     A.curOffset = 0;
     A.maxOffset = 0;
     A.isUnion = P->isUnion;
