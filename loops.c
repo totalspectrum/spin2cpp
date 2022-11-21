@@ -1283,7 +1283,9 @@ TransformCountRepeat(AST *ast)
     AST *stepstmt = NULL;
 
     AST *limitvar = NULL;
-
+    AST *finalstmt = NULL;
+    AST *origtoval = NULL;
+    
     ASTReportInfo saveinfo;
     
     /* create new ast elements using this ast's line info, at least for now */
@@ -1467,11 +1469,17 @@ TransformCountRepeat(AST *ast)
         if (gl_expand_constants && isIntegerLoop) {
             toval = AstInteger(EvalConstExpr(toval));
         }
+        origtoval = DupAST(toval);
     } else if (toval->kind == AST_IDENTIFIER && !AstModifiesIdentifier(body, toval)) {
         /* do nothing, toval is already OK */
+        origtoval = DupAST(toval);
     } else {
         limitvar = AstTempLocalVariable("_limit_", looptype);
+        origtoval = AstTempLocalVariable("_origto_", looptype);
         initstmt = NewAST(AST_SEQUENCE, initstmt, AstAssign(limitvar, toval));
+        if (curfunc && curfunc->language == LANG_SPIN_SPIN2) {
+            initstmt = NewAST(AST_SEQUENCE, initstmt, AstAssign(origtoval, limitvar));
+        }
         toval = limitvar;
     }
 
@@ -1625,6 +1633,13 @@ TransformCountRepeat(AST *ast)
     forast = NewAST((enum astkind)loopkind, initstmt, condtest);
     forast->lineidx = origast->lineidx;
     forast->lexdata = origast->lexdata;
+    if (curfunc && curfunc->language == LANG_SPIN_SPIN2 && origtoval) {
+        finalstmt = AstAssign(loopvar, origtoval);
+    }
+    if (finalstmt) {
+        forast = NewAST(AST_STMTLIST, forast,
+                           NewAST(AST_STMTLIST, finalstmt, NULL));
+    }
     AstReportDone(&saveinfo);
     return forast;
 }
