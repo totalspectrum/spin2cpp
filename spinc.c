@@ -816,8 +816,11 @@ CheckUnusedMethods(int isBinary)
             DeclareFunctions(P);
         }
         for (pf = P->functions; pf; pf = pf->next) {
-            // top level public methods should be assumed called
-            pf->callSites = 0;
+            if (P == allparse && !isBinary && pf->is_public && pf->body && pf->body->kind != AST_STRING) {
+                pf->callSites = 1;
+            } else {
+                pf->callSites = 0;
+            }
         }
     }
 
@@ -904,7 +907,7 @@ RemoveUnusedMethods(int isBinary)
             if (IsSystemModule(P)) continue;
             if (P->superclass) continue;
             for (pf = P->functions; pf; pf = pf->next) {
-                if (!pf->body || pf->body->kind == AST_STRING) {
+                if (pf->body && pf->body->kind == AST_STRING) {
                     continue;
                 }
                 if (pf->callSites == 0) {
