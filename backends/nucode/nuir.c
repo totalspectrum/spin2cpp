@@ -627,6 +627,7 @@ void NuCreateBytecodes(NuIrList *lists)
         const char *opname;
         NuMacro *macro;
 
+        compressValue = 0;
         NuRecalcUsage(lists);
         bc = NuFindCompressBytecode(lists, &compressValue);
         macro = NuScanForMacros(lists, &macroValue);
