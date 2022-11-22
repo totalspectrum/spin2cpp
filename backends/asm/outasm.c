@@ -5255,6 +5255,8 @@ RemoveIfInlined(Function *f)
         return false;
     if (ShouldSkipFunction(f))
         return true;
+    if (gl_output == OUTPUT_COGSPIN && f->is_public && f->module == allparse)
+        return false;
     if (!f->is_public || (gl_optimize_flags & OPT_REMOVE_UNUSED_FUNCS))
         return true;
     return false;
@@ -5501,6 +5503,9 @@ CompileToIR_internal(void *vptr, Module *P)
         }
         curfunc = f;
 	EmitNewline(irl);
+//        if (strstr(P->classname, "foo")) {
+//            printf("CompileWholeFunction: %s\n", f->name);
+//        }
         CompileWholeFunction(irl, f);
     }
     curfunc = save;
