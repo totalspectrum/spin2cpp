@@ -664,7 +664,7 @@ TransformSrcCommentsBlock(AST *ast, AST *upper)
 #endif
 
 AST *
-NewObject(AST *identifier, AST *string, int fromUsing)
+NewObjectWithParams(AST *identifier, AST *string, int fromUsing, AST *paramlist)
 {
     AST *ast;
     const char *filename;
@@ -679,15 +679,30 @@ NewObject(AST *identifier, AST *string, int fromUsing)
     if (filename) {
         Module *P = ParseFile(filename);
         P->fromUsing = fromUsing;
+        if (paramlist) {
+            ERROR(identifier, "Object parameters are not supported yet");
+        }
         ast->d.ptr = (void *)P;
     }
     return ast;
 }
 
 AST *
+NewObject(AST *identifier, AST *string, int fromUsing)
+{
+    return NewObjectWithParams(identifier, string, fromUsing, NULL);
+}
+
+AST *
 NewAbstractObject(AST *identifier, AST *string, int fromUsing)
 {
-    return NewObject( NewAST(AST_OBJDECL, identifier, 0), string, fromUsing );
+    return NewAbstractObjectWithParams(identifier, string, fromUsing, NULL);
+}
+
+AST *
+NewAbstractObjectWithParams(AST *identifier, AST *string, int fromUsing, AST *params)
+{
+    return NewObjectWithParams( NewAST(AST_OBJDECL, identifier, 0), string, fromUsing, params );
 }
 
 int

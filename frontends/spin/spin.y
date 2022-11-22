@@ -1170,21 +1170,32 @@ objline:
     { $$ = NULL; }
   | error  SP_EOLN
     { $$ = NULL; }
-  | identdecl ':' string
+  | identdecl ':' string optobjparams
     {
-        AST *typ = NewObject($1, $3, 1);
+        AST *paramlist = $4;
+        AST *filename = $3;
+        AST *typ = NewObjectWithParams($1, filename, 1, paramlist);
         /* last parameter is 1 for a private member */
         DeclareOneMemberVar(current, $1, typ, 0);
         $$ = typ;
     }
-  | identdecl '=' string
+  | identdecl '=' string optobjparams
     {
-        AST *typ = NewAbstractObject($1, $3, 1);
+        AST *paramlist = $4;
+        AST *filename = $3;
+        AST *typ = NewAbstractObjectWithParams($1, filename, 1, paramlist);
         AST *ident = $1;
         const char *name = GetIdentifierName(ident);
         AddSymbol(&current->objsyms, name, SYM_TYPEDEF, typ, NULL);
         $$ = typ;
     }
+;
+
+optobjparams:
+    /* empty */
+      { $$ = NULL; }
+  | '|' conline
+      { $$ = $2; }
 ;
 
 varblock:

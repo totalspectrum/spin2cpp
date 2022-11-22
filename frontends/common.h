@@ -467,6 +467,9 @@ struct modulestate {
     AST *topcomment;
     AST *botcomment;
 
+    /* constant overrides for this instantiation */
+    AST *objparams;
+    
     /* helpers for AddToListEx */
     AST *datblock_tail;
     AST *conblock_tail;
@@ -685,8 +688,11 @@ void ERRORHEADER(const char *fileName, int lineno, const char *msg);
 
 /* return a new object */
 AST *NewObject(AST *identifier, AST *string, int fromUsing);
+/* return a new object with over-ridden parameters */
+AST *NewObjectWithParams(AST *identifier, AST *string, int fromUsing, AST *params);
 /* like NewObject, but does not instantiate data */
 AST *NewAbstractObject(AST *identifier, AST *string, int fromUsing);
+AST *NewAbstractObjectWithParams(AST *identifier, AST *string, int fromUsing, AST *params);
 
 /* different kinds of output functions */
 void OutputCppCode(const char *name, Module *P, int printMain);
