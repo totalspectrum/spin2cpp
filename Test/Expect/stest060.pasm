@@ -16,11 +16,6 @@ _demo
 _demo_ret
 	ret
 
-_substest01_get
-	rdlong	result1, objptr
-_substest01_get_ret
-	ret
-
 _substest01_add
 	rdlong	result1, objptr
 	add	result1, arg01

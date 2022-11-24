@@ -11,10 +11,6 @@ _gety
 _gety_ret
 	ret
 
-_userdef_spin_start
-_userdef_spin_start_ret
-	ret
-
 imm_10000_
 	long	10000
 result1

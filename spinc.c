@@ -911,7 +911,7 @@ RemoveUnusedMethods(int isBinary)
                     continue;
                 }
                 if (pf->callSites == 0) {
-                    if (pf->is_public) {
+                    if (pf->is_public && P == allparse) {
                         MarkUsed(pf, "__public__");
                     } else if (pf->annotations) {
                         MarkUsed(pf, "__annotations__");

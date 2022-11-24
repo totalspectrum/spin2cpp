@@ -12,24 +12,13 @@ _demo
 _demo_ret
 	ret
 
-_arrobj_info
-	shl	arg01, #2
-	add	arg01, objptr
-	rdlong	result1, arg01
-_arrobj_info_ret
-	ret
-
 objptr
 	long	@@@objmem
-result1
-	long	0
 COG_BSS_START
 	fit	496
 objmem
 	long	0[10]
 	org	COG_BSS_START
 _var01
-	res	1
-arg01
 	res	1
 	fit	496

@@ -27,11 +27,6 @@ _nextidx
 _nextidx_ret
 	ret
 
-_pinobj_start
-	wrlong	arg01, objptr
-_pinobj_start_ret
-	ret
-
 _pinobj_tx
 	mov	_var01, #1
 	rdlong	_var02, objptr
