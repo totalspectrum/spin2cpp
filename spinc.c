@@ -469,7 +469,7 @@ getObjFileExtension(const char *fname)
 }
 
 static Module *
-doParseFile(const char *name, Module *P, int *is_dup)
+doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
 {
     FILE *f = NULL;
     Module *save, *Q, *LastQ;
@@ -610,6 +610,11 @@ doParseFile(const char *name, Module *P, int *is_dup)
         P = NewModule(fname, language);
         P->fromUsing = 1;
         new_module = 1;
+        if (paramlist) {
+            P->basename = NewTemporaryVariable(P->basename, NULL);
+            P->classname = NewTemporaryVariable(P->classname, NULL);
+            P->objparams = paramlist;
+        }       
     }
     P->curLanguage = language;
     if (gl_printprogress) {
@@ -751,11 +756,11 @@ doParseFile(const char *name, Module *P, int *is_dup)
 }
 
 static Module *
-LoadFileIntoModule(const char *name, Module *P)
+LoadFileIntoModule(const char *name, Module *P, AST *params)
 {
     int is_dup = 0;
 
-    P = doParseFile(name, P, &is_dup);
+    P = doParseFile(name, P, &is_dup, params);
     if (!is_dup) {
         ProcessModule(P);
     }
@@ -763,9 +768,9 @@ LoadFileIntoModule(const char *name, Module *P)
 }
 
 Module *
-ParseFile(const char *name)
+ParseFile(const char *name, AST *params)
 {
-    return LoadFileIntoModule(name, NULL);
+    return LoadFileIntoModule(name, NULL, params);
 }
 
 //
@@ -978,7 +983,7 @@ ResolveSymbols()
                 if (pf->body->kind == AST_STRING) {
                     const char *filename = pf->body->d.string;
                     current = Q;
-                    LoadFileIntoModule(filename, pf->module);
+                    LoadFileIntoModule(filename, pf->module, NULL);
                     pf->callSites++;
                     if (pf->body->kind == AST_STRING) {
                         ERROR(NULL, "No implementation for `%s' found in `%s'", pf->name, filename);
@@ -1298,7 +1303,7 @@ ParseTopFiles(const char *argv[], int argc, int outputBin)
     while (argc > 0) {
         name = *argv++;
         currentTypes = NULL;
-        P = doParseFile(name, P, &is_dup);
+        P = doParseFile(name, P, &is_dup, NULL);
         --argc;
     }
     ProcessModule(P);

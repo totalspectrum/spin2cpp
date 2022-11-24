@@ -49,8 +49,8 @@ AST *TransformCountRepeat(AST *);
 void ProcessModule(Module *P);
 
 // top level functions
-// parse a spin file
-Module *ParseFile(const char *name);
+// parse a spin file; params is optional list of overriden constants
+Module *ParseFile(const char *name, AST *params);
 
 // parse top level spin files (resets global state)
 // outputBin is nonzero if we are outputting binary code

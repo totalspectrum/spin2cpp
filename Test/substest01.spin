@@ -1,3 +1,6 @@
+CON
+  incval = 1
+  
 VAR
   long count
 
@@ -7,4 +10,6 @@ PUB get
 PUB add(x)
   count := count + x
   return count
-  
+
+PUB inc
+  return add(INCVAL)

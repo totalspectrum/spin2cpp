@@ -632,6 +632,37 @@ DeclareConstants(Module *P, AST **conlist_ptr)
 void
 ProcessConstants(Module *P)
 {
+    /* override constants */
+    if (P->objparams) {
+        AST *list = P->objparams;
+        AST *item;
+        while (list) {
+            item = list->left;
+            list = list->right;
+            while (item && item->kind == AST_COMMENTEDNODE) {
+                item = item->left;
+            }
+            if (item->kind == AST_ASSIGN) {
+                AST *ident = item->left;
+                AST *valast = item->right;
+                if (ident->kind == AST_IDENTIFIER) {
+                    const char *name = ident->d.string;
+                    Symbol *sym = LookupSymbolInTable(&P->objsyms, name);
+                    if (!sym || sym->kind != SYM_CONSTANT) {
+                        ERROR(ident, "object parameter %s not found or not a constant", name);
+                    } else if (!IsConstExpr(valast)) {
+                        ERROR(ident, "new value for %s is not constant", name);
+                    } else {
+                        sym->val = valast;
+                    }
+                } else {
+                    ERROR(item, "parameter override must be an identifier");
+                }
+            } else {
+                ERROR(item, "parameter override must be a simple assignment");
+            }
+        }
+    }
     /* for the top level module, calculate frequency and declare constants if necessary */
     if (IsTopLevel(P)) {
         if (gl_p2) {
@@ -677,11 +708,8 @@ NewObjectWithParams(AST *identifier, AST *string, int fromUsing, AST *paramlist)
 
     ast = NewAST(AST_OBJECT, identifier, NULL);
     if (filename) {
-        Module *P = ParseFile(filename);
+        Module *P = ParseFile(filename, paramlist);
         P->fromUsing = fromUsing;
-        if (paramlist) {
-            ERROR(identifier, "Object parameters are not supported yet");
-        }
         ast->d.ptr = (void *)P;
     }
     return ast;

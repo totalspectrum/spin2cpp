@@ -845,7 +845,7 @@ void initSpinLexer(int flags);
 
 void InitGlobalModule(void);
 Module *NewModule(const char *modulename, int language);
-Module *ParseFile(const char *filename);
+Module *ParseFile(const char *filename, AST *params);
 
 /* declare a single global variable */
 void DeclareOneGlobalVar(Module *P, AST *ident, AST *typ, int inDat);
