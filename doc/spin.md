@@ -247,6 +247,22 @@ r := (a) ? b : c
 ```
 In the latter form the parentheses around `a` are mandatory in Spin1 to avoid confusion with the random number operator `?`. In Spin2 the question mark is no longer used for random numbers, so the issue does not arise there.
 
+### Continuing lines with ...
+
+If a source line ends with `...` then the following newline is ignored for parsing purposes. This allows one to break long or complicated expressions over multiple lines, for example:
+```
+DAT
+    word  x +      ...
+          (y<<4) + ...
+	  (z<<5)
+```
+is equivalent to
+```
+DAT
+    word  x + (y<<4) + (z<<5)
+```
+In fact the `...` does not actually have to be the last thing on the line, although that is the recommended style; whenever `...` is seen the rest of the line, including the final newline, is ignored.
+
 ### Default function parameters
 
 flexspin permits function parameters to be given default values by adding `= X` after the parameter declaration, where `X` is a constant expression. For instance:
@@ -418,6 +434,16 @@ PUB dbl64(ahi, alo): bhi, blo
 PUB quad64(ahi, alo)
   return dbl64(dbl64(ahi, alo))
 ```
+
+### Object parameters
+
+Constants declared within an object may be overridden when an object is instantiated. For example, in
+```
+OBJ
+  A : "mypins"
+  B : "mypins" | PIN_I2C = 4, PIN_SPI = 8
+```
+the value of `A#PIN_I2C` is the default for the mypins object, but the value of `B#PIN_I2C` will be 4. This may be useful for providing buffer sizes, or for overriding default settings in an object. Note that if an object is given parameters, a completely new copy of the object will be created, including new copies of all methods in the object. Normally if multiple objects come from the same file they can share their code and DAT sections, but this is not the case for parameterized objects.
 
 ### Object pointers
 

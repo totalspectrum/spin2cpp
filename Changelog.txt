@@ -7,6 +7,8 @@ Version 5.9.20
 - Fixed 64 bit integer preincrement
 - Fixed initializing local reference variables
 - Fixed += and similar operators when used with references
+- Implemented object constant overrides (object parameters) for Spin
+- Implemented ... line continuation for Spin
 - Inline assembly can now access multiple longs of large local variables.
 - More fixes to C struct initialization
 - Made debug output and C library output work better together

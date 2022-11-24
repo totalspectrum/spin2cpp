@@ -1322,6 +1322,7 @@ checkCommentedLine(struct flexbuf *cbp, LexStream *L, int c, int language)
     AST *ast;
     char *commentLine;
     int cameFromHash = 0;
+    int eatNewline = 0;
     
     // look for #line directives
     if (c == '#' && L->colCounter == 1) {
@@ -1368,6 +1369,18 @@ not_comment:
     } else if (c == '\'') {
         while (c == '\'') c = lexgetc(L);
         goto docomment;
+    } else if (c == '.') {
+        int c2, c3;
+        c2 = lexgetc(L);
+        if (c2 == '.') {
+            c3 = lexgetc(L);
+            if (c3 == '.') {
+                eatNewline = 1;
+                goto docomment;
+            }
+            lexungetc(L, c3);
+        }
+        lexungetc(L, c2);
     }
     return c;
 docomment:
@@ -1396,6 +1409,9 @@ docomment:
         ast = NewAST(AST_COMMENT, NULL, NULL);
         ast->d.string = commentLine;
         comment_chain = AddToList(comment_chain, ast);
+    }
+    if (eatNewline && c == '\n') {
+        c = ' ';
     }
     return c;
 }
@@ -1540,6 +1556,9 @@ again:
     }   
     /* ignore completely empty lines or ones with just comments */
     c = checkCommentedLine(&cb, L, c, language);
+    if (c == ' ') {
+        goto again;
+    }
     if (commentBlockStart(language, c, L)) {
         struct flexbuf anno;
         int annotate = 0;

@@ -1,6 +1,7 @@
 DAT
 		org	0
-		rdfast	#0, temp
+		rdfast	#0, ...
+		           temp  ' tests ... line continuation
 		rdfast	#0, #$80
 
 temp		long	$100
