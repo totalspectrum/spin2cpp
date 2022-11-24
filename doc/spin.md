@@ -333,13 +333,15 @@ There are two important differences between `org`/`end` and `asm`/`endasm`:
 
 #### Differences from PropTool/PNut
 
-Unlike the "official" Spin2 compiler, flexspin does not accept an address for the inline assembly ("org $xxx"), and the assembly is not called as a subroutine (so no `ret` statement should be included). There are also some important restrictions in FlexSpin's implementation:
+Unlike the "official" Spin2 compiler, flexspin does not accept an address for the inline assembly ("org $xxx"), and the assembly is not called as a subroutine (so no `ret` statement should be included). There are also some important restrictions in flexspin's implementation:
 
 (1) `call` instructions may not be used in inline assembly
 
 (2) The `ptra` register must not be modified by the inline assembly.
 
-(3) The area set aside for inline assembly is smaller by default in FlexSpin than in Parallax's Spin2. This may be changed with the --fcache parameter to flexspin.
+(3) The area set aside for inline assembly is smaller by default in flexspin than in Parallax's Spin2. This may be changed with the --fcache parameter to flexspin.
+
+(4) In PNut/PropTool only the first 16 local variables may be accessed in inline assembly; flexspin does not have this restriction.
 
 ### Method pointers
 
@@ -419,7 +421,7 @@ PUB quad64(ahi, alo)
 
 ### Object pointers
 
-The proposed Spin2 syntax for abstract object definitions and object pointers is accepted. A declaration like:
+The proposed Spin2 syntax for abstract object definitions and object pointers is accepted by flexspin, even in Spin1 mode. A declaration like:
 ```
 OBJ
   fds = "FullDuplexSerial"
@@ -689,7 +691,7 @@ Many Spin1 programs may be ported from the Propeller 1 to the Propeller 2, but t
 
 - The hardware register set is different; the P2 does not have the CTRx, FRQx, PHSx, VCFG, or VSCL registers.
 
-## Compatibility with Spin2
+## Compatibility with PropTool
 
 flexspin is mostly, but not completely, compatible with the standard Spin2 compiler. Not all Spin2 builtin functions are available on the P1; only the ones listed in the "New intrinsics for both P1 and P2" are available on all platforms. But when compiling for P2 all of the Spin2 builtin functions should be available.
 
@@ -718,6 +720,8 @@ If you really need a relative offset, declare a label like `entry` at the start 
 No address may be given in an ORG/END pair. If no FCACHE is available (e.g. -O0 is given) then the code is run as hubexec, in which case no self-modifying code or local data is permitted.
 
 The space available for use in ORG/END inline assembly is smaller by default in flexspin (128 longs) than in PNut / Proptool (304 longs). You can change the flexspin value with the `--fcache=` flag, e.g. `--fcache=304`, but beware that this may cause the COG memory to overflow if the program uses a lot of local variables or pointers.
+
+The PNut / PropTool compiler has stricter limits on what registers may be used in inline assembly than flexspin does. Only the first 16 longs of the local variable area may be used in the standard compiler, whereas flexspin allows as many as will fit in memory (at least with the default PASM output).
 
 ### Memory map
 
