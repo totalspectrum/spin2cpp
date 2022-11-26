@@ -2087,10 +2087,40 @@ identlist:
     }
 ;
 
-classdecl:
-  BAS_CLASS BAS_IDENTIFIER BAS_USING BAS_STRING
+assignitem:
+  BAS_IDENTIFIER '=' expr
     {
-        AST *newobj = NewAbstractObject( $2, $4, 1 );
+        AST *assign = NewAST(AST_ASSIGN, $1, $3);
+        $$ = NewAST(AST_LISTHOLDER, assign, NULL);
+    }
+;
+
+assignlist:
+  assignitem
+    { $$ = $1; }
+  | assignitem ',' assignlist
+    {
+        AST *first = $1;
+        AST *rest = $3;
+        first->right = rest;
+        $$ = first;
+    }
+;
+
+optobjparams:
+  /* nothing */
+    { $$ = NULL; }
+  | BAS_WITH assignlist
+    {
+        $$ = $2;
+    }
+;
+
+classdecl:
+  BAS_CLASS BAS_IDENTIFIER BAS_USING BAS_STRING optobjparams
+    {
+        AST *params = $5;
+        AST *newobj = NewAbstractObjectWithParams( $2, $4, 1, params );
         current->objblock = AddToList(current->objblock, newobj);
         AddSymbol(currentTypes, $2->d.string, SYM_TYPEDEF, newobj, NULL);
         $$ = NULL;
@@ -2293,14 +2323,15 @@ basetypename:
     { $$ = NewAST(AST_PTRTYPE, NewAST(AST_FUNCTYPE, $6, $3), NULL); }
   | BAS_SUB '(' paramdecl ')'
     { $$ = NewAST(AST_PTRTYPE, NewAST(AST_FUNCTYPE, ast_type_void, $3), NULL); }
-  | BAS_CLASS BAS_USING BAS_STRING
+  | BAS_CLASS BAS_USING BAS_STRING optobjparams
     {
+        AST *params = $4;
         AST *tempnam = NewAST(AST_IDENTIFIER, NULL, NULL);
         const char *name = NewTemporaryVariable("_class_", NULL);
         AST *newobj;
 
         tempnam->d.string = name;
-        newobj = NewAbstractObject( tempnam, $3, 1 );        
+        newobj = NewAbstractObjectWithParams( tempnam, $3, 1, params );        
         current->objblock = AddToList(current->objblock, newobj);
         $$ = newobj;
     }

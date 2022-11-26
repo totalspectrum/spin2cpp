@@ -501,7 +501,7 @@ creates a global variable with an initial value of 2.
 A global variable is shared by all instances of the object that creates it. For example, if "foo.bas" contains
 ```
    dim shared ctr as integer
-
+   
    function set_ctr(x)
      ctr = x
    end function
@@ -765,6 +765,12 @@ FlexBASIC supports classes, which are similar to records or structs in other lan
 dim ser as class using "FullDuplexSerial.spin"
 ```
 declares the variable `ser` as a class, using the Spin variables and methods from the given file. This also works for `.bas` or `.c` files. Any functions declared in the file become methods of the new class.
+
+Constants declared in the class file may be overridden by appending a `with` clause after `using`, e.g.:
+```
+dim ser as class using "Serial.spin" with TX_PIN=16, RX_PIN=15
+```
+creates a class from "Serial.spin", but overrides the default values of constants `TX_PIN` and `RX_PIN` within the class to the new values 16 and 15, respectively.
 
 Classes may also be declared directly, with the variables and methods of the class specified between `class` and `end class`
 ```
@@ -3516,7 +3522,12 @@ Marks the end of a `while` loop; this is a short form of `end while`.
 
 ### WITH
 
-Keyword reserved for future use.
+This keyword is used to indicate an override of constants within a class included with `using`, e.g.:
+```
+dim p as class using "foo.spin2" with A=1,B=2
+```
+declares `p` as the Spin2 object, but with constant `A` set to 1 and `B` set to 2 (instead of whatever their defaults are within the file).
+
 
 ### WHILE
 
