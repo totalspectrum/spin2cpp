@@ -1405,7 +1405,7 @@ TransformCountRepeat(AST *ast)
             if ( reps >= 0 ) {
                 // loop will execute at least once
                 if (!(gl_output == OUTPUT_C || gl_output == OUTPUT_CPP)) {
-                    if ((int32_t)fromi > 0 && (int32_t)toi > 0) {
+                    if ((int32_t)fromi > 0 && (int32_t)toi > 0 && knownStepVal == 1 ) {
                         isUnsignedLoop = 1;
                     }
                     loopkind = AST_FORATLEASTONCE;
