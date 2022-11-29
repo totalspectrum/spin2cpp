@@ -1827,9 +1827,9 @@ opt_numrets:
 ;
 
 funccall:
-  identifier '(' exprlist ')' opt_numrets
+  lhs '(' exprlist ')' opt_numrets
     { $$ = MakeFunccall($1, FixupList($3), $5); }
-  | identifier '(' ')' opt_numrets
+  | lhs '(' ')' opt_numrets
     {
         $$ = MakeFunccall($1, NULL, $4);
         LANGUAGE_WARNING(LANG_SPIN_SPIN1, NULL, "Using () for functions with no parameters is a flexspin extension");

@@ -1,0 +1,10 @@
+VAR
+  long method[4]
+
+pub calli(i, x) : r | f
+  f := method[i]
+  r := f(x):1
+
+pub calli2(i, x) : r
+  r := method[i](x):1
+  
