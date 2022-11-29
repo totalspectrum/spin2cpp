@@ -2247,11 +2247,22 @@ typename:
   | basetypename '(' expr ')'
     {
         Symbol *sym = GetCurArrayBase();
-        AST *size = $3;
         AST *base = (AST *)sym->val;
+        AST *size = $3;
         size = AstOperator('-', size, AstOperator('-', base, AstInteger(1)));
-        $$ = MakeArrayType($1, size);
-        $$->d.ptr = (AST *)sym->val;
+        $$ = MakeArrayType($1, size, base);
+    }
+  | basetypename '(' expr ',' expr ')'
+    {
+        Symbol *sym = GetCurArrayBase();
+        AST *idxBase = (AST *)sym->val;
+        AST *size = $5;
+        AST *size2 = $3;
+        AST *typ;
+        size = AstOperator('-', size, AstOperator('-', idxBase, AstInteger(1)));
+        size2 = AstOperator('-', size2, AstOperator('-', idxBase, AstInteger(1)));
+        typ = MakeArrayType($1, size, idxBase);
+        $$ = MakeArrayType(typ, size2, idxBase);
     }
   ;
 
@@ -2369,15 +2380,31 @@ paramvar:
   | BAS_IDENTIFIER '(' ')' BAS_AS typename
     {
         AST *typ = $5;
-        typ = MakeArrayType(typ, AstInteger(0));
+        typ = MakeArrayType(typ, AstInteger(0), NULL);
         $$ = NewAST(AST_DECLARE_VAR, typ, $1);
     }
   | BAS_IDENTIFIER '(' expr ')' BAS_AS typename
     {
         AST *siz = $3;
         AST *typ = $6;
-        typ = MakeArrayType(typ, siz);
+        typ = MakeArrayType(typ, siz, NULL);
         $$ = NewAST(AST_DECLARE_VAR, typ, $1);
+    }
+  | BAS_IDENTIFIER '(' expr ',' expr ')' BAS_AS typename
+    {
+        Symbol *sym = GetCurArrayBase();
+        AST *idxBase = (AST *)sym->val;
+        AST *siz1 = $3;
+        AST *siz2 = $5;
+        AST *basetyp = $8;
+
+        siz1 = AstOperator('-', siz1, AstOperator('-', idxBase, AstInteger(1)));
+        siz2 = AstOperator('-', siz2, AstOperator('-', idxBase, AstInteger(1)));
+        
+        AST *subtyp = MakeArrayType(basetyp, siz2, idxBase);
+        AST *finaltyp;
+        finaltyp = MakeArrayType(subtyp, siz1, idxBase);
+        $$ = NewAST(AST_DECLARE_VAR, finaltyp, $1);
     }
   | BAS_IDENTIFIER '=' expr BAS_AS typename
     { $$ = NewAST(AST_DECLARE_VAR, $5, AstAssign($1, $3)); }

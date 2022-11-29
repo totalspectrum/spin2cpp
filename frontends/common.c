@@ -1758,7 +1758,7 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
         ident = ident->left;
     }
     if (ident->kind == AST_ARRAYDECL) {
-        type = MakeArrayType(type, ident->right);
+        type = MakeArrayType(type, ident->right, NULL);
         type->d.ptr = ident->d.ptr;
         ident = ident->left;
     }

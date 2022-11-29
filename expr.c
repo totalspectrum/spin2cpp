@@ -3315,16 +3315,19 @@ FuncLongParams(AST *functype)
 // create an array type
 //
 AST *
-MakeArrayType(AST *basetype, AST *exprlist)
+MakeArrayType(AST *basetype, AST *exprlist, AST *indexBase)
 {
     if (!exprlist) {
         return basetype;
     }
     if (exprlist->kind == AST_EXPRLIST) {
-        basetype = MakeArrayType(basetype, exprlist->right);
-        return MakeArrayType(basetype, exprlist->left);
+        basetype = MakeArrayType(basetype, exprlist->right, indexBase);
+        basetype->d.ptr = (void *)indexBase;
+        return MakeArrayType(basetype, exprlist->left, indexBase);
     }
-    return NewAST(AST_ARRAYTYPE, basetype, exprlist);
+    AST *typ = NewAST(AST_ARRAYTYPE, basetype, exprlist);
+    typ->d.ptr = (void *)indexBase;
+    return typ;
 }
 
 //
