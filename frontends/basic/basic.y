@@ -2372,6 +2372,13 @@ paramvar:
         typ = MakeArrayType(typ, AstInteger(0));
         $$ = NewAST(AST_DECLARE_VAR, typ, $1);
     }
+  | BAS_IDENTIFIER '(' expr ')' BAS_AS typename
+    {
+        AST *siz = $3;
+        AST *typ = $6;
+        typ = MakeArrayType(typ, siz);
+        $$ = NewAST(AST_DECLARE_VAR, typ, $1);
+    }
   | BAS_IDENTIFIER '=' expr BAS_AS typename
     { $$ = NewAST(AST_DECLARE_VAR, $5, AstAssign($1, $3)); }
 ;
