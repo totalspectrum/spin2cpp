@@ -891,9 +891,11 @@ RemoveUnusedMethods(int isBinary)
     Function *pf;
     Module *saveCur;
     int keep;
-
-    keep = (0 == (gl_optimize_flags & OPT_REMOVE_UNUSED_FUNCS));
+    int keepAll;
     
+    keepAll = (gl_output == OUTPUT_CPP || gl_output == OUTPUT_C);
+    keep = keepAll || (0 == (gl_optimize_flags & OPT_REMOVE_UNUSED_FUNCS));
+
     // mark everything unused
     // FIXME: there's an awful lot of duplication with
     // CheckUnusedMethods; can we simplify that?
@@ -916,7 +918,7 @@ RemoveUnusedMethods(int isBinary)
                     continue;
                 }
                 if (pf->callSites == 0) {
-                    if (pf->is_public && P == allparse) {
+                    if (pf->is_public && (keepAll || P == allparse)) {
                         MarkUsed(pf, "__public__");
                     } else if (pf->annotations) {
                         MarkUsed(pf, "__annotations__");
