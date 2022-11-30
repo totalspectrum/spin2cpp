@@ -2018,7 +2018,9 @@ DeclareOneMemberVar(Module *P, AST *ident, AST *type, int is_private)
                 flags = SYMF_NOALLOC;
             }
             sym = AddSymbol(&P->objsyms, name, SYM_VARIABLE, (void *)type, NULL);
-            sym->flags |= flags;
+            if (sym) {
+                sym->flags |= flags;
+            }
         }
     }
     return r;
