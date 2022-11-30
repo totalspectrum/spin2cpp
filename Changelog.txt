@@ -2,6 +2,7 @@ Version 5.9.21
 - Fixed loop test for downwards loops with steps > 1.
 - Improved handling of two dimensional arrays in BASIC
 - Improved handling of method pointers in Spin2
+- Optimized ZEROX (thanks Ada)
 - Restored generation of all public methods in spin2cpp C and C++ output
 
 Version 5.9.20
