@@ -954,6 +954,13 @@ static bool WriteInRange(IR *start,IR *end) {
     return false;
 }
 
+static bool FlagsChangeInRange(IR *start,IR *end,int flags) {
+    for (IR *ir=start;ir!=end->next;ir=ir->next) {
+        if (InstrSetsFlags(ir,flags)) return true;
+    }
+    return false;
+}
+
 static int MinCyclesInRange(IR *start,IR *end) {
     int cyc = 0;
     for (IR *ir=start;ir!=end->next;ir=ir->next) {
@@ -3998,14 +4005,17 @@ restart_check:
             int mask = ir->opc == OPC_RDBYTE ? 0xFF : 0xFFFF;
             nextread = FindNextUse(ir, dst1);
             if (nextread
+                && nextread->cond == ir->cond
+                && !FlagsChangeInRange(ir->next,nextread->prev,FlagsUsedByCond(ir->cond))
                 && nextread->dst == dst1
-                && !InstrSetsAnyFlags(nextread)
+                && (nextread->flags & FLAG_WZ) == nextread->flags
                 && isMaskingOp(nextread,&mval)
                 && mval == mask)
             {
-                // don't need zero extend after rdbyte
+                // don't need zero extend after rdbyte (change to MOV, gets eliminated next pass)
+                ReplaceOpcode(nextread,OPC_MOV);
+                nextread->src = nextread->dst;
                 change = 1;
-                nextread->opc = OPC_DUMMY;
             }
         }
         // cut unneccessary bits for immediate write values
