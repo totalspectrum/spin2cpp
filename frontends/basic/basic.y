@@ -2235,6 +2235,46 @@ typedecl:
         AddSymbol(currentTypes, $2->d.string, SYM_TYPEDEF, $4, NULL);
     }
 ;
+
+optarraylimit:
+  /* nothing */
+    { $$ = NULL; }
+  | BAS_TO expr
+    { $$ = $2; }
+;
+
+arraysizeitem: expr optarraylimit
+  {
+      AST *first = $1;
+      AST *second = $2;
+      AST *base;
+      AST *limit;
+      
+      if (second) {
+          base = first;
+          limit = second;
+      } else {
+          Symbol *sym = GetCurArrayBase();
+          if (sym) {
+              base = (AST *)sym->val;
+          } else {
+              base = AstInteger(0);
+          }
+          limit = first;
+      }
+      $$ = NewAST(AST_RANGE, base, limit);
+  }
+;
+
+arraysizelist:
+  arraysizeitem
+    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+  | arraysizelist ',' arraysizeitem
+    {
+        $$ = AddToList($1, $3);
+    }
+;
+
 typename:
   basetypename
     { $$ = $1; }
@@ -2244,25 +2284,11 @@ typename:
     { $$ = NewAST(AST_MODIFIER_CONST, NewAST(AST_PTRTYPE, $1, NULL), NULL); }
   | '(' typename ')'
     { $$ = $2; }
-  | basetypename '(' expr ')'
+  | basetypename '(' arraysizelist ')'
     {
-        Symbol *sym = GetCurArrayBase();
-        AST *base = (AST *)sym->val;
-        AST *size = $3;
-        size = AstOperator('-', size, AstOperator('-', base, AstInteger(1)));
-        $$ = MakeArrayType($1, size, base);
-    }
-  | basetypename '(' expr ',' expr ')'
-    {
-        Symbol *sym = GetCurArrayBase();
-        AST *idxBase = (AST *)sym->val;
-        AST *size = $5;
-        AST *size2 = $3;
-        AST *typ;
-        size = AstOperator('-', size, AstOperator('-', idxBase, AstInteger(1)));
-        size2 = AstOperator('-', size2, AstOperator('-', idxBase, AstInteger(1)));
-        typ = MakeArrayType($1, size, idxBase);
-        $$ = MakeArrayType(typ, size2, idxBase);
+        AST *typ = $1;
+        AST *siz = $3;
+        $$ = MakeArrayType(typ, siz);
     }
   ;
 
@@ -2380,31 +2406,15 @@ paramvar:
   | BAS_IDENTIFIER '(' ')' BAS_AS typename
     {
         AST *typ = $5;
-        typ = MakeArrayType(typ, AstInteger(0), NULL);
+        typ = MakeArrayType(typ, AstInteger(0));
         $$ = NewAST(AST_DECLARE_VAR, typ, $1);
     }
-  | BAS_IDENTIFIER '(' expr ')' BAS_AS typename
+  | BAS_IDENTIFIER '(' arraysizelist ')' BAS_AS typename
     {
         AST *siz = $3;
         AST *typ = $6;
-        typ = MakeArrayType(typ, siz, NULL);
+        typ = MakeArrayType(typ, siz);
         $$ = NewAST(AST_DECLARE_VAR, typ, $1);
-    }
-  | BAS_IDENTIFIER '(' expr ',' expr ')' BAS_AS typename
-    {
-        Symbol *sym = GetCurArrayBase();
-        AST *idxBase = (AST *)sym->val;
-        AST *siz1 = $3;
-        AST *siz2 = $5;
-        AST *basetyp = $8;
-
-        siz1 = AstOperator('-', siz1, AstOperator('-', idxBase, AstInteger(1)));
-        siz2 = AstOperator('-', siz2, AstOperator('-', idxBase, AstInteger(1)));
-        
-        AST *subtyp = MakeArrayType(basetyp, siz2, idxBase);
-        AST *finaltyp;
-        finaltyp = MakeArrayType(subtyp, siz1, idxBase);
-        $$ = NewAST(AST_DECLARE_VAR, finaltyp, $1);
     }
   | BAS_IDENTIFIER '=' expr BAS_AS typename
     { $$ = NewAST(AST_DECLARE_VAR, $5, AstAssign($1, $3)); }

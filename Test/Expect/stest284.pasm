@@ -5,6 +5,8 @@ dat
 entry
 
 _fetchx
+	sub	arg02, #1
+	sub	arg01, #1
 	shl	arg01, #9
 	add	arg01, objptr
 	shl	arg02, #2
@@ -14,6 +16,8 @@ _fetchx_ret
 	ret
 
 _fetchm1
+	sub	arg02, #1
+	sub	arg01, #1
 	shl	arg01, #9
 	add	arg01, arg03
 	shl	arg02, #2
@@ -23,6 +27,8 @@ _fetchm1_ret
 	ret
 
 _fetchm2
+	sub	arg02, #1
+	sub	arg01, #1
 	shl	arg01, #9
 	add	arg01, arg03
 	shl	arg02, #2
@@ -32,6 +38,8 @@ _fetchm2_ret
 	ret
 
 _fetchm3
+	sub	arg02, #1
+	sub	arg01, #1
 	shl	arg01, #9
 	add	arg01, arg03
 	shl	arg02, #2
@@ -41,6 +49,8 @@ _fetchm3_ret
 	ret
 
 _fetchm4
+	sub	arg02, #1
+	sub	arg01, #1
 	shl	arg01, #9
 	add	arg01, arg03
 	shl	arg02, #2

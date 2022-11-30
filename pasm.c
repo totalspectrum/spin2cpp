@@ -874,7 +874,7 @@ AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags)
                     ident = ident->left;
                 }
                 while (ident && ident->kind == AST_ARRAYDECL) {
-                    type = MakeArrayType(type, ident->right, NULL);
+                    type = MakeArrayType(type, ident->right);
                     ident = ident->left;
                 }
                 typalign = TypeAlign(type);

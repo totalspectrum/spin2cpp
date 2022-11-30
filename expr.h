@@ -77,7 +77,9 @@ int PointerTypeIncrement(AST *typ);
 // get base of an array type
 AST *GetArrayBase(AST *type);
 // create an array based on a type and expression or expression list
-AST *MakeArrayType(AST *basetype, AST *exprlist, AST *indexBase);
+// the elements of the list can either be simple expressions (giving the array size)
+// or AST_RANGE (giving the start and end indices)
+AST *MakeArrayType(AST *basetype, AST *exprlist);
 
 int IsFunctionType(AST *typ);
 int IsStringType(AST *typ);
