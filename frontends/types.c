@@ -656,12 +656,29 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
             *ast = *MakeOperatorCall(int64_sar, ast->left, ast->right, NULL);
             break;
         case K_SHR:
-            *ast = *MakeOperatorCall(int64_shr, ast->left, ast->right, NULL);
+        {
+            if (IsConstExpr(ast->right) && EvalConstExpr(ast->right) == 32) {
+                AST *high = AstInteger(0);
+                AST *low = NewAST(AST_GETHIGH, ast->left, NULL);
+                AST *val = NewAST(AST_EXPRLIST, low, NewAST(AST_EXPRLIST, high, NULL));
+                *ast = *val;
+            } else {
+                *ast = *MakeOperatorCall(int64_shr, ast->left, ast->right, NULL);
+            }
             break;
+        }
         case K_SHL:
-            *ast = *MakeOperatorCall(int64_shl, ast->left, ast->right, NULL);
+        {
+            if (IsConstExpr(ast->right) && EvalConstExpr(ast->right) == 32) {
+                AST *low = AstInteger(0);
+                AST *high = NewAST(AST_GETLOW, ast->left, NULL);
+                AST *val = NewAST(AST_EXPRLIST, low, NewAST(AST_EXPRLIST, high, NULL));
+                *ast = *val;
+            } else {
+                *ast = *MakeOperatorCall(int64_shl, ast->left, ast->right, NULL);
+            }
             break;
-            
+        }   
         default:
             ERROR(ast, "Compiler is incomplete: unable to handle this 64 bit expression");
             break;
