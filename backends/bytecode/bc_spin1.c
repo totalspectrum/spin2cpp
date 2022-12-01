@@ -1,7 +1,7 @@
 //
 // Spin1 Bytecode definitons for spin2cpp
 //
-// Copyright 2021 Ada Gottensträter and Total Spectrum Software Inc.
+// Copyright 2021-2022 Ada Gottensträter and Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 
@@ -462,19 +462,19 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
             break;
         case S1ConEn_DECOD: // power of 2
             buf[pos++] = 0b00110111;
-            buf[pos++] = 0b00000000 + ((30-__builtin_clz(immu))&31);
+            buf[pos++] = 0b00000000 + ((30-clz32(immu))&31);
             break;
         case S1ConEn_DECODNOT: // inverted power of 2
             buf[pos++] = 0b00110111;
-            buf[pos++] = 0b01000000 + ((30-__builtin_clz(~immu))&31);
+            buf[pos++] = 0b01000000 + ((30-clz32(~immu))&31);
             break;
         case S1ConEn_BMASKLOW:
             buf[pos++] = 0b00110111;
-            buf[pos++] = 0b00100000 + ((30-__builtin_clz(immu+1))&31);
+            buf[pos++] = 0b00100000 + ((30-clz32(immu+1))&31);
             break;
         case S1ConEn_BMASKHIGH:
             buf[pos++] = 0b00110111;
-            buf[pos++] = 0b01100000 + ((30-__builtin_clz((~immu)+1))&31);
+            buf[pos++] = 0b01100000 + ((30-clz32((~immu)+1))&31);
             break;
         case S1ConEn_1B: // 1 byte
             buf[pos++] = 0b00111000;

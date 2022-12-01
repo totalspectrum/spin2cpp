@@ -185,14 +185,24 @@ AST *FixupInitList(AST *typ, AST *initval);
 const char *TypeName(AST *typ);
 
 #if (defined(__GNUC__) || defined(__clang__))
-#define clz32(x) __builtin_clz((uint32_t)(x))
-#define ctz32(x) __builtin_ctz((uint32_t)(x))
+#define clz32(x)    __builtin_clz((uint32_t)(x))
+#define ctz32(x)    __builtin_ctz((uint32_t)(x))
 #define popcount(x) __builtin_popcount(x)
+#define bswap32(x)  __builtin_bswap32((uint32_t)(x))
+#define bswap16(x)  __builtin_bswap16((uint16_t)(x)) 
 #else
 #define NEED_BUILTINS
 extern int clz32(uint32_t x);
 extern int ctz32(uint32_t x);
 extern int popcount(uint64_t x);
+extern uint32_t bswap32(uint32_t x);
+extern uint16_t bswap16(uint16_t x);
+#endif
+
+#ifndef __BYTE_ORDER__
+#define __ORDER_LITTLE_ENDIAN__ 0
+#define __ORDER_BIG_ENDIAN__    1
+#define __BYTE_ORDER__ __ORDER_LITTLE_ENDIAN__
 #endif
 
 #endif

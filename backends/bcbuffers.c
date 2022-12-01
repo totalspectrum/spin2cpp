@@ -49,13 +49,13 @@ OutputSpan *BOB_PushByte(ByteOutputBuffer *buf,uint8_t data,const char *comment)
 }
 OutputSpan *BOB_PushWord(ByteOutputBuffer *buf,uint16_t data,const char *comment) {
     #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-        data = __builtin_bswap16(data);
+        data = bswap16(data);
     #endif
     return BOB_Push(buf,(uint8_t*)&data,2,comment);
 }
 OutputSpan *BOB_PushLong(ByteOutputBuffer *buf,uint32_t data,const char *comment) {
     #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-        data = __builtin_bswap32(data);
+        data = bswap32(data);
     #endif
     return BOB_Push(buf,(uint8_t*)&data,4,comment);
 }
@@ -65,13 +65,13 @@ void BOB_ReplaceByte(OutputSpan *span,uint8_t data,const char *comment) {
 }
 void BOB_ReplaceWord(OutputSpan *span,uint16_t data,const char *comment) {
     #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-        data = __builtin_bswap16(data);
+        data = bswap16(data);
     #endif
     return BOB_Replace(span,(uint8_t*)&data,2,comment);
 }
 void BOB_ReplaceLong(OutputSpan *span,uint32_t data,const char *comment) {
     #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-        data = __builtin_bswap32(data);
+        data = bswap32(data);
     #endif
     return BOB_Replace(span,(uint8_t*)&data,4,comment);
 }
@@ -112,14 +112,14 @@ void BOB_FixupData(ByteOutputBuffer *bob, uint32_t fixaddr, uint8_t *data, size_
 
 void BOB_FixupWord(ByteOutputBuffer *bob,uint32_t addr,uint16_t data) {
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-    data = __builtin_bswap16(data);
+    data = bswap16(data);
 #endif
     BOB_FixupData(bob,addr,(uint8_t *)&data,sizeof(uint16_t));
 }
 
 void BOB_FixupLong(ByteOutputBuffer *bob,uint32_t addr,uint32_t data) {
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-    data = __builtin_bswap32(data);
+    data = bswap32(data);
 #endif
     BOB_FixupData(bob,addr,(uint8_t *)&data,sizeof(uint32_t));
 }

@@ -16,6 +16,17 @@
 #include <limits.h>
 
 #ifdef NEED_BUILTINS
+uint16_t bswap16(uint16_t x) {
+    return (x>>8) | ((x&0xff)<<8);
+}
+uint32_t bswap32(uint32_t x) {
+    uint8_t a, b, c, d;
+    a = x;
+    b = (x>>8);
+    c = (x>>16);
+    d = (x>>24);
+    return d | (((uint32_t)c)<<8) | (((uint32_t)b)<<16) | (((uint32_t)a)<<24);
+}
 int clz32(uint32_t x) {
     unsigned r = 0;
     for (r = 0; r < 32; r++) {

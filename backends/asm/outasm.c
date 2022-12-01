@@ -2099,7 +2099,7 @@ CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
       if (getmod) {
           EmitOp2(irl, OPC_AND, temp, NewImmediate(aval-1));
       } else {
-          EmitOp2(irl, OPC_SHR, temp, NewImmediate(__builtin_ctz(aval)));
+          EmitOp2(irl, OPC_SHR, temp, NewImmediate(ctz32(aval)));
       }
       if (isSigned) {
           bool negresult = !getmod && (rhs->val < 0); // Negate result if divisor is negative and we're not getting the remainder

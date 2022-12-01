@@ -516,7 +516,7 @@ static bool OptimizeOperator(int *optoken, AST **left,AST **right) {
         } else if (shiftOptOp && isPowerOf2(rightVal)) {
             AstReportAs(*right,&save);
             *optoken = shiftOptOp;
-            *right = AstInteger(31-__builtin_clz(rightVal));
+            *right = AstInteger(31-clz32(rightVal));
             AstReportDone(&save);
             return true;
         } else if (negateOp && rightVal < 0 && rightVal != INT32_MIN) {
@@ -3454,7 +3454,7 @@ BCEmitModuleRelocations(ByteOutputBuffer *bob,Module *P) {
 static void
 BCDatPutLong(uint8_t *ptr, uint32_t data) {
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-    data = __builtin_bswap32(data);
+    data = bswap32(data);
 #endif
     memcpy(ptr, &data, 4);
 }
