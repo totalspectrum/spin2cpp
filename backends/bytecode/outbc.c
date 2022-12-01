@@ -753,9 +753,13 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         if (stackdiff) ERROR(node,"Modify jump to label with unequal hidden var count");
     }
     
-    ByteOpIR memOp = {.mathKind = modifyMathKind,
-        .attr.memop = {.modifyReverseMath = modifyReverseMath,.pushModifyResult = pushModifyResult,.repeatPopStep=repeatPopStep},
-        .jumpTo=jumpTo};
+    ByteOpIR memOp = {0};
+
+    memOp.mathKind = modifyMathKind;
+    memOp.attr.memop.modifyReverseMath = modifyReverseMath;
+    memOp.attr.memop.pushModifyResult = pushModifyResult;
+    memOp.attr.memop.repeatPopStep=repeatPopStep;
+    memOp.jumpTo=jumpTo;
 
     AST *type = ExprType(node);
     AST *typeoverride = NULL;

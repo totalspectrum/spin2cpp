@@ -15,11 +15,8 @@
 #include <stdlib.h>
 #include <limits.h>
 
-#if defined(__GNUC__) || defined(__clang__)
-#define clz32(x) __builtin_clz((uint32_t)(x))
-#define popcount(x) __builtin_popcount(x)
-#else
-static int clz32(uint32_t x) {
+#ifdef NEED_BUILTINS
+int clz32(uint32_t x) {
     unsigned r = 0;
     for (r = 0; r < 32; r++) {
         if ( ((int32_t)x) < 0) break;
@@ -28,7 +25,16 @@ static int clz32(uint32_t x) {
     return r;
 }
 
-static int popcount(uint64_t x) {
+int ctz32(uint32_t x) {
+    unsigned r = 0;
+    for (r = 0; r < 32; r++) {
+        if ( x & 1 ) break;
+        x = x>>1;
+    }
+    return r;
+}
+
+int popcount(uint64_t x) {
     int n = 0;
     for (unsigned i = 0; i < 64; i++) {
         if (x & (1ULL<<i)) n++;

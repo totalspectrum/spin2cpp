@@ -2955,14 +2955,14 @@ static int P2CheckBitMask(unsigned int x)
 {
     if (x == 0 || x == 0xFFFFFFFF) return -1;
 
-    int rshift = __builtin_ctz(x);
+    int rshift = ctz32(x);
     if (rshift == 0 && (x>>31)) { // No trailing zero, but leading one -> try wraparound case
-        rshift = 32-__builtin_clz(~x);
+        rshift = 32-clz32(~x);
     }
     x = x>>rshift | x<<((32-rshift)&31);
 
     if(x&(x+1)) return -1; // x is not (2^n)-1
-    int addbits = 31-__builtin_clz(x);
+    int addbits = 31-clz32(x);
     if (addbits > 15) return -1; // Doesn't fit in 9 bits
     return rshift + (addbits<<5);
 }

@@ -10,7 +10,7 @@
 #include "becommon.h"
 #include <stdlib.h>
 
-#pragma GCC diagnostic ignored "-Wmisleading-indentation" // GCC is very smart
+//#pragma GCC diagnostic ignored "-Wmisleading-indentation" // GCC is very smart
 
 enum Spin1OffsetEncoding {
     S1OffEn_VARLEN_SIGNED,
@@ -606,26 +606,29 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
         if (shortForm) {
             // Compile short form
             uint8_t opcode = 0x40 + (offset&0x1C);
-                 if (ir->kind == BOK_MEM_READ) opcode += 0;
+            if      (ir->kind == BOK_MEM_READ) opcode += 0;
             else if (ir->kind == BOK_MEM_WRITE) opcode += 1;
             else if (ir->kind == BOK_MEM_MODIFY) opcode += 2;
             else if (ir->kind == BOK_MEM_ADDRESS) opcode += 3;
-                 if (ir->attr.memop.base == MEMOP_BASE_VBASE) opcode += 0<<5;
+            
+            if      (ir->attr.memop.base == MEMOP_BASE_VBASE) opcode += 0<<5;
             else if (ir->attr.memop.base == MEMOP_BASE_DBASE) opcode += 1<<5;
 
             buf[pos++] = opcode;
         } else {
             uint8_t opcode = 0x80 + ((ir->attr.memop.popIndex)<<4);
-                 if (ir->attr.memop.memSize == MEMOP_SIZE_BYTE) opcode += 0<<5;
+            if      (ir->attr.memop.memSize == MEMOP_SIZE_BYTE) opcode += 0<<5;
             else if (ir->attr.memop.memSize == MEMOP_SIZE_WORD) opcode += 1<<5;
             else if (ir->attr.memop.memSize == MEMOP_SIZE_LONG) opcode += 2<<5;
             else ERROR(NULL,"Internal Error: Invalid memSize");
-                 if (ir->attr.memop.base == MEMOP_BASE_POP)   opcode += 0<<2;
+            
+            if      (ir->attr.memop.base == MEMOP_BASE_POP)   opcode += 0<<2;
             else if (ir->attr.memop.base == MEMOP_BASE_PBASE) opcode += 1<<2;
             else if (ir->attr.memop.base == MEMOP_BASE_VBASE) opcode += 2<<2;
             else if (ir->attr.memop.base == MEMOP_BASE_DBASE) opcode += 3<<2;
             else ERROR(NULL,"Internal Error: Invalid base");
-                 if (ir->kind == BOK_MEM_READ) opcode += 0;
+            
+            if      (ir->kind == BOK_MEM_READ) opcode += 0;
             else if (ir->kind == BOK_MEM_WRITE) opcode += 1;
             else if (ir->kind == BOK_MEM_MODIFY) opcode += 2;
             else if (ir->kind == BOK_MEM_ADDRESS) opcode += 3;

@@ -257,8 +257,9 @@ bool BCIR_IsConstMemOp(ByteOpIR *ir) {
 bool BCIR_IsEqualMemOpTarget(ByteOpIR *ir1,ByteOpIR *ir2) {
     if (ir1->data.int32 != ir2->data.int32) return false;
     if (!BCIR_IsConstMemOp(ir1) || !BCIR_IsConstMemOp(ir2)) return false;
-    if (memcmp(&ir1->attr.memop,&ir2->attr.memop,sizeof(struct bcir_memop_attr))) return false;
-
+    if (memcmp(&ir1->attr.memop,&ir2->attr.memop,sizeof(struct bcir_memop_attr))) {
+        return false;
+    }
     return true;
 }
 
@@ -451,6 +452,7 @@ static bool BCIR_OptContractWriteRead() {
     // Modifying a location without pop and then immediately reading it can be contracted into
     // All of this for long types only, I think
     bool didWork = false;
+    
     for(ByteOpIR *ir = current_birb->head;ir;ir=ir->next) {
         if(ir->kind == BOK_MEM_WRITE && ir->next && ir->next->kind == BOK_MEM_READ &&
         ir->attr.memop.memSize == MEMOP_SIZE_LONG && BCIR_IsEqualMemOpTarget(ir,ir->next)) {

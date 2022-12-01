@@ -176,6 +176,7 @@ typedef struct bcirstruct {
     enum ByteOpKind kind;
     enum MathOpKind mathKind;
     union {
+        unsigned long dummyVal;
         struct bcir_memop_attr {
             unsigned popIndex:1; //  pop index?
             unsigned pushModifyResult:1; // For BOK_MEM_MODIFY: push result onto stack

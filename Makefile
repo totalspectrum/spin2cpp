@@ -108,6 +108,10 @@ endif
 
 # use make OPT=-g to compile for debug, OPT=-O1 for release
 OPT ?= -g
+
+# DEPS are flags to generate dependencies; not all compilers support these
+DEPS ?= -MMD -MP
+
 CFLAGS = $(OPT) -Wall -fwrapv $(INC) $(DEFS)
 #CFLAGS = -no-pie -pg -Wall -fwrapv $(INC) $(DEFS)
 #CFLAGS = -g -O0 -Wall -fwrapv -Wc++-compat -Werror $(INC) $(DEFS)
@@ -233,7 +237,7 @@ $(BUILD)/version.o: version.c version.h FORCE
 	$(CC) $(CFLAGS) -DGITREV=$(shell git describe --tags --always) $(if $(filter release/%,$(patsubst master,release/master,$(gitbranch))),,-DGITBRANCH=$(gitbranch)) -o $@ -c $<
 
 $(BUILD)/%.o: %.c
-	$(CC) -MMD -MP $(CFLAGS) -o $@ -c $<
+	$(CC) $(DEPS) $(CFLAGS) -o $@ -c $<
 
 .PHONY: FORCE
 
