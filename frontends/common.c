@@ -2619,6 +2619,7 @@ typedef struct OffsetStruct {
     bool isUnion;
 } OffsetStruct;
 
+// fixup all variable offsets (used for BASIC and C)
 static int fixupVarOffset(Symbol *sym, void *arg)
 {
     OffsetStruct *A = (OffsetStruct *)arg;
@@ -2650,6 +2651,72 @@ static int fixupVarOffset(Symbol *sym, void *arg)
     return 1;
 }
 
+// fixup byte, word, long offsets
+// really just leave them alone, they won't have changed due to symbol resolution
+static int fixupByteWordLongOffset(Symbol *sym, void *arg)
+{
+    OffsetStruct *A = (OffsetStruct *)arg;
+    if (sym->kind != SYM_VARIABLE || (sym->flags & (SYMF_GLOBAL|SYMF_NOALLOC))) {
+        return 1;
+    }
+    AST *typ = (AST *)sym->val;
+    if (IsClassType(BaseType(typ))) {
+        return 1;
+    }
+    int siz = TypeSize(typ);
+#ifdef DEBUG_OFFSETS
+    printf("  VAR %s orig offset %d new offset %d size %d\n", sym->our_name, sym->offset, A->curOffset, siz);
+#endif
+    if (sym->offset != A->curOffset) {
+        sym->offset = A->curOffset;
+    }
+    if (A->isUnion) {
+        if (A->maxOffset < siz) {
+            A->maxOffset = siz;
+        }
+    } else {
+        A->curOffset += siz;
+        if (A->maxOffset < A->curOffset) {
+            A->maxOffset = A->curOffset;
+        }
+    }
+    return 1;
+}
+
+static int fixupObjectOffset(Symbol *sym, void *arg)
+{
+    OffsetStruct *A = (OffsetStruct *)arg;
+    if (sym->kind != SYM_VARIABLE || (sym->flags & (SYMF_GLOBAL|SYMF_NOALLOC))) {
+        return 1;
+    }
+    AST *typ = (AST *)sym->val;
+    if (!IsClassType(BaseType(typ))) {
+        return 1;
+    }
+    int align = PaddedTypeAlign(typ);
+    int siz = TypeSize(typ);
+    if ((A->curOffset & (align-1)) != 0) {
+        A->curOffset = (A->curOffset + (align-1)) & ~(align-1);
+    }
+#ifdef DEBUG_OFFSETS
+    printf("  OBJ %s orig offset %d new offset %d siz %d\n", sym->our_name, sym->offset, A->curOffset, siz);
+#endif
+    if (sym->offset != A->curOffset) {
+        sym->offset = A->curOffset;
+    }
+    if (A->isUnion) {
+        if (A->maxOffset < siz) {
+            A->maxOffset = siz;
+        }
+    } else {
+        A->curOffset += siz;
+        if (A->maxOffset < A->curOffset) {
+            A->maxOffset = A->curOffset;
+        }
+    }
+    return 1;
+}
+
 void FixupOffsets(Module *P) {
     Module *savecurrent = current;
     OffsetStruct A;
@@ -2666,8 +2733,13 @@ void FixupOffsets(Module *P) {
 #ifdef DEBUG_OFFSETS    
     printf("%s\n", P->classname);
 #endif    
-    IterateOverSymbols(&P->objsyms, fixupVarOffset, (void *)&A);
-
+    // Spin language offsets have to be set up in a very specific way
+    if (IsSpinLang(P->mainLanguage)) {
+        IterateOverSymbols(&P->objsyms, fixupByteWordLongOffset, (void *)&A);
+        IterateOverSymbols(&P->objsyms, fixupObjectOffset, (void *)&A);
+    } else {
+        IterateOverSymbols(&P->objsyms, fixupVarOffset, (void *)&A);
+    }
     if (P->varsize < A.maxOffset) {
 //        NOTE(NULL, "Increasing size of %s from %d to %d", P->classname, P->varsize, A.maxOffset);
         P->varsize = A.maxOffset;
