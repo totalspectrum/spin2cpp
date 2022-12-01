@@ -108,7 +108,7 @@ endif
 
 # use make OPT=-g to compile for debug, OPT=-O1 for release
 OPT ?= -g
-CFLAGS = $(OPT) -Wall -fwrapv $(INC) $(DEFS)
+CFLAGS = $(OPT) -std=gnu11 -Wall -fwrapv $(INC) $(DEFS)
 #CFLAGS = -no-pie -pg -Wall -fwrapv $(INC) $(DEFS)
 #CFLAGS = -g -O0 -Wall -fwrapv -Wc++-compat -Werror $(INC) $(DEFS)
 LIBS = -lm
