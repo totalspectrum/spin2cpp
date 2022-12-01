@@ -32,7 +32,7 @@ SymbolHash(const char *str)
 }
 
 /* find a symbol in the table */
-extern inline Symbol *FindSymbol(SymbolTable *table, const char *name);
+//extern inline Symbol *FindSymbol(SymbolTable *table, const char *name);
 
 Symbol *
 FindSymbolEx(SymbolTable *table, const char *name,int forceCaseSens)
