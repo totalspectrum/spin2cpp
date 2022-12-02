@@ -1,0 +1,47 @@
+name: Spin2cpp Auto-Release
+
+on:
+  push:
+    tags: "v[0-9]+.[0-9]+.[0-9]+"
+
+jobs:
+  build:
+    uses: ./.github/workflows/build_n_test.yml
+  deploy:
+    permissions:
+      contents: write
+    needs: build
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: release_zips_win32
+      - run: |
+          sudo apt-get install tree
+          tree .
+      - name: Generate description
+        id: textgen
+        run: |
+          echo "These are the compiler binaries (only) for flexspin and spin2cpp. For a complete GUI with sample code and documentation, see the FlexProp release (https://github.com/totalspectrum/flexprop/releases)." > release_desc.md
+          echo >> release_desc.md
+          git log -1 --pretty=%B | sed '1 s/.*//' >> release_desc.md
+          echo >> release_desc.md
+          echo "See Changelog.txt for full version history." >> release_desc.md
+          echo >> release_desc.md
+          echo "spin2cpp.zip contains spin2cpp, a tool for converting Parallax Spin1 and Spin2 files into C or C++. It has grown now to support C and BASIC input, and assembly language output." >> release_desc.md
+          echo >> release_desc.md
+          echo "flexptools.zip contains flexspin and flexcc, compilers built using the same engine, which can compile Spin, BASIC, or C into P1 or P2 binaries." >> release_desc.md
+          echo >> release_desc.md
+
+          echo "relTitle=Spin/PASM/BASIC/C to PASM/C/binary version `echo -n  "${{ github.ref_name }}" | sed s/^v//`" >> $GITHUB_OUTPUT
+      - uses: ncipollo/release-action@v1
+        with:
+          artifacts: "*.zip"
+          artifactErrorsFailBuild: true
+          bodyFile: release_desc.md
+          name: ${{ steps.textgen.outputs.relTitle }}
+          skipIfReleaseExists: true
+          allowUpdates: false
+
+
+  
