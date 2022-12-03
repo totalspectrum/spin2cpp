@@ -446,10 +446,13 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
     }
 }
 
+/////////////////////////////////////////////////////////////////////////
 void
 DoHLTransforms(Function *F)
 {
+    Function *savecurrent = curfunc;
+    curfunc = F;
     int insertCasts = !IsSpinLang(F->language);
     doSimplifyAssignments(&F->body, insertCasts, 1);
+    curfunc = savecurrent;
 }
-

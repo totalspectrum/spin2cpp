@@ -4,7 +4,7 @@
 
 int32_t test166::Check(int32_t Source, char *Addr)
 {
-  int32_t Val = 0;
+  int32_t Val;
   Val = (((Source == 'F') || (Source == 'R')) ? Foo((int32_t)Addr) : Addr[Source]);
   return Val;
 }

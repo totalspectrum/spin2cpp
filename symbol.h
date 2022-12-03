@@ -58,8 +58,6 @@ typedef struct symbol {
 #define SYMF_INTERNAL 0x04  /* symbol is created by flexspin itself, should not be shown in listings */
 #define SYMF_NOALLOC  0x08  /* symbol should not be allocated */
 
-#define SYMF_INITED   0x100 /* symbol was initialized */
-
 #define INTVAL(sym) ((intptr_t)((sym)->val))
 
 

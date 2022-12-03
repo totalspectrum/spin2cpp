@@ -12,7 +12,8 @@ int32_t test040::Dec(int32_t Value)
 {
   int32_t 	I, X;
   int32_t 	_idx__0000;
-  int32_t result = 0;
+  int32_t result;
+  result = 0;
   // Print a decimal number
   // Check for max negative
   X = -(Value == (int32_t)0x80000000U);

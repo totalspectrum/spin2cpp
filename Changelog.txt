@@ -1,4 +1,5 @@
 Version 5.9.21
+- Automatically zero local Spin2 variables
 - Fixed loop test for downwards loops with steps > 1.
 - Fixed some problems with variable offsets in Spin
 - Improved handling of two dimensional arrays in BASIC

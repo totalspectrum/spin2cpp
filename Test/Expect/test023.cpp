@@ -4,8 +4,8 @@
 
 int32_t test023::Start(void)
 {
-  int32_t	X;
-  int32_t R = 0;
+  int32_t 	X;
+  int32_t R;
   //
   // just a comment
   //

@@ -280,7 +280,8 @@ PrintFunctionVariables(Flexbuf *f, Function *func)
             flexbuf_printf(f, "  ");
             PrintType(f, GetFunctionReturnType(func), 0);
             CppPrintName(f, func->resultexpr->d.string, 0);
-            flexbuf_printf(f, " = 0;");
+            //flexbuf_printf(f, " = 0;");
+            flexbuf_printf(f, ";");
             PrintNewline(f);
         } else if (func->resultexpr->kind == AST_EXPRLIST) {
             AST *id = func->resultexpr;

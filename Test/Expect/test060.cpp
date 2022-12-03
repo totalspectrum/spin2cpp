@@ -4,7 +4,7 @@
 
 int32_t test060::Func(int32_t A, int32_t B)
 {
-  int32_t Ok = 0;
+  int32_t Ok;
   if (A < B) {
     Ok = -1;
   } else {

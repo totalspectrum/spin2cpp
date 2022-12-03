@@ -4,7 +4,7 @@
 
 int32_t test022::Calc(int32_t X, int32_t Y)
 {
-  int32_t R = 0;
+  int32_t R;
   //
   // just a comment
   //

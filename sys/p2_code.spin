@@ -188,6 +188,8 @@ pri _rxraw(timeout = 0) : rxbyte = long | z, endtime, temp2, rxpin
     _setbaud(__default_baud__)
   if timeout
     endtime := _getcnt() + timeout * (__clkfreq_var >> 10)
+  else
+    endtime := 0 ' just gets rid of a compiler warning
   rxbyte := -1
   rxpin := _rxpin
   z := 0

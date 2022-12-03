@@ -4,7 +4,7 @@
 
 int32_t test087::Check(int32_t N)
 {
-  int32_t Sum = 0;
+  int32_t Sum;
   Sum = 0;
   if (N > 1) {
     while (N--) {

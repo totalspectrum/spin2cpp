@@ -4,7 +4,8 @@
 
 int32_t test030::Test(void)
 {
-  int32_t X = 0;
+  int32_t X;
+  X = 0;
   if ((A == 0) && (B == 0)) {
     return 0;
   } else {

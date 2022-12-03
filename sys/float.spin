@@ -227,7 +227,7 @@ pri file "libsys/fmt.c" _basic_print_float(h, f, fmtparam, ch)
 
 ' convert string to integer
 pri __builtin_atoi(s = "0", base=0) : r = long | c, negate, digit
-  negate := 0
+  negate := digit := 0
   repeat while byte[s] == " "
     s++
   c := byte[s]

@@ -1414,15 +1414,12 @@ ModifyLookup(AST *top)
  * Returns an AST that should be printed before the function body, e.g.
  * to declare temporary arrays.
  */
-enum SetKind { SETFLAG_NEVER = 0, SETFLAG_ALWAYS = 3 };
 
 static AST *
-NormalizeFunc(AST *ast, Function *func, enum SetKind setflag)
+NormalizeFunc(AST *ast, Function *func)
 {
     AST *ldecl;
     AST *rdecl;
-    Symbol *sym;
-    const char *name;
     
     if (!ast)
         return NULL;
@@ -1430,39 +1427,25 @@ NormalizeFunc(AST *ast, Function *func, enum SetKind setflag)
     switch (ast->kind) {
     case AST_RETURN:
         if (ast->left) {
-            return NormalizeFunc(ast->left, func, SETFLAG_NEVER);
+            return NormalizeFunc(ast->left, func);
         }
         return NULL;
     case AST_ADDROF:
     case AST_ABSADDROF:
-        return NormalizeFunc(ast->left, func, SETFLAG_ALWAYS);
+        return NormalizeFunc(ast->left, func);
     case AST_RESULT:
         func->result_used = 1;
         return NULL;
     case AST_METHODREF:
-        return NormalizeFunc(ast->left, func, setflag);
+        return NormalizeFunc(ast->left, func);
     case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER:
         rdecl = func->resultexpr;
         if (rdecl && rdecl->kind == AST_DECLARE_VAR) {
             rdecl = rdecl->right;
         }
-        if (rdecl && AstUses(rdecl, ast))
+        if (rdecl && AstUses(rdecl, ast)) {
             func->result_used = 1;
-        sym = LookupSymbol(GetIdentifierName(ast));
-        if (sym && sym->kind == SYM_LOCALVAR) {
-            switch (setflag) {
-            case SETFLAG_ALWAYS:
-                sym->flags |= SYMF_INITED;
-                break;
-            default:
-                if (!(sym->flags & SYMF_INITED)) {
-                    if (gl_warn_flags & WARN_UNINIT_VARS) {
-                        WARNING(ast, "%s is possibly used before initialization", sym->user_name);
-                    }
-                }
-                break;
-            }
         }
         return NULL;
     case AST_INTEGER:
@@ -1476,39 +1459,33 @@ NormalizeFunc(AST *ast, Function *func, enum SetKind setflag)
         return NULL;
     case AST_LOOKUP:
     case AST_LOOKDOWN:
-        ldecl = NormalizeFunc(ast->left, func, SETFLAG_NEVER);
-        rdecl = NormalizeFunc(ast->right, func, SETFLAG_NEVER);
+        ldecl = NormalizeFunc(ast->left, func);
+        rdecl = NormalizeFunc(ast->right, func);
         return ModifyLookup(ast);
     case AST_VA_START:
     case AST_ASSIGN:
-        rdecl = NormalizeFunc(ast->right, func, SETFLAG_NEVER);
-        if (0 != (name = GetIdentifierName(ast->left))) {
-            sym = LookupSymbol(name);
-            if (sym) {
-                sym->flags |= SYMF_INITED;
-            }
-        }
-        ldecl = NormalizeFunc(ast->left, func, SETFLAG_ALWAYS);
+        rdecl = NormalizeFunc(ast->right, func);
+        ldecl = NormalizeFunc(ast->left, func);
         return AddToList(ldecl, rdecl);
     case AST_DOWHILE:
-        rdecl = NormalizeFunc(ast->right, func, setflag);
-        ldecl = NormalizeFunc(ast->left, func, setflag);
+        rdecl = NormalizeFunc(ast->right, func);
+        ldecl = NormalizeFunc(ast->left, func);
         return AddToList(ldecl, rdecl);
     case AST_COUNTREPEAT:
-        ldecl = NormalizeFunc(ast->left, func, SETFLAG_ALWAYS); // in a COUNTREPEAT the variable is initialized
-        rdecl = NormalizeFunc(ast->right, func, setflag);
+        ldecl = NormalizeFunc(ast->left, func);
+        rdecl = NormalizeFunc(ast->right, func);
         return AddToList(ldecl, rdecl);
     case AST_FOR:
     case AST_FORATLEASTONCE:
         // initialization statement
-        ldecl = NormalizeFunc(ast->left, func, setflag);
+        ldecl = NormalizeFunc(ast->left, func);
         {
             AST *loopcond = ast->right->left;
             AST *update = ast->right->right->left;
             AST *body = ast->right->right->right;
-            ldecl = AddToList(ldecl, NormalizeFunc(loopcond, func, setflag));
-            ldecl = AddToList(ldecl, NormalizeFunc(body, func, setflag));
-            ldecl = AddToList(ldecl, NormalizeFunc(update, func, setflag));
+            ldecl = AddToList(ldecl, NormalizeFunc(loopcond, func));
+            ldecl = AddToList(ldecl, NormalizeFunc(body, func));
+            ldecl = AddToList(ldecl, NormalizeFunc(update, func));
             return ldecl;
         }
     case AST_DECLARE_VAR:
@@ -1520,11 +1497,10 @@ NormalizeFunc(AST *ast, Function *func, enum SetKind setflag)
         if (func->result_declared) {
             func->result_used = 1;
         }
-        setflag = SETFLAG_ALWAYS;  /* assume stuff gets set before use in inline assembly */
         /* otherwise, fall through */
     default:
-        ldecl = NormalizeFunc(ast->left, func, setflag);
-        rdecl = NormalizeFunc(ast->right, func, setflag);
+        ldecl = NormalizeFunc(ast->left, func);
+        rdecl = NormalizeFunc(ast->right, func);
         return AddToList(ldecl, rdecl);
     }
 }
@@ -2268,7 +2244,7 @@ ProcessOneFunc(Function *pf)
     if (last_errors != gl_errors && gl_errors >= gl_max_errors) return;
     
     CheckRecursive(pf);  /* check for recursive functions */
-    decls = NormalizeFunc(pf->body, pf, SETFLAG_NEVER);
+    decls = NormalizeFunc(pf->body, pf);
     pf->extradecl = AddToList(pf->extradecl, decls);
 
     /* check for void functions */
