@@ -316,10 +316,15 @@ static int CheckSymbolUsage(Symbol *sym, void *arg) {
             }
         }
         if (needInit) {
-            AST *init = AstIdentifier(sym->our_name);
-            init = AstAssign(init, AstInteger(0));
-            init = NewAST(AST_STMTLIST, init, F->body);
-            F->body = init;
+            AST *typ = (AST *)sym->val;
+            if (IsArrayType(typ) || IsClassType(typ)) {
+                needWarn = true;
+            } else {
+                AST *init = AstIdentifier(sym->our_name);
+                init = AstAssign(init, AstInteger(0));
+                init = NewAST(AST_STMTLIST, init, F->body);
+                F->body = init;
+            }
         }
         if (needWarn) {
             WARNING(where, "variable %s may be used before it is set in function %s", sym->user_name, F->name);
