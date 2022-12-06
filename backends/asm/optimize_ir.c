@@ -3918,6 +3918,7 @@ CanSwap(IR *a, IR *b)
     if (InstrIsVolatile(a) || InstrIsVolatile(b)) return false;
     if (IsBranch(a) || IsBranch(b)) return false;
     if (InstrModifies(a, b->src)) return false;
+    if (InstrModifies(a, b->dst)) return false;
     if (InstrUses(b, a->dst)) return false;
     if (InstrModifies(b, a->src)) return false;
     if (InstrUses(a, b->dst)) return false;
