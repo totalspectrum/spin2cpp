@@ -2932,8 +2932,10 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
         AST *ftype;
         if (expr->kind == AST_FUNCCALL || expr->kind == AST_ADDROF || expr->kind == AST_ABSADDROF) {
             ftype = ExprType(expr->left);
-            if (!ftype && curfunc && IsSpinLang(curfunc->language)) {
-                ftype = ast_type_generic_funcptr;
+            if (curfunc && IsSpinLang(curfunc->language)) {
+                if (!ftype || ftype == ast_type_long) {
+                    ftype = ast_type_generic_funcptr;
+                }
             }
             if (ftype && (ftype->kind == AST_PTRTYPE || ftype->kind == AST_REFTYPE || ftype->kind == AST_COPYREFTYPE)) {
                 ftype = RemoveTypeModifiers(ftype->left);

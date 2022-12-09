@@ -2022,7 +2022,7 @@ CheckFunctionCalls(AST *ast)
                 f = (Function *)sym->val;
                 expectArgs = f->numparams;
             } else {
-                AST *ftype = ExprType(ast->left);
+                AST *ftype = (curfunc && IsSpinLang(curfunc->language)) ? NULL : ExprType(ast->left);
                 if (ftype) {
                     if (ftype->kind == AST_MODIFIER_SEND_ARGS) {
                         doExpandArgs = 1;

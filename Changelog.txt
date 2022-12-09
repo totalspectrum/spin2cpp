@@ -1,3 +1,6 @@
+Version 5.9.22
+- Fixed indirect method pointer calls in Spin2 (like LONG[x](foo))
+
 Version 5.9.21
 - Automatically zero local Spin2 variables
 - Fixed loop test for downwards loops with steps > 1.
