@@ -2255,9 +2255,20 @@ CompileBasicBoolExpression(IRList *irl, AST *expr)
   int isUnsigned = 0;
   
   if (expr->kind == AST_OPERATOR) {
-    opkind = (int)expr->d.ival;
+      opkind = (int)expr->d.ival;
   } else {
-    opkind = -1;
+      AST *typ = ExprType(expr);
+      if (IsFloatType(typ)) {
+          ERROR(expr, "Internal error, compiler needs explicit comparison to 0.0 for floats");
+      } else if (IsInt64Type(typ)) {
+          AST *hi, *lo, *newexpr;
+          hi = NewAST(AST_GETHIGH, expr, NULL);
+          lo = NewAST(AST_GETLOW, expr, NULL);
+          newexpr = AstOperator('|', hi, lo);
+          newexpr = AstOperator(K_NE, newexpr, AstInteger(0));
+          return CompileBasicBoolExpression(irl, newexpr);
+      }
+      opkind = -1;
   }
   switch(opkind) {
   case K_GEU:

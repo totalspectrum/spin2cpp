@@ -1,5 +1,6 @@
 Version 5.9.22
 - Fixed indirect method pointer calls in Spin2 (like LONG[x](foo))
+- Fixed compiling some boolean expressions involving 64 bit integers
 
 Version 5.9.21
 - Automatically zero local Spin2 variables
