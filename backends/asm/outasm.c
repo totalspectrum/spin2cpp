@@ -2036,47 +2036,47 @@ doCompileMul(IRList *irl, Operand *lhs, Operand *rhs, int gethi, Operand *dest)
 }
 
 enum SixteenBitSafe {
-	SIXTEEN_BIT_UNSAFE = 0,
-	SIXTEEN_BIT_SAFE_EITHER,
-	SIXTEEN_BIT_SAFE_SIGNED,
-	SIXTEEN_BIT_SAFE_UNSIGNED,
+    SIXTEEN_BIT_UNSAFE = 0,
+    SIXTEEN_BIT_SAFE_EITHER,
+    SIXTEEN_BIT_SAFE_SIGNED,
+    SIXTEEN_BIT_SAFE_UNSIGNED,
 };
 
 static enum SixteenBitSafe is16BitSafe(AST *expr) {
-	AST *type = ExprType(expr->left);
-	if (!IsIntType(type)) return SIXTEEN_BIT_UNSAFE;
-	if (IsConstExpr(expr)) {
-		ExprInt val = EvalConstExpr(expr);
-		if      (val >= 0 && val <= 0x7FFF) return SIXTEEN_BIT_SAFE_EITHER;
-		else if (val >= 0 && val <= 0xFFFF) return SIXTEEN_BIT_SAFE_UNSIGNED;
-		else if (val < 0 && val >= -0x8000) return SIXTEEN_BIT_SAFE_SIGNED;
-		else return SIXTEEN_BIT_UNSAFE;
-	}
-	if (TypeSize(type) == 2) {
-		// Code path not used in C, it seems, due to type promotion
-		return IsUnsignedType(type) ? SIXTEEN_BIT_SAFE_UNSIGNED : SIXTEEN_BIT_SAFE_SIGNED;
-	}
-	if (TypeSize(type) == 1 && IsUnsignedType(type)) {
-		return SIXTEEN_BIT_SAFE_UNSIGNED;
-	}
-	if (expr->kind == AST_OPERATOR
-	&& (expr->d.ival == K_ZEROEXTEND || expr->d.ival == K_SIGNEXTEND)
-	&& IsConstExpr(expr->right)) {
-		ExprInt extend = EvalConstExpr(expr->right);
-		if (extend == 16) {
-			return expr->d.ival == K_ZEROEXTEND ? SIXTEEN_BIT_SAFE_UNSIGNED : SIXTEEN_BIT_SAFE_SIGNED;
-		} else if (extend >= 0 && extend < 16) {
-			return expr->d.ival == K_ZEROEXTEND ? SIXTEEN_BIT_SAFE_EITHER : SIXTEEN_BIT_SAFE_SIGNED;
-		}
-	}
-	return SIXTEEN_BIT_UNSAFE;
+    AST *type = ExprType(expr->left);
+    if (!IsIntType(type)) return SIXTEEN_BIT_UNSAFE;
+    if (IsConstExpr(expr)) {
+        ExprInt val = EvalConstExpr(expr);
+        if      (val >= 0 && val <= 0x7FFF) return SIXTEEN_BIT_SAFE_EITHER;
+        else if (val >= 0 && val <= 0xFFFF) return SIXTEEN_BIT_SAFE_UNSIGNED;
+        else if (val < 0 && val >= -0x8000) return SIXTEEN_BIT_SAFE_SIGNED;
+        else return SIXTEEN_BIT_UNSAFE;
+    }
+    if (TypeSize(type) == 2) {
+        // Code path not used in C, it seems, due to type promotion
+        return IsUnsignedType(type) ? SIXTEEN_BIT_SAFE_UNSIGNED : SIXTEEN_BIT_SAFE_SIGNED;
+    }
+    if (TypeSize(type) == 1 && IsUnsignedType(type)) {
+        return SIXTEEN_BIT_SAFE_UNSIGNED;
+    }
+    if (expr->kind == AST_OPERATOR
+    && (expr->d.ival == K_ZEROEXTEND || expr->d.ival == K_SIGNEXTEND)
+    && IsConstExpr(expr->right)) {
+        ExprInt extend = EvalConstExpr(expr->right);
+        if (extend == 16) {
+            return expr->d.ival == K_ZEROEXTEND ? SIXTEEN_BIT_SAFE_UNSIGNED : SIXTEEN_BIT_SAFE_SIGNED;
+        } else if (extend >= 0 && extend < 16) {
+            return expr->d.ival == K_ZEROEXTEND ? SIXTEEN_BIT_SAFE_EITHER : SIXTEEN_BIT_SAFE_SIGNED;
+        }
+    }
+    return SIXTEEN_BIT_UNSAFE;
 }
 
 static enum SixteenBitSafe is16BitCompatible(enum SixteenBitSafe left,enum SixteenBitSafe right) {
-	if (left==right) return left;
-	if (left==SIXTEEN_BIT_SAFE_EITHER) return right;
-	if (right==SIXTEEN_BIT_SAFE_EITHER) return left;
-	return SIXTEEN_BIT_UNSAFE;
+    if (left==right) return left;
+    if (left==SIXTEEN_BIT_SAFE_EITHER) return right;
+    if (right==SIXTEEN_BIT_SAFE_EITHER) return left;
+    return SIXTEEN_BIT_UNSAFE;
 }
 
 static Operand *
@@ -2085,18 +2085,18 @@ CompileMul(IRList *irl, AST *expr, int gethi, Operand *dest)
     Operand *lhs = CompileExpression(irl, expr->left, NULL);
     Operand *rhs = CompileExpression(irl, expr->right, NULL);
     if (gl_p2 && gethi == 0) {
-		enum SixteenBitSafe sixteen_safe = is16BitCompatible(is16BitSafe(expr->left),is16BitSafe(expr->left));
-		if (sixteen_safe) {
-			Operand *temp = NewFunctionTempRegister();
-			EmitMove(irl, temp, lhs);
-			rhs = Dereference(irl, rhs);
-			if (sixteen_safe == SIXTEEN_BIT_SAFE_UNSIGNED) {
-				EmitOp2(irl, OPC_MULU, temp, rhs);
-			} else {
-				EmitOp2(irl, OPC_MULS, temp, rhs);
-			}
-			return temp;
-		}
+        enum SixteenBitSafe sixteen_safe = is16BitCompatible(is16BitSafe(expr->left),is16BitSafe(expr->left));
+        if (sixteen_safe) {
+            Operand *temp = NewFunctionTempRegister();
+            EmitMove(irl, temp, lhs);
+            rhs = Dereference(irl, rhs);
+            if (sixteen_safe == SIXTEEN_BIT_SAFE_UNSIGNED) {
+                EmitOp2(irl, OPC_MULU, temp, rhs);
+            } else {
+                EmitOp2(irl, OPC_MULS, temp, rhs);
+            }
+            return temp;
+        }
     }
     return doCompileMul(irl, lhs, rhs, gethi, dest);
 }
@@ -4805,7 +4805,7 @@ static void CompileStatement(IRList *irl, AST *ast)
         if (!retval) {
             retval = GetResultExpr(curfunc->resultexpr);
         }
-	if (retval) {
+    if (retval) {
             // extract the return value if it's buried in a sequence
             while (retval->kind == AST_SEQUENCE) {
                 if (retval->right) {
@@ -4869,9 +4869,9 @@ static void CompileStatement(IRList *irl, AST *ast)
                     oplist = oplist->next;
                 }
             }
-	}
-	EmitJump(irl, COND_TRUE, FuncData(curfunc)->asmreturnlabel);
-	break;
+    }
+    EmitJump(irl, COND_TRUE, FuncData(curfunc)->asmreturnlabel);
+    break;
     case AST_THROW:
         EmitDebugComment(irl, ast);
         retval = ast->left;
@@ -4923,29 +4923,29 @@ static void CompileStatement(IRList *irl, AST *ast)
     case AST_WHILE:
         EmitDebugComment(irl, ast->left);
         toploop = NewCodeLabel();
-	botloop = NewCodeLabel();
-	PushQuitNext(botloop, toploop);
-	EmitLabel(irl, toploop);
+    botloop = NewCodeLabel();
+    PushQuitNext(botloop, toploop);
+    EmitLabel(irl, toploop);
         CompileBoolBranches(irl, ast->left, NULL, botloop);
-	FreeTempRegisters(irl, starttempreg);
+    FreeTempRegisters(irl, starttempreg);
         CompileStatementList(irl, ast->right);
-	EmitJump(irl, COND_TRUE, toploop);
-	EmitLabel(irl, botloop);
-	PopQuitNext();
-	break;
+    EmitJump(irl, COND_TRUE, toploop);
+    EmitLabel(irl, botloop);
+    PopQuitNext();
+    break;
     case AST_DOWHILE:
         toploop = NewCodeLabel();
-	botloop = NewCodeLabel();
-	exitloop = NewCodeLabel();
-	PushQuitNext(exitloop, botloop);
-	EmitLabel(irl, toploop);
+    botloop = NewCodeLabel();
+    exitloop = NewCodeLabel();
+    PushQuitNext(exitloop, botloop);
+    EmitLabel(irl, toploop);
         CompileStatementList(irl, ast->right);
-	EmitLabel(irl, botloop);
+    EmitLabel(irl, botloop);
         CompileBoolBranches(irl, ast->left, toploop, NULL);
-	FreeTempRegisters(irl, starttempreg);
-	EmitLabel(irl, exitloop);
-	PopQuitNext();
-	break;
+    FreeTempRegisters(irl, starttempreg);
+    EmitLabel(irl, exitloop);
+    PopQuitNext();
+    break;
     case AST_TRYENV:
     {
         ValidateAbortFuncs();
@@ -4963,7 +4963,7 @@ static void CompileStatement(IRList *irl, AST *ast)
     }
     case AST_FORATLEASTONCE:
     case AST_FOR:
-	CompileForLoop(irl, ast, ast->kind == AST_FORATLEASTONCE);
+    CompileForLoop(irl, ast, ast->kind == AST_FORATLEASTONCE);
         break;
     case AST_INLINEASM:
     {
@@ -4982,44 +4982,44 @@ static void CompileStatement(IRList *irl, AST *ast)
     case AST_ENDCASE:
         EmitDebugComment(irl, ast);
         if (!quitlabel) {
-	    ERROR(ast, "loop exit statement outside of loop");
-	} else {
-	    EmitJump(irl, COND_TRUE, quitlabel);
-	}
-	break;
+        ERROR(ast, "loop exit statement outside of loop");
+    } else {
+        EmitJump(irl, COND_TRUE, quitlabel);
+    }
+    break;
     case AST_CONTINUE:
         EmitDebugComment(irl, ast);
         if (!nextlabel) {
-	    ERROR(ast, "loop continue statement outside of loop");
-	} else {
-	    EmitJump(irl, COND_TRUE, nextlabel);
-	}
-	break;
+            ERROR(ast, "loop continue statement outside of loop");
+        } else {
+            EmitJump(irl, COND_TRUE, nextlabel);
+        }
+    break;
     case AST_IF:
         EmitDebugComment(irl, ast->left);
         toploop = NewCodeLabel();
         CompileBoolBranches(irl, ast->left, NULL, toploop);
-	FreeTempRegisters(irl, starttempreg);
-	ast = ast->right;
-	if (ast->kind == AST_COMMENTEDNODE) {
-            pendingComments = ast->right;
-            ast = ast->left;
-	}
-	/* ast should be an AST_THENELSE */
-	CompileStatementList(irl, ast->left);
-	if (ast->right) {
-            EmitComments(irl, pendingComments);
-            botloop = NewCodeLabel();
-            EmitJump(irl, COND_TRUE, botloop);
-            EmitLabel(irl, toploop);
-            CompileStatementList(irl, ast->right);
-            EmitLabel(irl, botloop);
-	} else {
-            EmitLabel(irl, toploop);
-	}
-	break;
+        FreeTempRegisters(irl, starttempreg);
+        ast = ast->right;
+        if (ast->kind == AST_COMMENTEDNODE) {
+                pendingComments = ast->right;
+                ast = ast->left;
+        }
+        /* ast should be an AST_THENELSE */
+        CompileStatementList(irl, ast->left);
+        if (ast->right) {
+                EmitComments(irl, pendingComments);
+                botloop = NewCodeLabel();
+                EmitJump(irl, COND_TRUE, botloop);
+                EmitLabel(irl, toploop);
+                CompileStatementList(irl, ast->right);
+                EmitLabel(irl, botloop);
+        } else {
+                EmitLabel(irl, toploop);
+        }
+        break;
     case AST_YIELD:
-	/* do nothing in assembly for YIELD */
+    /* do nothing in assembly for YIELD */
         break;
     case AST_SCOPE:
         ast = ast->left;
@@ -5201,64 +5201,64 @@ static int EmitAsmVars(struct flexbuf *fb, IRList *datairl, IRList *bssirl, int 
     int count = 0;
     
     if (siz > 0) {
-      EmitNewline(datairl);
+        EmitNewline(datairl);
     }
     /* sort the global variables */
     if (alphaSort) {
         qsort(g, siz, sizeof(*g), gcmpfunc);
     }
     for (i = 0; i < siz; i++) {
-      if (g[i].op->kind == REG_LOCAL && !g[i].op->used) {
-	continue;
+        if (g[i].op->kind == REG_LOCAL && !g[i].op->used) {
+            continue;
+         }
+        if (g[i].op->kind == REG_TEMP && !g[i].op->used) {
+            continue;
+        }
+        if (g[i].op->kind == IMM_INT && !g[i].op->used) {
+            continue;
+        }
+        if (g[i].op->kind == REG_HW) {
+            continue;
+        }
+        switch(g[i].op->kind) {
+        case STRING_DEF:
+            EmitLabel(datairl, g[i].op);
+            count += EmitString(datairl, (AST *)g[i].val);
+            break;
+        case IMM_COG_LABEL:
+        case IMM_HUB_LABEL:
+        case REG_HUBPTR:
+        case REG_COGPTR:
+            EmitLabel(datairl, g[i].op);
+            count += EmitLongPtr(datairl, (Operand *)g[i].val);
+            break;
+        case IMM_INT:
+            EmitLabel(datairl, g[i].op);
+            count += EmitLong(datairl, g[i].val);
+            break;
+        case REG_ARG:
+        case REG_LOCAL:
+        case REG_TEMP:
+        if (bssirl != NULL) {
+            EmitLabel(bssirl, g[i].op);
+            varsize = g[i].count / LONG_SIZE;
+            if (varsize == 0) varsize = 1;
+                if (varsize > 1) {
+                    int n;
+                    char *label;
+                    EmitReserve(bssirl, 1, COG_RESERVE);
+                    for (n = 1; n < varsize; n++) {
+                        label = OffsetName(g[i].op->name, n);
+                        EmitNamedCogLabel(bssirl, label);
+                        EmitReserve(bssirl, 1, COG_RESERVE);
+                    }
+                } else {                  
+                    EmitReserve(bssirl, varsize, COG_RESERVE);
+                }
+                count += varsize * 4;
+            break;
       }
-      if (g[i].op->kind == REG_TEMP && !g[i].op->used) {
-	continue;
-      }
-      if (g[i].op->kind == IMM_INT && !g[i].op->used) {
-	continue;
-      }
-      if (g[i].op->kind == REG_HW) {
-	continue;
-      }
-      switch(g[i].op->kind) {
-      case STRING_DEF:
-          EmitLabel(datairl, g[i].op);
-          count += EmitString(datairl, (AST *)g[i].val);
-          break;
-      case IMM_COG_LABEL:
-      case IMM_HUB_LABEL:
-      case REG_HUBPTR:
-      case REG_COGPTR:
-          EmitLabel(datairl, g[i].op);
-          count += EmitLongPtr(datairl, (Operand *)g[i].val);
-          break;
-      case IMM_INT:
-          EmitLabel(datairl, g[i].op);
-          count += EmitLong(datairl, g[i].val);
-          break;
-      case REG_ARG:
-      case REG_LOCAL:
-      case REG_TEMP:
-	  if (bssirl != NULL) {
-   	      EmitLabel(bssirl, g[i].op);
-	      varsize = g[i].count / LONG_SIZE;
-	      if (varsize == 0) varsize = 1;
-              if (varsize > 1) {
-                  int n;
-                  char *label;
-                  EmitReserve(bssirl, 1, COG_RESERVE);
-                  for (n = 1; n < varsize; n++) {
-                      label = OffsetName(g[i].op->name, n);
-                      EmitNamedCogLabel(bssirl, label);
-                      EmitReserve(bssirl, 1, COG_RESERVE);
-                  }
-              } else {                  
-                  EmitReserve(bssirl, varsize, COG_RESERVE);
-              }
-              count += varsize * 4;
-	      break;
-	  }
-	  // otherwise fall through
+      // otherwise fall through
       default:
           EmitLabel(datairl, g[i].op);
           varsize = g[i].count / LONG_SIZE;
@@ -5363,8 +5363,8 @@ AssignOneFuncName(Function *f)
             }
         }
         fname = IdentifierModuleName(P, f->name);
-	frname = (char *)malloc(strlen(fname) + 5);
-	sprintf(frname, "%s_ret", fname);
+        frname = (char *)malloc(strlen(fname) + 5);
+        sprintf(frname, "%s_ret", fname);
         if (gl_output == OUTPUT_COGSPIN && InCog(f) && f->is_public && !gl_p2) {
             faltname = (char *)malloc(strlen(fname) + 6);
             sprintf(faltname, "pasm%s", fname);
@@ -5556,7 +5556,7 @@ CompileToIR_internal(void *vptr, Module *P)
             continue;
         }
         curfunc = f;
-	EmitNewline(irl);
+        EmitNewline(irl);
 //        if (strstr(P->classname, "foo")) {
 //            printf("CompileWholeFunction: %s\n", f->name);
 //        }
