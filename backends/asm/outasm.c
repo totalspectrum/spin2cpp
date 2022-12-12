@@ -2035,27 +2035,68 @@ doCompileMul(IRList *irl, Operand *lhs, Operand *rhs, int gethi, Operand *dest)
     return temp;
 }
 
+enum SixteenBitSafe {
+	SIXTEEN_BIT_UNSAFE = 0,
+	SIXTEEN_BIT_SAFE_EITHER,
+	SIXTEEN_BIT_SAFE_SIGNED,
+	SIXTEEN_BIT_SAFE_UNSIGNED,
+};
+
+static enum SixteenBitSafe is16BitSafe(AST *expr) {
+	AST *type = ExprType(expr->left);
+	if (!IsIntType(type)) return SIXTEEN_BIT_UNSAFE;
+	if (IsConstExpr(expr)) {
+		ExprInt val = EvalConstExpr(expr);
+		if      (val >= 0 && val <= 0x7FFF) return SIXTEEN_BIT_SAFE_EITHER;
+		else if (val >= 0 && val <= 0xFFFF) return SIXTEEN_BIT_SAFE_UNSIGNED;
+		else if (val < 0 && val >= -0x8000) return SIXTEEN_BIT_SAFE_SIGNED;
+		else return SIXTEEN_BIT_UNSAFE;
+	}
+	if (TypeSize(type) == 2) {
+		// Code path not used in C, it seems, due to type promotion
+		return IsUnsignedType(type) ? SIXTEEN_BIT_SAFE_UNSIGNED : SIXTEEN_BIT_SAFE_SIGNED;
+	}
+	if (TypeSize(type) == 1 && IsUnsignedType(type)) {
+		return SIXTEEN_BIT_SAFE_UNSIGNED;
+	}
+	if (expr->kind == AST_OPERATOR
+	&& (expr->d.ival == K_ZEROEXTEND || expr->d.ival == K_SIGNEXTEND)
+	&& IsConstExpr(expr->right)) {
+		ExprInt extend = EvalConstExpr(expr->right);
+		if (extend == 16) {
+			return expr->d.ival == K_ZEROEXTEND ? SIXTEEN_BIT_SAFE_UNSIGNED : SIXTEEN_BIT_SAFE_SIGNED;
+		} else if (extend >= 0 && extend < 16) {
+			return expr->d.ival == K_ZEROEXTEND ? SIXTEEN_BIT_SAFE_EITHER : SIXTEEN_BIT_SAFE_SIGNED;
+		}
+	}
+	return SIXTEEN_BIT_UNSAFE;
+}
+
+static enum SixteenBitSafe is16BitCompatible(enum SixteenBitSafe left,enum SixteenBitSafe right) {
+	if (left==right) return left;
+	if (left==SIXTEEN_BIT_SAFE_EITHER) return right;
+	if (right==SIXTEEN_BIT_SAFE_EITHER) return left;
+	return SIXTEEN_BIT_UNSAFE;
+}
+
 static Operand *
 CompileMul(IRList *irl, AST *expr, int gethi, Operand *dest)
 {
     Operand *lhs = CompileExpression(irl, expr->left, NULL);
     Operand *rhs = CompileExpression(irl, expr->right, NULL);
     if (gl_p2 && gethi == 0) {
-        AST *lefttype = ExprType(expr->left);
-        if (IsIntType(lefttype) && TypeSize(lefttype) == 2) {
-            AST *righttype = ExprType(expr->right);
-            if (righttype == lefttype) {
-                Operand *temp = NewFunctionTempRegister();
-                EmitMove(irl, temp, lhs);
-                rhs = Dereference(irl, rhs);
-                if (IsUnsignedType(lefttype)) {
-                    EmitOp2(irl, OPC_MULU, temp, rhs);
-                } else {
-                    EmitOp2(irl, OPC_MULS, temp, rhs);
-                }
-                return temp;
-            }
-        }
+		enum SixteenBitSafe sixteen_safe = is16BitCompatible(is16BitSafe(expr->left),is16BitSafe(expr->left));
+		if (sixteen_safe) {
+			Operand *temp = NewFunctionTempRegister();
+			EmitMove(irl, temp, lhs);
+			rhs = Dereference(irl, rhs);
+			if (sixteen_safe == SIXTEEN_BIT_SAFE_UNSIGNED) {
+				EmitOp2(irl, OPC_MULU, temp, rhs);
+			} else {
+				EmitOp2(irl, OPC_MULS, temp, rhs);
+			}
+			return temp;
+		}
     }
     return doCompileMul(irl, lhs, rhs, gethi, dest);
 }

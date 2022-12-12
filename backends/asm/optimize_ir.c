@@ -3408,6 +3408,40 @@ OptimizePeepholes(IRList *irl)
         }
         no_getx:
 
+		// Check for unneccessary sign/zero extends before MULU/MULS
+		if (ir->opc == OPC_MULU || ir->opc == OPC_MULS) {
+            IR *previr;
+			int32_t tmp;
+			// Check dst
+			previr = FindPrevSetterForReplace(ir,ir->dst);
+			if (previr && previr->opc == OPC_SIGNX && previr->src->kind == IMM_INT && (previr->src->val&31) >= 15) {
+				DeleteIR(irl,previr);
+                changed = 1;
+			} else if (previr && isMaskingOp(previr,&tmp) && (tmp&0xFFFF)==0xFFFF) {
+				DeleteIR(irl,previr);
+                changed = 1;
+			} else if (previr && previr->opc == OPC_GETWORD) {
+				ReplaceOpcode(previr,OPC_MOV);
+                changed = 1;
+			}
+			// Check src
+			if (IsDeadAfter(ir,ir->src)) {
+				previr = FindPrevSetterForReplace(ir,ir->src);
+				if (previr && previr->opc == OPC_SIGNX && previr->src->kind == IMM_INT && (previr->src->val&31) >= 15) {
+					DeleteIR(irl,previr);
+					changed = 1;
+				} else if (previr && isMaskingOp(previr,&tmp) && (tmp&0xFFFF)==0xFFFF) {
+					DeleteIR(irl,previr);
+					changed = 1;
+				} else if (previr && previr->opc == OPC_GETWORD) {
+					ReplaceOpcode(previr,OPC_MOV);
+					changed = 1;
+				}
+			}
+
+			
+		}
+
         // on P2, check for immediate operand with just one bit set
         if (gl_p2 && ir->src && ir->src->kind == IMM_INT && !InstrSetsAnyFlags(ir) && ((uint32_t)ir->src->val) > 511) {
             if (ir->opc == OPC_AND) { 
