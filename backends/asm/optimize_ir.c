@@ -472,6 +472,8 @@ InstrUsesFlags_CondAside(IR *ir, unsigned flags)
     case OPC_DRVNC:
     case OPC_MUXC:
     case OPC_MUXNC:
+    case OPC_SUMC:
+    case OPC_SUMNC:
     case OPC_NEGC:
     case OPC_NEGNC:
     case OPC_BITC:
@@ -490,6 +492,8 @@ InstrUsesFlags_CondAside(IR *ir, unsigned flags)
     case OPC_MUXNZ:
     case OPC_NEGZ:
     case OPC_NEGNZ:
+    case OPC_SUMZ:
+    case OPC_SUMNZ:
     case OPC_WRZ:
     case OPC_WRNZ:
         /* definitely uses the Z flag */
@@ -1496,6 +1500,10 @@ ApplyConditionAfter(IR *instr, int cval, int zval)
         case OPC_NEGNC: if (setc) {ReplaceOpcode(ir,!cval ? OPC_NEG  : OPC_MOV );change=1;} break;
         case OPC_NEGZ : if (setz) {ReplaceOpcode(ir, zval ? OPC_NEG  : OPC_MOV );change=1;} break;
         case OPC_NEGNZ: if (setz) {ReplaceOpcode(ir,!zval ? OPC_NEG  : OPC_MOV );change=1;} break;
+        case OPC_SUMC : if (setc) {ReplaceOpcode(ir, cval ? OPC_SUB  : OPC_ADD );change=1;} break;
+        case OPC_SUMNC: if (setc) {ReplaceOpcode(ir,!cval ? OPC_SUB  : OPC_ADD );change=1;} break;
+        case OPC_SUMZ : if (setz) {ReplaceOpcode(ir, zval ? OPC_SUB  : OPC_ADD );change=1;} break;
+        case OPC_SUMNZ: if (setz) {ReplaceOpcode(ir,!zval ? OPC_SUB  : OPC_ADD );change=1;} break;
         case OPC_MUXC : if (setc) {ReplaceOpcode(ir, cval ? OPC_OR   : OPC_ANDN);change=1;} break;
         case OPC_MUXNC: if (setc) {ReplaceOpcode(ir,!cval ? OPC_OR   : OPC_ANDN);change=1;} break;
         case OPC_MUXZ : if (setz) {ReplaceOpcode(ir, zval ? OPC_OR   : OPC_ANDN);change=1;} break;
@@ -1904,6 +1912,10 @@ CanTestZero(int opc)
     case OPC_NEGNC:
     case OPC_NEGZ:
     case OPC_NEGNZ:
+    case OPC_SUMC:
+    case OPC_SUMNC:
+    case OPC_SUMZ:
+    case OPC_SUMNZ:
     case OPC_MUXC:
     case OPC_MUXNC:
     case OPC_MUXZ:
@@ -2899,6 +2911,12 @@ ReplaceZWithNC(IR *ir)
     case OPC_NEGNZ:
         ReplaceOpcode(ir, OPC_NEGC);
         break;
+    case OPC_SUMZ:
+        ReplaceOpcode(ir, OPC_SUMNC);
+        break;
+    case OPC_SUMNZ:
+        ReplaceOpcode(ir, OPC_SUMC);
+        break;
     case OPC_DRVZ:
         ReplaceOpcode(ir, OPC_DRVNC);
         break;
@@ -2909,6 +2927,8 @@ ReplaceZWithNC(IR *ir)
     case OPC_MUXNC:
     case OPC_NEGC:
     case OPC_NEGNC:
+    case OPC_SUMC:
+    case OPC_SUMNC:
     case OPC_GENERIC:
     case OPC_GENERIC_DELAY:
     case OPC_GENERIC_NR:
@@ -5501,6 +5521,47 @@ static PeepholePattern pat_negnz2[] = {
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
+// replace if_c sub / if_nc add and smiliar patterns with SUMcc
+static PeepholePattern pat_sumc1[] = {
+    { COND_C,  OPC_SUB, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_NC, OPC_ADD, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_sumc2[] = {
+    { COND_NC, OPC_ADD, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_C,  OPC_SUB, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_sumnc1[] = {
+    { COND_NC, OPC_SUB, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_C,  OPC_ADD, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_sumnc2[] = {
+    { COND_C,  OPC_ADD, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_NC, OPC_SUB, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_sumz1[] = {
+    { COND_Z,  OPC_SUB, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_NZ, OPC_ADD, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_sumz2[] = {
+    { COND_NZ, OPC_ADD, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_Z,  OPC_SUB, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_sumnz1[] = {
+    { COND_NZ, OPC_SUB, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_Z,  OPC_ADD, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_sumnz2[] = {
+    { COND_Z,  OPC_ADD, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_NZ, OPC_SUB, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
 
 // replace mov x, #0 / cmp a, b wz / if_e mov x, #1
 static PeepholePattern pat_seteq[] = {
@@ -5739,7 +5800,11 @@ static int ReplaceWrcCmp(int arg, IRList *irl, IR *ir)
     }
     ir = arg == 0 ? ir1->next : ir0->next;
     for(lastir = ir; lastir; lastir = lastir->next) {
-        if (!lastir || InstrIsVolatile(lastir)) {
+        if (!lastir) {
+            // End of function, safe.
+            break;
+        }
+        if (InstrIsVolatile(lastir)) {
             return 0;
         }
         if (IsBranch(lastir)) {
@@ -5755,15 +5820,12 @@ static int ReplaceWrcCmp(int arg, IRList *irl, IR *ir)
             break;
         }
     }
-    if (!lastir) {
-        return 0;
-    }
     // OK, let's go ahead and change Z to NC
     while (ir != lastir) {
         ReplaceZWithNC(ir);
         ir = ir->next;
     }
-    if (IsBranch(lastir)) {
+    if (lastir && IsBranch(lastir)) {
         ReplaceZWithNC(lastir);
     }
     if (arg == 0) {
@@ -6226,6 +6288,15 @@ struct Peepholes {
     { pat_negz2, OPC_NEGZ, ReplaceDrvc },
     { pat_negnz1, OPC_NEGNZ, ReplaceDrvc },
     { pat_negnz2, OPC_NEGNZ, ReplaceDrvc },
+
+    { pat_sumc1, OPC_SUMC, ReplaceDrvc },
+    { pat_sumc2, OPC_SUMC, ReplaceDrvc },
+    { pat_sumnc1, OPC_SUMNC, ReplaceDrvc },
+    { pat_sumnc2, OPC_SUMNC, ReplaceDrvc },
+    { pat_sumz1, OPC_SUMZ, ReplaceDrvc },
+    { pat_sumz2, OPC_SUMZ, ReplaceDrvc },
+    { pat_sumnz1, OPC_SUMNZ, ReplaceDrvc },
+    { pat_sumnz2, OPC_SUMNZ, ReplaceDrvc },
 
     { pat_not, 0, ReplaceNot}, 
 

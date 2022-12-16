@@ -531,7 +531,7 @@ FindInstrForOpc(IROpcode kind)
     }
     r = lookup_table[(unsigned int)kind];
     if (!r) {
-        ERROR(NULL, "Internal error, unknown instruction");
+        ERROR(NULL, "Internal error, unknown instruction (OPC %d)",kind);
     }
     return r;
 }
