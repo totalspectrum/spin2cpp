@@ -206,7 +206,9 @@ runtest: $(PROGS)
 	(cd Test; ./runtests_p2.sh)
 
 test_spinsim:  $(PROGS)
-	(cd Test/spinsim; make; cd ..; ./runtests_p1.sh "" "./spinsim/build/spinsim -b -q"; ./runtests_bc.sh "" "./spinsim/build/spinsim -b -q")
+	(cd Test/spinsim; make) 
+	(cd Test; ./runtests_p1.sh "" "./spinsim/build/spinsim -b -q")
+	(cd Test; ./runtests_bc.sh "" "./spinsim/build/spinsim -b -q")
 
 $(BUILD)/spin2cpp$(EXT): spin2cpp.c cmdline.c $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
