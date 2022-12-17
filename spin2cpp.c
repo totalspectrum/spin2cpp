@@ -524,9 +524,7 @@ main(int argc, const char **argv)
             break;
         }
     }
-    if (wantcse) {
-        gl_optimize_flags |= OPT_PERFORM_CSE;
-    } else {
+    if (!wantcse) {
         gl_optimize_flags &= ~OPT_PERFORM_CSE;
     }
     
