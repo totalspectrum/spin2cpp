@@ -2607,7 +2607,7 @@ int OptimizeBranchCommonOps(IRList *irl) {
         if (ir->opc == OPC_JUMP && ir->cond != COND_TRUE && ir->aux) {
             // Check for common ops at top of branch
             IR *lbl = ir->aux;
-            if (lbl->opc == OPC_LABEL && lbl->prev && lbl->prev->opc == OPC_JUMP && lbl->prev->cond == COND_TRUE) {
+            if (lbl->opc == OPC_LABEL /*&& lbl->prev*/ && lbl->prev->opc == OPC_JUMP && lbl->prev->cond == COND_TRUE) {
                 for (;;) {
                     IR *next_stay = ir->next;
                     while (next_stay && IsDummy(next_stay)) next_stay = next_stay->next;
