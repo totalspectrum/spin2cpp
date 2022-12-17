@@ -652,6 +652,7 @@ NextUseAfter(IR *ir, Operand *op)
 }
 #endif
 
+#if 0
 bool
 IsMathInstr(IR *ir)
 {
@@ -670,6 +671,7 @@ IsMathInstr(IR *ir)
         return false;
     }
 }
+#endif
 
 bool
 IsSrcBitIndex(IR *ir)
@@ -2290,6 +2292,10 @@ MeaninglessMath(IR *ir)
     case OPC_MUXNC:
     case OPC_MUXZ:
     case OPC_MUXNZ:
+    case OPC_SUMC:
+    case OPC_SUMNC:
+    case OPC_SUMZ:
+    case OPC_SUMNZ:
     case OPC_MINU:
         return (val == 0);
     case OPC_ZEROX:
@@ -2768,7 +2774,7 @@ OptimizeAddSub(IRList *irl)
                         val = -val;
                         ReplaceOpcode(ir, OPC_SUB);
                     } else {
-                ReplaceOpcode(ir, OPC_ADD);
+                        ReplaceOpcode(ir, OPC_ADD);
                     }
                     ir->src = NewImmediate(val);
                     DeleteIR(irl, prev);
@@ -2961,6 +2967,16 @@ IsCommutativeMath(IROpcode opc)
     case OPC_AND:
     case OPC_XOR:
     case OPC_TEST:
+    case OPC_MULU:
+    case OPC_MULS:
+        return true;
+    case OPC_MAXS:
+    case OPC_MAXU:
+    case OPC_MINS:
+    case OPC_MINU:
+        // These have C flag that depends on operand order.
+        // The only place this function is called currently doesn't allow flag sets, so it's fine,
+        // But if that ever changes, these need to be distinguished.
         return true;
     default:
         return false;
@@ -3744,14 +3760,13 @@ OptimizeSimpleAssignments(IRList *irl)
             && ir_prev->opc == OPC_MOV && ir_next->opc == OPC_MOV
             && ir_prev->dst == ir_next->src && ir_prev->src == ir_next->dst
             && ir->dst == ir_prev->dst
-            && ir_prev->cond == ir->cond
-            && ir_next->cond == ir->cond
-            && IsMathInstr(ir)
+            && ir_prev->cond == ir_next->cond
+            && CondIsSubset(ir_prev->cond,ir->cond)
+            && !IsBranch(ir)
             && !InstrIsVolatile(ir) && !InstrIsVolatile(ir_prev) && !InstrIsVolatile(ir_next)
-            && !InstrSetsAnyFlags(ir)
             && !InstrSetsAnyFlags(ir_prev)
             && !InstrSetsAnyFlags(ir_next)
-            && IsDeadAfter(ir_next, ir_next->src)
+            && IsDeadAfter(ir_next, ir_next->src) // This check also rejects HW regs
             )
         {
             ir->dst = ir_next->dst;
