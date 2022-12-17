@@ -652,6 +652,31 @@ NextUseAfter(IR *ir, Operand *op)
 }
 #endif
 
+//
+// find the next IR after orig that uses dest
+//
+static IR* FindNextUse(IR *ir, Operand *dst)
+{
+    ir = ir->next;
+    while (ir) {
+        if (InstrUses(ir, dst)) {
+            return ir;
+        }
+        if (InstrModifies(ir, dst)) {
+            // modifies but does not use? abort
+            return NULL;
+        }
+        if (IsJump(ir)) {
+            return NULL;
+        }
+        if (ir->opc == OPC_LABEL) {
+            return NULL;
+        }
+        ir = ir->next;
+    }
+    return NULL;
+}
+
 bool
 IsSrcBitIndex(IR *ir)
 {
@@ -952,6 +977,24 @@ static int MinCyclesInRange(IR *start,IR *end) {
         cyc += InstrMinCycles(ir);
     }
     return cyc;
+}
+
+
+static void
+DoReorderBlock(IRList *irl,IR *after,IR *top,IR *bottom) {
+    IR *above = top->prev;
+    IR *below = bottom->next;
+    // Unlink block
+    if (above) above->next = below;
+    else irl->head = below;
+    if (below) below->prev = above;
+    else irl->tail = above;
+    // Link block at new location
+    top->prev = after;
+    bottom->next = after->next;
+    if (after->next) after->next->prev = bottom;
+    else irl->tail = bottom;
+    after->next = top;
 }
 
 /*
@@ -1540,6 +1583,27 @@ SameOperand(Operand *a, Operand *b)
         return false;
     }
     return SameImmediate(a, b);
+}
+
+// Note: Intentionally doesn't check condition
+static bool
+SameIR(IR *a, IR *b) {
+    if (!a || !b) {
+        return false;
+    }
+    if (a == b) {
+        return true;
+    }
+    if (a->opc >= OPC_GENERIC) return false;
+    if (a->opc != b->opc) return false;
+    if (a->flags != b->flags) return false;
+    if (!SameOperand(a->src,b->src)) return false;
+    if (!SameOperand(a->src2,b->src2)) return false;
+    if (!SameOperand(a->dst,b->dst)) return false;
+    if (a->srceffect != b->srceffect) return false;
+    if (a->dsteffect != b->dsteffect) return false;
+
+    return true;
 }
 
 // try to transform an operation with a destination that is
@@ -2534,6 +2598,57 @@ int OptimizeShortBranches(IRList *irl)
     return change;
 }
 
+
+// Find common ops in branches and move them out
+int OptimizeBranchCommonOps(IRList *irl) {
+    int change = 0;
+    for (IR *ir=irl->head;ir;ir=ir->next) {
+        if (InstrIsVolatile(ir) || IsDummy(ir)) continue;
+        if (ir->opc == OPC_JUMP && ir->cond != COND_TRUE && ir->aux) {
+            // Check for common ops at top of branch
+            IR *lbl = ir->aux;
+            if (lbl->opc == OPC_LABEL && lbl->prev->opc == OPC_JUMP && lbl->prev->cond == COND_TRUE) {
+                for (;;) {
+                    IR *next_stay = ir->next;
+                    while (next_stay && IsDummy(next_stay)) next_stay = next_stay->next;
+                    IR *next_jump = lbl->next;
+                    while (next_jump && IsDummy(next_jump)) next_jump = next_jump->next;
+
+                    if (SameIR(next_stay,next_jump) && next_stay->cond == next_jump->cond
+                    && !(InstrIsVolatile(next_stay)||InstrIsVolatile(next_jump))) {
+                        DeleteIR(irl,next_jump);
+                        DoReorderBlock(irl,ir->prev,next_stay,next_stay);
+                        change++;
+                    } else {
+                        break;
+                    }
+                }
+            }
+        } else if (ir->opc == OPC_LABEL && ir->aux) {
+            // check for common ops at bottom of branch
+            IR *jump = ir->aux;
+            if (jump->opc == OPC_JUMP && jump->cond == COND_TRUE) {
+                for (;;) {
+                    IR *prev_stay = ir->prev;
+                    while (prev_stay && IsDummy(prev_stay)) prev_stay = prev_stay->prev;
+                    IR *prev_jump = jump->prev;
+                    while (prev_jump && IsDummy(prev_jump)) prev_jump = prev_jump->prev;
+
+                    if (SameIR(prev_stay,prev_jump) && prev_stay->cond == prev_jump->cond
+                    && !(InstrIsVolatile(prev_stay)||InstrIsVolatile(prev_jump))) {
+                        DeleteIR(irl,prev_jump);
+                        DoReorderBlock(irl,ir,prev_stay,prev_stay);
+                        change++;
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    return change;
+}
+
 //
 // Optimize compares with 0 by changing a previous instruction to set
 // flags instead
@@ -3457,6 +3572,49 @@ OptimizePeepholes(IRList *irl)
             
         }
 
+        
+        if (ir->opc == OPC_NEGC || ir->opc == OPC_NEGNC || ir->opc == OPC_NEGZ || ir->opc == OPC_NEGNZ) {
+            IR *nextir;
+            // Check for no-op
+            if (ir->src->kind == IMM_INT && ir->src->val == 0) {
+                ReplaceOpcode(ir,OPC_MOV);
+                changed = 1;
+                goto done;
+            }
+            // Check for NEGxx;ADD/SUB sequences and transform to single SUMxx
+            if ((nextir = FindNextUse(ir,ir->dst)) && nextir->src == ir->dst && nextir->cond == ir->cond
+            && (nextir->opc == OPC_ADD || nextir->opc == OPC_SUB)
+            && !InstrSetsAnyFlags(ir) && !InstrSetsFlags(nextir,FLAG_WC)
+            && !ModifiedInRange(ir->next,nextir->prev,ir->src)
+            && !FlagsChangeInRange(ir->next,nextir->prev,FlagsUsedByCond(ir->cond) | ((ir->opc == OPC_NEGC || ir->opc == OPC_NEGNC) ? FLAG_WC : FLAG_WZ))
+            && IsDeadAfter(nextir,ir->dst)) {
+                bool isSub = (nextir->opc == OPC_SUB);
+                IROpcode newOpc;
+                switch (ir->opc) {
+                case OPC_NEGC:
+                    newOpc = isSub ? OPC_SUMNC : OPC_SUMC;
+                    break;
+                case OPC_NEGNC:
+                    newOpc = isSub ? OPC_SUMC : OPC_SUMNC;
+                    break;
+                case OPC_NEGZ:
+                    newOpc = isSub ? OPC_SUMNZ : OPC_SUMZ;
+                    break;
+                case OPC_NEGNZ:
+                    newOpc = isSub ? OPC_SUMZ : OPC_SUMNZ;
+                    break;
+                default:
+                    // unreachable
+                    goto done;
+                }
+                nextir->src = ir->src;
+                ReplaceOpcode(nextir,newOpc);
+                DeleteIR(irl,ir);
+                changed = 1;
+                goto done;
+            }
+        }
+
         // on P2, check for immediate operand with just one bit set
         if (gl_p2 && ir->src && ir->src->kind == IMM_INT && !InstrSetsAnyFlags(ir) && ((uint32_t)ir->src->val) > 511) {
             if (ir->opc == OPC_AND) { 
@@ -3848,31 +4006,6 @@ OptimizeP2(IRList *irl)
 }
 
 //
-// find the next IR after orig that uses dest
-//
-static IR* FindNextUse(IR *ir, Operand *dst)
-{
-    ir = ir->next;
-    while (ir) {
-        if (InstrUses(ir, dst)) {
-            return ir;
-        }
-        if (InstrModifies(ir, dst)) {
-            // modifies but does not use? abort
-            return NULL;
-        }
-        if (IsJump(ir)) {
-            return NULL;
-        }
-        if (ir->opc == OPC_LABEL) {
-            return NULL;
-        }
-        ir = ir->next;
-    }
-    return NULL;
-}
-
-//
 // find the next rdlong that uses src
 // returns NULL if we spot anything that changes src, dest,
 // memory, or a branch
@@ -4095,23 +4228,6 @@ restart_check:
         ir = next_ir;
     }
     return change;
-}
-
-static void
-DoReorderBlock(IRList *irl,IR *after,IR *top,IR *bottom) {
-    IR *above = top->prev;
-    IR *below = bottom->next;
-    // Unlink block
-    if (above) above->next = below;
-    else irl->head = below;
-    if (below) below->prev = above;
-    else irl->tail = above;
-    // Link block at new location
-    top->prev = after;
-    bottom->next = after->next;
-    if (after->next) after->next->prev = bottom;
-    else irl->tail = bottom;
-    after->next = top;
 }
 
 // Pull matching add/sub instructions out of loops
@@ -4729,6 +4845,7 @@ again:
             change |= OptimizePeephole2(irl);
         }
         if (flags & OPT_BRANCHES) {
+            change |= OptimizeBranchCommonOps(irl);
             change |= OptimizeShortBranches(irl);
         }
         if (flags & OPT_BASIC_REGS) {
