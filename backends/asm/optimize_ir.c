@@ -2627,7 +2627,7 @@ int OptimizeBranchCommonOps(IRList *irl) {
                 }
             }
         
-        } /* else if (ir->opc == OPC_LABEL && ir->aux) {
+        } else if (ir->opc == OPC_LABEL && ir->aux) {
             // check for common ops at bottom of branch
             IR *jump = ir->aux;
             if (jump->opc == OPC_JUMP && jump->cond == COND_TRUE) {
@@ -2647,7 +2647,7 @@ int OptimizeBranchCommonOps(IRList *irl) {
                     }
                 }
             }
-        } */
+        }
     }
     return change;
 }
