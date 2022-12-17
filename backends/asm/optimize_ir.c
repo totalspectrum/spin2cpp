@@ -652,27 +652,6 @@ NextUseAfter(IR *ir, Operand *op)
 }
 #endif
 
-#if 0
-bool
-IsMathInstr(IR *ir)
-{
-    switch (ir->opc) {
-    case OPC_ADD:
-    case OPC_SUB:
-    case OPC_AND:
-    case OPC_ANDN:
-    case OPC_OR:
-    case OPC_XOR:
-    case OPC_SHL:
-    case OPC_SHR:
-    case OPC_SAR:
-        return true;
-    default:
-        return false;
-    }
-}
-#endif
-
 bool
 IsSrcBitIndex(IR *ir)
 {
@@ -3763,6 +3742,7 @@ OptimizeSimpleAssignments(IRList *irl)
             && ir_prev->cond == ir_next->cond
             && CondIsSubset(ir_prev->cond,ir->cond)
             && !IsBranch(ir)
+            && InstrSetsDst(ir)
             && !InstrIsVolatile(ir) && !InstrIsVolatile(ir_prev) && !InstrIsVolatile(ir_next)
             && !InstrSetsAnyFlags(ir_prev)
             && !InstrSetsAnyFlags(ir_next)
