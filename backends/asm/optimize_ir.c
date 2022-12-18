@@ -2598,7 +2598,7 @@ int OptimizeShortBranches(IRList *irl)
     return change;
 }
 
-
+#if 0
 static void DumpIR(IRList *irl,int suscnt,...) {
     struct flexbuf flex;
     flexbuf_init(&flex,0);
@@ -2613,6 +2613,7 @@ static void DumpIR(IRList *irl,int suscnt,...) {
     printf("%s\n",flexbuf_peek(&flex));
     flexbuf_delete(&flex);
 }
+#endif
 
 // Check for spurious deleted IR.
 // Should be fixed properly, but too lazy .
@@ -2632,6 +2633,11 @@ static bool ValidIR(IRList *irl,IR* ir) {
 // Find common ops in branches and move them out
 int OptimizeBranchCommonOps(IRList *irl) {
     int change = 0;
+    //printf("%s pre:\n",curfunc->user_name);
+    //DumpIR(irl,0);
+
+    //IR *susjmp = 0,*suslbl = 0;
+
     for (IR *ir=irl->head;ir;ir=ir->next) {
         if (InstrIsVolatile(ir) || IsDummy(ir)) continue;
         if (ir->opc == OPC_JUMP && ir->cond != COND_TRUE && ir->aux) {
@@ -2647,7 +2653,9 @@ int OptimizeBranchCommonOps(IRList *irl) {
                     if (SameIR(next_stay,next_jump) && next_stay->cond == next_jump->cond
                     && !IsPrefixOpcode(next_stay)
                     && !(InstrIsVolatile(next_stay)||InstrIsVolatile(next_jump))
-                    && !InstrSetsFlags(next_stay,FlagsUsedByCond(ir->cond))){
+                    && !InstrSetsFlags(next_stay,FlagsUsedByCond(ir->cond))) {
+
+                        //printf("Top delete %s\n",next_jump->instr->name);
                         DeleteIR(irl,next_jump);
                         DoReorderBlock(irl,ir->prev,next_stay,next_stay);
                         change++;
@@ -2672,9 +2680,12 @@ int OptimizeBranchCommonOps(IRList *irl) {
                     if (SameIR(prev_stay,prev_jump) && prev_stay->cond == prev_jump->cond
                     && !(IsPrefixOpcode(prev_stay->prev)||IsPrefixOpcode(prev_jump->prev))
                     && !(InstrIsVolatile(prev_stay)||InstrIsVolatile(prev_jump))) {
+
+                        //printf("Bottom delete %s\n",prev_jump->instr->name);
                         DeleteIR(irl,prev_jump);
                         DoReorderBlock(irl,ir,prev_stay,prev_stay);
                         change++;
+                        //suslbl = ir;susjmp = jump;
                     } else {
                         break;
                     }
@@ -2682,6 +2693,8 @@ int OptimizeBranchCommonOps(IRList *irl) {
             }
         }
     }
+    //printf("%s post:\n",curfunc->user_name);
+    //DumpIR(irl,2,susjmp,suslbl);
     return change;
 }
 
