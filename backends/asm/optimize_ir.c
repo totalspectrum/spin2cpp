@@ -2617,15 +2617,36 @@ static void DumpIR(IRList *irl,int suscnt,...) {
 // Check for spurious deleted IR.
 // Should be fixed properly, but too lazy .
 static bool ValidIR(IRList *irl,IR* ir) {
-    if (
-        (ir->prev ? ir->prev->next : irl->head)!=ir
-     || (ir->next ? ir->next->prev : irl->tail)!=ir
-     ) {
-        DEBUG(NULL,"Instr. validity check failed in %s",curfunc->user_name);
+    // Check upwards
+    IR *tmp = ir;
+    int count = 0;
+    while (tmp->prev) {
+        if (tmp->prev->next != tmp) {
+            DEBUG(NULL,"Instr. validity check failed (bad next) after %d steps in %s",count,curfunc->user_name);
+            return false;
+        }
+        tmp = tmp->prev;
+        count++;
+    }
+    if (irl->head != tmp) {
+        DEBUG(NULL,"Instr. validity check failed (bad head) after %d steps in %s",count,curfunc->user_name);
         return false;
-     } else {
-        return true;
-     }
+    }
+    tmp = ir;
+    count = 0;
+    while (tmp->next) {
+        if (tmp->next->prev != tmp) {
+            DEBUG(NULL,"Instr. validity check failed (bad prev) after %d steps in %s",count,curfunc->user_name);
+            return false;
+        }
+        tmp = tmp->next;
+        count++;
+    }
+    if (irl->tail != tmp) {
+        DEBUG(NULL,"Instr. validity check failed (bad tail) after %d steps in %s",count,curfunc->user_name);
+        return false;
+    }
+    return true;
 }
 
 // Find common ops in branches and move them out
