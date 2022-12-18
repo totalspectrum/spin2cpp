@@ -2417,8 +2417,8 @@ CalcClkFreqP2(Module *P)
         }
         for (divd = 64; divd >= 1; --divd) {
             Fpfd = round(xinfreq / (double)divd);
-            mult = round(clkfreq * post / Fpfd);
-            Fvco = round(Fpfd * mult);
+            mult = round(clkfreq * (post * divd) / xinfreq);
+            Fvco = round(xinfreq * mult / divd);
             Fout = round(Fvco / post);
             e = fabs(Fout - clkfreq);
             if ( (e <= error) && (Fpfd >= 250000) && (mult <= 1024) && (Fvco > 99e6) && ((Fvco <= 201e6) || (Fvco <= clkfreq + 1e6)) ) {
