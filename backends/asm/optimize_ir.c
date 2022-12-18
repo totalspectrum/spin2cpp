@@ -2680,7 +2680,8 @@ int OptimizeBranchCommonOps(IRList *irl) {
         } else if (ir->opc == OPC_LABEL && ir->aux) {
             // check for common ops at bottom of branch
             IR *jump = ir->aux;
-            if (jump->opc == OPC_JUMP && jump->cond == COND_TRUE) {
+            if (jump->opc == OPC_JUMP && jump->cond == COND_TRUE && jump->aux == ir && ValidIR(irl,jump)) {
+
                 for (;;) {
                     IR *prev_stay = ir->prev;
                     while (prev_stay && IsDummy(prev_stay)) prev_stay = prev_stay->prev;
