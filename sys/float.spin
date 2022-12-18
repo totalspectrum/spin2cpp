@@ -10,6 +10,7 @@
 ''***************************************
 con
   _float_one = $2000_0000
+  _float_sign_bit = $8000_0000
   
 pri _float_fromuns(integer = long) : m = float | s, x
 
@@ -30,12 +31,10 @@ pri _float_fromint(integer = long) : single = float | negate
 ''Convert integer to float    
   if integer < 0
     integer := -integer
-    negate := 1
+    negate := _float_sign_bit
   else
     negate := 0
-  single := _float_fromuns(integer)
-  if (negate)  
-    single := _float_negate(single)
+  single := _float_fromuns(integer) ^ negate
    
 pri _float_fromuns64(lo, hi) : m = float | s, x
 
@@ -73,12 +72,10 @@ pri _float_fromint64(lo, hi) : single = float | negate, tmplo, tmphi
       sub lo, tmplo wc
       subx hi, tmphi
     endasm
-    negate := 1
+    negate := float_sign_bit
   else
     negate := 0
-  single := _float_fromuns64(lo, hi)
-  if (negate)  
-    single := _float_negate(single)
+  single := _float_fromuns64(lo, hi) ^ negate
 
 pri _float_round(single = float) : integer = long
 
@@ -112,7 +109,7 @@ pri file "libsys/ieee32.c" _float_add(singleA = float, singleB = float) : single
 
 ''Subtract singleB from singleA
 pri _float_sub(singleA = float, singleB = float) : single = float
-  return _float_add(singleA, _float_negate(singleB))
+  return _float_add(singleA, singleB ^ float_sign_bit)
 
              
 pri file "libsys/ieee32.c" _float_sqrt(singleA = float) : single = float
@@ -276,7 +273,7 @@ pri __builtin_atof(s = "0") : r=float | c, exp, scaleexp, sawpoint, negate
   c := byte[s]
   repeat while (c == "+") or (c == "-")
     if c == "-"
-      negate := 1-negate
+      negate ^= _float_sign_bit
     s++
     c := byte[s]
     
@@ -303,9 +300,7 @@ pri __builtin_atof(s = "0") : r=float | c, exp, scaleexp, sawpoint, negate
   else
     exp := scaleexp
     
-  r := _float_pow_n(r, 10.0, exp)
-  if negate
-    r := _float_negate(r)
+  r := _float_pow_n(r, 10.0, exp) ^ negate
 
 '' extract sign from a float
 pri __builtin_signbit(a=float) : r=long
