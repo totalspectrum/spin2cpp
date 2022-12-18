@@ -5,7 +5,7 @@ dat
 entry
 
 __float_fromuns
-	cmp	arg01, #0 wz
+	cmps	arg01, #0 wz
  if_ne	mov	result1, arg01
  if_ne	and	result1, #15
  if_ne	shr	arg01, #2
