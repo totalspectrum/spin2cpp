@@ -795,6 +795,12 @@ DeleteIR(IRList *irl, IR *ir)
   } else {
     irl->tail = prev;
   }
+
+  // Delete label back reference if present
+  if (IsBranch(ir) && ir->aux) {
+    IR *lbl = ir->aux;
+    if (lbl->opc == OPC_LABEL && lbl->aux == ir) lbl->aux = NULL;
+  }
 }
 
 // emit a machine instruction with no operands

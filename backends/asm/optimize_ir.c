@@ -171,7 +171,7 @@ static bool IsJump(IR *ir)
   }
 }
 
-static bool IsBranch(IR *ir)
+bool IsBranch(IR *ir)
 {
     return IsJump(ir) || ir->opc == OPC_CALL;
 }
@@ -2617,6 +2617,7 @@ static void DumpIR(IRList *irl,int suscnt,...) {
 
 // Check for spurious deleted IR.
 // Should be fixed properly, but too lazy .
+// EDIT: Is now fixed properly, but might be good to keep anyways?
 static bool ValidIR(IRList *irl,IR* ir) {
     // Check upwards
     if (
