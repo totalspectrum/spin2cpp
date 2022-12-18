@@ -2060,8 +2060,6 @@ struct reservedword {
     { "<>", SP_NE },
 
     { "><", SP_REV },
-    { "->", SP_ROTR },
-    { "<-", SP_ROTL },
 
     { "<<", SP_SHL },
     { ">>", SP_SHR },
@@ -2094,6 +2092,8 @@ struct reservedword init_spin1_words[] = {
     { "spr", SP_SPR },
 
     { "?", SP_RANDOM },
+    { "->", SP_ROTR },
+    { "<-", SP_ROTL },
 };
 
 struct reservedword init_spin2_words[] = {
