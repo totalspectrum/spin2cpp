@@ -1,6 +1,7 @@
 Version 5.9.22
 - Fixed indirect method pointer calls in Spin2 (like LONG[x](foo))
 - Fixed compiling some boolean expressions involving 64 bit integers
+- Fixed QCOS and QSIN when used with angles larger than twopi
 - New optimization to use SUMxx instructions if possible (thanks Ada!)
 - Removed <- and -> operators from Spin2 (use ROL and ROR instead)
 - Revised P2 frequency calculations to match Chip's latest version

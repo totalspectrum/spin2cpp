@@ -428,11 +428,15 @@ pri _xypol(x, y) : d, angle
 
 pri _qsin(len, angle, twopi) : y | x
   if twopi
+    if angle > twopi __orelse__ angle < -twopi
+      angle := angle // twopi
     angle, x := _sdiv64(angle, 0, twopi)
   x, y := _rotxy(len, 0, angle)
 
 pri _qcos(len, angle, twopi) : x | y
   if twopi
+    if angle > twopi __orelse__ angle < -twopi
+      angle := angle // twopi
     angle, x := _sdiv64(angle, 0, twopi)
   x, y := _rotxy(len, 0, angle)
 
