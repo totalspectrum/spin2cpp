@@ -2599,6 +2599,35 @@ int OptimizeShortBranches(IRList *irl)
 }
 
 
+static void DumpIR(IRList *irl,int suscnt,...) {
+    struct flexbuf flex;
+    flexbuf_init(&flex,0);
+    for (IR *ir=irl->head;ir;ir=ir->next) {
+        DoAssembleIR(&flex,ir,NULL);
+        va_list argp;
+        va_start(argp,suscnt);
+        for (int i=0;i<suscnt;i++) if (ir==va_arg(argp,IR*)) flexbuf_printf(&flex,"/\\ sussy no %d\n",i);
+        va_end(argp);
+    }
+    flexbuf_addchar(&flex,0);
+    printf("%s\n",flexbuf_peek(&flex));
+    flexbuf_delete(&flex);
+}
+
+// Check for spurious deleted IR.
+// Should be fixed properly, but too lazy .
+static bool ValidIR(IRList *irl,IR* ir) {
+    if (
+        (ir->prev ? ir->prev->next : irl->head)!=ir
+     || (ir->next ? ir->next->prev : irl->tail)!=ir
+     ) {
+        DEBUG(NULL,"Instr. validity check failed in %s",curfunc->user_name);
+        return false;
+     } else {
+        return true;
+     }
+}
+
 // Find common ops in branches and move them out
 int OptimizeBranchCommonOps(IRList *irl) {
     int change = 0;
@@ -2607,7 +2636,7 @@ int OptimizeBranchCommonOps(IRList *irl) {
         if (ir->opc == OPC_JUMP && ir->cond != COND_TRUE && ir->aux) {
             // Check for common ops at top of branch
             IR *lbl = ir->aux;
-            if (lbl->opc == OPC_LABEL && lbl->aux == ir && lbl->prev && lbl->prev->opc == OPC_JUMP && lbl->prev->cond == COND_TRUE) {
+            if (lbl->opc == OPC_LABEL && lbl->aux == ir && lbl->prev && lbl->prev->opc == OPC_JUMP && lbl->prev->cond == COND_TRUE && ValidIR(irl,lbl)) {
                 for (;;) {
                     IR *next_stay = ir->next;
                     while (next_stay && IsDummy(next_stay)) next_stay = next_stay->next;
@@ -2636,8 +2665,10 @@ int OptimizeBranchCommonOps(IRList *irl) {
                     while (prev_stay && IsDummy(prev_stay)) prev_stay = prev_stay->prev;
                     IR *prev_jump = jump->prev;
                     while (prev_jump && IsDummy(prev_jump)) prev_jump = prev_jump->prev;
+                    if (prev_jump == ir || prev_jump == jump || prev_stay == ir || prev_stay == jump) break;
 
                     if (SameIR(prev_stay,prev_jump) && prev_stay->cond == prev_jump->cond
+                    && !(IsPrefixOpcode(prev_stay->prev)||IsPrefixOpcode(prev_jump->prev))
                     && !(InstrIsVolatile(prev_stay)||InstrIsVolatile(prev_jump))) {
                         DeleteIR(irl,prev_jump);
                         DoReorderBlock(irl,ir,prev_stay,prev_stay);
