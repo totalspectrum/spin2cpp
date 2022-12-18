@@ -117,13 +117,12 @@ LR__0005
 LR__0006
 	cmp	__system___float_mul_a_0008, #0 wz
  if_e	jmp	#LR__0008
-	shl	__system___float_mul_a_0008, #1
 LR__0007
+	shl	__system___float_mul_a_0008, #1
 	cmp	__system___float_mul_a_0008, imm_8388608_ wc
  if_b	mov	_system___float_mul_tmp002_, __system___float_mul_aexp_0010
  if_b	sub	_system___float_mul_tmp002_, #1
  if_b	mov	__system___float_mul_aexp_0010, _system___float_mul_tmp002_
- if_b	shl	__system___float_mul_a_0008, #1
  if_b	jmp	#LR__0007
 	jmp	#LR__0001
 LR__0008
@@ -137,11 +136,10 @@ LR__0008
 LR__0009
 	cmp	__system___float_mul_b_0009, #0 wz
  if_e	jmp	#LR__0011
-	shl	__system___float_mul_b_0009, #1
 LR__0010
+	shl	__system___float_mul_b_0009, #1
 	cmp	__system___float_mul_b_0009, imm_8388608_ wc
  if_b	sub	__system___float_mul_bexp_0011, #1
- if_b	shl	__system___float_mul_b_0009, #1
  if_b	jmp	#LR__0010
 	jmp	#LR__0002
 LR__0011
@@ -229,23 +227,21 @@ LR__0015
 	and	_var05, #1
 	shl	_var05, #31
 	or	_var02, _var05
-	shr	_var01, #1
 LR__0016
+	shr	_var01, #1
 	cmps	_var03, #0 wc
  if_ae	jmp	#LR__0017
 	cmp	_var01, #0 wz
- if_e	jmp	#LR__0017
-	mov	_var06, _var02
-	and	_var06, #1
-	add	_var03, #1
-	shr	_var02, #1
-	mov	_var07, _var01
-	and	_var07, #1
-	shl	_var07, #31
-	or	_var02, _var07
-	or	_var02, _var06
-	shr	_var01, #1
-	jmp	#LR__0016
+ if_ne	mov	_var06, _var02
+ if_ne	and	_var06, #1
+ if_ne	add	_var03, #1
+ if_ne	shr	_var02, #1
+ if_ne	mov	_var07, _var01
+ if_ne	and	_var07, #1
+ if_ne	shl	_var07, #31
+ if_ne	or	_var02, _var07
+ if_ne	or	_var02, _var06
+ if_ne	jmp	#LR__0016
 LR__0017
 	cmps	_var03, #0 wc
  if_ae	jmp	#LR__0019
