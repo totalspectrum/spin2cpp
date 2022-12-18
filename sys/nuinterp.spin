@@ -911,7 +911,7 @@ impl_RDPINX
 	rdpin	nos, nos wc
    	neg	tos, #1
   _ret_	muxc	tos, tos
-	
+
 impl_ROTXY
 	mov	tmp, tos	' tmp = angle
 	call	#\impl_DROP	' tos = y, nos = x
@@ -919,7 +919,6 @@ impl_ROTXY
 	qrotate	nos, tmp
 	getqx	nos
   _ret_	getqy	tos
-
 
 impl_ADD64
 	mov	tmp, tos	' bhi
