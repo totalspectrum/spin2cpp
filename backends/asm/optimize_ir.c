@@ -3046,7 +3046,7 @@ ReplaceZWithNC(IR *ir)
     case COND_FALSE:
         break;
     default:
-        ERROR(NULL, "Internal error, unexpected condition");
+        ERROR(NULL, "Internal error, unexpected condition %d in ReplaceZWithNC",ir->cond);
     }
     switch (ir->opc) {
     case OPC_MUXZ:
@@ -5990,13 +5990,13 @@ static int ReplaceWrcCmp(int arg, IRList *irl, IR *ir)
         if (InstrIsVolatile(lastir)) {
             return 0;
         }
-        if (IsBranch(lastir)) {
-            // we assume flags do not have to be preserved across branches */
-            break;
-        }
         if (InstrUsesFlags(lastir, FLAG_WC)) {
             // C is explicitly used, so preserve it
             return 0;
+        }
+        if (IsBranch(lastir)) {
+            // we assume flags do not have to be preserved across branches */
+            break;
         }
         if (InstrSetsAnyFlags(lastir)) {
             // flags are to be replaced
