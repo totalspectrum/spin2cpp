@@ -4055,6 +4055,34 @@ OptimizeP2(IRList *irl)
     return changed;
 }
 
+static int
+MemoryOpSize(IR *ir) {
+    if (!ir) {
+        return 0;
+    }
+    switch (ir->opc) {
+    case OPC_RDBYTE:
+    case OPC_WRBYTE:
+        return 1;
+    case OPC_RDWORD:
+    case OPC_WRWORD:
+        return 2;
+    case OPC_RDLONG:
+    case OPC_WRLONG:
+        return 4;
+    default:
+        return 0;
+    }
+}
+
+static bool IsMemoryOrderSafe(Operand *op) {
+    if (!(curfunc->optimize_flags & OPT_AGGRESSIVE_MEM)) {
+        return false;
+    }
+    // maybe more conditions later?
+    return true;
+}
+
 //
 // find the next rdlong that uses src
 // returns NULL if we spot anything that changes src, dest,
@@ -4094,31 +4122,15 @@ static IR* FindNextRead(IR *irorig, Operand *dest, Operand *src)
             return NULL;
         }
         if (IsWrite(ir)) {
-            return NULL;
+            if (ir->src == src && IsMemoryOrderSafe(src) && (ir->opc == OPC_WRLONG || ir->opc == OPC_WRWORD || ir->opc == OPC_WRBYTE)
+                && (offset >= MemoryOpSize(irorig) || offset <= -MemoryOpSize(ir))) {
+                /* write does not conflict, should be okay */
+            } else {
+                return NULL;
+            }
         }
     }
     return NULL;
-}
-
-
-static int
-MemoryOpSize(IR *ir) {
-    if (!ir) {
-        return 0;
-    }
-    switch (ir->opc) {
-    case OPC_RDBYTE:
-    case OPC_WRBYTE:
-        return 1;
-    case OPC_RDWORD:
-    case OPC_WRWORD:
-        return 2;
-    case OPC_RDLONG:
-    case OPC_WRLONG:
-        return 4;
-    default:
-        return 0;
-    }
 }
 
 // true if ir represents a real instruction which does not

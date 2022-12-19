@@ -424,6 +424,8 @@ static struct optflag_table {
     { "special-functions", OPT_SPECIAL_FUNCS },
     { "cordic-reorder", OPT_CORDIC_REORDER},
     { "local-reuse", OPT_LOCAL_REUSE},
+    { "aggressive-mem", OPT_AGGRESSIVE_MEM},
+    
     { "experimental", OPT_EXPERIMENTAL },
     { "all", OPT_FLAGS_ALL },
 };

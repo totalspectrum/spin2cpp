@@ -281,6 +281,10 @@ pinwrite: Optimized if just one pin or one bit are being written
 
 On the P2, reorder instructions to take advantage of cordic pipeline delays.
 
+### Aggressive load/store optimization (-O2, -Oaggressive-mem)
+
+Enables some more aggressive optimizations which attempt to track values and reduce the number of memory accesses.
+
 ### Experimental / new optimizations (-O2, -Oexperimental)
 
 Enables some miscellaneous optimizations that are new and hence slightly less well tested. Generally these should be pretty safe, but they're not quite ready for promotion to the default -O1.

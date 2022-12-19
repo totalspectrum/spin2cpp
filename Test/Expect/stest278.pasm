@@ -47,7 +47,6 @@ _bump3
 	add	ptr__dat__, #4
 	wrlong	arg04, ptr__dat__
 	sub	ptr__dat__, #4
-	rdlong	result1, ptr__dat__
 	mov	_var02, arg04
 	mov	result2, _var02
 _bump3_ret
