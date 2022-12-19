@@ -15,8 +15,7 @@ __float_fromuns_ret
 	ret
 
 __float_fromint
-	cmps	arg01, #0 wc
- if_b	neg	arg01, arg01
+	abs	arg01, arg01 wc
  if_b	mov	__float_fromint_negate, #1
  if_ae	mov	__float_fromint_negate, #0
 	call	#__float_fromuns

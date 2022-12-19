@@ -5530,6 +5530,14 @@ static PeepholePattern pat_not[] = {
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
+// cmps x,#0 wc; if_c neg x,x -> abs x,x wc
+// (wz is also allowed)
+static PeepholePattern pat_cmps_abs[] = {
+    { COND_ANY, OPC_CMPS, PEEP_OP_SET|0, PEEP_OP_IMM|0, PEEP_FLAGS_WCZ_OK | PEEP_FLAGS_MUST_WC },
+    { COND_C  , OPC_NEG , PEEP_OP_MATCH|0, PEEP_OP_MATCH|0, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
 // remove redundant zero extends after rdbyte/rdword
 static PeepholePattern pat_rdbyte1[] = {
     { COND_TRUE, OPC_RDBYTE, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_NONE },
@@ -5945,6 +5953,17 @@ static int ReplaceExtend(int arg, IRList *irl, IR *ir)
     DeleteIR(irl, ir->next);
     return 1;
 }
+
+// cmps x,#0 wc; if_c neg x,x -> abs x,x wc
+// (wz also allowed)
+static int ReplaceCmpsAbs(int arg, IRList *irl, IR *ir)
+{
+    ReplaceOpcode(ir,OPC_ABS);
+    ir->src = ir->dst;
+    DeleteIR(irl,ir->next);
+    return 1;
+}
+
 //
 // looks at the sequence (arg = 0)
 //   wrc x (or muxc x,#-1 or subx x,x)
@@ -6463,6 +6482,8 @@ struct Peepholes {
     { pat_sumnz2, OPC_SUMNZ, ReplaceDrvc },
 
     { pat_not, 0, ReplaceNot}, 
+
+    { pat_cmps_abs, 0, ReplaceCmpsAbs},
 
     { pat_wrc_cmp, 0, ReplaceWrcCmp },
     { pat_wrc_and, 1, RemoveNFlagged },
