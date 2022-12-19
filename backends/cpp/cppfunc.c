@@ -50,8 +50,8 @@ PrintParameterList(Flexbuf *f, Function *func)
             flexbuf_printf(f, "intptr_t __vaargs");
         } else if (IsIdentifier(ast)) {
             sym = FindSymbol(&func->localsyms, ast->d.string);
-            if (sym && sym->kind == SYM_PARAMETER && sym->val) {
-                typ = (AST *)sym->val;
+            if (sym && sym->kind == SYM_PARAMETER && sym->v.ptr) {
+                typ = (AST *)sym->v.ptr;
             } else {
                 typ = ast_type_generic;
             }
@@ -263,7 +263,7 @@ PrintFunctionVariables(Flexbuf *f, Function *func)
                 sym = VarSymbol(func, v->left);
                 if (sym) {
 		    sym->offset += (offset*4);
-                    n = TypeSize((AST *)sym->val);
+                    n = TypeSize((AST *)sym->v.ptr);
                     while (n > 0) {
                         n -= 4;
                         parmsiz++;

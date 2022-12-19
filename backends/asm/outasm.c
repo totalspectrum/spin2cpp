@@ -258,7 +258,7 @@ PutVarOnStack(Function *func, Symbol *sym, int size)
     if (!ANY_VARS_ON_STACK(func)) {
         return false;
     }
-    if (sym->kind == SYM_LOCALVAR && TypeGoesOnStack((AST *)sym->val)) {
+    if (sym->kind == SYM_LOCALVAR && TypeGoesOnStack((AST *)sym->v.ptr)) {
         return true;
     }
     return false;
@@ -1163,7 +1163,7 @@ Operand *
 LabelRef(IRList *irl, Symbol *sym)
 {
     Operand *temp;
-    Label *lab = (Label *)sym->val;
+    Label *lab = (Label *)sym->v.ptr;
     Module *P = sym->module ? (Module *)sym->module : current;
     Operand *datbase = ValidateDatBase(P);
 
@@ -1222,7 +1222,7 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func, AST *ast)
               return ref;
           }
           ValidateObjbase();
-          exprtype = (AST *)sym->val;
+          exprtype = (AST *)sym->v.ptr;
           if (COG_DATA) {
               // COG memory
               size = TypeSize(exprtype);
@@ -1233,12 +1233,12 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func, AST *ast)
           }
       case SYM_FUNCTION:
       {
-          Function *calledf = (Function *)sym->val;
+          Function *calledf = (Function *)sym->v.ptr;
           return FuncData(calledf)->asmname;
       }
       case SYM_HWREG:
       {
-          HwReg *hw = (HwReg *)sym->val;
+          HwReg *hw = (HwReg *)sym->v.ptr;
           return GetOneGlobal(REG_HW, hw->name, 0);
       }
       case  SYM_CLOSURE:
@@ -1260,12 +1260,12 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func, AST *ast)
           if (stype == SYM_RESULT) {
               size = LONG_SIZE;
           } else {
-              size = TypeSize((AST *)sym->val);
+              size = TypeSize((AST *)sym->v.ptr);
           }
           if (PutVarOnStack(func, sym, size)) {
               int offset = sym_offset(func, sym);
               if (offset >= 0) {
-                  AST *typ = (AST *)sym->val;
+                  AST *typ = (AST *)sym->v.ptr;
                   if (IsArrayType(typ)) {
                       size = TypeSize(BaseType(typ));
                   }
@@ -1274,12 +1274,12 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func, AST *ast)
           }
           return GetSizedGlobal(REG_LOCAL, IdentifierLocalName(func, sym->our_name), 0, size);
       case SYM_TEMPVAR:
-          size = TypeSize((AST *)sym->val);
+          size = TypeSize((AST *)sym->v.ptr);
           return GetSizedGlobal(REG_TEMP, IdentifierLocalName(func, sym->our_name), 0, size);
       case SYM_LABEL:
           return LabelRef(irl, sym);
       case SYM_ALIAS:
-          expr = (AST *)sym->val;
+          expr = (AST *)sym->v.ptr;
           return CompileExpression(irl, expr, NULL);
       }
   }
@@ -1333,7 +1333,7 @@ GetSystemFunction(const char *name)
         ERROR(NULL, "Internal error, %s is not a function", name);
         return mulfunc;
     }
-    calledf = (Function *)sym->val;
+    calledf = (Function *)sym->v.ptr;
     if (!calledf || !FuncData(calledf)) {
         ERROR(NULL, "Internal error, %s not set up", name);
         return mulfunc;
@@ -1888,7 +1888,7 @@ CompileIdentifier(IRList *irl, AST *expr)
     if (expr->kind == AST_IDENTIFIER) {
         sym = LookupSymbol(expr->d.string);
         if (sym && (sym->kind == SYM_CONSTANT || sym->kind == SYM_FLOAT_CONSTANT)) {
-            AST *symexpr = (AST *)sym->val;
+            AST *symexpr = (AST *)sym->v.ptr;
             int val = EvalConstExpr(symexpr);
             if (val >= 0 && val < 512) {
                 // it would be nice to use sym->name as a symbolic
@@ -3032,7 +3032,7 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
         }
         return NULL;
     }
-    func = (Function *)sym->val;
+    func = (Function *)sym->v.ptr;
     if (func) {
         func->callSites |= 1; // internal functions may not have been marked earlier
     }
@@ -5436,10 +5436,10 @@ static int FixupTypes(Symbol *sym, void *arg)
     case SYM_VARIABLE:
     case SYM_PARAMETER:
     case SYM_RESULT:
-        sym->val = (void *)CleanupType((AST *)sym->val);
+        sym->v.ptr = (void *)CleanupType((AST *)sym->v.ptr);
         break;
     case SYM_LABEL:
-        lab = (Label *)sym->val;
+        lab = (Label *)sym->v.ptr;
         lab->type = CleanupType(lab->type);
         break;
     default:
@@ -6124,7 +6124,7 @@ CompileConstant(IRList *irl, AST *ast, bool skip_clkfreq, bool skip_clkmode)
         ERROR(ast, "constant symbol %s not declared??", name);
         return;
     }
-    expr = (AST *)sym->val;
+    expr = (AST *)sym->v.ptr;
     if (skip_clkfreq && !strcasecmp(name, "_clkfreq")) {
         return;
     }
@@ -6145,11 +6145,11 @@ CompileConsts(IRList *irl, Module *P)
     Symbol *sym;
     if ( 0 != (sym = FindSymbol(&P->objsyms, "__clkfreq_con")) ) {
         skip_clkfreq = true;
-        CompileConstOperand(irl, "_clkfreq", (AST *)sym->val);
+        CompileConstOperand(irl, "_clkfreq", (AST *)sym->v.ptr);
     }
     if ( 0 != (sym = FindSymbol(&P->objsyms, "__clkmode_con")) ) {
         skip_clkmode = true;
-        CompileConstOperand(irl, "_clkmode", (AST *)sym->val);
+        CompileConstOperand(irl, "_clkmode", (AST *)sym->v.ptr);
     }
     for (upper = conblock; upper; upper = upper->right) {
         ast = upper->left;
@@ -6782,7 +6782,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         Symbol *sym = LookupSymbol("__real_heapsize__");
         unsigned heapsize;
         if (sym && sym->kind == SYM_CONSTANT) {
-            heapsize = EvalConstExpr((AST *)sym->val);
+            heapsize = EvalConstExpr((AST *)sym->v.ptr);
         } else {
             heapsize = 256;
         }

@@ -65,7 +65,7 @@ PrintLabel(Flexbuf *f, Symbol *sym, int flags)
 {
     int ref = (flags & PRINTEXPR_ISREF) != 0;
     int divBy4 = (flags & PRINTEXPR_GASIMM) != 0;
-    Label *lab = (Label *)sym->val;
+    Label *lab = (Label *)sym->v.ptr;
 
     if (current->pasmLabels && !(flags & PRINTEXPR_GASABS)) {
         if (divBy4) {
@@ -231,7 +231,7 @@ PrintSymbol(Flexbuf *f, Symbol *sym, int flags)
     case SYM_FLOAT_CONSTANT:
         if (IsReservedWord(sym->user_name) && !(flags & PRINTEXPR_USECONST)) {
             int32_t v;
-            v = EvalConstExpr((AST *)sym->val);
+            v = EvalConstExpr((AST *)sym->v.ptr);
             PrintInteger(f, v, flags);
         } else if (gl_ccode || gl_gas_dat) {
             PrintObjConstName(f, current, sym->user_name);
@@ -297,7 +297,7 @@ PrintFuncCall(Flexbuf *f, Symbol *sym, AST *params, AST *objtype, AST *objref)
     
     Function *func = NULL;
     if (sym->kind == SYM_FUNCTION) {
-        func = (Function *)sym->val;
+        func = (Function *)sym->v.ptr;
         is_static = func->is_static;
         localMethod = (objtype == NULL) && (objref == NULL);
     }
@@ -389,7 +389,7 @@ PrintStackWithSize(Flexbuf *f, AST *origstack)
     if (!sym) {
         return;
     }
-    stype = (AST *)sym->val;
+    stype = (AST *)sym->v.ptr;
     if (!stype || stype->kind != AST_ARRAYTYPE) {
         ERROR(stack, "coginit stack is not array");
         return;
@@ -960,7 +960,7 @@ PrintLHS(Flexbuf *f, AST *expr, int flags)
                     ERROR(expr, "symbol %s on left hand side of assignment", sym->user_name);
                 } else {
                     if (sym->kind == SYM_BUILTIN) {
-                        Builtin *b = (Builtin *)sym->val;
+                        Builtin *b = (Builtin *)sym->v.ptr;
                         (*b->printit)(f, b, NULL);
                     } else {
                         if (gl_ccode) {
@@ -1603,7 +1603,7 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
                 flexbuf_printf(f, ")");
             }
         } else if (sym->kind == SYM_BUILTIN) {
-            Builtin *b = (Builtin *)sym->val;
+            Builtin *b = (Builtin *)sym->v.ptr;
             (*b->printit)(f, b, expr->right);
         } else if (sym->kind == SYM_FUNCTION) {
             PrintFuncCall(f, sym, expr->right, objtype, objref);
@@ -1810,7 +1810,7 @@ PrintExprList(Flexbuf *f, AST *list, int flags, Function *func)
                 }
                 sym = FindSymbol(&func->localsyms, paramid->d.string);
                 if (sym && sym->kind == SYM_PARAMETER) {
-                    paramtype = (AST *)sym->val;
+                    paramtype = (AST *)sym->v.ptr;
                 }
             }
         }

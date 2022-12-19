@@ -97,7 +97,7 @@ static const char *RemappedName(const char *name)
         return QuotedName(name);
     sym = FindSymbol(&localLabelMap, name);
     if (!sym) return QuotedName(name);
-    num = (uintptr_t)sym->val;
+    num = (uintptr_t)INTVAL(sym);
     sprintf(buf, "LR__%04u", num);
     return buf;
 }
@@ -1421,7 +1421,7 @@ RenameLabels(IRList *list)
                 if (!sym) {
                     sym = AddSymbol(&localLabelMap, ir->dst->name, SYM_UNKNOWN, (void *)0, NULL);
                 }
-                sym->val = (void *)(labelValue++);
+                sym->v.i = (labelValue++);
             }
         }
     }

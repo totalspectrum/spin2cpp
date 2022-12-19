@@ -262,7 +262,7 @@ GetAddrOffset(AST *ast)
         ERROR(ast, "@@@ supported only on labels and globals; %s is not one", user_name);
         return 0;
     }
-    label = (Label *)sym->val;
+    label = (Label *)sym->v.ptr;
     r = label->hubval;
     if (offsetExpr) {
         int offset = EvalPasmExpr(offsetExpr);
@@ -1302,7 +1302,7 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
             const char *user_name = GetUserIdentifierName(op);
             Symbol *sym = LookupSymbol(internal_name);
             if (sym && sym->kind == SYM_LABEL) {
-                Label *lab = (Label *)sym->val;
+                Label *lab = (Label *)sym->v.ptr;
                 if (lab && (lab->flags & LABEL_HAS_INSTR) && !(lab->flags & LABEL_HAS_JMP)) {
                     WARNING(line, "%s to %s without #; are you sure this is correct? If so, change the %s operand to %s-0 to suppress this warning", instr->name, user_name, instr->name, user_name);
                 }
@@ -1368,7 +1368,7 @@ IsRelativeHubAddress(AST *ast)
         if (sym->kind != SYM_LABEL) {
             return 0;
         }
-        lab = (Label *)sym->val;
+        lab = (Label *)sym->v.ptr;
         return 0 != (lab->flags & LABEL_IN_HUB);
     }
     default:

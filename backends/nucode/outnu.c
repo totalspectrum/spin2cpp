@@ -111,10 +111,10 @@ static NuIrLabel *NuGetLabelFromSymbol(AST *where, const char *name) {
         ERROR(where, "%s is not a label in this function", name);
         return NULL;
     }
-    if (!sym->val) {
-        sym->val = (void *)NuCreateLabel();
+    if (!sym->v.ptr) {
+        sym->v.ptr = (void *)NuCreateLabel();
     }
-    return (NuIrLabel *)sym->val;
+    return (NuIrLabel *)sym->v.ptr;
 }
 
 static void
@@ -142,7 +142,7 @@ NuPrepareFunctionBedata(Function *F) {
 
 const char *NuCodeSymbolName(Symbol *sym) {
     if (sym->kind == SYM_FUNCTION) {
-        Function *F = (Function *)sym->val;
+        Function *F = (Function *)sym->v.ptr;
         NuPrepareFunctionBedata(F);
         return NuLabelName(FunData(F)->entryLabel);
     }
@@ -173,7 +173,7 @@ static int NuCompileFunCall(NuIrList *irl, AST *node) {
     pushed = NuCompileExprList(irl, args);
     sym = FindFuncSymbol(node, &objref, 1);
     if (sym && sym->kind == SYM_FUNCTION) {
-        func = (Function *)sym->val;
+        func = (Function *)sym->v.ptr;
         pushed = func->numresults;
         if (!func->body) {
             if (pushed) {
@@ -291,7 +291,7 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
     int offset = 0;
     bool offsetValid = true;
     if (sym && sym->kind == SYM_WEAK_ALIAS) {
-        sym = LookupSymbol((const char *)sym->val);
+        sym = LookupSymbol((const char *)sym->v.ptr);
     }
     if (!sym) {
         ERROR(node, "identifier %s not found", GetUserIdentifierName(node));
@@ -318,15 +318,15 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
         if (curfunc->closure) {
             offsetOp = NU_OP_ADD_VBASE;
         }
-        loadOp = LoadStoreOp(sym->val, isLoad);
+        loadOp = LoadStoreOp(sym->v.ptr, isLoad);
         break;
     case SYM_CLOSURE:
         offset = sym->offset;
         offsetOp = NU_OP_ADD_VBASE;
-        loadOp = LoadStoreOp(sym->val, isLoad);
+        loadOp = LoadStoreOp(sym->v.ptr, isLoad);
         break;
     case SYM_VARIABLE:
-        loadOp = LoadStoreOp(sym->val, isLoad);
+        loadOp = LoadStoreOp(sym->v.ptr, isLoad);
         if (sym->flags & SYMF_GLOBAL) {
             offset = sym->offset;
             if (offset < 0) {
@@ -357,7 +357,7 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
         break;
     case SYM_LABEL:
     {
-        Label *lab = sym->val;
+        Label *lab = sym->v.ptr;
         NuIrLabel *nulabel = NULL;
         uint32_t labelval = lab->hubval;
         Module *Q = sym->module;
@@ -375,13 +375,13 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
         return loadOp;
     }
     case SYM_HWREG: {
-        HwReg *hwreg = (HwReg *)sym->val;
+        HwReg *hwreg = (HwReg *)sym->v.ptr;
         offset = hwreg->addr;
         loadOp = isLoad ? NU_OP_LDREG : NU_OP_STREG;
         offsetOp = NU_OP_ILLEGAL;
     } break;
     case SYM_FUNCTION: {
-        Function *F = (Function *)sym->val;
+        Function *F = (Function *)sym->v.ptr;
         NuPrepareFunctionBedata(F);
         NuEmitCommentedAddress(irl, FunData(F)->entryLabel, F->name);
         loadOp = isLoad ? NU_OP_LDL : NU_OP_STL;
@@ -389,7 +389,7 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
         offsetValid = false;
     } break;
     case SYM_ALIAS: {
-        AST *expr = (AST *)sym->val;
+        AST *expr = (AST *)sym->v.ptr;
         // this had better be a simple alias
         while (expr && expr->kind == AST_CAST) {
             expr = expr->right;
@@ -640,20 +640,20 @@ static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs)
         switch(sym->kind) {
         case SYM_VARIABLE:
             (void)NuCompileLhsAddress(irl, objref);  // don't care about load op
-            typ = sym->val;
+            typ = sym->v.ptr;
             NuEmitConst(irl, sym->offset);
             NuEmitCommentedOp(irl, NU_OP_ADD, auto_printf(128, "lookup member %s", memberName));
             op = LoadStoreOp(typ, 0);
             break;
         case SYM_FUNCTION: {
-            Function *F = (Function *)sym->val;
+            Function *F = (Function *)sym->v.ptr;
             NuPrepareFunctionBedata(F);
             NuEmitCommentedAddress(irl, FunData(F)->entryLabel, F->name);
             op = LoadStoreOp(ast_type_long, 0);
             return op;
         }
         case SYM_LABEL: {
-            Label *lab = sym->val;
+            Label *lab = sym->v.ptr;
             NuIrLabel *nulabel = NULL;
             uint32_t labelval = lab->hubval;
             Module *Q = sym->module;
@@ -1142,7 +1142,7 @@ NuCompileCoginit(NuIrList *irl, AST *expr)
             ERROR(funccall, "Not a regular function, bailing");
             return 1;
         }
-        Function *F = (Function *)sym->val;
+        Function *F = (Function *)sym->v.ptr;
         if (F->body->kind == AST_BYTECODE) {
             ERROR(funccall, "Internal error, function is actually a single bytecode op");
             return 1;
@@ -2091,7 +2091,7 @@ static void NuAddHeap(ByteOutputBuffer *bob, Module*P) {
     if (!objsym) return;
     if (!sym || sym->kind != SYM_LABEL) return;
     
-    L = (Label *)sym->val;
+    L = (Label *)sym->v.ptr;
     int off = L->hubval;
     //off += BCgetDAToffset(systemModule,true,NULL,false);
 
@@ -2099,7 +2099,7 @@ static void NuAddHeap(ByteOutputBuffer *bob, Module*P) {
     if (!sym || sym->kind != SYM_CONSTANT) return;
 
     uint32_t heapstart = bob->total_size + P->varsize;
-    uint32_t heapsize = EvalPasmExpr((AST *)sym->val) * LONG_SIZE;
+    uint32_t heapsize = EvalPasmExpr((AST *)sym->v.ptr) * LONG_SIZE;
 
     heapsize += 4*LONG_SIZE; // reserve a slot at the end
     heapsize = (heapsize+3)&~3; // long align

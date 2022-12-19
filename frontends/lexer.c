@@ -749,7 +749,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             free(idstr);
             if (sym->kind == SYM_INSTR) {
                 ast = NewAST(AST_INSTR, NULL, NULL);
-                ast->d.ptr = sym->val;
+                ast->d.ptr = sym->v.ptr;
                 if (comment_chain) {
                     ast = AddToList(comment_chain, ast);
                     comment_chain = NULL;
@@ -760,13 +760,13 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             }
             if (sym->kind == SYM_INSTRMODIFIER) {
                 ast = NewAST(AST_INSTRMODIFIER, NULL, NULL);
-                ast->d.ptr = sym->val;
+                ast->d.ptr = sym->v.ptr;
                 *ast_ptr = ast;
                 return SP_INSTRMODIFIER;
             }
             if (sym->kind == SYM_HWREG) {
                 ast = NewAST(AST_HWREG, NULL, NULL);
-                ast->d.ptr = sym->val;
+                ast->d.ptr = sym->v.ptr;
                 *ast_ptr = ast;
                 return SP_HWREG;
             }
@@ -785,7 +785,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
         if (sym->kind == SYM_BUILTIN)
         {
             /* run any parse hooks */
-            Builtin *b = (Builtin *)sym->val;
+            Builtin *b = (Builtin *)sym->v.ptr;
             if (b && b->parsehook) {
                 (*b->parsehook)(b);
             }
@@ -903,7 +903,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
         }
         if (sym->kind == SYM_HWREG) {
             ast = NewAST(AST_HWREG, NULL, NULL);
-            ast->d.ptr = sym->val;
+            ast->d.ptr = sym->v.ptr;
             free(idstr);
             *ast_ptr = ast;
             return SP_HWREG;
@@ -2594,7 +2594,7 @@ Builtin builtinfuncs[] = {
 struct constants {
     const char *name;
     int     type;
-    int32_t val;
+    int64_t val;
 } p1_constants[] = {
     { "chipver", SYM_CONSTANT, 1 },
     { "true", SYM_CONSTANT, -1 },
@@ -4055,7 +4055,7 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
             free(idstr);
             if (sym->kind == SYM_INSTR) {
                 ast = NewAST(AST_INSTR, NULL, NULL);
-                ast->d.ptr = sym->val;
+                ast->d.ptr = sym->v.ptr;
                 if (comment_chain) {
                     ast = AddToList(comment_chain, ast);
                     comment_chain = NULL;
@@ -4065,13 +4065,13 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
             }
             if (sym->kind == SYM_INSTRMODIFIER) {
                 ast = NewAST(AST_INSTRMODIFIER, NULL, NULL);
-                ast->d.ptr = sym->val;
+                ast->d.ptr = sym->v.ptr;
                 *ast_ptr = ast;
                 return BAS_INSTRMODIFIER;
             }
             if (sym->kind == SYM_HWREG) {
                 ast = NewAST(AST_HWREG, NULL, NULL);
-                ast->d.ptr = sym->val;
+                ast->d.ptr = sym->v.ptr;
                 *ast_ptr = ast;
                 return BAS_HWREG;
             }
@@ -4138,7 +4138,7 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
         sym = LookupSymbolInTable(currentTypes, idstr);
         if (sym) {
             if (sym->kind == SYM_VARIABLE) {
-                ast = (AST *)sym->val;
+                ast = (AST *)sym->v.ptr;
                 // check for an abstract object declaration
                 if (ast->left && ast->left->kind == AST_OBJDECL && ast->left->left->kind == AST_IDENTIFIER && !strcmp(idstr, ast->left->left->d.string)) {
                     *ast_ptr = ast;
@@ -4146,13 +4146,13 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
                     return BAS_TYPENAME;
                 }
             } else if (sym->kind == SYM_TYPEDEF) {
-                ast = (AST *)sym->val;
+                ast = (AST *)sym->v.ptr;
                 *ast_ptr = ast;
                 last_ast = AstIdentifier(idstr);
                 return BAS_TYPENAME;
             } else if (sym->kind == SYM_REDEF) {
                 last_ast = AstIdentifier(idstr);
-                ast = NewAST(AST_LOCAL_IDENTIFIER, (AST *)sym->val, last_ast);
+                ast = NewAST(AST_LOCAL_IDENTIFIER, (AST *)sym->v.ptr, last_ast);
                 *ast_ptr = ast;
                 return BAS_IDENTIFIER;
             }
@@ -4417,7 +4417,7 @@ parseCIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             free(idstr);
             if (sym->kind == SYM_INSTR) {
                 ast = NewAST(AST_INSTR, NULL, NULL);
-                ast->d.ptr = sym->val;
+                ast->d.ptr = sym->v.ptr;
                 if (comment_chain) {
                     ast = AddToList(comment_chain, ast);
                     comment_chain = NULL;
@@ -4427,13 +4427,13 @@ parseCIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             }
             if (sym->kind == SYM_INSTRMODIFIER) {
                 ast = NewAST(AST_INSTRMODIFIER, NULL, NULL);
-                ast->d.ptr = sym->val;
+                ast->d.ptr = sym->v.ptr;
                 *ast_ptr = ast;
                 return C_INSTRMODIFIER;
             }
             if (sym->kind == SYM_HWREG) {
                 ast = NewAST(AST_HWREG, NULL, NULL);
-                ast->d.ptr = sym->val;
+                ast->d.ptr = sym->v.ptr;
                 *ast_ptr = ast;
                 return C_HWREG;
             }
@@ -4502,7 +4502,7 @@ parseCIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             }
             if (sym->kind == SYM_REDEF) {
                 last_ast = AstIdentifier(idstr);
-                ast = NewAST(AST_LOCAL_IDENTIFIER, (AST *)sym->val, last_ast);
+                ast = NewAST(AST_LOCAL_IDENTIFIER, (AST *)sym->v.ptr, last_ast);
                 *ast_ptr = ast;
                 return C_IDENTIFIER;
             }

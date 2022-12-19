@@ -26,10 +26,10 @@ GetLabelFromSymbol(AST *where, const char *name, bool inFcache)
         ERROR(where, "%s is not a label in this function", name);
         return NULL;
     }
-    if (!sym->val) {
-        sym->val = (void *)GetLabelOperand(name, inFcache);
+    if (!sym->v.ptr) {
+        sym->v.ptr = (void *)GetLabelOperand(name, inFcache);
     }
-    return (Operand *)sym->val;
+    return (Operand *)sym->v.ptr;
 }
 
 extern void ValidateStackptr(void);
@@ -182,7 +182,7 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
                 break;
             case SYM_HWREG:
             {
-                HwReg *hw = (HwReg *)sym->val;
+                HwReg *hw = (HwReg *)sym->v.ptr;
                 r = GetOneGlobal(REG_HW, hw->name, 0);
                 break;
             }
@@ -616,10 +616,10 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
                 ERROR(ast, "%s is not a label or is multiply defined", ast->d.string);
                 break;
             }
-            if (!sym->val) {
-                sym->val = GetLabelOperand(sym->our_name, isInFcache);
+            if (!sym->v.ptr) {
+                sym->v.ptr = GetLabelOperand(sym->our_name, isInFcache);
             }
-            op = (Operand *)sym->val;
+            op = (Operand *)sym->v.ptr;
             ir = EmitLabel(irl, op);
             ir->addr = relpc;
             ir->flags |= FLAG_KEEP_INSTR;

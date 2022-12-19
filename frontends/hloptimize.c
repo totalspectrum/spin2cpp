@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2020 Total Spectrum Software Inc.
+ * Copyright 2011-2022 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * various high level optimizations
@@ -175,7 +175,7 @@ HLOptimizePass(AST *body) {
         HLOptimizePass(body->right);
         sym = LookupSymbol(GetIdentifierName(body->left));
         if (sym && sym->kind == SYM_FUNCTION) {
-            Function *F = (Function *)sym->val;
+            Function *F = (Function *)sym->v.ptr;
             if (F->specialfunc && (curfunc->optimize_flags & OPT_SPECIAL_FUNCS)) {
                 HandleSpecialFunction(body, F->specialfunc);
             }
@@ -316,7 +316,7 @@ static int CheckSymbolUsage(Symbol *sym, void *arg) {
             }
         }
         if (needInit) {
-            AST *typ = (AST *)sym->val;
+            AST *typ = (AST *)sym->v.ptr;
             if (IsArrayType(typ) || IsClassType(typ)) {
                 needWarn = true;
             } else {

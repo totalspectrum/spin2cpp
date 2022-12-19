@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2021 Total Spectrum Software Inc.
+ * Copyright 2011-2022 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for Spin specific features
@@ -355,7 +355,7 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
                 if (sym && sym->kind == SYM_VARIABLE && IsAddrRef(body, sym)) {
                     current->volatileVariables = 1;
                 } else if (sym && sym->kind == SYM_LABEL) {
-                    Label *lab = (Label *)sym->val;
+                    Label *lab = (Label *)sym->v.ptr;
                     if (lab->type == ast_type_void) {
                         WARNING(body, "Applying @ to RES memory `%s' is not supported in standard Spin", GetIdentifierName(ast));
                     }
@@ -425,7 +425,7 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
         }
         if (sym) {
             if (sym->kind == SYM_LABEL) {
-                Label *L = (Label *)sym->val;
+                Label *L = (Label *)sym->v.ptr;
                 L->flags |= LABEL_USED_IN_SPIN;
             }
             // convert plain foo into foo[0] if foo is an array
@@ -492,7 +492,7 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
             // scan through parameters, adjusting for expected return types
             Symbol *calledSym = FindFuncSymbol(body, NULL, 1);
             if (calledSym && calledSym->kind == SYM_FUNCTION) {
-                Function *calledFunc = (Function *)calledSym->val;
+                Function *calledFunc = (Function *)calledSym->v.ptr;
                 AST *calledParam = calledFunc->params;
                 while (calledParam && actualParamList) {
                     AST *paramId = calledParam->left;
@@ -503,7 +503,7 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
                         Symbol *paramSym = FindSymbol(&calledFunc->localsyms, paramId->d.string);
                         if (paramSym && paramSym->kind == SYM_PARAMETER) {
                             // symbol value is its expected type
-                            paramType = (AST *)paramSym->val; 
+                            paramType = (AST *)paramSym->v.ptr; 
                         }
                     }
                     ScanFunctionBody(fdef, actualParam, actualParamList, paramType);
@@ -662,7 +662,7 @@ doSpinTransform(AST **astptr, int level, AST *parent)
                pretend it returned 0 */
             sym = FindFuncSymbol(ast, NULL, 0);
             if (sym && sym->kind == SYM_FUNCTION) {
-                Function *f = (Function *)sym->val;
+                Function *f = (Function *)sym->v.ptr;
                 if (GetFunctionReturnType(f) == ast_type_void) {
                     AST *seq = NewAST(AST_SEQUENCE, ast, AstInteger(0));
                     *astptr = seq;
@@ -771,8 +771,8 @@ doSpinTransform(AST **astptr, int level, AST *parent)
                 case SYM_TYPEDEF:
                 {
                     // change this into a pointer cast
-                    //AST *ptrtype = NewAST(AST_PTRTYPE, (AST *)sym->val, NULL);
-                    AST *ptrtype = (AST *)sym->val;
+                    //AST *ptrtype = NewAST(AST_PTRTYPE, (AST *)sym->v.ptr, NULL);
+                    AST *ptrtype = (AST *)sym->v.ptr;
                     AST *ptrcast = NewAST(AST_MEMREF, ptrtype, ast->right);
                     AST *deref = NewAST(AST_ARRAYREF, ptrcast, AstInteger(0));
                     *ast = *deref;

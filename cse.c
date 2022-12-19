@@ -269,7 +269,7 @@ ArrayBaseType(AST *var)
     switch(sym->kind) {
     case SYM_LABEL:
         {
-            Label *label = (Label *)sym->val;
+            Label *label = (Label *)sym->v.ptr;
             return label->type ? label->type : ast_type_generic;
         }
     case SYM_LOCALVAR:
@@ -282,7 +282,7 @@ ArrayBaseType(AST *var)
         }
         /* fall through */
     case SYM_VARIABLE:
-        stype = (AST *)sym->val;
+        stype = (AST *)sym->v.ptr;
         if (!stype) {
             ERROR(var, "illegal array reference");
             return NULL;

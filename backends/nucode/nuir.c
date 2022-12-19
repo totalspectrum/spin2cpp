@@ -742,7 +742,7 @@ static long GetHeapSize() {
     if (! (gl_features_used & FEATURE_NEED_HEAP)) return 0;
     sym = LookupSymbolInTable(&systemModule->objsyms, "__real_heapsize__");
     if (!sym || sym->kind != SYM_CONSTANT) return 0;
-    uint32_t heapsize = EvalPasmExpr((AST *)sym->val) * LONG_SIZE;
+    uint32_t heapsize = EvalPasmExpr((AST *)sym->v.ptr) * LONG_SIZE;
 
     heapsize += 4*LONG_SIZE; // reserve a slot at the end
     return heapsize;

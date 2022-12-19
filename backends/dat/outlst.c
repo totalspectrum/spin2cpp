@@ -347,7 +347,7 @@ putConstant(Symbol *sym, void *arg)
 {
     Flexbuf *f = (Flexbuf *)arg;
     if (sym->kind == SYM_CONSTANT || sym->kind == SYM_FLOAT_CONSTANT) {
-        uint32_t val = EvalConstExpr((AST *)sym->val);
+        uint32_t val = EvalConstExpr((AST *)sym->v.ptr);
         // skip some internal symbols
         if (sym->flags & SYMF_INTERNAL) {
             return 1;

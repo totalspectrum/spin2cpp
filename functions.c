@@ -383,7 +383,7 @@ MarkSystemFuncUsed(const char *name)
         return;
     }
     if (sym->kind == SYM_FUNCTION) {
-        calledf = (Function *)sym->val;
+        calledf = (Function *)sym->v.ptr;
         calledf->used_as_ptr = 1;
     }
 }
@@ -892,11 +892,11 @@ doDeclareFunction(AST *funcblock)
     /* look for an existing definition */
     sym = FindSymbol(&current->objsyms, funcname_internal);
     if (sym && sym->kind == SYM_VARIABLE) {
-        AST *typ = (AST *)sym->val;
+        AST *typ = (AST *)sym->v.ptr;
         if (typ->kind == AST_FUNCTYPE) {
             // We are redefining a bare function declaration in a class
             fdef = NewFunction(language);
-            sym->val = (void *)fdef;
+            sym->v.ptr = (void *)fdef;
             sym->kind = SYM_FUNCTION;
         }
     }
@@ -905,7 +905,7 @@ doDeclareFunction(AST *funcblock)
             ERROR(funcdef, "Redefining %s as a function or subroutine", funcname_user);
             return NULL;
         }
-        fdef = (Function *)sym->val;
+        fdef = (Function *)sym->v.ptr;
         oldtype = fdef->overalltype;
     } else {
         fdef = NewFunction(language);
@@ -1151,8 +1151,8 @@ doDeclareFunction(AST *funcblock)
             vals = vals->right;
             if (id->kind == AST_IDENTIFIER) {
                 Symbol *sym = FindSymbol(&fdef->localsyms, id->d.string);
-                if (sym && sym->kind == SYM_PARAMETER && !sym->val) {
-                    sym->val = (void *)ExprType(defval);
+                if (sym && sym->kind == SYM_PARAMETER && !sym->v.ptr) {
+                    sym->v.ptr = (void *)ExprType(defval);
                 }
             }
         }
@@ -1686,7 +1686,7 @@ CheckForStatic(Function *fdef, AST *body)
                 return;
             }
             if (sym->kind == SYM_FUNCTION) {
-                Function *func = (Function *)sym->val;
+                Function *func = (Function *)sym->v.ptr;
                 if (func) {
                     fdef->is_static = fdef->is_static && func->is_static;
                 } else {
@@ -1915,7 +1915,7 @@ ExpandArguments(AST *sendptr, AST *args)
                     if (IsIdentifier(arg->left)) {
                         Symbol *sym = LookupAstSymbol(arg->left, NULL);
                         if (sym && sym->kind == SYM_FUNCTION) {
-                            Function *f = (Function *)sym->val;
+                            Function *f = (Function *)sym->v.ptr;
                             if (f->numresults == 0 || !f->result_declared) {
                                 typ = ast_type_void;
                             }
@@ -2016,10 +2016,10 @@ CheckFunctionCalls(AST *ast)
         if (sym) {
             fname = sym->user_name;
             if (sym->kind == SYM_BUILTIN) {
-                Builtin *b = (Builtin *)sym->val;
+                Builtin *b = (Builtin *)sym->v.ptr;
                 expectArgs = b->numparameters;
             } else if (sym->kind == SYM_FUNCTION) {
-                f = (Function *)sym->val;
+                f = (Function *)sym->v.ptr;
                 expectArgs = f->numparams;
             } else {
                 AST *ftype = (curfunc && IsSpinLang(curfunc->language)) ? NULL : ExprType(ast->left);
@@ -2404,14 +2404,14 @@ SetSymbolType(Symbol *sym, AST *newType)
   case SYM_VARIABLE:
   case SYM_LOCALVAR:
   case SYM_PARAMETER:
-    oldType = (AST *)sym->val;
+    oldType = (AST *)sym->v.ptr;
     if (oldType) {
       // FIXME: could warn here about type mismatches
       return 0;
     } else if (newType) {
         // if we had an unknown type before, the new type must be at least
         // 4 bytes wide
-        sym->val = WidenType(newType);
+        sym->v.ptr = WidenType(newType);
         return 1;
     }
   default:
@@ -2436,7 +2436,7 @@ InferTypesFunccall(AST *callast)
     sym = FindCalledFuncSymbol(callast, NULL, 0);
     if (!sym || sym->kind != SYM_FUNCTION) return 0;
     
-    func = (Function *)sym->val;
+    func = (Function *)sym->v.ptr;
     typelist = func->params;
     while (list) {
         paramtype = NULL;
@@ -2448,7 +2448,7 @@ InferTypesFunccall(AST *callast)
             if (paramid && paramid->kind == AST_IDENTIFIER) {
                 sym = FindSymbol(&func->localsyms, paramid->d.string);
                 if (sym && sym->kind == SYM_PARAMETER) {
-                    paramtype = (AST *)sym->val;
+                    paramtype = (AST *)sym->v.ptr;
                 }
             }
         } else {
@@ -2599,7 +2599,7 @@ UseInternal(const char *name)
 {
     Symbol *sym = FindSymbol(&systemModule->objsyms, name);
     if (sym && sym->kind == SYM_FUNCTION) {
-        Function *func = (Function *)sym->val;
+        Function *func = (Function *)sym->v.ptr;
         MarkUsed(func, "internal");
         curfunc->is_leaf = 0; // caller is not a leaf function
         return true;
@@ -2681,12 +2681,12 @@ MarkUsedBody(AST *body, const char *caller)
         name = GetIdentifierName(body);
         sym = LookupSymbol(name);
         if (sym && sym->kind == SYM_FUNCTION) {
-            Function *func = (Function *)sym->val;
+            Function *func = (Function *)sym->v.ptr;
             MarkUsed(func, sym->our_name);
             if (func->attributes & FUNC_ATTR_NEEDSINIT) {
                 sym = LookupSymbol("__init__");
                 if (sym && sym->kind == SYM_FUNCTION) {
-                    func = (Function *)sym->val;
+                    func = (Function *)sym->v.ptr;
                     MarkUsed(func, "needsinit");
                 }
             }
@@ -2701,7 +2701,7 @@ MarkUsedBody(AST *body, const char *caller)
             P = GetClassPtr(objtype);
             sym = LookupSymbolInTable(&P->objsyms, GetUserIdentifierName(body->right));
             if (sym && sym->kind == SYM_FUNCTION) {
-                MarkUsed((Function *)sym->val, sym->our_name);
+                MarkUsed((Function *)sym->v.ptr, sym->our_name);
                 return;
             }
         }
@@ -2976,7 +2976,7 @@ IsCalledFrom(Function *ref, AST *body, int visitRef)
         sym = FindCalledFuncSymbol(body, NULL, 0);
         if (!sym) return false;
         if (sym->kind != SYM_FUNCTION) return false;
-        func = (Function *)sym->val;
+        func = (Function *)sym->v.ptr;
         if (ref == func) return true;
         if (func->visitFlag == visitRef) {
             // we've been here before
@@ -3345,7 +3345,7 @@ static int AddSize(Symbol *sym, void *arg)
     case SYM_LOCALVAR:
     case SYM_TEMPVAR:
     case SYM_PARAMETER:
-        size = TypeSize((AST *)sym->val);
+        size = TypeSize((AST *)sym->v.ptr);
         size = (size + LONG_SIZE - 1) & ~(LONG_SIZE - 1);
         *ptr += size;
         break;

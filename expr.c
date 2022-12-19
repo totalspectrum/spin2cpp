@@ -298,9 +298,9 @@ LookupMemberSymbol(AST *expr, AST *objtype, const char *name, Module **Ptr, int 
     if (!sym) {
         ERROR(expr, "unknown identifier %s in class %s", name, P->classname);
     } else if (sym->kind == SYM_WEAK_ALIAS) {
-        sym = FindSymbol(&P->objsyms, (const char *)sym->val);
+        sym = FindSymbol(&P->objsyms, (const char *)sym->v.ptr);
     } else if (sym->kind == SYM_ALIAS) {
-        AST *newexpr = (AST *)sym->val;
+        AST *newexpr = (AST *)sym->v.ptr;
         if (newexpr && newexpr->kind == AST_METHODREF) {
             const char *basename = GetIdentifierName(newexpr->left);
             const char *subname = GetIdentifierName(newexpr->right);
@@ -312,7 +312,7 @@ LookupMemberSymbol(AST *expr, AST *objtype, const char *name, Module **Ptr, int 
                 ERROR(expr, "unknown anonymous class %s in class %s", basename, P->classname);
                 return NULL;
             }
-            Qtype = (AST *)basesym->val;
+            Qtype = (AST *)basesym->v.ptr;
             if (!IsClassType(Qtype)) {
                 ERROR(expr, "unknown anonymous class %s in class %s", basename, P->classname);
                 return NULL;
@@ -322,7 +322,7 @@ LookupMemberSymbol(AST *expr, AST *objtype, const char *name, Module **Ptr, int 
             //WARNING(expr, "transforming anon struct ref: base off=%d plus %d", basesym->offset, finalsym->offset);
             sym->kind = finalsym->kind;
             sym->offset = finalsym->offset + basesym->offset;
-            sym->val = finalsym->val; // preserve the type
+            sym->v.ptr = finalsym->v.ptr; // preserve the type
         }
     }
 
@@ -405,7 +405,7 @@ IsSpinCoginit(AST *params, Function **methodptr)
     if (func->kind == AST_IDENTIFIER || func->kind == AST_LOCAL_IDENTIFIER) {
         sym = LookupAstSymbol(func, "coginit/cognew");
         if (sym && sym->kind == SYM_FUNCTION) {
-            if (methodptr) *methodptr = (Function *)sym->val;
+            if (methodptr) *methodptr = (Function *)sym->v.ptr;
             return true;
         }
     }
@@ -418,7 +418,7 @@ IsSpinCoginit(AST *params, Function **methodptr)
             }
             if (sym->kind == SYM_FUNCTION) {
                 if (methodptr) {
-                    *methodptr = (Function *)sym->val;
+                    *methodptr = (Function *)sym->v.ptr;
                 }
                 return true;
             }
@@ -1673,12 +1673,12 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             switch (sym->kind) {
             case SYM_CONSTANT:
             {
-                ExprVal e = EvalExpr((AST *)sym->val, 0, NULL, depth+1);
+                ExprVal e = EvalExpr((AST *)sym->v.ptr, 0, NULL, depth+1);
                 return intExpr(e.val);
             }
             case SYM_FLOAT_CONSTANT:
             {
-                ExprVal e = EvalExpr((AST *)sym->val, 0, NULL, depth+1);
+                ExprVal e = EvalExpr((AST *)sym->v.ptr, 0, NULL, depth+1);
                 if (gl_fixedreal) {
                     return fixedExpr(e.val);
                 } else {
@@ -1708,7 +1708,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             } break;
             case SYM_LABEL:
                 if (flags & PASM_FLAG) {
-                    Label *lref = (Label *)sym->val;
+                    Label *lref = (Label *)sym->v.ptr;
                     if (lref->flags & LABEL_IN_HUB) {
                         return intExpr(lref->hubval);
                     }
@@ -1822,7 +1822,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             sym = LookupSymbol(name);
         }
         if (sym && sym->kind == SYM_LABEL) {
-            Label *lref = (Label *)sym->val;
+            Label *lref = (Label *)sym->v.ptr;
             if (offset) {
                 offset *= TypeSize(BaseType(lref->type));
             }
@@ -2009,7 +2009,7 @@ IsArray(AST *expr)
         return 1;
     if (sym->kind != SYM_VARIABLE && sym->kind != SYM_LOCALVAR)
         return 0;
-    type = (AST *)sym->val;
+    type = (AST *)sym->v.ptr;
     if (type && type->kind == AST_ARRAYTYPE)
         return 1;
     return 0;
@@ -2217,7 +2217,7 @@ IsArraySymbol(Symbol *sym)
     case SYM_VARIABLE:
     case SYM_PARAMETER:
     case SYM_RESULT:
-        type = (AST *)sym->val;
+        type = (AST *)sym->v.ptr;
         break;
     case SYM_LABEL:
         return 1;
@@ -2238,7 +2238,7 @@ IsArrayOrPointerSymbol(Symbol *sym)
     case SYM_VARIABLE:
     case SYM_PARAMETER:
     case SYM_RESULT:
-        type = (AST *)sym->val;
+        type = (AST *)sym->v.ptr;
         break;
     case SYM_LABEL:
         return 1;
@@ -2686,7 +2686,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         case SYM_HW_REG:
             return ast_type_long;
         case SYM_LABEL:
-            lab = (Label *)sym->val;
+            lab = (Label *)sym->v.ptr;
             typ = lab->type;
             if (curfunc && IsSpinLang(curfunc->language) && typ && typ->kind != AST_ARRAYTYPE) {
                 if (typ == ast_type_void) {
@@ -2703,12 +2703,12 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         case SYM_PARAMETER:
         case SYM_CLOSURE:
         case SYM_TYPEDEF:
-            return (AST *)sym->val;
+            return (AST *)sym->v.ptr;
         case SYM_FUNCTION:
-            return ((Function *)sym->val)->overalltype;
+            return ((Function *)sym->v.ptr)->overalltype;
         case SYM_ALIAS:
             // an alias for an expression
-            return ExprTypeRelative(table, (AST *)sym->val, P);
+            return ExprTypeRelative(table, (AST *)sym->v.ptr, P);
         default:
             return NULL;
         }            
@@ -2751,12 +2751,12 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         if (sym) {
             switch (sym->kind) {
             case SYM_FUNCTION:
-                return GetFunctionReturnType(((Function *)sym->val));
+                return GetFunctionReturnType(((Function *)sym->v.ptr));
             case SYM_VARIABLE:
             case SYM_PARAMETER:
             case SYM_LOCALVAR:
             case SYM_TEMPVAR:
-                typexpr = (AST *)sym->val;
+                typexpr = (AST *)sym->v.ptr;
                 AST *old_typexpr = typexpr;
                 if (typexpr && (typexpr->kind == AST_PTRTYPE || typexpr->kind == AST_REFTYPE || typexpr->kind == AST_COPYREFTYPE)) {
                     typexpr = RemoveTypeModifiers(typexpr->left);
@@ -2823,26 +2823,26 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         subclass = GetClassPtr(objtype);
         switch (sym->kind) {
         case SYM_FUNCTION:
-            func = (Function *)sym->val;
+            func = (Function *)sym->v.ptr;
             return func->overalltype;
         case SYM_VARIABLE:
-            return (AST *)sym->val;
+            return (AST *)sym->v.ptr;
         case SYM_CONSTANT:
         case SYM_FLOAT_CONSTANT:
-            return ExprTypeRelative(&subclass->objsyms, (AST *)sym->val, P);
+            return ExprTypeRelative(&subclass->objsyms, (AST *)sym->v.ptr, P);
         case SYM_ALIAS:
-            typexpr = (AST *)sym->val;
+            typexpr = (AST *)sym->v.ptr;
             if (typexpr->kind == AST_CAST) {
                 typexpr = typexpr->right;
             }
             if (typexpr && typexpr->kind == AST_RANGEREF) {
-                AST *typ = NewAST(AST_USING, (AST *)sym->val, NULL);
+                AST *typ = NewAST(AST_USING, (AST *)sym->v.ptr, NULL);
                 return typ;
             }
-            return ExprTypeRelative(&subclass->objsyms, (AST *)sym->val, P);
+            return ExprTypeRelative(&subclass->objsyms, (AST *)sym->v.ptr, P);
         case SYM_LABEL:
         {
-            Label *lref = (Label *)sym->val;
+            Label *lref = (Label *)sym->v.ptr;
             if (lref && lref->type) {
                 return lref->type;
             }

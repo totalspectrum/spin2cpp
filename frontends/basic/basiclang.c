@@ -612,7 +612,7 @@ adjustFuncCall(AST *ast)
 	}
 	sym = P ? FindSymbol(&P->objsyms, name) : LookupSymbol(name);
         if (sym && sym->kind == SYM_TEMPLATE) {
-	    func = InstantiateTemplateFunction(P ? P : current, (AST *)sym->val, ast);
+	    func = InstantiateTemplateFunction(P ? P : current, (AST *)sym->v.ptr, ast);
             if (func) {
                 if (methodcall) {
                     methodcall->right = func;
@@ -906,7 +906,7 @@ doBasicTransform(AST **astptr, bool transformFuncall)
             Function *f = NULL;
             sym = FindCalledFuncSymbol(ast, NULL, 0);
             if (sym && sym->kind == SYM_FUNCTION) {
-                f = (Function *)sym->val;
+                f = (Function *)sym->v.ptr;
             }
             if (f) {
                 f->used_as_ptr = 1;

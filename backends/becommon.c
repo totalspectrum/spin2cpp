@@ -54,7 +54,7 @@ BuildMethodPointer(AST *ast)
         }
         return ast;
     }
-    func = (Function *)sym->val;
+    func = (Function *)sym->v.ptr;
     if (func->is_static) {
         objast = AstInteger(0);
     } else if (objast == NULL) {

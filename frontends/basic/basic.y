@@ -42,14 +42,14 @@ AST *GetIORegisterPair(const char *name1, const char *name2)
     reg1 = NewAST(AST_HWREG, NULL, NULL);
     reg2 = NULL;
     
-    reg1->d.ptr = sym->val;
+    reg1->d.ptr = sym->v.ptr;
     if (name2 && gl_p2) {
         // for now, only use the register pairs on P2 (where it matters)
         // (FIXME? it could also come into play for P1V on FPGA...)
         sym = FindSymbol(&basicReservedWords, name2);
         if (sym) {
             reg2 = NewAST(AST_HWREG, NULL, NULL);
-            reg2->d.ptr = sym->val;
+            reg2->d.ptr = sym->v.ptr;
         }
     }
     if (reg2) {
@@ -147,13 +147,13 @@ HandleBASICOption(AST *optid, AST *exprlist)
         }
         arrayBase = EvalConstExpr(expr);
         sym = GetCurArrayBase();
-        sym->val = AstInteger(arrayBase);
+        sym->v.ptr = AstInteger(arrayBase);
     } else if (!strcasecmp(name, "explicit")) {
         sym = GetExplicitDeclares();
-        sym->val = AstInteger(255);
+        sym->v.ptr = AstInteger(255);
     } else if (!strcasecmp(name, "implicit")) {
         sym = GetExplicitDeclares();
-        sym->val = AstInteger(0);
+        sym->v.ptr = AstInteger(0);
     } else {
         SYNTAX_ERROR("Unknown option %s", name);
     }
@@ -170,7 +170,7 @@ DefineDefaultVarTypes(AST *deflist, AST *type)
     uint32_t low, high;
     uint32_t mask;
 
-    flags = EvalConstExpr( (AST *)sym->val );
+    flags = EvalConstExpr( (AST *)sym->v.ptr );
     if (IsIntType(type)) {
         mask = 0;
     } else if (IsFloatType(type)) {
@@ -210,7 +210,7 @@ DefineDefaultVarTypes(AST *deflist, AST *type)
             low++;
         }
     }
-    sym->val = AstInteger(flags);
+    sym->v.ptr = AstInteger(flags);
     return NULL;
 }
 
@@ -807,7 +807,7 @@ assign_statement:
         AST *assign = $1;
         AST *ident;
         Symbol *sym = GetExplicitDeclares();
-        int explicit_flag = EvalConstExpr((AST *)sym->val);
+        int explicit_flag = EvalConstExpr((AST *)sym->v.ptr);
         if (0 == (explicit_flag & 0x1) ) {
             ident = assign->left;
             MaybeDeclareMemberVar(current, ident, NULL, 0, IMPLICIT_VAR);
@@ -819,7 +819,7 @@ assign_statement:
         AST *assign = $2;
         AST *ident;
         Symbol *sym = GetExplicitDeclares();
-        int explicit_flag = EvalConstExpr((AST *)sym->val);
+        int explicit_flag = EvalConstExpr((AST *)sym->v.ptr);
         if (0 == (explicit_flag & 0x2) ) {
             ident = assign->left;
             MaybeDeclareMemberVar(current, ident, NULL, 0, IMPLICIT_VAR);
@@ -1039,7 +1039,7 @@ inputitem:
   varexpr
     {
         Symbol *sym = GetExplicitDeclares();
-        int explicit_flag = EvalConstExpr((AST *)sym->val);
+        int explicit_flag = EvalConstExpr((AST *)sym->v.ptr);
         if (0 == (explicit_flag & 0x4)) {
             MaybeDeclareMemberVar(current, $1, NULL, 0, IMPLICIT_VAR);
         }
@@ -1313,7 +1313,7 @@ forstmt:
       AST *declare;
       AST *loop;
       Symbol *sym = GetExplicitDeclares();
-      int explicit_flag = EvalConstExpr((AST *)sym->val);
+      int explicit_flag = EvalConstExpr((AST *)sym->v.ptr);
 
       if (0 == (explicit_flag & 0x8)) {
           /* create a WEAK definition for ident (it will not override any existing definition) */
@@ -2256,7 +2256,7 @@ arraysizeitem: expr optarraylimit
       } else {
           Symbol *sym = GetCurArrayBase();
           if (sym) {
-              base = (AST *)sym->val;
+              base = (AST *)sym->v.ptr;
           } else {
               base = AstInteger(0);
           }
@@ -2491,7 +2491,7 @@ identdecl:
     {
         Symbol *sym = GetCurArrayBase();
         AST *ident = $1;
-        AST *base = (AST *)sym->val;
+        AST *base = (AST *)sym->v.ptr;
         AST *size = $3;
         AST *decl;
         size = AstOperator('-', size, AstOperator('-', base, AstInteger(1)));
@@ -2516,7 +2516,7 @@ identdecl:
     {
         Symbol *sym = GetCurArrayBase();
         AST *ident = $1;
-        AST *base = (AST *)sym->val;
+        AST *base = (AST *)sym->v.ptr;
         AST *size1 = $3;
         AST *size2 = $5;
         AST *sizelist;

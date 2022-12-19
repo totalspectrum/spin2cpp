@@ -75,7 +75,7 @@ doCTransform(AST **astptr, unsigned cflags)
             Function *f = NULL;
             sym = FindCalledFuncSymbol(ast, NULL, 0);
             if (sym && sym->kind == SYM_FUNCTION) {
-                f = (Function *)sym->val;
+                f = (Function *)sym->v.ptr;
             }
             if (f) {
                 f->used_as_ptr = 1;

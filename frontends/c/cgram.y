@@ -136,7 +136,7 @@ FindClassByAst(AST *astName)
     Module *P = NULL;
     Symbol *sym = LookupSymbolInTable(currentTypes, name);
     if (sym && sym->kind == SYM_TYPEDEF) {
-        AST *typ = (AST *)sym->val;
+        AST *typ = (AST *)sym->v.ptr;
         if (typ->kind != AST_OBJECT) {
             ERROR(astName, "%s is not a class", name);
             return NULL;
@@ -730,7 +730,7 @@ MakeNewStruct(Module *Parent, AST *skind, AST *identifier, AST *body)
         sym = LookupSymbolInTable(&Parent->objsyms, typname);
     }
     if (sym && sym->kind == SYM_TYPEDEF) {
-        class_type = (AST *)sym->val;
+        class_type = (AST *)sym->v.ptr;
         if (!IsClassType(class_type)) {
             SYNTAX_ERROR("%s is not a class", typname);
             return NULL;
@@ -1534,7 +1534,7 @@ type_specifier
                 AST *ident = $1;
                 Symbol *sym = LookupSymbolInTable(currentTypes, ident->d.string);
                 if (sym && sym->kind == SYM_TYPEDEF) {
-                    $$ = (AST *)sym->val;
+                    $$ = (AST *)sym->v.ptr;
                 } else {
                     SYNTAX_ERROR("Internal error, bad typename %s", ident->d.string);
                     $$ = NULL;

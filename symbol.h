@@ -34,6 +34,11 @@ typedef enum symtype {
 
 #define IsAlias(sym) ((sym)->kind == SYM_WEAK_ALIAS)
 
+typedef union {
+    void *ptr;   /* a generic pointer */
+    int64_t i;   /* an integer value */
+} SymbolVal;
+
 //
 // Symbols have two names:
 // user_name is the name that should be used for error messages and the like
@@ -44,7 +49,7 @@ typedef struct symbol {
     const char   *user_name;   /* name given by the user */
     const char   *our_name;    /* internal compiler name */
     Symtype       kind;   /* kind of symbol */
-    void         *val;    /* symbol value */
+    SymbolVal     v;      /* symbol value */
     int           flags;  /* various flags */
     int           offset;  /* extra value recording symbol order within a function */
     void         *module;  /* module info */
@@ -58,7 +63,7 @@ typedef struct symbol {
 #define SYMF_INTERNAL 0x04  /* symbol is created by flexspin itself, should not be shown in listings */
 #define SYMF_NOALLOC  0x08  /* symbol should not be allocated */
 
-#define INTVAL(sym) ((intptr_t)((sym)->val))
+#define INTVAL(sym) ((sym)->v.i)
 
 
 /*

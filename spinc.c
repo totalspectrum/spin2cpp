@@ -292,7 +292,7 @@ InferTypeFromName(AST *identifier)
             if (sym->kind != SYM_CONSTANT) {
                 ERROR(identifier, "bad default type information");
             } else {
-                typemask = EvalConstExpr((AST *)sym->val);
+                typemask = EvalConstExpr((AST *)sym->v.ptr);
             }
             if (typemask & checkmask) {
                 return ast_type_float;
@@ -870,7 +870,7 @@ MarkStaticFunctionPointers(AST *list)
                     ERROR(list, "%s is not a function", sym->user_name);
                     return;
                 }
-                f = (Function *)sym->val;
+                f = (Function *)sym->v.ptr;
                 f->used_as_ptr = 1;
                 MarkUsed(f, "static func");
                 MarkSystemFuncUsed("__call_methodptr");
@@ -1093,7 +1093,7 @@ FixupFuncData(Module *P)
                 label->type = ast_type_long;
                 label->flags = LABEL_IN_HUB;
                 sym->kind = SYM_LABEL;
-                sym->val = (void *)label;
+                sym->v.ptr = (void *)label;
                 table = NewAST(AST_LONGLIST, table, NULL);
                 P->datblock = AddToList(P->datblock, table);
                 P->datsize += tablelen * LONG_SIZE;
@@ -1124,7 +1124,7 @@ InsertInitCall(Function *f, Module *Q)
         return;
     }
     
-    pf = (Function *)sym->val;
+    pf = (Function *)sym->v.ptr;
     if (!pf->is_static) {
         WARNING(pf->body, "initialization function %s is not static", name);
     }
@@ -1238,7 +1238,7 @@ FixupCode(Module *P, int isBinary)
                 if (sym->kind != SYM_CONSTANT) {
                     WARNING(NULL, "heapsize is not a constant");
                 } else {
-                    heapsize = EvalConstExpr((AST *)sym->val);
+                    heapsize = EvalConstExpr((AST *)sym->v.ptr);
                 }
             } else if (gl_p2) {
                 // if no symbol and we are on p2 change the default heap size
@@ -1257,7 +1257,7 @@ FixupCode(Module *P, int isBinary)
                     ERROR(NULL, "Internal error, could not find __REAL_HEAPSIZE__");
                 } else {
                     // reset the size
-                    sym->val = heapAst;
+                    sym->v.ptr = heapAst;
                 }
             }
         }

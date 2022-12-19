@@ -190,7 +190,7 @@ EnterLabel(SymbolTable *symtab, AST *origLabel, long hubpc, long cogpc, AST *lty
             }
             return;
         }
-        labelref = (Label *)sym->val;
+        labelref = (Label *)sym->v.ptr;
 #if 1
         if (labelref->hubval != hubpc) {
             ERROR(origLabel, "Changing hub value for symbol %s", name);

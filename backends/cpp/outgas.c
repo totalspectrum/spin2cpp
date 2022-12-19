@@ -486,7 +486,7 @@ outputGasLabel(Flexbuf *f, AST *id, int inlineAsm)
         if (sym->kind != SYM_LABEL) {
             ERROR(id, "expected label symbol");
         } else {
-            lab = (Label *)sym->val;
+            lab = (Label *)sym->v.ptr;
             align = TypeAlign(lab->type);
         }
     }
@@ -515,7 +515,7 @@ DeclareLabelsGas(Flexbuf *f, Module *P, int inlineAsm)
            sym = LookupSymbol(name);
            if (!sym) continue;
            if (sym->kind != SYM_LABEL) continue;
-           lab = (Label *)sym->val;
+           lab = (Label *)sym->v.ptr;
            if (lab->flags & LABEL_USED_IN_SPIN) {
                 flexbuf_printf(f, "extern ");
                 PrintType(f, lab->type, 0);

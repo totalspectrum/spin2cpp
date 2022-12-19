@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2021 Total Spectrum Software Inc.
+ * Copyright 2011-2022 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling loops
@@ -482,11 +482,11 @@ FindLoopStep(LoopValueSet *lvs, AST *val, AST **basename)
                 case SYM_TEMPVAR:
                 case SYM_LOCALVAR:
                 case SYM_PARAMETER:
-                    elementsize = ElementSize((AST *)sym->val);
+                    elementsize = ElementSize((AST *)sym->v.ptr);
                     break;
                 case SYM_LABEL:
                 {
-                    Label *lab = (Label *)sym->val;
+                    Label *lab = (Label *)sym->v.ptr;
                     elementsize = ElementSize(lab->type);
                     break;
                 }

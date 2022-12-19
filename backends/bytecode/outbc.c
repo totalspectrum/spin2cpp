@@ -795,11 +795,11 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         switch(sym->kind) {
         case SYM_VARIABLE:
             memberOffset += sym->offset;
-            type = sym->val;
+            type = sym->v.ptr;
             break;
         case SYM_FUNCTION:
             if (kind == MEMOP_ADDRESS) {
-                Function *F = (Function *)sym->val;
+                Function *F = (Function *)sym->v.ptr;
                 Module *M = F->module;
                 if (M->bedata == NULL) {
                     ERROR(node, "Cannot find address for function %s (no module info)",  sym->user_name);
@@ -829,7 +829,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
                 ERROR(node, "Cannot find address for field %s (no module info)",  sym->user_name);
                 return;
             }
-            Label *lab = (Label *)sym->val;
+            Label *lab = (Label *)sym->v.ptr;
             BCCompilePushModuleDatRef(irbuf, M, lab->hubval);
             switch (kind) {
             case MEMOP_ADDRESS:  break; /* nothing more to do */
@@ -949,7 +949,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
             memOp.attr.memop.base = MEMOP_BASE_PBASE;
             targetKind = MOT_MEM;
 
-            Label *lab = sym->val;
+            Label *lab = sym->v.ptr;
             uint32_t labelval = lab->hubval;
             // Add header offset
             if (sym->module == current || sym->module == 0) {
@@ -979,7 +979,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
 
         } break;
         case SYM_CLOSURE:{
-            BCAddStaticReference(current, (AST *)sym->val);
+            BCAddStaticReference(current, (AST *)sym->v.ptr);
             memOp.attr.memop.base = MEMOP_BASE_VBASE;
             targetKind = MOT_MEM;
             memOp.data.int32 = 0;
@@ -1014,7 +1014,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         } break;   
         case SYM_HWREG: {
             targetKind = MOT_REG;
-            hwreg = (HwReg *)sym->val;
+            hwreg = (HwReg *)sym->v.ptr;
             memOp.data.int32 = HWReg2Index(hwreg);
             memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
             goto after_typeinfer;
@@ -1028,7 +1028,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
                     return;
                 }
                 targetKind = MOT_REG;
-                hwreg = (HwReg *)cogid_sym->val;
+                hwreg = (HwReg *)cogid_sym->v.ptr;
                 memOp.data.int32 = HWReg2Index(hwreg);
                 memOp.attr.memop.memSize = MEMOP_SIZE_LONG;
                 goto after_typeinfer;
@@ -1051,7 +1051,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         } break;
         case SYM_FUNCTION: {
             if (kind == MEMOP_ADDRESS) {
-                Function *F = (Function *)sym->val;
+                Function *F = (Function *)sym->v.ptr;
                 Module *M = F->module;
                 if (M->bedata == NULL) {
                     ERROR(node, "Cannot find address for function (no module info)");
@@ -1071,7 +1071,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
             ERROR(node, "Unhandled memory operation on function");
         } break;
         case SYM_ALIAS: {
-            AST *expr = (AST *)sym->val;
+            AST *expr = (AST *)sym->v.ptr;
             AST *typ = NULL;
             if (expr->kind == AST_CAST) {
                 typ = expr->left;
@@ -1522,11 +1522,11 @@ redoLeft:
                 break;
             case SYM_HWREG:
                 memopNode = NewAST(AST_HWREG, NULL, NULL);
-                memopNode->d.ptr = sym->val;
+                memopNode->d.ptr = sym->v.ptr;
                 break;
             case SYM_ALIAS: {
                 // this is an alias for an expression, so compile the expression
-                AST *expr = (AST *)sym->val;
+                AST *expr = (AST *)sym->v.ptr;
                 while (expr && expr->kind == AST_CAST) {
                     expr = expr->right;
                 }
@@ -1929,7 +1929,7 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
         }
     } else if (sym->kind == SYM_FUNCTION) {
         // Function call
-        Function *func = (Function *)sym->val;
+        Function *func = (Function *)sym->v.ptr;
         int funid = getFuncID(objtype ? GetClassPtr(objtype) : current, sym->our_name);
         if (funid < 0) {
             ERROR(node,"Can't get function id for %s",sym->our_name);
@@ -1970,7 +1970,7 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
             ERROR(node,"Internal error, missing __call_methodptr");
             return;
         }
-        func = (Function *)sym->val;
+        func = (Function *)sym->v.ptr;
         funid = getFuncID(func->module, sym->our_name);
         if (funid < 0) {
             ERROR(node, "Unable to get function ID for %s", sym->our_name);
@@ -2445,7 +2445,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 case SYM_ALIAS:
                     // this is an alias for an expression, compile it
                 {
-                    AST *expr = (AST *)sym->val;
+                    AST *expr = (AST *)sym->v.ptr;
                     BCCompileExpression(irbuf, expr, context, asStatement);
                     return;
                 }
@@ -3487,7 +3487,7 @@ BCProcessDatRelocs(Module *P, OutputSpan *span, Reloc *reloc, size_t numRelocs)
                 data = reloc->symoff + datbase;
                 BCDatPutLong(&spdata[off], data);
             } else if (sym->kind == SYM_FUNCTION) {
-                Function *F = (Function *)sym->val;
+                Function *F = (Function *)sym->v.ptr;
                 Module *Obj = F->module;
                 if (Obj->bedata == NULL) {
                     ERROR(NULL, "No module data for %s", Obj->classname);
@@ -3648,7 +3648,7 @@ static void BCAddHeap(ByteOutputBuffer *bob, Module*P) {
     if (!objsym) return;
     if (!sym || sym->kind != SYM_LABEL) return;
     
-    L = (Label *)sym->val;
+    L = (Label *)sym->v.ptr;
     int off = L->hubval;
     off += BCgetDAToffset(systemModule,true,NULL,false);
 
@@ -3656,7 +3656,7 @@ static void BCAddHeap(ByteOutputBuffer *bob, Module*P) {
     if (!sym || sym->kind != SYM_CONSTANT) return;
 
     uint32_t heapstart = bob->total_size + P->varsize;
-    uint32_t heapsize = EvalPasmExpr((AST *)sym->val) * LONG_SIZE;
+    uint32_t heapsize = EvalPasmExpr((AST *)sym->v.ptr) * LONG_SIZE;
 
     heapsize += 4*LONG_SIZE; // reserve a slot at the end
     heapsize = (heapsize+3)&~3; // long align

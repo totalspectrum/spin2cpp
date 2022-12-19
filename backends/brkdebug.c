@@ -328,7 +328,7 @@ static void patch_long(char *where,int32_t val) {
 static int32_t const_or_default(Module *M,const char *name,int32_t defaultval) {
     Symbol *sym = FindSymbol(&M->objsyms,name);
     if (sym && sym->kind == SYM_CONSTANT) {
-        return EvalConstExpr((AST *)sym->val);
+        return EvalConstExpr((AST *)sym->v.ptr);
     } else {
         return defaultval;
     }

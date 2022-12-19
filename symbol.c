@@ -85,7 +85,7 @@ doLookupSymbolInTable(SymbolTable *table, const char *name, int level)
             //ERROR(NULL, "recursive definition for symbol %s", name);
             return NULL;
         }
-        alias = doLookupSymbolInTable(table, (const char *)sym->val, level);
+        alias = doLookupSymbolInTable(table, (const char *)sym->v.ptr, level);
         if (alias) {
             return alias;
         } else {
@@ -206,7 +206,7 @@ AddSymbol(SymbolTable *table, const char *name, int type, void *val, const char 
     sym->our_name = name;
     sym->user_name = user_name ? user_name : name;
     sym->kind = (Symtype)type;
-    sym->val = val;
+    sym->v.ptr = val;
     sym->module = 0;
     
     // now link into global list

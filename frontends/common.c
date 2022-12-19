@@ -454,7 +454,7 @@ EnterConstant(Module *P, const char *name, AST *expr)
             int32_t origval;
             int32_t newval;
 
-            origval = EvalConstExpr((AST *)sym->val);
+            origval = EvalConstExpr((AST *)sym->v.ptr);
             newval = EvalConstExpr(expr);
             if (origval != newval) {
                 ERROR(expr, "Redefining %s with a different value", name);
@@ -653,7 +653,7 @@ ProcessConstants(Module *P)
                     } else if (!IsConstExpr(valast)) {
                         ERROR(ident, "new value for %s is not constant", name);
                     } else {
-                        sym->val = valast;
+                        sym->v.ptr = valast;
                     }
                 } else {
                     ERROR(item, "parameter override must be an identifier");
@@ -1157,11 +1157,11 @@ DoPropellerPostprocess(const char *fname, size_t eepromSize)
     gl_caseSensitive = 0;
     sym = current ? FindSymbol(&current->objsyms, "_STACK") : NULL;
     if (sym && sym->kind == SYM_CONSTANT) {
-        reserveSize += LONG_SIZE * EvalConstExpr((AST *)sym->val);
+        reserveSize += LONG_SIZE * EvalConstExpr((AST *)sym->v.ptr);
     }
     sym = current ? FindSymbol(&current->objsyms, "_FREE") : NULL;
     if (sym && sym->kind == SYM_CONSTANT) {
-        reserveSize += LONG_SIZE * EvalConstExpr((AST *)sym->val);
+        reserveSize += LONG_SIZE * EvalConstExpr((AST *)sym->v.ptr);
     }
     gl_caseSensitive = save_casesensitive;
     // do sanity check on length
@@ -2169,7 +2169,7 @@ Symbol *AddSymbolPlaced(SymbolTable *table, const char *name, int type, void *va
     } else if (IsSpinLang(current->mainLanguage) && type == SYM_VARIABLE && IsClassType((AST *)val)) {
         // objects may have already been defined, don't object if they are
         sym = LookupSymbolInTable(table, name);
-        if (sym && sym->kind == SYM_VARIABLE && sym->val == val) {
+        if (sym && sym->kind == SYM_VARIABLE && sym->v.ptr == val) {
             //WARNING(def, "duplicate def");
             sym->def = def;
         } else {
@@ -2182,7 +2182,7 @@ Symbol *AddSymbolPlaced(SymbolTable *table, const char *name, int type, void *va
 int32_t EvalConstSym(Symbol *sym)
 {
     AST *ast;
-    ast = (AST *)sym->val;
+    ast = (AST *)sym->v.ptr;
     return EvalConstExpr(ast);
 }
 
@@ -2247,7 +2247,7 @@ CalcClkFreqP1(Module *P)
     if (!clkmodesym || clkmodesym->kind == SYM_ALIAS || clkmodesym->kind == SYM_WEAK_ALIAS) {
         return 0;  // nothing to do
     }
-    ast = (AST *)clkmodesym->val;
+    ast = (AST *)clkmodesym->v.ptr;
     if (clkmodesym->kind != SYM_CONSTANT) {
         WARNING(ast, "_clkmode is not a constant");
         return 0;
@@ -2258,18 +2258,18 @@ CalcClkFreqP1(Module *P)
     sym = FindSymbol(&P->objsyms, "_clkfreq");
     if (sym && sym->kind != SYM_WEAK_ALIAS) {
         if (sym->kind == SYM_CONSTANT) {
-            clkfreq = EvalConstExpr((AST*)sym->val);
+            clkfreq = EvalConstExpr((AST*)sym->v.ptr);
         } else {
-            WARNING((AST*)sym->val, "_clkfreq is not a constant");
+            WARNING((AST*)sym->v.ptr, "_clkfreq is not a constant");
         }
     }
     xinfreq = 0;
     sym = FindSymbol(&P->objsyms, "_xinfreq");
     if (sym) {
         if (sym->kind == SYM_CONSTANT) {
-            xinfreq = EvalConstExpr((AST*)sym->val);
+            xinfreq = EvalConstExpr((AST*)sym->v.ptr);
         } else {
-            WARNING((AST*)sym->val, "_xinfreq is not a constant");
+            WARNING((AST*)sym->v.ptr, "_xinfreq is not a constant");
         }
     }
     // calculate the multiplier
@@ -2625,7 +2625,7 @@ static int fixupVarOffset(Symbol *sym, void *arg)
     OffsetStruct *A = (OffsetStruct *)arg;
     
     if (sym->kind == SYM_VARIABLE && !(sym->flags & (SYMF_GLOBAL|SYMF_NOALLOC))) {
-        AST *typ = (AST *)sym->val;
+        AST *typ = (AST *)sym->v.ptr;
         int siz = TypeSize(typ);
         int align = PaddedTypeAlign(typ);
         if ((A->curOffset & (align-1)) != 0) {
@@ -2659,7 +2659,7 @@ static int fixupByteWordLongOffset(Symbol *sym, void *arg)
     if (sym->kind != SYM_VARIABLE || (sym->flags & (SYMF_GLOBAL|SYMF_NOALLOC))) {
         return 1;
     }
-    AST *typ = (AST *)sym->val;
+    AST *typ = (AST *)sym->v.ptr;
     if (IsClassType(BaseType(typ))) {
         return 1;
     }
@@ -2689,7 +2689,7 @@ static int fixupObjectOffset(Symbol *sym, void *arg)
     if (sym->kind != SYM_VARIABLE || (sym->flags & (SYMF_GLOBAL|SYMF_NOALLOC))) {
         return 1;
     }
-    AST *typ = (AST *)sym->val;
+    AST *typ = (AST *)sym->v.ptr;
     if (!IsClassType(BaseType(typ))) {
         return 1;
     }

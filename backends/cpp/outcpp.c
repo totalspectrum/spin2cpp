@@ -1,7 +1,7 @@
 //
 // C++ source code output for spin2cpp
 //
-// Copyright 2012-2019 Total Spectrum Software Inc.
+// Copyright 2012-2022 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 
@@ -144,7 +144,7 @@ PrintConstantDecl(Flexbuf *f, AST *ast)
         ERROR(ast, "constant symbol %s not declared??", name);
         return;
     }
-    expr = (AST *)sym->val;
+    expr = (AST *)sym->v.ptr;
     if (gl_output == OUTPUT_C || gl_gas_dat) {
         flexbuf_printf(f, "#define ");
         PrintSymbol(f, sym, PRINTEXPR_USECONST);
@@ -1000,7 +1000,7 @@ SetCppFlags(CppModData *bedata, AST *ast)
         {
             Symbol *sym = LookupSymbol(ast->d.string);
             if (sym && sym->kind == SYM_BUILTIN) {
-                Builtin *b = (Builtin *)sym->val;
+                Builtin *b = (Builtin *)sym->v.ptr;
                 if (!strncmp(b->name, "lock", 4)) {
                     bedata->needsLockFuncs = 1;
                 }

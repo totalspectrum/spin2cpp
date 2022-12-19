@@ -1792,7 +1792,7 @@ static AST *doCheckTypes(AST *ast)
                     extern Symbol *GetCurArrayBase();
                     Symbol *sym = GetCurArrayBase();
                     if (sym && sym->kind == SYM_CONSTANT) {
-                        ast->right = AstOperator('-', ast->right, (AST *)sym->val);
+                        ast->right = AstOperator('-', ast->right, (AST *)sym->v.ptr);
                     }
                 }
                 deref = NewAST(AST_MEMREF, basetype, ast->left);
@@ -1925,7 +1925,7 @@ static AST *doCheckTypes(AST *ast)
                 ltype = basetype;
             }
             if (sym->kind == SYM_FUNCTION) {
-                Function *f = (Function *)sym->val;
+                Function *f = (Function *)sym->v.ptr;
                 if (f->module == current || IsSystemModule(f->module)) {
                     AstReportDone(&saveinfo);
                     return ltype;
