@@ -5,6 +5,8 @@ Version 5.9.22
 - New optimization to use SUMxx instructions if possible (thanks Ada!)
 - Removed <- and -> operators from Spin2 (use ROL and ROR instead)
 - Revised P2 frequency calculations to match Chip's latest version
+- Some floating point optimizations from Ada
+- Several other miscellaneous optimizations from Ada
 - Spin2cpp now respects '!cse' optimization flag.
 
 Version 5.9.21
