@@ -434,7 +434,7 @@ AlignPc(Flexbuf *f, int size)
 int
 outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs, AST *type)
 {
-    uintptr_t origval, val;
+    uint64_t origval, val;
     int i;
     Reloc *rptr;
     int relocOff;
