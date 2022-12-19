@@ -68,6 +68,7 @@ int  ExpandInlines(IRList *irl);
 void ReplaceOpcode(IR *ir, IROpcode op);
 
 bool IsDummy(IR *ir);
+bool IsBranch(IR *ir);
 bool IsValidDstReg(Operand *reg);
 bool SrcOnlyHwReg(Operand *reg);
 bool IsLocal(Operand *reg);
