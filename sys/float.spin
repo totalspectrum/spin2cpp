@@ -72,7 +72,7 @@ pri _float_fromint64(lo, hi) : single = float | negate, tmplo, tmphi
       sub lo, tmplo wc
       subx hi, tmphi
     endasm
-    negate := float_sign_bit
+    negate := _float_sign_bit
   else
     negate := 0
   single := _float_fromuns64(lo, hi) ^ negate
@@ -109,7 +109,7 @@ pri file "libsys/ieee32.c" _float_add(singleA = float, singleB = float) : single
 
 ''Subtract singleB from singleA
 pri _float_sub(singleA = float, singleB = float) : single = float
-  return _float_add(singleA, singleB ^ float_sign_bit)
+  return _float_add(singleA, singleB ^ _float_sign_bit)
 
              
 pri file "libsys/ieee32.c" _float_sqrt(singleA = float) : single = float
