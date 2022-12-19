@@ -205,6 +205,7 @@ extern int gl_warn_flags;     /* flags for warnings */
 #define WARN_HIDE_MEMBERS       0x02
 #define WARN_ASM_USAGE          0x04
 #define WARN_UNINIT_VARS        0x08
+#define WARN_C_CONST_STRING     0x10
 #define WARN_ALL                0xFFFF
 
 extern int gl_list_options;   /* options for listing files */

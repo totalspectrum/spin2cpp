@@ -8,6 +8,7 @@ Version 5.9.22
 - Some floating point optimizations from Ada
 - Several other miscellaneous optimizations from Ada
 - Spin2cpp now respects '!cse' optimization flag.
+- Warnings about C strings being passed to non-const pointers now only happen with -Wall
 
 Version 5.9.21
 - Automatically zero local Spin2 variables
