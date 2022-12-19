@@ -281,6 +281,10 @@ pinwrite: Optimized if just one pin or one bit are being written
 
 On the P2, reorder instructions to take advantage of cordic pipeline delays.
 
+### Experimental / new optimizations (-O2, -Oexperimental)
+
+Enables some miscellaneous optimizations that are new and hence slightly less well tested. Generally these should be pretty safe, but they're not quite ready for promotion to the default -O1.
+
 ### Single Use Method inlining (-O2, -Oinline-single)
 
 If a method is called only once in a whole program, it is expanded inline at the call site.

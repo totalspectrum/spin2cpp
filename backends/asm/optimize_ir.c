@@ -4895,7 +4895,9 @@ again:
             change |= OptimizePeephole2(irl);
         }
         if (flags & OPT_BRANCHES) {
-            change |= OptimizeBranchCommonOps(irl);
+            if (flags & OPT_EXPERIMENTAL) {
+                change |= OptimizeBranchCommonOps(irl);
+            }
             change |= OptimizeShortBranches(irl);
         }
         if (flags & OPT_BASIC_REGS) {

@@ -424,6 +424,7 @@ static struct optflag_table {
     { "special-functions", OPT_SPECIAL_FUNCS },
     { "cordic-reorder", OPT_CORDIC_REORDER},
     { "local-reuse", OPT_LOCAL_REUSE},
+    { "experimental", OPT_EXPERIMENTAL },
     { "all", OPT_FLAGS_ALL },
 };
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
