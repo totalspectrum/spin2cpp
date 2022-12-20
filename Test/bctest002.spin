@@ -8,7 +8,7 @@ PUB assign_value
 ' That narrow-assign-as-expresion thing
 l := w := b := -1
 
-PUB normal_binary | x,y,z
+PUB {++warn(!init-vars)} normal_binary | x,y,z
 ' Normal binary operators
 x := y+z
 x := y-z
@@ -36,7 +36,7 @@ x := y => z
 x := y <# z
 x := y #> z
 
-PUB normal_unary |x,y
+PUB {++warn(!init-vars)} normal_unary |x,y
 x := -y
 x := NOT y
 x := ||y
@@ -44,14 +44,14 @@ x := ^^y
 x := |<y
 x := >|y
 
-PUB binary_assign_fuse | x,y,z
+PUB {++warn(!init-vars)} binary_assign_fuse | x,y,z
 ' Check for assign optimization
 z := z - 1
 y := 1 - y
 x := 25 * x
 x := 4 * x ' should convert to shift
 
-PUB binary_emulated | x,y,z
+PUB {++warn(!init-vars)} binary_emulated | x,y,z
 ' Emulated binary operators (can't do unsigned in Spin1 mode...)
 x := y XOR z
 x := y +| z
@@ -59,7 +59,7 @@ x := y -| z
 x := y __andthen__ ina++
 x := y __orelse__ ina++
 
-PUB selfmodify | x,y,z
+PUB {++warn(!init-vars)} selfmodify | x,y,z
 
 ~z
 ~~z

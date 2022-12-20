@@ -192,9 +192,86 @@ Most of COG RAM is used by the compiler, except that $1e0-$1ef is left free for 
 
 The first 16 registers of LUT memory (from $200 to $20f) is left free for use by user PASM code, e.g. for the streamer. The remainder of the first half of LUT memory (from $210 to $300) is used for any functions explicitly placed into LUT. The LUT memory from $300 to $400 (the second half of LUT) is used for internal purposes.
 
+## Warnings
+
+Listed below are warnings which may be enabled on the command line or on a per-function basis. One may also specify `-Wall` to enable all warnings.
+
+### Per-function control of warnings
+
+It is possible to enable or disable individual warnings in a function by using attributes. This doesn't work for all warnings; see the individual warnings for a description. For example, to disable warnings about uninitialized variables in a C function use:
+```
+int foo(int x) __attribute__(warn(!init-vars)) {
+...
+}
+```
+
+A similar effect is achieved in Spin by adding a comment `{++warn(!init-vars)}` between the `pub` or `pri` and the function name.
+
+In BASIC we use the `for` keyword followed by a string giving the warning options:
+```
+function for "warn(!init-vars)" myfunc()
+```
+
+Multiple warnings may be given, separated by commas. To turn a warning off, prefix it with `!` or with `~`. To enable all warnings, use the word `all`.
+
+Thus, a Spin function with `{++opt(!all,hide-members)}` will always be compiled with no warnings except for uninitialzed variables.
+
+### Warning control on the command line
+
+Multiple `-W` options may be given, or combined separated by commas. So for example to compile with all warnings except uninitialized variables, one would give `-Wall,!init-vars`.
+
+
+### Assembler usage warnings (-Wasm-usage) (enabled by default)
+
+Warns about some common issues in assembly code, for example forgetting to put `wc` or `wz` on a `cmp` instruction. This option is only available on the command line, it is generally ignored on a per-function basis (even for functions with inline assembly) because assembly parsing is handled specially.
+
+### C constant strings (-Wc-const-strings)
+
+If enabled, all string literals in C are treated as being `const`. This is a useful warning (because it is not legal to modify a string literal) but many older programs do not use `const` consistently enough to prevent this warning.
+
+### Hidden members (-Whide-members)
+
+If enabled, any function local variables which shadow class or object members are warned about.
+
+### Language extensions (-Wlanguage-extensions)
+
+Warns about various FlexProp specific extensions to the Spin, Spin2, and C languages. Note that some of these extensions are detected very early in the parsing process, before functions are recognized, and so it probably isn't useful to enable/disable this warning on a per-function basis.
+
+### Uninitialized variables (-Winit-vars)
+
+Issues a warning about attempts to use uninitialized variables. Note that FlexProp isn't completely able to see all ways a variable could be initialized, so this warning may sometimes be spurious.
+
 ## Optimizations
 
 Listed below are optimizations which may be enabled on the command line or on a per-function basis. The general optimization level may be specified by a number: 0 for no optimizations, 1 for basic (reliable) optimizations, and 2 for additional optimizations. `-Os` is generally equivalent to `-O1`, but favors size over speed (and may enable a few additional space optimizations).
+
+### Per-function control of optimizations
+
+It is possible to enable or disable individual optimizations in a function by using attributes. For example, to disable loop reduction for a particular C function, one would add an attribute:
+```
+int foo(int x) __attribute__(opt(!loop-reduce)) {
+...
+}
+```
+
+A similar effect is achieved in Spin by adding a comment `{++opt(!loop-reduce)}` between the `pub` or `pri` and the function name.
+
+In BASIC we use the `for` keyword followed by a string giving the optimization options:
+```
+function for "opt(!loop-reduce)" myfunc()
+```
+
+Multiple options may be given, separated by commas. To turn an option off, prefix it with `!` or with `~`. To enable all options for a particular optimization level, start the string with `0`, `1`, `2`, etc., or with the word `all` to enable all optimizations (regardless of the compiler optimization level chosen).
+
+Thus, a Spin function with `{++opt(0,peephole)}` will always be compiled with no optimization except peepholes, even when the `-O2` option is given to the compiler.
+
+### Optimization control on the command line
+
+Multiple `-O` options may be given, or combined separated by commas. So for example to compile with no optimizations except basic register and peephole, one would give `-O0,regs,peephole`. To compile with `-O2` but with peepholes turned off, one would give `-O2,!peephole`.
+
+### Optimizing for size
+
+The `-Os` option enables all of the optimizations specified by `-O1`, plus some size related optimizations.
 
 ### Multiplication conversion (always)
 
@@ -328,34 +405,6 @@ is converted to the equivalent of
 
 An expression like `(i*100)` where `i` is a loop index can be converted to
 something like `itmp \ itmp + 100`
-
-### Per-function control of optimizations
-
-It is possible to enable or disable individual optimizations in a function by using attributes. For example, to disable loop reduction for a particular C function, one would add an attribute:
-```
-int foo(int x) __attribute__(opt(!loop-reduce)) {
-...
-}
-```
-
-A similar effect is achieved in Spin by adding a comment `{++opt(!loop-reduce)}` between the `pub` or `pri` and the function name.
-
-In BASIC we use the `for` keyword followed by a string giving the optimization options:
-```
-function for "opt(!loop-reduce)" myfunc()
-```
-
-Multiple options may be given, separated by commas. To turn an option off, prefix it with `!` or with `~`. To enable all options for a particular optimization level, start the string with `0`, `1`, `2`, etc., or with the word `all` to enable all optimizations (regardless of the compiler optimization level chosen).
-
-Thus, a Spin function with `{++opt(0,peephole)}` will always be compiled with no optimization except peepholes, even when the `-O2` option is given to the compiler.
-
-### Optimization control on the command line
-
-Multiple `-O` options may be given, or combined separated by commas. So for example to compile with no optimizations except basic register and peephole, one would give `-O0,regs,peephole`. To compile with `-O2` but with peepholes turned off, one would give `-O2,!peephole`.
-
-### Optimizing for size
-
-The `-Os` option enables all of the optimizations specified by `-O1`, plus some size related optimizations.
 
 ## Memory Allocation and Management
 

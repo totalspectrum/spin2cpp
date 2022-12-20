@@ -68,6 +68,7 @@ static void ReinitFunction(Function *f, int language)
         f->localsyms.flags = SYMTAB_FLAG_NOCASE;
     }
     f->optimize_flags = gl_optimize_flags;
+    f->warn_flags = gl_warn_flags;
 }
 static const char *
 FindAnnotation(AST *annotations, const char *key)
@@ -148,8 +149,9 @@ EnterVariable(int kind, SymbolTable *stab, AST *astname, AST *type, unsigned sym
         sym->flags |= sym_flag;
         sym->module = (void *)current;
         if (current && current != systemModule) {
-            if ( (gl_warn_flags & WARN_HIDE_MEMBERS)
-                 || ( (gl_warn_flags & WARN_LANG_EXTENSIONS) && current->curLanguage == LANG_SPIN_SPIN2 ) )
+            int warn_flags = curfunc ? curfunc->warn_flags : gl_warn_flags;
+            if ( (warn_flags & WARN_HIDE_MEMBERS)
+                 || ( (warn_flags & WARN_LANG_EXTENSIONS) && current->curLanguage == LANG_SPIN_SPIN2 ) )
             {
                 Symbol *sym2;
                 switch (kind) {
@@ -965,6 +967,17 @@ doDeclareFunction(AST *funcblock)
                 ERROR(annotation, "optimization options must be enclosed in parentheses");
             } else {
                 ParseOptimizeString(annotation, opts+1, &fdef->optimize_flags);
+            }
+        }
+    }
+    {
+        const char *opts = FindAnnotation(annotation, "warn");
+        if (opts) {
+            //printf("Optimize string: [%s]\n", opt);
+            if (opts[0] != '(') {
+                ERROR(annotation, "warning options must be enclosed in parentheses");
+            } else {
+                ParseWarnString(annotation, opts+1, &fdef->warn_flags);
             }
         }
     }

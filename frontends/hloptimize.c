@@ -326,7 +326,7 @@ static int CheckSymbolUsage(Symbol *sym, void *arg) {
                 F->body = init;
             }
         }
-        if (needWarn) {
+        if (needWarn && (F->warn_flags & WARN_UNINIT_VARS)) {
             WARNING(where, "variable %s may be used before it is set in function %s", sym->user_name, F->name);
         }
     }

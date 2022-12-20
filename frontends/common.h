@@ -201,12 +201,14 @@ extern int gl_optimize_flags; /* flags for optimization */
 #define DEFAULT_BYTECODE_OPTS   (OPT_REMOVE_UNUSED_FUNCS|OPT_REMOVE_FEATURES|OPT_DEADCODE|OPT_MAKE_MACROS|OPT_SPECIAL_FUNCS|OPT_PEEPHOLE)
 
 extern int gl_warn_flags;     /* flags for warnings */
-#define WARN_LANG_EXTENSIONS    0x01
-#define WARN_HIDE_MEMBERS       0x02
-#define WARN_ASM_USAGE          0x04
-#define WARN_UNINIT_VARS        0x08
-#define WARN_C_CONST_STRING     0x10
-#define WARN_ALL                0xFFFF
+#define WARN_LANG_EXTENSIONS    0x000001
+#define WARN_HIDE_MEMBERS       0x000002
+#define WARN_ASM_USAGE          0x000004
+#define WARN_UNINIT_VARS        0x000008
+#define WARN_C_CONST_STRING     0x000010
+#define WARN_ALL                0xFFFFFF
+
+#define DEFAULT_WARN_FLAGS (WARN_ASM_USAGE | WARN_UNINIT_VARS)
 
 extern int gl_list_options;   /* options for listing files */
 #define LIST_INCLUDE_CONSTANTS  0x0001
@@ -385,6 +387,7 @@ typedef struct funcdef {
     
     /* various flags */
     int optimize_flags;   // optimizations to be applied
+    int warn_flags;       // warnings enabled for this function
     unsigned code_placement:2;
 #define CODE_PLACE_DEFAULT 0
 #define CODE_PLACE_HUB 1
@@ -959,6 +962,9 @@ Symbol *AddSymbolPlaced(SymbolTable *table, const char *name, int type, void *va
 // updates flags based on what we find
 // returns 0 on failure to parse, 1 otherwise
 int ParseOptimizeString(AST *lineNum, const char *str, int *flags);
+
+// parse a warning string
+int ParseWarnString(AST *lineNum, const char *str, int *flags);
 
 /* declare constants */
 void DeclareConstants(Module *P, AST **conlist);

@@ -1,4 +1,5 @@
 Version 5.9.22
+- Added control over individual warnings
 - Fixed indirect method pointer calls in Spin2 (like LONG[x](foo))
 - Fixed compiling some boolean expressions involving 64 bit integers
 - Fixed QCOS and QSIN when used with angles larger than twopi

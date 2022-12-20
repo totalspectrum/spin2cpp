@@ -399,10 +399,12 @@ const char * GetOptionString(char *buf, size_t n, const char *opts)
     }
 }
 
-static struct optflag_table {
+typedef struct FlagTable {
     const char *name;
-    int bits;
-} optflag[] = {
+    unsigned bits;
+} FlagTable;
+
+static FlagTable optflag[] = {
     { "remove-unused", OPT_REMOVE_UNUSED_FUNCS },
     { "remove-features", OPT_REMOVE_FEATURES },
     { "remove-dead", OPT_DEADCODE },
@@ -475,7 +477,7 @@ int ParseOptimizeString(AST *line, const char *str, int *flag_ptr)
                 flags = DEFAULT_ASM_OPTS | EXTRA_ASM_OPTS;
                 continue;
             default:
-                ERROR(line, "Unrecognized asm option: %s", buf);
+                ERROR(line, "Unrecognized optimization set: %s", buf);
                 return 0;
             }
         }
@@ -500,12 +502,65 @@ int ParseOptimizeString(AST *line, const char *str, int *flag_ptr)
     return 1;
 }
 
-int
-ParseWFlags(const char *flags)
+static FlagTable warnflag[] = {
+    { "asm-usage", WARN_ASM_USAGE },
+    { "c-const-strings", WARN_C_CONST_STRING },
+    { "hide-members", WARN_HIDE_MEMBERS },
+    { "init-vars", WARN_UNINIT_VARS },
+    { "language-extensions", WARN_LANG_EXTENSIONS },
+    
+    { "all", WARN_ALL },
+};
+
+int ParseWarnString(AST *line, const char *str, int *flag_ptr)
 {
-    if (!strcmp(flags, "all")) {
-        gl_warn_flags = WARN_ALL;
-    } else if (!strcmp(flags, "error")) {
+    int flags = *flag_ptr;
+    int notflag;
+    int bits, i;
+    char buf_base[80];
+    char *buf;
+    
+    if (!(*str)) {
+        // default to -O2
+        *flag_ptr = DEFAULT_ASM_OPTS | EXTRA_ASM_OPTS;
+        return 1;
+    }
+    while (str && *str) {
+        buf = buf_base;
+        str = GetOptionString(buf, sizeof(buf_base), str);
+        if (*buf == '!' || *buf == '~') {
+            buf++;
+            notflag = 1;
+        } else {
+            notflag = 0;
+        }
+        if (*buf == 0) {
+            continue;
+        }
+        bits = 0;
+        for (i = 0; i < ARRAY_SIZE(warnflag); i++) {
+            if (!strcmp(warnflag[i].name, buf)) {
+                bits = warnflag[i].bits;
+                break;
+            }
+        }
+        if (!bits) {
+            ERROR(line, "Unrecognized optimization flag: %s", buf);
+            return 0;
+        }
+        if (notflag) {
+            flags &= ~bits;
+        } else {
+            flags |= bits;
+        }
+    }
+    *flag_ptr = flags;
+    return 1;
+}
+
+int
+ParseWFlags(const char *flags) {
+    if (!strcmp(flags, "error")) {
         gl_warnings_are_errors = 1;
     } else if (!strcmp(flags, "extra")) {
         /* ignore for now */
@@ -514,12 +569,12 @@ ParseWFlags(const char *flags)
     } else if (!strncmp(flags, "max-errors=", 11)) {
         int n = strtol(flags+11, NULL, 10);
         if (n < 1) {
-            fprintf(stderr, "Unrecognized value `%s' for max-errors (must be at least 1)\n", flags+11);
+            ERROR(NULL, "Unrecognized value `%s' for max-errors (must be at least 1)\n", flags+11);
             return 0;
         }
         gl_max_errors = n;
     } else {
-        return 0;
+        return ParseWarnString(NULL, flags, &gl_warn_flags);
     }
     return 1;
 }

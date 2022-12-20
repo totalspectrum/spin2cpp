@@ -2645,7 +2645,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         }
         /* otherwise fall through */
     case AST_STRINGPTR:
-        if ( curfunc && curfunc->language == LANG_CFAMILY_C && !(gl_warn_flags & WARN_C_CONST_STRING) ) {
+        if ( curfunc && curfunc->language == LANG_CFAMILY_C && !(curfunc->warn_flags & WARN_C_CONST_STRING) ) {
             return ast_type_ptr_byte;
         }
         return ast_type_string;
