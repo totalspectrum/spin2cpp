@@ -68,6 +68,7 @@ Symbol                   | When Defined
 `__OUTPUT_BYTECODE__`    | if bytecode is being generated
 `__OUTPUT_C__`           | if C code is being generated
 `__OUTPUT_CPP__`         | if C++ code is being generated
+`__DEBUG__`              | if debugging is enabled (-g or -gbrk given)
 
 ## Runtime Environment
 

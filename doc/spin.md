@@ -105,6 +105,7 @@ Symbol           | When Defined
 `__LINE__`       | the current source line number
 `__TIME__`       | a string containing the time when compilation was begun
 `__VERSION__`    | a string containing the full version of flexspin in use
+`__DEBUG__`      | if debugging is enabled (-g or -gbrk given)
 
 A predefined symbol is also generated for type of output being created:
 

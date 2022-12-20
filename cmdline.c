@@ -148,6 +148,9 @@ int ProcessCommandLine(CmdLineOptions *cmd)
     if (gl_exit_status) {
         pp_define(&gl_pp, "__EXIT_STATUS__", "1");
     }
+    if (gl_debug) {
+        pp_define(&gl_pp, "__DEBUG__", "1");
+    }
     if (gl_output == OUTPUT_ASM || gl_output == OUTPUT_COGSPIN) {
         pp_define(&gl_pp, "__SPIN2PASM__", "1");
         pp_define(&gl_pp, "__OUTPUT_ASM__", "1");
