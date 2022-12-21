@@ -2035,7 +2035,10 @@ CheckFunctionCalls(AST *ast)
                 f = (Function *)sym->v.ptr;
                 expectArgs = f->numparams;
             } else {
-                AST *ftype = (curfunc && IsSpinLang(curfunc->language)) ? NULL : ExprType(ast->left);
+                AST *ftype = ExprType(ast->left);
+                if (curfunc && IsSpinLang(curfunc->language) && ftype == ast_type_long) {
+                    ftype = NULL;
+                }
                 if (ftype) {
                     if (ftype->kind == AST_MODIFIER_SEND_ARGS) {
                         doExpandArgs = 1;

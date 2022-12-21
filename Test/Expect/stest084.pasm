@@ -21,10 +21,7 @@ _bump
 	wrlong	arg02, objptr
 	add	objptr, #4
 	wrlong	arg02, objptr
-	sub	objptr, #4
-	rdlong	arg02, objptr
-	add	objptr, #4
-	rdlong	arg01, objptr
+	mov	arg01, arg02
 	sub	objptr, #4
 	add	arg02, arg01
 	wrlong	arg02, objptr
