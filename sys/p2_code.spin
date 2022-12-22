@@ -624,7 +624,7 @@ pri __builtin_longset(ptr, val, count) : r | lval
 
 pri __builtin_memmove(dst, src, count) : origdst
   origdst := dst
-  if dst < src __orelse__ dst+count => src
+  if dst < src __orelse__ dst => src+count
     repeat count >> 2
       long[dst] := long[src]
       dst += 4
