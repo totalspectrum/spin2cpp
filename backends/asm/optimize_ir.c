@@ -4718,7 +4718,7 @@ CORDICconstPropagate(IRList *irl) {
             case OPC_QDIV: {
                 uint64_t fullval;
                 if (setq1_valid) {
-                    fullval = (setq1 << 32) | ir->dst->val;
+                    fullval = (setq1 << 32) | (uint32_t)ir->dst->val;
                     if (ir->src->val == 0) {
                         const_x = 0xFFFFFFFF;
                         const_y = (int32_t)fullval;
