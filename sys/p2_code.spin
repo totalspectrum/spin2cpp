@@ -624,16 +624,17 @@ pri __builtin_longset(ptr, val, count) : r | lval
 
 pri __builtin_memmove(dst, src, count) : origdst
   origdst := dst
-  if (dst < src)
-    repeat while (count > 3)
+  if dst < src __orelse__ dst => src+count
+    repeat count >> 2
       long[dst] := long[src]
       dst += 4
       src += 4
-      count -= 4
-    repeat count
+    if count & 2
+      word[dst] := word[src]
+      dst += 2
+      src += 2
+    if count & 1
       byte[dst] := byte[src]
-      dst += 1
-      src += 1
   else
     dst += count
     src += count
