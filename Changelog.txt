@@ -6,6 +6,7 @@ Version 5.9.22
 - Fixed QCOS and QSIN when used with angles larger than twopi
 - Fixed some signed/unsigned conflicts in Spin constant evaluation
 - New optimization to use SUMxx instructions if possible (thanks Ada!)
+- New optimizations for memcpy/memmove (again, thanks to Ada)
 - Removed <- and -> operators from Spin2 (use ROL and ROR instead)
 - Revised P2 frequency calculations to match Chip's latest version
 - Some floating point optimizations from Ada
