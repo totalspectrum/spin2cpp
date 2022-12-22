@@ -1240,27 +1240,50 @@ BoolValue(int v)
 static ExprInt
 EvalIntOperator(int op, ExprInt lval, ExprInt rval, int *valid)
 {
+    bool truncMath = false; // if true, only use lower 32 bits for math
     
+    if (curfunc) {
+        truncMath = IsSpinLang(curfunc->language);
+    } else if (current) {
+        truncMath = IsSpinLang(current->curLanguage);
+    }
+        
     switch (op) {
     case '+':
         return lval + rval;
     case '-':
         return lval - rval;
     case '/':
+        if (truncMath) {
+            lval = (ExprInt)(int32_t)lval;
+            rval = (ExprInt)(int32_t)rval;
+        }
         if (rval == 0) return rval;
-        return (ExprInt)((int32_t)lval / (int32_t)rval);
+        return lval / rval;
     case K_MODULUS:
+        if (truncMath) {
+            lval = (ExprInt)(int32_t)lval;
+            rval = (ExprInt)(int32_t)rval;
+        }
         if (rval == 0) return rval;
-        return (ExprInt)(int32_t)lval % (int32_t)rval;
+        return lval % rval;
     case K_UNS_DIV:
+        if (truncMath) {
+            lval = (ExprInt)(uint32_t)lval;
+            rval = (ExprInt)(uint32_t)rval;
+        }
         if (rval == 0) return rval;
-        return (ExprInt)((UExprInt) (uint32_t)lval / (UExprInt) (uint32_t)rval);
+        return (ExprInt)((UExprInt) lval / (UExprInt) rval);
     case K_UNS_MOD:
+        if (truncMath) {
+            lval = (ExprInt)(uint32_t)lval;
+            rval = (ExprInt)(uint32_t)rval;
+        }
         if (rval == 0) return rval;
-        return (ExprInt)((UExprInt) (uint32_t)lval % (UExprInt) (uint32_t)rval);
+        return (ExprInt)((UExprInt) lval % (UExprInt) rval);
     case K_FRAC64:
         if (rval == 0) return rval;
-        return (ExprInt)( (((uint64_t)(uint32_t)lval)<<32) / (UExprInt)(uint32_t)rval );
+        return (ExprInt)( (((uint64_t)lval)<<32) / (UExprInt)rval );
     case '*':
         return lval * rval;
     case '|':
