@@ -18,7 +18,7 @@ flexspin has a pre-processor that understands basic directives like `#include`, 
 
 ### Directives
 
-#### DEFINE
+#### \#DEFINE
 ```
 #define FOO hello
 ```
@@ -32,7 +32,7 @@ If no value is given, e.g.
 ```
 then the symbol is defined as the string `1`.
 
-#### IFDEF
+#### \#IFDEF
 
 Introduces a conditional compilation section, which is only compiled if
 the symbol after the `#ifdef` is in fact defined. For example:
@@ -44,7 +44,7 @@ the symbol after the `#ifdef` is in fact defined. For example:
 #endif
 ```
 
-#### IFNDEF
+#### \#IFNDEF
 
 Introduces a conditional compilation section, which is only compiled if
 the symbol after the `#ifndef` is *not* defined. For example:
@@ -54,31 +54,31 @@ the symbol after the `#ifndef` is *not* defined. For example:
 #endif
 ```
 
-#### ELSE
+#### \#ELSE
 
 Switches the meaning of conditional compilation.
 
-#### ELSEIFDEF
+#### \#ELSEIFDEF
 
 A combination of `#else` and `#ifdef`.
 
-#### ELSEIFNDEF
+#### \#ELSEIFNDEF
 
 A combination of `#else` and `#ifndef`.
 
-#### ERROR
+#### \#ERROR
 
 Prints an error message. Mainly used in conditional compilation to report an unhandled condition. Everything after the `#error` directive is printed.
 
-#### INCLUDE
+#### \#INCLUDE
 
 Includes a file.
 
-#### WARN
+#### \#WARN
 
 Prints a warning message.
 
-#### UNDEF
+#### \#UNDEF
 
 Removes the definition of a symbol, e.g. to undefine `FOO` do:
 ```
