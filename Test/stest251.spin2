@@ -3,8 +3,8 @@ var
   byte ddd
   
 pub set1(x, y)
-  ddd.[y] := 1
+  ddd.[y&$1f] := 1
 
 pub set2(x, y)
-  dht[x].[y] := 1
+  dht[x].[y&$1f] := 1
 

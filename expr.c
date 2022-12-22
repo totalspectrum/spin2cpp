@@ -647,17 +647,55 @@ TransformAssignChain(AST *dst, AST *src)
  * Note: A addbits B is encoded as
  *    A | (B<<5)
  * We pass in the AST_RANGE item, so dst->kind == AST_RANGE
+ *
+ * Sigh... it's harder than that, the Spin2 compiler allows you to use
+ * a variable in there so we have to extract the bits at run time :(
  */
 static void
 CheckAddBits(AST *expr)
 {
-    if (expr->right == 0
-        && expr->left != 0
-        && expr->left->kind == AST_OPERATOR
-        && expr->left->d.ival == '|'
+    AST *sub;
+    // don't do this on Spin1, legacy code will only assume 1 bit anyway
+    int lang = LANG_DEFAULT;
+    if (curfunc) {
+        lang = curfunc->language;
+    } else if (current) {
+        lang = current->curLanguage;
+    }
+    if (lang != LANG_SPIN_SPIN2) {
+        // all this headache is Spin2 only
+        return;
+    }
+    
+    if (expr->right != NULL) {
+        // we've already got an explicit range
+        return;
+    }
+    if (expr->left == NULL) {
+        // what the heck? we'll throw an error, somewhere
+        return;
+    }
+
+    sub = expr->left;
+    if (IsConstExpr(sub)) {
+        uint32_t x = (uint32_t)EvalConstExpr(sub);
+        uint32_t firstval = x & 0x1f;
+        uint32_t rangeval = (x >> 5) & 0x1f;
+        uint32_t lastval = firstval + rangeval;
+
+        if (lastval != firstval) {
+            expr->left = AstInteger(lastval);
+            expr->right = AstInteger(firstval);
+        }
+        return;
+    }
+
+    // check for explicit A addbits B, in which
+    // case we extract and use A and B as is
+    if ( sub->kind == AST_OPERATOR
+        && sub->d.ival == '|'
         )
     {
-        AST *sub = expr->left;
         if (sub->right
             && sub->right->kind == AST_OPERATOR
             && sub->right->d.ival == K_SHL
@@ -671,6 +709,25 @@ CheckAddBits(AST *expr)
             expr->right = firstpin;
         }
     }
+
+    // otherwise:
+    // we painfully have to extract the bits to create the range
+
+    // if we can prove somehow that the expression is < 32, we can also skip
+    // a lot of nonsense
+    if (sub->kind == AST_OPERATOR && sub->d.ival == '&' && sub->right && IsConstExpr(sub->right)) {
+        uint32_t mask = (uint32_t)EvalConstExpr(sub->right);
+        if (mask < 32) {
+            return;
+        }
+    }
+    
+    AST *firstpin = AstOperator('&', sub, AstInteger(0x1f));
+    AST *lastpin = AstOperator(K_SHR, sub, AstInteger(5));
+    lastpin = AstOperator('+', firstpin, lastpin);
+    
+    expr->left = lastpin;
+    expr->right = firstpin;
 }
 
 // create a new expression that puts the inits first, then the actual expression

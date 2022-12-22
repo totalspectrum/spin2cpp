@@ -15,6 +15,7 @@ dat
 entry
 
 _set1
+	and	arg02, #31
 	decod	arg02, arg02
 	add	objptr, #5
 	rdbyte	_var01, objptr
@@ -26,6 +27,7 @@ _set1_ret
 
 _set2
 	add	arg01, objptr
+	and	arg02, #31
 	decod	arg02, arg02
 	rdbyte	_var01, arg01
 	or	_var01, arg02

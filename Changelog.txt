@@ -5,6 +5,7 @@ Version 5.9.22
 - Fixed compiling some boolean expressions involving 64 bit integers
 - Fixed QCOS and QSIN when used with angles larger than twopi
 - Fixed some signed/unsigned conflicts in Spin constant evaluation
+- Made foo.[n] produce the same results on P2 as the usual Spin2 compiler, by having it extract the upper bits to find the range of bits affected
 - New optimization to use SUMxx instructions if possible (thanks Ada!)
 - New optimizations for memcpy/memmove (again, thanks to Ada)
 - Removed <- and -> operators from Spin2 (use ROL and ROR instead)
