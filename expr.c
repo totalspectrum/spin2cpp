@@ -1248,19 +1248,19 @@ EvalIntOperator(int op, ExprInt lval, ExprInt rval, int *valid)
         return lval - rval;
     case '/':
         if (rval == 0) return rval;
-        return lval / rval;
+        return (ExprInt)((int32_t)lval / (int32_t)rval);
     case K_MODULUS:
         if (rval == 0) return rval;
-        return lval % rval;
+        return (ExprInt)(int32_t)lval % (int32_t)rval;
     case K_UNS_DIV:
         if (rval == 0) return rval;
-        return (ExprInt)((UExprInt) lval / (UExprInt) rval);
+        return (ExprInt)((UExprInt) (uint32_t)lval / (UExprInt) (uint32_t)rval);
     case K_UNS_MOD:
         if (rval == 0) return rval;
-        return (ExprInt)((UExprInt) lval % (UExprInt) rval);
+        return (ExprInt)((UExprInt) (uint32_t)lval % (UExprInt) (uint32_t)rval);
     case K_FRAC64:
         if (rval == 0) return rval;
-        return (ExprInt)( (((uint64_t)lval)<<32) / (UExprInt)rval );
+        return (ExprInt)( (((uint64_t)(uint32_t)lval)<<32) / (UExprInt)(uint32_t)rval );
     case '*':
         return lval * rval;
     case '|':
