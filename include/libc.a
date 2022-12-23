@@ -45,6 +45,10 @@ int tolower(int c) __fromfile("libc/misc/tolower.c");
 /* libc/misc/toupper.c */
 int toupper(int c) __fromfile("libc/misc/toupper.c");
 
+/* libc/stdio/feof.c */
+int feof(_FILE *f) __fromfile("libc/stdio/feof.c");
+int ferror(_FILE *f) __fromfile("libc/stdio/feof.c");
+
 /* libc/stdio/fflush.c */
 int fflush(_FILE *f) __fromfile("libc/stdio/fflush.c");
 
