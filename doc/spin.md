@@ -722,6 +722,10 @@ Many Spin1 programs may be ported from the Propeller 1 to the Propeller 2, but t
 
 flexspin is mostly, but not completely, compatible with the standard Spin2 compiler. Not all Spin2 builtin functions are available on the P1; only the ones listed in the "New intrinsics for both P1 and P2" are available on all platforms. But when compiling for P2 all of the Spin2 builtin functions should be available.
 
+### Layout of variables in memory
+
+In PropTool's Spin1 the return value always comes first in memory, followed by parameters, followed by local variables. In Spin2 this is changed, so that the parametes are first, then return values, then locals. Flexspin follows the PropTool Spin1 convention always, so that even with Spin2 code the return values are placed first. This can cause incompatibility with code that tries to copy variables using longmove, if they expect to run over the parameter / return value boundary.
+
 ### Expressions involving `:`
 
 The `:` character is used in multiple conflicting ways in Spin2:
