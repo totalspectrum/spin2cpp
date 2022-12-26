@@ -1455,6 +1455,7 @@ TransformCountRepeat(AST *ast)
     /* get the loop variable, if we don't already have one */
     if (!loopvar) {
         loopvar = AstTempLocalVariable("_idx_", looptype);
+        delayedUpdate = false; // no need to restore this variable
     }
 
     if (!IsConstExpr(fromval) && AstUses(fromval, loopvar)) {
