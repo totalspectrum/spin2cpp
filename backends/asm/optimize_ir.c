@@ -2651,10 +2651,12 @@ int OptimizeBranchCommonOps(IRList *irl) {
                     IR *next_jump = lbl->next;
                     while (next_jump && IsDummy(next_jump)) next_jump = next_jump->next;
 
-                    if (SameIR(next_stay,next_jump) && next_stay->cond == next_jump->cond
-                    && !IsPrefixOpcode(next_stay)
+                    if (SameIR(next_stay,next_jump) && next_stay->cond == next_jump->cond // SameIR doesn't check condition code
+                    && !IsPrefixOpcode(next_stay) // TODO: pull entire prefix sequence
                     && !(InstrIsVolatile(next_stay)||InstrIsVolatile(next_jump))
-                    && !InstrSetsFlags(next_stay,FlagsUsedByCond(ir->cond))) {
+                    && !InstrSetsFlags(next_stay,FlagsUsedByCond(ir->cond)) // Can't reorder flag-setting op if it changes the branch outcome
+                    && next_stay->opc != OPC_CALL) // Calls can also set flags
+                    {
 
                         //printf("Top delete %s\n",next_jump->instr->name);
                         DeleteIR(irl,next_jump);
