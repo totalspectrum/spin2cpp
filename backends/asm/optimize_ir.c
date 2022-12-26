@@ -5937,6 +5937,24 @@ static PeepholePattern pat_qdiv_qdiv_signed5[] = {
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
+// jmp conditional followed by jmp uncoditional to same place may be elided */
+static PeepholePattern pat_jmp_jmp[] = {
+    { COND_ANY, OPC_JUMP, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_JUMP, PEEP_OP_MATCH|0, OPERAND_ANY, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
+static int FixupDeleteInstr(int arg, IRList *irl, IR *ir) {
+    IR *next_ir;
+    while (ir && arg > 0) {
+        next_ir = ir->next;
+        DeleteIR(irl, ir);
+        ir = next_ir;
+        --arg;
+    }
+    return 1;
+}
+
 static int ReplaceMaxMin(int arg, IRList *irl, IR *ir)
 {
     if (!InstrSetsFlags(ir, FLAG_WZ|FLAG_WC)) {
@@ -6555,6 +6573,8 @@ struct Peepholes {
 
     { pat_mux_qmux_1p, 1, FixupQMux },
     { pat_mux_qmux_2p, 2, FixupQMux },
+
+    { pat_jmp_jmp, 1, FixupDeleteInstr },
 };
 
 

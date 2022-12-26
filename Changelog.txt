@@ -1,3 +1,6 @@
+Version 5.9.23
+- Fixed Spin2 loops so that the correct value is in the variable if the loop is quit
+
 Version 5.9.22
 - Added control over individual warnings
 - Define a symbol __DEBUG__ when -g or -gbrk is given

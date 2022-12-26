@@ -1284,13 +1284,17 @@ TransformCountRepeat(AST *ast)
 
     AST *limitvar = NULL;
     AST *finalstmt = NULL;
-    AST *origtoval = NULL;
+    AST *updatevar = NULL;
     
     ASTReportInfo saveinfo;
+    bool delayedUpdate = false;
     
     /* create new ast elements using this ast's line info, at least for now */
     AstReportAs(ast, &saveinfo);
 
+    if (curfunc && curfunc->language == LANG_SPIN_SPIN2) {
+        delayedUpdate = true;
+    }
     if (ast->left) {
         if (ast->left->kind == AST_IDENTIFIER) {
             loopvar = ast->left;
@@ -1417,7 +1421,7 @@ TransformCountRepeat(AST *ast)
                         Symbol *sym = LookupAstSymbol(loopvar, NULL);
                         if (sym && (sym->kind == SYM_LOCALVAR||sym->kind == SYM_TEMPVAR) ) {
                             //printf("switch loop to count down");
-                            initstmt = AstAssign(loopvar, AstInteger(toi+1));
+                                               initstmt = AstAssign(loopvar, AstInteger(toi+1));
                             loopvar = AstTempLocalVariable("_idx_", looptype);
                             fromi = reps+1;
                             toi = 1;
@@ -1469,20 +1473,18 @@ TransformCountRepeat(AST *ast)
         if (gl_expand_constants && isIntegerLoop) {
             toval = AstInteger(EvalConstExpr(toval));
         }
-        origtoval = DupAST(toval);
     } else if (toval->kind == AST_IDENTIFIER && !AstModifiesIdentifier(body, toval)) {
         /* do nothing, toval is already OK */
-        origtoval = DupAST(toval);
     } else {
         limitvar = AstTempLocalVariable("_limit_", looptype);
-        origtoval = AstTempLocalVariable("_origto_", looptype);
         initstmt = NewAST(AST_SEQUENCE, initstmt, AstAssign(limitvar, toval));
-        if (curfunc && curfunc->language == LANG_SPIN_SPIN2) {
-            initstmt = NewAST(AST_SEQUENCE, initstmt, AstAssign(origtoval, limitvar));
-        }
         toval = limitvar;
     }
-
+    if (delayedUpdate) {
+        updatevar = AstTempLocalVariable("_update_", looptype);
+    } else {
+        updatevar = NULL;
+    }
     /* set the step variable */
     if (knownStepVal && knownStepDir) {
         if (knownStepDir < 0 && IsSpinLang(curfunc->language)) {
@@ -1628,14 +1630,20 @@ TransformCountRepeat(AST *ast)
     if (LoopTestAlwaysTrue(condtest)) {
         WARNING(ast, "Loop will never terminate");
     }
+    if (delayedUpdate) {
+        stepstmt = NewAST(AST_SEQUENCE, AstAssign(updatevar, loopvar), stepstmt);
+        finalstmt = AstAssign(loopvar, updatevar);
+        finalstmt = NewAST(AST_IF,
+                           condtest,
+                           NewAST(AST_THENELSE,
+                                  NULL,
+                                  NewAST(AST_STMTLIST, finalstmt, NULL)));
+    }
     stepstmt = NewAST(AST_STEP, stepstmt, body);
     condtest = NewAST(AST_TO, condtest, stepstmt);
     forast = NewAST((enum astkind)loopkind, initstmt, condtest);
     forast->lineidx = origast->lineidx;
     forast->lexdata = origast->lexdata;
-    if (curfunc && curfunc->language == LANG_SPIN_SPIN2 && origtoval) {
-        finalstmt = AstAssign(loopvar, origtoval);
-    }
     if (finalstmt) {
         forast = NewAST(AST_STMTLIST, forast,
                            NewAST(AST_STMTLIST, finalstmt, NULL));
