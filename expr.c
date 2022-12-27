@@ -983,6 +983,7 @@ TransformRangeAssign(AST *dst, AST *src, int optoken, int toplevel)
 
         andexpr = AstOperator(K_SHL, maskexpr, loexpr);
         andexpr = AstOperator(K_BIT_NOT, NULL, andexpr);
+        andexpr = AstOperator('&', andexpr, AstInteger(0xffffffff));
         andexpr = FoldIfConst(andexpr);
 
         orexpr = FoldIfConst(AstOperator('&', src, maskexpr));
