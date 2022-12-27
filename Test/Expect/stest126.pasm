@@ -16,12 +16,12 @@ _mystrlen_ret
 	ret
 
 _wordxpand
-LR__0002
+LR__0010
 	rdword	_var01, arg02 wz
 	wrlong	_var01, arg01
 	add	arg01, #4
 	add	arg02, #2
- if_ne	jmp	#LR__0002
+ if_ne	jmp	#LR__0010
 _wordxpand_ret
 	ret
 

@@ -15,17 +15,17 @@ _tx_ret
 
 _str
 	mov	_var01, arg01
-LR__0002
+LR__0010
 	rdbyte	arg01, _var01 wz
 	add	_var01, #1
- if_e	jmp	#LR__0004
+ if_e	jmp	#LR__0012
 	mov	_var02, #4
-LR__0003
+LR__0011
 	mov	outa, arg01
 	add	arg01, #1
-	djnz	_var02, #LR__0003
-	jmp	#LR__0002
-LR__0004
+	djnz	_var02, #LR__0011
+	jmp	#LR__0010
+LR__0012
 _str_ret
 	ret
 

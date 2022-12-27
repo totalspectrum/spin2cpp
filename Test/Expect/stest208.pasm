@@ -30,15 +30,15 @@ _casetest2
 	max	_var01, #3
 	add	_var01, ptr_L__0014_
 	jmp	_var01
-LR__0004
-	jmp	#LR__0005
-	jmp	#LR__0005
-	jmp	#LR__0005
-	jmp	#LR__0006
-LR__0005
+LR__0010
+	jmp	#LR__0011
+	jmp	#LR__0011
+	jmp	#LR__0011
+	jmp	#LR__0012
+LR__0011
 	mov	result1, #1
 	jmp	#_casetest2_ret
-LR__0006
+LR__0012
 	mov	result1, #2
 _casetest2_ret
 	ret
@@ -48,15 +48,15 @@ _casetest3
 	max	_var01, #3
 	add	_var01, ptr_L__0018_
 	jmp	_var01
-LR__0007
-	jmp	#LR__0008
-	jmp	#LR__0008
-	jmp	#LR__0008
-	jmp	#LR__0009
-LR__0008
+LR__0020
+	jmp	#LR__0021
+	jmp	#LR__0021
+	jmp	#LR__0021
+	jmp	#LR__0022
+LR__0021
 	mov	result1, #1
 	jmp	#_casetest3_ret
-LR__0009
+LR__0022
 	mov	result1, #2
 _casetest3_ret
 	ret
@@ -64,9 +64,9 @@ _casetest3_ret
 ptr_L__0010_
 	long	LR__0001
 ptr_L__0014_
-	long	LR__0004
+	long	LR__0010
 ptr_L__0018_
-	long	LR__0007
+	long	LR__0020
 result1
 	long	0
 COG_BSS_START

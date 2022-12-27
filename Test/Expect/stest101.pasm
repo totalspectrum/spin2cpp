@@ -19,10 +19,10 @@ _checkcmd_ret
 	ret
 
 _cmd2
-LR__0003
+LR__0010
 	mov	outa, arg01
 	mov	arg01, #0
-	jmp	#LR__0003
+	jmp	#LR__0010
 _cmd2_ret
 	ret
 

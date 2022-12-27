@@ -1422,6 +1422,9 @@ RenameLabels(IRList *list)
                     sym = AddSymbol(&localLabelMap, ir->dst->name, SYM_UNKNOWN, (void *)0, NULL);
                 }
                 sym->v.i = (labelValue++);
+            } else if (labelValue > 1) {
+                // provide a bit of buffer so trival changes don't mess things up
+                labelValue = 10 * ((labelValue + 9)/10);
             }
         }
     }

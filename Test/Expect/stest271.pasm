@@ -16,25 +16,25 @@ _test1up_ret
 
 _test1dn
 	mov	_var01, #8
-LR__0002
+LR__0010
 	xor	outa, _var01
-	djnz	_var01, #LR__0002
+	djnz	_var01, #LR__0010
 _test1dn_ret
 	ret
 
 _test2up
 	mov	_var01, #8
-LR__0003
+LR__0020
 	xor	outa, #1
-	djnz	_var01, #LR__0003
+	djnz	_var01, #LR__0020
 _test2up_ret
 	ret
 
 _test2dn
 	mov	_var01, #8
-LR__0004
+LR__0030
 	xor	outa, #1
-	djnz	_var01, #LR__0004
+	djnz	_var01, #LR__0030
 _test2dn_ret
 	ret
 

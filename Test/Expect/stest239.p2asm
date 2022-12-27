@@ -36,13 +36,13 @@ _test1_ret
 
 _test2
 	cmp	arg01, #0 wz
- if_e	jmp	#LR__0003
+ if_e	jmp	#LR__0010
 	call	#_test1
 	mov	test2_tmp001_, result1
-	jmp	#LR__0004
-LR__0003
+	jmp	#LR__0011
+LR__0010
 	mov	test2_tmp001_, #3
-LR__0004
+LR__0011
 	mov	result1, test2_tmp001_
 _test2_ret
 	ret

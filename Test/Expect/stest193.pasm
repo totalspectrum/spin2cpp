@@ -13,9 +13,9 @@ _hang_ret
 _wait
 	mov	_var01, #1
 	shl	_var01, arg01
-LR__0002
+LR__0010
 	test	ina, _var01 wc
- if_ae	jmp	#LR__0002
+ if_ae	jmp	#LR__0010
 _wait_ret
 	ret
 

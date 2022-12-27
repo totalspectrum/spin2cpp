@@ -17,8 +17,8 @@ _demo_ret
 	ret
 
 _exit
-LR__0003
-	jmp	#LR__0003
+LR__0010
+	jmp	#LR__0010
 _exit_ret
 	ret
 

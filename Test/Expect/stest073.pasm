@@ -24,7 +24,7 @@ _get_ret
 
 _put
 	mov	_var01, #0
-LR__0002
+LR__0010
 	mov	_var02, _var01
 	or	_var02, #496
 	'.live	_var01
@@ -33,7 +33,7 @@ LR__0002
 	call	#wrcog
 	add	_var01, #1
 	cmps	_var01, #10 wc
- if_b	jmp	#LR__0002
+ if_b	jmp	#LR__0010
 _put_ret
 	ret
 wrcog

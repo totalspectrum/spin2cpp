@@ -61,29 +61,29 @@ _blah2_ret
 __system____builtin_memmove
 	mov	_var01, arg01
 	cmps	arg01, arg02 wc
- if_ae	jmp	#LR__0003
+ if_ae	jmp	#LR__0011
 	mov	_var02, arg03 wz
- if_e	jmp	#LR__0006
-LR__0002
+ if_e	jmp	#LR__0014
+LR__0010
 	rdbyte	result1, arg02
 	wrbyte	result1, arg01
 	add	arg01, #1
 	add	arg02, #1
-	djnz	_var02, #LR__0002
-	jmp	#LR__0006
-LR__0003
+	djnz	_var02, #LR__0010
+	jmp	#LR__0014
+LR__0011
 	add	arg01, arg03
 	add	arg02, arg03
 	mov	_var03, arg03 wz
- if_e	jmp	#LR__0005
-LR__0004
+ if_e	jmp	#LR__0013
+LR__0012
 	sub	arg01, #1
 	sub	arg02, #1
 	rdbyte	_var04, arg02
 	wrbyte	_var04, arg01
-	djnz	_var03, #LR__0004
-LR__0005
-LR__0006
+	djnz	_var03, #LR__0012
+LR__0013
+LR__0014
 	mov	result1, _var01
 __system____builtin_memmove_ret
 	ret

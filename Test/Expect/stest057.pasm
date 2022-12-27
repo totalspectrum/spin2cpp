@@ -18,24 +18,24 @@ _myfill_ret
 _fillzero
 	mov	arg03, arg02 wz
 	mov	arg02, #0
- if_e	jmp	#LR__0004
-LR__0003
+ if_e	jmp	#LR__0011
+LR__0010
 	wrlong	arg02, arg01
 	add	arg01, #4
-	djnz	arg03, #LR__0003
-LR__0004
+	djnz	arg03, #LR__0010
+LR__0011
 _fillzero_ret
 	ret
 
 _fillone
 	mov	arg03, arg02 wz
 	neg	arg02, #1
- if_e	jmp	#LR__0006
-LR__0005
+ if_e	jmp	#LR__0021
+LR__0020
 	wrlong	arg02, arg01
 	add	arg01, #4
-	djnz	arg03, #LR__0005
-LR__0006
+	djnz	arg03, #LR__0020
+LR__0021
 _fillone_ret
 	ret
 

@@ -161,25 +161,25 @@ __system___float_tointeger
 	and	arg01, imm_8388607_
  if_ne	shl	arg01, #6
  if_ne	or	arg01, imm_536870912_
- if_ne	jmp	#LR__0013
+ if_ne	jmp	#LR__0021
 	mov	_var03, arg01
 	mov	_var04, #32
-LR__0012
+LR__0020
 	shl	_var03, #1 wc
- if_ae	djnz	_var04, #LR__0012
+ if_ae	djnz	_var04, #LR__0020
 	sub	_var04, #23
 	mov	_var02, _var04
 	mov	_var03, #7
 	sub	_var03, _var04
 	shl	arg01, _var03
-LR__0013
+LR__0021
 	sub	_var02, #127
 	mov	result3, arg01
 	mov	result1, _var01
 	mov	result2, _var02
 	mov	_var05, result3
 	cmps	result2, imm_4294967295_ wc
- if_b	jmp	#LR__0014
+ if_b	jmp	#LR__0022
 	cmps	result2, #31 wc
  if_b	shl	_var05, #2
  if_b	mov	_var06, #30
@@ -191,7 +191,7 @@ LR__0013
  if_c_and_nz	neg	_var05, _var05
  if_b	mov	result1, _var05
  if_b	jmp	#__system___float_tointeger_ret
-LR__0014
+LR__0022
 	mov	result1, #0
 __system___float_tointeger_ret
 	ret
@@ -203,34 +203,34 @@ __system__pack_0007
 	mov	_var04, arg04
 	add	_var03, #127
 	test	_var04, #4 wz
- if_e	jmp	#LR__0015
+ if_e	jmp	#LR__0030
 	cmp	_var01, #0 wz
  if_e	mov	_var01, imm_4194304_
 	or	_var01, imm_2139095040_
-	jmp	#LR__0023
-LR__0015
+	jmp	#LR__0038
+LR__0030
 	test	_var04, #2 wz
  if_ne	mov	_var01, imm_2139095040_
  if_ne	mov	_var02, #0
- if_ne	jmp	#LR__0022
+ if_ne	jmp	#LR__0037
 	test	_var04, #8 wz
  if_ne	mov	_var01, #0
- if_ne	jmp	#LR__0021
+ if_ne	jmp	#LR__0036
 	cmps	_var03, #255 wc
  if_ae	mov	_var01, imm_2139095040_
  if_ae	mov	_var02, #0
- if_ae	jmp	#LR__0020
+ if_ae	jmp	#LR__0035
 	cmps	_var03, #1 wc
- if_ae	jmp	#LR__0018
+ if_ae	jmp	#LR__0033
 	shr	_var02, #1
 	mov	_var05, _var01
 	and	_var05, #1
 	shl	_var05, #31
 	or	_var02, _var05
-LR__0016
+LR__0031
 	shr	_var01, #1
 	cmps	_var03, #0 wc
- if_ae	jmp	#LR__0017
+ if_ae	jmp	#LR__0032
 	cmp	_var01, #0 wz
  if_ne	mov	_var06, _var02
  if_ne	and	_var06, #1
@@ -241,24 +241,24 @@ LR__0016
  if_ne	shl	_var07, #31
  if_ne	or	_var02, _var07
  if_ne	or	_var02, _var06
- if_ne	jmp	#LR__0016
-LR__0017
+ if_ne	jmp	#LR__0031
+LR__0032
 	cmps	_var03, #0 wc
- if_ae	jmp	#LR__0019
+ if_ae	jmp	#LR__0034
 	mov	_var08, #0
 	cmp	_var02, #0 wz
  if_ne	mov	_var08, #1
 	mov	_var02, _var08
-	jmp	#LR__0019
-LR__0018
+	jmp	#LR__0034
+LR__0033
 	andn	_var01, imm_4286578688_
 	shl	_var03, #23
 	or	_var01, _var03
-LR__0019
-LR__0020
-LR__0021
-LR__0022
-LR__0023
+LR__0034
+LR__0035
+LR__0036
+LR__0037
+LR__0038
 	test	_var01, #1 wz
  if_ne	or	_var02, #1
 	mov	_var08, _var02

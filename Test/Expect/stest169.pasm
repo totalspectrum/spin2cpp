@@ -16,36 +16,36 @@ _main1_ret
 
 _main2
 	mov	_var01, #2
-LR__0002
+LR__0010
 	add	_var01, #1
 	abs	outb, _var01
-	jmp	#LR__0002
+	jmp	#LR__0010
 _main2_ret
 	ret
 
 _main3
 	mov	_var01, #2
-LR__0003
+LR__0020
 	mov	arg01, _var01 wz
  if_e	mov	arg01, #1
 	mov	_var02, #32
-LR__0004
+LR__0021
 	test	arg01, #23 wc
 	rcr	arg01, #1
-	djnz	_var02, #LR__0004
+	djnz	_var02, #LR__0021
 	mov	_var01, arg01
 	abs	outb, _var01
-	jmp	#LR__0003
+	jmp	#LR__0020
 _main3_ret
 	ret
 
 _main4
 	mov	_var01, #2
-LR__0005
+LR__0030
 	mov	_var02, _var01
 	mov	_var01, inb
 	abs	outb, _var02
-	jmp	#LR__0005
+	jmp	#LR__0030
 _main4_ret
 	ret
 

@@ -17,11 +17,11 @@ _demo_ret
 	ret
 
 ptr_L__0011_
-	long	@@@LR__0002
+	long	@@@LR__0010
 COG_BSS_START
 	fit	496
 
-LR__0002
+LR__0010
 	byte	"goodbye"
 	byte	0
 	org	COG_BSS_START

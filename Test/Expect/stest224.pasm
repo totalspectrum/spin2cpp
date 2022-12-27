@@ -18,18 +18,18 @@ _main_ret
 	ret
 
 ptr_L__0003_
-	long	@@@LR__0004
+	long	@@@LR__0010
 ptr_L__0005_
-	long	@@@LR__0005
+	long	@@@LR__0011
 result1
 	long	0
 COG_BSS_START
 	fit	496
 
-LR__0004
+LR__0010
 	byte	"some big string",10
 	byte	0
-LR__0005
+LR__0011
 	byte	"some other string",10
 	byte	0
 	org	COG_BSS_START

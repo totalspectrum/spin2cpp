@@ -25,8 +25,8 @@ _start_ret
 	ret
 
 _djnfTest
-LR__0003
-	djnf	arg01, #LR__0003
+LR__0010
+	djnf	arg01, #LR__0010
 _djnfTest_ret
 	ret
 builtin_bytefill_

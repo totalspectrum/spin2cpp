@@ -23,14 +23,14 @@ _copy1_ret
 
 _copy2
 	cmp	arg03, #0 wz
- if_e	jmp	#LR__0003
-LR__0002
+ if_e	jmp	#LR__0011
+LR__0010
 	rdbyte	_var01, arg02
 	wrbyte	_var01, arg01
 	add	arg02, #1
 	add	arg01, #1
-	djnz	arg03, #LR__0002
-LR__0003
+	djnz	arg03, #LR__0010
+LR__0011
 _copy2_ret
 	ret
 

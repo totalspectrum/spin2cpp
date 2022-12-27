@@ -19,11 +19,11 @@ _init_ret
 _initzero
 	mov	_var01, objptr
 	mov	_var02, #10
-LR__0002
+LR__0010
 	mov	_var03, #0
 	wrlong	_var03, _var01
 	add	_var01, #4
-	djnz	_var02, #LR__0002
+	djnz	_var02, #LR__0010
 _initzero_ret
 	ret
 

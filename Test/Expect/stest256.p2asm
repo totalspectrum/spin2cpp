@@ -24,22 +24,22 @@ _sub1_ret
 	ret
 
 _sub2
-LR__0002
+LR__0010
 	drvl	#312
 	mov	arg01, #100
 	call	#__system___waitms
-	jmp	#LR__0002
+	jmp	#LR__0010
 _sub2_ret
 	ret
 
 __system___waitms
 	mov	_var01, arg01
 	rdlong	_var02, #20
-LR__0003
+LR__0020
 	cmps	_var01, ##1001 wc
  if_ae	waitx	_var02
  if_ae	sub	_var01, ##1000
- if_ae	jmp	#LR__0003
+ if_ae	jmp	#LR__0020
 	add	ptr___system__dat__, #12
 	rdlong	_var03, ptr___system__dat__ wz
  if_e	qdiv	_var02, ##1000

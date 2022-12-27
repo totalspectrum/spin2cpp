@@ -28,10 +28,10 @@ _demo_ret
 
 _func1
 	mov	_var01, #0
-	rep	@LR__0002, #8
+	rep	@LR__0010, #8
 	testp	#15 wc
 	rcl	_var01, #1
-LR__0002
+LR__0010
 	mov	result1, _var01
 _func1_ret
 	ret
@@ -41,7 +41,7 @@ _func2
 	rep	#2, #8
 	testp	#15 wc
 	rcl	_var01, #1
-LR__0003
+LR__0020
 	mov	result1, _var01
 _func2_ret
 	ret

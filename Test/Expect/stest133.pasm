@@ -22,13 +22,13 @@ _bar_ret
 	ret
 
 ptr_L__0004_
-	long	@@@LR__0002
+	long	@@@LR__0010
 result1
 	long	0
 COG_BSS_START
 	fit	496
 
-LR__0002
+LR__0010
 	byte	"hello",13,10,"there"
 	byte	0
 	org	COG_BSS_START
