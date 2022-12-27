@@ -1,6 +1,7 @@
 Version 5.9.23
 - Fixed Spin2 loops so that the correct value is in the variable if the loop is quit
 - Fixed Nucode evaluation of some bit operations
+- Made sure all registers involved in a large data structure are allocated if any of them are used
 
 Version 5.9.22
 - Added control over individual warnings

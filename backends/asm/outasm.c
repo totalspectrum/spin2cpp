@@ -1616,8 +1616,14 @@ RenameSubregs(IRList *irl, Operand *base, int numlocals, int isLeaf)
     int num = (base->size + LONG_SIZE) / LONG_SIZE;
     IR *ir;
     Operand *replace;
+    Operand *dummy;
     
     replace = GetLocalReg(numlocals, isLeaf);
+    replace->used++;
+    for (int i = 1; i < num; i++) {
+        dummy = GetLocalReg(numlocals + i, isLeaf);
+        dummy->used++;
+    }
     RenameOneReg(irl->head, base, replace);
     for (ir = irl->head; ir; ir = ir->next) {
         if (ir->dst && ir->dst->kind == REG_SUBREG && base == (Operand *)ir->dst->name) {

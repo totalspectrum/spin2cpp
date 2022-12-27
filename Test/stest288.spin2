@@ -1,0 +1,7 @@
+PUB main(x) | array[12]
+org
+        setq #11
+        rdlong array+0,#0
+        mov outa,array+11
+        mov outa,x
+end
