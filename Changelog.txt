@@ -1,4 +1,5 @@
 Version 5.9.23
+- Enable DEBUG in inline assembly if -gbrk is active
 - Fixed .lbl+n expressions in inline assembly
 - Fixed Spin2 loops so that the correct value is in the variable if the loop is quit
 - Fixed Nucode evaluation of some bit operations

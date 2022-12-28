@@ -201,4 +201,6 @@ bool InstrModifies(IR *ir, Operand *op);
 void PrintOperandAsValue(struct flexbuf *fb, Operand *op);
 void DoAssembleIR(struct flexbuf *, IR *, Module *);
 
+int OutAsm_DebugEval(AST *ast, int regNum, int *addr, void *ourarg);
+
 #endif

@@ -1,5 +1,6 @@
 #include "spinc.h"
 #include "outasm.h"
+#include "backends/becommon.h"
 
 Operand *
 GetLabelOperand(const char *name, bool inFcache)
@@ -659,6 +660,17 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
         } else if (ast->kind == AST_WORDLIST || ast->kind == AST_BYTELIST || ast->kind == AST_RES) {
             ERROR(ast, "declaring variables inside inline assembly is not supported; use local variables instead");
             break;
+        } else if (ast->kind == AST_BRKDEBUG) {
+            if (gl_output == OUTPUT_ASM) {
+                int brkCode = AsmDebug_CodeGen(ast, OutAsm_DebugEval, (void *)irl);
+                if (brkCode >= 0) {
+                    Operand *op = NewImmediate(brkCode);
+                    ir = EmitOp1(irl, OPC_BREAK, op);
+                    ir->flags |= FLAG_KEEP_INSTR;
+                }
+            } else {
+                WARNING(ast, "DEBUG ignored inside inline assembly");
+            }
         } else {
             ERROR(ast, "inline assembly of this item not supported yet");
             break;

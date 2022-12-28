@@ -4746,7 +4746,7 @@ static void MarkUsedLabel(IRList *irl, Operand *label)
     label->used = 9999; // make sure label is not removed
 }
 
-static int OutAsm_DebugEval(AST *ast, int regNum, int *addr, void *ourarg) {
+int OutAsm_DebugEval(AST *ast, int regNum, int *addr, void *ourarg) {
     IRList *irl = (IRList *)ourarg;
     Operand *srcop;
     Operand *dstop;
