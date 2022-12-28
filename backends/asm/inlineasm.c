@@ -294,10 +294,15 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
             if (expr->left && ( (expr->left->kind == AST_ARRAYREF && IsConstExpr(expr->left->right)) || IsIdentifier(expr->left) ) && IsConstExpr(expr->right) ) {
                 int offset = (expr->left->kind == AST_ARRAYREF) ? EvalConstExpr(expr->left->right) : 0;
                 AST *ref = (expr->left->kind == AST_ARRAYREF) ? expr->left->left : expr->left;
+                //AST *typ = ExprType(ref);
                 offset = offset + sign * EvalConstExpr(expr->right);
                 r = CompileInlineOperand(irl, ref, effects, 0);
                 if (offset != 0) {
-                    r = SubRegister(r, offset * LONG_SIZE);
+                    if (r->kind == IMM_COG_LABEL || r->kind == REG_HW) {
+                        r->val = offset;
+                    } else {
+                        r = SubRegister(r, offset * LONG_SIZE);
+                    }
                 }
                 return r;
             }
