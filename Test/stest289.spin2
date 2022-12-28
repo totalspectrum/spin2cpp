@@ -1,0 +1,7 @@
+PUB main() : x
+org
+        mov x, #1
+	mov .lbl+1, #0
+.lbl    nop
+	mov x, #2
+end
