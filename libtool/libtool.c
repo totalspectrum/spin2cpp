@@ -67,6 +67,8 @@ int newline_seen = 1;		/* are we at the start of a line */
 long linenum  = 1L;		/* line number in current file */
 int glastc   = ' ';		/* last char. seen by getsym() */
 
+int spin_output = 0;            /* to create a Spin library file rather than a .a one */
+
 typedef struct word {
 	struct word *next;
 	char   string[1];
@@ -675,6 +677,75 @@ DEBUG("emit called\n");
 }
 
 /*
+ * emit a function declaration for the Spin language. The attributes and name of the function
+ * are in wlist; the parameters are in plist. fname is the file name,
+ * and startline is the starting line
+ */
+
+void emit_spin(wlist, plist, fname, startline)
+	Word *wlist, *plist;
+        char *fname;
+	long  startline;
+{
+	Word *w;
+	int count = 0;
+	int needspace = 0;
+	int isstatic = 0;
+
+DEBUG("emit called\n");
+	if (donum)
+		printf("{ %8ld } ", startline);
+
+	for (w = wlist; w; w = w->next) {
+		if (w->string[0]) {
+			count ++;
+			if (!strcmp(w->string, "static"))
+				isstatic = 1;
+		}
+	}
+
+/* if the -e flag was given, and it's not a static function, print "extern" */
+
+        if (isstatic) {
+            printf("PRI ");
+        } else {
+            printf("PUB ");
+        }
+        printf("FILE \"%s\" ", fname);
+        
+	for (w = wlist; w; w = w->next) {
+		if (needspace)
+			putchar(' ');
+                if (!w->next) {
+                    printf("%s", w->string);
+                }
+	}
+        putchar('(');
+	needspace = 0;
+	for (w = plist; w; w = w->next) {
+//		if (no_parm_names && IS_PARM_NAME(w))
+//			continue;
+		if (w->string[0] == ',') {
+			needspace = 1;
+        	}
+                else
+		{
+                    if (!IS_PARM_NAME(w)) {
+                        continue;
+                    }
+                    if (needspace) {
+                        putchar(' ');
+                        needspace = 0;
+                    }
+		}
+		printf("%s", w->string);
+	}
+        printf(")");
+
+        printf("\n");
+}
+
+/*
  * get all the function declarations
  */
 
@@ -725,8 +796,13 @@ DEBUG("EOF in getdecl loop\n");
 				goto again;
 
 /* It seems to have been what we wanted */
-			if (oktoprint)
+			if (oktoprint) {
+                            if (spin_output) {
+                                emit_spin(wlist, plist, fname, startline);
+                            } else {
                                 emit(wlist, plist, fname, startline);
+                            }
+                        }
 			word_free(plist);
 			goto again;
 		}
@@ -755,8 +831,12 @@ dofile(char *filename)
     }
     if (iobuf)
         setvbuf(f, iobuf, _IOFBF, NEWBUFSIZ);
-    
-    printf("\n/* %s */\n", filename);
+
+    if (spin_output) {
+        printf("\n{ %s }\n", filename);
+    } else {
+        printf("\n/* %s */\n", filename);
+    }
     linenum = 1;
     newline_seen = 1;
     glastc = ' ';
@@ -851,6 +931,8 @@ int argc; char **argv;
 				define_macro = 0;
 			else if (*t == 'A')
 				use_macro = 0;
+			else if (*t == 'S')
+                        	spin_output = 1;
 			else
 				Usage();
 			t++;
