@@ -2584,11 +2584,18 @@ static int makeAnonAlias(Symbol *sym, void *arg)
     AST *expr;
     const char *newname = sym->our_name;
     Symbol *newsym;
-    
+
+    if (sym->kind == SYM_WEAK_ALIAS) {
+        return 1;
+    }
     symident = AstIdentifier(newname);
     expr = NewAST(AST_METHODREF, prefix, symident);
     newsym = AddSymbolPlaced(&P->objsyms, newname, SYM_ALIAS, expr, NULL, symident);
-    newsym->flags |= SYMF_NOALLOC;
+    if (newsym) {
+        newsym->flags |= SYMF_NOALLOC;
+    } else {
+        ERROR(A->prefix, "Duplicate name in anonymous struct or union: %s", newname);
+    }
     return 1;
 }
 
