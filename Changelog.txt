@@ -1,3 +1,6 @@
+Version 5.9.24
+- Fixed using local constants for default parameters in methods
+
 Version 5.9.23
 - Enable DEBUG in inline assembly if -gbrk is active
 - Fixed .lbl+n expressions in inline assembly

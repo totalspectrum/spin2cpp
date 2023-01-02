@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2022 Total Spectrum Software Inc.
+ * Copyright 2011-2023 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling functions
@@ -1117,7 +1117,13 @@ doDeclareFunction(AST *funcblock)
             if (p && p->kind == AST_ASSIGN) {
                 *aptr = p->left;
                 defval = p->right;
-                if (!IsConstExpr(defval) && !IsStringConst(defval)) {
+                if (IsConstExpr(defval)) {
+                    // evaluate it in this context to make sure correct value is used elsewhere
+                    int64_t v = EvalConstExpr(defval);
+                    defval = AstInteger(v);
+                } else if (IsStringConst(defval)) {
+                    // just use it as is
+                } else {
                     ERROR(defval, "default parameter value must be constant");
                 }
             } else {
