@@ -984,6 +984,9 @@ Symbol *DeclareAlias(SymbolTable *table, AST *newname, AST *oldname);
 // declare aliases in for members of anohymous struct/union
 void DeclareAnonymousAliases(Module *Parent, Module *sub, AST *prefix);
 
+// add a source file to our internal list
+void AddSourceFile(const char *shortName, const char *fullName);
+
 // external vars
 extern AST *basic_get_float;
 extern AST *basic_get_string;

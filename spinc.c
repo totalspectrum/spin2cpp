@@ -479,7 +479,10 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
     int language = LANG_SPIN_SPIN1;
     SymbolTable *saveCurrentTypes = NULL;
     int new_module = 0;
-
+    const char *fullName = NULL;
+    char *shortName = NULL;
+    bool needExtension = false;
+    
     // check language to process
     langptr = strrchr(name, '.');
     if (langptr) {
@@ -532,16 +535,19 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
         {
             language = LANG_SPIN_SPIN2;
             langptr = ".spin2";
+            needExtension = true;
         }
         else
         {
             language = LANG_SPIN_SPIN1;
             langptr = ".spin";
+            needExtension = true;
         }
     } else {
         // no extension, see if we can figure one out
         // if currently compiling a Spin1 program assume Spin1
         // as the default
+        needExtension = true;
         if (current && current->mainLanguage == LANG_SPIN_SPIN1) {
             langptr = ".spin";
             language = LANG_SPIN_SPIN1;
@@ -563,11 +569,13 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
                 fname = find_file_on_path(&gl_pp, name, ".spin", current->fullname);
                 if (fname) {
                     language = LANG_SPIN_SPIN1;
+                    langptr = ".spin";
                 }
             } else if (!strcmp(langptr, ".spin")) {
                 fname = find_file_on_path(&gl_pp, name, ".spin2", current->fullname);
                 if (fname) {
                     language = LANG_SPIN_SPIN2;
+                    langptr = ".spin2";
                 }
             }
         }
@@ -580,8 +588,17 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
     if (!fname) {
         fname = strdup(name);
     }
+    if (needExtension) {
+        if (!langptr) langptr = ".spin";
+        shortName = malloc(strlen(name) + strlen(langptr) + 2);
+        strcpy(shortName, name);
+        strcat(shortName, langptr);
+    } else {
+        shortName = strdup(name);
+    }
+    fullName = MakeAbsolutePath(fname);
     if (gl_useFullPaths) {
-        fname = (char *)MakeAbsolutePath(fname);
+        fname = (char *)fullName;
     }
     // check for file already included
     if (P) {
@@ -605,6 +622,7 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
         free(fname);
         exit(1);
     }
+    AddSourceFile(shortName, fullName);
     save = current;
     if (!P) {
         P = NewModule(fname, language);

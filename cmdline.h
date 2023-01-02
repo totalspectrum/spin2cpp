@@ -34,4 +34,6 @@ int ParseCharset(int *charset_var, const char *charset_name);
 
 void check_special_define(const char *name, const char *val);
 
+void PrintSourceFiles(void);
+
 #endif

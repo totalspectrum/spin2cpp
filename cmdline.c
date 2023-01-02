@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2022 Total Spectrum Software Inc.
+ * Copyright 2011-2023 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -232,10 +232,7 @@ int ProcessCommandLine(CmdLineOptions *cmd)
     P = ParseTopFiles(cmd->file_argv, cmd->file_argc, cmd->outputBin);
 
     if (cmd->outputFiles) {
-        Module *Q;
-        for (Q = allparse; Q; Q = Q->next) {
-            printf("%s\n", Q->fullname);
-        }
+        PrintSourceFiles();
         return 0;
     }
     
@@ -694,4 +691,53 @@ int ParseCharset(int *var, const char *name)
         return 1;
     }
     return 0;
+}
+
+//
+// Add a source file to the internal list
+//
+typedef struct SourceFile {
+    const char *shortName;
+    const char *fullName;
+} SourceFile;
+
+SourceFile *sourceData = NULL;
+int numSourceFiles = 0;
+int maxSourceFiles = 0;
+
+void AddSourceFile(const char *shortName, const char *fullName)
+{
+    SourceFile *f;
+    int i;
+    // check for duplicate
+    for (i = 0; i < numSourceFiles; i++) {
+        f = &sourceData[i];
+        if (!strcmp(f->fullName, fullName)) {
+            return;
+        }
+    }
+    
+    // OK, go ahead and add it
+    if (numSourceFiles == maxSourceFiles) {
+        maxSourceFiles += 1024;
+        sourceData = realloc(sourceData, maxSourceFiles * sizeof(SourceFile));
+        if (!sourceData) {
+            fprintf(stderr, "Out of memory\n");
+            exit(2);
+        }
+    }
+    sourceData[numSourceFiles].shortName = shortName;
+    sourceData[numSourceFiles].fullName = fullName;
+    numSourceFiles++;
+}
+
+void PrintSourceFiles(void)
+{
+    int i;
+    SourceFile *f;
+    for (i = 0; i < numSourceFiles; i++) {
+        f = &sourceData[i];
+//        printf("%s (%s)\n", f->shortName, f->fullName);
+        printf("%s\n", f->fullName);
+    }
 }

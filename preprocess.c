@@ -53,6 +53,9 @@
 #include "preprocess.h"
 #include "util/util.h"
 
+// hook for keeping track of source files
+extern void AddSourceFile(const char *shortName, const char *fullName);
+
 #ifdef _MSC_VER
 #define strdup _strdup
 #endif
@@ -975,7 +978,7 @@ find_file_relative(struct preprocess *pp, const char *name, const char *ext, con
           ret[0] = 0;
       }
   } else {
-      if (!last || last[1] != '0') {
+      if (!last || last[1] != 0) {
           strcat(ret, "/");
       }
   }
@@ -1038,6 +1041,7 @@ handle_include(struct preprocess *pp, ParseState *P)
       name = strdup(orig_name);
     pp_push_file(pp, name);
     pp->fil->lineno = 0;  /* hack to correct for \n in buffer?? */
+    AddSourceFile(strdup(orig_name), name);
 }
 
 /*

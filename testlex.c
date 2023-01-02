@@ -384,3 +384,7 @@ void rebootBuiltin() { }
 void PrintExpr(Flexbuf *f, AST *expr, int flags) {
     flexbuf_addstr(f, "expression");
 }
+
+// dummy for tracking source files
+void AddSourceFile(const char *shortName, const char *longName) {
+}
