@@ -107,7 +107,7 @@ static OperandList *CompileFunccall(IRList *irl, AST *expr);
 static void CompileStatement(IRList *irl, AST *ast); /* forward declaration */
 
 static Operand *GetAddressOf(IRList *irl, AST *expr);
-static IR *EmitMove(IRList *irl, Operand *dst, Operand *src);
+static IR *EmitMove(IRList *irl, Operand *dst, Operand *src, AST *linenum);
 static void EmitBuiltins(IRList *irl);
 static void CompileConsts(IRList *irl, Module *P);
 static Operand *EmitAddSub(IRList *irl, Operand *dst, int off);
@@ -1427,11 +1427,11 @@ static Operand *GetFunctionParameterForCall(IRList *irl, Function *func, AST *fu
     }
 }
 
-static void EmitPush(IRList *irl, Operand *src)
+static void EmitPush(IRList *irl, Operand *src, AST *linenum)
 {
     IR *ir;
     ValidateStackptr();
-    ir = EmitMove(irl, stacktop, src);
+    ir = EmitMove(irl, stacktop, src, linenum);
     if (gl_p2) {
         ir->srceffect = OPEFFECT_POSTINC;
     } else if (COG_DATA) {
@@ -1440,7 +1440,7 @@ static void EmitPush(IRList *irl, Operand *src)
         EmitOp2(irl, OPC_ADD, stackptr, NewImmediate(4));
     }
 }
-static void EmitPop(IRList *irl, Operand *src)
+static void EmitPop(IRList *irl, Operand *src, AST *linenum)
 {
     ValidateStackptr();
     IR *ir;
@@ -1451,7 +1451,7 @@ static void EmitPop(IRList *irl, Operand *src)
             EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(4));
         }
     }
-    ir = EmitMove(irl, src, stacktop);
+    ir = EmitMove(irl, src, stacktop, linenum);
     if (gl_p2) {
         ir->srceffect = OPEFFECT_PREDEC;
     }
@@ -1521,7 +1521,7 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
                 } else {
                     dst = basedst;
                 }
-                EmitMove(irl, dst, src);
+                EmitMove(irl, dst, src, ast);
             }
         }
     }
@@ -1535,21 +1535,22 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
         if (!copyfunc) {
             copyfunc = GetSystemFunction("bytemove");
         }
+        AST *linenum = func->body;
         ValidateStackptr();
         tmp = GetResultReg(5); // we know this won't be used in the system functions
         tmp = NewFunctionTempRegister();
         int starttempreg = GetTempRegisterStack(); //FuncData(curfunc)->curtempreg;
         // tmp = _gc_alloc_managed(framesize)
-        EmitMove(irl, GetArgReg(0), framesize);
+        EmitMove(irl, GetArgReg(0), framesize, linenum);
         EmitOp1(irl, OPC_CALL, allocfunc);
-        EmitMove(irl, tmp, GetResultReg(0));
+        EmitMove(irl, tmp, GetResultReg(0), linenum);
         // bytemove(tmp, frameptr, framesize)
-        EmitMove(irl, GetArgReg(0), tmp);
-        EmitMove(irl, GetArgReg(1), frameptr);
-        EmitMove(irl, GetArgReg(2), framesize);
+        EmitMove(irl, GetArgReg(0), tmp, linenum);
+        EmitMove(irl, GetArgReg(1), frameptr, linenum);
+        EmitMove(irl, GetArgReg(2), framesize, linenum);
         EmitOp1(irl, OPC_CALL, copyfunc);
         // frameptr = tmp
-        EmitMove(irl, frameptr, tmp);
+        EmitMove(irl, frameptr, tmp, linenum);
 
         // adjust stack pointer back
         EmitOp2(irl, OPC_SUB, stackptr, framesize);
@@ -1756,6 +1757,7 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
 {
     int i, n;
     int needFrame = 0;
+    AST *linenum = func->body;
     
     // earlier we put the appropriate comments into func->irheader
     // copy them out now
@@ -1774,15 +1776,15 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
 
     // push return address, if we are in cog mode
     if (func->is_recursive && InCog(func) && !gl_p2) {
-        EmitPush(irl, FuncData(func)->asmretregister);
+        EmitPush(irl, FuncData(func)->asmretregister, linenum);
     }
     
     // if SEND is set in function, save it
     if (func->sets_send) {
-        EmitPush(irl, sendreg);
+        EmitPush(irl, sendreg, linenum);
     }
     if (func->sets_recv) {
-        EmitPush(irl, recvreg);
+        EmitPush(irl, recvreg, linenum);
     }
     //
     // if recursive function, push all local registers
@@ -1811,14 +1813,14 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
         ValidateFrameptr();
         if (HUB_CODE) {
             ValidatePushregs();
-            EmitMove(irl, count_, NewImmediate(n));
+            EmitMove(irl, count_, NewImmediate(n), linenum);
             EmitOp1(irl, OPC_CALL, pushregs_);
         } else {
             for (i = 0; i < n; i++) {
-                EmitPush(irl, GetLocalReg(i, 0));
+                EmitPush(irl, GetLocalReg(i, 0), linenum);
             }
-            EmitPush(irl, frameptr);
-            EmitMove(irl, frameptr, stackptr);
+            EmitPush(irl, frameptr, linenum);
+            EmitMove(irl, frameptr, stackptr, linenum);
         }
     }
     if (IS_LEAF(func)) {
@@ -1843,7 +1845,8 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
 {
     int i, n;
     int needFrame;
-
+    AST *linenum = func->body;
+    
     needFrame = NeedFramePointer(func);
     n = FuncData(func)->numsavedregs;
     if (needFrame == FRAME_MAYBE) {
@@ -1853,29 +1856,29 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
     if (needFrame) {
         ValidateFrameptr();
         if (!func->closure) {
-            EmitMove(irl, stackptr, frameptr);
+            EmitMove(irl, stackptr, frameptr, linenum);
         }
         if (HUB_CODE) {
             // pop registers off stack
             ValidatePushregs();
             EmitOp1(irl, OPC_CALL, popregs_);
         } else {
-            EmitPop(irl, frameptr);
+            EmitPop(irl, frameptr, linenum);
             for (i = n-1; i >= 0; --i) {
-                EmitPop(irl, GetLocalReg(i, 0));
+                EmitPop(irl, GetLocalReg(i, 0), linenum);
             }
         }
     }
     // if SEND/RECV is set in function, restore it
     if (func->sets_recv) {
-        EmitPop(irl, recvreg);
+        EmitPop(irl, recvreg, linenum);
     }
     if (func->sets_send) {
-        EmitPop(irl, sendreg);
+        EmitPop(irl, sendreg, linenum);
     }
     if (func->is_recursive && InCog(func) && !gl_p2) {
         IR *ir;
-        EmitPop(irl, FuncData(func)->asmretregister);
+        EmitPop(irl, FuncData(func)->asmretregister, linenum);
         // WARNING: 
         // we need at least 1 instruction between the pop
         // and the actual return
@@ -1965,6 +1968,7 @@ doCompileMul(IRList *irl, Operand *lhs, Operand *rhs, int gethi, Operand *dest)
     Operand *temp = NewFunctionTempRegister();
     int isUnsigned = (gethi & 2);
     g_NeedMulHi |= (gethi & 1);
+    AST *linenum = NULL;
     
     // if lhs is constant, swap left and right
     if (lhs->kind == IMM_INT) {
@@ -1978,17 +1982,17 @@ doCompileMul(IRList *irl, Operand *lhs, Operand *rhs, int gethi, Operand *dest)
         int32_t val = rhs->val;
 
         if (val == 0) {
-            EmitMove(irl, temp, rhs); // rhs == 0
+            EmitMove(irl, temp, rhs, linenum); // rhs == 0
             return temp;
         }
         if (val == 1) {
-            EmitMove(irl, temp, lhs);
+            EmitMove(irl, temp, lhs, linenum);
             return temp;
         }
         lhs = Dereference(irl, lhs);
         // see if we can emit a sequence of shift and add/sub
         if (DecomposeBits(val, shifts)) {
-            EmitMove(irl, temp, lhs);
+            EmitMove(irl, temp, lhs, linenum);
             if (shifts[1] == 0) {
                 EmitOp2(irl, OPC_SHL, temp, NewImmediate(shifts[0]));
                 return temp;
@@ -2032,17 +2036,17 @@ doCompileMul(IRList *irl, Operand *lhs, Operand *rhs, int gethi, Operand *dest)
         muldiva = GetOneGlobal(REG_REG, "muldiva_", 0);
         muldivb = GetOneGlobal(REG_REG, "muldivb_", 0);
     }
-    EmitMove(irl, muldiva, lhs);
-    EmitMove(irl, muldivb, rhs);
+    EmitMove(irl, muldiva, lhs, linenum);
+    EmitMove(irl, muldivb, rhs, linenum);
     if (isUnsigned || !gethi) {
         EmitOp1(irl, OPC_CALL, unsmulfunc);
     } else {
         EmitOp1(irl, OPC_CALL, mulfunc);
     }
     if (gethi) {
-        EmitMove(irl, temp, muldivb);
+        EmitMove(irl, temp, muldivb, linenum);
     } else {
-        EmitMove(irl, temp, muldiva);
+        EmitMove(irl, temp, muldiva, linenum);
     }
     return temp;
 }
@@ -2100,7 +2104,7 @@ CompileMul(IRList *irl, AST *expr, int gethi, Operand *dest)
         enum SixteenBitSafe sixteen_safe = is16BitCompatible(is16BitSafe(expr->left),is16BitSafe(expr->left));
         if (sixteen_safe) {
             Operand *temp = NewFunctionTempRegister();
-            EmitMove(irl, temp, lhs);
+            EmitMove(irl, temp, lhs, expr);
             rhs = Dereference(irl, rhs);
             if (sixteen_safe == SIXTEEN_BIT_SAFE_UNSIGNED) {
                 EmitOp2(irl, OPC_MULU, temp, rhs);
@@ -2134,10 +2138,10 @@ CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
       int aval = (int)iabs( rhs->val );
       
       if (rhs->val == 1 || (rhs->val == -1 && getmod)) {
-          EmitMove(irl, temp, lhs);
+          EmitMove(irl, temp, lhs, expr);
           return temp;
       } else if (rhs->val == -1) {
-          EmitMove(irl, temp, lhs);
+          EmitMove(irl, temp, lhs, expr);
           EmitOp2(irl, OPC_NEG, temp, temp);
         return temp;
       }
@@ -2147,7 +2151,7 @@ CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
           ir = EmitOp2(irl, OPC_ABS, temp, lhs);
           ir->flags |= FLAG_WC; // carry will have the original sign bit
       } else {
-          EmitMove(irl, temp, lhs);
+          EmitMove(irl, temp, lhs, expr);
       }
       if (getmod) {
           EmitOp2(irl, OPC_AND, temp, NewImmediate(aval-1));
@@ -2165,8 +2169,8 @@ CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
   if (isfrac64) {
       if (gl_p2) {
           Operand *temp2 = NewFunctionTempRegister();
-          EmitMove(irl, temp2, rhs);
-          EmitMove(irl, temp, lhs);
+          EmitMove(irl, temp2, rhs, expr);
+          EmitMove(irl, temp, lhs, expr);
           EmitOp2(irl, OPC_QFRAC, temp, temp2);
           EmitOp1(irl, OPC_GETQX, temp);
           return temp;
@@ -2179,8 +2183,8 @@ CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
   // P2 can use QDIV for unsigned divide
   if (gl_p2 && !isSigned) {
     Operand *temp2 = NewFunctionTempRegister();
-    EmitMove(irl, temp2, rhs);
-    EmitMove(irl, temp, lhs);
+    EmitMove(irl, temp2, rhs, expr);
+    EmitMove(irl, temp, lhs, expr);
     EmitOp2(irl, OPC_QDIV, temp, temp2);
     EmitOp1(irl, getmod ? OPC_GETQY : OPC_GETQX, temp);
     return temp;
@@ -2226,13 +2230,13 @@ CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
     muldiva = GetOneGlobal(REG_ARG, "muldiva_", 0);
     muldivb = GetOneGlobal(REG_ARG, "muldivb_", 0);
   }
-  EmitMove(irl, muldiva, lhs);
-  EmitMove(irl, muldivb, rhs);
+  EmitMove(irl, muldiva, lhs, expr);
+  EmitMove(irl, muldivb, rhs, expr);
   EmitOp1(irl, OPC_CALL, (isSigned) ? divfunc : unsdivfunc);
   if (getmod) {
-    EmitMove(irl, temp, muldiva);
+      EmitMove(irl, temp, muldiva, expr);
   } else {
-    EmitMove(irl, temp, muldivb);
+      EmitMove(irl, temp, muldivb, expr);
   }
   return temp;
 }
@@ -2412,10 +2416,10 @@ CompileBoolBranches(IRList *irl, AST *expr, Operand *truedest, Operand *falsedes
         tmphi = NewFunctionTempRegister();
         tmp2lo = NewFunctionTempRegister();
         tmp2hi = NewFunctionTempRegister();
-        EmitMove(irl, tmplo, lo);
-        EmitMove(irl, tmp2lo, tmplo);
-        EmitMove(irl, tmphi, hi);
-        EmitMove(irl, tmp2hi, tmphi);
+        EmitMove(irl, tmplo, lo, expr);
+        EmitMove(irl, tmp2lo, tmplo, expr);
+        EmitMove(irl, tmphi, hi, expr);
+        EmitMove(irl, tmp2hi, tmphi, expr);
         EmitOp2(irl, OPC_MAXS, tmplo, tmp2hi); // now tmplo really is the smallest
         EmitOp2(irl, OPC_MINS, tmphi, tmp2lo); // and tmphi really is highest
         ir = EmitOp2(irl, OPC_CMPS, tmplo, val);
@@ -2528,7 +2532,7 @@ Dereference(IRList *irl, Operand *op)
 {
     if (IsMemRef(op)) {
         Operand *temp = NewFunctionTempRegister();
-        EmitMove(irl, temp, op);
+        EmitMove(irl, temp, op, NULL);
         if (op->size > 4) {
             ERROR(NULL, "internal error, Dereference called on large object");
         }
@@ -2565,14 +2569,14 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
           // reverse, then shift right
           left = CompileExpression(irl, lhs, NULL);
           right = CompileExpression(irl, rhs, NULL);
-          EmitMove(irl, temp, left);
+          EmitMove(irl, temp, left, lhs);
           EmitOp1(irl, OPC_REV_P2, temp); // reverse the bits
           EmitOp2(irl, OPC_SHR, temp, right);
           return temp;
       } else {
           left = CompileExpression(irl, lhs, temp);
           right = CompileExpression(irl, rhs, NULL);
-          EmitMove(irl, temp, left);
+          EmitMove(irl, temp, left, lhs);
           right = Dereference(irl, right);
           EmitOp2(irl, OPC_REV_P1, temp, right);
           return temp;
@@ -2589,7 +2593,7 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
   case K_LIMITMAX_UNS:
       left = CompileExpression(irl, lhs, temp);
       right = CompileExpression(irl, rhs, NULL);
-      EmitMove(irl, temp, left);
+      EmitMove(irl, temp, left, expr);
       right = Dereference(irl, right);
       EmitOp2(irl, OpcFromOp(op), temp, right);
       return temp;
@@ -2600,12 +2604,12 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
           rhs_temp = FoldIfConst(rhs_temp);
           right = CompileExpression(irl, rhs_temp, NULL);
           left = CompileExpression(irl, lhs, temp);
-          EmitMove(irl, temp, left);
+          EmitMove(irl, temp, left, expr);
           EmitOp2(irl, op == K_ZEROEXTEND ? OPC_ZEROX : OPC_SIGNX, temp, right);
       } else { // P1
           AST *rhs_temp = FoldIfConst(AstOperator('-',AstInteger(32),rhs));
           left = CompileExpression(irl, lhs, temp);
-          EmitMove(irl, temp, left);
+          EmitMove(irl, temp, left, expr);
           if (op == K_ZEROEXTEND && rhs_temp->kind == AST_INTEGER && (rhs_temp->d.ival&31) >= 23) {
               EmitOp2(irl, OPC_AND, temp, NewImmediate(0xFFFFFFFFu>>(rhs_temp->d.ival&31)));
           } else {
@@ -2627,7 +2631,7 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
       // commutative operations, but for now handle them the same
       left = CompileExpression(irl, lhs, temp);
       right = CompileExpression(irl, rhs, NULL);
-      EmitMove(irl, temp, left);
+      EmitMove(irl, temp, left, expr);
       right = Dereference(irl, right);
       EmitOp2(irl, OpcFromOp(op), temp, right);
       return temp;
@@ -2640,7 +2644,7 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
   case K_FNEGATE:
       right = CompileExpression(irl, rhs, temp);
       right = Dereference(irl, right);
-      EmitMove(irl, temp, NewImmediate(0x80000000));
+      EmitMove(irl, temp, NewImmediate(0x80000000), expr);
       EmitOp2(irl, OPC_XOR, temp, right);
       return temp;
   case K_BIT_NOT:
@@ -2650,7 +2654,7 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
           EmitOp2(irl, OPC_NOT, temp, right);
       } else {
           left = NewImmediate(-1);
-          EmitMove(irl, temp, right);
+          EmitMove(irl, temp, right, expr);
           EmitOp2(irl, OPC_XOR, temp, left);
       }
       return temp;
@@ -2671,12 +2675,12 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
           }
       } else {
           left = NewFunctionTempRegister();
-          EmitMove(irl, left, right);
+          EmitMove(irl, left, right, expr);
           if (specialcase) {
               // Spin2 ENCOD only goes 0-31, not 0-32
-              EmitMove(irl, temp, NewImmediate(31));
+              EmitMove(irl, temp, NewImmediate(31), expr);
           } else {
-              EmitMove(irl, temp, NewImmediate(32));
+              EmitMove(irl, temp, NewImmediate(32), expr);
           }
           right = NewCodeLabel();
           EmitLabel(irl, right);
@@ -2713,7 +2717,7 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
       } else {
           truevalue = NewImmediate(-1);
       }
-      EmitMove(irl, temp, zero);
+      EmitMove(irl, temp, zero, expr);
       CompileBoolBranches(irl, expr, NULL, skiplabel);
       EmitOp2(irl, OPC_XOR, temp, truevalue);
       EmitLabel(irl, skiplabel);
@@ -2769,7 +2773,7 @@ CompileOperator(IRList *irl, AST *expr, Operand *dest)
             addone = AstAssign(expr->left, AstOperator(opc, expr->left, stepsize));
             temp = NewFunctionTempRegister();
             lhs = CompileExpression(irl, expr->left, NULL);
-            EmitMove(irl, temp, lhs);
+            EmitMove(irl, temp, lhs, expr);
             CompileExpression(irl, addone, NULL);
             return temp;
         } else {
@@ -2796,7 +2800,7 @@ CompileOperator(IRList *irl, AST *expr, Operand *dest)
             Operand *temp = dest ? dest : NewFunctionTempRegister();
             Operand *lhs = CompileExpression(irl, expr->left, temp);
             Operand *rhs = CompileExpression(irl, expr->right->right, NULL);
-            EmitMove(irl, temp, lhs);
+            EmitMove(irl, temp, lhs, expr);
             rhs = Dereference(irl, rhs);
             EmitOp2(irl, OPC_ANDN, temp, rhs);
             return temp;
@@ -2879,7 +2883,7 @@ CompileExprList(IRList *irl, AST *fromlist)
             } else {
                 tmpfrom = opfrom;
             }
-            EmitMove(irl, opto[i], tmpfrom);
+            EmitMove(irl, opto[i], tmpfrom, from);
             AppendOperand(&ret, opto[i]);
             off += LONG_SIZE;
         }
@@ -2899,19 +2903,20 @@ EmitParameterList(IRList *irl, OperandList *oplist, Function *func, AST *functyp
     Operand *dst;
     int n = 0;
     int stackadj = 0;
+    AST *linenum = NULL;
     
     while (oplist != NULL) {
         op = oplist->op;
         oplist = oplist->next;
         dst = GetFunctionParameterForCall(irl, func, functype, n++);
         if (dst) {
-            EmitMove(irl, dst, op);
+            EmitMove(irl, dst, op, linenum);
         } else {
             if (stackadj == 0) {
                 ValidateStackptr();
-                EmitMove(irl, GetArgReg(n-1), stackptr);
+                EmitMove(irl, GetArgReg(n-1), stackptr, linenum);
             }
-            EmitPush(irl, op);
+            EmitPush(irl, op, linenum);
             if (COG_DATA) {
                 stackadj++;
             } else {
@@ -3021,12 +3026,12 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
         Operand *ptr1, *ptr2;
         
         base = CompileExpression(irl, expr->left, tempbase);
-        EmitMove(irl, tempbase, base);
+        EmitMove(irl, tempbase, base, expr);
         ptr1 = SizedHubMemRef(LONG_SIZE, tempbase, 0);
         ptr2 = SizedHubMemRef(LONG_SIZE, tempbase, 4);
         
-        EmitMove(irl, temp1, ptr1);
-        EmitMove(irl, temp2, ptr2);
+        EmitMove(irl, temp1, ptr1, expr);
+        EmitMove(irl, temp2, ptr2, expr);
         if (objptr) {
             *objptr = temp1;
         }
@@ -3106,7 +3111,6 @@ CompileFunccall(IRList *irl, AST *expr)
   int i;
   int stackadj = 0;
   int starttempreg = FuncData(curfunc)->curtempreg;
-
       
   func = CompileGetFunctionInfo(irl, expr, &absobjaddr, &offset, &funcaddr, &functype);
 
@@ -3128,14 +3132,14 @@ CompileFunccall(IRList *irl, AST *expr)
           EmitOp2(irl, OPC_ADD, objbase, offset);
       } else {
           temp = NewFunctionTempRegister();
-          EmitMove(irl, temp, objbase);
-          EmitMove(irl, objbase, absobjaddr);
+          EmitMove(irl, temp, objbase, expr);
+          EmitMove(irl, objbase, absobjaddr, expr);
       }
       ir = EmitOp1(irl, OPC_CALL, funcaddr);
       if (offset) {
           EmitOp2(irl, OPC_SUB, objbase, offset);
       } else if (temp) {
-          EmitMove(irl, objbase, temp);
+          EmitMove(irl, objbase, temp, expr);
       }
   } else {
       ir = EmitOp1(irl, OPC_CALL, funcaddr);
@@ -3163,7 +3167,7 @@ CompileFunccall(IRList *irl, AST *expr)
   
   for (i = 0; i < numresults; i++) {
       reg = NewFunctionTempRegister();
-      EmitMove(irl, reg, GetResultReg(i));
+      EmitMove(irl, reg, GetResultReg(i), expr);
       AppendOperand(&results, reg);
   }
   if (stackadj) {
@@ -3233,13 +3237,13 @@ CompileMultipleAssign(IRList *irl, AST *lhs, AST *rhs)
             r = CompileExpression(irl, target, NULL);
         } else if (siz == 8) {
             Operand *rlo = CompileExpression(irl, NewAST(AST_GETLOW, target, NULL), NULL);
-            EmitMove(irl, rlo, ptr->op);
+            EmitMove(irl, rlo, ptr->op, lhs);
             ptr = ptr->next;
             r = CompileExpression(irl, NewAST(AST_GETHIGH, target, NULL), NULL);
         } else {
             ERROR(lhs, "Unable to multiply assign this target");
         }
-        EmitMove(irl, r, ptr->op);
+        EmitMove(irl, r, ptr->op, lhs);
         lhs = lhs->right;
         ptr = ptr->next;
     }
@@ -3299,7 +3303,8 @@ OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type)
     int idx;
     int shift;
     int siz;
-
+    AST *linenum = NULL;
+    
     // check for COG memory references
     if (!IsMemRef(base) && IsCogMem(base)) {
         Operand *addr;
@@ -3329,7 +3334,7 @@ OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type)
             base->used = 1;
             addr = NewOperand(IMM_COG_LABEL, base->name, 0);
             temp = NewFunctionTempRegister();
-            EmitMove(irl, temp, addr);
+            EmitMove(irl, temp, addr, linenum);
             base = CogMemRef(temp, 0);
             break;
         default:
@@ -3358,7 +3363,7 @@ OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type)
         return newbase;
     }
     temp = NewFunctionTempRegister();
-    EmitMove(irl, temp, offset);
+    EmitMove(irl, temp, offset, linenum);
     if (shift) {
         EmitOp2(irl, OPC_SHR, temp, NewImmediate(shift));
     }
@@ -3376,7 +3381,8 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset, int siz)
     Operand *newbase;
     Operand *temp;
     int idx;
-
+    AST *linenum = NULL;
+    
     // check for COG memory references
     if (!IsMemRef(base) && IsCogMem(base)) {
         Operand *addr;
@@ -3405,7 +3411,7 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset, int siz)
             base->used = 1;
             addr = NewOperand(IMM_COG_LABEL, base->name, 0);
             temp = NewFunctionTempRegister();
-            EmitMove(irl, temp, addr);
+            EmitMove(irl, temp, addr, linenum);
             base = CogMemRef(temp, 0);
             break;
         default:
@@ -3445,7 +3451,7 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset, int siz)
         return newbase;
     }
     temp = NewFunctionTempRegister();
-    EmitMove(irl, temp, offset);
+    EmitMove(irl, temp, offset, linenum);
     if (siz > 1) {
         if (siz == 4) {
             EmitOp2(irl, OPC_SHL, temp, NewImmediate(2));
@@ -3475,13 +3481,13 @@ CompileCondResult(IRList *irl, AST *expr)
     CompileBoolBranches(irl, cond, NULL, label1);
     /* the default is the IF part */
     tmp = CompileExpression(irl, ifpart, NULL);
-    EmitMove(irl, r, tmp);
+    EmitMove(irl, r, tmp, expr);
     EmitJump(irl, COND_TRUE, label2);
 
     /* here is the ELSE part */
     EmitLabel(irl, label1);
     tmp = CompileExpression(irl, elsepart, NULL);
-    EmitMove(irl, r, tmp);
+    EmitMove(irl, r, tmp, expr);
 
     /* all done */
     EmitLabel(irl, label2);
@@ -3540,7 +3546,7 @@ CompileMaskMove(IRList *irl, AST *expr)
         ERROR(expr, "Internal error, bad value  in MaskMove");
         return tmp;
     }
-    ir = EmitMove(irl, tmp, dest);
+    ir = EmitMove(irl, tmp, dest, expr);
     ir->flags |= keepflag;
     ir = EmitOp2(irl, OPC_AND, tmp, mask);
     ir->flags |= keepflag;
@@ -3556,6 +3562,7 @@ CompileMaskMove(IRList *irl, AST *expr)
 Operand *
 GetLea(IRList *irl, Operand *src)
 {
+    AST *linenum = NULL;
     // check for COG memory references
     if (!IsMemRef(src) && IsCogMem(src)) {
         Operand *addr;
@@ -3589,7 +3596,7 @@ GetLea(IRList *irl, Operand *src)
         if (off) {
             src = EmitAddSub(irl, src, off);
         }
-        EmitMove(irl, dst, src);
+        EmitMove(irl, dst, src, linenum);
         if (off) {
             src = EmitAddSub(irl, src, -off);
         }
@@ -3666,7 +3673,7 @@ CompileCoginit(IRList *irl, AST *expr)
             ValidateObjbase();
             baseobjptr = objbase;
         }
-        EmitMove(irl, fobjptr, baseobjptr);
+        EmitMove(irl, fobjptr, baseobjptr, expr);
         if (offset) {
             EmitOp2(irl, OPC_ADD, fobjptr, offset);
         }
@@ -3713,15 +3720,15 @@ CompileCoginit(IRList *irl, AST *expr)
             newstacktop = SizedHubMemRef(LONG_SIZE, newstackptr, 0);
             const4 = NewImmediate(4);
         }
-        EmitMove(irl, newstacktop, fobjptr);
+        EmitMove(irl, newstacktop, fobjptr, expr);
         EmitOp2(irl, OPC_ADD, newstackptr, const4);
         // push the function to call
-        EmitMove(irl, newstacktop, funcptr);
+        EmitMove(irl, newstacktop, funcptr, expr);
         EmitOp2(irl, OPC_ADD, newstackptr, const4);
         // now the parameters
         plist = CompileExprList(irl, params);
         while (plist) {
-            EmitMove(irl, newstacktop, plist->op);
+            EmitMove(irl, newstacktop, plist->op, expr);
             EmitOp2(irl, OPC_ADD, newstackptr, const4);
             plist = plist->next;
             numparams++;
@@ -3790,11 +3797,11 @@ CompileLookupDown(IRList *irl, AST *expr)
         ValidateStackptr();
         arrid = NewAST(AST_OPERAND, NULL, NULL);
         arrid->d.ptr = (void *)basereg;
-        EmitMove(irl, basereg, stackptr);
+        EmitMove(irl, basereg, stackptr, table);
         n = 0;
         while (table) {
             Operand *src = CompileExpression(irl, table->left, NULL);
-            EmitPush(irl, src);
+            EmitPush(irl, src, table);
             n++;
             table = table->right;
         }
@@ -3988,7 +3995,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
           val = abortchain;
           r = abortcaught;
       }
-      EmitMove(irl, GetArgReg(0), val);
+      EmitMove(irl, GetArgReg(0), val, expr);
       EmitOp1(irl, OPC_CALL, setjmpfunc);
       return r;
   case AST_CATCHRESULT:
@@ -3998,12 +4005,12 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   {
       Operand *tmp;
       ValidateAbortFuncs();
-      EmitPush(irl, abortchain);
-      EmitMove(irl, abortchain, stackptr);
+      EmitPush(irl, abortchain, expr);
+      EmitMove(irl, abortchain, stackptr, expr);
       EmitOp2(irl, OPC_ADD, stackptr, NewImmediate(SETJMP_BUF_SIZE));
       tmp = CompileExpression(irl, expr->left, NULL);
       EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(SETJMP_BUF_SIZE));
-      EmitPop(irl, abortchain);
+      EmitPop(irl, abortchain, expr);
       return tmp;
   }
   case AST_ISBETWEEN:
@@ -4012,7 +4019,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       Operand *skiplabel = NewCodeLabel();
       Operand *temp = NewFunctionTempRegister();
       Operand *truevalue = (LangBoolIsOne(curfunc->language)) ? NewImmediate(1) : NewImmediate(-1);
-      EmitMove(irl, temp, zero);
+      EmitMove(irl, temp, zero, expr);
       CompileBoolBranches(irl, expr, NULL, skiplabel);
       EmitOp2(irl, OPC_XOR, temp, truevalue);
       EmitLabel(irl, skiplabel);
@@ -4037,7 +4044,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       Symbol *sym = (Symbol *)expr->d.ptr;
       r = CompileSymbolForFunc(irl, sym, curfunc, expr);
       if (dest) {
-          EmitMove(irl, dest, r);
+          EmitMove(irl, dest, r, expr);
           r = dest;
       }
       return r;
@@ -4047,7 +4054,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   case AST_LOCAL_IDENTIFIER:
     r = CompileIdentifier(irl, expr);
     if (dest) {
-        EmitMove(irl, dest, r);
+        EmitMove(irl, dest, r, expr);
         r = dest;
     }
     return r;
@@ -4058,7 +4065,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   {   // va_start(x, n) -> mov x, __func__varargs
       Operand *src = CompileIdentifier(irl, expr); // VA_START gets __func__varargs
       r = CompileIdentifier(irl, expr->left);
-      EmitMove(irl, r, src);
+      EmitMove(irl, r, src, expr);
       return r;
   }
   case AST_SELF:
@@ -4110,7 +4117,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
               val = CompileExpression(irl, expr->right, NULL);
           }
       }
-      EmitMove(irl, r, val);
+      EmitMove(irl, r, val, expr);
       return r;
   case AST_RANGEREF:
       return CompileExpression(irl, TransformRangeUse(expr), dest);
@@ -4126,7 +4133,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       r = GetOneHub(STRING_DEF, NewTempLabelName(), (intptr_t)(stringExpr));
       if (gl_p2) {
           Operand *temp = NewFunctionTempRegister();
-          EmitMove(irl, temp, r);
+          EmitMove(irl, temp, r, expr);
           return temp;
       }
       return NewImmediatePtr(NULL, r);
@@ -4181,7 +4188,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       Operand *val = CompileExpression(irl, expr->left, dest);
       Operand *datbase = ValidateDatBase(current);
       
-      EmitMove(irl, temp, val);
+      EmitMove(irl, temp, val, expr);
       EmitOp2(irl, OPC_ADD, temp, datbase);
       return temp;
   }
@@ -4241,7 +4248,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
           WARNING(expr, "cannot properly handle large va_arg");
       }
       r = CompileMemref(irl, expr);
-      EmitMove(irl, temp, r);
+      EmitMove(irl, temp, r, expr);
       (void)CompileExpression(irl,
                               AstAssign(expr->right,
                                         AstOperator('+', expr->right, AstInteger(incsize))),
@@ -4311,7 +4318,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
                               AstOperator(K_BIT_NOT, NULL, AstInteger(3)));
       r = CompileExpression(irl, alignexpr, NULL);
       temp = dest ? dest : NewFunctionTempRegister();
-      EmitMove(irl, temp, stackptr);
+      EmitMove(irl, temp, stackptr, expr);
       EmitOp2(irl, OPC_ADD, stackptr, r);
       return temp;
   }
@@ -4335,7 +4342,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
           base = CompileExpression(irl, expr->left, NULL);
           r = OffsetMemory(irl, base, NewImmediate(off), ast_type_long);
           if (dest) {
-              EmitMove(irl, dest, r);
+              EmitMove(irl, dest, r, expr);
               r = dest;
           }
       }
@@ -4460,7 +4467,7 @@ static IR *EmitCogwrite(IRList *irl, Operand *src, Operand *dst)
 
 #define MAX_TMP_REGS 4
 
-static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
+static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc, AST *linenum)
 {
     Operand *temps[MAX_TMP_REGS] = { 0 };
     unsigned i;
@@ -4482,7 +4489,7 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
         num_tmp_regs = (size + 3) / 4;
 
         if (num_tmp_regs > MAX_TMP_REGS) {
-            ERROR(NULL, "too many temporary registers needed");
+            ERROR(linenum, "too many temporary registers needed");
             return ir;
         }
         // if we are reading into a register, no need for
@@ -4530,7 +4537,7 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
                 EmitAddSub(irl, src, -4*(num_tmp_regs-1));
             }
         } else {
-            ERROR(NULL, "Illegal memory reference");
+            ERROR(linenum, "Illegal memory reference");
         }
 
         if (off && src->kind != IMM_INT) {
@@ -4551,7 +4558,7 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
         if (src->kind == IMM_INT || src->kind == IMM_COG_LABEL || SrcOnlyHwReg(src) || (off && src == dst) || src->kind == STRING_DEF) {
             num_tmp_regs = origdst->size;
             temp2 = NewFunctionTempRegister();
-            EmitMove(irl, temp2, src);
+            EmitMove(irl, temp2, src, linenum);
             src = temp2;
             for (i = 0; i < num_tmp_regs; i++) {
                 temps[i] = src;
@@ -4566,7 +4573,7 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
         }
         if (origdst->kind == COGMEM_REF) {
             if (num_tmp_regs != 1) {
-                ERROR(NULL, "Cannot handle multiple COG writes yet");
+                ERROR(linenum, "Cannot handle multiple COG writes yet");
                 return ir;
             }
             ir = EmitCogwrite(irl, src, dst);
@@ -4581,7 +4588,7 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
             } else {
                 Operand *inc4 = NewImmediate(4);
                 if (src != temps[0]) {
-                    ERROR(NULL, "Cannot handle memref of size %d", size);
+                    ERROR(linenum, "Cannot handle memref of size %d", size);
                     return ir;
                 }
                 for (i = 0; i < num_tmp_regs; i++) {
@@ -4593,7 +4600,7 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
                 EmitAddSub(irl, dst, -4*(num_tmp_regs-1));
             }
         } else {
-            ERROR(NULL, "Illegal memory reference");
+            ERROR(linenum, "Illegal memory reference");
         }
         if (off && dst->kind != IMM_INT) {
             EmitAddSub(irl, dst, -off);
@@ -4601,7 +4608,7 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
     } else {
         if (dst != src) {
             if (dst->kind == IMM_INT) {
-                ERROR(NULL, "Internal Error: emitting move to immediate");
+                ERROR(linenum, "Internal Error: emitting move to immediate");
             }
             ir = EmitOp2(irl, OPC_MOV, dst, src);
         }
@@ -4777,7 +4784,7 @@ int OutAsm_DebugEval(AST *ast, int regNum, int *addr, void *ourarg) {
                 return PASM_EVAL_ISREG_MAX;
             }
             dstop = GetDebugReg(regNum);
-            mvir = EmitMove(irl, dstop, ptr->op);
+            mvir = EmitMove(irl, dstop, ptr->op, ast);
             if (mvir) mvir->flags |= FLAG_KEEP_INSTR;
             regNum++;
             n++;
@@ -4787,7 +4794,7 @@ int OutAsm_DebugEval(AST *ast, int regNum, int *addr, void *ourarg) {
     srcop = CompileExpression(irl, ast, NULL);
 single_value:    
     dstop = GetDebugReg(regNum);
-    mvir = EmitMove(irl, dstop, srcop);
+    mvir = EmitMove(irl, dstop, srcop, ast);
     if (mvir) mvir->flags |= FLAG_KEEP_INSTR;
     *addr = debugaddr[regNum];
     return PASM_EVAL_ISREG;
@@ -4831,7 +4838,7 @@ static void CompileStatement(IRList *irl, AST *ast)
                 OperandList *oplist = CompileFunccall(irl, retval);
                 int n = 0;
                 while (oplist) {
-                    EmitMove(irl, GetResultReg(n), oplist->op);
+                    EmitMove(irl, GetResultReg(n), oplist->op, ast);
                     n++;
                     oplist = oplist->next;
                 }
@@ -4854,11 +4861,11 @@ static void CompileStatement(IRList *irl, AST *ast)
                     if (items <= 1) {
                         if (retlist) {
                             tempreg = NewFunctionTempRegister();
-                            EmitMove(irl, tempreg, op);
+                            EmitMove(irl, tempreg, op, retval);
                             AppendOperand(&oplist, tempreg);
                             n++;
                         } else {
-                            EmitMove(irl, GetResultReg(n), op);
+                            EmitMove(irl, GetResultReg(n), op, retval);
                             n++;
                         }
                     } else {
@@ -4868,7 +4875,7 @@ static void CompileStatement(IRList *irl, AST *ast)
                         while (items-- > 0) {
                             derefptr = ApplyArrayIndex(irl, base, NewImmediate(offset), LONG_SIZE);
                             tempreg = NewFunctionTempRegister();
-                            EmitMove(irl, tempreg, derefptr);
+                            EmitMove(irl, tempreg, derefptr, retval);
                             offset++;
                             AppendOperand(&oplist, tempreg);
                         }
@@ -4876,7 +4883,7 @@ static void CompileStatement(IRList *irl, AST *ast)
                 } while(retlist);
                 n = 0;
                 while (oplist) {
-                    EmitMove(irl, GetResultReg(n), oplist->op);
+                    EmitMove(irl, GetResultReg(n), oplist->op, ast);
                     n++;
                     oplist = oplist->next;
                 }
@@ -4903,9 +4910,9 @@ static void CompileStatement(IRList *irl, AST *ast)
         } else {
             buf = abortchain;
         }
-        EmitMove(irl, GetArgReg(0), buf);
-        EmitMove(irl, GetArgReg(1), op);
-        EmitMove(irl, GetArgReg(2), NewImmediate(ast->d.ival));
+        EmitMove(irl, GetArgReg(0), buf, ast);
+        EmitMove(irl, GetArgReg(1), op, ast);
+        EmitMove(irl, GetArgReg(2), NewImmediate(ast->d.ival), ast);
         EmitOp1(irl, OPC_CALL, longjmpfunc);
         break;
     case AST_LABEL:
@@ -4927,7 +4934,7 @@ static void CompileStatement(IRList *irl, AST *ast)
         ValidateGosub();
         op = GetLabelFromSymbol(ast, ast->left->d.string, false);
         if (op) {
-            EmitMove(irl, GetArgReg(0), op);
+            EmitMove(irl, GetArgReg(0), op, ast);
             EmitOp1(irl, OPC_CALL, gosub_);
             MarkUsedLabel(irl, op);
         }
@@ -4961,8 +4968,8 @@ static void CompileStatement(IRList *irl, AST *ast)
     case AST_TRYENV:
     {
         ValidateAbortFuncs();
-        EmitPush(irl, abortchain);
-        EmitMove(irl, abortchain, stackptr);
+        EmitPush(irl, abortchain, ast);
+        EmitMove(irl, abortchain, stackptr, ast);
         EmitOp2(irl, OPC_ADD, stackptr, NewImmediate(SETJMP_BUF_SIZE));
         if (ast->left && ast->left->kind != AST_STMTLIST) {
             (void)CompileExpression(irl, ast->left, NULL);
@@ -4970,7 +4977,7 @@ static void CompileStatement(IRList *irl, AST *ast)
             CompileStatementList(irl, ast->left);
         }
         EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(SETJMP_BUF_SIZE));
-        EmitPop(irl, abortchain);
+        EmitPop(irl, abortchain, ast);
         break;
     }
     case AST_FORATLEASTONCE:
@@ -6280,7 +6287,7 @@ EmitMain_P1(IRList *irl, Module *P)
     cogexit = NewOperand(IMM_COG_LABEL, "cogexit", 0);
     hubexit = NewOperand(IMM_HUB_LABEL, "hubexit", 0);
 
-    ir = EmitMove(irl, arg1, GetOneGlobal(REG_HW, "par", 0));
+    ir = EmitMove(irl, arg1, GetOneGlobal(REG_HW, "par", 0), NULL);
     ir->flags |= FLAG_WZ;
 
     // set up to run LMM
@@ -6319,15 +6326,15 @@ EmitMain_P1(IRList *irl, Module *P)
             return;
         }
         EmitLabel(irl, spinlabel);
-        EmitMove(irl, stackptr, arg1);
-        EmitMove(irl, objptr, stacktop);
+        EmitMove(irl, stackptr, arg1, NULL);
+        EmitMove(irl, objptr, stacktop, NULL);
         EmitOp2(irl, OPC_ADD, stackptr, const4);
-        EmitMove(irl, pc, stacktop);      // get address of function
-        EmitMove(irl, stacktop, hubexit); // set return address
+        EmitMove(irl, pc, stacktop, NULL);      // get address of function
+        EmitMove(irl, stacktop, hubexit, NULL); // set return address
         EmitOp2(irl, OPC_ADD, stackptr, const4);
         // now pull operands off the stack
         for (i = 0; i < maxArgs; i++) {
-            EmitMove(irl, GetArgReg(i), stacktop);
+            EmitMove(irl, GetArgReg(i), stacktop, NULL);
             if (i == maxArgs-1) {
                 int off = (maxArgs-1) * 4;
                 if (off > 0) {
@@ -6382,7 +6389,7 @@ EmitMain_P2(IRList *irl, Module *P, Operand *lutstart)
         EmitOp2(irl, OPC_MOV, stackptr, objbase);
         EmitOp2(irl, OPC_ADD, stackptr, NewImmediate(current->varsize));
     } else {
-        EmitMove(irl, stackptr, stacklabel);
+        EmitMove(irl, stackptr, stacklabel, NULL);
     }
     if (!GetClkFreq(P, &clkfreq, &clkmode)) {
         clkfreq = 160000000;
@@ -6395,7 +6402,7 @@ EmitMain_P2(IRList *irl, Module *P, Operand *lutstart)
     EmitOp1(irl, OPC_HUBSET, NewImmediate(0));
     EmitOp1(irl, OPC_HUBSET, NewImmediate(clkmode & ~3));
     EmitOp1(irl, OPC_WAITX, NewImmediate(200000));
-    EmitMove(irl, pa_reg, NewImmediate(clkmode));
+    EmitMove(irl, pa_reg, NewImmediate(clkmode), NULL);
     EmitOp1(irl, OPC_HUBSET, pa_reg);
     EmitOp2(irl, OPC_WRLONG, pa_reg, clkmode_addr);
     EmitOp2(irl, OPC_WRLONG, NewImmediate(clkfreq), clkfreq_addr);
@@ -6477,7 +6484,7 @@ EmitMain_CogSpin(IRList *irl, Module *p, int maxArgs, int maxResults)
     stacktop = SizedHubMemRef(LONG_SIZE, stackptr, 0);
 
     // mov mboxptr, par
-    EmitMove(irl, mboxptr, par);
+    EmitMove(irl, mboxptr, par, NULL);
     if (gl_p2) {
         Operand *const8 = NewImmediate(8);
         EmitOp2(irl, OPC_ADD, mboxptr, const8);
@@ -6521,15 +6528,15 @@ EmitMain_CogSpin(IRList *irl, Module *p, int maxArgs, int maxResults)
         }
     }
     EmitOp2(irl, OPC_SUB, mboxptr, NewImmediate(4*maxResults));
-    EmitMove(irl, arg1, NewImmediate(0));
+    EmitMove(irl, arg1, NewImmediate(0), NULL);
     EmitOp2(irl, OPC_WRLONG, arg1, mboxptr);
     EmitJump(irl, COND_TRUE, waitloop);
 
     if (!gl_p2) {
         pasm__init = NewOperand(IMM_COG_LABEL, "pasm__init", 0);
         EmitLabel(irl, pasm__init);
-        EmitMove(irl, objbase, arg1);
-        EmitMove(irl, stackptr, arg2);
+        EmitMove(irl, objbase, arg1, NULL);
+        EmitMove(irl, stackptr, arg2, NULL);
         EmitJump(irl, COND_TRUE, linkreg);
     }
 }
