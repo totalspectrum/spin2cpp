@@ -1482,7 +1482,8 @@ int     do_include(
     char *  fname;
     char *  filename;
     int     delim;                          /* " or <, >            */
-
+    int     sys_header = 0;
+    
     if ((delim = skip_ws()) == '\n') {      /* No argument          */
         cerror( no_name, NULL, 0L, NULL);
         return  FALSE;
@@ -1519,9 +1520,11 @@ int     do_include(
             , work_buf + PATHMAX);
     if (token_type == STR)                  /* String literal form  */
         goto  found_name;
-    else if (token_type == OPE && openum == OP_LT)          /* '<'  */
+    else if (token_type == OPE && openum == OP_LT) {         /* '<'  */
         workp = scan_quote( delim, work_buf, work_buf + PATHMAX, TRUE);
-                                        /* Re-construct or diagnose */
+        sys_header = 1;
+    }
+                                            /* Re-construct or diagnose */
     else                                    /* Any other token in-  */
         goto  not_header;                   /*   cluding <=, <<, <% */
 
@@ -1553,6 +1556,11 @@ found_name:
     if (open_include( filename, (delim == '"'), next)) {
         /* 'fname' should not be free()ed, it is used as file->         */
         /*      real_fname and has been registered into fnamelist[]     */
+        if (!sys_header) {
+            extern void AddSourceFile(const char *, const char *);
+            extern char *MakeAbsolutePath(const char *);
+            AddSourceFile(filename, MakeAbsolutePath(filename));
+        }
         return  TRUE;
     }
 
