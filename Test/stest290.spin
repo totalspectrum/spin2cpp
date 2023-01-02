@@ -1,5 +1,5 @@
 obj
-  o: "Test/simplepin"
+  o: "simplepin"
   
 pub main
   return o.getval()

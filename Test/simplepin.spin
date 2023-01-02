@@ -4,7 +4,6 @@ CON
   
 VAR
   long pin
-  long zz
   
 PUB tx(c)
   OUTA[pin] := c
