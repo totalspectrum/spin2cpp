@@ -1,7 +1,7 @@
 /*
  * Spin to C/C++ translator
  * flexcc front end 
- * Copyright 2011-2022 Total Spectrum Software Inc.
+ * Copyright 2011-2023 Total Spectrum Software Inc.
  *
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -43,7 +43,7 @@
 static void
 PrintInfo(FILE *f)
 {
-    fprintf(f, "FlexC compiler (c) 2011-2022 Total Spectrum Software Inc.\n");
+    fprintf(f, "FlexC compiler (c) 2011-2023 Total Spectrum Software Inc. and contributors\n");
     fprintf(f, "Version %s Compiled on: " __DATE__ "\n", VERSIONSTR);
     fflush(f);
 }
@@ -53,12 +53,15 @@ Usage(FILE *f)
 {
     fprintf(f, "usage: %s [options] file1.c file2.c ...\n", gl_progname);
     fprintf(f, "  [ --help ]         display this help\n");
+    fprintf(f, "  [ -1bc ]           compile for Prop1 ROM bytecode\n");
+    fprintf(f, "  [ -2 ]             compile for Prop2\n");
+    fprintf(f, "  [ -2nu ]           compile for Prop2 bytecode\n");
     fprintf(f, "  [ -c ]             output only .o file\n");
     fprintf(f, "  [ -D <define> ]    add a define\n");
     fprintf(f, "  [ -g ]             include debug info in output\n");
     fprintf(f, "  [ -L or -I <path> ] add a directory to the include path\n");
+    fprintf(f, "  [ -MMD ]           generate Make dependency file\n");
     fprintf(f, "  [ -o <name> ]      set output filename to <name>\n");
-    fprintf(f, "  [ -2 ]             compile for Prop2\n");
     fprintf(f, "  [ -O# ]            set optimization level:\n");
     fprintf(f, "          -O0 = no optimization\n");
     fprintf(f, "          -O1 = basic optimization\n");
@@ -362,6 +365,9 @@ main(int argc, const char **argv)
             opt = strdup(opt);
             incpath = opt;
             pp_add_to_path(&gl_pp, incpath);
+        } else if (!strcmp(argv[0], "-MMD")) {
+            cmd->outputDependencies = 1;
+            argv++; --argc;
         } else if (!strncmp(argv[0], "-O", 2)) {
             // -O0 means no optimization
             // -O1 means default optimization

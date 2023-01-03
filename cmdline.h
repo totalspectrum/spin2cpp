@@ -13,6 +13,7 @@ typedef struct CmdLineOptions {
     int outputMain;
     int outputDat;
     int outputFiles;
+    int outputDependencies;
     int outputBin;
     int outputAsm;
     int outputBytecode;

@@ -39,6 +39,7 @@
 #include "becommon.h"
 
 static int TrivialSpinFunction(Module *P);
+void PrintDependencies(const char *depname, const char *outname);
 
 extern const char *gl_progname; /* defined in common.c */
 const char *gl_cc = NULL;
@@ -246,7 +247,23 @@ int ProcessCommandLine(CmdLineOptions *cmd)
         if (gl_listing) {
             listFile = ReplaceExtension(P->fullname, ".lst");
         }
-    
+
+        if (cmd->outputDependencies) {
+            const char *depname = gl_outname;
+            const char *binname = gl_outname;
+            if (!depname) {
+                depname = ReplaceExtension(P->fullname, ".d");
+            }
+            if (!binname) {
+                if (gl_output == OUTPUT_OBJ) {
+                    binname = ReplaceExtension(P->fullname, ".o");
+                } else {
+                    binname = ReplaceExtension(P->fullname, ".binary");
+                }
+            }
+            PrintDependencies(depname, binname);
+        }
+        
         if (gl_output == OUTPUT_OBJ) {
             const char *binname = gl_outname;
             if (!binname) {
@@ -731,13 +748,38 @@ void AddSourceFile(const char *shortName, const char *fullName)
     numSourceFiles++;
 }
 
+static bool IsSysFile(const char *name) {
+    if (strstr(name, "../include/libc/")) return true;
+    if (strstr(name, "../include/libsys/")) return true;
+    return false;
+}
+
+void PrintDependencies(const char *depname, const char *outname)
+{
+    FILE *outf = stdout;
+    int i;
+    SourceFile *F;
+    
+    if (depname) {
+        outf = fopen(depname, "w");
+    }
+    fprintf(outf, "%s : ", outname);
+    for (i = 0; i < numSourceFiles; i++) {
+        F = &sourceData[i];
+        if (IsSysFile(F->fullName)) continue;
+        fprintf(outf, "%s ", F->shortName);
+    }
+    fprintf(outf, "\n");
+}
+
 void PrintSourceFiles(void)
 {
     int i;
-    SourceFile *f;
+    SourceFile *F;
     for (i = 0; i < numSourceFiles; i++) {
-        f = &sourceData[i];
-//        printf("%s (%s)\n", f->shortName, f->fullName);
-        printf("%s\n", f->fullName);
+        F = &sourceData[i];
+//        printf("%s (%s)\n", F->shortName, F->fullName);
+        if (IsSysFile(F->fullName)) continue;
+        printf("%s\n", F->fullName);
     }
 }
