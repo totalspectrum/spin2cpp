@@ -276,7 +276,7 @@ int ProcessCommandLine(CmdLineOptions *cmd)
                 char zipappend[128];
                 time_t now = time(NULL);
                 struct tm *tm = localtime(&now);
-                strftime(zipappend, sizeof(zipappend), "-%F.zip", tm);
+                strftime(zipappend, sizeof(zipappend), "-%Y-%m-%d.zip", tm);
                 zipname = ReplaceExtension(P->fullname, zipappend);
             }
             OutputZipFile(zipname);
