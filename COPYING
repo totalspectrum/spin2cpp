@@ -33,6 +33,15 @@ license (the same terms listed above for spin2cpp itself).
 
 ============================================================================
 
+The zip library used internally is based on kuba--'s zip library, which
+in turn is based on miniz. kuba--'s code is unlicensed (public domain);
+miniz is MIT licensed (terms as above) and is
+
+Copyright 2013-2014 RAD Game Tools and Valve Software
+Copyright 2010-2014 Rich Geldreich and Tenacious Software LLC
+
+============================================================================
+
 spin2cpp makes use of the mcpp preprocessor. The copyright for that is:
 
 /*-
