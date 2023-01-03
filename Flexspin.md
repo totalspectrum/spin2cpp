@@ -132,9 +132,13 @@ Command Line Options
 There are various command line options
 which may modify the compilation:
 ```
-  [ -h ]              display this help
+  [ -h ]             display this help
+  [ -1 ]             compile for Prop1 LMM (the default)
+  [ -1bc ]           compile for Prop1 ROM bytecode
+  [ -2 ]             compile for Prop2 assembly
+  [ -2nu ]           compile for Prop2 bytecode
   [ -L or -I <path> ] add a directory to the include path
-  [ -o ]             output filename
+  [ -o name ]        set output filename
   [ -b ]             output binary file format
   [ -e ]             output eeprom file format
   [ -c ]             output only DAT sections
@@ -149,15 +153,17 @@ which may modify the compilation:
                        -O1 apply default optimization (same as no -O flag)
 		       -O2 apply all optimization (same as -O)
   [ -D <define> ]    add a define
-  [ -2 ]             compile for Prop2
   [ -w ]             produce Spin wrappers for PASM code
   [ -H nnnn ]        change the base HUB address (see below)
   [ -E ]             omit any coginit header
   [ --code=cog  ]    compile to run in COG memory instead of HUB
   [ --fcache=N  ]    set size of FCACHE space in longs (0 to disable)
   [ --fixed ]        use 16.16 fixed point instead of IEEE floating point
+  [ --verbose ]      print some extra diagnostic messages
+  [ --version ]      show just the version number
+  [ --zip ]          create a zip file containing the sources
 ```
-The `-2` option is new: it is for compiling for the Propeller 2.
+
 
 `flexspin.exe` checks the name it was invoked by. If the name starts
 with the string "bstc" (case matters) then its output messages mimic

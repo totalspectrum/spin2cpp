@@ -1,4 +1,5 @@
 Version 5.9.24
+- Added --zip flag to create archive of source files
 - Fixed using local constants for default parameters in methods
 - Improved output of -f, and added #include'd files to that output
 

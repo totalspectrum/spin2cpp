@@ -258,6 +258,7 @@ extern int gl_interp_kind;
 #define OUTPUT_COGSPIN 4  /* like ASM, but with a Spin wrapper */
 #define OUTPUT_OBJ  5     /* outputs an object file */
 #define OUTPUT_BYTECODE 6
+#define OUTPUT_ZIP  7
 
 #define NuBytecodeOutput() (gl_output == OUTPUT_BYTECODE && gl_interp_kind == INTERP_KIND_NUCODE)
 #define TraditionalBytecodeOutput() (gl_output == OUTPUT_BYTECODE && gl_interp_kind != INTERP_KIND_NUCODE)
@@ -710,6 +711,7 @@ void OutputAsmCode(const char *name, Module *P, int printMain);
 void OutputObjFile(const char *name, Module *P);
 void OutputByteCode(const char *name, Module *P);
 void OutputNuCode(const char *name, Module *P);
+void OutputZipFile(const char *name);
 
 /* detect coginit/cognew calls that are for spin methods, return pointer to method involved */
 bool IsSpinCoginit(AST *body, Function **thefunc);

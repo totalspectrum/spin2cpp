@@ -270,6 +270,16 @@ int ProcessCommandLine(CmdLineOptions *cmd)
                 binname = ReplaceExtension(P->fullname, ".o");
             }
             OutputObjFile(binname, P);
+        } else if (gl_output == OUTPUT_ZIP) {
+            const char *zipname = gl_outname;
+            if (!zipname) {
+                char zipappend[128];
+                time_t now = time(NULL);
+                struct tm *tm = localtime(&now);
+                strftime(zipappend, sizeof(zipappend), "-%F.zip", tm);
+                zipname = ReplaceExtension(P->fullname, zipappend);
+            }
+            OutputZipFile(zipname);
         } else if (cmd->outputDat) {
             cmd->outname = gl_outname;
             if (gl_gas_dat) {
@@ -713,14 +723,15 @@ int ParseCharset(int *var, const char *name)
 //
 // Add a source file to the internal list
 //
-typedef struct SourceFile {
-    const char *shortName;
-    const char *fullName;
-} SourceFile;
-
 SourceFile *sourceData = NULL;
 int numSourceFiles = 0;
 int maxSourceFiles = 0;
+
+static bool IsSysFile(const char *name) {
+    if (strstr(name, "../include/libc/")) return true;
+    if (strstr(name, "../include/libsys/")) return true;
+    return false;
+}
 
 void AddSourceFile(const char *shortName, const char *fullName)
 {
@@ -745,13 +756,8 @@ void AddSourceFile(const char *shortName, const char *fullName)
     }
     sourceData[numSourceFiles].shortName = shortName;
     sourceData[numSourceFiles].fullName = fullName;
+    sourceData[numSourceFiles].isSysFile = IsSysFile(fullName);
     numSourceFiles++;
-}
-
-static bool IsSysFile(const char *name) {
-    if (strstr(name, "../include/libc/")) return true;
-    if (strstr(name, "../include/libsys/")) return true;
-    return false;
 }
 
 void PrintDependencies(const char *depname, const char *outname)
@@ -766,7 +772,7 @@ void PrintDependencies(const char *depname, const char *outname)
     fprintf(outf, "%s : ", outname);
     for (i = 0; i < numSourceFiles; i++) {
         F = &sourceData[i];
-        if (IsSysFile(F->fullName)) continue;
+        if (F->isSysFile) continue;
         fprintf(outf, "%s ", F->shortName);
     }
     fprintf(outf, "\n");
@@ -779,7 +785,7 @@ void PrintSourceFiles(void)
     for (i = 0; i < numSourceFiles; i++) {
         F = &sourceData[i];
 //        printf("%s (%s)\n", F->shortName, F->fullName);
-        if (IsSysFile(F->fullName)) continue;
+        if (F->isSysFile) continue;
         printf("%s\n", F->fullName);
     }
 }

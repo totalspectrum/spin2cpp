@@ -35,6 +35,14 @@ int ParseCharset(int *charset_var, const char *charset_name);
 
 void check_special_define(const char *name, const char *val);
 
+typedef struct SourceFile {
+    const char *shortName;
+    const char *fullName;
+    unsigned isSysFile:1;
+} SourceFile;
+extern SourceFile *sourceData;
+extern int numSourceFiles;
+
 void PrintSourceFiles(void);
 
 #endif

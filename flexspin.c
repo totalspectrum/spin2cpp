@@ -108,6 +108,7 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "  [ --tabs=N ]       assume tabs are set every N spaces for indentation purposes\n");
     fprintf(f, "  [ --verbose ]      print additional diagnostic messages\n");
     fprintf(f, "  [ --version ]      just show compiler version\n");
+    fprintf(f, "  [ --zip ]          create zip archive of source files\n");
     
     fflush(stderr);
     exit(2);
@@ -373,6 +374,10 @@ main(int argc, const char **argv)
         } else if (!strcmp(argv[0], "--version")) {
             PrintInfo(stdout, cmd->bstcMode);
             exit(0);
+        } else if (!strcmp(argv[0], "--zip")) {
+            cmd->compile = 0;
+            gl_output = OUTPUT_ZIP;
+            argv++; --argc;
         } else if (!strncmp(argv[0], "--bin", 5) || !strcmp(argv[0], "-b")
                    || !strcmp(argv[0], "-e"))
         {

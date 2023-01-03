@@ -524,9 +524,13 @@ The pins to use for the SD card may be changed by using `_vfs_open_sdcardx` inst
 There are various command line options for the compiler which may modify the compilation:
 ```
   [ --version ]      print just the compiler version, then exit
+  [ -1 ]             compile for Prop1 LMM (the default)
+  [ -1bc ]           compile for Prop1 ROM bytecode
+  [ -2 ]             compile for Prop2 assembly
+  [ -2nu ]           compile for Prop2 bytecode
   [ -h ]             display this help
   [ -L or -I <path> ] add a directory to the include path
-  [ -o ]             output filename
+  [ -o name ]        set output filename
   [ -b ]             output binary file format
   [ -e ]             output eeprom file format
   [ -c ]             output only DAT sections
@@ -559,8 +563,9 @@ There are various command line options for the compiler which may modify the com
   [ --lmm=xxx ]      use alternate LMM implementation for P1
            xxx = orig uses original flexspin LMM
            xxx = slow uses traditional (slow) LMM
-  [ --nostdlib ]     Do not check for include files in the standard place (../include relative to the flexspin binary)
+  [ --nostdlib ]     do not check for include files in the standard place (../include relative to the flexspin binary)
   [ --tabs=N ]       specifify number of spaces between tab stops (default 8)
+  [ --zip ]          create a zip file containing the source inputs
 ```
 
 `flexspin.exe` checks the name it was invoked by. If the name starts with the string "bstc" (case matters) then its output messages mimic that of the bstc compiler; otherwise it tries to match openspin's messages. This is for compatibility with Propeller IDE. For example, you can use flexspin with the PropellerIDE by renaming `bstc.exe` to `bstc.orig.exe` and then copying `flexspin.exe` to `bstc.exe`.
