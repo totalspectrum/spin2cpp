@@ -1503,8 +1503,6 @@ ApplyConditionAfter(IR *instr, int cval, int zval)
     cval = cval  < 0 ? 2 : 0;
     zval = zval == 0 ? 1 : 0;
 
-
-
     for (ir = instr->next; ir; ir = ir->next) {
         if (IsDummy(ir)) continue;
         newcond = (unsigned)ir->cond;
@@ -1621,24 +1619,28 @@ ApplyConditionAfter(IR *instr, int cval, int zval)
             if (setc) {
                 ReplaceOpcode(ir,OPC_MOV);
                 ir->src=NewImmediate( cval?1:0);
+                change = 1;
             }
             break;
         case OPC_WRNC :
             if (setc) {
                 ReplaceOpcode(ir,OPC_MOV);
                 ir->src=NewImmediate(!cval?1:0);
+                change = 1;
             }
             break;
         case OPC_WRZ  :
             if (setz) {
                 ReplaceOpcode(ir,OPC_MOV);
                 ir->src=NewImmediate( zval?1:0);
+                change = 1;
             }
             break;
         case OPC_WRNZ :
             if (setz) {
                 ReplaceOpcode(ir,OPC_MOV);
                 ir->src=NewImmediate(!zval?1:0);
+                change = 1;
             }
             break;
 
