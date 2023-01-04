@@ -41,7 +41,7 @@ static int NuMatchPattern(NuPeepholePattern *patrn, NuIr *ir)
             return 0; // no match, ran out of instructions
         }
         if (patrn->op == NU_OP_CBxx) {
-            if ( ! (ir->op >= NU_OP_CBEQ && ir->op <= NU_OP_CBGEU) ){
+            if ( ! (ir->op >= NU_OP_CBEQ && ir->op <= NU_OP_CBGEU) ) {
                 return 0;  // failure to match
             }
         } else if (patrn->op != NU_OP_ANY) {
@@ -242,7 +242,7 @@ int NuOptimizePeephole(NuIrList *irl) {
     NuIr *ir;
     int match, i;
     int change = 0;
-    
+
     ir = irl->head;
     for(;;) {
         while (ir && NuIsDummy(ir)) {
@@ -250,11 +250,11 @@ int NuOptimizePeephole(NuIrList *irl) {
         }
         if (!ir) break;
         for (i = 0; i < sizeof(nupeep) / sizeof(nupeep[0]); i++) {
-#if 0            
+#if 0
             if (nupeep[i].check == pat_djnz && ir->op == NU_OP_PUSHI && ir->next && ir->next->op == NU_OP_ADD_DBASE && ir->next->next && ir->next->next->op == NU_OP_LDL) {
                 printf("??\n");
             }
-#endif            
+#endif
             match = NuMatchPattern(nupeep[i].check, ir);
             if (match) {
                 match = (*nupeep[i].replace)(nupeep[i].arg, irl, ir);
@@ -347,6 +347,6 @@ int NuRemoveDeadCode(NuIrList *irl)
         } else if (ir->op == NU_OP_BRA) {
             if (!inJumpTable) inDeadCode = true;
         }
-    }    
+    }
     return changes;
 }

@@ -15,9 +15,9 @@
 #define MAX_BYTECODE 0xf8
 
 static const char *NuOpName[] = {
-    #define X(m) #m,
+#define X(m) #m,
     NU_OP_XMACRO
-    #undef X
+#undef X
 };
 
 static const char *impl_ptrs[NU_OP_DUMMY];
@@ -68,7 +68,7 @@ void NuIrInit(NuContext *ctxt) {
     const char *linestart;
     int c;
     int i;
-    
+
     memset(ctxt, 0, sizeof(*ctxt));
 
     // scan for implementation of primitives
@@ -94,7 +94,7 @@ void NuIrInit(NuContext *ctxt) {
     impl_ptrs[NU_OP_CALLA] = "";
     impl_ptrs[NU_OP_BREAK] = "";
     impl_ptrs[NU_OP_GETHEAP] = "";
-    
+
     // find the other implementations that we may need
     while (c) {
         linestart = ptr;
@@ -143,7 +143,7 @@ NuIr *NuCreateIrOp(NuIrOpcode op) {
 NuIr *NuEmitOp(NuIrList *irl, NuIrOpcode op) {
     NuIr *r;
     NuIr *last;
-    
+
     r = NuCreateIrOp(op);
     last = irl->tail;
     irl->tail = r;
@@ -249,7 +249,7 @@ GetBytecodeForConst(intptr_t val, int is_label, int bytecode)
 {
     int hash;
     NuBytecode *b;
-    
+
     hash = val & MAX_CONST_OPS;
     for (b = constOps[hash]; b; b = b->link) {
         if (b->value == val && b->code == bytecode) {
@@ -556,7 +556,7 @@ static NuBytecode *NuReplaceMacro(NuIrList *lists, NuMacro *macro) {
     while (irl) {
         for (ir = irl->head; ir; ir = ir->next) {
             NuIr *delir = ir->next;
-            if (ir->bytecode == first && delir && delir->bytecode == second) {                
+            if (ir->bytecode == first && delir && delir->bytecode == second) {
                 ir->bytecode = bc;
                 bc->usage++;
                 ir->next = delir->next;
@@ -569,7 +569,7 @@ static NuBytecode *NuReplaceMacro(NuIrList *lists, NuMacro *macro) {
                 second->usage--;
             }
         }
-        
+
         irl = irl->nextList;
     }
     return bc;
@@ -584,7 +584,7 @@ void NuCreateBytecodes(NuIrList *lists)
     int i;
     int code;
     NuBytecode *bc;
-    
+
     // create an initial set of bytecodes
     irl = lists;
     while (irl) {
@@ -765,7 +765,7 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     flexbuf_printf(fb, "  _clkfreq = %d\n", ctxt->clockFreq);
     flexbuf_printf(fb, "  clock_freq_addr = $14\n");
     flexbuf_printf(fb, "  clock_mode_addr = $18\n\n");
-    
+
     flexbuf_printf(fb, "dat\n");
     if (!gl_no_coginit && gl_output != OUTPUT_COGSPIN) {
         flexbuf_addstr(fb, "\torg 0\n");
@@ -779,7 +779,7 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
         flexbuf_addstr(fb, "\tlong\t0\t' reserved for baud ($1c)\n");
         flexbuf_addstr(fb, "\torgh\t$80\t' $40-$80 reserved\n");
     }
-    
+
     // copy interpreter source until ^L
     for(;;) {
         c = *ptr++;
@@ -831,7 +831,7 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
             flexbuf_printf(fb, "' pc= 0x%x\n", impl_pc);
         }
     }
-    
+
     if (!saw_orgh) {
         flexbuf_printf(fb, "\n\torgh ($ < $400) ? $400 : $\n");
     }
@@ -844,7 +844,7 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     flexbuf_printf(fb, "\tlong\timpl_CALLA\n");
     flexbuf_printf(fb, "\tlong\timpl_PUSHI16\n");
     flexbuf_printf(fb, "\tlong\timpl_PUSHI8\n");
-    
+
     for (i = 0; i < num_bytecodes; i++) {
         NuBytecode *bc = globalBytecodes[i];
         int code = bc->code;

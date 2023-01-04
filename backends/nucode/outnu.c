@@ -12,7 +12,7 @@
 void NuDeleteIr(NuIrList *irl, NuIr *ir) {
     NuIr *prev = ir->prev;
     NuIr *next = ir->next;
-    
+
     if (prev) {
         prev->next = next;
     } else {
@@ -94,7 +94,7 @@ static void NuPopQuitNext() {
     quitlabel = ql->label;
     nextlabel = nl->label;
     free(nl);
-    free(ql);    
+    free(ql);
 }
 
 static NuIrLabel *
@@ -135,9 +135,9 @@ NuPrepareFunctionBedata(Function *F) {
         return;
     }
     F->bedata = calloc(sizeof(NuFunData),1);
-    
+
     FunData(F)->entryLabel = NuCreateLabel();
-    //FunData(F)->exitLabel = NuCreateLabel();    
+    //FunData(F)->exitLabel = NuCreateLabel();
 }
 
 const char *NuCodeSymbolName(Symbol *sym) {
@@ -169,7 +169,7 @@ static int NuCompileFunCall(NuIrList *irl, AST *node) {
     Symbol *sym;
     AST *args = node->right;
     NuIr *ir;
-    
+
     pushed = NuCompileExprList(irl, args);
     sym = FindFuncSymbol(node, &objref, 1);
     if (sym && sym->kind == SYM_FUNCTION) {
@@ -202,13 +202,13 @@ static int NuCompileFunCall(NuIrList *irl, AST *node) {
                 NuCompileLhsAddress(irl, objref);
                 NuEmitCommentedAddress(irl, FunData(func)->entryLabel, func->name);
                 ir = NuEmitOp(irl, NU_OP_CALLM);
-                ir->comment = auto_printf(128, "call method %s", func->name);                
+                ir->comment = auto_printf(128, "call method %s", func->name);
             } else {
                 ERROR(node, "Unable to compile this method calls");
             }
         }
     } else if (node->left && IsIdentifier(node->left) && !LookupAstSymbol(node->left, NULL)) {
-            ERROR(node, "Unknown symbol %s", GetUserIdentifierName(node->left));
+        ERROR(node, "Unknown symbol %s", GetUserIdentifierName(node->left));
     } else {
         AST *funcNode = node->left;
         functype = ExprType(funcNode);
@@ -235,11 +235,16 @@ static int NuCompileFunCall(NuIrList *irl, AST *node) {
 // find the load opcode corresponding to a store opcode
 static NuIrOpcode NuLoadOpFor(NuIrOpcode stOp) {
     switch (stOp) {
-    case NU_OP_STB: return NU_OP_LDB;
-    case NU_OP_STW: return NU_OP_LDW;
-    case NU_OP_STL: return NU_OP_LDL;
-    case NU_OP_STD: return NU_OP_LDD;
-    case NU_OP_STREG: return NU_OP_LDREG;
+    case NU_OP_STB:
+        return NU_OP_LDB;
+    case NU_OP_STW:
+        return NU_OP_LDW;
+    case NU_OP_STL:
+        return NU_OP_LDL;
+    case NU_OP_STD:
+        return NU_OP_LDD;
+    case NU_OP_STREG:
+        return NU_OP_LDREG;
     default:
         ERROR(NULL, "bad kind of store op");
         return NU_OP_ILLEGAL;
@@ -254,7 +259,7 @@ static NuIrOpcode LoadStoreOp(AST *typ, int isLoad)
 
     if (IsArrayType(typ)) {
         typ = BaseType(typ);
-    }    
+    }
     siz = TypeSize(typ);
     switch (siz) {
     case 0:
@@ -379,7 +384,8 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
         offset = hwreg->addr;
         loadOp = isLoad ? NU_OP_LDREG : NU_OP_STREG;
         offsetOp = NU_OP_ILLEGAL;
-    } break;
+    }
+    break;
     case SYM_FUNCTION: {
         Function *F = (Function *)sym->v.ptr;
         NuPrepareFunctionBedata(F);
@@ -387,7 +393,8 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
         loadOp = isLoad ? NU_OP_LDL : NU_OP_STL;
         offsetOp = NU_OP_ILLEGAL;
         offsetValid = false;
-    } break;
+    }
+    break;
     case SYM_ALIAS: {
         AST *expr = (AST *)sym->v.ptr;
         // this had better be a simple alias
@@ -400,7 +407,8 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
         }
         loadOp = NuCompileLhsAddress(irl, expr);
         if (isLoad) loadOp = NuLoadOpFor(loadOp);
-    } break;
+    }
+    break;
     default:
         ERROR(node, "Unhandled symbol type for %s", sym->user_name);
         return loadOp;
@@ -443,21 +451,36 @@ NuCompileArrayAddress(NuIrList *irl, AST *node, int isLoad)
 /* find opposite comparison for branch */
 NuIrOpcode NuFlipCondition(NuIrOpcode op) {
     switch (op) {
-    case NU_OP_BZ:    return NU_OP_BNZ;
-    case NU_OP_BNZ:   return NU_OP_BZ;
-    case NU_OP_BRA:   return NU_OP_DROP2;
-    case NU_OP_DROP2: return NU_OP_BRA;
-    case NU_OP_CBEQ:  return NU_OP_CBNE;
-    case NU_OP_CBNE:  return NU_OP_CBEQ;
-    case NU_OP_CBLTS: return NU_OP_CBGES;
-    case NU_OP_CBGES: return NU_OP_CBLTS;
-    case NU_OP_CBLES: return NU_OP_CBGTS;
-    case NU_OP_CBGTS: return NU_OP_CBLES;
-    case NU_OP_CBLTU: return NU_OP_CBGEU;
-    case NU_OP_CBGEU: return NU_OP_CBLTU;
-    case NU_OP_CBLEU: return NU_OP_CBGTU;
-    case NU_OP_CBGTU: return NU_OP_CBLEU;
-    default: ERROR(NULL, "Bad opcode to NuFlipCondition");
+    case NU_OP_BZ:
+        return NU_OP_BNZ;
+    case NU_OP_BNZ:
+        return NU_OP_BZ;
+    case NU_OP_BRA:
+        return NU_OP_DROP2;
+    case NU_OP_DROP2:
+        return NU_OP_BRA;
+    case NU_OP_CBEQ:
+        return NU_OP_CBNE;
+    case NU_OP_CBNE:
+        return NU_OP_CBEQ;
+    case NU_OP_CBLTS:
+        return NU_OP_CBGES;
+    case NU_OP_CBGES:
+        return NU_OP_CBLTS;
+    case NU_OP_CBLES:
+        return NU_OP_CBGTS;
+    case NU_OP_CBGTS:
+        return NU_OP_CBLES;
+    case NU_OP_CBLTU:
+        return NU_OP_CBGEU;
+    case NU_OP_CBGEU:
+        return NU_OP_CBLTU;
+    case NU_OP_CBLEU:
+        return NU_OP_CBGTU;
+    case NU_OP_CBGTU:
+        return NU_OP_CBLEU;
+    default:
+        ERROR(NULL, "Bad opcode to NuFlipCondition");
     }
     return NU_OP_ILLEGAL;
 }
@@ -470,29 +493,55 @@ NuCompileBasicBoolExpression(NuIrList *irl, AST *expr)
     NuIrOpcode opc = NU_OP_ILLEGAL;
     AST *left, *right;
     int n;
-    
+
     int opkind = (expr->kind == AST_OPERATOR) ? expr->d.ival : -1;
     left = expr->left;
     right = expr->right;
     switch (opkind) {
     default:
-        opc = NU_OP_CBNE; left = expr; right = AstInteger(0);
+        opc = NU_OP_CBNE;
+        left = expr;
+        right = AstInteger(0);
         break;
-    case K_EQ: opc = NU_OP_CBEQ; break;
-    case K_NE: opc = NU_OP_CBNE; break;
-    case '<':  opc = NU_OP_CBLTS; break;
-    case K_LE: opc = NU_OP_CBLES; break;
-    case K_LTU: opc = NU_OP_CBLTU; break;
-    case K_LEU: opc = NU_OP_CBLEU; break;
-    case '>':   opc = NU_OP_CBGTS; break;
-    case K_GE:  opc = NU_OP_CBGES; break;
-    case K_GTU: opc = NU_OP_CBGTU; break;
-    case K_GEU: opc = NU_OP_CBGEU; break;
+    case K_EQ:
+        opc = NU_OP_CBEQ;
+        break;
+    case K_NE:
+        opc = NU_OP_CBNE;
+        break;
+    case '<':
+        opc = NU_OP_CBLTS;
+        break;
+    case K_LE:
+        opc = NU_OP_CBLES;
+        break;
+    case K_LTU:
+        opc = NU_OP_CBLTU;
+        break;
+    case K_LEU:
+        opc = NU_OP_CBLEU;
+        break;
+    case '>':
+        opc = NU_OP_CBGTS;
+        break;
+    case K_GE:
+        opc = NU_OP_CBGES;
+        break;
+    case K_GTU:
+        opc = NU_OP_CBGTU;
+        break;
+    case K_GEU:
+        opc = NU_OP_CBGEU;
+        break;
     }
     n = NuCompileExpression(irl, left);
-    if (n != 1) { ERROR(left, "Expected single value in boolean expression"); }
+    if (n != 1) {
+        ERROR(left, "Expected single value in boolean expression");
+    }
     n = NuCompileExpression(irl, right);
-    if (n != 1) { ERROR(left, "Expected single value in boolean expression"); }
+    if (n != 1) {
+        ERROR(left, "Expected single value in boolean expression");
+    }
     return opc;
 }
 
@@ -503,7 +552,7 @@ NuCompileBoolBranches(NuIrList *irl, AST *expr, NuIrLabel *truedest, NuIrLabel *
     NuIrLabel *dummylabel = NULL;
     int opkind;
     NuIrOpcode opc;
-    
+
     if (IsConstExpr(expr)) {
         int x = EvalConstExpr(expr);
         if (x && truedest) NuEmitBranch(irl, NU_OP_BRA, truedest);
@@ -584,7 +633,7 @@ NuCompileBoolBranches(NuIrList *irl, AST *expr, NuIrLabel *truedest, NuIrLabel *
             NuEmitLabel(irl, dummylabel);
         }
         break;
-    }       
+    }
 }
 /* compile address for lhs of assignment, return store op (or NU_OP_ILLEGAL if fail) */
 static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs)
@@ -616,7 +665,8 @@ static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs)
         if (n != 1) {
             ERROR(lhs, "too many values pushed on stack");
         }
-    } break;
+    }
+    break;
     case AST_METHODREF: {
         AST *objref = lhs->left;
         AST *methodname = lhs->right;
@@ -674,12 +724,14 @@ static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs)
             ERROR(lhs, "Wrong kind of symbol (%d) in method reference", sym->kind);
             break;
         }
-    } break;
+    }
+    break;
     case AST_HWREG: {
         HwReg *hwreg = (HwReg *)lhs->d.ptr;
         NuEmitConst(irl, hwreg->addr);
         op = NU_OP_STREG;
-    } break;
+    }
+    break;
     case AST_SEQUENCE:
     case AST_STMTLIST: {
         if (lhs->right) {
@@ -746,7 +798,7 @@ static int NuCompileMaskMove(NuIrList *irl, AST *expr)
     AST *destast = expr->left;
     AST *maskast;
     AST *valast;
-    
+
     if (expr->right->kind == AST_SEQUENCE) {
         maskast = expr->right->left;
         valast = expr->right->right;
@@ -819,7 +871,9 @@ NuCompileMul(NuIrList *irl, AST *lhs, AST *rhs, int gethi)
             NuEmitConst(irl, EvalConstExpr(lhs) * EvalConstExpr(rhs));
             return 1;
         }
-        tmp = lhs; lhs = rhs; rhs = tmp;
+        tmp = lhs;
+        lhs = rhs;
+        rhs = tmp;
     }
     NuCompileExpression(irl, lhs);
     if (IsConstExpr(rhs)) {
@@ -900,7 +954,7 @@ NuCompileOperator(NuIrList *irl, AST *node) {
     int optoken;
     int pushed = 0;
     int isBool;
-    
+
     lhs = node->left;
     rhs = node->right;
     optoken = node->d.ival;
@@ -920,8 +974,10 @@ NuCompileOperator(NuIrList *irl, AST *node) {
     case K_LEU:
     case K_GEU:
         isBool = 1;
-        break;            
-    default: isBool = 0; break;
+        break;
+    default:
+        isBool = 0;
+        break;
     }
     if (isBool) {
         NuIrLabel *skiplabel = NuCreateLabel();
@@ -941,7 +997,7 @@ NuCompileOperator(NuIrList *irl, AST *node) {
         NuIrOpcode ldOp, stOp;
         int stepSize = 1;
         int postIncDec = node->left != 0;
-        
+
         if (IsPointerType(desttype)) {
             stepSize = TypeSize(BaseType(desttype));
         } else if (IsFloatType(desttype)) {
@@ -963,13 +1019,20 @@ NuCompileOperator(NuIrList *irl, AST *node) {
         NuCompileLhsAddress(irl, dest);
         NuEmitOp(irl, stOp);
         pushed = 1;
-    } else if (optoken == '*') {            pushed = NuCompileMul(irl, node->left, node->right, 0);
-    } else if (optoken == K_HIGHMULT) {     pushed = NuCompileMul(irl, node->left, node->right, 1);
-    } else if (optoken == K_UNS_HIGHMULT) { pushed = NuCompileMul(irl, node->left, node->right, 3);
-    } else if (optoken == '/') {            pushed = NuCompileDiv(irl, node->left, node->right, 0);
-    } else if (optoken == K_MODULUS) {      pushed = NuCompileDiv(irl, node->left, node->right, 1);
-    } else if (optoken == K_UNS_DIV) {      pushed = NuCompileDiv(irl, node->left, node->right, 2);
-    } else if (optoken == K_UNS_MOD) {      pushed = NuCompileDiv(irl, node->left, node->right, 3);
+    } else if (optoken == '*') {
+        pushed = NuCompileMul(irl, node->left, node->right, 0);
+    } else if (optoken == K_HIGHMULT) {
+        pushed = NuCompileMul(irl, node->left, node->right, 1);
+    } else if (optoken == K_UNS_HIGHMULT) {
+        pushed = NuCompileMul(irl, node->left, node->right, 3);
+    } else if (optoken == '/') {
+        pushed = NuCompileDiv(irl, node->left, node->right, 0);
+    } else if (optoken == K_MODULUS) {
+        pushed = NuCompileDiv(irl, node->left, node->right, 1);
+    } else if (optoken == K_UNS_DIV) {
+        pushed = NuCompileDiv(irl, node->left, node->right, 2);
+    } else if (optoken == K_UNS_MOD) {
+        pushed = NuCompileDiv(irl, node->left, node->right, 3);
     } else if (optoken == K_REV) {
         NuCompileExpression(irl, lhs);
         NuCompileExpression(irl, rhs);
@@ -979,7 +1042,9 @@ NuCompileOperator(NuIrList *irl, AST *node) {
     } else if (optoken == K_SIGNEXTEND || optoken == K_ZEROEXTEND) {
         AST *rhs_temp = AstOperator('-', rhs, AstInteger(1));
         rhs_temp = FoldIfConst(rhs_temp);
-        if (NuCompileExpression(irl, lhs) != 1) { ERROR(lhs, "too many values"); };
+        if (NuCompileExpression(irl, lhs) != 1) {
+            ERROR(lhs, "too many values");
+        };
         NuCompileExpression(irl, rhs_temp);
         NuEmitOp(irl, (optoken == K_SIGNEXTEND) ? NU_OP_SIGNX : NU_OP_ZEROX);
         pushed = 1;
@@ -994,25 +1059,63 @@ NuCompileOperator(NuIrList *irl, AST *node) {
         // assume we will push just one item
         pushed = 1;
         switch (optoken) {
-        case K_NEGATE: NuEmitOp(irl, NU_OP_NEG); break;
-        case K_BIT_NOT: NuEmitOp(irl, NU_OP_NOT); break;
-        case K_ABS: NuEmitOp(irl, NU_OP_ABS); break;
-        case '+': NuEmitOp(irl, NU_OP_ADD); break;
-        case '-': NuEmitOp(irl, NU_OP_SUB); break;
-        case '&': NuEmitOp(irl, NU_OP_AND); break;
-        case '|': NuEmitOp(irl, NU_OP_IOR); break;
-        case '^': NuEmitOp(irl, NU_OP_XOR); break;
-        case K_SHL: NuEmitOp(irl, NU_OP_SHL); break;
-        case K_SHR: NuEmitOp(irl, NU_OP_SHR); break;
-        case K_SAR: NuEmitOp(irl, NU_OP_SAR); break;
-        case K_ROTL: NuEmitOp(irl, NU_OP_ROL); break;
-        case K_ROTR: NuEmitOp(irl, NU_OP_ROR); break;
-        case K_ENCODE: NuEmitOp(irl, NU_OP_ENCODE); break;
-        case K_ENCODE2: NuEmitOp(irl, NU_OP_ENCODE2); break;
-        case K_LIMITMIN: NuEmitOp(irl, NU_OP_MINS); break;
-        case K_LIMITMAX: NuEmitOp(irl, NU_OP_MAXS); break;
-        case K_LIMITMIN_UNS: NuEmitOp(irl, NU_OP_MINU); break;
-        case K_LIMITMAX_UNS: NuEmitOp(irl, NU_OP_MAXU); break;
+        case K_NEGATE:
+            NuEmitOp(irl, NU_OP_NEG);
+            break;
+        case K_BIT_NOT:
+            NuEmitOp(irl, NU_OP_NOT);
+            break;
+        case K_ABS:
+            NuEmitOp(irl, NU_OP_ABS);
+            break;
+        case '+':
+            NuEmitOp(irl, NU_OP_ADD);
+            break;
+        case '-':
+            NuEmitOp(irl, NU_OP_SUB);
+            break;
+        case '&':
+            NuEmitOp(irl, NU_OP_AND);
+            break;
+        case '|':
+            NuEmitOp(irl, NU_OP_IOR);
+            break;
+        case '^':
+            NuEmitOp(irl, NU_OP_XOR);
+            break;
+        case K_SHL:
+            NuEmitOp(irl, NU_OP_SHL);
+            break;
+        case K_SHR:
+            NuEmitOp(irl, NU_OP_SHR);
+            break;
+        case K_SAR:
+            NuEmitOp(irl, NU_OP_SAR);
+            break;
+        case K_ROTL:
+            NuEmitOp(irl, NU_OP_ROL);
+            break;
+        case K_ROTR:
+            NuEmitOp(irl, NU_OP_ROR);
+            break;
+        case K_ENCODE:
+            NuEmitOp(irl, NU_OP_ENCODE);
+            break;
+        case K_ENCODE2:
+            NuEmitOp(irl, NU_OP_ENCODE2);
+            break;
+        case K_LIMITMIN:
+            NuEmitOp(irl, NU_OP_MINS);
+            break;
+        case K_LIMITMAX:
+            NuEmitOp(irl, NU_OP_MAXS);
+            break;
+        case K_LIMITMIN_UNS:
+            NuEmitOp(irl, NU_OP_MINU);
+            break;
+        case K_LIMITMAX_UNS:
+            NuEmitOp(irl, NU_OP_MAXU);
+            break;
         default:
             ERROR(node, "Unable to handle operator 0x%x", optoken);
             break;
@@ -1029,7 +1132,7 @@ static int NuCompileCondResult(NuIrList *irl, AST *expr) {
     NuIrLabel *label1 = NuCreateLabel();
     NuIrLabel *label2 = NuCreateLabel();
     int n_if, n_else;
-    
+
     NuCompileBoolBranches(irl, cond, NULL, label1);
 
     /* the default is the IF part */
@@ -1044,7 +1147,7 @@ static int NuCompileCondResult(NuIrList *irl, AST *expr) {
     if (n_if != n_else) {
         ERROR(expr, "different number of results in ?: sides");
     }
-    
+
     return n_if;
 }
 
@@ -1054,7 +1157,7 @@ static int NuCompileCondResult(NuIrList *irl, AST *expr) {
 static void
 NuCompileIncrement(NuIrList *irl, AST *val, int n) {
     NuIrOpcode stOp;
-    
+
     if (n == 0) return;
     NuCompileExpression(irl, val);
     NuEmitConst(irl, n);
@@ -1076,7 +1179,7 @@ NuCompileCoginit(NuIrList *irl, AST *expr)
     AST *funccall;
     AST *params = expr->left;
     int n;
-    
+
     if ( IsSpinCoginit(expr, NULL) ) {
         AST *exprlist;
         AST *funccall;
@@ -1086,24 +1189,27 @@ NuCompileCoginit(NuIrList *irl, AST *expr)
         AST *tmpreg = AstIdentifier("__interp_temp1");
         NuIrOpcode stOp;
         Symbol *sym;
-        
+
         // need to push some stuff onto the new stack, namely:
         //   the arguments
         //   initial PC
         //   initial object base
         exprlist = expr->left;
         if (!exprlist) {
-            ERROR(expr, "Missing cog parameter for coginit/cognew"); return 1;
+            ERROR(expr, "Missing cog parameter for coginit/cognew");
+            return 1;
         }
         cogid = exprlist->left;
         exprlist = exprlist->right;
         if (!exprlist) {
-            ERROR(expr, "Missing function parameter for coginit/cognew"); return 1;
+            ERROR(expr, "Missing function parameter for coginit/cognew");
+            return 1;
         }
         funccall = exprlist->left;
         exprlist = exprlist->right;
         if (!exprlist) {
-            ERROR(expr, "Missing stack parameter for coginit/cognew"); return 1;
+            ERROR(expr, "Missing stack parameter for coginit/cognew");
+            return 1;
         }
         stack = exprlist->left;
         if (exprlist->right != NULL) {
@@ -1111,7 +1217,10 @@ NuCompileCoginit(NuIrList *irl, AST *expr)
         }
         // get initial stack pointer into tmpreg
         n = NuCompileExpression(irl, stack);
-        if (n != 1) { ERROR(expr, "Bad stack value"); return 1; }
+        if (n != 1) {
+            ERROR(expr, "Bad stack value");
+            return 1;
+        }
         stOp = NuCompileLhsAddress(irl, tmpreg);
         NuEmitCommentedOp(irl, stOp, "get copy of stack value");
         // compile arguments
@@ -1128,10 +1237,15 @@ NuCompileCoginit(NuIrList *irl, AST *expr)
             n = NuCompileExpression(irl, arg);  // n is number of longs pushed
             NuCompileExpression(irl, tmpreg);
             switch (n) {
-            case 1: NuEmitCommentedOp(irl, NU_OP_STL, "pop long arg"); break;
-            case 2: NuEmitCommentedOp(irl, NU_OP_STD, "pop double arg"); break;
+            case 1:
+                NuEmitCommentedOp(irl, NU_OP_STL, "pop long arg");
+                break;
+            case 2:
+                NuEmitCommentedOp(irl, NU_OP_STD, "pop double arg");
+                break;
             default:
-                ERROR(arg, "argument too long for coginit"); return 1;
+                ERROR(arg, "argument too long for coginit");
+                return 1;
             }
             // increment tmpreg pointer
             NuCompileIncrement(irl, tmpreg, n*LONG_SIZE);
@@ -1154,7 +1268,7 @@ NuCompileCoginit(NuIrList *irl, AST *expr)
         NuCompileExpression(irl, tmpreg);
         NuEmitCommentedOp(irl, NU_OP_STL, "save pc");
         NuCompileIncrement(irl, tmpreg, LONG_SIZE);
-        
+
         // push new VBASE
         if (!objref) {
             NuEmitConst(irl, 0);
@@ -1216,7 +1330,7 @@ NuCompileLookupDown(NuIrList *irl, AST *expr)
         // FIXME?? ASSUMES STACK GROWS UP!!!
         tmpreg1 = AstIdentifier("__interp_temp1");
         tmpreg2 = AstIdentifier("__interp_temp2");
-        
+
         /* NOTE!
            we have to evaluate the index before evaluating array elements
         */
@@ -1230,10 +1344,10 @@ NuCompileLookupDown(NuIrList *irl, AST *expr)
         NuEmitOp(irl, NU_OP_ADD_SP);
         NuCompileLhsAddress(irl, tmpreg2);
         NuEmitOp(irl, NU_OP_STREG);
-        
+
         idx = tmpreg1;
         arrid = tmpreg2;
-        
+
         // push the arguments onto the stack
         popsize = NuCompileExpression(irl, table);
         len = AstInteger(popsize);
@@ -1271,7 +1385,7 @@ NuCompileAlloca(NuIrList *irl, AST *siz) {
     if (n != 1) ERROR(siz, "too many values passed to alloca");
     NuEmitCommentedOp(irl, NU_OP_ADD_SP, "allocate stack space");
     NuCompileLhsAddress(irl, nu_stack_ptr);
-    NuEmitCommentedOp(irl, NU_OP_STREG, "update stack pointer"); 
+    NuEmitCommentedOp(irl, NU_OP_STREG, "update stack pointer");
 }
 
 /* compile freea(ptr): ptr is already on stack */
@@ -1317,7 +1431,7 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         NuIrOpcode storeOp, loadOp;
         bool isPostSet = (node->kind == AST_POSTSET);
         AST *ref = isPostSet ? node->left : node;
-        
+
         typ = ExprType(ref);
         if (!typ) {
             typ = ast_type_long;
@@ -1348,36 +1462,42 @@ NuCompileExpression(NuIrList *irl, AST *node) {
                 NuEmitOp(irl, storeOp);
             }
         }
-    } break;
+    }
+    break;
     case AST_FUNCCALL:
     {
         pushed = NuCompileFunCall(irl, node);
-    } break;
+    }
+    break;
     case AST_OPERATOR:
     {
         pushed = NuCompileOperator(irl, node);
-    } break;
+    }
+    break;
     case AST_MASKMOVE:
     {
         pushed = NuCompileMaskMove(irl, node);
-    } break;
+    }
+    break;
     case AST_ABSADDROF:
     case AST_ADDROF:
     {
         (void)NuCompileLhsAddress(irl, node->left); // don't care about load op, we will not use it
         pushed = 1;
-    } break;
+    }
+    break;
     case AST_DATADDROF:
     {
         pushed = NuCompileExpression(irl, node->left); // don't care about load op, we will not use it
         NuEmitCommentedAddress(irl, ModData(current)->datLabel, "DAT address");
         NuEmitCommentedOp(irl, NU_OP_ADD, "compute @@");
-    } break;
+    }
+    break;
     case AST_STRINGPTR:
     {
         NuIrLabel *tmpLabel;
         NuFunData *fdata = FunData(curfunc);
-        
+
         if (!fdata->dataLabel) {
             fdata->dataLabel = NuCreateLabel();
             flexbuf_init(&fdata->dataBuf, 256);
@@ -1386,7 +1506,8 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         StringBuildBuffer(&fdata->dataBuf, node->left);
         NuEmitAddress(irl, tmpLabel);
         pushed = 1;
-    } break;
+    }
+    break;
     case AST_CAST:
         return NuCompileExpression(irl, node->right);
     case AST_DECLARE_VAR:
@@ -1395,7 +1516,8 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         int n = NuCompileExpression(irl, node->left);
         NuCompileDrop(irl, n);
         return NuCompileExpression(irl, node->right);
-    } break;
+    }
+    break;
     case AST_GETLOW:
     case AST_GETHIGH: {
         int n = NuCompileExpression(irl, node->left);
@@ -1407,7 +1529,8 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         }
         NuCompileDrop(irl, n-1);
         pushed = 1;
-    } break;
+    }
+    break;
     case AST_ASSIGN:
         pushed = NuCompileAssign(irl, node, 1);
         break;
@@ -1419,13 +1542,16 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         NuEmitConst(irl, hw->addr);
         NuEmitOp(irl, NU_OP_LDREG);
         pushed = 1;
-    } break;
+    }
+    break;
     case AST_EXPRLIST: {
         pushed = NuCompileExprList(irl, node);
-    } break;
+    }
+    break;
     case AST_RESULT: {
         if (!curfunc->resultexpr) {
-            pushed = 1; NuEmitConst(irl, 0);
+            pushed = 1;
+            NuEmitConst(irl, 0);
         } else if (curfunc->resultexpr->kind != AST_RESULT) {
             pushed = NuCompileExpression(irl, curfunc->resultexpr);
         } else {
@@ -1433,12 +1559,14 @@ NuCompileExpression(NuIrList *irl, AST *node) {
             NuEmitOp(irl, NU_OP_LDL);
             pushed = 1;
         }
-    } break;
+    }
+    break;
     case AST_SELF: {
         NuEmitConst(irl, 0);
         NuEmitCommentedOp(irl, NU_OP_ADD_VBASE, "self");
         pushed = 1;
-    } break;
+    }
+    break;
     case AST_LOOKUP:
     case AST_LOOKDOWN:
         pushed = NuCompileLookupDown(irl, node);
@@ -1473,12 +1601,14 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         NuEmitCommentedOp(irl, NU_OP_SWAP, "get alloca base on top");
         NuCompileFreea(irl);
         break;
-    } break;
+    }
+    break;
     case AST_TRYENV: {
         //  allocate space on stack
         ERROR(node, "Cannot handle tryenv in expressions yet");
         pushed = 1;
-    } break;
+    }
+    break;
     case AST_SETJMP: {
         int needpop = 0;
         if (node->left) {
@@ -1497,30 +1627,34 @@ NuCompileExpression(NuIrList *irl, AST *node) {
             NuEmitCommentedOp(irl, NU_OP_STREG, "save abort result");
         }
         pushed = 1;
-    } break;
+    }
+    break;
     case AST_CATCHRESULT: {
         NuCompileLhsAddress(irl, nu_abortresult_ptr);
         NuEmitCommentedOp(irl, NU_OP_LDREG, "load last caught value");
         pushed = 1;
-    } break;
+    }
+    break;
     case AST_ALLOCA: {
         NuCompileAlloca(irl, node->right);
         pushed = 1;
-    } break;
+    }
+    break;
     case AST_CONSTANT: {
-      if (!IsConstExpr(node->left)) {
-          WARNING(node, "CONSTANT expression is not actually constant and will be evaluated at run time");
-      }
-      pushed = NuCompileExpression(irl, node->left);
-    } break;
-#if 0        
+        if (!IsConstExpr(node->left)) {
+            WARNING(node, "CONSTANT expression is not actually constant and will be evaluated at run time");
+        }
+        pushed = NuCompileExpression(irl, node->left);
+    }
+    break;
+#if 0
     case AST_VA_ARG: {
         AST *typ = ExprType(node->left);
         int siz = TypeSize(typ);
         AST *args = node->right;
         AST *incr;
         AST *fetch;
-        
+
         if (siz > 8) {
             ERROR(node, "large varargs not supported in nucode");
             siz = 8;
@@ -1529,8 +1663,9 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         pushed = NuCompileExpression(irl, fetch);
         incr = AstAssign(args, AstOperator('+', args, AstInteger(siz)));
         NuCompileAssign(irl, incr, 0);
-    } break;
-#endif        
+    }
+    break;
+#endif
     default:
         ERROR(node, "Unknown expression node %d", node->kind);
         return 1;
@@ -1569,7 +1704,7 @@ static void NuCompileInlineAsm(NuIrList *irl, AST *ast) {
     NuIrLabel *startLabel;
     NuFunData *fdata = FunData(curfunc);
     unsigned startPos, endPos;
-    
+
     if (!fdata->dataLabel) {
         fdata->dataLabel = NuCreateLabel();
         flexbuf_init(&fdata->dataBuf, 1024);
@@ -1603,7 +1738,7 @@ static void NuCompileForLoop(NuIrList *irl, AST *ast, int atleastonce) {
     AST *update;
     AST *body = 0;
     NuIrLabel *toplabel, *nextlabel, *exitlabel;
-    
+
     initstmt = ast->left;
     ast = ast->right;
     if (!ast || ast->kind != AST_TO) {
@@ -1642,7 +1777,7 @@ static void NuCompileForLoop(NuIrList *irl, AST *ast, int atleastonce) {
         NuEmitBranch(irl, NU_OP_BRA, toplabel);
     }
     NuEmitLabel(irl, exitlabel);
-    NuPopQuitNext();   
+    NuPopQuitNext();
 }
 
 static int NuDebugEval(AST *ast, int regNum, int *addr, void *ourArg) {
@@ -1681,7 +1816,8 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
         // TODO: When we implement __builtin_alloca(), we should restore the
         // stack after compiling the contents of the scope.
         NuCompileStmtlist(irl, ast->left);
-    } break;
+    }
+    break;
     case AST_ASSIGN:
         NuCompileAssign(irl, ast, 0);
         break;
@@ -1695,19 +1831,22 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
             NuEmitAddress(irl, lab);
             NuEmitOp(irl, NU_OP_GOSUB);
         }
-    } break;
+    }
+    break;
     case AST_GOTO: {
         NuIrLabel *lab = NuGetLabelFromSymbol( ast, GetUserIdentifierName(ast->left) );
         if (lab) {
             NuEmitBranch(irl, NU_OP_BRA, lab);
         }
-    } break;
+    }
+    break;
     case AST_LABEL: {
         NuIrLabel *lab = NuGetLabelFromSymbol( ast, GetUserIdentifierName(ast->left) );
         if (lab) {
             NuEmitLabel(irl, lab);
         }
-    } break;
+    }
+    break;
     case AST_JUMPTABLE: {
         NuIrLabel *jumptab = NuCreateLabel();
         NuIrLabel *op;
@@ -1718,14 +1857,18 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
         ast = ast->right;
         while (ast && ast->kind == AST_LISTHOLDER) {
             op = NuGetLabelFromSymbol( ast, GetUserIdentifierName(ast->left) );
-            if (op) { NuEmitBranch(irl, NU_OP_BRA, op); }
+            if (op) {
+                NuEmitBranch(irl, NU_OP_BRA, op);
+            }
             ast = ast->right;
         }
         if (!ast || ast->kind != AST_STMTLIST) {
-            ERROR(ast, "Expected statement list!"); break;
+            ERROR(ast, "Expected statement list!");
+            break;
         }
         NuCompileStmtlist(irl, ast);
-    } break;
+    }
+    break;
     case AST_IF: {
         NuIrLabel *elselbl = NuCreateLabel();
         NuIrLabel *bottomlbl;
@@ -1743,8 +1886,9 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
             bottomlbl = elselbl;
         }
         NuEmitLabel(irl, bottomlbl);
-    } break;
-        
+    }
+    break;
+
     case AST_WHILE:
         toploop = NuCreateLabel();
         botloop = NuCreateLabel();
@@ -1758,16 +1902,16 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
         break;
     case AST_DOWHILE:
         toploop = NuCreateLabel();
-	botloop = NuCreateLabel();
-	exitloop = NuCreateLabel();
-	NuPushQuitNext(exitloop, botloop);
-	NuEmitLabel(irl, toploop);
+        botloop = NuCreateLabel();
+        exitloop = NuCreateLabel();
+        NuPushQuitNext(exitloop, botloop);
+        NuEmitLabel(irl, toploop);
         NuCompileStmtlist(irl, ast->right);
-	NuEmitLabel(irl, botloop);
+        NuEmitLabel(irl, botloop);
         NuCompileBoolBranches(irl, ast->left, toploop, NULL);
-	NuEmitLabel(irl, exitloop);
-	NuPopQuitNext();
-	break;
+        NuEmitLabel(irl, exitloop);
+        NuPopQuitNext();
+        break;
     case AST_FOR:
     case AST_FORATLEASTONCE:
         NuCompileForLoop(irl, ast, ast->kind == AST_FORATLEASTONCE);
@@ -1775,18 +1919,18 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
     case AST_QUITLOOP:
     case AST_ENDCASE:  /* note: in C "break" gets translated as AST_ENDCASE */
         if (!quitlabel) {
-	    ERROR(ast, "loop exit statement outside of loop");
-	} else {
-	    NuEmitBranch(irl, NU_OP_BRA, quitlabel);
-	}
+            ERROR(ast, "loop exit statement outside of loop");
+        } else {
+            NuEmitBranch(irl, NU_OP_BRA, quitlabel);
+        }
         break;
     case AST_CONTINUE:
         if (!nextlabel) {
-	    ERROR(ast, "loop continue statement outside of loop");
-	} else {
-	    NuEmitBranch(irl, NU_OP_BRA, nextlabel);
-	}
-	break;
+            ERROR(ast, "loop continue statement outside of loop");
+        } else {
+            NuEmitBranch(irl, NU_OP_BRA, nextlabel);
+        }
+        break;
     case AST_YIELD:
         /* do nothing */
         break;
@@ -1848,7 +1992,8 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
         }
         NuEmitConst(irl, flag);
         NuEmitCommentedOp(irl, NU_OP_LONGJMP, "throw");
-    } break;
+    }
+    break;
     case AST_TRYENV: {
         NuCompileLhsAddress(irl, nu_abortchain_ptr);
         NuEmitCommentedOp(irl, NU_OP_LDREG, "save old abortchain ptr");
@@ -1866,15 +2011,17 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
         NuEmitCommentedOp(irl, NU_OP_STREG, "restore stack");
         NuCompileLhsAddress(irl, nu_abortchain_ptr);
         NuEmitCommentedOp(irl, NU_OP_STREG, "pop abortchain ptr");
-    } break;
+    }
+    break;
     case AST_BRKDEBUG: {
         int brkCode = AsmDebug_CodeGen(ast, NuDebugEval, (void *)irl);
         if (brkCode >= 0) {
             NuEmitConst(irl, brkCode);
             NuEmitOp(irl, NU_OP_BREAK);
         }
-    } break;
-#if 0        
+    }
+    break;
+#if 0
     case AST_VA_START: {
         AST *va_ident = AstIdentifier("__varargs");
         NuIrOpcode op;
@@ -1885,8 +2032,9 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
         }
         op = NuCompileLhsAddress(irl, ast->left);
         NuEmitOp(irl, op);
-    } break;
-#endif        
+    }
+    break;
+#endif
     default:
         ERROR(ast, "Unhandled node type %d in NuCompileStatement", ast->kind);
         break;
@@ -1897,12 +2045,12 @@ static void
 NuCompileFunction(Function *F) {
     NuIrList *irl;
     Function *saveFunc = curfunc;
-    
+
     curfunc = F;
 
     NuPrepareFunctionBedata(F);
     NormalizeVarOffsets(F);
-    
+
     // I think there's other body types so let's leave this instead of using ASSERT_AST_KIND
     if (!F->body) {
         DEBUG(NULL,"compiling function %s with no body...",F->name);
@@ -1940,10 +2088,10 @@ NuCompileFunction(Function *F) {
             copymem = NewAST(AST_FUNCCALL, AstIdentifier("bytemove"), args);
             copymem = NewAST(AST_STMTLIST, copymem, NULL);
 
-	    // super := vbase
+            // super := vbase
             supervar = AstAssign(supervar, AstIdentifier("__interp_vbase"));
             supervar = NewAST(AST_STMTLIST, supervar, NULL);
-            
+
             // vbase := result
             args = AstAssign(AstIdentifier("__interp_vbase"), tempvar);
             args = NewAST(AST_STMTLIST, args, F->body);
@@ -1964,7 +2112,7 @@ NuCompileFunction(Function *F) {
         //NuEmitConst(irl, NumArgLongs(F));
         NuEmitConst(irl, NumLocalLongs(F));
         NuEmitOp(irl, NU_OP_ENTER);
-        
+
         NuCompileStmtlist(irl, F->body);
         // emit function epilogue
         //NuEmitLabel(irl, FunData(F)->exitLabel);
@@ -2050,10 +2198,10 @@ static int NuCompileObject(void *vptr, Module *P) {
 
     NuPrepareModuleBedata(P);
     if (ModData(P)->isCompiled) return 0; // already done
-    
+
     flexbuf_printf(fb, "'--- Object: %s\n", P->classname);
 
-        /* compile DAT block */
+    /* compile DAT block */
     if (P->datblock) {
         // Got DAT block
         // TODO pass through listing data
@@ -2066,7 +2214,7 @@ static int NuCompileObject(void *vptr, Module *P) {
         OutputAlignLong(&datBuf);
         //NuOutputLabelNL(fb, ModData(P)->datLabel); // actually done by OutputDataBlob
         OutputDataBlob(fb, &datBuf, &datRelocs, NuLabelName(ModData(P)->datLabel));
-        
+
         flexbuf_delete(&datRelocs);
         flexbuf_delete(&datBuf);
     }
@@ -2090,7 +2238,7 @@ static void NuAddHeap(ByteOutputBuffer *bob, Module*P) {
     if (! (gl_features_used & FEATURE_NEED_HEAP)) return;
     if (!objsym) return;
     if (!sym || sym->kind != SYM_LABEL) return;
-    
+
     L = (Label *)sym->v.ptr;
     int off = L->hubval;
     //off += BCgetDAToffset(systemModule,true,NULL,false);
@@ -2124,7 +2272,7 @@ void OutputNuCode(const char *asmFileName, Module *P)
     nu_abortchain_ptr = AstIdentifier("__interp_abortchain");
     nu_abortresult_ptr = AstIdentifier("__interp_abortresult");
     NuIrInit(&nuContext);
-    
+
     if (!P->functions) {
         ERROR(NULL, "Top level module has no functions");
         return;
@@ -2136,12 +2284,12 @@ void OutputNuCode(const char *asmFileName, Module *P)
     // optimize and prepare for bytecode assignment
     VisitRecursive(&globalList, P, NuRevisitFunctions, VISITFLAG_BC_OPTIMIZE);
     VisitRecursive(&globalList, systemModule, NuRevisitFunctions, VISITFLAG_BC_OPTIMIZE);
-    
+
     // create bytecodes
     NuCreateBytecodes(globalList);
 
     flexbuf_init(&asmFb, 512);
-    
+
     // find main entry point
     Function *mainFunc = GetMainFunction(P);
     if (!mainFunc) {
@@ -2155,7 +2303,7 @@ void OutputNuCode(const char *asmFileName, Module *P)
         return;
     }
     uint32_t clkfreq, clkmode;
-    
+
     // set entry point and other significant variables
     if (!GetClkFreq(P, &clkfreq, &clkmode)) {
         clkfreq = 160000000;
@@ -2167,14 +2315,14 @@ void OutputNuCode(const char *asmFileName, Module *P)
     nuContext.initSp = NuCreateLabel();
     nuContext.initObj = NuCreateLabel();
     nuContext.varSize = (P->varsize + 3) & ~3;
-    
+
     // create & prepend interpreter
     NuOutputInterpreter(&asmFb, &nuContext);
-    
+
     // compile objects to PASM
     VisitRecursive(&asmFb, P, NuCompileObject, VISITFLAG_EMITDAT);
     VisitRecursive(&asmFb, systemModule, NuCompileObject, VISITFLAG_EMITDAT);
-    
+
     // finish -- heap could go here too
     NuOutputFinish(&asmFb, &nuContext);
 
