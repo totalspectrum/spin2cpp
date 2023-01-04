@@ -9,7 +9,7 @@ GetLabelOperand(const char *name, bool inFcache)
 
     name = NewTempLabelName();
     if (inFcache) {
-        op = NewOperand(IMM_COG_LABEL, name, 0);        
+        op = NewOperand(IMM_COG_LABEL, name, 0);
     } else if (curfunc && curfunc->code_placement == CODE_PLACE_HUB) {
         op = NewOperand(IMM_HUB_LABEL, name, 0);
     } else {
@@ -77,7 +77,7 @@ Operand *ImmediateRef(int immflag, intptr_t val)
         return NewOperand(REG_HW, strdup(buf), 0);
     }
 }
-    
+
 //
 // compile an expression as an inline asm operand
 //
@@ -87,7 +87,7 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
     Operand *r = NULL;
     int r_address = 0;
     int32_t v;
-    
+
     if (expr->kind == AST_IMMHOLDER || expr->kind == AST_BIGIMMHOLDER) {
         immflag = 1;
         expr = expr->left;
@@ -165,7 +165,7 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
                 break;
             case SYM_CONSTANT:
                 v = EvalPasmExpr(expr);
-                
+
                 /*  if (!immflag) {
                     WARNING(expr, "symbol %s used without #", sym->user_name);
                     } */
@@ -248,7 +248,7 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
                 offset = EvalConstExpr(rhs->left);
             }
         }
-        r = GetOneGlobal(REG_HW, hw->name, 0);        
+        r = GetOneGlobal(REG_HW, hw->name, 0);
         *effects |= (offset << OPEFFECT_OFFSET_SHIFT);
         return r;
     } else if (expr->kind == AST_OPERATOR) {
@@ -309,7 +309,7 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
             }
         }
     }
-    
+
     ERROR(expr, "Operand too complex for inline assembly");
     return NULL;
 }
@@ -333,7 +333,7 @@ CompileInlineInstr_only(IRList *irl, AST *ast)
     uint32_t effectFlags = 0;
     uint32_t ival;
     uint32_t condbits;
-    
+
     while (ast && ast->kind != AST_INSTR) {
         ast = ast->right;
     }
@@ -348,7 +348,7 @@ CompileInlineInstr_only(IRList *irl, AST *ast)
     /* parse operands and put them in place */
     ival = instr->binary;
     ival |= (gl_p2) ? (0xf<<28) : (0xf<<18); // set initial condition flags
-    
+
     numoperands = DecodeAsmOperands(instr, ast, operands, opimm, &ival, &effectFlags);
     /* replace wcz with wc,wz if we can, to make the optimizer's job
        easier */
@@ -370,7 +370,7 @@ CompileInlineInstr_only(IRList *irl, AST *ast)
     } else {
         ir->cond = (IRCond)(condbits^15);
     }
-    
+
     if (numoperands < 0) {
         return NULL;
     }
@@ -451,7 +451,7 @@ FixupHereLabel(IRList *irl, IR *firstir, int addr, Operand *dst)
               (unsigned long)-dst->val);
         return NewImmediate(0);
     }
-    
+
     for (jir = firstir; jir; jir = jir->next) {
         if (jir->addr == addr) {
             Operand *newlabel = GetLabelOperand(NULL, false);
@@ -468,7 +468,7 @@ FixupHereLabel(IRList *irl, IR *firstir, int addr, Operand *dst)
         ERROR(NULL, "pc relative address $ + %lu in inline assembly is out of range",
               (unsigned long)dst->val);
     }
-        
+
     return NewImmediate(0);;
 }
 
@@ -498,7 +498,7 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
     bool isConst = asmFlags & INLINE_ASM_FLAG_CONST;
     bool isInFcache = false;
     bool ptraSaved = false;
-    
+
     if (!curfunc) {
         ERROR(origtop, "Internal error, no context for inline assembly");
         return;
@@ -547,7 +547,7 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
             AddSymbol(&curfunc->localsyms, ast->d.string, SYM_LOCALLABEL, labelop, NULL);
         }
     }
-    
+
     // now go back and emit code
     top = origtop;
     relpc = 0;
@@ -557,7 +557,7 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
         if (gl_p2) {
             AppendIR(irl, org0);
         }
-    }        
+    }
     firstir = NULL;
     while(top) {
         ast = top;

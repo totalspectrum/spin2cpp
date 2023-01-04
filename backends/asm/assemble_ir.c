@@ -1,7 +1,7 @@
 /*
  * Spin to C/C++ translator
  * Copyright 2016-2022 Total Spectrum Software Inc.
- * 
+ *
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
  * +--------------------------------------------------------------------
@@ -92,7 +92,7 @@ static const char *RemappedName(const char *name)
     Symbol *sym;
     unsigned num;
     static char buf[MAX_BUF];
-    
+
     if (!mayRemap(name))
         return QuotedName(name);
     sym = FindSymbol(&localLabelMap, name);
@@ -113,13 +113,13 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
     int opoffset;
     int skipimm;
     unsigned effect = (unsigned)effect_orig;
-    
+
     opoffset = ((int)effect) >> OPEFFECT_OFFSET_SHIFT;
     effect &= ~(OPEFFECT_OFFSET_MASK);
 
     skipimm = ((int)effect) & OPEFFECT_NOIMM;
     effect &= ~(OPEFFECT_NOIMM);
-    
+
     usehubaddr = effect & OPEFFECT_FORCEHUB;
     effect &= ~(OPEFFECT_FORCEHUB);
     if (gl_p2) {
@@ -162,7 +162,7 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
             } else {
                 sprintf(temp, "%d", (int)(int32_t)reg->val);
                 flexbuf_addstr(fb, temp);
-            }            
+            }
         } else {
             // the immediate actually got processed as a register
             flexbuf_addstr(fb, RemappedName(reg->name));
@@ -209,15 +209,15 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
                 flexbuf_addstr(fb, "@");
             }
         }
-        
+
         flexbuf_addstr(fb, RemappedName(reg->name));
         break;
     default:
-         if (!useabsaddr) {
+        if (!useabsaddr) {
             useimm = 0;
         }
-        /* fall through */
-   case IMM_COG_LABEL:
+    /* fall through */
+    case IMM_COG_LABEL:
         if (useimm && !skipimm) {
             flexbuf_addstr(fb, "#");
             if (useabsaddr) {
@@ -277,7 +277,7 @@ void
 PrintOperandAsValue(struct flexbuf *fb, Operand *reg)
 {
     Operand *indirect;
-    
+
     switch (reg->kind) {
     case IMM_INT:
         flexbuf_printf(fb, "%d", (int)(int32_t)reg->val);
@@ -298,7 +298,7 @@ PrintOperandAsValue(struct flexbuf *fb, Operand *reg)
         } else {
             flexbuf_addstr(fb, "@@@");
         }
-        // fall through
+    // fall through
     case IMM_COG_LABEL:
         flexbuf_addstr(fb, RemappedName(reg->name));
         break;
@@ -308,7 +308,7 @@ PrintOperandAsValue(struct flexbuf *fb, Operand *reg)
         int c;
         int needquote = 1;
         int needcomma = 0;
-        
+
         while ( (c = *s++) != 0) {
             if (c < 0x20 || c >= 0x7f || c == '\"') {
                 if (needquote == 0) {
@@ -353,25 +353,25 @@ PrintCond(struct flexbuf *fb, IRCond cond)
 {
     switch (cond) {
     case COND_TRUE:
-      break;
+        break;
     case COND_EQ:
-      flexbuf_addstr(fb, " if_e");
-      break;
+        flexbuf_addstr(fb, " if_e");
+        break;
     case COND_NE:
-      flexbuf_addstr(fb, " if_ne");
-      break;
+        flexbuf_addstr(fb, " if_ne");
+        break;
     case COND_LT:
-      flexbuf_addstr(fb, " if_b");
-      break;
+        flexbuf_addstr(fb, " if_b");
+        break;
     case COND_GE:
-      flexbuf_addstr(fb, " if_ae");
-      break;
+        flexbuf_addstr(fb, " if_ae");
+        break;
     case COND_GT:
-      flexbuf_addstr(fb, " if_a");
-      break;
+        flexbuf_addstr(fb, " if_a");
+        break;
     case COND_LE:
-      flexbuf_addstr(fb, " if_be");
-      break;
+        flexbuf_addstr(fb, " if_be");
+        break;
     // case COND_C:
     //   flexbuf_addstr(fb, " if_c");
     //   break;
@@ -382,33 +382,33 @@ PrintCond(struct flexbuf *fb, IRCond cond)
     //   flexbuf_addstr(fb, " if_nc_and_nz");
     //   break;
     case COND_NC_AND_Z:
-      flexbuf_addstr(fb, " if_nc_and_z");
-      break;        
+        flexbuf_addstr(fb, " if_nc_and_z");
+        break;
     case COND_C_AND_NZ:
-      flexbuf_addstr(fb, " if_c_and_nz");
-      break;
+        flexbuf_addstr(fb, " if_c_and_nz");
+        break;
     case COND_C_AND_Z:
-      flexbuf_addstr(fb, " if_c_and_z");
-      break;        
+        flexbuf_addstr(fb, " if_c_and_z");
+        break;
     case COND_C_OR_NZ:
-      flexbuf_addstr(fb, " if_c_or_nz");
-      break;        
+        flexbuf_addstr(fb, " if_c_or_nz");
+        break;
     case COND_NC_OR_NZ:
-      flexbuf_addstr(fb, " if_nc_or_nz");
-      break;        
+        flexbuf_addstr(fb, " if_nc_or_nz");
+        break;
     case COND_NC_OR_Z:
-      flexbuf_addstr(fb, " if_nc_or_z");
-      break;        
+        flexbuf_addstr(fb, " if_nc_or_z");
+        break;
     case COND_C_EQ_Z:
-      flexbuf_addstr(fb, " if_c_eq_z");
-      break;
+        flexbuf_addstr(fb, " if_c_eq_z");
+        break;
     case COND_C_NE_Z:
-      flexbuf_addstr(fb, " if_c_ne_z");
-      break;
+        flexbuf_addstr(fb, " if_c_ne_z");
+        break;
     default:
-      ERROR(NULL, "Internal error, unexpected condition");
-      flexbuf_addstr(fb, " if_??");
-      break;
+        ERROR(NULL, "Internal error, unexpected condition");
+        flexbuf_addstr(fb, " if_??");
+        break;
     }
     flexbuf_addchar(fb, '\t');
 }
@@ -469,7 +469,7 @@ OutputDataBlob(Flexbuf *fb, Flexbuf *databuf, Flexbuf *relocbuf, const char *sta
         int bytesPending = len - addr;
         int bytesToReloc;
 
-    again:
+again:
         if (relocs > 0) {
             bytesToReloc = nextreloc->addr - addr;
             if (bytesToReloc == 0) {
@@ -477,7 +477,7 @@ OutputDataBlob(Flexbuf *fb, Flexbuf *databuf, Flexbuf *relocbuf, const char *sta
                 uint32_t baseWord;
                 Symbol *sym;
                 const char *symname;
-                
+
                 // we have to output a relocation or debug entry now
                 if (nextreloc->kind == RELOC_KIND_DEBUG) {
                     LineInfo *info = (LineInfo *)nextreloc->sym;
@@ -581,7 +581,9 @@ OutputDataBlob(Flexbuf *fb, Flexbuf *databuf, Flexbuf *relocbuf, const char *sta
         bytesPending--;
         while (bytesPending > 0) {
             flexbuf_printf(fb, ", $%02x", data[0]);
-            data++; addr++; --bytesPending;
+            data++;
+            addr++;
+            --bytesPending;
         }
         flexbuf_printf(fb,"\n");
     }
@@ -603,7 +605,7 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op, Module *P)
     Flexbuf *databuf;
     Flexbuf *relocbuf;
     const char *baseLabel;
-    
+
     if (op->kind != IMM_BINARY) {
         ERROR(NULL, "Internal: bad binary blob");
         return;
@@ -677,15 +679,15 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
 
         flexbuf_printf(fb, "pub __cognew%s : r\n", noargs);
         flexbuf_addstr(fb, "  return __coginit(-1)\n\n");
-                       
+
         flexbuf_addstr(fb, "'' Code to stop the remote COG\n");
         flexbuf_printf(fb, "pub __cogstop%s\n", noargs);
         flexbuf_addstr(fb, "  if __cognum\n");
         flexbuf_printf(fb, "    __lock%s  ' wait until everyone else is finished\n", noargs);
         flexbuf_addstr(fb, "    cogstop(__cognum~ - 1)\n");
-	flexbuf_addstr(fb, "    __mbox[0] := 0\n");
-	flexbuf_addstr(fb, "    __cognum := 0\n\n");
-        
+        flexbuf_addstr(fb, "    __mbox[0] := 0\n");
+        flexbuf_addstr(fb, "    __cognum := 0\n\n");
+
         flexbuf_addstr(fb, "'' Code to lock access to the PASM COG\n");
         flexbuf_addstr(fb, "'' The idea here is that (in theory) multiple Spin bytecode threads might\n");
         flexbuf_addstr(fb, "'' want access to the PASM COG, so this lock makes sure they don't step on each other.\n");
@@ -729,7 +731,7 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
         flexbuf_addstr(fb, "'' So the compiler inserts a chain of fixups, with each entry having the Spin\n");
         flexbuf_addstr(fb, "'' relative address in the low word, and a pointer to the next fixup in the high word.\n");
         flexbuf_addstr(fb, "'' This code follows that chain and adjusts the relative addresses to absolute ones.\n");
-        
+
         flexbuf_printf(fb, "pri __fixup_addresses%s | ptr, nextptr, temp\n", noargs);
         flexbuf_addstr(fb, "  ptr := __fixup_ptr[0]\n");
         flexbuf_addstr(fb, "  repeat while (ptr)      ' the fixup chain is terminated with a 0 pointer\n");
@@ -744,7 +746,7 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
         flexbuf_addstr(fb, "'--------------------------------------------------\n");
         flexbuf_addstr(fb, "' Stub functions to perform remote calls to the COG\n");
         flexbuf_addstr(fb, "'--------------------------------------------------\n\n");
-        
+
         // now we have to create the stub functions
         for (f = P->functions; f; f = f->next) {
             if (f->is_public) {
@@ -814,7 +816,7 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
     } else {
         flexbuf_addstr(fb, "pub main\n");
         flexbuf_addstr(fb, "  coginit(0, @entry, 0)\n");
-    }        
+    }
 }
 
 // print a compressed local call to "labelStr"
@@ -930,8 +932,8 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                 flexbuf_printf(fb, "\tcoginit\tpa,##$%x\n", P2_HUB_BASE + 4);
                 flexbuf_printf(fb, "\torgh\t$%x\n", P2_CONFIG_BASE);
                 flexbuf_printf(fb, "\tlong\t0\t'reserved\n");
-                flexbuf_printf(fb, "\tlong\t0 ' clock frequency: will default to %d\n", clkfreq); 
-                flexbuf_printf(fb, "\tlong\t0 ' clock mode: will default to $%x\n", clkreg); 
+                flexbuf_printf(fb, "\tlong\t0 ' clock frequency: will default to %d\n", clkfreq);
+                flexbuf_printf(fb, "\tlong\t0 ' clock mode: will default to $%x\n", clkreg);
                 flexbuf_printf(fb, "\torgh\t$%x\n", P2_HUB_BASE);
                 flexbuf_printf(fb, " _ret_\tmov\tresult1, #0\n");
             }
@@ -1140,7 +1142,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                 if (gl_lmm_kind == LMM_KIND_COMPRESS) {
                     PrintCompressCondJump(fb, ir->cond, ir->dst);
                     return;
-                }                    
+                }
                 PrintCond(fb, ir->cond);
                 // if we know the destination we may be able to optimize
                 // the branch
@@ -1255,7 +1257,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
             if (gl_p2 && ((FLAG_WC|FLAG_WZ) == (ccset & (FLAG_WC|FLAG_WZ)))) {
                 flexbuf_printf(fb, "%swcz", sepstring);
                 sepstring = ",";
-            } else { 
+            } else {
                 if (ccset & FLAG_WC) {
                     flexbuf_printf(fb, "%swc", sepstring);
                     sepstring = ",";
@@ -1285,7 +1287,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                 flexbuf_printf(fb, "%sxorz", sepstring);
             }
         }
-#if 0        
+#if 0
         if (ir->flags & FLAG_KEEP_INSTR) {
             flexbuf_printf(fb, " '' (volatile)");
         }
@@ -1293,7 +1295,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         flexbuf_addstr(fb, "\n");
         return;
     }
-    
+
     switch(ir->opc) {
     case OPC_LIVE:
         /* no code necessary, internal opcode */
@@ -1303,7 +1305,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         break;
     case OPC_LITERAL:
         PrintOperand(fb, ir->dst);
-	break;
+        break;
     case OPC_LABEL:
         flexbuf_addstr(fb, RemappedName(ir->dst->name));
         flexbuf_addstr(fb, "\n");
@@ -1317,9 +1319,9 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
     case OPC_LONG:
     case OPC_STRING:
         flexbuf_addchar(fb, '\t');
-	flexbuf_addstr(fb, StringFor(ir->opc));
-	flexbuf_addstr(fb, "\t");
-	PrintOperandAsValue(fb, ir->dst);
+        flexbuf_addstr(fb, StringFor(ir->opc));
+        flexbuf_addstr(fb, "\t");
+        PrintOperandAsValue(fb, ir->dst);
         if (ir->src) {
             // repeat count
             flexbuf_addstr(fb, "[");
@@ -1327,7 +1329,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
             flexbuf_addstr(fb, "]");
         }
         flexbuf_addstr(fb, "\n");
-	break;
+        break;
     case OPC_RESERVE:
         flexbuf_printf(fb, "\tres\t");
         PrintOperandAsValue(fb, ir->dst);
@@ -1374,7 +1376,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         flexbuf_printf(fb, "\torg\t");
         if (ir->dst) {
             PrintOperandAsValue(fb, ir->dst);
-        }            
+        }
         flexbuf_printf(fb, "\n");
         break;
     case OPC_ORGF:
@@ -1417,7 +1419,7 @@ RenameLabels(IRList *list)
     IR *ir;
     Symbol *sym;
     uintptr_t labelValue = 1;
-    
+
     for (ir = list->head; ir; ir = ir->next) {
         if (ir->opc == OPC_LABEL) {
             const char *name = ir->dst->name;
@@ -1442,7 +1444,7 @@ doIRAssemble(IRList *list, Module *P, int flags)
     IR *ir;
     struct flexbuf fb;
     char *ret;
-    
+
     inDat = 0;
     inCon = 0;
     didOrg = 0;
@@ -1451,7 +1453,7 @@ doIRAssemble(IRList *list, Module *P, int flags)
         lmmMode = 0;
         RenameLabels(list);
     }
-    
+
     if (gl_p2 && gl_output != OUTPUT_COGSPIN) {
         didPub = 1; // we do not want pub declaration in P2 code
     }
