@@ -1,7 +1,7 @@
 /*
  * Spin to C/C++ translator
  * Copyright 2011-2022 Total Spectrum Software Inc.
- * 
+ *
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
  * +--------------------------------------------------------------------
@@ -66,9 +66,9 @@ static void
 makeClassNameSafe(Module *P)
 {
     // check for conflict with C reserved word */
-    if ( Is_C_Reserved(P->classname) 
-         || (0 != FindSymbolExact(&P->objsyms, P->classname))
-        )
+    if ( Is_C_Reserved(P->classname)
+            || (0 != FindSymbolExact(&P->objsyms, P->classname))
+       )
     {
         NormalizeIdentifier(P->classname);
     }
@@ -106,7 +106,7 @@ InitGlobalModule(void)
     int oldtmpnum;
     int saveyydebug;
     const char *syscode = "";
-    
+
     current = systemModule = NewModule("_system_", LANG_SPIN_SPIN1);
     table = &systemModule->objsyms;
 
@@ -136,15 +136,15 @@ InitGlobalModule(void)
             sym = AddSymbol(table, "__interp_abortchain", SYM_VARIABLE, ast_type_ptr_long, NULL);
             sym->flags |= SYMF_GLOBAL;
             sym->offset = -0x1e4; // gives COG address
-            
+
             sym = AddSymbol(table, "__interp_abortresult", SYM_VARIABLE, ast_type_ptr_long, NULL);
             sym->flags |= SYMF_GLOBAL;
             sym->offset = -0x1e5; // gives COG address
-            
+
             sym = AddSymbol(table, "__interp_super", SYM_VARIABLE, ast_type_ptr_long, NULL);
             sym->flags |= SYMF_GLOBAL;
             sym->offset = -0x1e6; // gives COG address
-            
+
             sym = AddSymbol(table, "__interp_temp1", SYM_VARIABLE, ast_type_generic, NULL);
             sym->flags |= SYMF_GLOBAL;
             sym->offset = -0x1ea; // special flag for COG internal memory
@@ -167,16 +167,16 @@ InitGlobalModule(void)
         sym->flags |= SYMF_GLOBAL;
         sym->offset = P2_CONFIG_BASE+0xc;
     }
-    
+
     /* compile inline assembly */
     if (gl_output == OUTPUT_ASM || gl_output == OUTPUT_COGSPIN || gl_output == OUTPUT_BYTECODE) {
         int old_normalize = gl_normalizeIdents;
-        
+
         /* set up temporary variable processing */
         oldtmpnum = SetTempVariableBase(90000, 0);
         saveyydebug = spinyydebug;  // do not show parser debug output for system
         spinyydebug = 0;
-        
+
         // add in processor specific code
         if (gl_output == OUTPUT_BYTECODE) {
             switch (gl_interp_kind) {
@@ -250,7 +250,7 @@ InferTypeFromName(AST *identifier)
 {
     const char *name;
     const char *suffix;
-    
+
     if (identifier->kind == AST_ASSIGN) {
         identifier = identifier->left;
     }
@@ -278,27 +278,27 @@ InferTypeFromName(AST *identifier)
     case '#':
         return ast_type_float;
     default:
-        {
-            Symbol *sym = GetCurImplicitTypes();
-            uint32_t typemask = 0;
-            uint32_t firstlet;
-            uint32_t checkmask;
-            firstlet = toupper(name[0]);
-            if (firstlet >= 'A' && firstlet <= 'Z') {
-                checkmask = 1U << (firstlet - 'A');
-            } else {
-                return ast_type_long;
-            }
-            if (sym->kind != SYM_CONSTANT) {
-                ERROR(identifier, "bad default type information");
-            } else {
-                typemask = EvalConstExpr((AST *)sym->v.ptr);
-            }
-            if (typemask & checkmask) {
-                return ast_type_float;
-            }
+    {
+        Symbol *sym = GetCurImplicitTypes();
+        uint32_t typemask = 0;
+        uint32_t firstlet;
+        uint32_t checkmask;
+        firstlet = toupper(name[0]);
+        if (firstlet >= 'A' && firstlet <= 'Z') {
+            checkmask = 1U << (firstlet - 'A');
+        } else {
             return ast_type_long;
         }
+        if (sym->kind != SYM_CONSTANT) {
+            ERROR(identifier, "bad default type information");
+        } else {
+            typemask = EvalConstExpr((AST *)sym->v.ptr);
+        }
+        if (typemask & checkmask) {
+            return ast_type_float;
+        }
+        return ast_type_long;
+    }
     }
 }
 
@@ -352,7 +352,7 @@ InitBasicData(Module *P)
 
     // Add a definition for __basic_data_ptr
     MaybeDeclareMemberVar(P, varname, ast_type_string, 0, NORMAL_VAR);
-    
+
     // now add in an initializer
     init = AstAssign(varname,
                      NewAST(AST_ADDROF, labelref, NULL));
@@ -370,7 +370,7 @@ ProcessModule(Module *P)
 
     current = P;
     P->botcomment = GetComments();
-    
+
     if (P->body) {
         AST *funcdecl = NewAST(AST_FUNCDECL, AstIdentifier("program"), NULL);
         AST *funcvars = NewAST(AST_FUNCVARS, NULL, NULL);
@@ -383,7 +383,7 @@ ProcessModule(Module *P)
         DeclareFunction(P, ast_type_void, 1, funcdef, P->body, NULL, NULL);
         P->body = NULL;
     }
-    
+
     /* now declare all the symbols that weren't already declared */
     DeclareConstants(P, &P->conblock);
     ProcessConstants(P);
@@ -422,7 +422,7 @@ static void
 doparse(int language)
 {
     ASTReportInfo saveinfo;
-    
+
     AstReportAs(NULL, &saveinfo); // reset error tracking
     if (IsBasicLang(language)) {
         basicyydebug = spinyydebug;
@@ -482,7 +482,7 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
     const char *fullName = NULL;
     char *shortName = NULL;
     bool needExtension = false;
-    
+
     // check language to process
     langptr = strrchr(name, '.');
     if (langptr) {
@@ -500,15 +500,15 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
             }
         }
         if (!strcmp(langptr, ".bas")
-            || !strcmp(langptr, ".basic")
-            || !strcmp(langptr, ".bi")
-            )
+                || !strcmp(langptr, ".basic")
+                || !strcmp(langptr, ".bi")
+           )
         {
             language = LANG_BASIC_FBASIC;
         } else if (!strcmp(langptr, ".c")
                    || !strcmp(langptr, ".h")
                    || !strcmp(langptr, ".a")
-            )
+                  )
         {
             language = LANG_CFAMILY_C;
         } else if (!strcmp(langptr, ".cpp")
@@ -517,7 +517,7 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
                    || !strcmp(langptr, ".c++")
                    || !strcmp(langptr, ".hpp")
                    || !strcmp(langptr, ".hh")
-            )
+                  )
         {
             language = LANG_CFAMILY_CPP;
         }
@@ -614,7 +614,7 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
             return P;
         }
     }
-    
+
     f = fopen(fname, "r");
     if (!f) {
         fprintf(stderr, "Unable to open file `%s': ", fname);
@@ -632,7 +632,7 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
             P->basename = NewTemporaryVariable(P->basename, NULL);
             P->classname = NewTemporaryVariable(P->classname, NULL);
             P->objparams = paramlist;
-        }       
+        }
     }
     P->curLanguage = language;
     if (gl_printprogress) {
@@ -651,7 +651,7 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
         printf("%s\n", tail);
         gl_depth++;
     }
-    
+
     /* if we have already visited this file, skip it */
     /* also finds the last element in the list, so we can append to
        the list easily */
@@ -683,7 +683,7 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
         currentTypes->flags = SYMTAB_FLAG_NOCASE;
     }
     AddSymbol(&P->objsyms, fname, SYM_FILE, (void *)0, NULL);
-    
+
     if (gl_preprocess) {
         void *defineState;
 
@@ -701,7 +701,7 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
             }
             argv[argc++] = fname;
             argv[argc] = NULL;
-            
+
             mcpp_use_mem_buffers(1);
             r = mcpp_lib_main(argc, argv);
             errString = mcpp_get_mem_buffer(ERR);
@@ -733,7 +733,7 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
             pp_restore_define_state(&gl_pp, defineState);
         }
         strToLex(NULL, parseString, fname, language);
-	doparse(language);
+        doparse(language);
         free(parseString);
     } else {
         fileToLex(NULL, f, fname, language);
@@ -831,7 +831,7 @@ CheckUnusedMethods(int isBinary)
     Module *P;
     Function *pf;
     Module *savecurrent = current;
-    
+
     // mark everything unused
     for (P = allparse; P; P = P->next) {
         if (P->funcblock) {
@@ -910,7 +910,7 @@ RemoveUnusedMethods(int isBinary)
     Module *saveCur;
     int keep;
     int keepAll;
-    
+
     keepAll = (gl_output == OUTPUT_CPP || gl_output == OUTPUT_C);
     keep = keepAll || (0 == (gl_optimize_flags & OPT_REMOVE_UNUSED_FUNCS));
 
@@ -923,7 +923,7 @@ RemoveUnusedMethods(int isBinary)
             pf->callSites = 0;
         }
     }
-    
+
     if (isBinary && !keep) {
         MarkUsed(GetMainFunction(allparse), "__root__");
     } else {
@@ -951,7 +951,7 @@ RemoveUnusedMethods(int isBinary)
         current = P;
         MarkStaticFunctionPointers(P->datblock);
         current = saveCur;
-        
+
     }
     // mark all functions called via pointers
     for (P = allparse; P; P = P->next) {
@@ -961,7 +961,7 @@ RemoveUnusedMethods(int isBinary)
             }
         }
     }
-    
+
     // Now remove the ones that are never called
     for (P = allparse; P; P = P->next) {
         doPruneMethods(P);
@@ -990,7 +990,7 @@ ResolveSymbols()
     Module *Q, *savecurrent;
     Function *pf;
     int changes = 0;
-    
+
     savecurrent = current;
     for (Q = allparse; Q; Q = Q->next) {
         if (Q->funcblock) {
@@ -1087,7 +1087,7 @@ FixupFuncData(Module *P)
                     ERROR(name, "Internal error, unable to find symbol");
                     break;
                 }
-                
+
                 table = decl->right;
                 if (table->kind != AST_EXPRLIST) {
                     ERROR(table, "Internal error, expected expression list");
@@ -1132,16 +1132,16 @@ InsertInitCall(Function *f, Module *Q)
     const char *name = "__init__";
     Function *pf;
     AST *ident, *classtype, *expr;
-    
+
     AstReportAs(f->body, &saveinfo); // reset error tracking
-    
+
     // check that the function is static
     sym = LookupSymbolInTable(&Q->objsyms, name);
     if (!sym || !(sym->kind == SYM_FUNCTION)) {
         ERROR(f->body, "function %s not found in class %s", name, Q->classname);
         return;
     }
-    
+
     pf = (Function *)sym->v.ptr;
     if (!pf->is_static) {
         WARNING(pf->body, "initialization function %s is not static", name);
@@ -1195,14 +1195,14 @@ FixupCode(Module *P, int isBinary)
     if (gl_errors >= gl_max_errors) {
         return;
     }
-    
+
     for (Q = allparse; Q; Q = Q->next) {
         if (Q->functions) {
             DoHighLevelOptimize(Q);
         }
         if (gl_errors) return;
     }
-    
+
     do {
         CheckUnusedMethods(isBinary);
         changes = ResolveSymbols();
@@ -1213,7 +1213,7 @@ FixupCode(Module *P, int isBinary)
     }
     RemoveUnusedMethods(isBinary);
     doTypeInference();
-    
+
     for (Q = allparse; Q; Q = Q->next) {
         PerformCSE(Q);
     }
@@ -1222,7 +1222,7 @@ FixupCode(Module *P, int isBinary)
     for (Q = allparse; Q; Q = Q->next) {
         FixupFuncData(Q);
     }
-    
+
     // see if we need a heap for garbage collection
     {
         bool need_heap = false;
@@ -1301,14 +1301,14 @@ FixupCode(Module *P, int isBinary)
     current = GetTopLevelModule();
     FixupOffsets(allparse);
 
-#if 0    
+#if 0
     /* sanity check: obsolete now that FixupOffsets is done */
     for (Q = allparse; Q; Q = Q->next) {
         if (Q->varsize_used_valid && Q->varsize_used != Q->varsize) {
             ERROR(NULL, "Internal error in module %s: varsize=%d but was %d when used in OBJ", Q->classname, Q->varsize, Q->varsize_used);
         }
     }
-#endif    
+#endif
 }
 
 Module *
@@ -1317,7 +1317,7 @@ ParseTopFiles(const char *argv[], int argc, int outputBin)
     const char *name;
     Module *P = NULL;
     int is_dup = 0; // not really used
-    
+
     current = allparse = NULL;
 
     while (argc > 0) {
@@ -1338,7 +1338,7 @@ GetMainFunction(Module *P)
 {
     const char *mainName = NULL;
     Function *pf;
-    
+
     if (IsBasicLang(P->mainLanguage)) {
         mainName = "program";
     } else if (IsCLang(P->mainLanguage)) {
@@ -1360,7 +1360,7 @@ GetMainFunction(Module *P)
         }
         ERROR(NULL, "could not find function %s", mainName);
     }
-    
+
     /* for Spin, return first public function */
     for (pf = P->functions; pf; pf = pf->next) {
         if (pf->is_public) {
