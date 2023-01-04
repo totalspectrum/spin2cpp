@@ -1955,7 +1955,8 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
         int funid;
         if (!IsFunctionType(funcType)) {
             if (curfunc && IsSpinLang(curfunc->language) && !funcType) {
-                // OK
+                // generally OK, but a flexspin extension in Spin2
+                LANGUAGE_WARNING(LANG_SPIN_SPIN2, node, "Spin2 requires the number of return values to be specified in method pointer calls");
             } else {
                 ERROR(node,"Unhandled indirect FUNCALL symbol");
                 return;
