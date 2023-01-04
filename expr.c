@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2022 Total Spectrum Software Inc.
+ * Copyright 2011-2023 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling expressions
@@ -2848,6 +2848,11 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
                 if ( (IsArrayType(old_typexpr) || IsPointerType(old_typexpr)) && curfunc && IsBasicLang(curfunc->language)) {
                     // in BASIC we may not have converted x(i) into an array reference yet
                     return BaseType(old_typexpr);
+                }
+                if (curfunc && IsSpinLang(curfunc->language)) {
+                    if (old_typexpr == NULL) {
+                        return NULL;
+                    }
                 }
                 ERROR(expr, "Object called is not a function");
                 break;

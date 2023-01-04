@@ -1954,8 +1954,12 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
         Function *func;
         int funid;
         if (!IsFunctionType(funcType)) {
-            ERROR(node,"Unhandled indirect FUNCALL symbol");
-            return;
+            if (curfunc && IsSpinLang(curfunc->language) && !funcType) {
+                // OK
+            } else {
+                ERROR(node,"Unhandled indirect FUNCALL symbol");
+                return;
+            }
         }
         indirect_call_expr = ident;
         // strip off one level of indirection if this is not a pointer
