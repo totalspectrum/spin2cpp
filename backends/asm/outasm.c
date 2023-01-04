@@ -311,7 +311,7 @@ ValidateStackptr(void)
         } else {
             stacklabel = NewOperand(IMM_COG_LABEL, "stackspace", 0);
             stackptr = NewImmediatePtr("sp", stacklabel);
-            stacktop = CogMemRef(stackptr, 0);            
+            stacktop = CogMemRef(stackptr, 0);
         }
     }
 }
@@ -368,7 +368,7 @@ ValidateGosub(void)
 {
     if (0 == (gl_features_used & FEATURE_GOSUB_USED)) {
         ERROR(NULL, "Internal error, using longjmp/setjmp but feature not marked\n");
-    }    
+    }
     ValidatePushregs();
     gosub_ = NewOperand(IMM_COG_LABEL, "gosub_", 0);
 }
@@ -381,34 +381,34 @@ static int IsMemRef(Operand *op)
 static Operand *
 GetSizedVar(struct flexbuf *fb, Operandkind kind, const char *name, intptr_t value, int count)
 {
-  size_t siz = flexbuf_curlen(fb) / sizeof(AsmVariable);
-  size_t i;
-  AsmVariable tmp;
-  AsmVariable *g = (AsmVariable *)flexbuf_peek(fb);
-  for (i = 0; i < siz; i++) {
-    if (strcmp(name, g[i].op->name) == 0) {
-        if (g[i].val != value) {
-            if ( (kind == REG_HUBPTR || kind == REG_COGPTR)
-                 && kind == g[i].op->kind
-                 && !strcmp( ((Operand *)g[i].val)->name, ((Operand *)value)->name )
-                )
-            {
-                /* OK, pretend this is a match */
-            } else {
-                ERROR(NULL, "Internal error, redefining value of %s", name);
+    size_t siz = flexbuf_curlen(fb) / sizeof(AsmVariable);
+    size_t i;
+    AsmVariable tmp;
+    AsmVariable *g = (AsmVariable *)flexbuf_peek(fb);
+    for (i = 0; i < siz; i++) {
+        if (strcmp(name, g[i].op->name) == 0) {
+            if (g[i].val != value) {
+                if ( (kind == REG_HUBPTR || kind == REG_COGPTR)
+                        && kind == g[i].op->kind
+                        && !strcmp( ((Operand *)g[i].val)->name, ((Operand *)value)->name )
+                   )
+                {
+                    /* OK, pretend this is a match */
+                } else {
+                    ERROR(NULL, "Internal error, redefining value of %s", name);
+                }
             }
+            if (g[i].count < count) {
+                g[i].count = count;
+            }
+            return g[i].op;
         }
-        if (g[i].count < count) {
-            g[i].count = count;
-        }
-      return g[i].op;
     }
-  }
-  tmp.op = NewOperand(kind, name, value);
-  tmp.val = value;
-  tmp.count = count;
-  flexbuf_addmem(fb, (const char *)&tmp, sizeof(tmp));
-  return tmp.op;
+    tmp.op = NewOperand(kind, name, value);
+    tmp.val = value;
+    tmp.count = count;
+    flexbuf_addmem(fb, (const char *)&tmp, sizeof(tmp));
+    return tmp.op;
 }
 
 Operand *GetOneGlobal(Operandkind kind, const char *name, intptr_t value)
@@ -480,7 +480,7 @@ static Operand *GetGeneralLocalReg(int n)
             sprintf(rvalname, "local%02d", n+1);
         } else {
             sprintf(rvalname, "local_%03d", n+1);
-        }            
+        }
         /* do not use REG_LOCAL here, that will break optimization of recursive
            functions */
         localreg[n] = GetOneGlobal(REG_ARG, strdup(rvalname), 0);
@@ -514,7 +514,7 @@ FindInstrForOpc(IROpcode kind)
     static Instruction **lookup_table;
     extern Instruction *instr; // in lexer.c
     Instruction *r;
-    
+
     if ((unsigned int)kind >= OPC_GENERIC) {
         return NULL;
     }
@@ -599,8 +599,8 @@ void ReplaceIRWithInline(IRList *irl, IR *origir, Function *func)
         newir = DupIR(ir);
         newir->flags |= FLAG_INSTR_NEW;
         if (newir->opc == OPC_LABEL) {
-        // leave off the asm return name, if it's there
-        // FIXME: this is probably an obsolete test now
+            // leave off the asm return name, if it's there
+            // FIXME: this is probably an obsolete test now
             if (newir->dst == FuncData(func)->asmretname) {
                 /* do nothing */
             } else {
@@ -658,7 +658,7 @@ Operand *NewOperand(enum Operandkind k, const char *name, intptr_t value)
     R->name = name;
     R->val = value;
     if (k == IMM_COG_LABEL || k == IMM_HUB_LABEL) {
-      R->used = 1;
+        R->used = 1;
     }
     return R;
 }
@@ -666,53 +666,53 @@ Operand *NewOperand(enum Operandkind k, const char *name, intptr_t value)
 void
 AppendOperand(OperandList **listptr, Operand *op)
 {
-  OperandList *next = (OperandList *)malloc(sizeof(OperandList));
-  OperandList *x;
-  next->op = op;
-  next->next = NULL;
-  for(;;) {
-    x = *listptr;
-    if (!x) {
-      *listptr = next;
-      return;
+    OperandList *next = (OperandList *)malloc(sizeof(OperandList));
+    OperandList *x;
+    next->op = op;
+    next->next = NULL;
+    for(;;) {
+        x = *listptr;
+        if (!x) {
+            *listptr = next;
+            return;
+        }
+        listptr = &x->next;
     }
-    listptr = &x->next;
-  }
 }
 
 void
 AppendOperandList(OperandList **listptr, OperandList *next)
 {
-  OperandList *x;
-  for(;;) {
-    x = *listptr;
-    if (!x) {
-      *listptr = next;
-      return;
+    OperandList *x;
+    for(;;) {
+        x = *listptr;
+        if (!x) {
+            *listptr = next;
+            return;
+        }
+        listptr = &x->next;
     }
-    listptr = &x->next;
-  }
 }
 
 void
 AppendOperandUnique(OperandList **listptr, Operand *op)
 {
-  OperandList *next;
-  OperandList *x;
-  for(;;) {
-    x = *listptr;
-    if (!x) {
-        next = (OperandList *)malloc(sizeof(OperandList));
-        next->op = op;
-        next->next = NULL;
-        *listptr = next;
-        return;
+    OperandList *next;
+    OperandList *x;
+    for(;;) {
+        x = *listptr;
+        if (!x) {
+            next = (OperandList *)malloc(sizeof(OperandList));
+            next->op = op;
+            next->next = NULL;
+            *listptr = next;
+            return;
+        }
+        if (x->op == op) {
+            return;
+        }
+        listptr = &x->next;
     }
-    if (x->op == op) {
-        return;
-    }
-    listptr = &x->next;
-  }
 }
 
 /*
@@ -737,7 +737,7 @@ InsertAfterIR(IRList *irl, IR *orig, IR *ir)
     IR *o_next;
 
     if (!ir) return;
-    
+
     if (!orig) {
         /* place at the beginning of the list */
         o_next = irl->head;
@@ -769,65 +769,65 @@ InsertAfterIR(IRList *irl, IR *orig, IR *ir)
 void
 AppendIRList(IRList *irl, IRList *sub)
 {
-  IR *last = irl->tail;
-  if (!last) {
-    irl->head = sub->head;
-    irl->tail = sub->tail;
-    return;
-  }
-  AppendIR(irl, sub->head);
+    IR *last = irl->tail;
+    if (!last) {
+        irl->head = sub->head;
+        irl->tail = sub->tail;
+        return;
+    }
+    AppendIR(irl, sub->head);
 }
 
 /* Delete one IR from a list */
 void
 DeleteIR(IRList *irl, IR *ir)
 {
-  IR *prev = ir->prev;
-  IR *next = ir->next;
+    IR *prev = ir->prev;
+    IR *next = ir->next;
 
-  if (prev) {
-    prev->next = next;
-  } else {
-    irl->head = next;
-  }
-  if (next) {
-    next->prev = prev;
-  } else {
-    irl->tail = prev;
-  }
+    if (prev) {
+        prev->next = next;
+    } else {
+        irl->head = next;
+    }
+    if (next) {
+        next->prev = prev;
+    } else {
+        irl->tail = prev;
+    }
 
-  // Delete label back reference if present
-  if (IsBranch(ir) && ir->aux) {
-    IR *lbl = ir->aux;
-    if (lbl->opc == OPC_LABEL && lbl->aux == ir) lbl->aux = NULL;
-  }
+    // Delete label back reference if present
+    if (IsBranch(ir) && ir->aux) {
+        IR *lbl = ir->aux;
+        if (lbl->opc == OPC_LABEL && lbl->aux == ir) lbl->aux = NULL;
+    }
 }
 
 // emit a machine instruction with no operands
 static IR *EmitOp0(IRList *irl, IROpcode code)
 {
-  IR *ir = NewIR(code);
-  AppendIR(irl, ir);
-  return ir;
+    IR *ir = NewIR(code);
+    AppendIR(irl, ir);
+    return ir;
 }
 
 // emit a machine instruction with one operand
 IR *EmitOp1(IRList *irl, IROpcode code, Operand *op)
 {
-  IR *ir = NewIR(code);
-  ir->dst = op;
-  AppendIR(irl, ir);
-  return ir;
+    IR *ir = NewIR(code);
+    ir->dst = op;
+    AppendIR(irl, ir);
+    return ir;
 }
 
 // emit a machine instruction with two operands
 IR *EmitOp2(IRList *irl, IROpcode code, Operand *d, Operand *s)
 {
-  IR *ir = NewIR(code);
-  ir->dst = d;
-  ir->src = s;
-  AppendIR(irl, ir);
-  return ir;
+    IR *ir = NewIR(code);
+    ir->dst = d;
+    ir->src = s;
+    AppendIR(irl, ir);
+    return ir;
 }
 
 // emit an assembler label
@@ -857,10 +857,10 @@ NewTempLabelName()
 Operand *
 NewHubLabel()
 {
-  Operand *label;
-  label = NewOperand(IMM_HUB_LABEL, NewTempLabelName(), 0);
-  label->used = 0;
-  return label;
+    Operand *label;
+    label = NewOperand(IMM_HUB_LABEL, NewTempLabelName(), 0);
+    label->used = 0;
+    return label;
 }
 
 //
@@ -869,15 +869,15 @@ NewHubLabel()
 Operand *
 NewCodeLabel()
 {
-  Operand *label;
-  const char *id = NewTempLabelName();
-  if (curfunc && !InCog(curfunc)) {
-      label = NewOperand(IMM_HUB_LABEL, id, 0);
-  } else {
-      label = NewOperand(IMM_COG_LABEL, id, 0);
-  }
-  label->used = 0;
-  return label;
+    Operand *label;
+    const char *id = NewTempLabelName();
+    if (curfunc && !InCog(curfunc)) {
+        label = NewOperand(IMM_HUB_LABEL, id, 0);
+    } else {
+        label = NewOperand(IMM_COG_LABEL, id, 0);
+    }
+    label->used = 0;
+    return label;
 }
 
 // new code label should be persistent
@@ -885,40 +885,40 @@ NewCodeLabel()
 Operand *
 NewNamedCodeLabel(const char *id)
 {
-  Operand *label;
-  char temp[1024];
-  if (curfunc) {
-      snprintf(temp, sizeof(temp)-1, "Label_%s_%s", curfunc->name, cleanname(id));
-      id = temp;
-  }
-  id = strdup(id);
-  if (curfunc && !InCog(curfunc)) {
-      label = NewOperand(IMM_HUB_LABEL, id, 0);
-  } else {
-      label = NewOperand(IMM_COG_LABEL, id, 0);
-  }
-  label->used = 1;
-  return label;
+    Operand *label;
+    char temp[1024];
+    if (curfunc) {
+        snprintf(temp, sizeof(temp)-1, "Label_%s_%s", curfunc->name, cleanname(id));
+        id = temp;
+    }
+    id = strdup(id);
+    if (curfunc && !InCog(curfunc)) {
+        label = NewOperand(IMM_HUB_LABEL, id, 0);
+    } else {
+        label = NewOperand(IMM_COG_LABEL, id, 0);
+    }
+    label->used = 1;
+    return label;
 }
 
 Operand *
 NewDataLabel()
 {
-  Operand *label;
-  label = NewOperand(IMM_HUB_LABEL, NewTempLabelName(), 0);
-  label->used = 0;
-  return label;
+    Operand *label;
+    label = NewOperand(IMM_HUB_LABEL, NewTempLabelName(), 0);
+    label->used = 0;
+    return label;
 }
 
 int EmitLong(IRList *irl, int val)
 {
-  Operand *op;
+    Operand *op;
 
-  if (irl) {
-      op = NewOperand(IMM_INT, "", val);
-      EmitOp1(irl, OPC_LONG, op);
-  }
-  return 4;
+    if (irl) {
+        op = NewOperand(IMM_INT, "", val);
+        EmitOp1(irl, OPC_LONG, op);
+    }
+    return 4;
 }
 
 #define COG_RESERVE 0
@@ -926,16 +926,16 @@ int EmitLong(IRList *irl, int val)
 
 void EmitReserve(IRList *irl, int val, int isHub)
 {
-  Operand *op;
+    Operand *op;
 
-  if (irl) {
-      op = NewOperand(IMM_INT, "", val);
-      if (isHub) {
-          EmitOp1(irl, OPC_RESERVEH, op);
-      } else {
-          EmitOp1(irl, OPC_RESERVE, op);
-      }
-  }
+    if (irl) {
+        op = NewOperand(IMM_INT, "", val);
+        if (isHub) {
+            EmitOp1(irl, OPC_RESERVEH, op);
+        } else {
+            EmitOp1(irl, OPC_RESERVE, op);
+        }
+    }
 }
 
 static int EmitLongPtr(IRList *irl, Operand *op)
@@ -948,31 +948,31 @@ static int EmitLongPtr(IRList *irl, Operand *op)
 
 static int EmitStringNoTrailingZero(IRList *irl, AST *ast)
 {
-  Operand *op;
-  switch (ast->kind) {
-  case AST_STRING:
-      if (irl) {
-          op = NewOperand(IMM_STRING, ast->d.string, 0);
-          EmitOp1(irl, OPC_STRING, op);
-      }
-      return strlen(ast->d.string);
-  case AST_INTEGER:
-      if (irl) {
-          op = NewOperand(IMM_INT, "", (int)ast->d.ival);
-          EmitOp1(irl, OPC_BYTE, op);
-      }
-      return 1;
-  default:
-      if (IsConstExpr(ast)) {
-          if (irl) {
-              op = NewOperand(IMM_INT, "", EvalConstExpr(ast));
-              EmitOp1(irl, OPC_BYTE, op);
-          }
-      } else {
-          ERROR(ast, "Unable to emit string");
-      }
-      return 1;
-  }
+    Operand *op;
+    switch (ast->kind) {
+    case AST_STRING:
+        if (irl) {
+            op = NewOperand(IMM_STRING, ast->d.string, 0);
+            EmitOp1(irl, OPC_STRING, op);
+        }
+        return strlen(ast->d.string);
+    case AST_INTEGER:
+        if (irl) {
+            op = NewOperand(IMM_INT, "", (int)ast->d.ival);
+            EmitOp1(irl, OPC_BYTE, op);
+        }
+        return 1;
+    default:
+        if (IsConstExpr(ast)) {
+            if (irl) {
+                op = NewOperand(IMM_INT, "", EvalConstExpr(ast));
+                EmitOp1(irl, OPC_BYTE, op);
+            }
+        } else {
+            ERROR(ast, "Unable to emit string");
+        }
+        return 1;
+    }
 }
 
 int EmitString(IRList *irl, AST *ast)
@@ -995,14 +995,14 @@ int EmitString(IRList *irl, AST *ast)
 
 IR *EmitJump(IRList *irl, IRCond cond, Operand *label)
 {
-  IR *ir;
+    IR *ir;
 
-  if (cond == COND_FALSE) return NULL;
-  ir = NewIR(OPC_JUMP);
-  ir->dst = label;
-  ir->cond = cond;
-  AppendIR(irl, ir);
-  return ir;
+    if (cond == COND_FALSE) return NULL;
+    ir = NewIR(OPC_JUMP);
+    ir->dst = label;
+    ir->cond = cond;
+    AppendIR(irl, ir);
+    return ir;
 }
 
 Operand *
@@ -1014,12 +1014,12 @@ NewPcRelative(int32_t val)
 Operand *
 NewImmediate(int32_t val)
 {
-  char temp[1024];
-  if ( gl_p2 || (val >= 0 && val < 512) ) {
-    return NewOperand(IMM_INT, "", (int32_t)val);
-  }
-  sprintf(temp, "imm_%u_", (unsigned)val);
-  return GetOneGlobal(IMM_INT, strdup(temp), (int32_t)val);
+    char temp[1024];
+    if ( gl_p2 || (val >= 0 && val < 512) ) {
+        return NewOperand(IMM_INT, "", (int32_t)val);
+    }
+    sprintf(temp, "imm_%u_", (unsigned)val);
+    return GetOneGlobal(IMM_INT, strdup(temp), (int32_t)val);
 }
 
 Operand *
@@ -1040,17 +1040,17 @@ NewImmediatePtr(const char *name, Operand *val)
 static Operand *
 GetFunctionTempRegister(Function *f, int n)
 {
-  Module *P = f->module;
-  char buf[1024];
-  if (IS_LEAF(f)) {
-      // leaf functions can share a set of temporary registers
-      snprintf(buf, sizeof(buf)-1, "_tmp%03d_", n);
-  } else if (IsTopLevel(P)) {
-      snprintf(buf, sizeof(buf)-1, "%s_tmp%03d_", cleanname(f->name), n);
-  } else {
-      snprintf(buf, sizeof(buf)-1, "%s_%s_tmp%03d_", P->classname, cleanname(f->name), n);
-  }
-  return GetOneGlobal(REG_TEMP, strdup(buf), 0);
+    Module *P = f->module;
+    char buf[1024];
+    if (IS_LEAF(f)) {
+        // leaf functions can share a set of temporary registers
+        snprintf(buf, sizeof(buf)-1, "_tmp%03d_", n);
+    } else if (IsTopLevel(P)) {
+        snprintf(buf, sizeof(buf)-1, "%s_tmp%03d_", cleanname(f->name), n);
+    } else {
+        snprintf(buf, sizeof(buf)-1, "%s_%s_tmp%03d_", P->classname, cleanname(f->name), n);
+    }
+    return GetOneGlobal(REG_TEMP, strdup(buf), 0);
 }
 
 Operand *
@@ -1096,7 +1096,7 @@ static Operand *
 TypedHubMemRef(AST *type, Operand *addr, int offset)
 {
     int size;
-    
+
     while (type && (type->kind == AST_ARRAYTYPE || type->kind == AST_MODIFIER_CONST || type->kind == AST_MODIFIER_VOLATILE)) {
         type = type->left;
     }
@@ -1167,11 +1167,11 @@ LabelRef(IRList *irl, Symbol *sym)
     Module *P = sym->module ? (Module *)sym->module : current;
     Operand *datbase = ValidateDatBase(P);
 
-#if 0    
+#if 0
     if (! (lab->flags & (LABEL_IN_HUB|LABEL_USED_IN_SPIN) ) ) {
         WARNING(NULL, "Internal error, unexpected COG label");
     }
-#endif    
+#endif
     temp = TypedHubMemRef(lab->type, datbase, (int)lab->hubval);
     return temp;
 }
@@ -1179,144 +1179,144 @@ LabelRef(IRList *irl, Symbol *sym)
 static Operand *
 CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func, AST *ast)
 {
-  int stype;
-  int size;
-  Module *P = func->module;
-  if (sym) {
-      AST *exprtype;
-      AST *expr;
-      stype = sym->kind;
-      switch (stype) {
-      case SYM_VARIABLE:
-          if (sym->flags & SYMF_GLOBAL) {
-              int off = sym->offset;
-              Operand *addr;
-              Operand *ref;
-              if (off == -1) {
-                  // this is a special internal COG variable
-                  if (!sendreg) {
-                      sendreg = GetOneGlobal(REG_REG, "__sendreg", P2_HUB_BASE);
-                  }
-                  return sendreg;
-              } else if (off == -2) {
-                  // this is a special internal COG variable
-                  if (!recvreg) {
-                      recvreg = GetOneGlobal(REG_REG, "__recvreg", P2_HUB_BASE);
-                  }
-                  return recvreg;
-              } else if (off == -3) {
-                  // this is a special internal COG variable
-                  if (!lockreg) {
-                      lockreg = GetOneGlobal(REG_REG, "__lockreg", 0);
-                  }
-                  return lockreg;
-              } else if (off == -9999) {
-                  // internal register
-                  return GetOneGlobal(REG_REG, sym->our_name, 0);
-              } else if (off < 0) {
-                  ERROR(ast, "Internal error, unkknown global symbol\n");
-              }
-              addr = NewImmediate(off);
-              ref = NewOperand(HUBMEM_REF, (char *)addr, 0);
-              ref->size = LONG_SIZE;
-              return ref;
-          }
-          ValidateObjbase();
-          exprtype = (AST *)sym->v.ptr;
-          if (COG_DATA) {
-              // COG memory
-              size = TypeSize(exprtype);
-              return GetSizedGlobal(REG_REG, IdentifierModuleName(P, sym->our_name), 0, size);
-          } else {
-              // HUB memory
-              return TypedHubMemRef(exprtype, objbase, (int)sym->offset);
-          }
-      case SYM_FUNCTION:
-      {
-          Function *calledf = (Function *)sym->v.ptr;
-          return FuncData(calledf)->asmname;
-      }
-      case SYM_HWREG:
-      {
-          HwReg *hw = (HwReg *)sym->v.ptr;
-          return GetOneGlobal(REG_HW, hw->name, 0);
-      }
-      case  SYM_CLOSURE:
-      {
-          return FrameRef(0, LONG_SIZE);
-      }
-      default:
-          if (sym->kind == SYM_RESERVED && !strcmp(sym->our_name, "result")) {
-              /* do nothing, this is OK */
-              stype = SYM_RESULT;
-          } else {
-              ERROR(ast, "Undefined symbol %s", sym->user_name);
-              return EmptyOperand();
-          }
-          /* fall through */
-      case SYM_LOCALVAR:
-      case SYM_PARAMETER:
-      case SYM_RESULT:
-          if (stype == SYM_RESULT) {
-              size = LONG_SIZE;
-          } else {
-              size = TypeSize((AST *)sym->v.ptr);
-          }
-          if (PutVarOnStack(func, sym, size)) {
-              int offset = sym_offset(func, sym);
-              if (offset >= 0) {
-                  AST *typ = (AST *)sym->v.ptr;
-                  if (IsArrayType(typ)) {
-                      size = TypeSize(BaseType(typ));
-                  }
-                  return FrameRef(offset, size);
-              }
-          }
-          return GetSizedGlobal(REG_LOCAL, IdentifierLocalName(func, sym->our_name), 0, size);
-      case SYM_TEMPVAR:
-          size = TypeSize((AST *)sym->v.ptr);
-          return GetSizedGlobal(REG_TEMP, IdentifierLocalName(func, sym->our_name), 0, size);
-      case SYM_LABEL:
-          return LabelRef(irl, sym);
-      case SYM_ALIAS:
-          expr = (AST *)sym->v.ptr;
-          return CompileExpression(irl, expr, NULL);
-      }
-  }
-  return NULL;
+    int stype;
+    int size;
+    Module *P = func->module;
+    if (sym) {
+        AST *exprtype;
+        AST *expr;
+        stype = sym->kind;
+        switch (stype) {
+        case SYM_VARIABLE:
+            if (sym->flags & SYMF_GLOBAL) {
+                int off = sym->offset;
+                Operand *addr;
+                Operand *ref;
+                if (off == -1) {
+                    // this is a special internal COG variable
+                    if (!sendreg) {
+                        sendreg = GetOneGlobal(REG_REG, "__sendreg", P2_HUB_BASE);
+                    }
+                    return sendreg;
+                } else if (off == -2) {
+                    // this is a special internal COG variable
+                    if (!recvreg) {
+                        recvreg = GetOneGlobal(REG_REG, "__recvreg", P2_HUB_BASE);
+                    }
+                    return recvreg;
+                } else if (off == -3) {
+                    // this is a special internal COG variable
+                    if (!lockreg) {
+                        lockreg = GetOneGlobal(REG_REG, "__lockreg", 0);
+                    }
+                    return lockreg;
+                } else if (off == -9999) {
+                    // internal register
+                    return GetOneGlobal(REG_REG, sym->our_name, 0);
+                } else if (off < 0) {
+                    ERROR(ast, "Internal error, unkknown global symbol\n");
+                }
+                addr = NewImmediate(off);
+                ref = NewOperand(HUBMEM_REF, (char *)addr, 0);
+                ref->size = LONG_SIZE;
+                return ref;
+            }
+            ValidateObjbase();
+            exprtype = (AST *)sym->v.ptr;
+            if (COG_DATA) {
+                // COG memory
+                size = TypeSize(exprtype);
+                return GetSizedGlobal(REG_REG, IdentifierModuleName(P, sym->our_name), 0, size);
+            } else {
+                // HUB memory
+                return TypedHubMemRef(exprtype, objbase, (int)sym->offset);
+            }
+        case SYM_FUNCTION:
+        {
+            Function *calledf = (Function *)sym->v.ptr;
+            return FuncData(calledf)->asmname;
+        }
+        case SYM_HWREG:
+        {
+            HwReg *hw = (HwReg *)sym->v.ptr;
+            return GetOneGlobal(REG_HW, hw->name, 0);
+        }
+        case  SYM_CLOSURE:
+        {
+            return FrameRef(0, LONG_SIZE);
+        }
+        default:
+            if (sym->kind == SYM_RESERVED && !strcmp(sym->our_name, "result")) {
+                /* do nothing, this is OK */
+                stype = SYM_RESULT;
+            } else {
+                ERROR(ast, "Undefined symbol %s", sym->user_name);
+                return EmptyOperand();
+            }
+        /* fall through */
+        case SYM_LOCALVAR:
+        case SYM_PARAMETER:
+        case SYM_RESULT:
+            if (stype == SYM_RESULT) {
+                size = LONG_SIZE;
+            } else {
+                size = TypeSize((AST *)sym->v.ptr);
+            }
+            if (PutVarOnStack(func, sym, size)) {
+                int offset = sym_offset(func, sym);
+                if (offset >= 0) {
+                    AST *typ = (AST *)sym->v.ptr;
+                    if (IsArrayType(typ)) {
+                        size = TypeSize(BaseType(typ));
+                    }
+                    return FrameRef(offset, size);
+                }
+            }
+            return GetSizedGlobal(REG_LOCAL, IdentifierLocalName(func, sym->our_name), 0, size);
+        case SYM_TEMPVAR:
+            size = TypeSize((AST *)sym->v.ptr);
+            return GetSizedGlobal(REG_TEMP, IdentifierLocalName(func, sym->our_name), 0, size);
+        case SYM_LABEL:
+            return LabelRef(irl, sym);
+        case SYM_ALIAS:
+            expr = (AST *)sym->v.ptr;
+            return CompileExpression(irl, expr, NULL);
+        }
+    }
+    return NULL;
 }
 
 static Operand *
 CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
 {
-  Symbol *sym;
-  const char *name;
-  AST *resultexpr;
-  
-  if (expr->kind == AST_RESULT) {
-      resultexpr = func->resultexpr;
-      if (resultexpr && resultexpr->kind == AST_DECLARE_VAR) {
-          resultexpr = resultexpr->right;
-      }
-      if (resultexpr && resultexpr->kind == AST_IDENTIFIER) {
-          name = resultexpr->d.string;
-      } else {
-          name = "result";
-      }
-  } else {
-      name = VarName(expr);
-      if (!name) {
-          ERROR(expr, "Internal error, unexpected expression type for identifier");
-          return EmptyOperand();
-      }
-  }
-  sym = LookupSymbol(name);
-  if (sym) {
-      return CompileSymbolForFunc(irl, sym, func, expr);
-  } else {
-      ERROR_UNKNOWN_SYMBOL(expr);
-  }
-  return GetOneGlobal(REG_LOCAL, IdentifierLocalName(func, name), 0);
+    Symbol *sym;
+    const char *name;
+    AST *resultexpr;
+
+    if (expr->kind == AST_RESULT) {
+        resultexpr = func->resultexpr;
+        if (resultexpr && resultexpr->kind == AST_DECLARE_VAR) {
+            resultexpr = resultexpr->right;
+        }
+        if (resultexpr && resultexpr->kind == AST_IDENTIFIER) {
+            name = resultexpr->d.string;
+        } else {
+            name = "result";
+        }
+    } else {
+        name = VarName(expr);
+        if (!name) {
+            ERROR(expr, "Internal error, unexpected expression type for identifier");
+            return EmptyOperand();
+        }
+    }
+    sym = LookupSymbol(name);
+    if (sym) {
+        return CompileSymbolForFunc(irl, sym, func, expr);
+    } else {
+        ERROR_UNKNOWN_SYMBOL(expr);
+    }
+    return GetOneGlobal(REG_LOCAL, IdentifierLocalName(func, name), 0);
 }
 
 static Operand *
@@ -1387,7 +1387,7 @@ static Operand *GetFunctionParameterForCall(IRList *irl, Function *func, AST *fu
         AST *ast;
         int numresults;
         int offset;
-        
+
         if (!IsFunctionType(functype)) {
             ERROR(functype, "Expected function type");
             return EmptyOperand();
@@ -1618,7 +1618,7 @@ RenameSubregs(IRList *irl, Operand *base, int numlocals, int isLeaf)
     IR *ir;
     Operand *replace;
     Operand *dummy;
-    
+
     replace = GetLocalReg(numlocals, isLeaf);
     replace->used++;
     for (int i = 1; i < num; i++) {
@@ -1642,7 +1642,7 @@ RenameSubregs(IRList *irl, Operand *base, int numlocals, int isLeaf)
             }
         }
     }
-        
+
     return num;
 }
 
@@ -1758,7 +1758,7 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     int i, n;
     int needFrame = 0;
     AST *linenum = func->body;
-    
+
     // earlier we put the appropriate comments into func->irheader
     // copy them out now
     AppendIRList(irl, &FuncData(func)->irheader);
@@ -1778,7 +1778,7 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     if (func->is_recursive && InCog(func) && !gl_p2) {
         EmitPush(irl, FuncData(func)->asmretregister, linenum);
     }
-    
+
     // if SEND is set in function, save it
     if (func->sets_send) {
         EmitPush(irl, sendreg, linenum);
@@ -1846,13 +1846,13 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
     int i, n;
     int needFrame;
     AST *linenum = func->body;
-    
+
     needFrame = NeedFramePointer(func);
     n = FuncData(func)->numsavedregs;
     if (needFrame == FRAME_MAYBE) {
         needFrame = (n > 0) ? FRAME_YES : FRAME_NO;
     }
-    
+
     if (needFrame) {
         ValidateFrameptr();
         if (!func->closure) {
@@ -1879,7 +1879,7 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
     if (func->is_recursive && InCog(func) && !gl_p2) {
         IR *ir;
         EmitPop(irl, FuncData(func)->asmretregister, linenum);
-        // WARNING: 
+        // WARNING:
         // we need at least 1 instruction between the pop
         // and the actual return
         ir = EmitOp1(irl, OPC_NOP, NULL);
@@ -1915,8 +1915,8 @@ CompileIdentifier(IRList *irl, AST *expr)
 Operand *
 CompileHWReg(IRList *irl, AST *expr)
 {
-  HwReg *hw = (HwReg *)expr->d.ptr;
-  return GetOneGlobal(REG_HW, hw->name, 0);
+    HwReg *hw = (HwReg *)expr->d.ptr;
+    return GetOneGlobal(REG_HW, hw->name, 0);
 }
 
 static int isPowerOf2(unsigned x)
@@ -1934,7 +1934,7 @@ static int isPowerOf2(unsigned x)
 static int DecomposeBits(unsigned val, int *shifts)
 {
     int shift = 0;
-    
+
     while (val != 0) {
         if (val & 1) {
             break;
@@ -1964,12 +1964,12 @@ static int g_NeedMulHi = 0;
 
 static Operand *
 doCompileMul(IRList *irl, Operand *lhs, Operand *rhs, int gethi, Operand *dest)
-{    
+{
     Operand *temp = NewFunctionTempRegister();
     int isUnsigned = (gethi & 2);
     g_NeedMulHi |= (gethi & 1);
     AST *linenum = NULL;
-    
+
     // if lhs is constant, swap left and right
     if (lhs->kind == IMM_INT) {
         Operand *swap = lhs;
@@ -1999,7 +1999,7 @@ doCompileMul(IRList *irl, Operand *lhs, Operand *rhs, int gethi, Operand *dest)
             } else {
                 EmitOp2(irl, OPC_SHL, temp, NewImmediate(shifts[2]));
             }
-            if (shifts[1] > 0) {              
+            if (shifts[1] > 0) {
                 EmitOp2(irl, OPC_ADD, temp, lhs);
             } else {
                 EmitOp2(irl, OPC_SUB, temp, lhs);
@@ -2029,7 +2029,7 @@ doCompileMul(IRList *irl, Operand *lhs, Operand *rhs, int gethi, Operand *dest)
             return temp;
         }
     }
-    
+
     if (!mulfunc) {
         mulfunc = NewOperand(IMM_COG_LABEL, "multiply_", 0);
         unsmulfunc = NewOperand(IMM_COG_LABEL, "unsmultiply_", 0);
@@ -2076,8 +2076,8 @@ static enum SixteenBitSafe is16BitSafe(AST *expr) {
         return SIXTEEN_BIT_SAFE_UNSIGNED;
     }
     if (expr->kind == AST_OPERATOR
-    && (expr->d.ival == K_ZEROEXTEND || expr->d.ival == K_SIGNEXTEND)
-    && IsConstExpr(expr->right)) {
+            && (expr->d.ival == K_ZEROEXTEND || expr->d.ival == K_SIGNEXTEND)
+            && IsConstExpr(expr->right)) {
         ExprInt extend = EvalConstExpr(expr->right);
         if (extend == 16) {
             return expr->d.ival == K_ZEROEXTEND ? SIXTEEN_BIT_SAFE_UNSIGNED : SIXTEEN_BIT_SAFE_SIGNED;
@@ -2124,148 +2124,148 @@ CompileMul(IRList *irl, AST *expr, int gethi, Operand *dest)
 static Operand *
 CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
 {
-  Operand *lhs = CompileExpression(irl, expr->left, NULL);
-  Operand *rhs = CompileExpression(irl, expr->right, NULL);
-  Operand *temp = dest ? dest : NewFunctionTempRegister();
-  int isSigned = (getmod & 2) == 0;
-  int isfrac64 = getmod >= 4;
-  
-  getmod &= 1;
-  
+    Operand *lhs = CompileExpression(irl, expr->left, NULL);
+    Operand *rhs = CompileExpression(irl, expr->right, NULL);
+    Operand *temp = dest ? dest : NewFunctionTempRegister();
+    int isSigned = (getmod & 2) == 0;
+    int isfrac64 = getmod >= 4;
+
+    getmod &= 1;
+
 #ifdef FAST_IMMEDIATE_DIVIDES
-  if (rhs->kind == IMM_INT  && !isfrac64 && ((rhs->val > 0 && isPowerOf2(rhs->val)) || (rhs->val < 0 && isPowerOf2(0-rhs->val)))) {
-      IR *ir;
-      int aval = (int)iabs( rhs->val );
-      
-      if (rhs->val == 1 || (rhs->val == -1 && getmod)) {
-          EmitMove(irl, temp, lhs, expr);
-          return temp;
-      } else if (rhs->val == -1) {
-          EmitMove(irl, temp, lhs, expr);
-          EmitOp2(irl, OPC_NEG, temp, temp);
+    if (rhs->kind == IMM_INT  && !isfrac64 && ((rhs->val > 0 && isPowerOf2(rhs->val)) || (rhs->val < 0 && isPowerOf2(0-rhs->val)))) {
+        IR *ir;
+        int aval = (int)iabs( rhs->val );
+
+        if (rhs->val == 1 || (rhs->val == -1 && getmod)) {
+            EmitMove(irl, temp, lhs, expr);
+            return temp;
+        } else if (rhs->val == -1) {
+            EmitMove(irl, temp, lhs, expr);
+            EmitOp2(irl, OPC_NEG, temp, temp);
+            return temp;
+        }
+
+        lhs = Dereference(irl, lhs);
+        if (isSigned) {
+            ir = EmitOp2(irl, OPC_ABS, temp, lhs);
+            ir->flags |= FLAG_WC; // carry will have the original sign bit
+        } else {
+            EmitMove(irl, temp, lhs, expr);
+        }
+        if (getmod) {
+            EmitOp2(irl, OPC_AND, temp, NewImmediate(aval-1));
+        } else {
+            EmitOp2(irl, OPC_SHR, temp, NewImmediate(ctz32(aval)));
+        }
+        if (isSigned) {
+            bool negresult = !getmod && (rhs->val < 0); // Negate result if divisor is negative and we're not getting the remainder
+            ir = EmitOp2(irl, negresult ? OPC_NEGNC : OPC_NEGC, temp, temp);
+        }
         return temp;
-      }
-
-      lhs = Dereference(irl, lhs);
-      if (isSigned) {
-          ir = EmitOp2(irl, OPC_ABS, temp, lhs);
-          ir->flags |= FLAG_WC; // carry will have the original sign bit
-      } else {
-          EmitMove(irl, temp, lhs, expr);
-      }
-      if (getmod) {
-          EmitOp2(irl, OPC_AND, temp, NewImmediate(aval-1));
-      } else {
-          EmitOp2(irl, OPC_SHR, temp, NewImmediate(ctz32(aval)));
-      }
-      if (isSigned) {
-          bool negresult = !getmod && (rhs->val < 0); // Negate result if divisor is negative and we're not getting the remainder
-          ir = EmitOp2(irl, negresult ? OPC_NEGNC : OPC_NEGC, temp, temp);
-      }
-      return temp;
-  }
+    }
 #endif
-  
-  if (isfrac64) {
-      if (gl_p2) {
-          Operand *temp2 = NewFunctionTempRegister();
-          EmitMove(irl, temp2, rhs, expr);
-          EmitMove(irl, temp, lhs, expr);
-          EmitOp2(irl, OPC_QFRAC, temp, temp2);
-          EmitOp1(irl, OPC_GETQX, temp);
-          return temp;
-      } else {
-        ERROR(expr, "FRAC not supported on P1 yet");
-        return temp; //???
-      }
-  }
 
-  // P2 can use QDIV for unsigned divide
-  if (gl_p2 && !isSigned) {
-    Operand *temp2 = NewFunctionTempRegister();
-    EmitMove(irl, temp2, rhs, expr);
-    EmitMove(irl, temp, lhs, expr);
-    EmitOp2(irl, OPC_QDIV, temp, temp2);
-    EmitOp1(irl, getmod ? OPC_GETQY : OPC_GETQX, temp);
-    return temp;
-  }
+    if (isfrac64) {
+        if (gl_p2) {
+            Operand *temp2 = NewFunctionTempRegister();
+            EmitMove(irl, temp2, rhs, expr);
+            EmitMove(irl, temp, lhs, expr);
+            EmitOp2(irl, OPC_QFRAC, temp, temp2);
+            EmitOp1(irl, OPC_GETQX, temp);
+            return temp;
+        } else {
+            ERROR(expr, "FRAC not supported on P1 yet");
+            return temp; //???
+        }
+    }
 
-  // Use native QDIV + ABS/NEGC for signed divide with known divisor
-  if (gl_p2 && isSigned && rhs->kind == IMM_INT) {
-    IR *ir;
-    lhs = Dereference(irl,lhs);
-    Operand *rhs2 = NewOperand(IMM_INT,rhs->name,iabs(rhs->val));
-    ir = EmitOp2(irl, OPC_ABS, temp, lhs);
-    ir->flags |= FLAG_WC;
-    EmitOp2(irl, OPC_QDIV, temp, rhs2);
-    EmitOp1(irl, getmod ? OPC_GETQY : OPC_GETQX, temp);
-    bool negresult = !getmod && (rhs->val < 0); // Negate result if divisor is negative and we're not getting the remainder
-    EmitOp2(irl,negresult ? OPC_NEGNC : OPC_NEGC, temp, temp);
-    //ir->cond = negresult ? COND_GE : COND_LT; // only do the negate if x < 0
-    return temp;
-  }
-  
-  // Use native QDIV + ABS/NEGC for signed divide with known dividend
-  if (gl_p2 && isSigned && lhs->kind == IMM_INT) {
-    IR *ir;
-    rhs = Dereference(irl,rhs);
-    Operand *lhs2 = NewOperand(IMM_INT,lhs->name,iabs(lhs->val));
-    ir = EmitOp2(irl, OPC_ABS, temp, rhs);
-    if (!getmod) ir->flags |= FLAG_WC;
-    EmitOp2(irl, OPC_QDIV, lhs2, temp);
-    EmitOp1(irl, getmod ? OPC_GETQY : OPC_GETQX, temp);
+    // P2 can use QDIV for unsigned divide
+    if (gl_p2 && !isSigned) {
+        Operand *temp2 = NewFunctionTempRegister();
+        EmitMove(irl, temp2, rhs, expr);
+        EmitMove(irl, temp, lhs, expr);
+        EmitOp2(irl, OPC_QDIV, temp, temp2);
+        EmitOp1(irl, getmod ? OPC_GETQY : OPC_GETQX, temp);
+        return temp;
+    }
+
+    // Use native QDIV + ABS/NEGC for signed divide with known divisor
+    if (gl_p2 && isSigned && rhs->kind == IMM_INT) {
+        IR *ir;
+        lhs = Dereference(irl,lhs);
+        Operand *rhs2 = NewOperand(IMM_INT,rhs->name,iabs(rhs->val));
+        ir = EmitOp2(irl, OPC_ABS, temp, lhs);
+        ir->flags |= FLAG_WC;
+        EmitOp2(irl, OPC_QDIV, temp, rhs2);
+        EmitOp1(irl, getmod ? OPC_GETQY : OPC_GETQX, temp);
+        bool negresult = !getmod && (rhs->val < 0); // Negate result if divisor is negative and we're not getting the remainder
+        EmitOp2(irl,negresult ? OPC_NEGNC : OPC_NEGC, temp, temp);
+        //ir->cond = negresult ? COND_GE : COND_LT; // only do the negate if x < 0
+        return temp;
+    }
+
+    // Use native QDIV + ABS/NEGC for signed divide with known dividend
+    if (gl_p2 && isSigned && lhs->kind == IMM_INT) {
+        IR *ir;
+        rhs = Dereference(irl,rhs);
+        Operand *lhs2 = NewOperand(IMM_INT,lhs->name,iabs(lhs->val));
+        ir = EmitOp2(irl, OPC_ABS, temp, rhs);
+        if (!getmod) ir->flags |= FLAG_WC;
+        EmitOp2(irl, OPC_QDIV, lhs2, temp);
+        EmitOp1(irl, getmod ? OPC_GETQY : OPC_GETQX, temp);
+        if (getmod) {
+            EmitOp2(irl, (lhs->val < 0) ? OPC_NEG : OPC_MOV, temp, temp);
+        } else {
+            EmitOp2(irl, (lhs->val < 0) ? OPC_NEGNC : OPC_NEGC, temp, temp);
+        }
+        return temp;
+    }
+
+
+    // Fall back on function call
+    if (!divfunc) {
+        divfunc = NewOperand(IMM_COG_LABEL, "divide_", 0);
+        unsdivfunc = NewOperand(IMM_COG_LABEL, "unsdivide_", 0);
+        muldiva = GetOneGlobal(REG_ARG, "muldiva_", 0);
+        muldivb = GetOneGlobal(REG_ARG, "muldivb_", 0);
+    }
+    EmitMove(irl, muldiva, lhs, expr);
+    EmitMove(irl, muldivb, rhs, expr);
+    EmitOp1(irl, OPC_CALL, (isSigned) ? divfunc : unsdivfunc);
     if (getmod) {
-      EmitOp2(irl, (lhs->val < 0) ? OPC_NEG : OPC_MOV, temp, temp);
+        EmitMove(irl, temp, muldiva, expr);
     } else {
-      EmitOp2(irl, (lhs->val < 0) ? OPC_NEGNC : OPC_NEGC, temp, temp);
+        EmitMove(irl, temp, muldivb, expr);
     }
     return temp;
-  }
-
-
-  // Fall back on function call
-  if (!divfunc) {
-    divfunc = NewOperand(IMM_COG_LABEL, "divide_", 0);
-    unsdivfunc = NewOperand(IMM_COG_LABEL, "unsdivide_", 0);
-    muldiva = GetOneGlobal(REG_ARG, "muldiva_", 0);
-    muldivb = GetOneGlobal(REG_ARG, "muldivb_", 0);
-  }
-  EmitMove(irl, muldiva, lhs, expr);
-  EmitMove(irl, muldivb, rhs, expr);
-  EmitOp1(irl, OPC_CALL, (isSigned) ? divfunc : unsdivfunc);
-  if (getmod) {
-      EmitMove(irl, temp, muldiva, expr);
-  } else {
-      EmitMove(irl, temp, muldivb, expr);
-  }
-  return temp;
 }
 
 static IRCond
 CondFromExpr(int kind)
 {
-  switch (kind) {
-  case K_NE:
-    return COND_NE;
-  case K_EQ:
-    return COND_EQ;
-  case K_GE:
-  case K_GEU:
-    return COND_GE;
-  case K_LE:
-  case K_LEU:
-    return COND_LE;
-  case '<':
-  case K_LTU:
-    return COND_LT;
-  case '>':
-  case K_GTU:
-    return COND_GT;
-  default:
-    break;
-  }
-  ERROR(NULL, "Unknown boolean operator");
-  return COND_FALSE;
+    switch (kind) {
+    case K_NE:
+        return COND_NE;
+    case K_EQ:
+        return COND_EQ;
+    case K_GE:
+    case K_GEU:
+        return COND_GE;
+    case K_LE:
+    case K_LEU:
+        return COND_LE;
+    case '<':
+    case K_LTU:
+        return COND_LT;
+    case '>':
+    case K_GTU:
+        return COND_GT;
+    default:
+        break;
+    }
+    ERROR(NULL, "Unknown boolean operator");
+    return COND_FALSE;
 }
 
 /*
@@ -2275,18 +2275,18 @@ CondFromExpr(int kind)
 static IRCond
 FlipSides(IRCond cond)
 {
-  switch (cond) {
-  case COND_LT:
-    return COND_GT;
-  case COND_GT:
-    return COND_LT;
-  case COND_LE:
-    return COND_GE;
-  case COND_GE:
-    return COND_LE;
-  default:
-    return cond;
-  }
+    switch (cond) {
+    case COND_LT:
+        return COND_GT;
+    case COND_GT:
+        return COND_LT;
+    case COND_LE:
+        return COND_GE;
+    case COND_GE:
+        return COND_LE;
+    default:
+        return cond;
+    }
 }
 /*
  * invert a condition (e.g. EQ -> NE, LT -> GE
@@ -2296,102 +2296,102 @@ FlipSides(IRCond cond)
 IRCond
 InvertCond(IRCond v)
 {
-  v = (IRCond)(15 ^ (unsigned)v);
-  return v;
+    v = (IRCond)(15 ^ (unsigned)v);
+    return v;
 }
 
 static IRCond
 CompileBasicBoolExpression(IRList *irl, AST *expr)
 {
-  IRCond cond;
-  Operand *lhs;
-  Operand *rhs;
-  int opkind;
-  IR *ir;
-  int flags;
-  int isUnsigned = 0;
-  
-  if (expr->kind == AST_OPERATOR) {
-      opkind = (int)expr->d.ival;
-  } else {
-      AST *typ = ExprType(expr);
-      if (IsFloatType(typ)) {
-          ERROR(expr, "Internal error, compiler needs explicit comparison to 0.0 for floats");
-      } else if (IsInt64Type(typ)) {
-          AST *hi, *lo, *newexpr;
-          hi = NewAST(AST_GETHIGH, expr, NULL);
-          lo = NewAST(AST_GETLOW, expr, NULL);
-          newexpr = AstOperator('|', hi, lo);
-          newexpr = AstOperator(K_NE, newexpr, AstInteger(0));
-          return CompileBasicBoolExpression(irl, newexpr);
-      }
-      opkind = -1;
-  }
-  switch(opkind) {
-  case K_GEU:
-  case K_GTU:
-  case K_LEU:
-  case K_LTU:
-      isUnsigned = 1;
-      /* fall through */
-  case K_NE:
-  case K_EQ:
-  case '<':
-  case '>':
-  case K_LE:
-  case K_GE:
-    cond = CondFromExpr(opkind);
-    lhs = CompileExpression(irl, expr->left, NULL);
-    rhs = CompileExpression(irl, expr->right, NULL);
-    break;
-  default:
-    cond = COND_NE;
-    lhs = CompileExpression(irl, expr, NULL);
-    if (lhs && lhs->kind == IMM_INT) {
-        return (lhs->val == 0) ? COND_FALSE : COND_TRUE;
+    IRCond cond;
+    Operand *lhs;
+    Operand *rhs;
+    int opkind;
+    IR *ir;
+    int flags;
+    int isUnsigned = 0;
+
+    if (expr->kind == AST_OPERATOR) {
+        opkind = (int)expr->d.ival;
+    } else {
+        AST *typ = ExprType(expr);
+        if (IsFloatType(typ)) {
+            ERROR(expr, "Internal error, compiler needs explicit comparison to 0.0 for floats");
+        } else if (IsInt64Type(typ)) {
+            AST *hi, *lo, *newexpr;
+            hi = NewAST(AST_GETHIGH, expr, NULL);
+            lo = NewAST(AST_GETLOW, expr, NULL);
+            newexpr = AstOperator('|', hi, lo);
+            newexpr = AstOperator(K_NE, newexpr, AstInteger(0));
+            return CompileBasicBoolExpression(irl, newexpr);
+        }
+        opkind = -1;
     }
-    rhs = NewOperand(IMM_INT, "", 0);
-    break;
-  }
-  /* emit a compare operator */
-  /* note that lhs cannot be a constant */
-  if (lhs && lhs->kind == IMM_INT) {
-    Operand *tmp = lhs;
-    lhs = rhs;
-    rhs = tmp;
-    cond = FlipSides(cond);
-  }
-  // If comparing with constant, try for a condition that only uses C
-  // but only if it's correct and it won't horribly pessimize everything
-  if ((cond == COND_LE||cond == COND_GT)
-  && rhs && rhs->kind == IMM_INT
-  && rhs->val != 511 && (int32_t)rhs->val != (isUnsigned ? UINT32_MAX : INT32_MAX)) {
-    cond = (cond == COND_LE) ? COND_LT : COND_GE;
-    rhs = NewImmediate(rhs->val+1);
-  }
-  
-  switch (cond) {
-  case COND_LT:
-  case COND_GE:
-    flags = FLAG_WC;
-    break;
-  case COND_NE:
-  case COND_EQ:
-    flags = FLAG_WZ;
-    break;
-  default:
-    flags = FLAG_WZ|FLAG_WC;
-    break;
-  }
-  lhs = Dereference(irl, lhs);
-  rhs = Dereference(irl, rhs);
-  if (isUnsigned || flags == FLAG_WZ) {
-      ir = EmitOp2(irl, OPC_CMP, lhs, rhs);
-  } else {
-      ir = EmitOp2(irl, OPC_CMPS, lhs, rhs);
-  }
-  ir->flags |= flags;
-  return cond;
+    switch(opkind) {
+    case K_GEU:
+    case K_GTU:
+    case K_LEU:
+    case K_LTU:
+        isUnsigned = 1;
+    /* fall through */
+    case K_NE:
+    case K_EQ:
+    case '<':
+    case '>':
+    case K_LE:
+    case K_GE:
+        cond = CondFromExpr(opkind);
+        lhs = CompileExpression(irl, expr->left, NULL);
+        rhs = CompileExpression(irl, expr->right, NULL);
+        break;
+    default:
+        cond = COND_NE;
+        lhs = CompileExpression(irl, expr, NULL);
+        if (lhs && lhs->kind == IMM_INT) {
+            return (lhs->val == 0) ? COND_FALSE : COND_TRUE;
+        }
+        rhs = NewOperand(IMM_INT, "", 0);
+        break;
+    }
+    /* emit a compare operator */
+    /* note that lhs cannot be a constant */
+    if (lhs && lhs->kind == IMM_INT) {
+        Operand *tmp = lhs;
+        lhs = rhs;
+        rhs = tmp;
+        cond = FlipSides(cond);
+    }
+    // If comparing with constant, try for a condition that only uses C
+    // but only if it's correct and it won't horribly pessimize everything
+    if ((cond == COND_LE||cond == COND_GT)
+            && rhs && rhs->kind == IMM_INT
+            && rhs->val != 511 && (int32_t)rhs->val != (isUnsigned ? UINT32_MAX : INT32_MAX)) {
+        cond = (cond == COND_LE) ? COND_LT : COND_GE;
+        rhs = NewImmediate(rhs->val+1);
+    }
+
+    switch (cond) {
+    case COND_LT:
+    case COND_GE:
+        flags = FLAG_WC;
+        break;
+    case COND_NE:
+    case COND_EQ:
+        flags = FLAG_WZ;
+        break;
+    default:
+        flags = FLAG_WZ|FLAG_WC;
+        break;
+    }
+    lhs = Dereference(irl, lhs);
+    rhs = Dereference(irl, rhs);
+    if (isUnsigned || flags == FLAG_WZ) {
+        ir = EmitOp2(irl, OPC_CMP, lhs, rhs);
+    } else {
+        ir = EmitOp2(irl, OPC_CMPS, lhs, rhs);
+    }
+    ir->flags |= flags;
+    return cond;
 }
 
 void
@@ -2401,13 +2401,13 @@ CompileBoolBranches(IRList *irl, AST *expr, Operand *truedest, Operand *falsedes
     int opkind;
     Operand *dummylabel = NULL;
     IR *ir;
-    
+
     if (expr->kind == AST_ISBETWEEN) {
         Operand *lo, *hi;
         Operand *val;
         Operand *tmplo, *tmphi;
         Operand *tmp2lo, *tmp2hi;
-        
+
         val = CompileExpression(irl, expr->left, NULL);
         val = Dereference(irl, val);
         lo = CompileExpression(irl, expr->right->left, NULL);
@@ -2435,7 +2435,7 @@ CompileBoolBranches(IRList *irl, AST *expr, Operand *truedest, Operand *falsedes
         }
         return;
     }
-    
+
     if (expr->kind == AST_OPERATOR) {
         opkind = (int)expr->d.ival;
     } else {
@@ -2487,45 +2487,45 @@ CompileBoolBranches(IRList *irl, AST *expr, Operand *truedest, Operand *falsedes
 static IROpcode
 OpcFromOp(int op)
 {
-  switch(op) {
-  case '+':
-    return OPC_ADD;
-  case '-':
-    return OPC_SUB;
-  case '&':
-    return OPC_AND;
-  case '|':
-    return OPC_OR;
-  case '^':
-    return OPC_XOR;
-  case K_SHL:
-    return OPC_SHL;
-  case K_SAR:
-    return OPC_SAR;
-  case K_SHR:
-    return OPC_SHR;
-  case K_NEGATE:
-    return OPC_NEG;
-  case K_ABS:
-    return OPC_ABS;
-  case K_ROTL:
-      return OPC_ROL;
-  case K_ROTR:
-      return OPC_ROR;
+    switch(op) {
+    case '+':
+        return OPC_ADD;
+    case '-':
+        return OPC_SUB;
+    case '&':
+        return OPC_AND;
+    case '|':
+        return OPC_OR;
+    case '^':
+        return OPC_XOR;
+    case K_SHL:
+        return OPC_SHL;
+    case K_SAR:
+        return OPC_SAR;
+    case K_SHR:
+        return OPC_SHR;
+    case K_NEGATE:
+        return OPC_NEG;
+    case K_ABS:
+        return OPC_ABS;
+    case K_ROTL:
+        return OPC_ROL;
+    case K_ROTR:
+        return OPC_ROR;
 //  case K_REV:
 //      return gl_p2 ? OPC_REV_P2 : OPC_REV_P1;
-  case K_LIMITMIN:
-      return OPC_MINS;
-  case K_LIMITMAX:
-      return OPC_MAXS;
-  case K_LIMITMIN_UNS:
-      return OPC_MINU;
-  case K_LIMITMAX_UNS:
-      return OPC_MAXU;
-  default:
-    ERROR(NULL, "Unsupported operator 0x%x", op);
-    return OPC_UNKNOWN;
-  }
+    case K_LIMITMIN:
+        return OPC_MINS;
+    case K_LIMITMAX:
+        return OPC_MAXS;
+    case K_LIMITMIN_UNS:
+        return OPC_MINU;
+    case K_LIMITMAX_UNS:
+        return OPC_MAXU;
+    default:
+        ERROR(NULL, "Unsupported operator 0x%x", op);
+        return OPC_UNKNOWN;
+    }
 }
 static Operand *
 Dereference(IRList *irl, Operand *op)
@@ -2544,200 +2544,200 @@ Dereference(IRList *irl, Operand *op)
 static Operand *
 CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
 {
-  int op = (int)expr->d.ival;
-  AST *lhs = expr->left;
-  AST *rhs = expr->right;
-  Operand *left;
-  Operand *right;
-  Operand *temp;
-  IR *ir;
-  int specialcase = 0;
-  
-  // beware of things like a = b - a
-  // so make sure we re-use temp for dest only
-  // if it isn't already in use
-  if (dest && dest->kind == REG_TEMP) {
-      temp = dest;
-  } else {
-      temp = NewFunctionTempRegister();
-  }
-  switch(op) {
-  case K_REV:
-      // we actually want rev lhs, 32 - rhs
-      rhs = AstOperator('-', AstInteger(32), rhs);
-      if (gl_p2) {
-          // reverse, then shift right
-          left = CompileExpression(irl, lhs, NULL);
-          right = CompileExpression(irl, rhs, NULL);
-          EmitMove(irl, temp, left, lhs);
-          EmitOp1(irl, OPC_REV_P2, temp); // reverse the bits
-          EmitOp2(irl, OPC_SHR, temp, right);
-          return temp;
-      } else {
-          left = CompileExpression(irl, lhs, temp);
-          right = CompileExpression(irl, rhs, NULL);
-          EmitMove(irl, temp, left, lhs);
-          right = Dereference(irl, right);
-          EmitOp2(irl, OPC_REV_P1, temp, right);
-          return temp;
-      }
-  case '-':
-  case K_SHL:
-  case K_SHR:
-  case K_SAR:
-  case K_ROTL:
-  case K_ROTR:
-  case K_LIMITMIN:
-  case K_LIMITMAX:
-  case K_LIMITMIN_UNS:
-  case K_LIMITMAX_UNS:
-      left = CompileExpression(irl, lhs, temp);
-      right = CompileExpression(irl, rhs, NULL);
-      EmitMove(irl, temp, left, expr);
-      right = Dereference(irl, right);
-      EmitOp2(irl, OpcFromOp(op), temp, right);
-      return temp;
-  case K_ZEROEXTEND:
-  case K_SIGNEXTEND:
-      if (gl_p2) {
-          AST *rhs_temp = AstOperator('-', rhs, AstInteger(1));
-          rhs_temp = FoldIfConst(rhs_temp);
-          right = CompileExpression(irl, rhs_temp, NULL);
-          left = CompileExpression(irl, lhs, temp);
-          EmitMove(irl, temp, left, expr);
-          EmitOp2(irl, op == K_ZEROEXTEND ? OPC_ZEROX : OPC_SIGNX, temp, right);
-      } else { // P1
-          AST *rhs_temp = FoldIfConst(AstOperator('-',AstInteger(32),rhs));
-          left = CompileExpression(irl, lhs, temp);
-          EmitMove(irl, temp, left, expr);
-          if (op == K_ZEROEXTEND && rhs_temp->kind == AST_INTEGER && (rhs_temp->d.ival&31) >= 23) {
-              EmitOp2(irl, OPC_AND, temp, NewImmediate(0xFFFFFFFFu>>(rhs_temp->d.ival&31)));
-          } else {
-              right = CompileExpression(irl, rhs_temp, NULL);
-              EmitOp2(irl, OPC_SHL, temp, right);
-              EmitOp2(irl, (op == K_ZEROEXTEND) ? OPC_SHR : OPC_SAR, temp, right);
-          }
-      }
-      return temp;
-    // commutative ops 
-  case '+':
-      // check for unary op
-      if (!lhs) return CompileExpression(irl, rhs, temp);
-      // fall through
-  case '^':
-  case '&':
-  case '|':
-      // there might be something different we could do about
-      // commutative operations, but for now handle them the same
-      left = CompileExpression(irl, lhs, temp);
-      right = CompileExpression(irl, rhs, NULL);
-      EmitMove(irl, temp, left, expr);
-      right = Dereference(irl, right);
-      EmitOp2(irl, OpcFromOp(op), temp, right);
-      return temp;
-  case K_NEGATE:
-  case K_ABS:
-      right = CompileExpression(irl, rhs, temp);
-      right = Dereference(irl, right);
-      EmitOp2(irl, OpcFromOp(op), temp, right);
-      return temp;
-  case K_FNEGATE:
-      right = CompileExpression(irl, rhs, temp);
-      right = Dereference(irl, right);
-      EmitMove(irl, temp, NewImmediate(0x80000000), expr);
-      EmitOp2(irl, OPC_XOR, temp, right);
-      return temp;
-  case K_BIT_NOT:
-      right = CompileExpression(irl, rhs, temp);
-      if (gl_p2) {
-          right = Dereference(irl, right);
-          EmitOp2(irl, OPC_NOT, temp, right);
-      } else {
-          left = NewImmediate(-1);
-          EmitMove(irl, temp, right, expr);
-          EmitOp2(irl, OPC_XOR, temp, left);
-      }
-      return temp;
-  case K_ENCODE2:
-      specialcase = 1;
-      /* fall through */
-  case K_ENCODE:
-      right = CompileExpression(irl, rhs, temp);
-      if (gl_p2) {
-          IR *ir;
-          ir = EmitOp2(irl, OPC_ENCOD, temp, right);
-          if (!specialcase) {
-              // the Spin operator returns 0-32; the Spin2 one returns
-              // 0-31 with ENCOD(0) == 0
-              ir->flags |= FLAG_WC;
-              ir = EmitOp2(irl, OPC_ADD, temp, NewImmediate(1));
-              ir->cond = COND_LT; // if c is set, src was nonzero and add 1
-          }
-      } else {
-          left = NewFunctionTempRegister();
-          EmitMove(irl, left, right, expr);
-          if (specialcase) {
-              // Spin2 ENCOD only goes 0-31, not 0-32
-              EmitMove(irl, temp, NewImmediate(31), expr);
-          } else {
-              EmitMove(irl, temp, NewImmediate(32), expr);
-          }
-          right = NewCodeLabel();
-          EmitLabel(irl, right);
-          ir = EmitOp2(irl, OPC_SHL, left, NewImmediate(1));
-          ir->flags |= FLAG_WC;
-          ir = EmitOp2(irl, OPC_DJNZ, temp, right);
-          ir->cond = COND_NC;
-      }
-      return temp;
-  case K_DECODE:
-      ERROR(rhs, "Internal error, decode operators should have been handled in spin transormations");
-      return EmptyOperand();
+    int op = (int)expr->d.ival;
+    AST *lhs = expr->left;
+    AST *rhs = expr->right;
+    Operand *left;
+    Operand *right;
+    Operand *temp;
+    IR *ir;
+    int specialcase = 0;
 
-  case K_BOOL_NOT:
-  case K_BOOL_AND:
-  case K_BOOL_OR:
-  case K_EQ:
-  case K_NE:
-  case K_LE:
-  case K_GE:
-  case '<':
-  case '>':
-  case K_LTU:
-  case K_GTU:
-  case K_LEU:
-  case K_GEU:
-  {
-      Operand *zero = NewImmediate(0);
-      Operand *skiplabel = NewCodeLabel();
-      Operand *truevalue;
+    // beware of things like a = b - a
+    // so make sure we re-use temp for dest only
+    // if it isn't already in use
+    if (dest && dest->kind == REG_TEMP) {
+        temp = dest;
+    } else {
+        temp = NewFunctionTempRegister();
+    }
+    switch(op) {
+    case K_REV:
+        // we actually want rev lhs, 32 - rhs
+        rhs = AstOperator('-', AstInteger(32), rhs);
+        if (gl_p2) {
+            // reverse, then shift right
+            left = CompileExpression(irl, lhs, NULL);
+            right = CompileExpression(irl, rhs, NULL);
+            EmitMove(irl, temp, left, lhs);
+            EmitOp1(irl, OPC_REV_P2, temp); // reverse the bits
+            EmitOp2(irl, OPC_SHR, temp, right);
+            return temp;
+        } else {
+            left = CompileExpression(irl, lhs, temp);
+            right = CompileExpression(irl, rhs, NULL);
+            EmitMove(irl, temp, left, lhs);
+            right = Dereference(irl, right);
+            EmitOp2(irl, OPC_REV_P1, temp, right);
+            return temp;
+        }
+    case '-':
+    case K_SHL:
+    case K_SHR:
+    case K_SAR:
+    case K_ROTL:
+    case K_ROTR:
+    case K_LIMITMIN:
+    case K_LIMITMAX:
+    case K_LIMITMIN_UNS:
+    case K_LIMITMAX_UNS:
+        left = CompileExpression(irl, lhs, temp);
+        right = CompileExpression(irl, rhs, NULL);
+        EmitMove(irl, temp, left, expr);
+        right = Dereference(irl, right);
+        EmitOp2(irl, OpcFromOp(op), temp, right);
+        return temp;
+    case K_ZEROEXTEND:
+    case K_SIGNEXTEND:
+        if (gl_p2) {
+            AST *rhs_temp = AstOperator('-', rhs, AstInteger(1));
+            rhs_temp = FoldIfConst(rhs_temp);
+            right = CompileExpression(irl, rhs_temp, NULL);
+            left = CompileExpression(irl, lhs, temp);
+            EmitMove(irl, temp, left, expr);
+            EmitOp2(irl, op == K_ZEROEXTEND ? OPC_ZEROX : OPC_SIGNX, temp, right);
+        } else { // P1
+            AST *rhs_temp = FoldIfConst(AstOperator('-',AstInteger(32),rhs));
+            left = CompileExpression(irl, lhs, temp);
+            EmitMove(irl, temp, left, expr);
+            if (op == K_ZEROEXTEND && rhs_temp->kind == AST_INTEGER && (rhs_temp->d.ival&31) >= 23) {
+                EmitOp2(irl, OPC_AND, temp, NewImmediate(0xFFFFFFFFu>>(rhs_temp->d.ival&31)));
+            } else {
+                right = CompileExpression(irl, rhs_temp, NULL);
+                EmitOp2(irl, OPC_SHL, temp, right);
+                EmitOp2(irl, (op == K_ZEROEXTEND) ? OPC_SHR : OPC_SAR, temp, right);
+            }
+        }
+        return temp;
+    // commutative ops
+    case '+':
+        // check for unary op
+        if (!lhs) return CompileExpression(irl, rhs, temp);
+    // fall through
+    case '^':
+    case '&':
+    case '|':
+        // there might be something different we could do about
+        // commutative operations, but for now handle them the same
+        left = CompileExpression(irl, lhs, temp);
+        right = CompileExpression(irl, rhs, NULL);
+        EmitMove(irl, temp, left, expr);
+        right = Dereference(irl, right);
+        EmitOp2(irl, OpcFromOp(op), temp, right);
+        return temp;
+    case K_NEGATE:
+    case K_ABS:
+        right = CompileExpression(irl, rhs, temp);
+        right = Dereference(irl, right);
+        EmitOp2(irl, OpcFromOp(op), temp, right);
+        return temp;
+    case K_FNEGATE:
+        right = CompileExpression(irl, rhs, temp);
+        right = Dereference(irl, right);
+        EmitMove(irl, temp, NewImmediate(0x80000000), expr);
+        EmitOp2(irl, OPC_XOR, temp, right);
+        return temp;
+    case K_BIT_NOT:
+        right = CompileExpression(irl, rhs, temp);
+        if (gl_p2) {
+            right = Dereference(irl, right);
+            EmitOp2(irl, OPC_NOT, temp, right);
+        } else {
+            left = NewImmediate(-1);
+            EmitMove(irl, temp, right, expr);
+            EmitOp2(irl, OPC_XOR, temp, left);
+        }
+        return temp;
+    case K_ENCODE2:
+        specialcase = 1;
+    /* fall through */
+    case K_ENCODE:
+        right = CompileExpression(irl, rhs, temp);
+        if (gl_p2) {
+            IR *ir;
+            ir = EmitOp2(irl, OPC_ENCOD, temp, right);
+            if (!specialcase) {
+                // the Spin operator returns 0-32; the Spin2 one returns
+                // 0-31 with ENCOD(0) == 0
+                ir->flags |= FLAG_WC;
+                ir = EmitOp2(irl, OPC_ADD, temp, NewImmediate(1));
+                ir->cond = COND_LT; // if c is set, src was nonzero and add 1
+            }
+        } else {
+            left = NewFunctionTempRegister();
+            EmitMove(irl, left, right, expr);
+            if (specialcase) {
+                // Spin2 ENCOD only goes 0-31, not 0-32
+                EmitMove(irl, temp, NewImmediate(31), expr);
+            } else {
+                EmitMove(irl, temp, NewImmediate(32), expr);
+            }
+            right = NewCodeLabel();
+            EmitLabel(irl, right);
+            ir = EmitOp2(irl, OPC_SHL, left, NewImmediate(1));
+            ir->flags |= FLAG_WC;
+            ir = EmitOp2(irl, OPC_DJNZ, temp, right);
+            ir->cond = COND_NC;
+        }
+        return temp;
+    case K_DECODE:
+        ERROR(rhs, "Internal error, decode operators should have been handled in spin transormations");
+        return EmptyOperand();
 
-      if (LangBoolIsOne(curfunc->language)) {
-          truevalue = NewImmediate(1);
-      } else {
-          truevalue = NewImmediate(-1);
-      }
-      EmitMove(irl, temp, zero, expr);
-      CompileBoolBranches(irl, expr, NULL, skiplabel);
-      EmitOp2(irl, OPC_XOR, temp, truevalue);
-      EmitLabel(irl, skiplabel);
-      return temp;
-  }
-  case K_SQRT:
-  case K_ONES_COUNT:
-  case K_SCAS:
-  case K_FRAC64:
-  case K_QEXP:
-  case K_QLOG:
-  case '?':
-  {
-      ERROR(expr, "Internal error, Unexpected operator 0x%x found, should have been converted to function", op);
-      return EmptyOperand();
-  }
-  default:
-    ERROR(lhs, "Unsupported operator 0x%x", op);
-    return EmptyOperand();
-  }
+    case K_BOOL_NOT:
+    case K_BOOL_AND:
+    case K_BOOL_OR:
+    case K_EQ:
+    case K_NE:
+    case K_LE:
+    case K_GE:
+    case '<':
+    case '>':
+    case K_LTU:
+    case K_GTU:
+    case K_LEU:
+    case K_GEU:
+    {
+        Operand *zero = NewImmediate(0);
+        Operand *skiplabel = NewCodeLabel();
+        Operand *truevalue;
+
+        if (LangBoolIsOne(curfunc->language)) {
+            truevalue = NewImmediate(1);
+        } else {
+            truevalue = NewImmediate(-1);
+        }
+        EmitMove(irl, temp, zero, expr);
+        CompileBoolBranches(irl, expr, NULL, skiplabel);
+        EmitOp2(irl, OPC_XOR, temp, truevalue);
+        EmitLabel(irl, skiplabel);
+        return temp;
+    }
+    case K_SQRT:
+    case K_ONES_COUNT:
+    case K_SCAS:
+    case K_FRAC64:
+    case K_QEXP:
+    case K_QLOG:
+    case '?':
+    {
+        ERROR(expr, "Internal error, Unexpected operator 0x%x found, should have been converted to function", op);
+        return EmptyOperand();
+    }
+    default:
+        ERROR(lhs, "Unsupported operator 0x%x", op);
+        return EmptyOperand();
+    }
 }
 
 static Operand *
@@ -2816,34 +2816,34 @@ static OperandList quitstack;
 static void
 PushQuitNext(Operand *q, Operand *n)
 {
-  OperandList *qholder = (OperandList *)malloc(sizeof(OperandList));
-  OperandList *nholder = (OperandList *)malloc(sizeof(OperandList));
-  qholder->op = quitlabel;
-  nholder->op = nextlabel;
-  qholder->next = nholder;
-  nholder->next = quitstack.next;
-  quitstack.next = qholder;
+    OperandList *qholder = (OperandList *)malloc(sizeof(OperandList));
+    OperandList *nholder = (OperandList *)malloc(sizeof(OperandList));
+    qholder->op = quitlabel;
+    nholder->op = nextlabel;
+    qholder->next = nholder;
+    nholder->next = quitstack.next;
+    quitstack.next = qholder;
 
-  quitlabel = q;
-  nextlabel = n;
+    quitlabel = q;
+    nextlabel = n;
 }
 
 static void
 PopQuitNext()
 {
-  OperandList *ql, *nl;
+    OperandList *ql, *nl;
 
-  ql = quitstack.next;
-  if (!ql || !ql->next) {
-    ERROR(NULL, "Internal error, empty loop stack");
-    return;
-  }
-  nl = ql->next;
-  quitstack.next = nl->next;
-  quitlabel = ql->op;
-  nextlabel = nl->op;
-  free(nl);
-  free(ql);
+    ql = quitstack.next;
+    if (!ql || !ql->next) {
+        ERROR(NULL, "Internal error, empty loop stack");
+        return;
+    }
+    nl = ql->next;
+    quitstack.next = nl->next;
+    quitlabel = ql->op;
+    nextlabel = nl->op;
+    free(nl);
+    free(ql);
 }
 
 /* compiles a list of expressions; returns
@@ -2852,45 +2852,45 @@ PopQuitNext()
 static OperandList *
 CompileExprList(IRList *irl, AST *fromlist)
 {
-  AST *from;
-  Operand *opfrom = NULL;
-  Operand *opto[MAX_TUPLE] = { 0 };
-  OperandList *ret = NULL;
-  OperandList *fresults = NULL;
-  int starttempreg;
-  
-  while (fromlist) {
-    from = fromlist->left;
-    fromlist = fromlist->right;
+    AST *from;
+    Operand *opfrom = NULL;
+    Operand *opto[MAX_TUPLE] = { 0 };
+    OperandList *ret = NULL;
+    OperandList *fresults = NULL;
+    int starttempreg;
 
-    if (from && from->kind == AST_FUNCCALL) {
-        fresults = CompileFunccall(irl, from);
-        AppendOperandList(&ret, fresults);
-    } else {
-        int siz = TypeSize(ExprType(from));
-        int i;
-        int off = 0;
-        for (i = 0; i < siz; i += LONG_SIZE) {
-            opto[i] = NewFunctionTempRegister();
-        }
-        starttempreg = FuncData(curfunc)->curtempreg;
-        opfrom = CompileExpression(irl, from, NULL);
-        if (!opfrom) break;
-        for (i = 0; i < siz; i += LONG_SIZE) {
-            Operand *tmpfrom;
-            if (off) {
-                tmpfrom = OffsetMemory(irl, opfrom, NewImmediate(off), NULL);
-            } else {
-                tmpfrom = opfrom;
+    while (fromlist) {
+        from = fromlist->left;
+        fromlist = fromlist->right;
+
+        if (from && from->kind == AST_FUNCCALL) {
+            fresults = CompileFunccall(irl, from);
+            AppendOperandList(&ret, fresults);
+        } else {
+            int siz = TypeSize(ExprType(from));
+            int i;
+            int off = 0;
+            for (i = 0; i < siz; i += LONG_SIZE) {
+                opto[i] = NewFunctionTempRegister();
             }
-            EmitMove(irl, opto[i], tmpfrom, from);
-            AppendOperand(&ret, opto[i]);
-            off += LONG_SIZE;
+            starttempreg = FuncData(curfunc)->curtempreg;
+            opfrom = CompileExpression(irl, from, NULL);
+            if (!opfrom) break;
+            for (i = 0; i < siz; i += LONG_SIZE) {
+                Operand *tmpfrom;
+                if (off) {
+                    tmpfrom = OffsetMemory(irl, opfrom, NewImmediate(off), NULL);
+                } else {
+                    tmpfrom = opfrom;
+                }
+                EmitMove(irl, opto[i], tmpfrom, from);
+                AppendOperand(&ret, opto[i]);
+                off += LONG_SIZE;
+            }
+            FreeTempRegisters(irl, starttempreg);
         }
-        FreeTempRegisters(irl, starttempreg);
     }
-  }
-  return ret;
+    return ret;
 }
 
 //
@@ -2904,7 +2904,7 @@ EmitParameterList(IRList *irl, OperandList *oplist, Function *func, AST *functyp
     int n = 0;
     int stackadj = 0;
     AST *linenum = NULL;
-    
+
     while (oplist != NULL) {
         op = oplist->op;
         oplist = oplist->next;
@@ -2996,7 +2996,7 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
     Function *func;
     AST *objref = NULL;
     int abstract = 0;
-    
+
     if (ftypeptr) {
         AST *ftype;
         if (expr->kind == AST_FUNCCALL || expr->kind == AST_ADDROF || expr->kind == AST_ABSADDROF) {
@@ -3024,12 +3024,12 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
         Operand *temp1 = NewFunctionTempRegister();
         Operand *temp2 = NewFunctionTempRegister();
         Operand *ptr1, *ptr2;
-        
+
         base = CompileExpression(irl, expr->left, tempbase);
         EmitMove(irl, tempbase, base, expr);
         ptr1 = SizedHubMemRef(LONG_SIZE, tempbase, 0);
         ptr2 = SizedHubMemRef(LONG_SIZE, tempbase, 4);
-        
+
         EmitMove(irl, temp1, ptr1, expr);
         EmitMove(irl, temp2, ptr2, expr);
         if (objptr) {
@@ -3049,7 +3049,7 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
     }
     offset = NULL;
     objaddr = NULL;
-    
+
     if (objref) {
         if (IsDirectMemberVariable(irl, objref, &offset)) {
             // do nothing, offset is already set up
@@ -3097,83 +3097,83 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
 static OperandList *
 CompileFunccall(IRList *irl, AST *expr)
 {
-  Function *func = NULL;
-  AST *functype = NULL;
-  AST *params;
-  Operand *offset = NULL;
-  Operand *absobjaddr = NULL;
-  Operand *funcaddr = NULL;
-  OperandList *temp;
-  OperandList *results = NULL;
-  Operand *reg;
-  int numresults;
-  IR *ir;
-  int i;
-  int stackadj = 0;
-  int starttempreg = FuncData(curfunc)->curtempreg;
-      
-  func = CompileGetFunctionInfo(irl, expr, &absobjaddr, &offset, &funcaddr, &functype);
+    Function *func = NULL;
+    AST *functype = NULL;
+    AST *params;
+    Operand *offset = NULL;
+    Operand *absobjaddr = NULL;
+    Operand *funcaddr = NULL;
+    OperandList *temp;
+    OperandList *results = NULL;
+    Operand *reg;
+    int numresults;
+    IR *ir;
+    int i;
+    int stackadj = 0;
+    int starttempreg = FuncData(curfunc)->curtempreg;
 
-  if (!func && !functype) {
-      return NULL;
-  }
-  params = expr->right;
-  temp = CompileExprList(irl, params);
+    func = CompileGetFunctionInfo(irl, expr, &absobjaddr, &offset, &funcaddr, &functype);
 
-  /* now copy the parameters into place (have to do this in case there are
-     function calls within the parameters)
-   */
-  stackadj = EmitParameterList(irl, temp, func, functype);
+    if (!func && !functype) {
+        return NULL;
+    }
+    params = expr->right;
+    temp = CompileExprList(irl, params);
 
-  if (offset || absobjaddr) {
-      Operand *temp = NULL;
-      ValidateObjbase();
-      if (offset) {
-          EmitOp2(irl, OPC_ADD, objbase, offset);
-      } else {
-          temp = NewFunctionTempRegister();
-          EmitMove(irl, temp, objbase, expr);
-          EmitMove(irl, objbase, absobjaddr, expr);
-      }
-      ir = EmitOp1(irl, OPC_CALL, funcaddr);
-      if (offset) {
-          EmitOp2(irl, OPC_SUB, objbase, offset);
-      } else if (temp) {
-          EmitMove(irl, objbase, temp, expr);
-      }
-  } else {
-      ir = EmitOp1(irl, OPC_CALL, funcaddr);
-  }
-  if (func) {
-      FuncData(func)->actual_callsites++;
-  }
-  ir->aux = (void *)func; // remember the function for optimization purposes
+    /* now copy the parameters into place (have to do this in case there are
+       function calls within the parameters)
+     */
+    stackadj = EmitParameterList(irl, temp, func, functype);
 
-  FreeTempRegisters(irl, starttempreg);
-  
-  /* now get the results */
-  /* NOTE: we cannot assume this is unchanged over future calls,
-     so save it in a temp register
-  */
-  numresults = FuncNumResults(functype);
-  if (func && func->numresults != numresults) {
-      if (functype) {
-          WARNING(NULL, "Internal assert failure: func numresults inconsistent for function %s", func->name);
-          func->numresults = numresults;
-      } else {
-          numresults = func->numresults;
-      }
-  }
-  
-  for (i = 0; i < numresults; i++) {
-      reg = NewFunctionTempRegister();
-      EmitMove(irl, reg, GetResultReg(i), expr);
-      AppendOperand(&results, reg);
-  }
-  if (stackadj) {
-      EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(stackadj));
-  }
-  return results;
+    if (offset || absobjaddr) {
+        Operand *temp = NULL;
+        ValidateObjbase();
+        if (offset) {
+            EmitOp2(irl, OPC_ADD, objbase, offset);
+        } else {
+            temp = NewFunctionTempRegister();
+            EmitMove(irl, temp, objbase, expr);
+            EmitMove(irl, objbase, absobjaddr, expr);
+        }
+        ir = EmitOp1(irl, OPC_CALL, funcaddr);
+        if (offset) {
+            EmitOp2(irl, OPC_SUB, objbase, offset);
+        } else if (temp) {
+            EmitMove(irl, objbase, temp, expr);
+        }
+    } else {
+        ir = EmitOp1(irl, OPC_CALL, funcaddr);
+    }
+    if (func) {
+        FuncData(func)->actual_callsites++;
+    }
+    ir->aux = (void *)func; // remember the function for optimization purposes
+
+    FreeTempRegisters(irl, starttempreg);
+
+    /* now get the results */
+    /* NOTE: we cannot assume this is unchanged over future calls,
+       so save it in a temp register
+    */
+    numresults = FuncNumResults(functype);
+    if (func && func->numresults != numresults) {
+        if (functype) {
+            WARNING(NULL, "Internal assert failure: func numresults inconsistent for function %s", func->name);
+            func->numresults = numresults;
+        } else {
+            numresults = func->numresults;
+        }
+    }
+
+    for (i = 0; i < numresults; i++) {
+        reg = NewFunctionTempRegister();
+        EmitMove(irl, reg, GetResultReg(i), expr);
+        AppendOperand(&results, reg);
+    }
+    if (stackadj) {
+        EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(stackadj));
+    }
+    return results;
 }
 
 static Operand *
@@ -3284,7 +3284,7 @@ CompileMemref(IRList *irl, AST *expr)
 {
     Operand *addr = CompileExpression(irl, expr->right, NULL);
     AST *type = expr->left;
-    
+
     addr = Dereference(irl, addr);
     if (0 && addr->kind != REG_TEMP && IsCogMem(addr)) {
         addr = CogMemRef(addr, 0);
@@ -3304,12 +3304,12 @@ OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type)
     int shift;
     int siz;
     AST *linenum = NULL;
-    
+
     // check for COG memory references
     if (!IsMemRef(base) && IsCogMem(base)) {
         Operand *addr;
         long offval = offset->val;
-        
+
         if (base->kind == REG_SUBREG) {
             offval += base->val * LONG_SIZE;
             base = (Operand *)base;
@@ -3321,7 +3321,7 @@ OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type)
         case REG_ARG:
         case REG_RESULT:
         case REG_HW:
-#if 1      
+#if 1
             /* special case immediate offsets */
             if (offset->kind == IMM_INT) {
                 base->used = 1;
@@ -3330,7 +3330,7 @@ OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type)
                 }
                 return SubRegister(base, offval);
             }
-#endif            
+#endif
             base->used = 1;
             addr = NewOperand(IMM_COG_LABEL, base->name, 0);
             temp = NewFunctionTempRegister();
@@ -3382,7 +3382,7 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset, int siz)
     Operand *temp;
     int idx;
     AST *linenum = NULL;
-    
+
     // check for COG memory references
     if (!IsMemRef(base) && IsCogMem(base)) {
         Operand *addr;
@@ -3398,7 +3398,7 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset, int siz)
         case REG_ARG:
         case REG_RESULT:
         case REG_HW:
-#if 1      
+#if 1
             /* special case immediate offsets */
             if (offset->kind == IMM_INT) {
                 base->used = 1;
@@ -3407,7 +3407,7 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset, int siz)
                 }
                 return SubRegister(base, offval);
             }
-#endif            
+#endif
             base->used = 1;
             addr = NewOperand(IMM_COG_LABEL, base->name, 0);
             temp = NewFunctionTempRegister();
@@ -3439,7 +3439,7 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset, int siz)
         siz = 1;
         break;
     }
-          
+
     basereg = (Operand *)base->name;
     if (offset->kind == IMM_INT) {
         idx = offset->val * siz;
@@ -3521,7 +3521,7 @@ CompileMaskMove(IRList *irl, AST *expr)
         ERROR(expr, "Internal format error");
         return tmp;
     }
-    
+
     val = CompileExpression(irl, valast, NULL);
     mask = CompileExpression(irl, maskast, NULL);
 
@@ -3534,7 +3534,7 @@ CompileMaskMove(IRList *irl, AST *expr)
         break;
     case AST_HWREG:
         dest = CompileHWReg(irl, destast);
-// is this really necessary? it certainly hinders optimization        
+// is this really necessary? it certainly hinders optimization
 //        keepflag = FLAG_KEEP_INSTR;
         break;
     case AST_ARRAYREF:
@@ -3619,7 +3619,7 @@ CompileCoginit(IRList *irl, AST *expr)
 {
     AST *funccall;
     AST *params = expr->left;
-    
+
     if ( IsSpinCoginit(expr, NULL) )
     {
         AST *exprlist;
@@ -3693,7 +3693,7 @@ CompileCoginit(IRList *irl, AST *expr)
                 return OPERAND_DUMMY;
             }
         }
-        
+
         // we have to build the call into the new stack
         if (IsIdentifier(func)) {
             params = NULL;
@@ -3705,7 +3705,7 @@ CompileCoginit(IRList *irl, AST *expr)
         }
         ValidateObjbase();
         if (stack->kind != AST_ADDROF && stack->kind != AST_DATADDROF
-            && stack->kind != AST_ABSADDROF)
+                && stack->kind != AST_ABSADDROF)
         {
             if (!IsPointerType(ExprType(stack))) {
                 WARNING(stack, "Normally the coginit stack parameter should be an address");
@@ -3762,7 +3762,7 @@ CompileLookupDown(IRList *irl, AST *expr)
     AST *len;
     AST *arrid;
     Operand *value;
-    
+
     int popsize = 0;
     if (expr->kind == AST_LOOKDOWN) {
         funccall = AstIdentifier("_lookdown");
@@ -3786,14 +3786,14 @@ CompileLookupDown(IRList *irl, AST *expr)
         int n;
         Operand *basereg = NewFunctionTempRegister();
         Operand *finalidx;
-        
+
         /* NOTE!
            we have to evaluate the index before evaluating array elements
         */
         finalidx = CompileExpression(irl, idx, NULL);
         idx = NewAST(AST_OPERAND, NULL, NULL);
         idx->d.ptr = (void *)finalidx;
-        
+
         ValidateStackptr();
         arrid = NewAST(AST_OPERAND, NULL, NULL);
         arrid->d.ptr = (void *)basereg;
@@ -3841,20 +3841,20 @@ GetAddressOf(IRList *irl, AST *expr)
         return tmp;
     case AST_ARRAYREF:
     {
-      Operand *base;
-      Operand *offset;
-      int siz;
-      
-      if (!expr->right) {
-          ERROR(expr, "Array ref with no index?");
-          return NewOperand(REG_REG, "???", 0);
-      }
-      base = CompileExpression(irl, expr->left, NULL);
-      offset = CompileExpression(irl, expr->right, NULL);
-      siz = TypeSize(ExprType(expr));
-      res = ApplyArrayIndex(irl, base, offset, siz);
-      tmp = GetLea(irl, res);
-      return tmp;
+        Operand *base;
+        Operand *offset;
+        int siz;
+
+        if (!expr->right) {
+            ERROR(expr, "Array ref with no index?");
+            return NewOperand(REG_REG, "???", 0);
+        }
+        base = CompileExpression(irl, expr->left, NULL);
+        offset = CompileExpression(irl, expr->right, NULL);
+        siz = TypeSize(ExprType(expr));
+        res = ApplyArrayIndex(irl, base, offset, siz);
+        tmp = GetLea(irl, res);
+        return tmp;
     }
     case AST_METHODREF:
     {
@@ -3863,7 +3863,7 @@ GetAddressOf(IRList *irl, AST *expr)
         const char *name;
         Module *P;
         int off;
-        
+
         name = GetUserIdentifierName(expr->right);
         sym = LookupMemberSymbol(expr, ExprType(expr->left), name, &P, NULL);
         if (sym) {
@@ -3905,7 +3905,7 @@ static void
 EmitComments(IRList *irl, AST *comment)
 {
     Operand *r;
-    
+
     while (comment) {
         if (comment->kind == AST_COMMENT) {
             /* for now ignore comments */
@@ -3954,411 +3954,411 @@ validateArrayRef(AST *ast)
 static Operand *
 CompileExpression(IRList *irl, AST *expr, Operand *dest)
 {
-  Operand *r;
-  Operand *val;
+    Operand *r;
+    Operand *val;
 
-  while (expr && expr->kind == AST_COMMENTEDNODE) {
-      EmitComments(irl, expr->right);          
-      expr = expr->left;
-  }
-  if (!expr) return NULL;
-  if (expr->kind == AST_COMMENT) return NULL;
-  if (IsConstExpr(expr)) {
-      switch (expr->kind) {
-      case AST_SYMBOL:
-      case AST_IDENTIFIER:
-      case AST_LOCAL_IDENTIFIER:
-          // leave symbolic constants alone
-      case AST_ADDROF:
-      case AST_ABSADDROF:
-          // similarly for address expressions
-          break;
-      default:
-          expr = FoldIfConst(expr);
-          break;
-      }
-  }
-  switch (expr->kind) {
-  case AST_CONDRESULT:
-      return CompileCondResult(irl, expr);
-  case AST_MASKMOVE:
-      return CompileMaskMove(irl, expr);
-  case AST_CATCH:
-      ERROR(expr, "Internal error, should not see raw CATCH");
-      return OPERAND_DUMMY;
-  case AST_SETJMP:
-      ValidateAbortFuncs();
-      if (expr->left) {
-          val = CompileExpression(irl, expr->left, NULL);
-          r = GetResultReg(0);
-      } else {
-          val = abortchain;
-          r = abortcaught;
-      }
-      EmitMove(irl, GetArgReg(0), val, expr);
-      EmitOp1(irl, OPC_CALL, setjmpfunc);
-      return r;
-  case AST_CATCHRESULT:
-      ValidateAbortFuncs();
-      return abortresult;
-  case AST_TRYENV:
-  {
-      Operand *tmp;
-      ValidateAbortFuncs();
-      EmitPush(irl, abortchain, expr);
-      EmitMove(irl, abortchain, stackptr, expr);
-      EmitOp2(irl, OPC_ADD, stackptr, NewImmediate(SETJMP_BUF_SIZE));
-      tmp = CompileExpression(irl, expr->left, NULL);
-      EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(SETJMP_BUF_SIZE));
-      EmitPop(irl, abortchain, expr);
-      return tmp;
-  }
-  case AST_ISBETWEEN:
-  {
-      Operand *zero = NewImmediate(0);
-      Operand *skiplabel = NewCodeLabel();
-      Operand *temp = NewFunctionTempRegister();
-      Operand *truevalue = (LangBoolIsOne(curfunc->language)) ? NewImmediate(1) : NewImmediate(-1);
-      EmitMove(irl, temp, zero, expr);
-      CompileBoolBranches(irl, expr, NULL, skiplabel);
-      EmitOp2(irl, OPC_XOR, temp, truevalue);
-      EmitLabel(irl, skiplabel);
-      return temp;
-  }
-  case AST_SEQUENCE:
-  {
-      int starttemp = GetTempRegisterStack();
-      r = CompileExpression(irl, expr->left, NULL);
-      if (expr->right) {
-          FreeTempRegisters(irl, starttemp);
-          r = CompileExpression(irl, expr->right, NULL);
-      }
-      return r;
-  }
-  case AST_INTEGER:
-  case AST_FLOAT:
-    r = NewImmediate((int32_t)expr->d.ival);
-    return r;
-  case AST_SYMBOL:
-  {
-      Symbol *sym = (Symbol *)expr->d.ptr;
-      r = CompileSymbolForFunc(irl, sym, curfunc, expr);
-      if (dest) {
-          EmitMove(irl, dest, r, expr);
-          r = dest;
-      }
-      return r;
-  }
-  case AST_RESULT:
-  case AST_IDENTIFIER:
-  case AST_LOCAL_IDENTIFIER:
-    r = CompileIdentifier(irl, expr);
-    if (dest) {
-        EmitMove(irl, dest, r, expr);
-        r = dest;
+    while (expr && expr->kind == AST_COMMENTEDNODE) {
+        EmitComments(irl, expr->right);
+        expr = expr->left;
     }
-    return r;
-  case AST_EMPTY:
-      r = EmptyOperand();
-      return r;
-  case AST_VA_START:
-  {   // va_start(x, n) -> mov x, __func__varargs
-      Operand *src = CompileIdentifier(irl, expr); // VA_START gets __func__varargs
-      r = CompileIdentifier(irl, expr->left);
-      EmitMove(irl, r, src, expr);
-      return r;
-  }
-  case AST_SELF:
-      ValidateObjbase();
-      return objbase;
-  case AST_HWREG:
-    return CompileHWReg(irl, expr);
-  case AST_OPERATOR:
-      return CompileOperator(irl, expr, dest);
-  case AST_FUNCCALL:
-      return CompileFunccallFirstResult(irl, expr);
-  case AST_ASSIGN:
-      if (expr->d.ival != K_ASSIGN) {
-          ERROR(expr, "Internal error, asm code cannot handle assignment");
-      }
-      if (expr->left) {
-          AST *typ;
-          int n;
-          typ = ExprType(expr->left);
-          if (typ && !TypeGoesOnStack(typ)) {
-              // construct a list of object members
-              n = (TypeSize(typ) + (LONG_SIZE-1)) / LONG_SIZE;
-              if (n > 1) {
-                  expr->left = BuildExprlistFromObject(expr->left, typ);
-              }
-          }
-          if (expr->left->kind == AST_EXPRLIST) {
-              // do a series of assignments
-              if (expr->right->kind != AST_EXPRLIST) {
-                  typ = ExprType(expr->right);
-                  if (typ && !TypeGoesOnStack(typ)) {
-                      expr->right = BuildExprlistFromObject(expr->right, typ);
-                  }
-              }
-              return CompileMultipleAssign(irl, expr->left, expr->right);
-          }
-      }
-      if ( IsSpinLang(curfunc->language)) {
-          // Spin always evaluates RHS first, then LHS
-          val = CompileExpression(irl, expr->right, NULL);
-          r = CompileExpression(irl, expr->left, NULL);
-      } else {
-          // for other languages, try to optimize by
-          // compiling RHS first and if it's a register re-using it
-          r = CompileExpression(irl, expr->left, NULL);
-          if (IsRegister(r->kind)) {
-              val = CompileExpression(irl, expr->right, r);
-          } else {
-              val = CompileExpression(irl, expr->right, NULL);
-          }
-      }
-      EmitMove(irl, r, val, expr);
-      return r;
-  case AST_RANGEREF:
-      return CompileExpression(irl, TransformRangeUse(expr), dest);
-  case AST_STRING:
-      if (strlen(expr->d.string) > 1)  {
+    if (!expr) return NULL;
+    if (expr->kind == AST_COMMENT) return NULL;
+    if (IsConstExpr(expr)) {
+        switch (expr->kind) {
+        case AST_SYMBOL:
+        case AST_IDENTIFIER:
+        case AST_LOCAL_IDENTIFIER:
+        // leave symbolic constants alone
+        case AST_ADDROF:
+        case AST_ABSADDROF:
+            // similarly for address expressions
+            break;
+        default:
+            expr = FoldIfConst(expr);
+            break;
+        }
+    }
+    switch (expr->kind) {
+    case AST_CONDRESULT:
+        return CompileCondResult(irl, expr);
+    case AST_MASKMOVE:
+        return CompileMaskMove(irl, expr);
+    case AST_CATCH:
+        ERROR(expr, "Internal error, should not see raw CATCH");
+        return OPERAND_DUMMY;
+    case AST_SETJMP:
+        ValidateAbortFuncs();
+        if (expr->left) {
+            val = CompileExpression(irl, expr->left, NULL);
+            r = GetResultReg(0);
+        } else {
+            val = abortchain;
+            r = abortcaught;
+        }
+        EmitMove(irl, GetArgReg(0), val, expr);
+        EmitOp1(irl, OPC_CALL, setjmpfunc);
+        return r;
+    case AST_CATCHRESULT:
+        ValidateAbortFuncs();
+        return abortresult;
+    case AST_TRYENV:
+    {
+        Operand *tmp;
+        ValidateAbortFuncs();
+        EmitPush(irl, abortchain, expr);
+        EmitMove(irl, abortchain, stackptr, expr);
+        EmitOp2(irl, OPC_ADD, stackptr, NewImmediate(SETJMP_BUF_SIZE));
+        tmp = CompileExpression(irl, expr->left, NULL);
+        EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(SETJMP_BUF_SIZE));
+        EmitPop(irl, abortchain, expr);
+        return tmp;
+    }
+    case AST_ISBETWEEN:
+    {
+        Operand *zero = NewImmediate(0);
+        Operand *skiplabel = NewCodeLabel();
+        Operand *temp = NewFunctionTempRegister();
+        Operand *truevalue = (LangBoolIsOne(curfunc->language)) ? NewImmediate(1) : NewImmediate(-1);
+        EmitMove(irl, temp, zero, expr);
+        CompileBoolBranches(irl, expr, NULL, skiplabel);
+        EmitOp2(irl, OPC_XOR, temp, truevalue);
+        EmitLabel(irl, skiplabel);
+        return temp;
+    }
+    case AST_SEQUENCE:
+    {
+        int starttemp = GetTempRegisterStack();
+        r = CompileExpression(irl, expr->left, NULL);
+        if (expr->right) {
+            FreeTempRegisters(irl, starttemp);
+            r = CompileExpression(irl, expr->right, NULL);
+        }
+        return r;
+    }
+    case AST_INTEGER:
+    case AST_FLOAT:
+        r = NewImmediate((int32_t)expr->d.ival);
+        return r;
+    case AST_SYMBOL:
+    {
+        Symbol *sym = (Symbol *)expr->d.ptr;
+        r = CompileSymbolForFunc(irl, sym, curfunc, expr);
+        if (dest) {
+            EmitMove(irl, dest, r, expr);
+            r = dest;
+        }
+        return r;
+    }
+    case AST_RESULT:
+    case AST_IDENTIFIER:
+    case AST_LOCAL_IDENTIFIER:
+        r = CompileIdentifier(irl, expr);
+        if (dest) {
+            EmitMove(irl, dest, r, expr);
+            r = dest;
+        }
+        return r;
+    case AST_EMPTY:
+        r = EmptyOperand();
+        return r;
+    case AST_VA_START:
+    {   // va_start(x, n) -> mov x, __func__varargs
+        Operand *src = CompileIdentifier(irl, expr); // VA_START gets __func__varargs
+        r = CompileIdentifier(irl, expr->left);
+        EmitMove(irl, r, src, expr);
+        return r;
+    }
+    case AST_SELF:
+        ValidateObjbase();
+        return objbase;
+    case AST_HWREG:
+        return CompileHWReg(irl, expr);
+    case AST_OPERATOR:
+        return CompileOperator(irl, expr, dest);
+    case AST_FUNCCALL:
+        return CompileFunccallFirstResult(irl, expr);
+    case AST_ASSIGN:
+        if (expr->d.ival != K_ASSIGN) {
+            ERROR(expr, "Internal error, asm code cannot handle assignment");
+        }
+        if (expr->left) {
+            AST *typ;
+            int n;
+            typ = ExprType(expr->left);
+            if (typ && !TypeGoesOnStack(typ)) {
+                // construct a list of object members
+                n = (TypeSize(typ) + (LONG_SIZE-1)) / LONG_SIZE;
+                if (n > 1) {
+                    expr->left = BuildExprlistFromObject(expr->left, typ);
+                }
+            }
+            if (expr->left->kind == AST_EXPRLIST) {
+                // do a series of assignments
+                if (expr->right->kind != AST_EXPRLIST) {
+                    typ = ExprType(expr->right);
+                    if (typ && !TypeGoesOnStack(typ)) {
+                        expr->right = BuildExprlistFromObject(expr->right, typ);
+                    }
+                }
+                return CompileMultipleAssign(irl, expr->left, expr->right);
+            }
+        }
+        if ( IsSpinLang(curfunc->language)) {
+            // Spin always evaluates RHS first, then LHS
+            val = CompileExpression(irl, expr->right, NULL);
+            r = CompileExpression(irl, expr->left, NULL);
+        } else {
+            // for other languages, try to optimize by
+            // compiling RHS first and if it's a register re-using it
+            r = CompileExpression(irl, expr->left, NULL);
+            if (IsRegister(r->kind)) {
+                val = CompileExpression(irl, expr->right, r);
+            } else {
+                val = CompileExpression(irl, expr->right, NULL);
+            }
+        }
+        EmitMove(irl, r, val, expr);
+        return r;
+    case AST_RANGEREF:
+        return CompileExpression(irl, TransformRangeUse(expr), dest);
+    case AST_STRING:
+        if (strlen(expr->d.string) > 1)  {
             ERROR(expr, "string too long, expected a single character");
-      }
-      return NewImmediate(expr->d.string[0]);
-  case AST_STRINGPTR:
-  {
-      // evaluate any const references in our current context
-      AST *stringExpr = EvalStringConst(expr->left);
-      r = GetOneHub(STRING_DEF, NewTempLabelName(), (intptr_t)(stringExpr));
-      if (gl_p2) {
-          Operand *temp = NewFunctionTempRegister();
-          EmitMove(irl, temp, r, expr);
-          return temp;
-      }
-      return NewImmediatePtr(NULL, r);
-  }
-  case AST_ARRAYREF:
-  {
-      Operand *base;
-      Operand *offset;
-      int siz;
-      if (!expr->right || !expr->left) {
-          ERROR(expr, "Bad array reference");
-          return NewOperand(REG_REG, "???", 0);
-      }
-      if (!validateArrayRef(expr->left)) {
-          ERROR(expr, "%s is not an array", GetVarNameForError(expr->left));
-      }
-      base = CompileExpression(irl, expr->left, NULL);
-      offset = CompileExpression(irl, expr->right, NULL);
-      if (IsFunctionType(ExprType(expr->left))) {
-          return base;
-      }
-      siz = TypeSize(ExprType(expr));
-      return ApplyArrayIndex(irl, base, offset, siz);
-  }
-  case AST_SPRREF:
-  {
-      Operand *base;
+        }
+        return NewImmediate(expr->d.string[0]);
+    case AST_STRINGPTR:
+    {
+        // evaluate any const references in our current context
+        AST *stringExpr = EvalStringConst(expr->left);
+        r = GetOneHub(STRING_DEF, NewTempLabelName(), (intptr_t)(stringExpr));
+        if (gl_p2) {
+            Operand *temp = NewFunctionTempRegister();
+            EmitMove(irl, temp, r, expr);
+            return temp;
+        }
+        return NewImmediatePtr(NULL, r);
+    }
+    case AST_ARRAYREF:
+    {
+        Operand *base;
+        Operand *offset;
+        int siz;
+        if (!expr->right || !expr->left) {
+            ERROR(expr, "Bad array reference");
+            return NewOperand(REG_REG, "???", 0);
+        }
+        if (!validateArrayRef(expr->left)) {
+            ERROR(expr, "%s is not an array", GetVarNameForError(expr->left));
+        }
+        base = CompileExpression(irl, expr->left, NULL);
+        offset = CompileExpression(irl, expr->right, NULL);
+        if (IsFunctionType(ExprType(expr->left))) {
+            return base;
+        }
+        siz = TypeSize(ExprType(expr));
+        return ApplyArrayIndex(irl, base, offset, siz);
+    }
+    case AST_SPRREF:
+    {
+        Operand *base;
 
-      if (!expr->left) {
-          ERROR(expr, "SPR ref with no index?");
-          return NewOperand(REG_REG, "???", 0);
-      }
-      base = CompileExpression(irl, expr->left, NULL);
-      return CogMemRef(base, 0);
-  }
-  case AST_MEMREF:
-  {
-      if (IsFunctionType(ExprType(expr->right))) {
-          return CompileExpression(irl, expr->right, dest);
-      }
-      return CompileMemref(irl, expr);
-  }
-  case AST_COGINIT:
-    return CompileCoginit(irl, expr);
-  case AST_ADDROF:
-  case AST_ABSADDROF:
-      return GetAddressOf(irl, expr->left);
-  case AST_DATADDROF:
-      /* this requires that we add an offset to the value we get */
-  {
-      Operand *temp = dest ? dest : NewFunctionTempRegister();
-      Operand *val = CompileExpression(irl, expr->left, dest);
-      Operand *datbase = ValidateDatBase(current);
-      
-      EmitMove(irl, temp, val, expr);
-      EmitOp2(irl, OPC_ADD, temp, datbase);
-      return temp;
-  }
-  case AST_LOOKUP:
-  case AST_LOOKDOWN:
-      return CompileLookupDown(irl, expr);
-  case AST_OPERAND:
-      /* stashed away by other code */
-      return (Operand *)expr->d.ptr;
-  case AST_STMTLIST:
-  {
-      AST *list = expr;
-      if (list && list->right) {
-          CompileStatement(irl, list->left);
-          return CompileExpression(irl, list->right, dest);
-      }
-      if (list) {
-          AST *finalexpr = list->left;
-          while (finalexpr && finalexpr->kind == AST_COMMENTEDNODE) {
-              finalexpr = finalexpr->left;
-          }
-          if (finalexpr) {
-              switch(finalexpr->kind) {
-              case AST_IF:
-              case AST_GOTO:
-              case AST_GOSUB:
-              case AST_WHILE:
-              case AST_DOWHILE:
-              case AST_FOR:
-              case AST_FORATLEASTONCE:
-              case AST_CASE:
-              case AST_ENDCASE:
-              case AST_QUITLOOP:
-              case AST_LABEL:
-                  CompileStatement(irl, list);
-                  WARNING(expr, "statement expression does not produce a value");
-                  return OPERAND_DUMMY;
-              default:
-                  return CompileExpression(irl, finalexpr, dest);
-              }
-          }
-      }
-      ERROR(expr, "expected expression at end of statement list");
-      return OPERAND_DUMMY;
-  }
-  case AST_VA_ARG:
-  {
-      // x = va_arg(vl, type) should act like:
-      //  x = *(type *)vl;
-      //  vl += sizeof(type)
-      int incsize = TypeSize(expr->left);
-      Operand *temp;
-      if (incsize <= LONG_SIZE) {
-          temp = dest ? dest : NewFunctionTempRegister();
-      } else {
-          temp = NewFunctionTempRegister();
-          WARNING(expr, "cannot properly handle large va_arg");
-      }
-      r = CompileMemref(irl, expr);
-      EmitMove(irl, temp, r, expr);
-      (void)CompileExpression(irl,
-                              AstAssign(expr->right,
-                                        AstOperator('+', expr->right, AstInteger(incsize))),
-                              NULL);
-      return temp;
-  }
-  case AST_METHODREF:
-  {
-      Symbol *sym;
-      Operand *base = NULL;
-      AST *finaltype;
-      AST *objtype;
-      int off = 0;
-      Module *P;
-      const char *name;
-      objtype = ExprType(expr->left);
-      name = GetUserIdentifierName(expr->right);
-      if (!objtype) {
-          ERROR(expr, "%s is not accessible in this context", GetIdentifierName(expr->left));
-          return EmptyOperand();
-      }
-      else if (!IsClassType(objtype)) {
-          ERROR(expr, "Request for member %s in something that is not a class", name);
-          return EmptyOperand();
-      }
-      if (expr->left && expr->left->kind == AST_OBJECT) {
-          // FIXME: we could potentially support calls of static class
-          // member functions, but for now, punt
-          ERROR(expr, "Use of class name in method references is not supported yet");
-          return EmptyOperand();
-      }
-      sym = LookupMemberSymbol(expr, objtype, name, &P, NULL);
-      if (sym) {
-          switch (sym->kind) {
-          case SYM_VARIABLE:
-              base = CompileExpression(irl, expr->left, NULL);
-              off = sym->offset;
-              break;
-          case SYM_LABEL:
-              base = LabelRef(irl, sym);
-              break;
-          default:
-              ERROR(expr, "Unable to dereference symbol %s in %s", name, P->classname);
-              break;
-          }
-      }
-      finaltype = ExprType(expr);
-      if (off == 0 && IsCogMem(base)) {
-          r = base;
-      } else {
-          r = OffsetMemory(irl, base, NewImmediate(off), finaltype);
-      }
-      return r;
-  }
-  case AST_CAST:
-      return CompileExpression(irl, expr->right, dest);
-  case AST_DECLARE_VAR:
-      return CompileExpression(irl, expr->right, dest);
-  case AST_ALLOCA:
-  {
-      Operand *temp;
-      AST *alignexpr;
-      ValidateStackptr();
-      // we have to keep the stack long aligned
-      alignexpr = AstOperator('&',
-                              AstOperator('+', expr->right, AstInteger(3)),
-                              AstOperator(K_BIT_NOT, NULL, AstInteger(3)));
-      r = CompileExpression(irl, alignexpr, NULL);
-      temp = dest ? dest : NewFunctionTempRegister();
-      EmitMove(irl, temp, stackptr, expr);
-      EmitOp2(irl, OPC_ADD, stackptr, r);
-      return temp;
-  }
-  case AST_CONSTANT:
-  {
-      if (!IsConstExpr(expr->left)) {
-          WARNING(expr, "CONSTANT expression is not actually constant and will be evaluated at run time");
-      }
-      return CompileExpression(irl, expr->left, dest);
-  }
-  case AST_GETHIGH:
-  case AST_GETLOW:
-  {
-      Operand *base;
-      int off = expr->kind == AST_GETLOW ? 0 : 4;
-      if (IsConstExpr(expr->left)) {
-          uint64_t bigval = EvalConstExpr(expr->left);
-          uint32_t val = (off == 0) ? bigval : (bigval >> 32);
-          r = NewImmediate(val);
-      } else {
-          base = CompileExpression(irl, expr->left, NULL);
-          r = OffsetMemory(irl, base, NewImmediate(off), ast_type_long);
-          if (dest) {
-              EmitMove(irl, dest, r, expr);
-              r = dest;
-          }
-      }
-      return r;
-  }
-  case AST_EXPRLIST: {
-      /* a singleton expression list is just like an expression */
-      if (!expr->right) {
-          return CompileExpression(irl, expr->left, dest);
-      }
-      /* otherwise fall through */
-  }
-  default:
-    ERROR(expr, "Cannot handle expression yet");
-    return NewOperand(REG_REG, "???", 0);
-  }
+        if (!expr->left) {
+            ERROR(expr, "SPR ref with no index?");
+            return NewOperand(REG_REG, "???", 0);
+        }
+        base = CompileExpression(irl, expr->left, NULL);
+        return CogMemRef(base, 0);
+    }
+    case AST_MEMREF:
+    {
+        if (IsFunctionType(ExprType(expr->right))) {
+            return CompileExpression(irl, expr->right, dest);
+        }
+        return CompileMemref(irl, expr);
+    }
+    case AST_COGINIT:
+        return CompileCoginit(irl, expr);
+    case AST_ADDROF:
+    case AST_ABSADDROF:
+        return GetAddressOf(irl, expr->left);
+    case AST_DATADDROF:
+        /* this requires that we add an offset to the value we get */
+    {
+        Operand *temp = dest ? dest : NewFunctionTempRegister();
+        Operand *val = CompileExpression(irl, expr->left, dest);
+        Operand *datbase = ValidateDatBase(current);
+
+        EmitMove(irl, temp, val, expr);
+        EmitOp2(irl, OPC_ADD, temp, datbase);
+        return temp;
+    }
+    case AST_LOOKUP:
+    case AST_LOOKDOWN:
+        return CompileLookupDown(irl, expr);
+    case AST_OPERAND:
+        /* stashed away by other code */
+        return (Operand *)expr->d.ptr;
+    case AST_STMTLIST:
+    {
+        AST *list = expr;
+        if (list && list->right) {
+            CompileStatement(irl, list->left);
+            return CompileExpression(irl, list->right, dest);
+        }
+        if (list) {
+            AST *finalexpr = list->left;
+            while (finalexpr && finalexpr->kind == AST_COMMENTEDNODE) {
+                finalexpr = finalexpr->left;
+            }
+            if (finalexpr) {
+                switch(finalexpr->kind) {
+                case AST_IF:
+                case AST_GOTO:
+                case AST_GOSUB:
+                case AST_WHILE:
+                case AST_DOWHILE:
+                case AST_FOR:
+                case AST_FORATLEASTONCE:
+                case AST_CASE:
+                case AST_ENDCASE:
+                case AST_QUITLOOP:
+                case AST_LABEL:
+                    CompileStatement(irl, list);
+                    WARNING(expr, "statement expression does not produce a value");
+                    return OPERAND_DUMMY;
+                default:
+                    return CompileExpression(irl, finalexpr, dest);
+                }
+            }
+        }
+        ERROR(expr, "expected expression at end of statement list");
+        return OPERAND_DUMMY;
+    }
+    case AST_VA_ARG:
+    {
+        // x = va_arg(vl, type) should act like:
+        //  x = *(type *)vl;
+        //  vl += sizeof(type)
+        int incsize = TypeSize(expr->left);
+        Operand *temp;
+        if (incsize <= LONG_SIZE) {
+            temp = dest ? dest : NewFunctionTempRegister();
+        } else {
+            temp = NewFunctionTempRegister();
+            WARNING(expr, "cannot properly handle large va_arg");
+        }
+        r = CompileMemref(irl, expr);
+        EmitMove(irl, temp, r, expr);
+        (void)CompileExpression(irl,
+                                AstAssign(expr->right,
+                                          AstOperator('+', expr->right, AstInteger(incsize))),
+                                NULL);
+        return temp;
+    }
+    case AST_METHODREF:
+    {
+        Symbol *sym;
+        Operand *base = NULL;
+        AST *finaltype;
+        AST *objtype;
+        int off = 0;
+        Module *P;
+        const char *name;
+        objtype = ExprType(expr->left);
+        name = GetUserIdentifierName(expr->right);
+        if (!objtype) {
+            ERROR(expr, "%s is not accessible in this context", GetIdentifierName(expr->left));
+            return EmptyOperand();
+        }
+        else if (!IsClassType(objtype)) {
+            ERROR(expr, "Request for member %s in something that is not a class", name);
+            return EmptyOperand();
+        }
+        if (expr->left && expr->left->kind == AST_OBJECT) {
+            // FIXME: we could potentially support calls of static class
+            // member functions, but for now, punt
+            ERROR(expr, "Use of class name in method references is not supported yet");
+            return EmptyOperand();
+        }
+        sym = LookupMemberSymbol(expr, objtype, name, &P, NULL);
+        if (sym) {
+            switch (sym->kind) {
+            case SYM_VARIABLE:
+                base = CompileExpression(irl, expr->left, NULL);
+                off = sym->offset;
+                break;
+            case SYM_LABEL:
+                base = LabelRef(irl, sym);
+                break;
+            default:
+                ERROR(expr, "Unable to dereference symbol %s in %s", name, P->classname);
+                break;
+            }
+        }
+        finaltype = ExprType(expr);
+        if (off == 0 && IsCogMem(base)) {
+            r = base;
+        } else {
+            r = OffsetMemory(irl, base, NewImmediate(off), finaltype);
+        }
+        return r;
+    }
+    case AST_CAST:
+        return CompileExpression(irl, expr->right, dest);
+    case AST_DECLARE_VAR:
+        return CompileExpression(irl, expr->right, dest);
+    case AST_ALLOCA:
+    {
+        Operand *temp;
+        AST *alignexpr;
+        ValidateStackptr();
+        // we have to keep the stack long aligned
+        alignexpr = AstOperator('&',
+                                AstOperator('+', expr->right, AstInteger(3)),
+                                AstOperator(K_BIT_NOT, NULL, AstInteger(3)));
+        r = CompileExpression(irl, alignexpr, NULL);
+        temp = dest ? dest : NewFunctionTempRegister();
+        EmitMove(irl, temp, stackptr, expr);
+        EmitOp2(irl, OPC_ADD, stackptr, r);
+        return temp;
+    }
+    case AST_CONSTANT:
+    {
+        if (!IsConstExpr(expr->left)) {
+            WARNING(expr, "CONSTANT expression is not actually constant and will be evaluated at run time");
+        }
+        return CompileExpression(irl, expr->left, dest);
+    }
+    case AST_GETHIGH:
+    case AST_GETLOW:
+    {
+        Operand *base;
+        int off = expr->kind == AST_GETLOW ? 0 : 4;
+        if (IsConstExpr(expr->left)) {
+            uint64_t bigval = EvalConstExpr(expr->left);
+            uint32_t val = (off == 0) ? bigval : (bigval >> 32);
+            r = NewImmediate(val);
+        } else {
+            base = CompileExpression(irl, expr->left, NULL);
+            r = OffsetMemory(irl, base, NewImmediate(off), ast_type_long);
+            if (dest) {
+                EmitMove(irl, dest, r, expr);
+                r = dest;
+            }
+        }
+        return r;
+    }
+    case AST_EXPRLIST: {
+        /* a singleton expression list is just like an expression */
+        if (!expr->right) {
+            return CompileExpression(irl, expr->left, dest);
+        }
+        /* otherwise fall through */
+    }
+    default:
+        ERROR(expr, "Cannot handle expression yet");
+        return NewOperand(REG_REG, "???", 0);
+    }
 }
 
 static void
@@ -4378,7 +4378,7 @@ static Operand *EmitAddSub(IRList *irl, Operand *dst, int off)
 {
     IROpcode opc  = OPC_ADD;
     Operand *imm;
-    
+
     if (off < 0) {
         off = -off;
         opc = OPC_SUB;
@@ -4669,7 +4669,7 @@ static void CompileForLoop(IRList *irl, AST *ast, int atleastonce)
         EmitDebugComment(irl, body);
     }
     CompileExpression(irl, initstmt, NULL);
-    
+
     toplabel = NewCodeLabel();
     nextlabel = NewCodeLabel();
     exitlabel = NewCodeLabel();
@@ -4703,7 +4703,7 @@ static void CompileCaseStmt(IRList *irl, AST *ast)
     AST *booltest;
     AST *stmts;
     int starttempreg;
-    
+
     var = ast->left;
     if (var->kind == AST_ASSIGN) {
         CompileExpression(irl, var, NULL);
@@ -4759,7 +4759,7 @@ int OutAsm_DebugEval(AST *ast, int regNum, int *addr, void *ourarg) {
     Operand *dstop;
     int n;
     IR *mvir;
-    
+
     if (IsConstExpr(ast)) {
         *addr = EvalConstExpr(ast);
         return PASM_EVAL_ISCONST;
@@ -4792,7 +4792,7 @@ int OutAsm_DebugEval(AST *ast, int regNum, int *addr, void *ourarg) {
         return n;
     }
     srcop = CompileExpression(irl, ast, NULL);
-single_value:    
+single_value:
     dstop = GetDebugReg(regNum);
     mvir = EmitMove(irl, dstop, srcop, ast);
     if (mvir) mvir->flags |= FLAG_KEEP_INSTR;
@@ -4809,7 +4809,7 @@ static void CompileStatement(IRList *irl, AST *ast)
     Operand *buf;
     int starttempreg;
     AST *pendingComments = NULL;
-    
+
     if (!ast) return;
 
     starttempreg = GetTempRegisterStack(); // FuncData(curfunc)->curtempreg;
@@ -4824,7 +4824,7 @@ static void CompileStatement(IRList *irl, AST *ast)
         if (!retval) {
             retval = GetResultExpr(curfunc->resultexpr);
         }
-    if (retval) {
+        if (retval) {
             // extract the return value if it's buried in a sequence
             while (retval->kind == AST_SEQUENCE) {
                 if (retval->right) {
@@ -4888,9 +4888,9 @@ static void CompileStatement(IRList *irl, AST *ast)
                     oplist = oplist->next;
                 }
             }
-    }
-    EmitJump(irl, COND_TRUE, FuncData(curfunc)->asmreturnlabel);
-    break;
+        }
+        EmitJump(irl, COND_TRUE, FuncData(curfunc)->asmreturnlabel);
+        break;
     case AST_THROW:
         EmitDebugComment(irl, ast);
         retval = ast->left;
@@ -4942,29 +4942,29 @@ static void CompileStatement(IRList *irl, AST *ast)
     case AST_WHILE:
         EmitDebugComment(irl, ast->left);
         toploop = NewCodeLabel();
-    botloop = NewCodeLabel();
-    PushQuitNext(botloop, toploop);
-    EmitLabel(irl, toploop);
+        botloop = NewCodeLabel();
+        PushQuitNext(botloop, toploop);
+        EmitLabel(irl, toploop);
         CompileBoolBranches(irl, ast->left, NULL, botloop);
-    FreeTempRegisters(irl, starttempreg);
+        FreeTempRegisters(irl, starttempreg);
         CompileStatementList(irl, ast->right);
-    EmitJump(irl, COND_TRUE, toploop);
-    EmitLabel(irl, botloop);
-    PopQuitNext();
-    break;
+        EmitJump(irl, COND_TRUE, toploop);
+        EmitLabel(irl, botloop);
+        PopQuitNext();
+        break;
     case AST_DOWHILE:
         toploop = NewCodeLabel();
-    botloop = NewCodeLabel();
-    exitloop = NewCodeLabel();
-    PushQuitNext(exitloop, botloop);
-    EmitLabel(irl, toploop);
+        botloop = NewCodeLabel();
+        exitloop = NewCodeLabel();
+        PushQuitNext(exitloop, botloop);
+        EmitLabel(irl, toploop);
         CompileStatementList(irl, ast->right);
-    EmitLabel(irl, botloop);
+        EmitLabel(irl, botloop);
         CompileBoolBranches(irl, ast->left, toploop, NULL);
-    FreeTempRegisters(irl, starttempreg);
-    EmitLabel(irl, exitloop);
-    PopQuitNext();
-    break;
+        FreeTempRegisters(irl, starttempreg);
+        EmitLabel(irl, exitloop);
+        PopQuitNext();
+        break;
     case AST_TRYENV:
     {
         ValidateAbortFuncs();
@@ -4982,7 +4982,7 @@ static void CompileStatement(IRList *irl, AST *ast)
     }
     case AST_FORATLEASTONCE:
     case AST_FOR:
-    CompileForLoop(irl, ast, ast->kind == AST_FORATLEASTONCE);
+        CompileForLoop(irl, ast, ast->kind == AST_FORATLEASTONCE);
         break;
     case AST_INLINEASM:
     {
@@ -5001,11 +5001,11 @@ static void CompileStatement(IRList *irl, AST *ast)
     case AST_ENDCASE:
         EmitDebugComment(irl, ast);
         if (!quitlabel) {
-        ERROR(ast, "loop exit statement outside of loop");
-    } else {
-        EmitJump(irl, COND_TRUE, quitlabel);
-    }
-    break;
+            ERROR(ast, "loop exit statement outside of loop");
+        } else {
+            EmitJump(irl, COND_TRUE, quitlabel);
+        }
+        break;
     case AST_CONTINUE:
         EmitDebugComment(irl, ast);
         if (!nextlabel) {
@@ -5013,7 +5013,7 @@ static void CompileStatement(IRList *irl, AST *ast)
         } else {
             EmitJump(irl, COND_TRUE, nextlabel);
         }
-    break;
+        break;
     case AST_IF:
         EmitDebugComment(irl, ast->left);
         toploop = NewCodeLabel();
@@ -5021,28 +5021,28 @@ static void CompileStatement(IRList *irl, AST *ast)
         FreeTempRegisters(irl, starttempreg);
         ast = ast->right;
         if (ast->kind == AST_COMMENTEDNODE) {
-                pendingComments = ast->right;
-                ast = ast->left;
+            pendingComments = ast->right;
+            ast = ast->left;
         }
         /* ast should be an AST_THENELSE */
         CompileStatementList(irl, ast->left);
         if (ast->right) {
-                EmitComments(irl, pendingComments);
-                botloop = NewCodeLabel();
-                EmitJump(irl, COND_TRUE, botloop);
-                EmitLabel(irl, toploop);
-                CompileStatementList(irl, ast->right);
-                EmitLabel(irl, botloop);
+            EmitComments(irl, pendingComments);
+            botloop = NewCodeLabel();
+            EmitJump(irl, COND_TRUE, botloop);
+            EmitLabel(irl, toploop);
+            CompileStatementList(irl, ast->right);
+            EmitLabel(irl, botloop);
         } else {
-                EmitLabel(irl, toploop);
+            EmitLabel(irl, toploop);
         }
         break;
     case AST_YIELD:
-    /* do nothing in assembly for YIELD */
+        /* do nothing in assembly for YIELD */
         break;
     case AST_SCOPE:
         ast = ast->left;
-        /* fall through */
+    /* fall through */
     case AST_STMTLIST:
         CompileStatementList(irl, ast);
         break;
@@ -5055,7 +5055,7 @@ static void CompileStatement(IRList *irl, AST *ast)
         Operand *shift;
         IR *ir;
         int needAlign = 0;
-        
+
         if (curfunc && InCog(curfunc)) {
             shift = 0;
         } else if (gl_p2) {
@@ -5110,9 +5110,10 @@ static void CompileStatement(IRList *irl, AST *ast)
             IR *ir = EmitOp1(irl, OPC_BREAK, op);
             ir->flags |= FLAG_KEEP_INSTR;
         }
-    } break;
+    }
+    break;
     case AST_ASSIGN:
-        /* fall through */
+    /* fall through */
     default:
         /* assume an expression */
         EmitDebugComment(irl, ast);
@@ -5133,7 +5134,7 @@ CompileFunctionBody(Function *f)
     IRList *irheader = &FuncData(f)->irheader;
 
     EmitComments(irheader, f->doccomment);
-    
+
     nextlabel = quitlabel = NULL;
 
     // check for __fromfile
@@ -5152,7 +5153,7 @@ CompileFunctionBody(Function *f)
                 CompileStatement(irl, resinit);
             } else if (init->kind == AST_EXPRLIST) {
                 AST *var;
-                
+
                 while (init && init->kind == AST_EXPRLIST) {
                     var = init->left;
                     init = init->right;
@@ -5200,9 +5201,9 @@ static void EmitNewline(IRList *irl)
 
 static int gcmpfunc(const void *a, const void *b)
 {
-  const AsmVariable *ga = (const AsmVariable *)a;
-  const AsmVariable *gb = (const AsmVariable *)b;
-  return strcmp(ga->op->name, gb->op->name);
+    const AsmVariable *ga = (const AsmVariable *)a;
+    const AsmVariable *gb = (const AsmVariable *)b;
+    return strcmp(ga->op->name, gb->op->name);
 }
 
 #define SORT_ALPHABETICALLY 1
@@ -5218,7 +5219,7 @@ static int EmitAsmVars(struct flexbuf *fb, IRList *datairl, IRList *bssirl, int 
     int varsize;
     int alphaSort = flags & SORT_ALPHABETICALLY;
     int count = 0;
-    
+
     if (siz > 0) {
         EmitNewline(datairl);
     }
@@ -5229,7 +5230,7 @@ static int EmitAsmVars(struct flexbuf *fb, IRList *datairl, IRList *bssirl, int 
     for (i = 0; i < siz; i++) {
         if (g[i].op->kind == REG_LOCAL && !g[i].op->used) {
             continue;
-         }
+        }
         if (g[i].op->kind == REG_TEMP && !g[i].op->used) {
             continue;
         }
@@ -5258,10 +5259,10 @@ static int EmitAsmVars(struct flexbuf *fb, IRList *datairl, IRList *bssirl, int 
         case REG_ARG:
         case REG_LOCAL:
         case REG_TEMP:
-        if (bssirl != NULL) {
-            EmitLabel(bssirl, g[i].op);
-            varsize = g[i].count / LONG_SIZE;
-            if (varsize == 0) varsize = 1;
+            if (bssirl != NULL) {
+                EmitLabel(bssirl, g[i].op);
+                varsize = g[i].count / LONG_SIZE;
+                if (varsize == 0) varsize = 1;
                 if (varsize > 1) {
                     int n;
                     char *label;
@@ -5271,29 +5272,29 @@ static int EmitAsmVars(struct flexbuf *fb, IRList *datairl, IRList *bssirl, int 
                         EmitNamedCogLabel(bssirl, label);
                         EmitReserve(bssirl, 1, COG_RESERVE);
                     }
-                } else {                  
+                } else {
                     EmitReserve(bssirl, varsize, COG_RESERVE);
                 }
                 count += varsize * 4;
+                break;
+            }
+        // otherwise fall through
+        default:
+            EmitLabel(datairl, g[i].op);
+            varsize = g[i].count / LONG_SIZE;
+            if (varsize <= 1) {
+                count += EmitLong(datairl, g[i].val);
+            } else {
+                count += varsize * 4;
+                if (datairl) {
+                    /* normally ir->src is NULL for OPC_LONG, but in this
+                       case (an array definition) it is a count */
+                    EmitOp2(datairl, OPC_LONG, NewOperand(IMM_INT, "", 0),
+                            NewOperand(IMM_INT, "", varsize));
+                }
+            }
             break;
-      }
-      // otherwise fall through
-      default:
-          EmitLabel(datairl, g[i].op);
-          varsize = g[i].count / LONG_SIZE;
-          if (varsize <= 1) {
-              count += EmitLong(datairl, g[i].val);
-          } else {
-              count += varsize * 4;
-              if (datairl) {
-                  /* normally ir->src is NULL for OPC_LONG, but in this
-                     case (an array definition) it is a count */
-                  EmitOp2(datairl, OPC_LONG, NewOperand(IMM_INT, "", 0),
-                          NewOperand(IMM_INT, "", varsize));
-              }
-          }
-          break;
-      }
+        }
     }
     return count;
 }
@@ -5361,7 +5362,7 @@ AssignOneFuncName(Function *f)
     char *fentername = NULL;
     Module *P = f->module;
     Function *savecur = curfunc;
-    
+
     if (f->bedata) {
         // already set up
         return;
@@ -5442,7 +5443,7 @@ AssignOneFuncName(Function *f)
 static int FixupTypes(Symbol *sym, void *arg)
 {
     Label *lab;
-    
+
     switch (sym->kind) {
     case SYM_LOCALVAR:
     case SYM_TEMPVAR:
@@ -5466,7 +5467,7 @@ static int
 AssignFuncNames(void *vptr, Module *P)
 {
     Function *f;
-    
+
     for(f = P->functions; f; f = f->next) {
         if (ShouldSkipFunction(f))
             continue;
@@ -5482,13 +5483,13 @@ CompileFunc_internal(void *vptr, Module *P)
 {
     Function *savecurf = curfunc;
     Function *f;
-    
+
     for(f = P->functions; f; f = f->next) {
-      if (ShouldSkipFunction(f))
-          continue;
-      curfunc = f;
-      CompileFunctionBody(f);
-      FuncData(f)->isInline = ShouldBeInlined(f);
+        if (ShouldSkipFunction(f))
+            continue;
+        curfunc = f;
+        CompileFunctionBody(f);
+        FuncData(f)->isInline = ShouldBeInlined(f);
     }
     curfunc = savecurf;
     return 0;
@@ -5502,7 +5503,7 @@ ExpandInline_internal(void *vptr, Module *P)
     int newInlines;
     int inlineStatus;
     int anyChange = 0;
-    
+
     do {
         newInlines = 0;
         for (f = P->functions; f; f = f->next) {
@@ -5536,7 +5537,7 @@ CompileIntermediate(Module *P)
 {
     int change;
     InitAsmCode();
-    
+
     VisitRecursive(NULL, P, AssignFuncNames, VISITFLAG_FUNCNAMES);
     VisitRecursive(NULL, P, CompileFunc_internal, VISITFLAG_COMPILEFUNCS);
     do {
@@ -5559,7 +5560,7 @@ CompileToIR_internal(void *vptr, Module *P)
     } else {
         docog = CODE_PLACE_HUB;
     }
-    
+
     // emit output for P
     for(f = P->functions; f; f = f->next) {
         // if the function was private and has
@@ -5590,7 +5591,7 @@ CompileToIR_cog(IRList *irl, Module *P)
 {
     // and generate real output
     VisitRecursive(irl, P, CompileToIR_internal, VISITFLAG_COMPILEIR_COG);
-    
+
     return gl_errors == 0;
 }
 bool
@@ -5607,82 +5608,82 @@ CompileToIR_hub(IRList *irl, Module *P)
 {
     // and generate real output
     VisitRecursive(irl, P, CompileToIR_internal, VISITFLAG_COMPILEIR_HUB);
-    
+
     return gl_errors == 0;
 }
 /*
  * emit builtin functions like mul and div
  */
 static const char *builtin_mul_p1 =
-"\nmultiply_\n"
-"\tmov\titmp2_, muldiva_\n"
-"\txor\titmp2_, muldivb_\n"
-"\tabs\tmuldiva_, muldiva_\n"
-"\tabs\tmuldivb_, muldivb_\n"
-"\tjmp\t#do_multiply_\n"    
-"\nunsmultiply_\n"
-"\tmov\titmp2_, #0\n"
-"do_multiply_\n"
-"\tmov\tresult1, #0\n"
-"\tmov\titmp1_, #32\n"
-"\tshr\tmuldiva_, #1 wc\n"
-"mul_lp_\n"
-" if_c\tadd\tresult1, muldivb_ wc\n"
-"\trcr\tresult1, #1 wc\n"
-"\trcr\tmuldiva_, #1 wc\n"
-"\tdjnz\titmp1_, #mul_lp_\n"
+    "\nmultiply_\n"
+    "\tmov\titmp2_, muldiva_\n"
+    "\txor\titmp2_, muldivb_\n"
+    "\tabs\tmuldiva_, muldiva_\n"
+    "\tabs\tmuldivb_, muldivb_\n"
+    "\tjmp\t#do_multiply_\n"
+    "\nunsmultiply_\n"
+    "\tmov\titmp2_, #0\n"
+    "do_multiply_\n"
+    "\tmov\tresult1, #0\n"
+    "\tmov\titmp1_, #32\n"
+    "\tshr\tmuldiva_, #1 wc\n"
+    "mul_lp_\n"
+    " if_c\tadd\tresult1, muldivb_ wc\n"
+    "\trcr\tresult1, #1 wc\n"
+    "\trcr\tmuldiva_, #1 wc\n"
+    "\tdjnz\titmp1_, #mul_lp_\n"
 
-"\tshr\titmp2_, #31 wz\n"
-"\tnegnz\tmuldivb_, result1\n"
-" if_nz\tneg\tmuldiva_, muldiva_ wz\n"
-" if_nz\tsub\tmuldivb_, #1\n"
-"multiply__ret\n"
-"unsmultiply__ret\n"
-"\tret\n"
-;
+    "\tshr\titmp2_, #31 wz\n"
+    "\tnegnz\tmuldivb_, result1\n"
+    " if_nz\tneg\tmuldiva_, muldiva_ wz\n"
+    " if_nz\tsub\tmuldivb_, #1\n"
+    "multiply__ret\n"
+    "unsmultiply__ret\n"
+    "\tret\n"
+    ;
 
 static const char *builtin_mul_p1_fast =
-"\nmultiply_\n"
-"       mov    itmp2_, muldiva_\n"
-"       xor    itmp2_, muldivb_\n"
-"       abs    muldiva_, muldiva_\n"
-"       abs    muldivb_, muldivb_\n"
-"       jmp    #do_multiply_\n"
-"unsmultiply_\n"
-"       mov    itmp2_, #0\n"
-"do_multiply_\n"
-"	mov    result1, #0\n"
-"mul_lp_\n"
-"	shr    muldivb_, #1 wc,wz\n"
-" if_c	add    result1, muldiva_\n"
-"	shl    muldiva_, #1\n"
-" if_ne	jmp    #mul_lp_\n"
-"       shr    itmp2_, #31 wz\n"
-"       negnz  muldiva_, result1\n"
-"multiply__ret\n"
-"unsmultiply__ret\n"
-"	ret\n"
-;
+    "\nmultiply_\n"
+    "       mov    itmp2_, muldiva_\n"
+    "       xor    itmp2_, muldivb_\n"
+    "       abs    muldiva_, muldiva_\n"
+    "       abs    muldivb_, muldivb_\n"
+    "       jmp    #do_multiply_\n"
+    "unsmultiply_\n"
+    "       mov    itmp2_, #0\n"
+    "do_multiply_\n"
+    "	mov    result1, #0\n"
+    "mul_lp_\n"
+    "	shr    muldivb_, #1 wc,wz\n"
+    " if_c	add    result1, muldiva_\n"
+    "	shl    muldiva_, #1\n"
+    " if_ne	jmp    #mul_lp_\n"
+    "       shr    itmp2_, #31 wz\n"
+    "       negnz  muldiva_, result1\n"
+    "multiply__ret\n"
+    "unsmultiply__ret\n"
+    "	ret\n"
+    ;
 
 static const char *builtin_mul_p2 =
-"\nunsmultiply_\n"
-"\tqmul\tmuldiva_, muldivb_\n"
-"\tgetqx\tmuldiva_\n"
-"\tgetqy\tmuldivb_\n"
-"\tret\n"
+    "\nunsmultiply_\n"
+    "\tqmul\tmuldiva_, muldivb_\n"
+    "\tgetqx\tmuldiva_\n"
+    "\tgetqy\tmuldivb_\n"
+    "\tret\n"
 
-"\nmultiply_\n"
-"\tqmul\tmuldiva_, muldivb_\n"
-"\tmov\titmp2_, #0\n"
-"\tcmps\tmuldiva_, #0 wc\n"
-"  if_c\tadd\titmp2_, muldivb_\n"
-"\tcmps\tmuldivb_, #0 wc\n"
-"  if_c\tadd\titmp2_, muldiva_\n"
-"\tgetqx\tmuldiva_\n"
-"\tgetqy\tmuldivb_\n"
-"\tsub\tmuldivb_, itmp2_\n"
-"\tret\n"
-;
+    "\nmultiply_\n"
+    "\tqmul\tmuldiva_, muldivb_\n"
+    "\tmov\titmp2_, #0\n"
+    "\tcmps\tmuldiva_, #0 wc\n"
+    "  if_c\tadd\titmp2_, muldivb_\n"
+    "\tcmps\tmuldivb_, #0 wc\n"
+    "  if_c\tadd\titmp2_, muldiva_\n"
+    "\tgetqx\tmuldiva_\n"
+    "\tgetqy\tmuldivb_\n"
+    "\tsub\tmuldivb_, itmp2_\n"
+    "\tret\n"
+    ;
 
 /*
  * signed divide, taken from spin interpreter
@@ -5691,55 +5692,55 @@ static const char *builtin_mul_p2 =
  */
 
 static const char *builtin_div_p1 =
-"' code originally from spin interpreter, modified slightly\n"
-"\nunsdivide_\n"
-"       mov     itmp2_,#0\n"
-"       jmp     #udiv__\n"
-"\ndivide_\n"
-"       abs     muldiva_,muldiva_     wc       'abs(x)\n"
-"       muxc    itmp2_,divide_haxx_            'store sign of x (mov x,#1 has bits 0 and 31 set)\n"
-"       abs     muldivb_,muldivb_     wc,wz    'abs(y)\n"
-" if_z  jmp     #divbyzero__\n"
-" if_c  xor     itmp2_,#1                      'store sign of y\n"
-"udiv__\n"
-"divide_haxx_\n"
-"        mov     itmp1_,#1                    'unsigned divide (bit 0 is discarded)\n"
-"        mov     DIVCNT,#32\n"
-"mdiv__\n"
-"        shr     muldivb_,#1        wc,wz\n"
-"        rcr     itmp1_,#1\n"
-" if_nz   djnz    DIVCNT,#mdiv__\n"
-"mdiv2__\n"
-"        cmpsub  muldiva_,itmp1_        wc\n"
-"        rcl     muldivb_,#1\n"
-"        shr     itmp1_,#1\n"
-"        djnz    DIVCNT,#mdiv2__\n"
+    "' code originally from spin interpreter, modified slightly\n"
+    "\nunsdivide_\n"
+    "       mov     itmp2_,#0\n"
+    "       jmp     #udiv__\n"
+    "\ndivide_\n"
+    "       abs     muldiva_,muldiva_     wc       'abs(x)\n"
+    "       muxc    itmp2_,divide_haxx_            'store sign of x (mov x,#1 has bits 0 and 31 set)\n"
+    "       abs     muldivb_,muldivb_     wc,wz    'abs(y)\n"
+    " if_z  jmp     #divbyzero__\n"
+    " if_c  xor     itmp2_,#1                      'store sign of y\n"
+    "udiv__\n"
+    "divide_haxx_\n"
+    "        mov     itmp1_,#1                    'unsigned divide (bit 0 is discarded)\n"
+    "        mov     DIVCNT,#32\n"
+    "mdiv__\n"
+    "        shr     muldivb_,#1        wc,wz\n"
+    "        rcr     itmp1_,#1\n"
+    " if_nz   djnz    DIVCNT,#mdiv__\n"
+    "mdiv2__\n"
+    "        cmpsub  muldiva_,itmp1_        wc\n"
+    "        rcl     muldivb_,#1\n"
+    "        shr     itmp1_,#1\n"
+    "        djnz    DIVCNT,#mdiv2__\n"
 
-"        shr     itmp2_,#31       wc,wz    'restore sign\n"
-"        negnz   muldiva_,muldiva_         'remainder\n"
-"        negc    muldivb_,muldivb_ wz      'division result\n"
+    "        shr     itmp2_,#31       wc,wz    'restore sign\n"
+    "        negnz   muldiva_,muldiva_         'remainder\n"
+    "        negc    muldivb_,muldivb_ wz      'division result\n"
 
-"divbyzero__\n"
-"divide__ret\n"
-"unsdivide__ret\n"
+    "divbyzero__\n"
+    "divide__ret\n"
+    "unsdivide__ret\n"
     "\tret\n"
-"DIVCNT\n"
-"\tlong\t0\n"
-;
-static const char *builtin_div_p2 = 
-"\ndivide_\n"
-"       abs     muldivb_,muldivb_     wcz      'abs(y)\n"
-"       wrc     itmp2_                         'store sign of y\n"
-"       abs     muldiva_,muldiva_     wc       'abs(x)\n"
-"       qdiv    muldiva_, muldivb_             'queue divide\n"
-" if_c  xor     itmp2_,#1                      'store sign of x\n"
-"       getqx   muldivb_                       'get quotient\n"
-"       getqy   muldiva_                       'get remainder\n"
-"       negc    muldiva_,muldiva_              'restore sign, remainder (sign of x)\n"
-"       testb   itmp2_,#0             wc       'restore sign, division result\n"
-" _ret_ negc    muldivb_,muldivb_     \n"
+    "DIVCNT\n"
+    "\tlong\t0\n"
+    ;
+static const char *builtin_div_p2 =
+    "\ndivide_\n"
+    "       abs     muldivb_,muldivb_     wcz      'abs(y)\n"
+    "       wrc     itmp2_                         'store sign of y\n"
+    "       abs     muldiva_,muldiva_     wc       'abs(x)\n"
+    "       qdiv    muldiva_, muldivb_             'queue divide\n"
+    " if_c  xor     itmp2_,#1                      'store sign of x\n"
+    "       getqx   muldivb_                       'get quotient\n"
+    "       getqy   muldiva_                       'get remainder\n"
+    "       negc    muldiva_,muldiva_              'restore sign, remainder (sign of x)\n"
+    "       testb   itmp2_,#0             wc       'restore sign, division result\n"
+    " _ret_ negc    muldivb_,muldivb_     \n"
 
-;
+    ;
 
 #include "sys/lmm_orig.spin.h"
 #include "sys/lmm_slow.spin.h"
@@ -5755,7 +5756,7 @@ const char *builtin_fcache_p2 =
     "    sub\tfcache_tmpb_, pa\n"
     "    shr\tpa, #2\n" // convert to words
     "    altd\tpa\n"
-    "    mov\t 0-0, ret_instr_\n" 
+    "    mov\t 0-0, ret_instr_\n"
     "    sub\tpa, #1\n"
     "    setq\tpa\n"
     "    rdlong\t$0, fcache_tmpb_\n"
@@ -5775,7 +5776,7 @@ const char *builtin_fcache_p2 =
 //    count <- next thing on stack, count of locals to pop (may be 0)
 //    locals <- 1..count locals
 
-const char *builtin_pushregs_p1 = 
+const char *builtin_pushregs_p1 =
     "COUNT_\n"
     "    long 0\n"
     "prcnt_\n"
@@ -6191,23 +6192,23 @@ CompileConsts(IRList *irl, Module *P)
 int
 EmitDatSection(void *vptr, Module *P)
 {
-  IRList *irl = (IRList *)vptr;
-  Flexbuf *fb;
-  Flexbuf *relocs;
-  Operand *op;
-  IR *ir;
-  
-  if (!ModData(P) || !ModData(P)->datbase)
-      return 0;
-  fb = (Flexbuf *)calloc(1, sizeof(*fb));
-  relocs = (Flexbuf *)calloc(1, sizeof(*relocs));
-  flexbuf_init(fb, 32768);
-  flexbuf_init(relocs, 512);
-  PrintDataBlock(fb, P->datblock, NULL,relocs);
-  op = NewOperand(IMM_BINARY, (const char *)fb, (intptr_t)relocs);
-  ir = EmitOp2(irl, OPC_LABELED_BLOB, ModData(P)->datlabel, op);
-  ir->src2 = (Operand *)P;
-  return 0;
+    IRList *irl = (IRList *)vptr;
+    Flexbuf *fb;
+    Flexbuf *relocs;
+    Operand *op;
+    IR *ir;
+
+    if (!ModData(P) || !ModData(P)->datbase)
+        return 0;
+    fb = (Flexbuf *)calloc(1, sizeof(*fb));
+    relocs = (Flexbuf *)calloc(1, sizeof(*relocs));
+    flexbuf_init(fb, 32768);
+    flexbuf_init(relocs, 512);
+    PrintDataBlock(fb, P->datblock, NULL,relocs);
+    op = NewOperand(IMM_BINARY, (const char *)fb, (intptr_t)relocs);
+    ir = EmitOp2(irl, OPC_LABELED_BLOB, ModData(P)->datlabel, op);
+    ir->src2 = (Operand *)P;
+    return 0;
 }
 
 int
@@ -6270,7 +6271,7 @@ EmitMain_P1(IRList *irl, Module *P)
     Operand *arg1;
     int maxArgs = max_coginit_args;
     int i;
-    
+
     // always need at least arg1
     arg1 = GetArgReg(0);
 
@@ -6282,7 +6283,7 @@ EmitMain_P1(IRList *irl, Module *P)
     firstfunc->toplevel = 1;  // does not need to save registers
     firstfunc->callSites += 1;
     firstfuncname = IdentifierModuleName(firstfunc->module, firstfunc->name);
-    
+
     spinlabel = NewOperand(IMM_COG_LABEL, "spininit", 0);
     cogexit = NewOperand(IMM_COG_LABEL, "cogexit", 0);
     hubexit = NewOperand(IMM_HUB_LABEL, "hubexit", 0);
@@ -6374,7 +6375,7 @@ EmitMain_P2(IRList *irl, Module *P, Operand *lutstart)
     firstfunc->toplevel = 1;
     firstfunc->callSites += 1;
     firstfuncname = IdentifierModuleName(firstfunc->module, firstfunc->name);
-    
+
     ValidateStackptr();
     ValidateObjbase();
     cogexit = NewOperand(IMM_COG_LABEL, "cogexit", 0);
@@ -6413,7 +6414,7 @@ EmitMain_P2(IRList *irl, Module *P, Operand *lutstart)
     } else {
         EmitOp1(irl, OPC_ORGF, NewImmediate(32));
     }
-    
+
     EmitLabel(irl, skip_clock_label);
 
     // force LUT code, if any, to be loaded
@@ -6439,7 +6440,7 @@ EmitMain_P2(IRList *irl, Module *P, Operand *lutstart)
     EmitOp2(irl, OPC_RDLONG, result1, stackptr)->srceffect = OPEFFECT_POSTINC;
     // now pull operands off the stack
     if (maxArgs > 0)  {
-        for (int i=0;i<maxArgs;i++) GetArgReg(i); // Make sure the registers actually exist
+        for (int i=0; i<maxArgs; i++) GetArgReg(i); // Make sure the registers actually exist
         if (maxArgs > 1) EmitOp1(irl,OPC_SETQ,NewImmediate(maxArgs-1));
         EmitOp2(irl,OPC_RDLONG,GetArgReg(0),stackptr);
     }
@@ -6450,7 +6451,7 @@ EmitMain_P2(IRList *irl, Module *P, Operand *lutstart)
 
 /*
  * .cog.spin main program looks like:
- * 
+ *
  */
 
 void
@@ -6565,7 +6566,7 @@ GuessFcacheSize(IRList *irl)
     /* for now, just go by p2/p1 */
     if (gl_p2) {
         if (gl_optimize_flags & OPT_AUTO_FCACHE) {
-             return 128;
+            return 128;
         }
         return 0; // disable fcache if no optimization
     } else {
@@ -6589,11 +6590,11 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     Operand *lutstart = NULL;
     Operand *cog_bss_start = NewOperand(IMM_COG_LABEL, "COG_BSS_START", 0);
     bool emitSpinCode = true;
-    
+
     const char *asmcode;
     int maxargs = 2; // initialization code wants 2 arguments
     int maxrets = 1;  // assume 1 return value is default
-    
+
     save = current;
     current = P;
 
@@ -6609,13 +6610,13 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         }
     }
     InitAsmCode();
-    
+
     memset(&cogcode, 0, sizeof(cogcode));
     memset(&hubcode, 0, sizeof(hubcode));
     memset(&cogdata, 0, sizeof(cogdata));
     memset(&hubdata, 0, sizeof(hubdata));
     memset(&cogbss, 0, sizeof(cogbss));
-    
+
     if (gl_output == OUTPUT_COGSPIN) {
         // count max. number of arguments in any public function
         // also try to guess at stack size required
@@ -6652,7 +6653,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
                 stackSize += maxLeafSize;
             }
 
-            func = func->next;            
+            func = func->next;
         }
         if (maxargs > maxrets) {
             mboxSize = maxargs + 3;
@@ -6694,11 +6695,11 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     if (gl_fcache_size < 0) {
         gl_fcache_size = GuessFcacheSize(&cogcode);
     }
-    
+
     if (emitSpinCode) {
         // compile libraries
         CompileIntermediate(systemModule);
-        
+
         // output the main stub
         EmitLabel(&cogcode, entrylabel);
         if (gl_have_lut) {
@@ -6752,7 +6753,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         if (gl_compress) {
             IRCompress(&hubcode, &cogcode);
         }
-    
+
         orgh = EmitOp0(&cogcode, OPC_HUBMODE);
     }
 
@@ -6771,10 +6772,10 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         ClearUseCounts(&cogGlobalVars);
         ClearUseCounts(&hubGlobalVars);
         MarkUsedAsmVars(&cogcode);
-        
+
         // cog data
         EmitGlobals(&cogdata, &cogbss, &hubdata);
-    
+
         // COG bss
         // FCACHE space
         if (HUB_CODE && !gl_p2) {
@@ -6789,7 +6790,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     // we need to emit all dat sections
     VisitRecursive(&hubdata, P, EmitDatSection, VISITFLAG_EMITDAT);
     VisitRecursive(&hubdata, systemModule, EmitDatSection, VISITFLAG_EMITDAT);
-    
+
     // emit heap space, if we need it
     if (heaplabel) {
         Symbol *sym = LookupSymbol("__real_heapsize__");
@@ -6808,7 +6809,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
             EmitReserve(&cogbss, heapsize, COG_RESERVE);
         }
     }
-    
+
     // only the top level variable space is needed
     EmitVarSection(&hubdata, P);
 
@@ -6835,7 +6836,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         // now insert the cog data after the cog code, before the orgh
         EmitLabel(&cogdata, cog_bss_start);
         EmitOp1(&cogdata, OPC_FIT, limitop);
-    
+
         EmitOp1(&cogbss, OPC_FIT, limitop);
         if (orgh) {
             InsertAfterIR(&cogcode, orgh->prev, cogdata.head);
@@ -6848,7 +6849,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
 
     // and assemble the result
     asmcode = IRAssemble(&cogcode, P);
-    
+
     current = save;
 
     f = fopen(fname, "w");
