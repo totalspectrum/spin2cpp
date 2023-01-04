@@ -120,7 +120,7 @@ unsigned int findInTable(unsigned int *tab, unsigned wc) {
 static void InitPasm(int flags);
 
 /* functions for handling string streams */
-static int 
+static int
 strgetc(LexStream *L)
 {
     char *s;
@@ -161,7 +161,7 @@ void strToLex(LexStream *L, const char *s, const char *name, int language)
    filegetwc is for UCS-16LE streams
 */
 
-static int 
+static int
 filegetc(LexStream *L)
 {
     FILE *f;
@@ -181,7 +181,7 @@ filegetc(LexStream *L)
     return (c >= 0) ? c : EOF;
 }
 
-static int 
+static int
 filegetwc(LexStream *L)
 {
     FILE *f;
@@ -303,11 +303,14 @@ static void startNewLine(LexStream *L)
     if (L->mixed_tab_warning) {
         switch (L->mixed_tab_warning) {
         case MIXED_TAB_SAME_LINE:
-            WARNING(DummyLineAst(L->lineCounter), "mixing tabs and spaces for indentation on same line"); break;
+            WARNING(DummyLineAst(L->lineCounter), "mixing tabs and spaces for indentation on same line");
+            break;
         case MIXED_TAB_CHANGED_TO_SPACES:
-            WARNING(DummyLineAst(L->lineCounter), "used spaces for indentation (previous lines used tabs)"); break;
+            WARNING(DummyLineAst(L->lineCounter), "used spaces for indentation (previous lines used tabs)");
+            break;
         case MIXED_TAB_CHANGED_TO_TABS:
-            WARNING(DummyLineAst(L->lineCounter), "used tabs for indentation (previous lines used spaces)"); break;
+            WARNING(DummyLineAst(L->lineCounter), "used tabs for indentation (previous lines used spaces)");
+            break;
         }
         L->mixed_tab_warning = 0;
     }
@@ -462,11 +465,11 @@ parseNumber(LexStream *L, unsigned int base, uint64_t *num)
     int kind = SP_NUM;
     int lang;
     int ignored_digits = 0;
-    
+
     lang = L->language;
     uval = 0;
     tenval = 0;
-    
+
     for(;;) {
         c = lexgetc(L);
         if (c == '_' || (IsCLang(lang) && c == '\'') )
@@ -499,7 +502,7 @@ parseNumber(LexStream *L, unsigned int base, uint64_t *num)
         }
     }
     if ( ((base <= 10) && (c == '.' || c == 'e' || c == 'E') )
-         || (base == 16 && (c=='.' || c == 'p' || c == 'P') ) )
+            || (base == 16 && (c=='.' || c == 'p' || c == 'P') ) )
     {
         /* potential floating point number */
         double f = (base == 16) ? (double)uval : (double)tenval;
@@ -653,7 +656,7 @@ getTranslatedString(struct flexbuf *fb)
     wchar_t wc;
     int c;
     size_t count, len;
-    
+
     if (gl_run_charset != CHARSET_UTF8) {
         // translate the UTF-8 characters into the appropriate runtime
         // character set
@@ -792,7 +795,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             goto is_identifier;
         }
         if (sym->kind == SYM_CONSTANT
-            || sym->kind == SYM_FLOAT_CONSTANT)
+                || sym->kind == SYM_FLOAT_CONSTANT)
         {
             goto is_identifier;
         }
@@ -815,11 +818,11 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             case SP_RES:
                 L->sawInstruction = 1;
                 break;
-	    case SP_ASM:
+            case SP_ASM:
             case SP_ASM_CONST:
             case SP_ORG:
-	        if (L->block_type == BLOCK_ASM && (c == SP_ASM || c == SP_ASM_CONST)) {
-		    WARNING(DummyLineAst(L->lineCounter), "ignoring nested asm near line %d\n", L->lineCounter);
+                if (L->block_type == BLOCK_ASM && (c == SP_ASM || c == SP_ASM_CONST)) {
+                    WARNING(DummyLineAst(L->lineCounter), "ignoring nested asm near line %d\n", L->lineCounter);
                 } else if (InDatBlock(L)) {
                     /* for ORG, nothing special to do */
                     /* for ASM, check for identifier */
@@ -828,18 +831,18 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                     }
                     L->sawInstruction = 1;
                 } else {
-		    L->save_block = L->block_type;
+                    L->save_block = L->block_type;
                     L->block_type = BLOCK_ASM;
-		}
-		break;
+                }
+                break;
             case SP_END:
                 if (L->block_type != BLOCK_ASM || L->colCounter - L->firstNonBlank > 4) {
                     goto is_identifier;
                 }
-                /* fall through */
-	    case SP_ENDASM:
-	        L->block_type = L->save_block;
-	        break;
+            /* fall through */
+            case SP_ENDASM:
+                L->block_type = L->save_block;
+                break;
             case SP_IF:
             case SP_IFNOT:
             case SP_ELSE:
@@ -939,7 +942,7 @@ parseLineAsString(LexStream *L, AST **ast_ptr)
     int c;
     struct flexbuf fb;
     AST *ast;
-    
+
     ast = NewAST(AST_STRING, NULL, NULL);
     flexbuf_init(&fb, INCSTR);
 
@@ -947,7 +950,7 @@ parseLineAsString(LexStream *L, AST **ast_ptr)
     do {
         c = lexgetc(L);
     } while (c == ' ');
-    
+
     while (c > 0 && c < 256) {
         if (c == 10 || c == 13) {
             // newline in mid-string, this is what we want
@@ -1070,7 +1073,7 @@ parseBacktickInBacktick(LexStream *L, AST **ast_ptr)
     int identLen;
     char *dup;
     AST *ast;
-    
+
     /* first, read the identifier (everything up to the next "(") */
     identLen = 0;
     c = lexgetc(L);
@@ -1135,21 +1138,29 @@ getEscapedChar(LexStream *L)
         lexungetc(L, g);
         break;
     case 'a':
-        c = 7; break;
+        c = 7;
+        break;
     case 'b':
-        c = 8; break;
+        c = 8;
+        break;
     case 't':
-        c = 9; break;
+        c = 9;
+        break;
     case 'n':
-        c = 10; break;
+        c = 10;
+        break;
     case 'v':
-        c = 11; break;
+        c = 11;
+        break;
     case 'f':
-        c = 12; break;
+        c = 12;
+        break;
     case 'r':
-        c = 13; break;
+        c = 13;
+        break;
     case 'e':
-        c = 27; break;
+        c = 27;
+        break;
     case 'x':
     case 'X':
         c = 0;
@@ -1182,7 +1193,7 @@ parseCString(LexStream *L, AST **ast_ptr)
     AST *exprlist;
     AST *ast;
     char *str;
-    
+
     exprlist = NULL;
     flexbuf_init(&fb, INCSTR);
 again:
@@ -1258,9 +1269,9 @@ static void CheckSrcComment( LexStream *L )
     static LexStream *s_lastStream;
     static int s_lastLine = -1;
     static const char *s_lastFileName;
-    
+
     if (s_lastStream == L && s_lastLine == L->lineCounter
-        && s_lastFileName == L->fileName)
+            && s_lastFileName == L->fileName)
     {
         return;
     }
@@ -1290,10 +1301,10 @@ getFileName(const char *name, const char *orig)
     // of the new one, just return the original
     if (!strchr(orig, '/')
 #ifdef WINDOWS
-        && !strchr(orig, '\\')
-#endif        
-        )
-    {        
+            && !strchr(orig, '\\')
+#endif
+       )
+    {
         siz = strlen(ptr) - strlen(orig);
         if ( 0L <= (long)siz ) {
             if (!strcmp(ptr + siz, orig)) {
@@ -1323,7 +1334,7 @@ checkCommentedLine(struct flexbuf *cbp, LexStream *L, int c, int language)
     char *commentLine;
     int cameFromHash = 0;
     int eatNewline = 0;
-    
+
     // look for #line directives
     if (c == '#' && L->colCounter == 1) {
         // UGH! it's actually legal in Spin to put #N at the beginning of
@@ -1337,7 +1348,7 @@ checkCommentedLine(struct flexbuf *cbp, LexStream *L, int c, int language)
         }
         goto docomment;
     }
-not_comment:        
+not_comment:
     if ( IsBasicLang(language) && (c == 'r' || c == 'R') ) {
         int c2, c3, c4;
         c2 = lexgetc(L);
@@ -1503,10 +1514,10 @@ skipSpace(LexStream *L, AST **ast_ptr, int language)
     int eof_token;
     int numspaces = 0;
     int numtabs = 0;
-    
+
     if (IsBasicLang(language)) {
-      eoln_token = BAS_EOLN;
-      eof_token = BAS_EOF;
+        eoln_token = BAS_EOLN;
+        eof_token = BAS_EOF;
     } else if (IsCLang(language)) {
         if (InDatBlock(L)) {
             eoln_token = C_EOLN;
@@ -1515,10 +1526,10 @@ skipSpace(LexStream *L, AST **ast_ptr, int language)
         }
         eof_token = -1;
     } else {
-      eoln_token = SP_EOLN;
-      eof_token = SP_EOF;
+        eoln_token = SP_EOLN;
+        eof_token = SP_EOF;
     }
-    
+
     flexbuf_init(&cb, INCSTR);
 refetch:
     numspaces = numtabs = 0;
@@ -1553,7 +1564,7 @@ again:
             }
             L->indent_saw_tabs = 1;
         }
-    }   
+    }
     /* ignore completely empty lines or ones with just comments */
     c = checkCommentedLine(&cb, L, c, language);
     if (c == ' ') {
@@ -1563,7 +1574,7 @@ again:
         struct flexbuf anno;
         int annotate = 0;
         int directive = 0;
-	int doccomment = 0;
+        int doccomment = 0;
         int doccommentchar;
         int allowNestedComments;
 
@@ -1578,7 +1589,7 @@ again:
             doccommentchar = '*';
             allowNestedComments = 0;
         }
-        /* check for special comments {++... } which indicate 
+        /* check for special comments {++... } which indicate
            inline C code
            We also set up the preprocessor to emit {#line xx} directives when
            doing #include
@@ -1594,27 +1605,27 @@ again:
             c = lexgetc(L);
             directive = 1;
         } else if (c == doccommentchar) {
-	    c = lexgetc(L);
-	    doccomment = 1;
+            c = lexgetc(L);
+            doccomment = 1;
             allowNestedComments = 0;
-	}
+        }
         lexungetc(L, c);
         for(;;) {
             c = lexgetc(L);
             if (allowNestedComments && commentBlockStart(language, c, L)) {
                 commentNest++;
             } else if (commentBlockEnd(language, c, L)) {
-	        if (doccomment && (IsSpinLang(language) || L->block_type == BLOCK_PASM)) {
-	            int peekc;
-		    peekc = lexgetc(L);
-		    if (peekc == '}') {
-		        commentNest = 0;
-		    } else {
-		        lexungetc(L, peekc);
-		    }
-		} else {
-		  --commentNest;
-		}
+                if (doccomment && (IsSpinLang(language) || L->block_type == BLOCK_PASM)) {
+                    int peekc;
+                    peekc = lexgetc(L);
+                    if (peekc == '}') {
+                        commentNest = 0;
+                    } else {
+                        lexungetc(L, peekc);
+                    }
+                } else {
+                    --commentNest;
+                }
             }
             if (commentNest <= 0 || c == EOF) {
                 break;
@@ -1626,11 +1637,11 @@ again:
             }
         }
         if (c == EOF) {
-	    if (commentNest > 0) {
-	        ERROR(DummyLineAst(startline), "End of file seen inside comment (comment starts at line %d)\n", startline);
+            if (commentNest > 0) {
+                ERROR(DummyLineAst(startline), "End of file seen inside comment (comment starts at line %d)\n", startline);
             }
             return eof_token;
-	}
+        }
         if (annotate) {
             AST *ast = NewAST(AST_ANNOTATION, NULL, NULL);
             flexbuf_addchar(&anno, '\0');
@@ -1696,15 +1707,15 @@ again:
     }
     // force an end-of line at EOF
     if (c == EOF) {
-      if (!L->eoln && !L->eof) {
-        L->eof = L->eoln = 1;
-        if (IsBasicLang(language)) {
-            L->firstNonBlank = 0;
+        if (!L->eoln && !L->eof) {
+            L->eof = L->eoln = 1;
+            if (IsBasicLang(language)) {
+                L->firstNonBlank = 0;
+            }
+            if (eoln_token == ' ') goto refetch;
+            return eoln_token;
         }
-        if (eoln_token == ' ') goto refetch;
-        return eoln_token;
-      }
-      return eof_token;
+        return eof_token;
     }
     if (L->eoln) {
         L->eoln = 0;
@@ -1816,10 +1827,10 @@ getSpinToken(LexStream *L, AST **ast_ptr)
         }
         lexungetc(L, c);
     }
-    
+
     c = skipSpace(L, &ast, LANG_SPIN_SPIN1);
     if (c == EOF) {
-      c = SP_EOF;
+        c = SP_EOF;
     }
 
 //    printf("L->linecounter=%d\n", L->lineCounter);
@@ -1874,7 +1885,7 @@ getSpinToken(LexStream *L, AST **ast_ptr)
             }
         }
     } else if (gl_p2 && c == '.' && isIdentifierStart(lexpeekc(L)) && InDatBlock(L)) {
-            c = parseSpinIdentifier(L, &ast, L->lastGlobal ? L->lastGlobal : "");
+        c = parseSpinIdentifier(L, &ast, L->lastGlobal ? L->lastGlobal : "");
     } else if (InDatBlock(L) && L->sawDataDirective && c == '[') {
         c = SP_DAT_LBRACK;
     } else if (InDatBlock(L) && L->sawDataDirective && c == ']') {
@@ -1887,7 +1898,7 @@ getSpinToken(LexStream *L, AST **ast_ptr)
 
         op[0] = token = c;
         op[1] = 0;
-        
+
         // have to special case single character operators
         if (L->language == LANG_SPIN_SPIN2) {
             sym = FindSymbol(&spin2ReservedWords, op);
@@ -1897,7 +1908,7 @@ getSpinToken(LexStream *L, AST **ast_ptr)
         if (sym) {
             token = INTVAL(sym);
         }
-        // now check for more characters    
+        // now check for more characters
         for (i = 1; i < sizeof(op)-1; i++) {
             c = lexgetc(L);
             if (c >= 128 || c < 0 || strchr(operator_chars, c) == NULL) {
@@ -1944,7 +1955,7 @@ getSpinToken(LexStream *L, AST **ast_ptr)
         PopExprState(L);
     }
     *ast_ptr = last_ast = ast;
-        
+
     return c;
 }
 
@@ -1965,7 +1976,7 @@ struct reservedword {
     { "__builtin_alloca", SP_ALLOCA }, // NON-STANDARD
     { "byte", SP_BYTE },
     { "__bytecode__", SP_BYTECODE },
-    
+
     { "case", SP_CASE },
     { "case_fast", SP_CASE_FAST }, // NON-STANDARD
     { "cognew", SP_COGNEW },
@@ -2032,7 +2043,7 @@ struct reservedword {
     { "word", SP_WORD },
 
     { "xor", SP_XOR },
-    
+
     /* operators */
     { "+", '+' },
     { "-", '-' },
@@ -2081,7 +2092,7 @@ struct reservedword {
     { "-|", SP_SIGNX },
 
     { "??", SP_RANDOM },
-    
+
     { "@@", SP_DOUBLEAT },
     { "@@@", SP_TRIPLEAT },
 };
@@ -2109,9 +2120,9 @@ struct reservedword init_spin2_words[] = {
     { "+<=", SP_LEU },
     { "+>=", SP_GEU },
     { "+.", SP_FADD },
-    { "-.", SP_FSUB }, 
+    { "-.", SP_FSUB },
     { "*.", SP_FMUL },
-    { "/.", SP_FDIV }, 
+    { "/.", SP_FDIV },
     { "<.", SP_FLT },
     { ">.", SP_FGT },
     { "<=.", SP_FLE },
@@ -2160,242 +2171,242 @@ struct reservedword init_spin2_words[] = {
 };
 
 struct reservedword basic_keywords[] = {
-  { "_", BAS_EMPTY },
-  
-  { "abs", BAS_ABS },
-  { "alias", BAS_ALIAS },
-  { "and", BAS_AND },
-  { "andalso", BAS_ANDALSO },
-  { "any", BAS_ANY },
-  { "append", BAS_APPEND },
-  { "as", BAS_AS },
-  { "asc", BAS_ASC },
-  { "asm", BAS_ASM },
-  { "boolean", BAS_BOOLEAN },
-  { "__builtin_alloca", BAS_ALLOCA },
-  { "byref", BAS_BYREF },
-  { "byte", BAS_BYTE },
-  { "byval", BAS_BYVAL },
-  { "call", BAS_CALL },
-  { "case", BAS_CASE },
-  { "cast", BAS_CAST },
-  { "catch", BAS_CATCH },
-  { "chain", BAS_CHAIN },
-  { "class", BAS_CLASS },
-  { "close", BAS_CLOSE },
-  { "const", BAS_CONST },
-  { "continue", BAS_CONTINUE },
-  { "cpu", BAS_CPU },
-  { "data", BAS_DATA },
-  { "declare", BAS_DECLARE },
-  { "def", BAS_DEF },
-  { "defint", BAS_DEFINT },
-  { "defsng", BAS_DEFSNG },
-  { "delete", BAS_DELETE },
-  { "dim", BAS_DIM },
-  { "direction", BAS_DIRECTION },
-  { "do", BAS_DO },
-  { "double", BAS_DOUBLE },
-  { "else", BAS_ELSE },
-  { "end", BAS_END },
-  { "endif", BAS_ENDIF },
-  { "enum", BAS_ENUM },
-  { "extern", BAS_EXTERN },
-  { "exit", BAS_EXIT },
-  { "fixed", BAS_FIXED },
-  { "for", BAS_FOR },
-  { "function", BAS_FUNCTION },
-  { "__function__", BAS_FUNC_NAME },
-  { "get", BAS_GET },
-  { "goto", BAS_GOTO },
-  { "gosub", BAS_GOSUB },
-  { "_hasmethod", BAS_HASMETHOD },
-  { "if", BAS_IF },
-  { "import", BAS_IMPORT },
-  { "input", BAS_INPUT },
-  { "int", BAS_CAST_INT },
-  { "integer", BAS_INTEGER_KW },
-  { "let", BAS_LET },
-  { "lib", BAS_LIB },
-  { "line", BAS_LINE },
-  { "long", BAS_LONG },
-  { "longint", BAS_LONGINT },
-  { "loop", BAS_LOOP },
-  { "mod", BAS_MOD },
-  { "new", BAS_NEW },
-  { "next", BAS_NEXT },
-  { "not", BAS_NOT },
-  { "nil", BAS_NIL },
-  { "on", BAS_ON },
-  { "open", BAS_OPEN },
-  { "option", BAS_OPTION },
-  { "or", BAS_OR },
-  { "orelse", BAS_ORELSE },
-  { "output", BAS_OUTPUT },
-  { "pointer", BAS_POINTER },
-  { "preserve", BAS_PRESERVE },
-  { "print", BAS_PRINT },
-  { "private", BAS_PRIVATE },
-  { "program", BAS_PROGRAM },
-  { "ptr", BAS_PTR },
-  { "put", BAS_PUT },
-  { "read", BAS_READ },
-  { "redim", BAS_REDIM },
-  { "register", BAS_REGISTER },
-  { "restore", BAS_RESTORE },
-  { "return", BAS_RETURN },
-  { "_sametypes", BAS_SAMETYPES },
-  { "select", BAS_SELECT },
-  { "self", BAS_SELF },
-  { "shared", BAS_SHARED },
-  { "shl", BAS_SHL },
-  { "short", BAS_SHORT },
-  { "shr", BAS_SHR },
-  { "single", BAS_SINGLE },
-  { "sizeof", BAS_SIZEOF },
-  { "sqr", BAS_SQRT },
-  { "sqrt", BAS_SQRT },
-  { "step", BAS_STEP },
-  { "string", BAS_STRING_KW },
-  { "struct", BAS_STRUCT },
-  { "sub", BAS_SUB },
-  { "subroutine", BAS_SUB },
-  { "then", BAS_THEN },
-  { "throw", BAS_THROW },
-  { "throwifcaught", BAS_THROWIFCAUGHT },
-  { "to", BAS_TO },
-  { "try", BAS_TRY },
-  { "type", BAS_TYPE },
-  { "ubyte", BAS_UBYTE },
-  { "uinteger", BAS_UINTEGER },
-  { "ulong", BAS_ULONG },
-  { "ulongint", BAS_ULONGINT },
-  { "union", BAS_UNION },
-  { "until", BAS_UNTIL },
-  { "ushort", BAS_USHORT },
-  { "using", BAS_USING },
-  { "var", BAS_VAR },
-  { "wend", BAS_WEND },
-  { "while", BAS_WHILE },
-  { "with", BAS_WITH },
-  { "word", BAS_WORD },
-  { "xor", BAS_XOR },
+    { "_", BAS_EMPTY },
+
+    { "abs", BAS_ABS },
+    { "alias", BAS_ALIAS },
+    { "and", BAS_AND },
+    { "andalso", BAS_ANDALSO },
+    { "any", BAS_ANY },
+    { "append", BAS_APPEND },
+    { "as", BAS_AS },
+    { "asc", BAS_ASC },
+    { "asm", BAS_ASM },
+    { "boolean", BAS_BOOLEAN },
+    { "__builtin_alloca", BAS_ALLOCA },
+    { "byref", BAS_BYREF },
+    { "byte", BAS_BYTE },
+    { "byval", BAS_BYVAL },
+    { "call", BAS_CALL },
+    { "case", BAS_CASE },
+    { "cast", BAS_CAST },
+    { "catch", BAS_CATCH },
+    { "chain", BAS_CHAIN },
+    { "class", BAS_CLASS },
+    { "close", BAS_CLOSE },
+    { "const", BAS_CONST },
+    { "continue", BAS_CONTINUE },
+    { "cpu", BAS_CPU },
+    { "data", BAS_DATA },
+    { "declare", BAS_DECLARE },
+    { "def", BAS_DEF },
+    { "defint", BAS_DEFINT },
+    { "defsng", BAS_DEFSNG },
+    { "delete", BAS_DELETE },
+    { "dim", BAS_DIM },
+    { "direction", BAS_DIRECTION },
+    { "do", BAS_DO },
+    { "double", BAS_DOUBLE },
+    { "else", BAS_ELSE },
+    { "end", BAS_END },
+    { "endif", BAS_ENDIF },
+    { "enum", BAS_ENUM },
+    { "extern", BAS_EXTERN },
+    { "exit", BAS_EXIT },
+    { "fixed", BAS_FIXED },
+    { "for", BAS_FOR },
+    { "function", BAS_FUNCTION },
+    { "__function__", BAS_FUNC_NAME },
+    { "get", BAS_GET },
+    { "goto", BAS_GOTO },
+    { "gosub", BAS_GOSUB },
+    { "_hasmethod", BAS_HASMETHOD },
+    { "if", BAS_IF },
+    { "import", BAS_IMPORT },
+    { "input", BAS_INPUT },
+    { "int", BAS_CAST_INT },
+    { "integer", BAS_INTEGER_KW },
+    { "let", BAS_LET },
+    { "lib", BAS_LIB },
+    { "line", BAS_LINE },
+    { "long", BAS_LONG },
+    { "longint", BAS_LONGINT },
+    { "loop", BAS_LOOP },
+    { "mod", BAS_MOD },
+    { "new", BAS_NEW },
+    { "next", BAS_NEXT },
+    { "not", BAS_NOT },
+    { "nil", BAS_NIL },
+    { "on", BAS_ON },
+    { "open", BAS_OPEN },
+    { "option", BAS_OPTION },
+    { "or", BAS_OR },
+    { "orelse", BAS_ORELSE },
+    { "output", BAS_OUTPUT },
+    { "pointer", BAS_POINTER },
+    { "preserve", BAS_PRESERVE },
+    { "print", BAS_PRINT },
+    { "private", BAS_PRIVATE },
+    { "program", BAS_PROGRAM },
+    { "ptr", BAS_PTR },
+    { "put", BAS_PUT },
+    { "read", BAS_READ },
+    { "redim", BAS_REDIM },
+    { "register", BAS_REGISTER },
+    { "restore", BAS_RESTORE },
+    { "return", BAS_RETURN },
+    { "_sametypes", BAS_SAMETYPES },
+    { "select", BAS_SELECT },
+    { "self", BAS_SELF },
+    { "shared", BAS_SHARED },
+    { "shl", BAS_SHL },
+    { "short", BAS_SHORT },
+    { "shr", BAS_SHR },
+    { "single", BAS_SINGLE },
+    { "sizeof", BAS_SIZEOF },
+    { "sqr", BAS_SQRT },
+    { "sqrt", BAS_SQRT },
+    { "step", BAS_STEP },
+    { "string", BAS_STRING_KW },
+    { "struct", BAS_STRUCT },
+    { "sub", BAS_SUB },
+    { "subroutine", BAS_SUB },
+    { "then", BAS_THEN },
+    { "throw", BAS_THROW },
+    { "throwifcaught", BAS_THROWIFCAUGHT },
+    { "to", BAS_TO },
+    { "try", BAS_TRY },
+    { "type", BAS_TYPE },
+    { "ubyte", BAS_UBYTE },
+    { "uinteger", BAS_UINTEGER },
+    { "ulong", BAS_ULONG },
+    { "ulongint", BAS_ULONGINT },
+    { "union", BAS_UNION },
+    { "until", BAS_UNTIL },
+    { "ushort", BAS_USHORT },
+    { "using", BAS_USING },
+    { "var", BAS_VAR },
+    { "wend", BAS_WEND },
+    { "while", BAS_WHILE },
+    { "with", BAS_WITH },
+    { "word", BAS_WORD },
+    { "xor", BAS_XOR },
 };
 
 struct reservedword c_keywords[] = {
-  { "__asm", C_ASM },
-  { "__attribute__", C_ATTRIBUTE },
-  { "_Bool", C_BOOL },
-  { "break", C_BREAK },
-  { "__builtin_abs", C_BUILTIN_ABS },
-  { "__builtin_alloca", C_BUILTIN_ALLOCA },
-  { "__builtin_clz", C_BUILTIN_CLZ },
-  { "__builtin_cogstart", C_BUILTIN_COGSTART },
-  { "__builtin_expect", C_BUILTIN_EXPECT },
-  { "__builtin_longjmp", C_BUILTIN_LONGJMP },
-  { "__builtin_mulh",  C_BUILTIN_MULH },
-  { "__builtin_muluh", C_BUILTIN_MULUH },
-  { "__builtin_printf", C_BUILTIN_PRINTF },
-  { "__builtin_propeller_rev", C_BUILTIN_REV },
-  { "__builtin_setjmp", C_BUILTIN_SETJMP },
-  { "__builtin_sqrt", C_BUILTIN_SQRT },
-  { "__builtin_va_arg", C_BUILTIN_VA_ARG },
-  { "__builtin_va_start", C_BUILTIN_VA_START },
-  { "case", C_CASE },
-  { "__catch", C_CATCH },
-  { "__class", C_CLASS },
-  { "char", C_CHAR },
-  { "const", C_CONST },
-  { "continue", C_CONTINUE },
-  { "default", C_DEFAULT },
-  { "do", C_DO },
-  { "double", C_DOUBLE },
-  { "else", C_ELSE },
-  { "enum", C_ENUM },
-  { "extern", C_EXTERN },
-  { "float", C_FLOAT },
-  { "for", C_FOR },
-  { "__fromfile", C_FROMFILE },
-  { "__func__", C_FUNC },
-  { "__FUNCTION__", C_FUNC },
-  { "goto", C_GOTO },
-  { "if", C_IF },
-  { "_Imaginary", C_IMAGINARY },
-  { "__inline", C_INLINE },
-  { "__inline__", C_INLINE },
-  { "inline", C_INLINE },
-  { "int", C_INT },
-  { "long", C_LONG },
-  { "__pasm", C_PASM },
-  { "__restrict", C_RESTRICT },
-  { "register", C_REGISTER },
-  { "return", C_RETURN },
-  { "short", C_SHORT },
-  { "signed", C_SIGNED },
-  { "sizeof", C_SIZEOF },
-  { "static", C_STATIC },
-  { "struct", C_STRUCT },
-  { "switch", C_SWITCH },
-  { "__this", C_THIS },
-  { "__throw", C_THROW },
-  { "__throwifcaught", C_THROWIF },
-  { "__try", C_TRY },
-  { "typedef", C_TYPEDEF },
-  { "__typeof__", C_TYPEOF },
-  { "union", C_UNION },
-  { "unsigned", C_UNSIGNED },
-  { "__using", C_USING },
-  { "void", C_VOID },
-  { "volatile", C_VOLATILE },
-  { "while", C_WHILE },
+    { "__asm", C_ASM },
+    { "__attribute__", C_ATTRIBUTE },
+    { "_Bool", C_BOOL },
+    { "break", C_BREAK },
+    { "__builtin_abs", C_BUILTIN_ABS },
+    { "__builtin_alloca", C_BUILTIN_ALLOCA },
+    { "__builtin_clz", C_BUILTIN_CLZ },
+    { "__builtin_cogstart", C_BUILTIN_COGSTART },
+    { "__builtin_expect", C_BUILTIN_EXPECT },
+    { "__builtin_longjmp", C_BUILTIN_LONGJMP },
+    { "__builtin_mulh",  C_BUILTIN_MULH },
+    { "__builtin_muluh", C_BUILTIN_MULUH },
+    { "__builtin_printf", C_BUILTIN_PRINTF },
+    { "__builtin_propeller_rev", C_BUILTIN_REV },
+    { "__builtin_setjmp", C_BUILTIN_SETJMP },
+    { "__builtin_sqrt", C_BUILTIN_SQRT },
+    { "__builtin_va_arg", C_BUILTIN_VA_ARG },
+    { "__builtin_va_start", C_BUILTIN_VA_START },
+    { "case", C_CASE },
+    { "__catch", C_CATCH },
+    { "__class", C_CLASS },
+    { "char", C_CHAR },
+    { "const", C_CONST },
+    { "continue", C_CONTINUE },
+    { "default", C_DEFAULT },
+    { "do", C_DO },
+    { "double", C_DOUBLE },
+    { "else", C_ELSE },
+    { "enum", C_ENUM },
+    { "extern", C_EXTERN },
+    { "float", C_FLOAT },
+    { "for", C_FOR },
+    { "__fromfile", C_FROMFILE },
+    { "__func__", C_FUNC },
+    { "__FUNCTION__", C_FUNC },
+    { "goto", C_GOTO },
+    { "if", C_IF },
+    { "_Imaginary", C_IMAGINARY },
+    { "__inline", C_INLINE },
+    { "__inline__", C_INLINE },
+    { "inline", C_INLINE },
+    { "int", C_INT },
+    { "long", C_LONG },
+    { "__pasm", C_PASM },
+    { "__restrict", C_RESTRICT },
+    { "register", C_REGISTER },
+    { "return", C_RETURN },
+    { "short", C_SHORT },
+    { "signed", C_SIGNED },
+    { "sizeof", C_SIZEOF },
+    { "static", C_STATIC },
+    { "struct", C_STRUCT },
+    { "switch", C_SWITCH },
+    { "__this", C_THIS },
+    { "__throw", C_THROW },
+    { "__throwifcaught", C_THROWIF },
+    { "__try", C_TRY },
+    { "typedef", C_TYPEDEF },
+    { "__typeof__", C_TYPEOF },
+    { "union", C_UNION },
+    { "unsigned", C_UNSIGNED },
+    { "__using", C_USING },
+    { "void", C_VOID },
+    { "volatile", C_VOLATILE },
+    { "while", C_WHILE },
 };
 // C++ keywords
 struct reservedword cpp_keywords[] = {
-  { "bool", C_BOOL },
-  { "catch", C_CATCH },
-  { "class", C_CLASS },
-  { "false", C_FALSE },
-  { "nullptr", C_NULLPTR },
-  { "private", C_PRIVATE },
-  { "public", C_PUBLIC },
-  { "template", C_TEMPLATE },
-  { "this", C_THIS },
-  { "throw", C_THROW },
-  { "true", C_TRUE },
-  { "try", C_TRY },
-  { "typeof", C_TYPEOF },
+    { "bool", C_BOOL },
+    { "catch", C_CATCH },
+    { "class", C_CLASS },
+    { "false", C_FALSE },
+    { "nullptr", C_NULLPTR },
+    { "private", C_PRIVATE },
+    { "public", C_PUBLIC },
+    { "template", C_TEMPLATE },
+    { "this", C_THIS },
+    { "throw", C_THROW },
+    { "true", C_TRUE },
+    { "try", C_TRY },
+    { "typeof", C_TYPEOF },
 };
 
 // keywords reserved in BASIC only in asm blocks
 struct reservedword bas_pasm_keywords[] = {
-  { "alignl", BAS_ALIGNL },
-  { "alignw", BAS_ALIGNW },
-  { "asm", BAS_ASM },
-  { "byte", BAS_BYTE },
-  { "end", BAS_END },
-  { "file", BAS_FILE },
-  { "fit", BAS_FIT },
-  { "long", BAS_LONG },
-  { "org", BAS_ORG },
-  { "orgf", BAS_ORGF },
-  { "orgh", BAS_ORGH },
-  { "res", BAS_RES },
-  { "shared", BAS_SHARED },
-  { "word", BAS_WORD },
+    { "alignl", BAS_ALIGNL },
+    { "alignw", BAS_ALIGNW },
+    { "asm", BAS_ASM },
+    { "byte", BAS_BYTE },
+    { "end", BAS_END },
+    { "file", BAS_FILE },
+    { "fit", BAS_FIT },
+    { "long", BAS_LONG },
+    { "org", BAS_ORG },
+    { "orgf", BAS_ORGF },
+    { "orgh", BAS_ORGH },
+    { "res", BAS_RES },
+    { "shared", BAS_SHARED },
+    { "word", BAS_WORD },
 };
 // keywords reserved in C only with __asm blocks
 struct reservedword c_pasm_keywords[] = {
-  { "alignl", C_ALIGNL },
-  { "alignw", C_ALIGNW },
-  { "byte", C_BYTE },
-  { "debug", C_DEBUG },
-  { "file", C_FILE },
-  { "fit", C_FIT },
-  { "org", C_ORG },
-  { "orgf", C_ORGF },
-  { "orgh", C_ORGH },
-  { "res", C_RES },
-  { "word", C_WORD },
+    { "alignl", C_ALIGNL },
+    { "alignw", C_ALIGNW },
+    { "byte", C_BYTE },
+    { "debug", C_DEBUG },
+    { "file", C_FILE },
+    { "fit", C_FIT },
+    { "org", C_ORG },
+    { "orgf", C_ORGF },
+    { "orgh", C_ORGH },
+    { "res", C_RES },
+    { "word", C_WORD },
 };
 
 // list of words to detect symbols that may conflict with
@@ -2582,7 +2593,7 @@ Builtin builtinfuncs[] = {
 
     { "_waitms",   1, defaultBuiltin, "_waitms", "_waitms", NULL, 0, NULL },
     { "_waitus",   1, defaultBuiltin, "_waitus", "_waitus", NULL, 0, NULL },
-    
+
     { "_wrpin",    2, defaultBuiltin, "_wrpin", "_wrpin", NULL, 0, NULL },
     { "_wxpin",    2, defaultBuiltin, "_wxpin", "_wxpin", NULL, 0, NULL },
     { "_wypin",    2, defaultBuiltin, "_wypin", "_wypin", NULL, 0, NULL },
@@ -2621,7 +2632,7 @@ struct constants p2_constants[] = {
     { "false", SYM_CONSTANT, 0 },
     { "posx", SYM_CONSTANT, 0x7fffffff },
     { "negx", SYM_CONSTANT, 0x80000000U },
-    
+
     { "rcfast", SYM_CONSTANT, 0x00000001 },
     { "rcslow", SYM_CONSTANT, 0x00000002 },
     { "xinput", SYM_CONSTANT, 0x00000004 },
@@ -2767,7 +2778,7 @@ struct constants p2_constants[] = {
     { "p_reg_up_down", SYM_CONSTANT, 0x1a },
     { "p_count_rises", SYM_CONSTANT, 0x1c },
     { "p_count_highs", SYM_CONSTANT, 0x1e },
-    
+
     { "p_state_ticks", SYM_CONSTANT, 0x20 },
     { "p_high_ticks",  SYM_CONSTANT, 0x22 },
     { "p_events_ticks", SYM_CONSTANT, 0x24 },
@@ -2776,7 +2787,7 @@ struct constants p2_constants[] = {
     { "p_counter_ticks", SYM_CONSTANT, 0x2a },
     { "p_counter_highs", SYM_CONSTANT, 0x2c },
     { "p_counter_periods", SYM_CONSTANT, 0x2e },
-    
+
     { "p_adc",      SYM_CONSTANT, 0x30 },
     { "p_adc_ext",  SYM_CONSTANT, 0x32 },
     { "p_adc_scope", SYM_CONSTANT, 0x34 },
@@ -2810,7 +2821,7 @@ struct constants p2_constants[] = {
     { "x_rflong_16x2_lut", SYM_CONSTANT, 0x7004 << 16 },
     { "x_rflong_8x4_lut",  SYM_CONSTANT, 0x7006 << 16 },
     { "x_rflong_4x8_lut",  SYM_CONSTANT, 0x7008 << 16 },
-    
+
     { "x_rfbyte_1p_1dac1", SYM_CONSTANT, 0x8000 << 16 },
     { "x_rfbyte_2p_2dac1", SYM_CONSTANT, 0x9000 << 16 },
     { "x_rfbyte_2p_1dac2", SYM_CONSTANT, 0x9002 << 16 },
@@ -2907,7 +2918,7 @@ struct constants p2_constants[] = {
     { "event_xrl", SYM_CONSTANT, 13 },
     { "event_atn", SYM_CONSTANT, 14 },
     { "event_qmt", SYM_CONSTANT, 15 },
-    
+
 };
 
 #if defined(WIN32)
@@ -2963,7 +2974,7 @@ MakeAbsolutePath(const char *name)
 }
 
 
-int 
+int
 getProgramPath(const char **argv, char *path, int size)
 {
 #if defined(WIN32)
@@ -2976,14 +2987,14 @@ getProgramPath(const char **argv, char *path, int size)
     int r;
     r = readlink("/proc/self/exe", path, size - 1);
     if (r >= 0)
-      path[r] = 0;
+        path[r] = 0;
     else
-      return -1;
+        return -1;
 #elif defined(MACOSX)
     uint32_t bufsize = size - 1;
     int r = _NSGetExecutablePath(path, &bufsize);
     if (r < 0)
-      return -1;
+        return -1;
 #else
     /* fall back on argv[0]... probably not the best bet, since
        shells might not put the full path in, but it's the most portable
@@ -3038,14 +3049,14 @@ void SetPreprocessorLanguage(int language)
 {
     if (IsBasicLang(language)) {
         pp_setcomments(&gl_pp, "\'", "/'", "'/");
-        //pp_setlinedirective(&gl_pp, "/'#line %d %s'/");   
-        //pp_setlinedirective(&gl_pp, "");   
+        //pp_setlinedirective(&gl_pp, "/'#line %d %s'/");
+        //pp_setlinedirective(&gl_pp, "");
     } else if (IsCLang(language)) {
         pp_setcomments(&gl_pp, "//", "/*", "*/");
-        //pp_setlinedirective(&gl_pp, "/*#line %d %s*/");   
+        //pp_setlinedirective(&gl_pp, "/*#line %d %s*/");
     } else {
         pp_setcomments(&gl_pp, "\'", "{", "}");
-        //pp_setlinedirective(&gl_pp, "{#line %d %s}");   
+        //pp_setlinedirective(&gl_pp, "{#line %d %s}");
     }
 }
 
@@ -3077,7 +3088,7 @@ initSpinLexer(int flags)
     spin2ReservedWords.flags |= SYMTAB_FLAG_NOCASE;
     basicReservedWords.flags |= SYMTAB_FLAG_NOCASE;
     basicAsmReservedWords.flags |= SYMTAB_FLAG_NOCASE;
-    
+
     /* add our reserved words */
     for (i = 0; i < N_ELEMENTS(init_spin_words); i++) {
         AddSymbol(&spinCommonReservedWords, init_spin_words[i].name, SYM_RESERVED, (void *)init_spin_words[i].val, NULL);
@@ -3104,7 +3115,7 @@ initSpinLexer(int flags)
     for (i = 0; i < N_ELEMENTS(c_pasm_keywords); i++) {
         AddSymbol(&cAsmReservedWords, c_pasm_keywords[i].name, SYM_RESERVED, (void *)c_pasm_keywords[i].val, NULL);
     }
-    
+
     /* add builtin functions */
     for (i = 0; i < N_ELEMENTS(builtinfuncs); i++) {
         AddSymbol(&spinCommonReservedWords, builtinfuncs[i].name, SYM_BUILTIN, (void *)&builtinfuncs[i], NULL);
@@ -3120,7 +3131,7 @@ initSpinLexer(int flags)
             AddSymbol(&spinCommonReservedWords, p1_constants[i].name, p1_constants[i].type, AstInteger(p1_constants[i].val), NULL);
         }
     }
-    
+
     /* C keywords */
     for (i = 0; i < N_ELEMENTS(c_words); i++) {
         AddSymbol(&ckeywords, c_words[i], SYM_RESERVED, NULL, NULL);
@@ -3353,10 +3364,10 @@ instr_p2[] = {
 
     { "decod",  0x09c00000, TWO_OPERANDS_OPTIONAL, OPC_DECOD, 0 },
     { "bmask",  0x09c80000, TWO_OPERANDS_OPTIONAL, OPC_BMASK, 0 },
-    
+
     { "crcbit", 0x09d00000, TWO_OPERANDS, OPC_GENERIC, 0 },
     { "crcnib", 0x09d80000, TWO_OPERANDS, OPC_GENERIC, 0 },
-    
+
     { "muxnits", 0x09e00000, TWO_OPERANDS, OPC_GENERIC, 0 },
     { "muxnibs", 0x09e80000, TWO_OPERANDS, OPC_GENERIC, 0 },
     { "muxq",   0x09f00000, TWO_OPERANDS, OPC_MUXQ, /*OPC_GENERIC_NOFLAGS,*/ 0 },
@@ -3380,7 +3391,7 @@ instr_p2[] = {
     { "rqpin",  0x0a800000, TWO_OPERANDS, OPC_GENERIC_NOFLAGS, FLAG_WC },
     { "rdpin",  0x0a880000, TWO_OPERANDS, OPC_GENERIC_NOFLAGS, FLAG_WC },
     { "rdlut",  0x0aa00000, P2_RDWR_OPERANDS, OPC_GENERIC_NOFLAGS, FLAG_P2_STD },
-  
+
     { "rdbyte", 0x0ac00000, P2_RDWR_OPERANDS, OPC_RDBYTE, FLAG_P2_STD },
     { "rdword", 0x0ae00000, P2_RDWR_OPERANDS, OPC_RDWORD, FLAG_P2_STD },
     { "rdlong", 0x0b000000, P2_RDWR_OPERANDS, OPC_RDLONG, FLAG_P2_STD },
@@ -3388,7 +3399,7 @@ instr_p2[] = {
     // some aliases from rdlong x, ++ptra
     { "popa",  0x0b00015f, TWO_OPERANDS_DEFZ, OPC_GENERIC_NOFLAGS, FLAG_P2_STD },
     { "popb",  0x0b0001df, TWO_OPERANDS_DEFZ, OPC_GENERIC_NOFLAGS, FLAG_P2_STD },
-    
+
     { "calld",  0x0b200000, P2_TJZ_OPERANDS, OPC_GENERIC_BRCOND, FLAG_P2_JMP },
     { "reti0",  0x0b3bffff, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
     { "reti1",  0x0b3bfff5, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
@@ -3418,7 +3429,7 @@ instr_p2[] = {
 
 //  { "jp",     0x0ba00000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH },
 //  { "jnp",    0x0bb00000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH },
-    
+
 
     { "jint",   0x0bc80000, P2_JINT_OPERANDS, OPC_GENERIC_BRANCH, 0 },
     { "jct1",   0x0bc80200, P2_JINT_OPERANDS, OPC_GENERIC_BRANCH, 0 },
@@ -3479,7 +3490,7 @@ instr_p2[] = {
     { "xcont",  0x0cc00000, P2_TWO_OPERANDS, OPC_GENERIC_NOFLAGS, 0 },
 
     { "rep",    0x0cd00000, P2_TWO_OPERANDS, OPC_REPEAT, 0 },
-  
+
     { "coginit",0x0ce00000, P2_TWO_OPERANDS, OPC_GENERIC_NOFLAGS, FLAG_WC },
     { "qmul",   0x0d000000, P2_TWO_OPERANDS, OPC_QMUL, 0 },
     { "qdiv",   0x0d100000, P2_TWO_OPERANDS, OPC_QDIV, 0 },
@@ -3498,13 +3509,13 @@ instr_p2[] = {
 
     { "qlog",   0x0d60000e, P2_DST_CONST_OK, OPC_QLOG, 0 },
     { "qexp",   0x0d60000f, P2_DST_CONST_OK, OPC_QEXP, 0 },
-  
+
     { "rfbyte", 0x0d600010, DST_OPERAND_ONLY, OPC_GENERIC_NOFLAGS, FLAG_P2_STD },
     { "rfword", 0x0d600011, DST_OPERAND_ONLY, OPC_GENERIC_NOFLAGS, FLAG_P2_STD },
     { "rflong", 0x0d600012, DST_OPERAND_ONLY, OPC_GENERIC_NOFLAGS, FLAG_P2_STD },
     { "rfvar",  0x0d600013, DST_OPERAND_ONLY, OPC_GENERIC_NOFLAGS, FLAG_P2_STD },
     { "rfvars", 0x0d600014, DST_OPERAND_ONLY, OPC_GENERIC_NOFLAGS, FLAG_P2_STD },
-    
+
     { "wfbyte", 0x0d600015, P2_DST_CONST_OK, OPC_GENERIC_NOFLAGS, 0 },
     { "wfword", 0x0d600016, P2_DST_CONST_OK, OPC_GENERIC_NOFLAGS, 0 },
     { "wflong", 0x0d600017, P2_DST_CONST_OK, OPC_GENERIC_NOFLAGS, 0 },
@@ -3518,12 +3529,12 @@ instr_p2[] = {
     { "setxfrq",0x0d60001d, P2_DST_CONST_OK, OPC_GENERIC_NOFLAGS, 0 },
     { "getxacc",0x0d60001e, DST_OPERAND_ONLY, OPC_GENERIC_NOFLAGS, 0 },
     { "waitx",  0x0d60001f, P2_DST_CONST_OK, OPC_WAITX, FLAG_P2_STD },
-  
+
     { "setse1", 0x0d600020, P2_DST_CONST_OK, OPC_GENERIC_NOFLAGS, 0 },
     { "setse2", 0x0d600021, P2_DST_CONST_OK, OPC_GENERIC_NOFLAGS, 0 },
     { "setse3", 0x0d600022, P2_DST_CONST_OK, OPC_GENERIC_NOFLAGS, 0 },
     { "setse4", 0x0d600023, P2_DST_CONST_OK, OPC_GENERIC_NOFLAGS, 0 },
-  
+
     { "pollint",0x0d600024, NO_OPERANDS, OPC_GENERIC_NOFLAGS, FLAG_P2_STD },
     { "pollct1",0x0d600224, NO_OPERANDS, OPC_GENERIC_NOFLAGS, FLAG_P2_STD },
     { "pollct2",0x0d600424, NO_OPERANDS, OPC_GENERIC_NOFLAGS, FLAG_P2_STD },
@@ -3540,7 +3551,7 @@ instr_p2[] = {
     { "pollxrl",0x0d601a24, NO_OPERANDS, OPC_GENERIC_NOFLAGS, FLAG_P2_STD },
     { "pollatn",0x0d601c24, NO_OPERANDS, OPC_GENERIC_NOFLAGS, FLAG_P2_STD },
     { "pollqmt",0x0d601e24, NO_OPERANDS, OPC_GENERIC_NOFLAGS, FLAG_P2_STD },
-  
+
     { "waitint",0x0d602024, NO_OPERANDS, OPC_GENERIC_NOFLAGS, FLAG_P2_STD },
     { "waitct1",0x0d602224, NO_OPERANDS, OPC_GENERIC_NOFLAGS, FLAG_P2_STD },
     { "waitct2",0x0d602424, NO_OPERANDS, OPC_GENERIC_NOFLAGS, FLAG_P2_STD },
@@ -3566,7 +3577,7 @@ instr_p2[] = {
     { "nixint1",0x0d604a24, NO_OPERANDS, OPC_GENERIC_NOFLAGS, 0 },
     { "nixint2",0x0d604c24, NO_OPERANDS, OPC_GENERIC_NOFLAGS, 0 },
     { "nixint3",0x0d604e24, NO_OPERANDS, OPC_GENERIC_NOFLAGS, 0 },
-  
+
     { "setint1",0x0d600025, P2_DST_CONST_OK, OPC_GENERIC_NR_NOFLAGS, 0 },
     { "setint2",0x0d600026, P2_DST_CONST_OK, OPC_GENERIC_NR_NOFLAGS, 0 },
     { "setint3",0x0d600027, P2_DST_CONST_OK, OPC_GENERIC_NR_NOFLAGS, 0 },
@@ -3577,9 +3588,9 @@ instr_p2[] = {
     { "push",   0x0d60002a, P2_DST_CONST_OK, OPC_PUSH, 0 },
     { "pop",    0x0d60002b, DST_OPERAND_ONLY, OPC_POP, FLAG_P2_STD },
 
-  // indirect jumps via register
-  // normally the user will write "jmp x" and the assembler will
-  // recognize if x is a register and rewrite it as "jmp.ind x"
+    // indirect jumps via register
+    // normally the user will write "jmp x" and the assembler will
+    // recognize if x is a register and rewrite it as "jmp.ind x"
     { "jmp.ind", 0x0d60002c, DST_OPERAND_ONLY, OPC_GENERIC_BRANCH, FLAG_P2_STD },
     { "call.ind",0x0d60002d, DST_OPERAND_ONLY, OPC_GENERIC_BRANCH, FLAG_P2_STD },
     { "ret",    0x0d64002d, NO_OPERANDS, OPC_RET, FLAG_P2_STD },
@@ -3589,7 +3600,7 @@ instr_p2[] = {
     { "retb",   0x0d64002f, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
 
     { "jmprel", 0x0d600030, P2_DST_CONST_OK, OPC_JMPREL, 0 },
-  
+
     { "skip",   0x0d600031, P2_DST_CONST_OK, OPC_GENERIC_NR_NOFLAGS, 0 },
     { "skipf",  0x0d600032, P2_DST_CONST_OK, OPC_GENERIC_NR_NOFLAGS, 0 },
     { "execf",  0x0d600033, P2_DST_CONST_OK, OPC_GENERIC_NR_NOFLAGS, 0 },
@@ -3600,7 +3611,7 @@ instr_p2[] = {
     { "setluts",0x0d600037, P2_DST_CONST_OK, OPC_GENERIC_NR_NOFLAGS, 0 },
     { "lutsoff",0x0d640037, NO_OPERANDS, OPC_GENERIC_NR_NOFLAGS, 0 },
     { "lutson", 0x0d640237, NO_OPERANDS, OPC_GENERIC_NR_NOFLAGS, 0 },
-  
+
     { "setcy",  0x0d600038, P2_DST_CONST_OK, OPC_GENERIC_NR_NOFLAGS, 0 },
     { "setci",  0x0d600039, P2_DST_CONST_OK, OPC_GENERIC_NR_NOFLAGS, 0 },
     { "setcq",  0x0d60003a, P2_DST_CONST_OK, OPC_GENERIC_NR_NOFLAGS, 0 },
@@ -3621,7 +3632,7 @@ instr_p2[] = {
     { "dirnz",  0x0d600045, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
     { "dirrnd", 0x0d600046, P2_DST_CONST_OK, OPC_GENERIC_NR_NOFLAGS, FLAG_WCZ },
     { "dirnot", 0x0d600047, P2_DST_CONST_OK, OPC_GENERIC_NR_NOFLAGS, FLAG_WCZ },
-  
+
     { "outl",   0x0d600048, P2_DST_CONST_OK, OPC_GENERIC_NR_NOFLAGS, FLAG_WCZ },
     { "outh",   0x0d600049, P2_DST_CONST_OK, OPC_GENERIC_NR_NOFLAGS, FLAG_WCZ },
     { "outc",   0x0d60004a, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
@@ -3639,7 +3650,7 @@ instr_p2[] = {
     { "fltnz",  0x0d600055, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
     { "fltrnd", 0x0d600056, P2_DST_CONST_OK, OPC_GENERIC_NR_NOFLAGS, FLAG_WCZ },
     { "fltnot", 0x0d600057, P2_DST_CONST_OK, OPC_GENERIC_NR_NOFLAGS, FLAG_WCZ },
-  
+
     { "drvl",   0x0d600058, P2_DST_CONST_OK, OPC_DRVL, FLAG_WCZ },
     { "drvh",   0x0d600059, P2_DST_CONST_OK, OPC_DRVH, FLAG_WCZ },
     { "drvc",   0x0d60005a, P2_DST_CONST_OK, OPC_DRVC, FLAG_WCZ },
@@ -3659,7 +3670,7 @@ instr_p2[] = {
     { "rgbexp", 0x0d600067, DST_OPERAND_ONLY, OPC_GENERIC_NOFLAGS, 0 },
     { "xoro32", 0x0d600068, DST_OPERAND_ONLY, OPC_GENERIC_DELAY, 0 },
     { "rev",    0x0d600069, DST_OPERAND_ONLY, OPC_REV_P2, 0 },
-    
+
     { "rczr",   0x0d60006a, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
     { "rczl",   0x0d60006b, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
     { "wrc",    0x0d60006c, DST_OPERAND_ONLY, OPC_WRC, 0 },
@@ -3671,9 +3682,9 @@ instr_p2[] = {
     { "modz",   0x0d64006f, P2_MODCZ, OPC_GENERIC, FLAG_WZ | FLAG_WARN_NOTUSED },
     { "setscp", 0x0d600070, P2_DST_CONST_OK, OPC_GENERIC_NR_NOFLAGS, 0 },
     { "getscp", 0x0d600071, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
-    
-  // long jumps
-    { "jmp" ,   0x0d800000, P2_JUMP, OPC_JUMP, FLAG_P2_JMP },
+
+    // long jumps
+    { "jmp",   0x0d800000, P2_JUMP, OPC_JUMP, FLAG_P2_JMP },
     { "call",   0x0da00000, P2_JUMP, OPC_CALL, FLAG_P2_JMP },
     { "calla",  0x0dc00000, P2_JUMP, OPC_GENERIC_BRANCH, FLAG_P2_JMP },
     { "callb",  0x0de00000, P2_JUMP, OPC_GENERIC_BRANCH, FLAG_P2_JMP },
@@ -3720,7 +3731,7 @@ HwReg interpreg_p1rom[] = {
     { "__interp_dbase", 0x1ed, "__INTERP_DBASE"},
     { "__interp_pcurr", 0x1ee, "__INTERP_PCURR"},
     { "__interp_dcurr", 0x1ef, "__INTERP_DCURR"},
-    
+
     { NULL, 0, NULL },
 };
 
@@ -3733,7 +3744,7 @@ HwReg hwreg_p2[] = {
     { "pr5", 0x1e5, "_PR5" },
     { "pr6", 0x1e6, "_PR6" },
     { "pr7", 0x1e7, "_PR7" },
-    
+
     { "ijmp3", 0x1f0, "_IJMP3" },
     { "iret3", 0x1f1, "_IRET3" },
     { "ijmp2", 0x1f2, "_IJMP2" },
@@ -3886,7 +3897,7 @@ InstrModifier modifiers_p2[] = {
     { "wz", (1<<19), FLAG_WZ },
     { "wc", (2<<19), FLAG_WC },
     { "wcz", (3<<19), FLAG_WCZ },
-    
+
     { "andz", (1<<19), FLAG_ANDZ },
     { "andc", (2<<19), FLAG_ANDC },
     { "xorz", (1<<19), FLAG_XORZ },
@@ -3918,7 +3929,9 @@ InitPasm(int flags)
     if (gl_output == OUTPUT_BYTECODE) {
         HwReg *interpreg = NULL;
         switch (gl_interp_kind) {
-        case INTERP_KIND_P1ROM: interpreg = interpreg_p1rom; break;
+        case INTERP_KIND_P1ROM:
+            interpreg = interpreg_p1rom;
+            break;
         }
         /* add interpreter registers */
         for (i = 0; interpreg && interpreg[i].name != NULL; i++) {
@@ -3928,10 +3941,10 @@ InitPasm(int flags)
             AddSymbol(&pasmWords, interpreg[i].name, SYM_HWREG, (void *)&interpreg[i], NULL);
         }
     }
-    
+
     pasmWords.flags |= SYMTAB_FLAG_NOCASE;
     pasmInstrWords.flags |= SYMTAB_FLAG_NOCASE;
-    
+
     /* add hardware registers */
     for (i = 0; hwreg[i].name != NULL; i++) {
         AddSymbol(&spinCommonReservedWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i], NULL);
@@ -4001,7 +4014,7 @@ int
 spinyylex(SPINYYSTYPE *yval)
 {
     int c;
-    
+
     saved_spinyychar = c = getSpinToken(current->Lptr, yval);
     if (c == SP_EOF)
         return 0;
@@ -4018,7 +4031,7 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
     AST *ast = NULL;
     char *idstr;
     bool forceLower = 0; // !gl_caseSensitive;
-    
+
     flexbuf_init(&fb, INCSTR);
     c = lexgetc(L);
     while (isIdentifierChar(c)) {
@@ -4038,7 +4051,7 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
     flexbuf_addchar(&fb, '\0');
     flexbuf_addchar(&fb, '\0');
     idstr = flexbuf_get(&fb);
-    lexungetc(L, c);  
+    lexungetc(L, c);
 
     // check for ASM
     /* check for reserved words */
@@ -4086,52 +4099,52 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
         sym = FindSymbol(&basicReservedWords, idstr);
     }
     if (sym != NULL) {
-      if (sym->kind == SYM_RESERVED) {
-        int peekc = lexpeekc(L);
-	c = INTVAL(sym);
-        /* check for special handling */
-        switch(c) {
-        case BAS_ASM:
-            if (InDatBlock(L)) {
-                // leave the inline assembly
-                L->block_type = BLOCK_PUB;
-            } else {
-                L->block_type = BLOCK_ASM;
+        if (sym->kind == SYM_RESERVED) {
+            int peekc = lexpeekc(L);
+            c = INTVAL(sym);
+            /* check for special handling */
+            switch(c) {
+            case BAS_ASM:
+                if (InDatBlock(L)) {
+                    // leave the inline assembly
+                    L->block_type = BLOCK_PUB;
+                } else {
+                    L->block_type = BLOCK_ASM;
+                }
+                break;
+            case BAS_AND:
+                if (peekc == '=') {
+                    (void)lexgetc(L);
+                    c = BAS_AND_ASSIGN;
+                }
+                break;
+            case BAS_MOD:
+                if (peekc == '=') {
+                    (void)lexgetc(L);
+                    c = BAS_MOD_ASSIGN;
+                }
+                break;
+            case BAS_OR:
+                if (peekc == '=') {
+                    (void)lexgetc(L);
+                    c = BAS_OR_ASSIGN;
+                }
+                break;
+            case BAS_XOR:
+                if (peekc == '=') {
+                    (void)lexgetc(L);
+                    c = BAS_XOR_ASSIGN;
+                }
+                break;
+            default:
+                break;
             }
-            break;
-        case BAS_AND:
-            if (peekc == '=') {
-                (void)lexgetc(L);
-                c = BAS_AND_ASSIGN;
+            if (!ast) {
+                ast = GetComments();
+                *ast_ptr = ast;
+                return c;
             }
-            break;
-        case BAS_MOD:
-            if (peekc == '=') {
-                (void)lexgetc(L);
-                c = BAS_MOD_ASSIGN;
-            }
-            break;
-        case BAS_OR:
-            if (peekc == '=') {
-                (void)lexgetc(L);
-                c = BAS_OR_ASSIGN;
-            }
-            break;
-        case BAS_XOR:
-            if (peekc == '=') {
-                (void)lexgetc(L);
-                c = BAS_XOR_ASSIGN;
-            }
-            break;
-        default:
-            break;
         }
-	if (!ast) {
-	  ast = GetComments();
-	  *ast_ptr = ast;
-	  return c;
-	}
-      }
     }
     // check for a defined class or similar type
     if (current) {
@@ -4192,7 +4205,7 @@ getBasicToken(LexStream *L, AST **ast_ptr)
 {
     int c;
     AST *ast = NULL;
-    
+
     c = skipSpace(L, &ast, LANG_BASIC_FBASIC);
 again:
     // printf("c=%d L->linecounter=%d\n", c, L->lineCounter);
@@ -4241,8 +4254,8 @@ again:
         c = parseNumber(L, 10, &ast->d.ival);
         if (c == SP_FLOATNUM) {
             ast->kind = AST_FLOAT;
-	    c = BAS_FLOAT;
-	} else if (ast->d.ival == 0 && !is_label) {
+            c = BAS_FLOAT;
+        } else if (ast->d.ival == 0 && !is_label) {
             // check for hex or binary prefixes like 0x or 0h
             int c2;
             c2 = lexgetc(L);
@@ -4258,7 +4271,7 @@ again:
                 lexungetc(L, c2);
             }
             c = BAS_INTEGER;
-	} else {
+        } else {
             if (is_label) {
                 ast = IntegerLabel(ast);
                 c = BAS_LABEL_INFERRED;
@@ -4292,7 +4305,7 @@ again:
         }
     } else if (c == '"') {
         parseString(L, &ast);
-	c = BAS_STRING;
+        c = BAS_STRING;
     } else if (c == '<' || c == '>' || c == '=') {
         int c2 = lexgetc(L);
         if (c2 == '<' || c2 == '>' || c2 == '=') {
@@ -4358,7 +4371,7 @@ ParseCAttribute(LexStream *L, AST **ast_ptr)
     int balance = 0;
     struct flexbuf fb;
     AST *ast = NewAST(AST_ANNOTATION, NULL, NULL);
-    
+
     flexbuf_init(&fb, 32);
     do {
         c = lexgetc(L);
@@ -4384,7 +4397,7 @@ parseCIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     Symbol *sym;
     AST *ast = NULL;
     char *idstr;
-    
+
     flexbuf_init(&fb, INCSTR);
     if (prefix) {
         flexbuf_addmem(&fb, prefix, strlen(prefix));
@@ -4404,7 +4417,7 @@ parseCIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     flexbuf_addchar(&fb, '\0');
     flexbuf_addchar(&fb, '\0');
     idstr = flexbuf_get(&fb);
-    lexungetc(L, c);  
+    lexungetc(L, c);
 
     // check for ASM
     /* check for reserved words */
@@ -4461,35 +4474,35 @@ parseCIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
         sym = FindSymbol(&cppReservedWords, idstr);
     }
     if (sym != NULL) {
-      if (sym->kind == SYM_RESERVED) {
-	c = INTVAL(sym);
-        /* check for special handling */
-        switch(c) {
-        case C_ASM:
-        case C_PASM:
-            if (InDatBlock(L)) {
-                // leave the inline assembly
-                L->block_type = BLOCK_PUB;
-            } else {
-                L->block_type = (c == C_PASM) ? BLOCK_PASM : BLOCK_ASM;
+        if (sym->kind == SYM_RESERVED) {
+            c = INTVAL(sym);
+            /* check for special handling */
+            switch(c) {
+            case C_ASM:
+            case C_PASM:
+                if (InDatBlock(L)) {
+                    // leave the inline assembly
+                    L->block_type = BLOCK_PUB;
+                } else {
+                    L->block_type = (c == C_PASM) ? BLOCK_PASM : BLOCK_ASM;
+                }
+                break;
+            case C_ATTRIBUTE:
+                return ParseCAttribute(L, ast_ptr);
+            default:
+                break;
             }
-            break;
-        case C_ATTRIBUTE:
-            return ParseCAttribute(L, ast_ptr);
-        default:
-            break;
+            if (!ast) {
+                ast = GetComments();
+                *ast_ptr = ast;
+                return c;
+            }
+        } else {
+            ast = NewAST(AST_SYMBOL, NULL, NULL);
+            ast->d.ptr = (void *)sym;
+            *ast_ptr = last_ast = ast;
+            return C_IDENTIFIER;
         }
-	if (!ast) {
-	  ast = GetComments();
-	  *ast_ptr = ast;
-	  return c;
-	}
-      } else {
-          ast = NewAST(AST_SYMBOL, NULL, NULL);
-          ast->d.ptr = (void *)sym;
-          *ast_ptr = last_ast = ast;
-          return C_IDENTIFIER;
-      }
     }
     // check for a defined class or similar type
     if (current) {
@@ -4543,7 +4556,7 @@ getCToken(LexStream *L, AST **ast_ptr)
     int c, c2;
     AST *ast = NULL;
     int at_startofline = (L->eoln == 1);
-    
+
     c = skipSpace(L, &ast, LANG_CFAMILY_C);
 
     // printf("c=%d L->linecounter=%d\n", c, L->lineCounter);
@@ -4551,7 +4564,7 @@ getCToken(LexStream *L, AST **ast_ptr)
         *ast_ptr = ast;
         return c;
     }
-parse_number:        
+parse_number:
     if (safe_isdigit(c)) {
         lexungetc(L,c);
         ast = NewAST(AST_INTEGER, NULL, NULL);
@@ -4564,14 +4577,14 @@ parse_number:
         if (c == SP_FLOATNUM) {
             int c2;
             ast->kind = AST_FLOAT;
-	    c = C_CONSTANT;
+            c = C_CONSTANT;
             c2 = lexpeekc(L);
             if (c2 == 'f' || c2 == 'F') {
                 lexgetc(L);
             }
-	} else {
+        } else {
             int c2 = lexgetc(L);
-            
+
             if (ast->d.ival == 0) {
                 // check for hex or binary prefixes like 0x or 0h
                 if (c2 == 'x' || c2 == 'X') {
@@ -4610,7 +4623,7 @@ parse_number:
                 }
             }
             lexungetc(L, c2);
-        done_number:            
+done_number:
             c = C_CONSTANT;
         }
     } else if (isCIdentifierStart(c)) {
@@ -4635,7 +4648,7 @@ parse_number:
         }
     } else if (c == '"') {
         parseCString(L, &ast);
-	c = C_STRING_LITERAL;
+        c = C_STRING_LITERAL;
     } else if (c == '}' && InDatBlock(L)) {
         L->block_type = BLOCK_PUB;
     } else if (c == '\'') {

@@ -1,7 +1,7 @@
 /*
  * Spin to C/C++ translator
  * Copyright 2011-2022 Total Spectrum Software Inc.
- * 
+ *
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
  * +--------------------------------------------------------------------
@@ -115,7 +115,7 @@ SelectActiveCase(AST *switchstmt, AST *stmts, AST *endlabel, AST *defaultlabel)
     AST *block;
     AST *tryblock;
     AST *blockast = NULL;
-    
+
     for (ast = switchstmt; ast; ast = ast->right) {
         if (ast->kind != AST_STMTLIST) {
             return NULL;
@@ -199,7 +199,7 @@ CreateGotos(AST *tmpvar, AST *switchstmt, AST *stmt, AST **defaultlabel, AST *en
     AST *labelid;
     AST *label;
     ASTReportInfo saveinfo;
-again:    
+again:
     if (!stmt) {
         return switchstmt;
     }
@@ -212,14 +212,14 @@ again:
     {
         AST *ifgoto;
         AST *ifcond;
-        
+
         AstReportAs(stmt, &saveinfo);
         labelid = AstTempIdentifier("_case_");
         label = NewAST(AST_LABEL, labelid, NULL);
         AddSymbolForLabel(label);
         ifcond = MakeCaseTest(tmpvar, stmt->left);
         *stmt = *NewAST(AST_STMTLIST, label,
-                            NewAST(AST_STMTLIST, stmt->right, NULL));
+                        NewAST(AST_STMTLIST, stmt->right, NULL));
         ifgoto = NewAST(AST_GOTO, labelid, NULL);
         ifgoto = NewAST(AST_STMTLIST, ifgoto, NULL);
         ifgoto = NewAST(AST_THENELSE, ifgoto, NULL);
@@ -261,7 +261,7 @@ again:
     case AST_FOR:
     case AST_FORATLEASTONCE:
         endswitch = NULL;
-        // fall through
+    // fall through
     case AST_STMTLIST:
     case AST_IF:
     case AST_SEQUENCE:
@@ -357,7 +357,7 @@ static int AddCases(Flexbuf *fb, AST *ident, AST *expr, AST *label, const char *
         }
         return 1;
     }
-skip:    
+skip:
     if (force_reason) {
         ERROR(expr, "%s: case expression is not valid", force_reason);
     }
@@ -384,7 +384,7 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
     int lastval;
     int defaults_seen = 0;
     int distinct_cases = 0;
-    
+
     if (gl_output == OUTPUT_C || gl_output == OUTPUT_CPP) {
         return NULL;
     }
@@ -470,11 +470,11 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
     if (range < minrange && !force_reason) {
         return NULL;
     }
-    
+
     // at least density/maxrange items must be non-default
     const int density = force_reason
-        ? 0 // we will always use a jump table
-        : maxrange / 2; // otherwise at least half the jump table entries must be non-default
+                        ? 0 // we will always use a jump table
+                        : maxrange / 2; // otherwise at least half the jump table entries must be non-default
 
     ast = NewAST(AST_JUMPTABLE, NULL, NULL);
 
@@ -544,7 +544,7 @@ AST *
 CreateSwitch(AST *origast, const char *force_reason)
 {
     AST *expr = origast->left, *stmt = DupAST(origast->right);
-    
+
     AST *casetype;
     AST *tmpvar;
     AST *endswitch;
@@ -556,9 +556,9 @@ CreateSwitch(AST *origast, const char *force_reason)
     ASTReportInfo saveinfo;
     int filterCases;
     int optimize_flags = curfunc->optimize_flags;
-    
+
     //DumpAST(stmt);
-    
+
     AstReportAs(stmt, &saveinfo);
     casetype = ExprType(expr);
 
@@ -576,9 +576,9 @@ CreateSwitch(AST *origast, const char *force_reason)
         filterCases = 0;
     }
 
-    
+
     endswitch = AstTempIdentifier("_endswitch");
-    
+
     switchstmt = NewAST(AST_STMTLIST, AstAssign(tmpvar, expr), NULL);
 
     // find all CASE labels within stmt; turn them into labels, and
@@ -586,7 +586,7 @@ CreateSwitch(AST *origast, const char *force_reason)
 
     endlabel = NewAST(AST_LABEL, endswitch, NULL);
     AddSymbolForLabel(endlabel);
-    
+
     // switchstmt will have all the gotos we make
     switchstmt = CreateGotos(use_expr, switchstmt, stmt, &defaultlabel, endswitch);
     // add a "goto default"

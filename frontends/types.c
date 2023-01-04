@@ -1,7 +1,7 @@
 /*
  * Spin to C/C++ translator
  * Copyright 2011-2022 Total Spectrum Software Inc.
- * 
+ *
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
  * +--------------------------------------------------------------------
@@ -137,7 +137,7 @@ MakeOperatorCall(AST *func, AST *left, AST *right, AST *extraArg)
     AST *call;
     AST *params = NULL;
     ASTReportInfo saveinfo;
-    
+
     if (!func) {
         ERROR(left, "Internal error, NULL parameter");
         return AstInteger(0);
@@ -187,7 +187,7 @@ static AST *dopromote(AST *expr, int srcbytes, int destbytes, int operatr)
             }
             val = AstInteger(result);
             val->left = typ;
-#if 1            
+#if 1
             promote = NewAST(AST_EXPRLIST,
                              NewAST(AST_GETLOW, val, NULL),
                              NewAST(AST_EXPRLIST,
@@ -195,12 +195,12 @@ static AST *dopromote(AST *expr, int srcbytes, int destbytes, int operatr)
                                     NULL));
 #else
             promote = val;
-#endif            
+#endif
         } else {
             // at this point "promote" will contain a 4 byte value
             // now we need to convert it to an 8 byte value
             AST *convfunc;
-        
+
             if (operatr == K_ZEROEXTEND) {
                 convfunc = int64_zerox;
             } else {
@@ -234,7 +234,7 @@ static AST *donarrow(AST *expr, int A, int B, int isSigned)
         return expr; // nothing to do
     }
     promote = dopromote(expr, A, LONG_SIZE, isSigned ? K_ZEROEXTEND : K_SIGNEXTEND);
-#if 0    
+#if 0
     if (shiftbits > 0) {
         int operatr = isSigned ? K_SAR : K_SHR;
         narrow = AstOperator(K_SHL, promote, AstInteger(shiftbits));
@@ -300,7 +300,7 @@ AST *MatchIntegerTypes(AST *ast, AST *lefttype, AST *righttype, int force) {
     int rightunsigned = IsUnsignedType(righttype);
     int finalsize;
     AST *ulong_type, *long_type;
-    
+
     force = force || (lsize != rsize);
     if (lsize > LONG_SIZE || rsize > LONG_SIZE) {
         finalsize = LONG64_SIZE;
@@ -490,7 +490,7 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
                     ast->right = domakedouble(righttype, ast->right);
                 } else {
                     ast->right = domakefloat(righttype, ast->right);
-                }                    
+                }
                 righttype = ExprType(ast->right);
             }
         } else if (isfloat64) {
@@ -548,7 +548,7 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
             }
         }
     }
-            
+
     if (IsConstExpr(ast)) {
         AST *finaltype = NULL;
         if (lefttype == righttype) {
@@ -642,7 +642,7 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
             break;
         case K_UNS_MOD:
             *ast = *MakeOperatorCall(int64_modu, ast->left, ast->right, NULL);
-            break;            
+            break;
         case '&':
             *ast = *MakeOperatorCall(int64_and, ast->left, ast->right, NULL);
             break;
@@ -678,12 +678,12 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
                 *ast = *MakeOperatorCall(int64_shl, ast->left, ast->right, NULL);
             }
             break;
-        }   
+        }
         default:
             ERROR(ast, "Compiler is incomplete: unable to handle this 64 bit expression");
             break;
         }
-    }             
+    }
     AstReportDone(&saveinfo);
     return lefttype;
 }
@@ -745,7 +745,7 @@ void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
     int leftUnsigned = 0;
     int rightUnsigned = 0;
     int isint64 = 0;
-    
+
     if (IsFloatType(lefttype)) {
         if (!IsFloatType(righttype)) {
             ast->right = domakefloat(righttype, ast->right);
@@ -799,11 +799,11 @@ void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
         leftUnsigned = IsUnsignedType(lefttype);
         rightUnsigned = IsUnsignedType(righttype);
     }
-    
-     //
+
+    //
     // handle unsigned/signed comparisons here
     //
-    
+
     if (isint64) {
         if (leftUnsigned || rightUnsigned) {
             ast->left = MakeOperatorCall(int64_cmpu, ast->left, ast->right, NULL);
@@ -814,7 +814,7 @@ void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
     }
     else if (leftUnsigned || rightUnsigned) {
         if ( (leftUnsigned && (rightUnsigned || IsUnsignedConst(ast->right)))
-             || (rightUnsigned && IsUnsignedConst(ast->left)) )
+                || (rightUnsigned && IsUnsignedConst(ast->left)) )
         {
             switch (op) {
             case '<':
@@ -913,7 +913,7 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
     AST *rettype = lefttype;
     int op;
     int isfloat64 = 0;
-    
+
     // hmmm, should we automatically convert arrays to pointers here?
     // for current languages yes, eventually maybe not if we want
     // to support array arithmetic
@@ -1116,7 +1116,7 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
     case K_INCREMENT:
     case K_DECREMENT:
         if ( (lefttype && IsConstType(lefttype) )
-             || (righttype && IsConstType(righttype)) )
+                || (righttype && IsConstType(righttype)) )
         {
             const char *name = NULL;
             if (ast->left && IsIdentifier(ast->left)) {
@@ -1136,7 +1136,7 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
         if (righttype && (IsPointerType(righttype) || IsIntOrGenericType(righttype))) {
             return righttype;
         }
-        /* fall through */
+    /* fall through */
     default:
         if (!MakeBothIntegers(ast, lefttype, righttype, "operator")) {
             return NULL;
@@ -1157,7 +1157,7 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
     ASTReportInfo saveinfo;
     AST *expr = astptr ? *astptr : NULL;
     int lang = curfunc ? curfunc->language : (current ? current->mainLanguage : LANG_CFAMILY_C);
-    
+
     if (expr && expr->kind == AST_INTEGER && expr->d.ival == 0) {
         // handle literal '0' specially for C
         if (curfunc && IsCLang(curfunc->language)) {
@@ -1225,16 +1225,16 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
     }
     // similarly for classes in some languages
     if (IsClassType(srctype) && (IsPointerType(desttype) || !desttype) && ( IsBasicLang(lang) || IsPythonLang(lang) ))
-      {
-          srctype = ClassToPointerType(srctype);
-          if (!astptr) {
-              ERROR(line, "Unable to convert class function result to pointer");
-          } else {
-              expr = StructAddress(expr);
-              *astptr = expr;
-          }
-      }
-    
+    {
+        srctype = ClassToPointerType(srctype);
+        if (!astptr) {
+            ERROR(line, "Unable to convert class function result to pointer");
+        } else {
+            expr = StructAddress(expr);
+            *astptr = expr;
+        }
+    }
+
     if (IsFunctionType(srctype) && IsPointerType(desttype) && !IsPointerType(srctype)) {
         srctype = FunctionPointerType(srctype);
         if (astptr) {
@@ -1328,7 +1328,7 @@ doCast(AST *desttype, AST *srctype, AST *src)
     AST *expr = src;
     const char *name;
     ASTReportInfo saveinfo;
-    
+
     if (IsVoidType(desttype)) {
         // (void)x ignores x
         return src;
@@ -1443,7 +1443,7 @@ static int PushSize(AST *list)
 {
     int size = 0;
     AST *typ;
-    
+
     while (list) {
         typ = ExprType(list->left);
         size += TypeSize(typ);
@@ -1465,7 +1465,7 @@ static AST *doCheckTypes(AST *ast)
     AST *ltype, *rtype;
     if (!ast) return NULL;
     if (ast->kind == AST_INLINEASM) return NULL;
-    
+
     if (ast->kind == AST_CAST) {
         AST *cast;
         ltype = DerefType(ast->left);
@@ -1488,20 +1488,20 @@ static AST *doCheckTypes(AST *ast)
     }
     switch (ast->kind) {
     case AST_GOSUB:
-        /* FIXME: should check here for top level function */
+    /* FIXME: should check here for top level function */
     case AST_GOTO:
-        {
-            AST *id = ast->left;
-            if (!id || !IsIdentifier(id)) {
-                ERROR(ast, "Expected identifier in goto/gosub");
-            } else {
-                Symbol *sym = FindSymbol(&curfunc->localsyms, GetIdentifierName(id));
-                if (!sym || sym->kind != SYM_LOCALLABEL) {
-                    ERROR(id, "%s is not a local label", GetUserIdentifierName(id));
-                }
+    {
+        AST *id = ast->left;
+        if (!id || !IsIdentifier(id)) {
+            ERROR(ast, "Expected identifier in goto/gosub");
+        } else {
+            Symbol *sym = FindSymbol(&curfunc->localsyms, GetIdentifierName(id));
+            if (!sym || sym->kind != SYM_LOCALLABEL) {
+                ERROR(id, "%s is not a local label", GetUserIdentifierName(id));
             }
         }
-        return NULL;
+    }
+    return NULL;
     case AST_THROW:
         if (!IsIntOrGenericType(ltype)) {
             WARNING(ast, "Throwing non-integral types is not supported");
@@ -1511,7 +1511,7 @@ static AST *doCheckTypes(AST *ast)
         ltype = ast_type_long;
         {
             bool isCog = IsSpinCoginit(ast, NULL);
-            
+
             // promote types of parameters if necessary
             AST *paramlist = ast->left;
             AST *paramtype;
@@ -1612,122 +1612,122 @@ static AST *doCheckTypes(AST *ast)
         }
         break;
     case AST_FUNCCALL:
-        {
-            AST *actualParamList = ast->right;
-            AST *actualParamListPrev = ast;
-            AST *calledParamList;
-            AST *expectType, *passedType;
-            AST *functype;
-            AST *tupleType = NULL;
-            AST **varArgsPlace = NULL;
-            AST *varArgs = NULL;
-            AST *varArgsList = NULL;
-            int varargsOffset = 0;
-            int tupleCount = 0;
-            
-            functype = RemoveTypeModifiers(ExprType(ast->left));
-            if (functype && functype->kind == AST_PTRTYPE) {
-                functype = RemoveTypeModifiers(functype->left);
-            }
-            if (!functype || IsFunctionType(functype)) {
-                calledParamList = functype ? functype->right : NULL;
-                while (actualParamList) {
-                    AST *paramId = calledParamList ? calledParamList->left : NULL;
-                    AST *actualParam = actualParamList->left;
-                    
-                    expectType = NULL;
-                    if (tupleType) {
-                        passedType = tupleType->left;
-                    } else {
-                        passedType = ExprType(actualParam);
-                        if (passedType && passedType->kind == AST_TUPLE_TYPE) {
-                            // a tuple substitutes for multiple parameters
-                            tupleType = passedType;
-                            passedType = passedType->left;
-                            tupleCount = TypeSize(tupleType)/LONG_SIZE;
-                        } else {
-                            tupleCount = 0;
-                        }
-                    }
-                    if (paramId) {
-                        // if the parameter has a type declaration, use it
-                        if (paramId->kind == AST_DECLARE_VAR) {
-                            expectType = ExprType(paramId);
-                        } else if (paramId->kind == AST_VARARGS) {
-                            /* anything */
-                            if (!varArgsPlace) {
-                                if (NoVarargsOutput()) {
-                                    int bytes = PushSize(actualParamList);
-                                    AST *funcall = NewAST(AST_FUNCCALL, gc_alloc_managed,
-                                                          NewAST(AST_EXPRLIST, AstInteger(bytes), NULL));
-                                    varArgs = AstTempLocalVariable("_varargs_", NULL);
+    {
+        AST *actualParamList = ast->right;
+        AST *actualParamListPrev = ast;
+        AST *calledParamList;
+        AST *expectType, *passedType;
+        AST *functype;
+        AST *tupleType = NULL;
+        AST **varArgsPlace = NULL;
+        AST *varArgs = NULL;
+        AST *varArgsList = NULL;
+        int varargsOffset = 0;
+        int tupleCount = 0;
 
-                                    varArgsPlace = &actualParamListPrev->right;
-                                    varArgsList = NewAST(AST_SEQUENCE, AstAssign(varArgs, funcall), NULL);
-                                }
-                            }
-                        }
-                    }
-                    if (!expectType) {
-                        // pass arrays as pointers
-                        if (IsArrayType(passedType)) {
-                            expectType = ArrayToPointerType(passedType);
-                        } else if (TypeGoesOnStack(passedType)) {
-                            // need to emit a copy
-                            expectType = NewAST(AST_COPYREFTYPE, passedType, NULL);
-                        } else if (TypeSize(passedType) > LONG_SIZE) {
-                            expectType = passedType;
-                        } else {
-                            // we use const generic to avoid lots of warning
-                            // messages about passing strings to printf
-                            expectType = ast_type_const_generic;
-                        }
-                    }
-                    if (tupleType) {
-                        // cannot coerce function arguments, really
-                        CoerceAssignTypes(ast, AST_FUNCCALL, NULL, expectType, passedType, "parameter passing");
-                        tupleType = tupleType->right;
-                    } else {
-                        CoerceAssignTypes(ast, AST_FUNCCALL, &actualParamList->left, expectType, passedType, "parameter passing");
-                    }
-                    if (!tupleType) {
-                        if (varArgsList) {
-                            AST *memref = NewAST(AST_MEMREF, expectType, AstOperator('+', varArgs, AstInteger(varargsOffset)));
-                            AST *assignref = NULL;
-
-                            if (tupleCount) {
-                                int tupleOffset;
-                                for (tupleOffset = tupleCount-1; tupleOffset >= 0; tupleOffset--) {
-                                    assignref = NewAST(AST_EXPRLIST,
-                                                       NewAST(AST_ARRAYREF, memref, AstInteger(tupleOffset)),
-                                                       assignref);
-                                }
-                            } else {
-                                assignref = NewAST(AST_ARRAYREF, memref, AstInteger(0));
-                            }
-                            AST *assign = AstAssign(assignref,
-                                                    actualParamList->left);
-                            varArgsList->right = assign;
-                            varArgsList = NewAST(AST_SEQUENCE, varArgsList, NULL);
-                            varargsOffset += TypeSize(expectType);
-                        }
-                        actualParamListPrev = actualParamList;
-                        actualParamList = actualParamList->right;
-                    }
-                    if (calledParamList) {
-                        calledParamList = calledParamList->right;
-                    }
-                }
-                ltype = functype ? functype->left : NULL;
-                if (varArgsPlace) {
-                    varArgsList = NewAST(AST_SEQUENCE, varArgsList, varArgs);
-                    *varArgsPlace = NewAST(AST_EXPRLIST, varArgsList, NULL);
-                }
-            } else {
-                return NULL;
-            }
+        functype = RemoveTypeModifiers(ExprType(ast->left));
+        if (functype && functype->kind == AST_PTRTYPE) {
+            functype = RemoveTypeModifiers(functype->left);
         }
-        break;
+        if (!functype || IsFunctionType(functype)) {
+            calledParamList = functype ? functype->right : NULL;
+            while (actualParamList) {
+                AST *paramId = calledParamList ? calledParamList->left : NULL;
+                AST *actualParam = actualParamList->left;
+
+                expectType = NULL;
+                if (tupleType) {
+                    passedType = tupleType->left;
+                } else {
+                    passedType = ExprType(actualParam);
+                    if (passedType && passedType->kind == AST_TUPLE_TYPE) {
+                        // a tuple substitutes for multiple parameters
+                        tupleType = passedType;
+                        passedType = passedType->left;
+                        tupleCount = TypeSize(tupleType)/LONG_SIZE;
+                    } else {
+                        tupleCount = 0;
+                    }
+                }
+                if (paramId) {
+                    // if the parameter has a type declaration, use it
+                    if (paramId->kind == AST_DECLARE_VAR) {
+                        expectType = ExprType(paramId);
+                    } else if (paramId->kind == AST_VARARGS) {
+                        /* anything */
+                        if (!varArgsPlace) {
+                            if (NoVarargsOutput()) {
+                                int bytes = PushSize(actualParamList);
+                                AST *funcall = NewAST(AST_FUNCCALL, gc_alloc_managed,
+                                                      NewAST(AST_EXPRLIST, AstInteger(bytes), NULL));
+                                varArgs = AstTempLocalVariable("_varargs_", NULL);
+
+                                varArgsPlace = &actualParamListPrev->right;
+                                varArgsList = NewAST(AST_SEQUENCE, AstAssign(varArgs, funcall), NULL);
+                            }
+                        }
+                    }
+                }
+                if (!expectType) {
+                    // pass arrays as pointers
+                    if (IsArrayType(passedType)) {
+                        expectType = ArrayToPointerType(passedType);
+                    } else if (TypeGoesOnStack(passedType)) {
+                        // need to emit a copy
+                        expectType = NewAST(AST_COPYREFTYPE, passedType, NULL);
+                    } else if (TypeSize(passedType) > LONG_SIZE) {
+                        expectType = passedType;
+                    } else {
+                        // we use const generic to avoid lots of warning
+                        // messages about passing strings to printf
+                        expectType = ast_type_const_generic;
+                    }
+                }
+                if (tupleType) {
+                    // cannot coerce function arguments, really
+                    CoerceAssignTypes(ast, AST_FUNCCALL, NULL, expectType, passedType, "parameter passing");
+                    tupleType = tupleType->right;
+                } else {
+                    CoerceAssignTypes(ast, AST_FUNCCALL, &actualParamList->left, expectType, passedType, "parameter passing");
+                }
+                if (!tupleType) {
+                    if (varArgsList) {
+                        AST *memref = NewAST(AST_MEMREF, expectType, AstOperator('+', varArgs, AstInteger(varargsOffset)));
+                        AST *assignref = NULL;
+
+                        if (tupleCount) {
+                            int tupleOffset;
+                            for (tupleOffset = tupleCount-1; tupleOffset >= 0; tupleOffset--) {
+                                assignref = NewAST(AST_EXPRLIST,
+                                                   NewAST(AST_ARRAYREF, memref, AstInteger(tupleOffset)),
+                                                   assignref);
+                            }
+                        } else {
+                            assignref = NewAST(AST_ARRAYREF, memref, AstInteger(0));
+                        }
+                        AST *assign = AstAssign(assignref,
+                                                actualParamList->left);
+                        varArgsList->right = assign;
+                        varArgsList = NewAST(AST_SEQUENCE, varArgsList, NULL);
+                        varargsOffset += TypeSize(expectType);
+                    }
+                    actualParamListPrev = actualParamList;
+                    actualParamList = actualParamList->right;
+                }
+                if (calledParamList) {
+                    calledParamList = calledParamList->right;
+                }
+            }
+            ltype = functype ? functype->left : NULL;
+            if (varArgsPlace) {
+                varArgsList = NewAST(AST_SEQUENCE, varArgsList, varArgs);
+                *varArgsPlace = NewAST(AST_EXPRLIST, varArgsList, NULL);
+            }
+        } else {
+            return NULL;
+        }
+    }
+    break;
     case AST_RESULT:
         return GetFunctionReturnType(curfunc);
     case AST_FLOAT:
@@ -1756,7 +1756,7 @@ static AST *doCheckTypes(AST *ast)
         return ast_type_long;
     case AST_FUNC_NAME:
         *ast = *AstStringPtr(curfunc->name);
-        /* fall through */
+    /* fall through */
     case AST_STRING:
     case AST_STRINGPTR:
         if (curfunc && IsBasicLang(curfunc->language)) {
@@ -1771,70 +1771,70 @@ static AST *doCheckTypes(AST *ast)
         }
         return NewAST(AST_PTRTYPE, ltype, NULL);
     case AST_ARRAYREF:
-        {
-            AST *lefttype = ltype;
-            AST *righttype = rtype ? rtype : ExprType(ast->right);
-            AST *basetype;
+    {
+        AST *lefttype = ltype;
+        AST *righttype = rtype ? rtype : ExprType(ast->right);
+        AST *basetype;
 
-            righttype = CoerceAssignTypes(ast, AST_ARRAYREF, &ast->right, ast_type_long, righttype, "array indexing");
-            if (!lefttype) {
-                lefttype = ExprType(ast->left);
-            }
-            if (!lefttype) {
-                return NULL;
-            }
-            basetype = BaseType(lefttype);
-            if (IsPointerType(lefttype)) {
-                // force this to have a memory dereference
-                // and in BASIC, also force the appropriate number for the base
-                AST *deref;
-                if (curfunc && IsBasicLang(curfunc->language)) {
-                    extern Symbol *GetCurArrayBase();
-                    Symbol *sym = GetCurArrayBase();
-                    if (sym && sym->kind == SYM_CONSTANT) {
-                        ast->right = AstOperator('-', ast->right, (AST *)sym->v.ptr);
-                    }
-                }
-                deref = NewAST(AST_MEMREF, basetype, ast->left);
-                ast->left = deref;
-            } else if (ast->left->kind == AST_MEMREF) {
-                // the base type may be encoded here
-                if (ast->left->left) {
-                    basetype = ast->left->left;
-                }
-            } else if (IsArrayType(lefttype)) {
-                // convert the array index to subtract base
-                AST *base = GetArrayBase(lefttype);
-                if (base) {
-                    ast->right = AstOperator('-', ast->right, base);
-                }
-            } else {
-                // try to figure out a name for this
-                const char *name = GetExprString(ast->left);
-                ERROR(ast, "Array dereferences on non-array %s", name);
-                return NULL;
-            }
-            return basetype;
+        righttype = CoerceAssignTypes(ast, AST_ARRAYREF, &ast->right, ast_type_long, righttype, "array indexing");
+        if (!lefttype) {
+            lefttype = ExprType(ast->left);
         }
-        break;
+        if (!lefttype) {
+            return NULL;
+        }
+        basetype = BaseType(lefttype);
+        if (IsPointerType(lefttype)) {
+            // force this to have a memory dereference
+            // and in BASIC, also force the appropriate number for the base
+            AST *deref;
+            if (curfunc && IsBasicLang(curfunc->language)) {
+                extern Symbol *GetCurArrayBase();
+                Symbol *sym = GetCurArrayBase();
+                if (sym && sym->kind == SYM_CONSTANT) {
+                    ast->right = AstOperator('-', ast->right, (AST *)sym->v.ptr);
+                }
+            }
+            deref = NewAST(AST_MEMREF, basetype, ast->left);
+            ast->left = deref;
+        } else if (ast->left->kind == AST_MEMREF) {
+            // the base type may be encoded here
+            if (ast->left->left) {
+                basetype = ast->left->left;
+            }
+        } else if (IsArrayType(lefttype)) {
+            // convert the array index to subtract base
+            AST *base = GetArrayBase(lefttype);
+            if (base) {
+                ast->right = AstOperator('-', ast->right, base);
+            }
+        } else {
+            // try to figure out a name for this
+            const char *name = GetExprString(ast->left);
+            ERROR(ast, "Array dereferences on non-array %s", name);
+            return NULL;
+        }
+        return basetype;
+    }
+    break;
     case AST_NEW:
         // turn this into an alloc
-        {
-            AST *sizeExpr;
-            AST *basetype;
-            int baseSize;
-            ltype = ast->left;
-            basetype = BaseType(ltype);
-            baseSize = TypeSize(basetype);
-            if (IsConstExpr(ast->right)) {
-                baseSize *= EvalConstExpr(ast->right);
-                sizeExpr = AstInteger(baseSize);
-            } else {
-                sizeExpr = AstOperator('*', ast->right, AstInteger(baseSize));
-            }
-            *ast = *MakeOperatorCall(gc_alloc_managed, sizeExpr, NULL, NULL);
+    {
+        AST *sizeExpr;
+        AST *basetype;
+        int baseSize;
+        ltype = ast->left;
+        basetype = BaseType(ltype);
+        baseSize = TypeSize(basetype);
+        if (IsConstExpr(ast->right)) {
+            baseSize *= EvalConstExpr(ast->right);
+            sizeExpr = AstInteger(baseSize);
+        } else {
+            sizeExpr = AstOperator('*', ast->right, AstInteger(baseSize));
         }
-        break;
+        *ast = *MakeOperatorCall(gc_alloc_managed, sizeExpr, NULL, NULL);
+    }
+    break;
     case AST_DELETE:
         *ast = *MakeOperatorCall(gc_free, ast->left, NULL, NULL);
         ltype = ast_type_void;
@@ -1873,7 +1873,7 @@ static AST *doCheckTypes(AST *ast)
                 outputs->left = domakefloat(ltype, outputs->left);
             }
             ltype = rtype;
-        }            
+        }
         if (!CompatibleTypes(ltype, rtype)) {
             WARNING(ast, "different types in arms of ?");
         }
@@ -1900,78 +1900,78 @@ static AST *doCheckTypes(AST *ast)
     case AST_IDENTIFIER:
     case AST_SYMBOL:
         // add super class lookups if necessary
-        {
-            Module *P;
-            AST *supers = NULL;
-            static AST *superref = NULL;
-            ASTReportInfo saveinfo;
-            Symbol *sym = LookupAstSymbol(ast, NULL);
-            if (!sym) {
-                return NULL;
-            }
-            AstReportAs(ast, &saveinfo);
-            ltype = DerefType(ExprType(ast));
-            if (!ltype && sym->kind == SYM_HWREG) {
-                ltype = ast_type_unsigned_long;
-            }
-            // if this is a REFTYPE then dereference it
-            if (ltype && IsRefType(ltype)) {
-                AST *deref;
-                AST *basetype = DerefType(BaseType(ltype));
-                deref = DupAST(ast);
-                deref = NewAST(AST_MEMREF, basetype, deref);
-                deref = NewAST(AST_ARRAYREF, deref, AstInteger(0));
-                *ast = *deref;
-                ltype = basetype;
-            }
-            if (sym->kind == SYM_FUNCTION) {
-                Function *f = (Function *)sym->v.ptr;
-                if (f->module == current || IsSystemModule(f->module)) {
-                    AstReportDone(&saveinfo);
-                    return ltype;
-                }
-            }
-            if (sym->kind == SYM_VARIABLE || sym->kind == SYM_FUNCTION) {
-                const char *name = sym->our_name;
-                int supersValid = 1;
-                P = current;
-                while (P) {
-                    sym = FindSymbol(&P->objsyms, name);
-                    if (sym) {
-                        break;
-                    }
-                    if (!superref) {
-                        superref = AstIdentifier("__super");
-                    }
-                    if (supers) {
-                        supers = NewAST(AST_METHODREF, supers, superref);
-                    } else {
-                        supers = superref;
-                    }
-                    supers = NewAST(AST_ARRAYREF,
-                                    NewAST(AST_MEMREF,
-                                           ClassType(P->superclass),
-                                           supers),
-                                    AstInteger(0));
-                    P = P->superclass;
-                    if (P && !FindSymbol(&P->objsyms, "__super")) {
-                        supersValid = 0;
-                    }
-                }
-                if (sym && supers) {
-                    if (supersValid) {
-                        *ast = *NewAST(AST_METHODREF, supers, DupAST(ast));
-                    } else if (P) {
-                        // produce a warning if P is not the top level class
-                        if (!IsTopLevel(P)) {
-                            ERROR(ast, "Cannot handle reference to method of enclosing class");
-                        }
-                    }
-                }
-            }
-            AstReportDone(&saveinfo);
-            return ltype;
+    {
+        Module *P;
+        AST *supers = NULL;
+        static AST *superref = NULL;
+        ASTReportInfo saveinfo;
+        Symbol *sym = LookupAstSymbol(ast, NULL);
+        if (!sym) {
+            return NULL;
         }
+        AstReportAs(ast, &saveinfo);
+        ltype = DerefType(ExprType(ast));
+        if (!ltype && sym->kind == SYM_HWREG) {
+            ltype = ast_type_unsigned_long;
+        }
+        // if this is a REFTYPE then dereference it
+        if (ltype && IsRefType(ltype)) {
+            AST *deref;
+            AST *basetype = DerefType(BaseType(ltype));
+            deref = DupAST(ast);
+            deref = NewAST(AST_MEMREF, basetype, deref);
+            deref = NewAST(AST_ARRAYREF, deref, AstInteger(0));
+            *ast = *deref;
+            ltype = basetype;
+        }
+        if (sym->kind == SYM_FUNCTION) {
+            Function *f = (Function *)sym->v.ptr;
+            if (f->module == current || IsSystemModule(f->module)) {
+                AstReportDone(&saveinfo);
+                return ltype;
+            }
+        }
+        if (sym->kind == SYM_VARIABLE || sym->kind == SYM_FUNCTION) {
+            const char *name = sym->our_name;
+            int supersValid = 1;
+            P = current;
+            while (P) {
+                sym = FindSymbol(&P->objsyms, name);
+                if (sym) {
+                    break;
+                }
+                if (!superref) {
+                    superref = AstIdentifier("__super");
+                }
+                if (supers) {
+                    supers = NewAST(AST_METHODREF, supers, superref);
+                } else {
+                    supers = superref;
+                }
+                supers = NewAST(AST_ARRAYREF,
+                                NewAST(AST_MEMREF,
+                                       ClassType(P->superclass),
+                                       supers),
+                                AstInteger(0));
+                P = P->superclass;
+                if (P && !FindSymbol(&P->objsyms, "__super")) {
+                    supersValid = 0;
+                }
+            }
+            if (sym && supers) {
+                if (supersValid) {
+                    *ast = *NewAST(AST_METHODREF, supers, DupAST(ast));
+                } else if (P) {
+                    // produce a warning if P is not the top level class
+                    if (!IsTopLevel(P)) {
+                        ERROR(ast, "Cannot handle reference to method of enclosing class");
+                    }
+                }
+            }
+        }
+        AstReportDone(&saveinfo);
+        return ltype;
+    }
     case AST_EXPRLIST:
         if (ast->right) {
             return NewAST(AST_TUPLE_TYPE, ltype, rtype);
@@ -1997,7 +1997,7 @@ static AST *doCheckTypes(AST *ast)
             AST *args = ast->right;
             AST *fetch;
             AST *incr;
-            
+
             if (siz > 8) {
                 ERROR(ast, "large varargs not supported with this output type");
                 siz = 8;
@@ -2082,7 +2082,7 @@ InitGlobalFuncs(void)
         int64_xor = getBasicPrimitive("_int64_xor");
         int64_signx = getBasicPrimitive("_int64_signx");
         int64_zerox = getBasicPrimitive("_int64_zerox");
-        
+
         double_add = getBasicPrimitive("_double_add");
         double_sub = getBasicPrimitive("_double_sub");
         double_mul = getBasicPrimitive("_double_mul");
@@ -2095,7 +2095,7 @@ InitGlobalFuncs(void)
         basic_get_integer = getBasicPrimitive("_basic_get_integer");
         basic_get_string = getBasicPrimitive("_basic_get_string");
         basic_read_line = getBasicPrimitive("_basic_read_line");
-        
+
         basic_print_integer = getBasicPrimitive("_basic_print_integer");
         basic_print_integer_2 = getBasicPrimitive("_basic_print_integer_2");
         basic_print_integer_3 = getBasicPrimitive("_basic_print_integer_3");
@@ -2112,10 +2112,10 @@ InitGlobalFuncs(void)
         basic_put = getBasicPrimitive("_basic_put");
         basic_lock_io = getBasicPrimitive("__lockio");
         basic_unlock_io = getBasicPrimitive("__unlockio");
-        
+
         struct_copy = getBasicPrimitive("bytemove");
         struct_memset = getBasicPrimitive("__builtin_memset");
-        
+
         string_cmp = getBasicPrimitive("_string_cmp");
         string_concat = getBasicPrimitive("_string_concat");
         gc_alloc_managed = getBasicPrimitive("_gc_alloc_managed");

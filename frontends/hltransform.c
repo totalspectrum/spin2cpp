@@ -75,7 +75,7 @@ CheckSimpleArrayref(AST *ast)
         int shift = 0;
         int bits = 0;
         ASTReportInfo saveinfo;
-        
+
         if (typ && id && id->kind == AST_ADDROF) {
             AST *subtype;
             id = id->left;
@@ -332,8 +332,8 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
                     ast = AstAssign(lhs, AstOperator(op, DupAST(lhs), rhs));
                 } else {
                     ast = AstAssign(lhs, AstOperator(op, NULL, DupAST(lhs)));
-                }                    
-            } 
+                }
+            }
             if (preseq) {
                 ast = NewAST(AST_SEQUENCE, preseq, ast);
             }
@@ -422,7 +422,7 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
                         AST *temp = AstTempLocalVariable("_temp_", typ);
                         AST *save = AstAssign(temp, ast->left);
                         AST *update = AstAssign(ast->left, AstOperator('+', ast->left, AstInteger(1)));
-                        
+
                         ast = *astptr = NewAST(AST_SEQUENCE,
                                                NewAST(AST_SEQUENCE, save, update),
                                                temp);

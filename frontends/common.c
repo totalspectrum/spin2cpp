@@ -1,7 +1,7 @@
 /*
  * Spin to C/C++ translator
  * Copyright 2011-2022 Total Spectrum Software Inc.
- * 
+ *
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
  * +--------------------------------------------------------------------
@@ -121,7 +121,7 @@ Aliases spinalias[] = {
     { "clkset", "_clkset" },
     { "cogid", "_cogid" },
     { "cogstop", "_cogstop" },
-    
+
     { "strsize", "__builtin_strlen" },
 
     { "lockclr", "_lockclr" },
@@ -136,7 +136,7 @@ Aliases spinalias[] = {
     { "_pinw", "_pinwrite" },
     { "_pinl", "_drvl" },
     { "_pinh", "_drvh" },
-    
+
     /* obsolete aliases */
     { "dirl_", "_dirl" },
     { "dirh_", "_dirh" },
@@ -151,16 +151,16 @@ Aliases spin2alias[] = {
     /* special constants */
     { "clkmode_", "__clkmode_con" },
     { "clkfreq_", "__clkfreq_con" },
-    
+
     /* other symbols */
     { "cnt", "_getcnt" },
     { "cogchk", "_cogchk" },
 
     { "locktry", "_locktry" },
     { "lockrel", "_lockclr" },
-    
+
     { "pinw", "_pinwrite" },
-    { "pinl", "_drvl" },    
+    { "pinl", "_drvl" },
     { "pinh", "_drvh" },
     { "pint", "_drvnot" },
     { "pinr", "_pinread" },
@@ -168,26 +168,26 @@ Aliases spin2alias[] = {
     { "pinstart", "_pinstart" },
     { "pinsetup", "_pinsetup" },
     { "pinclear", "_pinclear" },
-    
+
 //    { "pinrnd", "_drvrnd" },
     { "pinwrite", "_pinwrite" },
-    { "pinlow", "_drvl" },    
+    { "pinlow", "_drvl" },
     { "pinhigh", "_drvh" },
     { "pintoggle", "_drvnot" },
     { "pinread", "_pinread" },
     { "pinfloat", "_fltl" },
     { "pinmode", "_pinmode" },
-    
+
     { "getct", "_getcnt" },
     { "getms", "_getms" },
     { "getrnd", "_getrnd" },
     { "getsec", "_getsec" },
     { "hubset", "_hubset" },
-    
+
     { "wrpin", "_wrpin" },
     { "wxpin", "_wxpin" },
     { "wypin", "_wypin" },
-    
+
     { "akpin", "_akpin" },
     { "rdpin", "_rdpin" },
     { "rqpin", "_rqpin" },
@@ -197,23 +197,23 @@ Aliases spin2alias[] = {
     { "qsin",  "_qsin" },
     { "rotxy", "_rotxy" },
     { "xypol", "_xypol" },
-    
+
     { "cogatn", "_cogatn" },
     { "pollatn", "_pollatn" },
     { "waitatn", "_waitatn" },
-    
+
     { "muldiv64", "_muldiv64" },
     { "waitx", "_waitx" },
     { "waitms", "_waitms" },
     { "waitus", "_waitus" },
     { "pollct", "_pollct" },
     { "waitct", "_waitcnt" },
-    
-    { "recv", "__recvptr" },    
+
+    { "recv", "__recvptr" },
     { "send", "__sendptr" },
 
     { "strcopy", "__builtin_strncpy" },
-    
+
     /* obsolete aliases */
     { "outl_", "_outl" },
     { "outh_", "_outh" },
@@ -291,7 +291,7 @@ Aliases basicalias[] = {
     { "tan", "__builtin_tanf" },
 
     { "round", "_float_round" },
-    
+
     { "_lockrel", "_lockclr" },
     { NULL, NULL },
 };
@@ -316,7 +316,7 @@ Aliases calias[] = {
     /* some math functions */
     { "__builtin_popcount", "_ones" },
     { "__builtin_round", "_float_round" },
-    
+
     /* useful I/O functions */
     { "mount", "_mount" },
     { "umount", "_umount" },
@@ -378,7 +378,7 @@ initSymbols(Module *P, int language)
 
 /*
  * allocate a new parser state
- */ 
+ */
 Module *
 NewModule(const char *fullname, int language)
 {
@@ -408,13 +408,13 @@ NewModule(const char *fullname, int language)
     root = strrchr(P->basename, '/');
 #if defined(WIN32) || defined(WIN64)
     if (!root) {
-      root = strrchr(P->basename, '\\');
+        root = strrchr(P->basename, '\\');
     }
 #endif
     if (!root)
-      root = P->basename;
+        root = P->basename;
     else
-      P->basename = root+1;
+        P->basename = root+1;
     /* set up the class name */
     P->classname = (char *)calloc(1, strlen(P->basename)+1);
     strcpy(P->classname, P->basename);
@@ -482,7 +482,7 @@ DeclareConstants(Module *P, AST **conlist_ptr)
     int default_val_ok = 0;
     int default_skip;
     int n;
-    
+
     conlist = *conlist_ptr;
 
     // first do all the simple assignments
@@ -508,7 +508,7 @@ DeclareConstants(Module *P, AST **conlist_ptr)
                         if (!IsIdentifier(ast->left)) {
                             ERROR(ast, "Internal error, bad constant declaration");
                             return;
-                        }                            
+                        }
                         EnterConstant(P, GetIdentifierName(ast->left), ast->right);
                         n++;
                         // now pull the assignment out so we don't see it again
@@ -676,7 +676,7 @@ ProcessConstants(Module *P)
 
 #if 0
 /*
- * transform AST_SRCCOMMENTs into comments with the line data of the 
+ * transform AST_SRCCOMMENTs into comments with the line data of the
  * next non-comment AST
  */
 static void
@@ -756,7 +756,7 @@ static const WORD colorWindows[] = {
     0x05, // PRINT_DEBUG
     0x0F, // PRINT_ERROR_LOCATION
 };
-#else 
+#else
 static const char *colorANSI[] = {
     "\033[0m", // PRINT_NORMAL
     "\033[0;1;36m", // PRINT_NOTE
@@ -771,11 +771,11 @@ enum printColorKind current_print_color;
 
 void SETCOLOR(enum printColorKind color) {
     if (!gl_colorize_output) return;
-    #ifdef WIN32
-        SetConsoleTextAttribute(GetStdHandle(STD_ERROR_HANDLE),colorWindows[color]);
-    #else
-        fprintf(stderr, "%s", colorANSI[color]);
-    #endif
+#ifdef WIN32
+    SetConsoleTextAttribute(GetStdHandle(STD_ERROR_HANDLE),colorWindows[color]);
+#else
+    fprintf(stderr, "%s", colorANSI[color]);
+#endif
     current_print_color = color;
 }
 
@@ -787,7 +787,7 @@ ERRORHEADER(const char *fileName, int lineno, const char *msg)
         SETCOLOR(PRINT_ERROR_LOCATION);
         fprintf(stderr, "%s:%d: ", fileName, lineno);
         SETCOLOR(save);
-    } 
+    }
     fprintf(stderr, "%s: ", msg);
 
 }
@@ -838,7 +838,7 @@ LANGUAGE_WARNING(int language, AST *ast, const char *msg, ...)
 {
     va_list args;
     const char *banner;
-    
+
     if (!(gl_warn_flags & WARN_LANG_EXTENSIONS)) {
         return;
     }
@@ -947,7 +947,7 @@ ERROR_UNKNOWN_SYMBOL(AST *ast)
 {
     const char *name;
     Label *labelref;
-    
+
     if (IsIdentifier(ast)) {
         name = GetVarNameForError(ast);
     } else if (ast->kind == AST_VARARGS || ast->kind == AST_VA_START) {
@@ -1012,7 +1012,7 @@ Init()
     ast_type_ptr_void = NewAST(AST_PTRTYPE, ast_type_void, NULL);
 
     ast_type_bitfield = NewAST(AST_BITFIELD, NULL, NULL);
-    
+
     // string is pointer to const byte
     ast_type_string = NewAST(AST_PTRTYPE, NewAST(AST_MODIFIER_CONST, ast_type_byte, NULL), NULL);
 
@@ -1022,7 +1022,7 @@ Init()
     // a generic function for Spin2 SEND type functionality
     ast_type_sendptr = NewAST(AST_MODIFIER_SEND_ARGS, GenericFunctionPtr(0), NULL);
     ast_type_recvptr = GenericFunctionPtr(1);
-    
+
     initSpinLexer(gl_p2);
 
     /* fill in the global symbol table */
@@ -1037,9 +1037,9 @@ FindLastDirectoryChar(const char *fname)
     while (*fname) {
         if (*fname == '/'
 #ifdef WIN32
-            || *fname == '\\'
+                || *fname == '\\'
 #endif
-            )
+           )
         {
             found = fname;
         }
@@ -1055,39 +1055,39 @@ FindLastDirectoryChar(const char *fname)
 char *
 ReplaceDirectory(const char *basename, const char *directory)
 {
-  char *ret = (char *)malloc(strlen(basename) + strlen(directory) + 2);
-  char *dot;
-  if (!ret) {
-    fprintf(stderr, "FATAL: out of memory\n");
-    exit(2);
-  }
-  strcpy(ret, directory);
-  dot = (char *)FindLastDirectoryChar(ret);
-  if (dot) {
-      *dot++ = '/';
-  } else {
-      dot = ret;
-  }
-  strcpy(dot, basename);
-  return ret;
+    char *ret = (char *)malloc(strlen(basename) + strlen(directory) + 2);
+    char *dot;
+    if (!ret) {
+        fprintf(stderr, "FATAL: out of memory\n");
+        exit(2);
+    }
+    strcpy(ret, directory);
+    dot = (char *)FindLastDirectoryChar(ret);
+    if (dot) {
+        *dot++ = '/';
+    } else {
+        dot = ret;
+    }
+    strcpy(dot, basename);
+    return ret;
 }
 
 char *
 ReplaceExtension(const char *basename, const char *extension)
 {
-  char *ret = (char *)malloc(strlen(basename) + strlen(extension) + 1);
-  char *dot;
-  if (!ret) {
-    fprintf(stderr, "FATAL: out of memory\n");
-    exit(2);
-  }
-  strcpy(ret, basename);
-  dot = strrchr(ret, '/');
-  if (!dot) dot = ret;
-  dot = strrchr(dot, '.');
-  if (dot) *dot = 0;
-  strcat(ret, extension);
-  return ret;
+    char *ret = (char *)malloc(strlen(basename) + strlen(extension) + 1);
+    char *dot;
+    if (!ret) {
+        fprintf(stderr, "FATAL: out of memory\n");
+        exit(2);
+    }
+    strcpy(ret, basename);
+    dot = strrchr(ret, '/');
+    if (!dot) dot = ret;
+    dot = strrchr(dot, '.');
+    if (dot) *dot = 0;
+    strcat(ret, extension);
+    return ret;
 }
 
 //
@@ -1098,8 +1098,8 @@ AddExtension(const char *basename, const char *extension)
 {
     char *ret = (char *)malloc(strlen(basename) + strlen(extension) + 1);
     if (!ret) {
-      fprintf(stderr, "FATAL: out of memory\n");
-      exit(2);
+        fprintf(stderr, "FATAL: out of memory\n");
+        exit(2);
     }
     strcpy(ret, basename);
     strcat(ret, extension);
@@ -1123,7 +1123,7 @@ DoPropellerPostprocess(const char *fname, size_t eepromSize)
     uint32_t reserveSize = 0;
     Symbol *sym;
     int save_casesensitive;
-    
+
     if (!f) {
         perror(fname);
         return -1;
@@ -1134,7 +1134,7 @@ DoPropellerPostprocess(const char *fname, size_t eepromSize)
     // pad file to multiple of 4, if necessary
     if (gl_p2) {
         padbytes = 0;
-    } else {    
+    } else {
         padbytes = ((len + 3) & ~3) - len;
     }
     if (padbytes) {
@@ -1233,10 +1233,14 @@ DoPropellerPostprocess(const char *fname, size_t eepromSize)
         fseek(f, 0L, SEEK_END);
         if (!gl_p2) {
             // I think this is only needed on P1
-            fputc(0xff, f); fputc(0xff, f);
-            fputc(0xf9, f); fputc(0xff, f);
-            fputc(0xff, f); fputc(0xff, f);
-            fputc(0xf9, f); fputc(0xff, f);
+            fputc(0xff, f);
+            fputc(0xff, f);
+            fputc(0xf9, f);
+            fputc(0xff, f);
+            fputc(0xff, f);
+            fputc(0xff, f);
+            fputc(0xf9, f);
+            fputc(0xff, f);
             len += 8;
         }
         while (len < eepromSize) {
@@ -1453,7 +1457,7 @@ MakeOneDeclaration(AST *origdecl, SymbolTable *table, AST *restOfList)
     if (sym) {
         WARNING(ident, "Redefining %s", name);
     }
-            
+
     if (decl->kind == AST_TYPEDEF) {
         AddSymbolPlaced(table, name, SYM_TYPEDEF, decl->left, NULL, decl);
         return NULL;
@@ -1472,7 +1476,7 @@ MakeOneDeclaration(AST *origdecl, SymbolTable *table, AST *restOfList)
         } else {
             ERROR(decl, "internal error could not find identifier ptr");
         }
-    }        
+    }
     return origdecl;
 }
 
@@ -1688,11 +1692,11 @@ FindDeclaration(AST *datlist, const char *name)
 {
     AST *ident;
     AST *declare;
-    
+
     while (datlist) {
         if (datlist->kind == AST_COMMENTEDNODE
-            && datlist->left
-            && datlist->left->kind == AST_DECLARE_VAR)
+                && datlist->left
+                && datlist->left->kind == AST_DECLARE_VAR)
         {
             declare = datlist->left;
             ident = declare->right;
@@ -1729,12 +1733,12 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
     const char *user_name = "variable";
     int is_typedef = 0;
     AST *rawtype;
-    
+
     if (!type) {
         type = InferTypeFromName(ident);
     }
     rawtype = RemoveTypeModifiers(type);
-    
+
     // this may be a typedef
     if (type->kind == AST_TYPEDEF) {
         type = type->left;
@@ -1800,7 +1804,7 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
         if (!initializer) {
 //            ERROR(ident, "global array %s declared with no size and no initializer", user_name);
             return; // just ignore this declaration
-          } else {
+        } else {
             if (initializer->kind == AST_EXPRLIST) {
                 initializer = FixupInitList(rawtype, initializer);
                 *initptr = initializer;
@@ -1899,7 +1903,7 @@ DeclareMemberVariablesOfSizeFlag(Module *P, int sizeRequest, int offset)
             idlist = ast->left;
             break;
         case AST_LONGLIST:
-	    curtype = NULL; // was ast_type_generic;
+            curtype = NULL; // was ast_type_generic;
             curtypesize = 4;
             curSizeFlag = SIZEFLAG_LONG;
             idlist = ast->left;
@@ -1991,7 +1995,7 @@ DeclareMemberVariablesOfSizeFlag(Module *P, int sizeRequest, int offset)
     if (curtypesize != 4 && offset != oldoffset) {
         P->longOnly = 0;
     }
-    return offset;   
+    return offset;
 }
 
 AST *
@@ -2084,7 +2088,7 @@ MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ, int is_private, unsi
         P->pendingvarblock = AddToList(P->pendingvarblock, ret);
     } else {
         // re-defining
-        // allow (and ignore it) if the types are the same 
+        // allow (and ignore it) if the types are the same
         if (!(flags & IMPLICIT_VAR) && !SameTypes(typ, oldtype)) {
             ERROR(sub, "Re-defining member %s", name);
         }
@@ -2193,7 +2197,7 @@ int32_t EvalConstSym(Symbol *sym)
 unsigned CalcOrigClockMode(unsigned int clkreg)
 {
     unsigned clockmode = 0;
-    
+
     if (gl_p2) {
         return clkreg;
     }
@@ -2207,26 +2211,35 @@ unsigned CalcOrigClockMode(unsigned int clkreg)
         unsigned tmp = (clkreg >> 3) & 3;
         switch (tmp) {
         case 1:
-            clockmode |= XTAL1; break;
+            clockmode |= XTAL1;
+            break;
         case 2:
-            clockmode |= XTAL2; break;
+            clockmode |= XTAL2;
+            break;
         default:
-            clockmode |= XTAL3; break;
+            clockmode |= XTAL3;
+            break;
         }
         tmp = (clkreg & 0x7);
         switch (tmp) {
         case 0x3:
-            clockmode |= PLL1X; break;
+            clockmode |= PLL1X;
+            break;
         case 0x4:
-            clockmode |= PLL2X; break;
+            clockmode |= PLL2X;
+            break;
         case 0x5:
-            clockmode |= PLL4X; break;
+            clockmode |= PLL4X;
+            break;
         case 0x6:
-            clockmode |= PLL8X; break;
+            clockmode |= PLL8X;
+            break;
         case 0x7:
-            clockmode |= PLL16X; break;
+            clockmode |= PLL16X;
+            break;
         default:
-            ERROR(NULL, "unexpected clock register value\n"); break;
+            ERROR(NULL, "unexpected clock register value\n");
+            break;
         }
     }
     return clockmode;
@@ -2243,7 +2256,7 @@ CalcClkFreqP1(Module *P)
     int32_t clkmode, clkfreq, xinfreq;
     int32_t multiplier = 1;
     uint8_t clkreg;
-    
+
     if (!clkmodesym || clkmodesym->kind == SYM_ALIAS || clkmodesym->kind == SYM_WEAK_ALIAS) {
         return 0;  // nothing to do
     }
@@ -2308,7 +2321,7 @@ CalcClkFreqP1(Module *P)
             clkreg |= 0x7;  // CLKSELx
         }
     }
-    
+
     // validate xinfreq and clkfreq
     if (xinfreq == 0) {
         if (clkfreq == 0) {
@@ -2338,7 +2351,7 @@ CalcClkFreqP1(Module *P)
         AddInternalSymbol(&Q->objsyms, "__clkreg_con", SYM_CONSTANT, AstInteger(clkreg), NULL);
         AddInternalSymbol(&Q->objsyms, "__clkmode_con", SYM_CONSTANT, AstInteger(clkmode), NULL);
     }
-    
+
     return 1;
 }
 
@@ -2401,7 +2414,7 @@ CalcClkFreqP2(Module *P)
     if (errfreqsym) {
         errtolerance = (double)EvalConstSym(errfreqsym);
     }
-    
+
     // figure out clock mode based on frequency
     uint32_t divd;
     double e, post, mult, Fpfd, Fvco, Fout;
@@ -2439,14 +2452,14 @@ CalcClkFreqP2(Module *P)
     M = ((uint32_t)result_mult) - 1;
     clkmode = zzzz | (result_pppp<<4) | (M<<8) | (D<<18) | (1<<24);
 
-    
+
     finalfreq = (uint32_t)round(result_Fout);
 set_symbols:
     // define built in constants for these
     AddInternalSymbol(&P->objsyms, "__clkfreq_con", SYM_CONSTANT, AstInteger(finalfreq), NULL);
     AddInternalSymbol(&P->objsyms, "__clkmode_con", SYM_CONSTANT, AstInteger(clkmode), NULL);
     AddInternalSymbol(&P->objsyms, "__clkreg_con", SYM_CONSTANT, AstInteger(clkmode), NULL);
-    
+
     // put them in the system module as well, so that they may be
     // accessed in sub-modules
     Module *Q = systemModule;
@@ -2543,7 +2556,7 @@ Symbol *DeclareAlias(SymbolTable *table, AST *newId, AST *oldId)
     AST *typ = NULL;
     const char *newname, *oldname;
     Symbol *sym = NULL;
-    
+
     if (!IsIdentifier(newId)) {
         ERROR(newId, "Internal error, not an identifier for alias");
         return NULL;
@@ -2608,8 +2621,8 @@ void DeclareAnonymousAliases(Module *Parent, Module *sub, AST *prefix)
     }
     A.Parent = Parent;
     A.prefix = prefix;
-    
-    IterateOverSymbols(&sub->objsyms, makeAnonAlias, (void *)&A); 
+
+    IterateOverSymbols(&sub->objsyms, makeAnonAlias, (void *)&A);
 }
 
 //#define DEBUG_OFFSETS
@@ -2630,7 +2643,7 @@ typedef struct OffsetStruct {
 static int fixupVarOffset(Symbol *sym, void *arg)
 {
     OffsetStruct *A = (OffsetStruct *)arg;
-    
+
     if (sym->kind == SYM_VARIABLE && !(sym->flags & (SYMF_GLOBAL|SYMF_NOALLOC))) {
         AST *typ = (AST *)sym->v.ptr;
         int siz = TypeSize(typ);
@@ -2639,7 +2652,7 @@ static int fixupVarOffset(Symbol *sym, void *arg)
             A->curOffset = (A->curOffset + (align-1)) & ~(align-1);
         }
 #ifdef DEBUG_OFFSETS
-            printf("  symbol %s orig offset %d new offset %d\n", sym->our_name, sym->offset, A->curOffset);
+        printf("  symbol %s orig offset %d new offset %d\n", sym->our_name, sym->offset, A->curOffset);
 #endif
         if (sym->offset != A->curOffset) {
             sym->offset = A->curOffset;
@@ -2732,14 +2745,14 @@ void FixupOffsets(Module *P) {
     FixupOffsets(P->next);
 
     current = P;
-    
+
     A.curOffset = 0;
     A.maxOffset = 0;
     A.isUnion = P->isUnion;
 
-#ifdef DEBUG_OFFSETS    
+#ifdef DEBUG_OFFSETS
     printf("%s\n", P->classname);
-#endif    
+#endif
     // Spin language offsets have to be set up in a very specific way
     if (IsSpinLang(P->mainLanguage)) {
         IterateOverSymbols(&P->objsyms, fixupByteWordLongOffset, (void *)&A);

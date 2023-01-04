@@ -192,7 +192,7 @@ HLOptimizePass(AST *body) {
 typedef enum VarUse {
     VAR_UNUSED, VAR_SET, VAR_USED
 } VarUse;
-    
+
 typedef struct LocalsInitCheckS {
     Function *F;
 } LocalsInitCheckStruct;
@@ -210,7 +210,7 @@ again:
         body = body->left;
     }
     if (!body) return VAR_UNUSED;
-    
+
     switch (body->kind) {
     case AST_CONSTREF:
         return VAR_UNUSED;
@@ -339,7 +339,7 @@ void DoHighLevelOptimize(Module *Q)
     Module *savecur = current;
     Function *func;
     Function *savefunc = curfunc;
-    
+
     current = Q;
     for (func = Q->functions; func; func = func->next) {
         curfunc = func;

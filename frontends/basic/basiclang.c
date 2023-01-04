@@ -233,9 +233,9 @@ TransformUsing(const char *usestr, AST *params)
     unsigned padchar = 0;
     unsigned altbit = 0;
     ASTReportInfo saveinfo;
-    
+
     AstReportAs(params, &saveinfo);
-    
+
     // scan through the use str until we find a special character
     flexbuf_init(&fb, 80);
     for(;;) {
@@ -256,10 +256,10 @@ TransformUsing(const char *usestr, AST *params)
             break;
         case '&':
             exprlist = harvest(exprlist, &fb);
-            
+
             // reset format to default
             lastFormat = AstInteger(0);
-            usingAst = NewAST(AST_USING, lastFormat, NextParam(&params)); 
+            usingAst = NewAST(AST_USING, lastFormat, NextParam(&params));
             exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, usingAst, NULL));
             signchar = 0;
             break;
@@ -295,7 +295,7 @@ TransformUsing(const char *usestr, AST *params)
             exprlist = harvest(exprlist, &fb);
             width = 1;
             minwidth = 1;
-        handlenumeric:
+handlenumeric:
             while (*usestr && *usestr == c) {
                 usestr++;
                 width++;
@@ -398,7 +398,7 @@ genPrintf(AST *ast)
     int longflag;
     int signchar;
     ASTReportInfo saveinfo;
-    
+
     if (gl_output == OUTPUT_CPP || gl_output == OUTPUT_C) {
         return NULL; // convert directly to C
     }
@@ -480,7 +480,7 @@ genPrintf(AST *ast)
                     zeropad = 1;
                 }
                 while ( (c >= '0' && c <= '9') && *fmtstring) {
-                     minwidth = minwidth * 10 + (c - '0');
+                    minwidth = minwidth * 10 + (c - '0');
                     c = *fmtstring++;
                 }
                 if ( (c == '+' || c == ' ') && *fmtstring) {
@@ -532,7 +532,7 @@ genPrintf(AST *ast)
                     //ERROR(ast, "unknown printf format character `%c'", c);
                     return NULL;
                 }
-            done_arg:
+done_arg:
                 ;
             }
         } else if (c == '\n') {
@@ -584,43 +584,43 @@ adjustFuncCall(AST *ast)
     AST *methodcall;
     Module *P = NULL;
 
-    
+
     if (left->kind == AST_METHODREF) {
         methodcall = left;
         templident = left->right;
-	methodref = left->left;
+        methodref = left->left;
     } else {
         templident = left;
-	methodref = NULL;
+        methodref = NULL;
         methodcall = NULL;
         leftparent = ast;
     }
     /* check for template instantiation */
     if (templident->kind == AST_IDENTIFIER || templident->kind == AST_LOCAL_IDENTIFIER) {
         Symbol *sym;
-	const char *name = GetIdentifierName(templident);
-	if (methodref) {
+        const char *name = GetIdentifierName(templident);
+        if (methodref) {
             AST *modtyp = ExprType(methodref);
             if (IsRefType(modtyp)) {
                 modtyp = modtyp->left;
             }
-	    if (!IsClassType(modtyp)) {
-	        ERROR(methodref, "Unable to determine class type");
-	        return;
-	    }
-	    P = GetClassPtr(modtyp);
-	}
-	sym = P ? FindSymbol(&P->objsyms, name) : LookupSymbol(name);
+            if (!IsClassType(modtyp)) {
+                ERROR(methodref, "Unable to determine class type");
+                return;
+            }
+            P = GetClassPtr(modtyp);
+        }
+        sym = P ? FindSymbol(&P->objsyms, name) : LookupSymbol(name);
         if (sym && sym->kind == SYM_TEMPLATE) {
-	    func = InstantiateTemplateFunction(P ? P : current, (AST *)sym->v.ptr, ast);
+            func = InstantiateTemplateFunction(P ? P : current, (AST *)sym->v.ptr, ast);
             if (func) {
                 if (methodcall) {
                     methodcall->right = func;
                 } else {
                     ast->left = func;
                 }
-	    }
-	}
+            }
+        }
     }
     if (!func) {
         typ = ExprType(left);
@@ -636,7 +636,7 @@ adjustFuncCall(AST *ast)
                     *ast = *left;
                 }
             }
-	} else {
+        } else {
             if (left->kind == AST_IDENTIFIER && leftparent && typ) {
                 if (!strcmp(left->d.string, "_basic_open") && IsStringType(typ)) {
                     /* change to _basic_open_string */
@@ -657,13 +657,13 @@ ConvertPrintToPrintf(AST *ast)
     AST *handle = ast->right;
     AST *expr, *type;
     AST *printit = NewAST(AST_PRINT, NULL, NULL);
-    AST *seq = NULL;    
+    AST *seq = NULL;
 //    AST *fmtAst = NULL;
     Flexbuf fbstr;
     char strbuf[8];
 
     flexbuf_init(&fbstr, 80);
-    
+
     if (handle) {
         ERROR(ast, "Unable to convert print # to C");
         return AstInteger(0);
@@ -722,7 +722,7 @@ ConvertPrintToPrintf(AST *ast)
             seq = AddExprToList(seq, expr);
         } else {
             ERROR(ast, "Unable to print expression of this type");
-        }       
+        }
     }
     printit->left = AstIdentifier("printf");
     exprlist = harvest(NULL, &fbstr);
@@ -804,7 +804,7 @@ ParsePrintStatement(AST *ast)
                     print_done = true;
                 }
             }
-            if (!print_done) {   
+            if (!print_done) {
                 seq = addPrintCall(seq, handle, basic_print_string, expr, fmtAst);
             }
         } else if (IsGenericType(type) || IsPointerType(type)) {
@@ -836,7 +836,7 @@ doBasicTransform(AST **astptr, bool transformFuncall)
     AST *ast = *astptr;
     Function *func;
     ASTReportInfo saveinfo;
-    
+
     while (ast && ast->kind == AST_COMMENTEDNODE) {
         astptr = &ast->left;
         ast = *astptr;
@@ -876,7 +876,7 @@ doBasicTransform(AST **astptr, bool transformFuncall)
         *ast = *CreateSwitch(ast, case_name);
         AstReportDone(&saveinfo);
         break;
-    }        
+    }
     case AST_COUNTREPEAT:
         // convert repeat count into a for loop
         doBasicTransform(&ast->left, transformFuncall);
@@ -894,28 +894,28 @@ doBasicTransform(AST **astptr, bool transformFuncall)
         break;
     case AST_ADDROF:
     case AST_ABSADDROF:
-        {
-            doBasicTransform(&ast->left, transformFuncall);
-            doBasicTransform(&ast->right, transformFuncall);
-            if (IsLocalVariable(ast->left)) {
-                curfunc->local_address_taken = 1;
-            }
-            // taking the address of a function may restrict how
-            // we can call it (stack vs. register calling)
-            Symbol *sym;
-            Function *f = NULL;
-            sym = FindCalledFuncSymbol(ast, NULL, 0);
-            if (sym && sym->kind == SYM_FUNCTION) {
-                f = (Function *)sym->v.ptr;
-            }
-            if (f) {
-                f->used_as_ptr = 1;
-                if (f->callSites == 0) {
-                    MarkUsed(f, "func pointer");
-                }
+    {
+        doBasicTransform(&ast->left, transformFuncall);
+        doBasicTransform(&ast->right, transformFuncall);
+        if (IsLocalVariable(ast->left)) {
+            curfunc->local_address_taken = 1;
+        }
+        // taking the address of a function may restrict how
+        // we can call it (stack vs. register calling)
+        Symbol *sym;
+        Function *f = NULL;
+        sym = FindCalledFuncSymbol(ast, NULL, 0);
+        if (sym && sym->kind == SYM_FUNCTION) {
+            f = (Function *)sym->v.ptr;
+        }
+        if (f) {
+            f->used_as_ptr = 1;
+            if (f->callSites == 0) {
+                MarkUsed(f, "func pointer");
             }
         }
-        break;
+    }
+    break;
     case AST_FUNCCALL:
         doBasicTransform(&ast->left, transformFuncall);
         doBasicTransform(&ast->right, transformFuncall);
@@ -923,7 +923,7 @@ doBasicTransform(AST **astptr, bool transformFuncall)
         {
             // the parser treats a(x) as a function call (always), but in
             // fact it may be an array reference; change it to one if applicable
- 	    adjustFuncCall(ast);
+            adjustFuncCall(ast);
         }
         break;
     case AST_METHODREF:
@@ -967,7 +967,7 @@ doBasicTransform(AST **astptr, bool transformFuncall)
             AST *seq = NULL;
             AST *lineptr = NULL;
             AST *read_lineptr;
-            
+
             if (handle) {
                 lineptr = AstTempLocalVariable("_tmp_", ast_type_string);
                 read_lineptr = AstAssign(lineptr,
