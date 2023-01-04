@@ -213,7 +213,7 @@ skipCommentsAndDeclares(AST *a)
     return a;
 }
 
-    
+
 /* see if two trees match */
 /* if "ignoreStatic" is true, ignore local identifier differences */
 
@@ -254,7 +254,7 @@ doAstMatch(AST *a, AST *b, int ignoreStatic)
         return strcmp(a->d.string, b->d.string) == 0;
     case AST_IDENTIFIER:
         if ( (curfunc && LangCaseSensitive(curfunc->language))
-             || (current && LangCaseSensitive(current->curLanguage)) )
+                || (current && LangCaseSensitive(current->curLanguage)) )
         {
             return strcmp(a->d.string, b->d.string) == 0;
         }
@@ -307,7 +307,7 @@ AstModifiesIdentifierLHS(AST *body, AST *id)
         }
     } else if (body->kind == AST_ARRAYREF) {
         return AstModifiesIdentifierLHS(body->left, id)
-            || AstModifiesIdentifier(body->right, id);
+               || AstModifiesIdentifier(body->right, id);
     }
     if (AstModifiesIdentifierLHS(body->left, id) || AstModifiesIdentifierLHS(body->right, id)) {
         return 1;
@@ -582,17 +582,17 @@ static const char *astnames[] = {
     "listholder",
     "integer",
     "string",
-    
+
     "identifier",
     "operator",
     "float",
     "assign",
-    
+
     "enumset",
     "arraydecl",
     "bytelist",
     "wordlist",
-    
+
     "longlist",
     "inttype",
     "unsignedtype",
@@ -607,7 +607,7 @@ static const char *astnames[] = {
     "hwreg",
     "return",
     "if",
-    
+
     "thenelse",
     "range",
     "rangeref",
@@ -747,7 +747,7 @@ static const char *astnames[] = {
     "union",
     "simplefuncptr",
     "read",
-    
+
     "gosub",
     "super",
     "local_identifier",
@@ -799,7 +799,7 @@ static void doASTDump(AST *ast, int indent)
     int leaf = 0;
     unsigned idx;
     const char *astname = "ast";
-    
+
     if (!ast) {
         printf("%*c<>\n", indent, ' ');
         return;
@@ -840,11 +840,11 @@ static void doASTDump(AST *ast, int indent)
     case AST_STRING:
         sprintf(buf, "<string %s/>", ast->d.string);
         leaf = 1;
-        break;        
+        break;
     case AST_BYTECODE:
         sprintf(buf, "<bytecode %s/>", ast->d.string);
         leaf = 1;
-        break;        
+        break;
     case AST_HWREG:
         sprintf(buf, "<hwreg/>");
         leaf = 1;
@@ -963,14 +963,14 @@ static void doASTDump(AST *ast, int indent)
     case AST_ANNOTATION:
         sprintf(buf, "<annotation %s>", ast->d.string);
         leaf = 1;
-        break;        
+        break;
     case AST_FUNC_NAME:
         sprintf(buf, "<func_name/>");
         leaf = 1;
-        break;        
+        break;
     case AST_THROW:
         sprintf(buf, "<throw %" PRId64 ">", ast->d.ival);
-        break;        
+        break;
     default:
         idx = (unsigned int)ast->kind;
         if (idx < sizeof(astnames) / sizeof(astnames[0])) {
@@ -1009,7 +1009,7 @@ LineInfo *GetLineInfo(AST *ast)
     LineInfo *I;
     int size;
     int i;
-    
+
     if (!ast || !ast->lexdata) return NULL;
     L = ast->lexdata;
     I = (LineInfo *)flexbuf_peek(&L->lineInfo);

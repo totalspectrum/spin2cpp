@@ -107,7 +107,7 @@ GetVarNameForError(AST *expr)
     }
     return "variable";
 }
-        
+
 /* get class from object type */
 Module *
 GetClassPtr(AST *objtype)
@@ -197,7 +197,7 @@ LookupAstSymbol(AST *ast, const char *msg)
     AST *id;
     const char *username = "";
     const char *ourname;
-    
+
     if (ast->kind == AST_SYMBOL) {
         return (Symbol *)ast->d.ptr;
     }
@@ -237,7 +237,7 @@ LookupMemberSymbol(AST *expr, AST *objtype, const char *name, Module **Ptr, int 
     Module *P;
     Symbol *sym;
     AST *objident = NULL;
-    
+
     objtype = BaseType(objtype);
 
     if (!objtype) {
@@ -272,7 +272,7 @@ LookupMemberSymbol(AST *expr, AST *objtype, const char *name, Module **Ptr, int 
                     a = a->right;
                     if (b->kind == AST_DECLARE_VAR) {
                         if (b->left && b->left->kind == AST_OBJECT
-                            && AstUses(b->right, objident))
+                                && AstUses(b->right, objident))
                         {
                             objtype = b->left;
                             break;
@@ -341,10 +341,10 @@ LookupMethodRef(AST *expr, Module **Ptr, int *valid)
     AST *type = ExprType(expr->left);
     AST *ident = expr->right;
     const char *name;
-    
+
     name = GetUserIdentifierName(ident);
     return LookupMemberSymbol(expr, type, name, Ptr, valid);
-    
+
 }
 
 /*
@@ -503,7 +503,7 @@ RangeXor(AST *dst, AST *src)
     AST *hwreg = NULL;
     ASTReportInfo saveinfo;
     AST *result = NULL;
-    
+
     AstReportAs(dst, &saveinfo);
     if (dst->right->right == NULL) {
         loexpr = FoldIfConst(dst->right->left);
@@ -520,7 +520,7 @@ RangeXor(AST *dst, AST *src)
                 hwreg = dst->left;
                 if (hwreg->kind == AST_HWREG) {
                     result = AstAssign(hwreg,
-                                     AstOperator('^', hwreg, maskexpr));
+                                       AstOperator('^', hwreg, maskexpr));
                     AstReportDone(&saveinfo);
                     return result;
                 } else {
@@ -550,7 +550,7 @@ RangeXor(AST *dst, AST *src)
     maskexpr = AstOperator(K_ROTL, maskexpr, loexpr);
     maskexpr = FoldIfConst(maskexpr);
     result = AstAssign(dst->left,
-                     AstOperator('^', dst->left, maskexpr));
+                       AstOperator('^', dst->left, maskexpr));
     AstReportDone(&saveinfo);
     return result;
 }
@@ -575,25 +575,25 @@ RangeBitSet(AST *dst, uint32_t mask, int bitset)
     AST *maskexpr;
     AST *result;
     ASTReportInfo saveinfo;
-    
+
     AstReportAs(dst, &saveinfo);
     if (dst->right->right == NULL) {
         loexpr = dst->right->left;
     } else {
         AST *hiexpr;
         loexpr = dst->right->right;
-	hiexpr = dst->right->left;
+        hiexpr = dst->right->left;
         loexpr = AstOperator(K_LIMITMAX, loexpr, hiexpr);
         loexpr = FoldIfConst(loexpr);
     }
     maskexpr = AstOperator(K_SHL, AstInteger(mask), loexpr);
     if (bitset) {
         result = AstAssign(dst->left,
-                         AstOperator('|', dst->left, maskexpr));
+                           AstOperator('|', dst->left, maskexpr));
     } else {
         maskexpr = AstOperator(K_BIT_NOT, NULL, maskexpr);
         result = AstAssign(dst->left,
-                         AstOperator('&', dst->left, maskexpr));
+                           AstOperator('&', dst->left, maskexpr));
     }
     AstReportDone(&saveinfo);
     return result;
@@ -666,7 +666,7 @@ CheckAddBits(AST *expr)
         // all this headache is Spin2 only
         return;
     }
-    
+
     if (expr->right != NULL) {
         // we've already got an explicit range
         return;
@@ -693,14 +693,14 @@ CheckAddBits(AST *expr)
     // check for explicit A addbits B, in which
     // case we extract and use A and B as is
     if ( sub->kind == AST_OPERATOR
-        && sub->d.ival == '|'
-        )
+            && sub->d.ival == '|'
+       )
     {
         if (sub->right
-            && sub->right->kind == AST_OPERATOR
-            && sub->right->d.ival == K_SHL
-            && sub->right->right->kind == AST_INTEGER
-            && sub->right->right->d.ival == 5)
+                && sub->right->kind == AST_OPERATOR
+                && sub->right->d.ival == K_SHL
+                && sub->right->right->kind == AST_INTEGER
+                && sub->right->right->d.ival == 5)
         {
             AST *firstpin = expr->left->left;
             AST *lastpin = sub->right->left;
@@ -721,11 +721,11 @@ CheckAddBits(AST *expr)
             return;
         }
     }
-    
+
     AST *firstpin = AstOperator('&', sub, AstInteger(0x1f));
     AST *lastpin = AstOperator(K_SHR, sub, AstInteger(5));
     lastpin = AstOperator('+', firstpin, lastpin);
-    
+
     expr->left = lastpin;
     expr->right = firstpin;
 }
@@ -771,7 +771,7 @@ TransformRangeAssign(AST *dst, AST *src, int optoken, int toplevel)
     ASTReportInfo saveinfo;
     AST *result;
     AST *inits = NULL;
-    
+
     if (!dst) return dst;
     if (!dst->right || dst->right->kind != AST_RANGE) {
         ERROR(dst, "Internal error, expecting range");
@@ -785,7 +785,7 @@ TransformRangeAssign(AST *dst, AST *src, int optoken, int toplevel)
     AstReportAs(dst, &saveinfo);  // set up error messages as if coming from "dst"
     /* change x.[a addbits b] to x.[(b+a)..a] */
     CheckAddBits(dst->right);
-    
+
     hwreg = dst->left;
     if (hwreg->kind == AST_REGPAIR) {
         AST *assign, *assign2;
@@ -795,7 +795,7 @@ TransformRangeAssign(AST *dst, AST *src, int optoken, int toplevel)
 
         hwreg = NewAST(AST_RANGEREF, hwreg, dst->right);
         hwreg2 = NewAST(AST_RANGEREF, hwreg2, dst->right);
-        
+
         assign = TransformRangeAssign(hwreg, src, optoken, toplevel);
         assign2 = TransformRangeAssign(hwreg2, src, optoken, toplevel);
         if (dst->right->right && IsConstExpr(dst->right->right)) {
@@ -808,7 +808,7 @@ TransformRangeAssign(AST *dst, AST *src, int optoken, int toplevel)
             AstReportDone(&saveinfo);
             if (x) return assign;
             return assign2;
-        } 
+        }
         // here we don't know which set of pins to use, so
         // we have to generate an IF statement
         if (!toplevel) {
@@ -839,7 +839,7 @@ TransformRangeAssign(AST *dst, AST *src, int optoken, int toplevel)
 
     /* doing a NOT on the whole thing */
     if (src->kind == AST_OPERATOR && src->d.ival == K_BIT_NOT
-        && AstMatch(dst, src->right))
+            && AstMatch(dst, src->right))
     {
         result = RangeXor(dst, AstInteger(-1));
         AstReportDone(&saveinfo);
@@ -853,9 +853,9 @@ TransformRangeAssign(AST *dst, AST *src, int optoken, int toplevel)
         loexpr = dst->right->left;
         /* special case flipping a bit */
         if (src->kind == AST_OPERATOR && src->d.ival == '^'
-            && AstMatch(dst, src->left)
-            && IsConstExpr(src->right)
-            && EvalConstExpr(src->right) == 1)
+                && AstMatch(dst, src->left)
+                && IsConstExpr(src->right)
+                && EvalConstExpr(src->right) == 1)
         {
             result = RangeXor(dst, AstInteger(-1));
             AstReportDone(&saveinfo);
@@ -947,17 +947,17 @@ TransformRangeAssign(AST *dst, AST *src, int optoken, int toplevel)
         /* dst->left is the destination assignment */
         /* it may be an AST_LISTHOLDER, in which case it
            represents a pair of registers */
-        
+
         ifcond = AstOperator('&', src, AstInteger(1));
         ifpart = AstOperator('|', dst->left, maskvar);
         ifpart = AstAssign(dst->left, ifpart);
         ifpart = NewAST(AST_STMTLIST, ifpart, NULL);
-        
+
         elsepart = AstOperator('&', dst->left,
                                AstOperator(K_BIT_NOT, NULL, maskvar));
         elsepart = AstAssign(dst->left, elsepart);
         elsepart = NewAST(AST_STMTLIST, elsepart, NULL);
-        
+
         stmt = NewAST(AST_THENELSE, ifpart, elsepart);
         ifstmt = NewAST(AST_IF, ifcond, stmt);
         ifstmt = NewAST(AST_STMTLIST, ifstmt, NULL);
@@ -965,7 +965,7 @@ TransformRangeAssign(AST *dst, AST *src, int optoken, int toplevel)
         AstReportDone(&saveinfo);
         return ifstmt;
     }
-                             
+
     /*
      * outa[lo] := src
      * can translate to:
@@ -989,7 +989,7 @@ TransformRangeAssign(AST *dst, AST *src, int optoken, int toplevel)
         orexpr = FoldIfConst(AstOperator('&', src, maskexpr));
         orexpr = AstOperator(K_SHL, orexpr, loexpr);
         orexpr = FoldIfConst(orexpr);
-        
+
         //orexpr = NewAST(AST_MASKMOVE, dst->left,
         //                AstOperator('|', andexpr, orexpr));
         orexpr = NewAST(AST_MASKMOVE, dst->left,
@@ -1017,7 +1017,7 @@ TransformRangeUse(AST *src)
     AST *range;
     ASTReportInfo saveinfo;
     AST *inits = NULL;
-    
+
     if (!curfunc) {
         ERROR(src, "Internal error, could not find function");
         return AstInteger(0);
@@ -1093,8 +1093,8 @@ TransformRangeUse(AST *src)
             nbits = ReplaceExprWithVariable("_bits", nbits, &inits);
         }
         lo = NewAST(AST_CONDRESULT,
-                        test,
-                        NewAST(AST_THENELSE, hi, lo));
+                    test,
+                    NewAST(AST_THENELSE, hi, lo));
         if (IsConstExpr(lo)) {
             lo = AstInteger(EvalConstExpr(lo));
         } else {
@@ -1109,7 +1109,7 @@ TransformRangeUse(AST *src)
     } else {
         mask = ReplaceExprWithVariable("_mask_", mask, &inits);
     }
-    
+
     /* we want to end up with:
        ((src->left >> lo) & mask)
     */
@@ -1129,7 +1129,7 @@ TransformRangeUse(AST *src)
         val = FoldIfConst(AstOperator('&', val, mask));
     }
     revval = FoldIfConst(AstOperator(K_REV, val, nbits));
-    
+
     if (IsConstExpr(test)) {
         int tval = EvalConstExpr(test);
         val = tval ? revval : val;
@@ -1147,7 +1147,7 @@ TransformRangeUse(AST *src)
 static ExprFloat
 EvalFloatOperator(int op, ExprFloat lval, ExprFloat rval, int *valid)
 {
-    
+
     switch (op) {
     case '+':
     case K_FADD:
@@ -1221,7 +1221,7 @@ EvalFloatOperator(int op, ExprFloat lval, ExprFloat rval, int *valid)
 static ExprInt
 EvalFixedOperator(int op, ExprInt lval, ExprInt rval, int *valid)
 {
-    
+
     switch (op) {
     case '+':
         return lval + rval;
@@ -1299,13 +1299,13 @@ static ExprInt
 EvalIntOperator(int op, ExprInt lval, ExprInt rval, int *valid)
 {
     bool truncMath = false; // if true, only use lower 32 bits for math
-    
+
     if (curfunc) {
         truncMath = IsSpinLang(curfunc->language);
     } else if (current) {
         truncMath = IsSpinLang(current->curLanguage);
     }
-        
+
     switch (op) {
     case '+':
         return lval + rval;
@@ -1425,17 +1425,17 @@ EvalIntOperator(int op, ExprInt lval, ExprInt rval, int *valid)
     case K_REV:
         return ReverseBits(lval, rval);
     case K_ZEROEXTEND:
-        {
-            int shift = 32 - rval;
-            return ((uint32_t)lval << shift) >> shift;
-        }
-        break;
+    {
+        int shift = 32 - rval;
+        return ((uint32_t)lval << shift) >> shift;
+    }
+    break;
     case K_SIGNEXTEND:
-        {
-            int shift = 32 - rval;
-            return ((ExprInt)lval << shift) >> shift;
-        }
-        break;
+    {
+        int shift = 32 - rval;
+        return ((ExprInt)lval << shift) >> shift;
+    }
+    break;
     case K_DECREMENT:
     case K_INCREMENT:
         if (valid) {
@@ -1447,27 +1447,27 @@ EvalIntOperator(int op, ExprInt lval, ExprInt rval, int *valid)
     case K_ONES_COUNT:
         return popcount(rval);
     case K_QLOG:
-        {
-            double e = log2((double)(uint32_t)rval);
-            uint32_t i = (int)e;
-            return (i << 27) | (uint32_t)round((e - (double)i)*(1<<27));
-        }
-        break;
+    {
+        double e = log2((double)(uint32_t)rval);
+        uint32_t i = (int)e;
+        return (i << 27) | (uint32_t)round((e - (double)i)*(1<<27));
+    }
+    break;
     case K_QEXP:
-        {
-            double e = ((uint32_t)rval) >> 27;
-            double f = ((double)(rval & ((1<<27)-1))) / (1<<27);
-            e = pow(2.0, e+f);
-            return (uint32_t)round(e);
-        }
-        break;
+    {
+        double e = ((uint32_t)rval) >> 27;
+        double f = ((double)(rval & ((1<<27)-1))) / (1<<27);
+        e = pow(2.0, e+f);
+        return (uint32_t)round(e);
+    }
+    break;
     case K_POWER:
-        {
-            double a = (double)lval;
-            double b = (double)rval;
-            a = pow(a, b);
-            return (uint32_t)round(a);
-        }
+    {
+        double a = (double)lval;
+        double b = (double)rval;
+        a = pow(a, b);
+        return (uint32_t)round(a);
+    }
     case K_FADD:
         return floatAsInt(intAsFloat(lval) + intAsFloat(rval));
     case K_FSUB:
@@ -1571,7 +1571,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
     const char *name;
     AST *offsetExpr = NULL;
     unsigned long offset;
-    
+
     if (!expr)
         return intExpr(0);
     if (depth > MAX_DEPTH) {
@@ -1709,12 +1709,12 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
     case AST_METHODREF:
     {
         Module *P;
-        
+
         sym = LookupMethodRef(expr, &P, valid);
         if (!sym) {
             return intExpr(0);
         }
-#if 0        
+#if 0
         if ((sym->kind != SYM_CONSTANT && sym->kind != SYM_FLOAT_CONSTANT)) {
             if (valid) {
                 *valid = 0;
@@ -1723,7 +1723,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             }
             return intExpr(0);
         }
-#endif        
+#endif
         /* while we're evaluating, use the object context */
         ret = EvalExprInState(P, expr->right, flags, valid, depth+1);
         return ret;
@@ -1786,7 +1786,8 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
                     *valid = 0;
                 }
                 return intExpr(0);
-            } break;
+            }
+            break;
             case SYM_LABEL:
                 if (flags & PASM_FLAG) {
                     Label *lref = (Label *)sym->v.ptr;
@@ -1803,7 +1804,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
                     }
                     return intExpr(lref->cogval >> 2);
                 }
-                /* otherwise fall through */
+            /* otherwise fall through */
             default:
                 if (reportError)
                     ERROR(expr, "Symbol %s is not constant", name);
@@ -1863,7 +1864,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             const char *str = expr->left->d.string;
             rval = EvalExpr(expr->right, flags, valid, depth+1);
             if ((!valid || *valid) && IsIntOrGenericType(rval.type)
-                && rval.val >= 0 && rval.val <= strlen(str))
+                    && rval.val >= 0 && rval.val <= strlen(str))
             {
                 return intExpr(str[rval.val]);
             }
@@ -1914,13 +1915,15 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
                     *valid = 0;
                 }
             }
-            
+
             if (gl_output == OUTPUT_BYTECODE && gl_interp_kind != INTERP_KIND_NUCODE) {
                 int datoffset = BCgetDAToffset(current,kind == AST_ABSADDROF,expr,reportError);
-                if (datoffset < 0) {if (valid) *valid = 0;} // Error (BCgetDAToffset will have already printed it if needed)
+                if (datoffset < 0) {
+                    if (valid) *valid = 0;   // Error (BCgetDAToffset will have already printed it if needed)
+                }
                 else offset += datoffset;
             } else if (kind == AST_ABSADDROF) {
-	            offset += gl_dat_offset > 0 ? gl_dat_offset : 0;
+                offset += gl_dat_offset > 0 ? gl_dat_offset : 0;
             }
             return intExpr(lref->hubval + offset);
         } else if (sym && sym->kind == SYM_VARIABLE && (sym->flags & SYMF_GLOBAL)) {
@@ -2182,13 +2185,13 @@ int TypeAlign(AST *typ)
     default:
         return 4; // all pointers are 4 bytes
     case AST_OBJECT:
-        {
-            Module *P = (Module *)typ->d.ptr;
-            if (P->varsize < 3 && P->varsize > 0) {
-                return P->varsize;
-            }
-            return 4;
+    {
+        Module *P = (Module *)typ->d.ptr;
+        if (P->varsize < 3 && P->varsize > 0) {
+            return P->varsize;
         }
+        return 4;
+    }
     }
 }
 
@@ -2342,7 +2345,7 @@ FindFuncSymbol(AST *ast, AST **objrefPtr, int errflag)
         sym = LookupAstSymbol(expr, errflag ? "function call" : NULL);
         return sym;
     }
-    if (expr->kind != AST_METHODREF) {       
+    if (expr->kind != AST_METHODREF) {
         if (expr->kind != AST_FUNCCALL && expr->kind != AST_ADDROF && expr->kind != AST_ABSADDROF) {
             ERROR(expr, "Internal error expecting function call");
             return NULL;
@@ -2440,7 +2443,7 @@ IsPointerType(AST *type)
 {
     type = RemoveTypeModifiers(type);
     if (!type) return 0;
-    
+
     if (type->kind == AST_PTRTYPE || type->kind == AST_REFTYPE || type->kind == AST_COPYREFTYPE)
         return 1;
     return 0;
@@ -2451,7 +2454,7 @@ IsRefType(AST *type)
 {
     type = RemoveTypeModifiers(type);
     if (!type) return 0;
-    
+
     if (type->kind == AST_REFTYPE || type->kind == AST_COPYREFTYPE)
         return 1;
     return 0;
@@ -2673,7 +2676,7 @@ AST *
 ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
 {
     AST *sub;
-    
+
     if (!expr) return NULL;
     if (!P) {
         P = current;
@@ -2724,14 +2727,14 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         if (curfunc && IsSpinLang(curfunc->language)) {
             return ast_type_long;
         }
-        /* otherwise fall through */
+    /* otherwise fall through */
     case AST_STRINGPTR:
         if ( curfunc && curfunc->language == LANG_CFAMILY_C && !(curfunc->warn_flags & WARN_C_CONST_STRING) ) {
             return ast_type_ptr_byte;
         }
         return ast_type_string;
     case AST_MEMREF:
-        return expr->left; 
+        return expr->left;
     case AST_ADDROF:
     case AST_ABSADDROF:
         /* if expr->right is not NULL, then it's the final type */
@@ -2792,7 +2795,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
             return ExprTypeRelative(table, (AST *)sym->v.ptr, P);
         default:
             return NULL;
-        }            
+        }
     }
     case AST_ARRAYREF:
         sub = ExprTypeRelative(table, expr->left, P);
@@ -2885,7 +2888,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         const char *methodname;
         Function *func;
         Module *subclass;
-        
+
         if (expr->right->kind != AST_IDENTIFIER && expr->right->kind != AST_LOCAL_IDENTIFIER) {
             ERROR(expr, "Expecting identifier after '.'");
             return NULL;
@@ -2975,7 +2978,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
             if (IsArrayType(rtype)) {
                 rtype = ArrayToPointerType(rtype);
             }
-            
+
             if (IsPointerType(ltype) && IsPointerType(rtype)) {
                 if (expr->d.ival == '-') {
                     return ast_type_long;
@@ -3146,10 +3149,10 @@ CompatibleTypes(AST *A, AST *B)
 {
     bool isSpin = (curfunc != NULL && IsSpinLang(curfunc->language));
     bool skipfloats = isSpin;
-    
+
     A = RemoveTypeModifiers(A);
     B = RemoveTypeModifiers(B);
-    
+
     if (!A || (skipfloats && A->kind == AST_FLOATTYPE)) {
         A = ast_type_generic;
     }
@@ -3189,7 +3192,7 @@ CompatibleTypes(AST *A, AST *B)
         }
         return CompatibleTypes(B->left, A);
     }
-    
+
     if (A->kind == AST_INTTYPE || A->kind == AST_UNSIGNEDTYPE || A->kind == AST_GENERICTYPE) {
         if (B->kind == AST_INTTYPE || B->kind == AST_UNSIGNEDTYPE || B->kind == AST_GENERICTYPE) {
             return true;
@@ -3235,7 +3238,7 @@ CompatibleTypes(AST *A, AST *B)
         if (IsVoidType(rawtypeA))
             return 1;
         if (rawtypeA && typeB && CompatibleTypes(rawtypeA, typeB)
-            && TypeSize(rawtypeA) == TypeSize(typeB))
+                && TypeSize(rawtypeA) == TypeSize(typeB))
         {
             return 1;
         }
@@ -3348,7 +3351,7 @@ IsStringConst(AST *expr)
                 val = expr->left;
                 if (!val) return false;
                 if (val->kind != AST_STRING
-                    && !IsConstExpr(val))
+                        && !IsConstExpr(val))
                 {
                     return false;
                 }
@@ -3475,7 +3478,7 @@ CleanupType(AST *typ)
 {
     AST *idx;
     int n;
-    
+
     if (!typ) return typ;
     switch (typ->kind) {
     case AST_ARRAYTYPE:
@@ -3511,7 +3514,7 @@ BuildExprlistFromObject(AST *origexpr, AST *typ)
     ASTReportInfo saveinfo;
     AST *expr = origexpr;
     AST **exprptr = NULL;
-    
+
     int i;
     int n;
 
@@ -3677,7 +3680,7 @@ FixupInitList(AST *type, AST *initval)
     AST **astarr = 0;
     int curelem;
     AST *origtype = type;
-    
+
     if (!initval) {
         return initval;
     }
@@ -3691,7 +3694,7 @@ FixupInitList(AST *type, AST *initval)
     if (initval->kind != AST_EXPRLIST) {
         initval = NewAST(AST_EXPRLIST, initval, NULL);
     }
-    
+
     type = RemoveTypeModifiers(type);
     switch(type->kind) {
     case AST_ARRAYTYPE:
@@ -3703,7 +3706,7 @@ FixupInitList(AST *type, AST *initval)
            we need to convert this to { {1, 2, 3}, {4, 5, 6} }
         */
         if ( (IsArrayType(type) || IsClassType(type) ) && initval->left && initval->left->kind != AST_EXPRLIST
-             && !(initval->left->kind == AST_STRINGPTR && IsArrayType(type)) ) {
+                && !(initval->left->kind == AST_STRINGPTR && IsArrayType(type)) ) {
             AST *rawlist = initval;
             AST *item;
             initval = NULL;
@@ -3891,7 +3894,7 @@ const char *TypeName(AST *typ)
     int isUnsigned = 0;
     AST *nexttyp;
     int needMore = 0;
-    
+
     buf[0] = 0;
     if (!typ) {
         return "generic type";
@@ -3945,7 +3948,7 @@ const char *TypeName(AST *typ)
             break;
         case AST_UNSIGNEDTYPE:
             isUnsigned = 1;
-            /* fall through */
+        /* fall through */
         case AST_INTTYPE:
             size = EvalPasmExpr(typ->left);
             switch (size) {

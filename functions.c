@@ -137,7 +137,7 @@ EnterVariable(int kind, SymbolTable *stab, AST *astname, AST *type, unsigned sym
         ERROR(astname, "Internal error, bad identifier");
         return NULL;
     }
-    
+
     sym = AddSymbolPlaced(stab, name, kind, (void *)type, username, astname);
     if (!sym) {
         // ignore duplicate definitions for SYM_TEMPVAR
@@ -151,7 +151,7 @@ EnterVariable(int kind, SymbolTable *stab, AST *astname, AST *type, unsigned sym
         if (current && current != systemModule) {
             int warn_flags = curfunc ? curfunc->warn_flags : gl_warn_flags;
             if ( (warn_flags & WARN_HIDE_MEMBERS)
-                 || ( (warn_flags & WARN_LANG_EXTENSIONS) && current->curLanguage == LANG_SPIN_SPIN2 ) )
+                    || ( (warn_flags & WARN_LANG_EXTENSIONS) && current->curLanguage == LANG_SPIN_SPIN2 ) )
             {
                 Symbol *sym2;
                 switch (kind) {
@@ -216,7 +216,7 @@ EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offse
     int size;
     int typesize;
     ASTReportInfo saveinfo;
-    
+
     for (lower = varlist; lower; lower = lower->right) {
         if (lower->kind == AST_LISTHOLDER) {
             ast = lower->left;
@@ -236,7 +236,7 @@ EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offse
                 // keep things in registers, generally
                 if (typesize < 4) typesize = 4;
             }
-            
+
             if (!ast) {
                 ast = AstTempIdentifier("_param_");
             }
@@ -255,7 +255,7 @@ EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offse
                 // a type with no associated variable
                 actualtype = ast;
                 ast = AstTempIdentifier("_param_");
-                // fall through
+            // fall through
             case AST_VARARGS:
             case AST_IDENTIFIER:
             case AST_LOCAL_IDENTIFIER:
@@ -298,7 +298,7 @@ EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offse
             }
             default:
                 /* this may be a type with no variable */
-                
+
                 ERROR(ast, "Internal error, bad AST value %d", ast->kind);
                 break;
             }
@@ -323,10 +323,10 @@ DeclareFunction(Module *P, AST *rettype, int is_public, AST *funcdef, AST *body,
     AST *holder;
     AST *funcdecl;
     AST *retinfoholder;
-    
+
     holder = NewAST(AST_FUNCHOLDER, funcdef, body);
     holder->d.ival = P->curLanguage;
-    
+
     funcblock = NewAST(is_public ? AST_PUBFUNC : AST_PRIFUNC, holder, annotation);
     funcblock->d.ptr = (void *)comment;
     funcblock = NewAST(AST_LISTHOLDER, funcblock, NULL);
@@ -398,7 +398,7 @@ GuessLambdaReturnType(AST *params, AST *body)
 {
     AST *expr;
     AST *r;
-    
+
     if (body->kind == AST_STMTLIST) {
         // look for a return statement
         while (body && body->right != NULL && body->right->kind == AST_STMTLIST) {
@@ -423,7 +423,7 @@ GuessLambdaReturnType(AST *params, AST *body)
         SymbolTable *table = (SymbolTable *)calloc(1, sizeof(SymbolTable));
         table->next = &curfunc->localsyms;
         EnterVars(SYM_PARAMETER, table, NULL, params, 0, 0, 0);
-        
+
         r = ExprTypeRelative(table, expr, NULL);
         free(table);
     }
@@ -440,7 +440,7 @@ UndoLocalIdentifier(AST *body, AST *ident)
         return;
     }
     if (body->kind == AST_LOCAL_IDENTIFIER
-        && !strcmp(body->left->d.string, ident->left->d.string))
+            && !strcmp(body->left->d.string, ident->left->d.string))
     {
         body->kind = AST_IDENTIFIER;
         body->d.string = ident->right->d.string;
@@ -500,7 +500,7 @@ AddInitializers(AST *seq, AST *ident, AST *expr, AST *basetype)
             AST *tmpname = AstTempIdentifier("_init_");
             AST *tmpvar = NewAST(AST_ASSIGN, tmpname, expr);
             DeclareOneGlobalVar(current, tmpvar, basetype, 1);
-            
+
             params = NewAST(AST_EXPRLIST,
                             NewAST(AST_ABSADDROF, ident, NULL),
                             NewAST(AST_EXPRLIST, NewAST(AST_ABSADDROF, tmpname, NULL),
@@ -521,12 +521,12 @@ AddInitializers(AST *seq, AST *ident, AST *expr, AST *basetype)
             ERROR(expr, "Copying %d bytes to array which has only %d bytes space\n", srclen, dstlen);
         }
         params = NewAST(AST_EXPRLIST,
-                       ident,
-                       NewAST(AST_EXPRLIST,
-                              expr, NULL));
+                        ident,
+                        NewAST(AST_EXPRLIST,
+                               expr, NULL));
         assign = NewAST(AST_FUNCCALL,
-                     AstIdentifier("__builtin_strcpy"),
-                     params);
+                        AstIdentifier("__builtin_strcpy"),
+                        params);
         seq = AddToList(seq, NewAST(AST_SEQUENCE, assign, NULL));
         AstReportDone(&saveinfo);
         return seq;
@@ -609,7 +609,7 @@ AddInitializers(AST *seq, AST *ident, AST *expr, AST *basetype)
 //
 
 //
-// FIXME: someday we should implement scopes other 
+// FIXME: someday we should implement scopes other
 // than function scope
 //
 static void
@@ -625,7 +625,7 @@ findLocalsAndDeclare(Function *func, AST *ast)
     AST *arrayinfo = NULL;
     int kind;
     bool skipDef;
-    
+
     if (!ast) return;
     kind = ast->kind;
     switch(kind) {
@@ -695,7 +695,7 @@ findLocalsAndDeclare(Function *func, AST *ast)
                 skipDef = false;
             }
             if (!skipDef && basetype && basetype->kind == AST_FUNCTYPE
-                && IsCLang(func->language))
+                    && IsCLang(func->language))
             {
                 // ignore definitions of global functions and such
                 // complication: since it's a local variable we've defined
@@ -752,7 +752,7 @@ findLocalsAndDeclare(Function *func, AST *ast)
             C->objsyms.next = &Parent->objsyms;
             Parent->subclasses = C;
             C->superclass = Parent;
-            
+
             // we have to mark the global bytemove and _gc_alloc_managed functions
             // as in used
             MarkSystemFuncUsed("_gc_alloc_managed");
@@ -765,7 +765,7 @@ findLocalsAndDeclare(Function *func, AST *ast)
             AST *fbody = ast->right;
             AST *name = AstIdentifier(NewTemporaryVariable("func_", NULL));
             AST *ptrref;
-            
+
             // check for the return type; we may have to infer this
             if (!ftype->left) {
                 ftype->left = GuessLambdaReturnType(ftype->right, fbody);
@@ -812,15 +812,15 @@ AdjustParameterTypes(AST *paramlist, int lang)
 {
     AST *param;
     AST *type;
-    
+
     while (paramlist) {
         param = paramlist->left;
         if (param->kind == AST_DECLARE_VAR) {
             type = param->left;
             if ( (IsArrayType(type) && (IsCLang(lang) || IsBasicLang(lang)))
-		 || (IsClassType(type) && (IsBasicLang(lang) || IsPythonLang(lang)) )
-	       )
-	    {
+                    || (IsClassType(type) && (IsBasicLang(lang) || IsPythonLang(lang)) )
+               )
+            {
                 type = BaseType(type);
                 type = NewAST(AST_PTRTYPE, type, NULL);
                 param->left = type;
@@ -857,7 +857,7 @@ doDeclareFunction(AST *funcblock)
     AST *oldtype = NULL;
     Symbol *sym;
     int is_cog;
-    
+
     is_public = (funcblock->kind == AST_PUBFUNC);
     holder = funcblock->left;
     annotation = funcblock->right;
@@ -866,7 +866,7 @@ doDeclareFunction(AST *funcblock)
     comment = (AST *)funcblock->d.ptr;
 
     language = holder->d.ival;
-    
+
     if (funcdef->kind != AST_FUNCDEF || funcdef->left->kind != AST_FUNCDECL) {
         ERROR(funcdef, "Internal error, bad function definition");
         return NULL;
@@ -922,7 +922,7 @@ doDeclareFunction(AST *funcblock)
         }
         sym->module = current;
     }
-    
+
     if (FindAnnotation(annotation, "constructor")) fdef->attributes |= FUNC_ATTR_CONSTRUCTOR;
     if (FindAnnotation(annotation, "destructor"))  fdef->attributes |= FUNC_ATTR_DESTRUCTOR;
     if (FindAnnotation(annotation, "needsinit"))   fdef->attributes |= FUNC_ATTR_NEEDSINIT;
@@ -1004,7 +1004,7 @@ doDeclareFunction(AST *funcblock)
             }
         }
     }
-    
+
     fdef->name = funcname_internal;
     fdef->user_name = funcname_user;
     fdef->annotations = annotation;
@@ -1100,12 +1100,12 @@ doDeclareFunction(AST *funcblock)
     fdef->locals = vars->right;
     /* and into the parameter list */
     fdef->overalltype->right = fdef->params;
-    
+
     /* set up default values for parameters, if any present */
     {
         AST *a, *p;
         AST *defval;
-        
+
         defparams = NULL;
         for (a = fdef->params; a; a = a->right) {
             AST **aptr = &a->left;
@@ -1153,7 +1153,7 @@ doDeclareFunction(AST *funcblock)
             }
         }
     }
-    
+
     fdef->numlocals = EnterVars(SYM_LOCALVAR, &fdef->localsyms, NULL, fdef->locals, 0, 0, 0) / LONG_SIZE;
 
     // if there are default values for the parameters, use those to initialize
@@ -1216,7 +1216,7 @@ doDeclareFunction(AST *funcblock)
         superclass = AstIdentifier("__super");
         superclass = NewAST(AST_DECLARE_VAR,
                             NewAST(AST_PTRTYPE,
-                                   ClassType(fdef->module), 
+                                   ClassType(fdef->module),
                                    NULL),
                             superclass);
         AddClosureSymbol(fdef, fdef->closure, superclass);
@@ -1243,13 +1243,13 @@ DeclareFunctions(Module *P)
 
 /*
  * convert lookup/lookdown into a case statement
- * lookdown(i : a, b, c..d, e) -> 
+ * lookdown(i : a, b, c..d, e) ->
  *      case i
  *        a: r := 1
  *        b: r := 2
  *        c..d: r:= 3+(i-c)
  *        e: r := 4+(d-c)
- * lookup(i : a, b, c..d, e) -> 
+ * lookup(i : a, b, c..d, e) ->
  *      case i
  *        1: r := a
  *        2: r := b
@@ -1318,7 +1318,7 @@ LookupAsCase(AST *top)
     AST *one = AstInteger(1);
     int isLookup = top->kind == AST_LOOKUP;
     AST *newvar = NULL;
-    
+
     if (!IsIdentifier(lookvar)) {
         newvar = AstTempVariable("_look_");
         AddLocalVariable(curfunc, newvar, NULL, SYM_LOCALVAR);
@@ -1361,7 +1361,7 @@ ModifyLookup(AST *top)
     AST *id;
     AST *decl;
     int badlen = 0;
-    
+
     ev = top->left;
     table = top->right;
     if (table->kind == AST_TEMPARRAYUSE) {
@@ -1439,7 +1439,7 @@ NormalizeFunc(AST *ast, Function *func)
 {
     AST *ldecl;
     AST *rdecl;
-    
+
     if (!ast)
         return NULL;
 
@@ -1516,7 +1516,7 @@ NormalizeFunc(AST *ast, Function *func)
         if (func->result_declared) {
             func->result_used = 1;
         }
-        /* otherwise, fall through */
+    /* otherwise, fall through */
     default:
         ldecl = NormalizeFunc(ast->left, func);
         rdecl = NormalizeFunc(ast->right, func);
@@ -1546,7 +1546,7 @@ AddLocalVariable(Function *func, AST *var, AST *vartype, int symtype)
 {
     AST *varlist = NewAST(AST_LISTHOLDER, var, NULL);
     int numlongs;
-    
+
     if (!vartype) {
         vartype = ast_type_long;
     }
@@ -1563,8 +1563,12 @@ AddLocalVariable(Function *func, AST *var, AST *vartype, int symtype)
     }
 }
 
-int  GetTempStack(void) { return curfunc->local_var_counter; }
-void SetTempStack(int n) { curfunc->local_var_counter = n; }
+int  GetTempStack(void) {
+    return curfunc->local_var_counter;
+}
+void SetTempStack(int n) {
+    curfunc->local_var_counter = n;
+}
 
 AST *
 AstTempLocalVariable(const char *prefix, AST *type)
@@ -1595,7 +1599,7 @@ TransformCaseExprList(AST *var, AST *ast)
     AST *node = NULL;
     ASTReportInfo saveinfo;
     AST *result;
-    
+
     while (ast) {
         AstReportAs(ast, &saveinfo);
         if (ast->kind == AST_OTHER) {
@@ -1612,7 +1616,8 @@ TransformCaseExprList(AST *var, AST *ast)
             while ( (c = *sptr++) != 0) {
                 char *newStr = (char *)malloc(2);
                 AST *strNode;
-                newStr[0] = c; newStr[1] = 0;
+                newStr[0] = c;
+                newStr[1] = 0;
                 strNode = NewAST(AST_STRING, NULL, NULL);
                 strNode->d.string = newStr;
                 node = AstOperator(K_EQ, var, strNode);
@@ -1828,7 +1833,7 @@ CheckRetStatement(Function *func, AST *ast)
 {
     int sawreturn = 0;
     AST *lhs, *rhs;
-    
+
     if (!ast) return 0;
     switch (ast->kind) {
     case AST_COMMENTEDNODE:
@@ -1954,14 +1959,14 @@ ExpandArguments(AST *sendptr, AST *args)
                 /* ignore sequence like (f(x),0), which we
                    generated before for a void f; just do f(x) */
                 if (arg->left && arg->left->kind == AST_FUNCCALL
-                    && arg->right && arg->right->kind == AST_INTEGER
-                    && arg->right->d.ival == 0
-                    && ExprType(arg->left) == ast_type_void)
+                        && arg->right && arg->right->kind == AST_INTEGER
+                        && arg->right->d.ival == 0
+                        && ExprType(arg->left) == ast_type_void)
                 {
                     call = arg->left;
                     break;
                 }
-                /* otherwise fall through */
+            /* otherwise fall through */
             default:
                 call = NewAST(AST_FUNCCALL, sendptr,
                               NewAST(AST_EXPRLIST, arg, NULL));
@@ -2103,11 +2108,11 @@ CheckFunctionCalls(AST *ast)
                 AST *assign;
                 AST *newparams;
                 AST *exprlist;
-                
-		if (n > MAX_TUPLE) {
-		  ERROR(ast, "argument too large to pass on stack");
-		  n = MAX_TUPLE-1;
-		}
+
+                if (n > MAX_TUPLE) {
+                    ERROR(ast, "argument too large to pass on stack");
+                    n = MAX_TUPLE-1;
+                }
                 // many backends need the results placed in temporaries
                 for (i = 0; i < n; i++) {
                     temps[i] = AstTempLocalVariable("_parm_", NULL);
@@ -2118,7 +2123,7 @@ CheckFunctionCalls(AST *ast)
                 // create an initialization for the temps
                 exprlist = a->left;
                 typ = ExprType(a->left);
-                
+
                 if (IsIdentifier(exprlist)) {
                     AST *temp;
                     AST *id = exprlist;
@@ -2196,11 +2201,14 @@ CheckFunctionCalls(AST *ast)
             if (gotArgs != expectArgs) {
                 if (ast->left == basic_print_integer) {
                     if (gotArgs - expectArgs == 1) {
-                        ast->left = basic_print_integer_2; goto func_ok;
+                        ast->left = basic_print_integer_2;
+                        goto func_ok;
                     } else if (gotArgs - expectArgs == 2) {
-                        ast->left = basic_print_integer_3; goto func_ok;
+                        ast->left = basic_print_integer_3;
+                        goto func_ok;
                     } else if (gotArgs - expectArgs == 3) {
-                        ast->left = basic_print_integer_4; goto func_ok;
+                        ast->left = basic_print_integer_4;
+                        goto func_ok;
                     }
                 }
                 if (f && IsCLang(f->language)) {
@@ -2214,7 +2222,7 @@ CheckFunctionCalls(AST *ast)
                 return;
             }
         }
-    func_ok:
+func_ok:
         if (initseq) {
             // modify the ast to hold the sequence and then the function call
             initseq = NewAST(AST_SEQUENCE, initseq,
@@ -2224,7 +2232,7 @@ CheckFunctionCalls(AST *ast)
             ast->right = NULL;
         }
     }
-skipcheck:    
+skipcheck:
     CheckFunctionCalls(ast->left);
     CheckFunctionCalls(ast->right);
     AstReportDone(&saveinfo);
@@ -2241,7 +2249,7 @@ ProcessOneFunc(Function *pf)
     Function *savefunc;
     AST *decls;
     int last_errors = gl_errors;
-    
+
     if (pf->lang_processed)
         return;
     if (pf->body) {
@@ -2264,7 +2272,7 @@ ProcessOneFunc(Function *pf)
     }
 
     if (last_errors != gl_errors && gl_errors >= gl_max_errors) return;
-    
+
     CheckRecursive(pf);  /* check for recursive functions */
     decls = NormalizeFunc(pf->body, pf);
     pf->extradecl = AddToList(pf->extradecl, decls);
@@ -2315,9 +2323,9 @@ ProcessOneFunc(Function *pf)
             pf->body = AddToList(pf->body, retstmt);
         }
     }
-    
+
     CheckFunctionCalls(pf->body);
-        
+
     pf->lang_processed = 1;
     current = savecurrent;
     curfunc = savefunc;
@@ -2329,81 +2337,81 @@ ProcessOneFunc(Function *pf)
 static int
 InferTypesStmtList(AST *list)
 {
-  int changes = 0;
-  if (list && (list->kind == AST_STRING || list->kind == AST_BYTECODE)) {
-      return 0;
-  }
-  while (list) {
-    if (list->kind != AST_STMTLIST) {
-      ERROR(list, "Internal error, expected statement list");
-      return 0;
+    int changes = 0;
+    if (list && (list->kind == AST_STRING || list->kind == AST_BYTECODE)) {
+        return 0;
     }
-    changes |= InferTypesStmt(list->left);
-    list = list->right;
-  }
-  return changes;
+    while (list) {
+        if (list->kind != AST_STMTLIST) {
+            ERROR(list, "Internal error, expected statement list");
+            return 0;
+        }
+        changes |= InferTypesStmt(list->left);
+        list = list->right;
+    }
+    return changes;
 }
 
 static int
 InferTypesStmt(AST *ast)
 {
-  AST *sub;
-  int changes = 0;
+    AST *sub;
+    int changes = 0;
 
-  if (!ast) return 0;
-  switch(ast->kind) {
-  case AST_COMMENTEDNODE:
-    return InferTypesStmt(ast->left);
-  case AST_ANNOTATION:
-    return 0;
-  case AST_RETURN:
-    sub = ast->left;
-    if (!sub) {
-      sub = curfunc->resultexpr;
+    if (!ast) return 0;
+    switch(ast->kind) {
+    case AST_COMMENTEDNODE:
+        return InferTypesStmt(ast->left);
+    case AST_ANNOTATION:
+        return 0;
+    case AST_RETURN:
+        sub = ast->left;
+        if (!sub) {
+            sub = curfunc->resultexpr;
+        }
+        if (sub && sub->kind != AST_TUPLE_TYPE && sub->kind != AST_EXPRLIST) {
+            changes = InferTypesExpr(sub, GetFunctionReturnType(curfunc));
+        }
+        return changes;
+    case AST_IF:
+        changes += InferTypesExpr(ast->left, NULL);
+        ast = ast->right;
+        if (ast->kind == AST_COMMENTEDNODE) {
+            ast = ast->left;
+        }
+        changes += InferTypesStmtList(ast->left);
+        changes += InferTypesStmtList(ast->right);
+        return changes;
+    case AST_WHILE:
+    case AST_DOWHILE:
+        changes += InferTypesExpr(ast->left, NULL);
+        changes += InferTypesStmtList(ast->right);
+        return changes;
+    case AST_FOR:
+    case AST_FORATLEASTONCE:
+        changes += InferTypesExpr(ast->left, NULL);
+        ast = ast->right;
+        changes += InferTypesExpr(ast->left, NULL);
+        ast = ast->right;
+        changes += InferTypesExpr(ast->left, NULL);
+        changes += InferTypesStmtList(ast->right);
+        return changes;
+    case AST_STMTLIST:
+        return InferTypesStmtList(ast);
+    case AST_SEQUENCE:
+        changes += InferTypesStmt(ast->left);
+        changes += InferTypesStmt(ast->right);
+        return changes;
+    case AST_ASSIGN:
+    default:
+        return InferTypesExpr(ast, NULL);
     }
-    if (sub && sub->kind != AST_TUPLE_TYPE && sub->kind != AST_EXPRLIST) {
-        changes = InferTypesExpr(sub, GetFunctionReturnType(curfunc));
-    }
-    return changes;
-  case AST_IF:
-    changes += InferTypesExpr(ast->left, NULL);
-    ast = ast->right;
-    if (ast->kind == AST_COMMENTEDNODE) {
-      ast = ast->left;
-    }
-    changes += InferTypesStmtList(ast->left);
-    changes += InferTypesStmtList(ast->right);
-    return changes;
-  case AST_WHILE:
-  case AST_DOWHILE:
-    changes += InferTypesExpr(ast->left, NULL);
-    changes += InferTypesStmtList(ast->right);
-    return changes;
-  case AST_FOR:
-  case AST_FORATLEASTONCE:
-    changes += InferTypesExpr(ast->left, NULL);
-    ast = ast->right;
-    changes += InferTypesExpr(ast->left, NULL);
-    ast = ast->right;
-    changes += InferTypesExpr(ast->left, NULL);
-    changes += InferTypesStmtList(ast->right);
-    return changes;
-  case AST_STMTLIST:
-    return InferTypesStmtList(ast);
-  case AST_SEQUENCE:
-    changes += InferTypesStmt(ast->left);
-    changes += InferTypesStmt(ast->right);
-    return changes;
-  case AST_ASSIGN:
-  default:
-    return InferTypesExpr(ast, NULL);
-  }
 }
 
 static AST *
 PtrType(AST *base)
 {
-  return NewAST(AST_PTRTYPE, base, NULL);
+    return NewAST(AST_PTRTYPE, base, NULL);
 }
 
 static AST *
@@ -2417,29 +2425,29 @@ WidenType(AST *newType)
 static int
 SetSymbolType(Symbol *sym, AST *newType)
 {
-  AST *oldType = NULL;
-  if (!newType) return 0;
-  if (!sym) return 0;
-  if (!gl_infer_ctypes) return 0;
-  
-  switch(sym->kind) {
-  case SYM_VARIABLE:
-  case SYM_LOCALVAR:
-  case SYM_PARAMETER:
-    oldType = (AST *)sym->v.ptr;
-    if (oldType) {
-      // FIXME: could warn here about type mismatches
-      return 0;
-    } else if (newType) {
-        // if we had an unknown type before, the new type must be at least
-        // 4 bytes wide
-        sym->v.ptr = WidenType(newType);
-        return 1;
+    AST *oldType = NULL;
+    if (!newType) return 0;
+    if (!sym) return 0;
+    if (!gl_infer_ctypes) return 0;
+
+    switch(sym->kind) {
+    case SYM_VARIABLE:
+    case SYM_LOCALVAR:
+    case SYM_PARAMETER:
+        oldType = (AST *)sym->v.ptr;
+        if (oldType) {
+            // FIXME: could warn here about type mismatches
+            return 0;
+        } else if (newType) {
+            // if we had an unknown type before, the new type must be at least
+            // 4 bytes wide
+            sym->v.ptr = WidenType(newType);
+            return 1;
+        }
+    default:
+        break;
     }
-  default:
-    break;
-  }
-  return 0;
+    return 0;
 }
 
 static int
@@ -2457,7 +2465,7 @@ InferTypesFunccall(AST *callast)
     list = callast->right;
     sym = FindCalledFuncSymbol(callast, NULL, 0);
     if (!sym || sym->kind != SYM_FUNCTION) return 0;
-    
+
     func = (Function *)sym->v.ptr;
     typelist = func->params;
     while (list) {
@@ -2492,69 +2500,69 @@ InferTypesFunccall(AST *callast)
 static int
 InferTypesExpr(AST *expr, AST *expectType)
 {
-  int changes = 0;
-  Symbol *sym;
-  AST *lhsType;
-  if (!expr) return 0;
-  switch(expr->kind) {
-  case AST_IDENTIFIER:
+    int changes = 0;
+    Symbol *sym;
+    AST *lhsType;
+    if (!expr) return 0;
+    switch(expr->kind) {
+    case AST_IDENTIFIER:
         lhsType = ExprType(expr);
         if (lhsType == NULL && expectType != NULL) {
-          sym = LookupSymbol(expr->d.string);
-          changes = SetSymbolType(sym, expectType);
-      }
-      return changes;
-  case AST_MEMREF:
-      return InferTypesExpr(expr->right, PtrType(expr->left));
-  case AST_OPERATOR:
-      switch (expr->d.ival) {
-      case K_INCREMENT:
-      case K_DECREMENT:
-      case '+':
-      case '-':
-          if (expectType) {
-              if (IsPointerType(expectType) && PointerTypeIncrement(expectType) != 1) {
-                  // addition only works right on pointers of size 1
-                  expectType = ast_type_generic; // force generic type
-              } else if (!IsIntOrGenericType(expectType)) {
-                  expectType = ast_type_generic;
-              }
-          }
-          changes = InferTypesExpr(expr->left, expectType);
-          changes += InferTypesExpr(expr->right, expectType);
-          return changes;
-      default:
-          if (!expectType || !IsIntOrGenericType(expectType)) {
-              expectType = ast_type_long;
-          }
-          changes = InferTypesExpr(expr->left, expectType);
-          changes += InferTypesExpr(expr->right, expectType);
-          return changes;
-      }
+            sym = LookupSymbol(expr->d.string);
+            changes = SetSymbolType(sym, expectType);
+        }
+        return changes;
+    case AST_MEMREF:
+        return InferTypesExpr(expr->right, PtrType(expr->left));
+    case AST_OPERATOR:
+        switch (expr->d.ival) {
+        case K_INCREMENT:
+        case K_DECREMENT:
+        case '+':
+        case '-':
+            if (expectType) {
+                if (IsPointerType(expectType) && PointerTypeIncrement(expectType) != 1) {
+                    // addition only works right on pointers of size 1
+                    expectType = ast_type_generic; // force generic type
+                } else if (!IsIntOrGenericType(expectType)) {
+                    expectType = ast_type_generic;
+                }
+            }
+            changes = InferTypesExpr(expr->left, expectType);
+            changes += InferTypesExpr(expr->right, expectType);
+            return changes;
+        default:
+            if (!expectType || !IsIntOrGenericType(expectType)) {
+                expectType = ast_type_long;
+            }
+            changes = InferTypesExpr(expr->left, expectType);
+            changes += InferTypesExpr(expr->right, expectType);
+            return changes;
+        }
 #if 0
-  case AST_ASSIGN:
-      lhsType = ExprType(expr->left);
-      if (!expectType) expectType = ExprType(expr->right);
-      if (!lhsType && expectType) {
-          changes += InferTypesExpr(expr->left, expectType);
-      } else {
-          expectType = lhsType;
-      }
-      changes += InferTypesExpr(expr->right, expectType);
-      return changes;
+    case AST_ASSIGN:
+        lhsType = ExprType(expr->left);
+        if (!expectType) expectType = ExprType(expr->right);
+        if (!lhsType && expectType) {
+            changes += InferTypesExpr(expr->left, expectType);
+        } else {
+            expectType = lhsType;
+        }
+        changes += InferTypesExpr(expr->right, expectType);
+        return changes;
 #endif
-  case AST_FUNCCALL:
-      changes += InferTypesFunccall(expr);
-      return changes;
-  case AST_ADDROF:
-  case AST_ABSADDROF:
-      expectType = NULL; // forget what we were expecting
-      // fall through
-  default:
-      changes = InferTypesExpr(expr->left, expectType);
-      changes += InferTypesExpr(expr->right, expectType);
-      return changes;
-  }
+    case AST_FUNCCALL:
+        changes += InferTypesFunccall(expr);
+        return changes;
+    case AST_ADDROF:
+    case AST_ABSADDROF:
+        expectType = NULL; // forget what we were expecting
+    // fall through
+    default:
+        changes = InferTypesExpr(expr->left, expectType);
+        changes += InferTypesExpr(expr->right, expectType);
+        return changes;
+    }
 }
 
 /*
@@ -2593,7 +2601,7 @@ InferTypes(Module *P)
     Function *pf;
     int changes = 0;
     Function *savecur = curfunc;
-    
+
     /* scan for static definitions */
     current = P;
     for (pf = P->functions; pf; pf = pf->next) {
@@ -2662,11 +2670,16 @@ static int
 NonUnsignedOp(int val)
 {
     switch(val) {
-    case K_LEU: return K_LE;
-    case K_GEU: return K_GE;
-    case K_LTU: return '<';
-    case K_GTU: return '>';
-    default: return val;
+    case K_LEU:
+        return K_LE;
+    case K_GEU:
+        return K_GE;
+    case K_LTU:
+        return '<';
+    case K_GTU:
+        return '>';
+    default:
+        return val;
     }
 }
 
@@ -2674,16 +2687,23 @@ static int
 NonFloatOp(int val)
 {
     switch(val) {
-    case K_FEQ: return K_EQ;
-    case K_FNE: return K_NE;
-    case K_FLE: return K_LE;
-    case K_FGE: return K_GE;
-    case K_FLT: return '<';
-    case K_FGT: return '>';
-    default: return val;
+    case K_FEQ:
+        return K_EQ;
+    case K_FNE:
+        return K_NE;
+    case K_FLE:
+        return K_LE;
+    case K_FGE:
+        return K_GE;
+    case K_FLT:
+        return '<';
+    case K_FGT:
+        return '>';
+    default:
+        return val;
     }
 }
-        
+
 static void
 MarkUsedBody(AST *body, const char *caller)
 {
@@ -2692,7 +2712,7 @@ MarkUsedBody(AST *body, const char *caller)
     AST *objtype;
     Module *P;
     const char *name;
-    
+
     if (!body) return;
     switch(body->kind) {
     case AST_FLOAT:
@@ -2812,25 +2832,25 @@ MarkUsedBody(AST *body, const char *caller)
             *body = *ConvertInternal(body, "_qfrac", body->left, body->right, NULL);
             break;
         case '?':
-            {
-                AST *var;
-                AST *fcall;
-                if (body->left) {
-                    var = body->left;
-                    fcall = ConvertInternal(body, "_lfsr_forward", var, NULL, NULL);
-                } else {
-                    var = body->right;
-                    fcall = ConvertInternal(body, "_lfsr_backward", var, NULL, NULL);
-                }
-                if (body != fcall) {
-                    // only do this if ConvertInternal actually changed us
-                    *body = *AstAssign(var, fcall);
-                }
+        {
+            AST *var;
+            AST *fcall;
+            if (body->left) {
+                var = body->left;
+                fcall = ConvertInternal(body, "_lfsr_forward", var, NULL, NULL);
+            } else {
+                var = body->right;
+                fcall = ConvertInternal(body, "_lfsr_backward", var, NULL, NULL);
             }
-            break;
-            /* on some platforms, some unsigned operations are done in software */
-            /* NOTE: ConvertInternal will return the original AST if the specified function is not found,
-               so we can easily disable these conversions by deleting them from the appropriate file in sys/ */
+            if (body != fcall) {
+                // only do this if ConvertInternal actually changed us
+                *body = *AstAssign(var, fcall);
+            }
+        }
+        break;
+        /* on some platforms, some unsigned operations are done in software */
+        /* NOTE: ConvertInternal will return the original AST if the specified function is not found,
+           so we can easily disable these conversions by deleting them from the appropriate file in sys/ */
         case K_UNS_DIV:
             *body = *ConvertInternal(body, "_unsigned_div", body->left, body->right, NULL);
             break;
@@ -2925,7 +2945,7 @@ MarkUsed(Function *f, const char *caller)
 {
     Module *oldcurrent;
     Function *oldfunc;
-    
+
     if (!f || f->callSites > CALLSITES_MANY) {
         return;
     }
@@ -2990,7 +3010,7 @@ IsCalledFrom(Function *ref, AST *body, int visitRef)
     Symbol *sym;
     Function *func;
     bool result;
-    
+
     if (!body) return false;
     switch(body->kind) {
     case AST_FUNCCALL:
@@ -3030,7 +3050,7 @@ IsCalledFrom(Function *ref, AST *body, int visitRef)
         }
     default:
         return IsCalledFrom(ref, body->left, visitRef)
-            || IsCalledFrom(ref, body->right, visitRef);
+               || IsCalledFrom(ref, body->right, visitRef);
         break;
     }
     return false;
@@ -3056,10 +3076,10 @@ DeclareFunctionTemplate(Module *P, AST *templ)
     /* templ->right->right->left is the name */
     ident = templ->right->right->left;
     if (ident->kind == AST_LOCAL_IDENTIFIER) {
-      name_internal = ident->left->d.string;
-      name_user = ident->right->d.string;
+        name_internal = ident->left->d.string;
+        name_user = ident->right->d.string;
     } else if (ident->kind == AST_IDENTIFIER) {
-      name_internal = name_user = ident->d.string;
+        name_internal = name_user = ident->d.string;
     } else {
         ERROR(templ, "Internal error, no template name found");
         return;
@@ -3080,55 +3100,55 @@ DeclareFunctionTemplate(Module *P, AST *templ)
 static char *
 concatstr(const char *base, const char *suffix)
 {
-  int len = strlen(base) + strlen(suffix) + 1;
-  char *next = (char *)malloc(len);
-  strcpy(next, base);
-  strcat(next, suffix);
-  return next;
+    int len = strlen(base) + strlen(suffix) + 1;
+    char *next = (char *)malloc(len);
+    strcpy(next, base);
+    strcat(next, suffix);
+    return next;
 }
 
 static const char *
 appendType(const char *base, AST *typ)
 {
-  char buf[32];
-  Module *P;
-  if (!typ) return base;
-  switch (typ->kind) {
-  case AST_MODIFIER_CONST:
-  case AST_MODIFIER_VOLATILE:
-    return appendType(base, typ->left);
-  case AST_INTTYPE:
-    sprintf(buf, "i%" PRId64, EvalConstExpr(typ->left));
-    return concatstr(base, buf);
-  case AST_UNSIGNEDTYPE:
-    sprintf(buf, "u%" PRId64, EvalConstExpr(typ->left));
-    return concatstr(base, buf);
-  case AST_FLOATTYPE:
-    sprintf(buf, "f%" PRId64, EvalConstExpr(typ->left));
-    return concatstr(base, buf);
-  case AST_GENERICTYPE:
-    return concatstr(base, "g");
-  case AST_REFTYPE:
-  case AST_PTRTYPE:
-    base = concatstr(base, "p");
-    return appendType(base, typ->left);
-  case AST_FUNCTYPE:
-    base = concatstr(base, "m");
-    return appendType(base, typ->left);
-  case AST_ARRAYTYPE:
-    sprintf(buf, "a%" PRId64, EvalConstExpr(typ->right));
-    base = concatstr(base, buf);
-    return appendType(base, typ->left);
-  case AST_OBJECT:
-    P = GetClassPtr(typ);
-    sprintf(buf, "x%ld", (long)strlen(P->classname));
-    base = concatstr(base, buf);
-    base = concatstr(base, P->classname);
-    return base;
-  default:
-    ERROR(typ, "do not know how to express type");
-    return base;
-  }
+    char buf[32];
+    Module *P;
+    if (!typ) return base;
+    switch (typ->kind) {
+    case AST_MODIFIER_CONST:
+    case AST_MODIFIER_VOLATILE:
+        return appendType(base, typ->left);
+    case AST_INTTYPE:
+        sprintf(buf, "i%" PRId64, EvalConstExpr(typ->left));
+        return concatstr(base, buf);
+    case AST_UNSIGNEDTYPE:
+        sprintf(buf, "u%" PRId64, EvalConstExpr(typ->left));
+        return concatstr(base, buf);
+    case AST_FLOATTYPE:
+        sprintf(buf, "f%" PRId64, EvalConstExpr(typ->left));
+        return concatstr(base, buf);
+    case AST_GENERICTYPE:
+        return concatstr(base, "g");
+    case AST_REFTYPE:
+    case AST_PTRTYPE:
+        base = concatstr(base, "p");
+        return appendType(base, typ->left);
+    case AST_FUNCTYPE:
+        base = concatstr(base, "m");
+        return appendType(base, typ->left);
+    case AST_ARRAYTYPE:
+        sprintf(buf, "a%" PRId64, EvalConstExpr(typ->right));
+        base = concatstr(base, buf);
+        return appendType(base, typ->left);
+    case AST_OBJECT:
+        P = GetClassPtr(typ);
+        sprintf(buf, "x%ld", (long)strlen(P->classname));
+        base = concatstr(base, buf);
+        base = concatstr(base, P->classname);
+        return base;
+    default:
+        ERROR(typ, "do not know how to express type");
+        return base;
+    }
 }
 
 // determine the function name for a template
@@ -3137,113 +3157,113 @@ appendType(const char *base, AST *typ)
 
 const char *TemplateFuncName(AST *templpairs, const char *orig_base)
 {
-  AST *ast, *typ;
-  const char *base = concatstr(orig_base, "__");
-  while (templpairs) {
-    ast = templpairs->left;
-    templpairs = templpairs->right;
-    typ = ast->right;
-    base = appendType(base, typ);
-  }
-  return base;
+    AST *ast, *typ;
+    const char *base = concatstr(orig_base, "__");
+    while (templpairs) {
+        ast = templpairs->left;
+        templpairs = templpairs->right;
+        typ = ast->right;
+        base = appendType(base, typ);
+    }
+    return base;
 }
 
 static AST *matchType(AST *decl, AST *use, AST *var)
 {
-  if (decl->kind == AST_REFTYPE) {
-      decl = decl->left;
-  }
-  if (decl->kind == AST_IDENTIFIER) {
-    return use;
-  }
-  if (decl->kind == use->kind) {
-    return matchType(decl->left, use->left, var);
-  }
-  ERROR(decl, "Unable to match template variable %s", GetUserIdentifierName(var));
-  return ast_type_generic;
+    if (decl->kind == AST_REFTYPE) {
+        decl = decl->left;
+    }
+    if (decl->kind == AST_IDENTIFIER) {
+        return use;
+    }
+    if (decl->kind == use->kind) {
+        return matchType(decl->left, use->left, var);
+    }
+    ERROR(decl, "Unable to match template variable %s", GetUserIdentifierName(var));
+    return ast_type_generic;
 }
 
 // try to figure out the types required to instantiate a template
 // returns a list of pairs containing (template name, type)
 static AST *deduceTemplateTypes(AST *templateVars, AST *functype, AST *call)
 {
-  AST *funcparams = functype->right;
-  AST *callparams = call->right;
-  AST *typ;
-  AST *decltyp;
-  AST *var;
-  AST *ast, *templVar;
-  AST *q;
-  AST *pairs = NULL;
-  AST *thispair;
-  const char *templName;
-  
-  while (funcparams && callparams) {
-    var = funcparams->left;
-    if (var && var->kind == AST_DECLARE_VAR) {
-      decltyp = var->left;
-      // check for use of one of the template variables
-      for (ast = templateVars; ast; ast = ast->right) {
-	templVar = ast->left;
-	templName = GetIdentifierName(templVar);
-	if (AstUses(decltyp, templVar)) {
-	  typ = ExprType(callparams->left);
-	  typ = matchType(decltyp, typ, templVar);
-	  // now look for it in the list of pairs
-	  for (q = pairs; q; q = q->right) {
-	    thispair = q->left;
-	    if (AstMatch(thispair->left, templVar)) {
-	      // already found; verify the type
-	      if (!CompatibleTypes(thispair->right, typ)) {
-                  const char *name = NULL;
-                  if (call->kind == AST_FUNCCALL) {
-                      name = GetUserIdentifierName(call->left);
-                  }
-                  if (!name) {
-                      name = "function call";
-                  }
-                  ERROR(callparams, "Inconsistent types for template parameter %s in %s", templName, name);
-              }
-	      break;
-	    }
-	  }
-	  if (!q) {
-	    thispair = NewAST(AST_SEQUENCE, DupAST(templVar), typ);
-	    pairs = AddToList(pairs, NewAST(AST_LISTHOLDER, thispair, NULL));
-	  }
-	  break;
-	}
-      }
+    AST *funcparams = functype->right;
+    AST *callparams = call->right;
+    AST *typ;
+    AST *decltyp;
+    AST *var;
+    AST *ast, *templVar;
+    AST *q;
+    AST *pairs = NULL;
+    AST *thispair;
+    const char *templName;
+
+    while (funcparams && callparams) {
+        var = funcparams->left;
+        if (var && var->kind == AST_DECLARE_VAR) {
+            decltyp = var->left;
+            // check for use of one of the template variables
+            for (ast = templateVars; ast; ast = ast->right) {
+                templVar = ast->left;
+                templName = GetIdentifierName(templVar);
+                if (AstUses(decltyp, templVar)) {
+                    typ = ExprType(callparams->left);
+                    typ = matchType(decltyp, typ, templVar);
+                    // now look for it in the list of pairs
+                    for (q = pairs; q; q = q->right) {
+                        thispair = q->left;
+                        if (AstMatch(thispair->left, templVar)) {
+                            // already found; verify the type
+                            if (!CompatibleTypes(thispair->right, typ)) {
+                                const char *name = NULL;
+                                if (call->kind == AST_FUNCCALL) {
+                                    name = GetUserIdentifierName(call->left);
+                                }
+                                if (!name) {
+                                    name = "function call";
+                                }
+                                ERROR(callparams, "Inconsistent types for template parameter %s in %s", templName, name);
+                            }
+                            break;
+                        }
+                    }
+                    if (!q) {
+                        thispair = NewAST(AST_SEQUENCE, DupAST(templVar), typ);
+                        pairs = AddToList(pairs, NewAST(AST_LISTHOLDER, thispair, NULL));
+                    }
+                    break;
+                }
+            }
+        }
+        funcparams = funcparams->right;
+        callparams = callparams->right;
     }
-    funcparams = funcparams->right;
-    callparams = callparams->right;
-  }
-  return pairs;    
+    return pairs;
 }
 
 static AST *
 fixupFunctype(AST *pairs, AST *orig)
 {
-  AST *thispair;
-  AST *t;
-  if (!orig) return NULL;
-  switch (orig->kind) {
-  case AST_IDENTIFIER:
-    for (t = pairs; t; t = t->right)
-      {
-	thispair = t->left;
-	if (AstMatch(thispair->left, orig)) {
-	  return thispair->right;
-	}
-      }
-    // identifier was not found in the template list, so just return it
-    return orig;
-  default:
-    t = orig;
-    t->left = fixupFunctype(pairs, orig->left);
-    t->right = fixupFunctype(pairs, orig->right);
-    return t;
-  }
+    AST *thispair;
+    AST *t;
+    if (!orig) return NULL;
+    switch (orig->kind) {
+    case AST_IDENTIFIER:
+        for (t = pairs; t; t = t->right)
+        {
+            thispair = t->left;
+            if (AstMatch(thispair->left, orig)) {
+                return thispair->right;
+            }
+        }
+        // identifier was not found in the template list, so just return it
+        return orig;
+    default:
+        t = orig;
+        t->left = fixupFunctype(pairs, orig->left);
+        t->right = fixupFunctype(pairs, orig->right);
+        return t;
+    }
 }
 
 /* optimize template instantiations by evaluating constant "if" expressions */
@@ -3289,48 +3309,48 @@ ReduceTemplateConstants(AST *body)
 AST *
 InstantiateTemplateFunction(Module *P, AST *templ, AST *call)
 {
-  AST *templateVars = templ->left;
-  AST *ident;
-  AST *functype;
-  AST *body;
-  AST *pairs;
-  AST *funcblock;
-  const char *name;
-  Symbol *sym;
-  Module *savecur = current;
-  
-  templateVars = templ->left;
-  templ = templ->right;
-  functype = templ->left;
-  templ = templ->right;
-  ident = templ->left;
-  templ = templ->right;
-  body = templ->left;
+    AST *templateVars = templ->left;
+    AST *ident;
+    AST *functype;
+    AST *body;
+    AST *pairs;
+    AST *funcblock;
+    const char *name;
+    Symbol *sym;
+    Module *savecur = current;
 
-  // assign types for each of the items in templateVars,
-  // based on the types passed in the parameters
-  pairs = deduceTemplateTypes(templateVars, functype, call);
-  name = GetIdentifierName(ident);
-  name = TemplateFuncName(pairs, name);
+    templateVars = templ->left;
+    templ = templ->right;
+    functype = templ->left;
+    templ = templ->right;
+    ident = templ->left;
+    templ = templ->right;
+    body = templ->left;
 
-  ident = AstIdentifier(name);
-  sym = FindSymbol(&P->objsyms, name);
-  if (!sym) {
-    Function *fdef;
-    current = P;
-    functype = fixupFunctype(pairs, DupASTTypeSafe(functype));
-    body = fixupFunctype(pairs, DupASTTypeSafe(body));
-    body = ReduceTemplateConstants(body);
-    funcblock = DeclareTypedFunction(P, functype, ident, 1, body, NULL, NULL);
-    fdef = doDeclareFunction(funcblock);
-    if (fdef) {
-        fdef->is_static = 1;
-        CheckForStatic(fdef, fdef->body);
-        ProcessOneFunc(fdef);
+    // assign types for each of the items in templateVars,
+    // based on the types passed in the parameters
+    pairs = deduceTemplateTypes(templateVars, functype, call);
+    name = GetIdentifierName(ident);
+    name = TemplateFuncName(pairs, name);
+
+    ident = AstIdentifier(name);
+    sym = FindSymbol(&P->objsyms, name);
+    if (!sym) {
+        Function *fdef;
+        current = P;
+        functype = fixupFunctype(pairs, DupASTTypeSafe(functype));
+        body = fixupFunctype(pairs, DupASTTypeSafe(body));
+        body = ReduceTemplateConstants(body);
+        funcblock = DeclareTypedFunction(P, functype, ident, 1, body, NULL, NULL);
+        fdef = doDeclareFunction(funcblock);
+        if (fdef) {
+            fdef->is_static = 1;
+            CheckForStatic(fdef, fdef->body);
+            ProcessOneFunc(fdef);
+        }
     }
-  }
-  current = savecur;
-  return ident;
+    current = savecur;
+    return ident;
 }
 
 //
