@@ -1576,7 +1576,7 @@ AstTempLocalVariable(const char *prefix, AST *type)
     char *name;
     AST *ast = NewAST(AST_IDENTIFIER, NULL, NULL);
 
-    if (curfunc && (!type || TypeSize(type) == LONG_SIZE)) {
+    if (curfunc && (!type || (!IsPointerType(type) && TypeSize(type) == LONG_SIZE) ) ) {
         name = NewTemporaryVariable(prefix, &curfunc->local_var_counter);
         type = ast_type_generic; /* make it untyped so it can be re-used */
     } else {
