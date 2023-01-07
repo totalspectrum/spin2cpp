@@ -1,7 +1,7 @@
 //
 // Bytecode (nucode) compiler for spin2cpp
 //
-// Copyright 2021-2022 Total Spectrum Software Inc.
+// Copyright 2021-2023 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include "outnu.h"
@@ -99,7 +99,7 @@ static void NuPopQuitNext() {
 
 static NuIrLabel *
 NuIrOffsetLabel(NuIrLabel *base, int offset) {
-    NuIrLabel *r = malloc(sizeof(*r));
+    NuIrLabel *r = (NuIrLabel *)malloc(sizeof(*r));
     *r = *base;
     r->offset = offset;
     return r;
@@ -323,15 +323,15 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
         if (curfunc->closure) {
             offsetOp = NU_OP_ADD_VBASE;
         }
-        loadOp = LoadStoreOp(sym->v.ptr, isLoad);
+        loadOp = LoadStoreOp((AST *)sym->v.ptr, isLoad);
         break;
     case SYM_CLOSURE:
         offset = sym->offset;
         offsetOp = NU_OP_ADD_VBASE;
-        loadOp = LoadStoreOp(sym->v.ptr, isLoad);
+        loadOp = LoadStoreOp((AST *)sym->v.ptr, isLoad);
         break;
     case SYM_VARIABLE:
-        loadOp = LoadStoreOp(sym->v.ptr, isLoad);
+        loadOp = LoadStoreOp((AST *)sym->v.ptr, isLoad);
         if (sym->flags & SYMF_GLOBAL) {
             offset = sym->offset;
             if (offset < 0) {
@@ -362,10 +362,10 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
         break;
     case SYM_LABEL:
     {
-        Label *lab = sym->v.ptr;
+        Label *lab = (Label *)sym->v.ptr;
         NuIrLabel *nulabel = NULL;
         uint32_t labelval = lab->hubval;
-        Module *Q = sym->module;
+        Module *Q = (Module *)sym->module;
         if (!Q) {
             Q = current;
         }
@@ -690,7 +690,7 @@ static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs)
         switch(sym->kind) {
         case SYM_VARIABLE:
             (void)NuCompileLhsAddress(irl, objref);  // don't care about load op
-            typ = sym->v.ptr;
+            typ = (AST *)sym->v.ptr;
             NuEmitConst(irl, sym->offset);
             NuEmitCommentedOp(irl, NU_OP_ADD, auto_printf(128, "lookup member %s", memberName));
             op = LoadStoreOp(typ, 0);
@@ -703,10 +703,10 @@ static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs)
             return op;
         }
         case SYM_LABEL: {
-            Label *lab = sym->v.ptr;
+            Label *lab = (Label *)sym->v.ptr;
             NuIrLabel *nulabel = NULL;
             uint32_t labelval = lab->hubval;
-            Module *Q = sym->module;
+            Module *Q = (Module *)sym->module;
             if (!Q) {
                 Q = current;
             }

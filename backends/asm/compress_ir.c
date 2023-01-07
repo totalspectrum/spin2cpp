@@ -69,8 +69,8 @@ IsSimple9BitOperand(Operand *op)
 // sorter function for PtrFreq
 int freqsort_fn(const void *aptr, const void *bptr)
 {
-    const PtrFreq *a = aptr;
-    const PtrFreq *b = bptr;
+    const PtrFreq *a = (const PtrFreq *)aptr;
+    const PtrFreq *b = (const PtrFreq *)bptr;
     return b->count - a->count;
 }
 

@@ -1,6 +1,6 @@
 /*
  * C compiler parser
- * Copyright (c) 2011-2022 Total Spectrum Software Inc.
+ * Copyright (c) 2011-2023 Total Spectrum Software Inc.
  * See the file COPYING for terms of use.
  */
 
@@ -91,7 +91,7 @@ LabelName(AST *x)
     char *new_name;
 
     if (!orig_name) return x;
-    new_name = calloc(strlen(orig_name) + 8, 1);
+    new_name = (char *)calloc(strlen(orig_name) + 8, 1);
     strcpy(new_name, "label:");
     strcat(new_name, orig_name);
     return AstIdentifier(new_name);

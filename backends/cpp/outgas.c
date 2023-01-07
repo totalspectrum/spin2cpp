@@ -386,7 +386,7 @@ outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm, CppInlineState *state)
                     ERROR(ast, "call instruction must be to identifier");
                     continue;
                 }
-                retname = alloca(strlen(ast->d.string) + 6);
+                retname = (char *)alloca(strlen(ast->d.string) + 6);
                 sprintf(retname, "%s_ret", ast->d.string);
                 sym = LookupSymbol(retname);
                 if (!sym || sym->kind != SYM_LABEL) {

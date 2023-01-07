@@ -1,3 +1,9 @@
+//
+// Bytecode (nucode) compiler for spin2cpp
+//
+// Copyright 2021-2023 Total Spectrum Software Inc.
+// see the file COPYING for conditions of redistribution
+//
 #include "common.h"
 #include "nuir.h"
 #include <stdio.h>
@@ -122,7 +128,7 @@ void NuIrInit(NuContext *ctxt) {
 NuIrLabel *NuCreateLabel() {
     NuIrLabel *r;
     static int labelnum = 0;
-    r = calloc(sizeof(*r), 1);
+    r = (NuIrLabel *)calloc(sizeof(*r), 1);
     r->num = labelnum++;
     snprintf(r->name, sizeof(r->name), "__Label_%05u", r->num);
     return r;
@@ -130,7 +136,7 @@ NuIrLabel *NuCreateLabel() {
 
 static NuIr *NuCreateIr() {
     NuIr *r;
-    r = calloc(sizeof(*r), 1);
+    r = (NuIr *)calloc(sizeof(*r), 1);
     return r;
 }
 
@@ -211,7 +217,9 @@ NuIr *NuEmitLabel(NuIrList *irl, NuIrLabel *label) {
 
 NuIr *NuEmitNamedOpcode(NuIrList *irl, const char *name) {
     NuIrOpcode op;
-    for (op = NU_OP_ILLEGAL; op < NU_OP_DUMMY; op++) {
+    int i;
+    for (i = (int)NU_OP_ILLEGAL; i < (int)NU_OP_DUMMY; i++) {
+        op = (NuIrOpcode)i;
         if (!strcasecmp(NuOpName[op], name)) {
             break;
         }
@@ -237,7 +245,7 @@ AllocBytecode()
     if (num_bytecodes == MAX_NUM_BYTECODE) {
         return NULL;
     }
-    b = calloc(sizeof(*b), 1);
+    b = (NuBytecode *)calloc(sizeof(*b), 1);
     b->usage = 1;
     globalBytecodes[num_bytecodes] = b;
     num_bytecodes++;

@@ -1,6 +1,6 @@
 /*
  * Spin compiler parser
- * Copyright (c) 2011-2022 Total Spectrum Software Inc.
+ * Copyright (c) 2011-2023 Total Spectrum Software Inc.
  * See the file COPYING for terms of use.
  */
 
@@ -130,7 +130,7 @@ FixupList(AST *list)
                 }
             } else if (IsLongString(right)) {
                 shortstr = strdup(right->d.string+1);
-                singlechar = calloc(1, 2);
+                singlechar = (char *)calloc(1, 2);
                 singlechar[0] = right->d.string[0];
                 left = AstOperator(op, left, AstPlainString(singlechar));
                 right = AstPlainString(shortstr);
@@ -1998,21 +1998,21 @@ operand:
    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
  | '#' optcatch expr
    {
-       AST *catch = $2;
+       AST *catchexpr = $2;
        AST *expr = $3;
-       if (catch) {
-           catch->left = expr;
-           expr = catch;
+       if (catchexpr) {
+           catchexpr->left = expr;
+           expr = catchexpr;
        }
        $$ = NewAST(AST_EXPRLIST, NewAST(AST_IMMHOLDER, expr, NULL), NULL);
    }
  | '#' '#' optcatch expr
    {
-       AST *catch = $3;
+       AST *catchexpr = $3;
        AST *expr = $4;
-       if (catch) {
-           catch->left = expr;
-           expr = catch;
+       if (catchexpr) {
+           catchexpr->left = expr;
+           expr = catchexpr;
        }
        $$ = NewAST(AST_EXPRLIST, NewAST(AST_BIGIMMHOLDER, expr, NULL), NULL);
    }

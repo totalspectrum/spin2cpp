@@ -1,7 +1,7 @@
 //
 // Spin1 Bytecode definitons for spin2cpp
 //
-// Copyright 2021-2022 Ada Gottensträter and Total Spectrum Software Inc.
+// Copyright 2021-2023 Ada Gottensträter and Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 
@@ -419,7 +419,7 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
     case BOK_CONSTANT_FUNCREF: {
         int32_t id = ir->data.int32;
         Module *P = ir->attr.funcval.modref;
-        BCRelocList *reloc = calloc(1, sizeof(*reloc));
+        BCRelocList *reloc = (BCRelocList *)calloc(1, sizeof(*reloc));
         reloc->next = ModData(P)->relocList;
         ModData(P)->relocList = reloc;
         reloc->func = Spin1RelocFuncAddr;
@@ -441,7 +441,7 @@ const char *CompileIROP_Spin1(uint8_t *buf,int size,ByteOpIR *ir) {
     case BOK_CONSTANT_DATREF: {
         int32_t off = ir->data.int32;
         Module *P = ir->attr.datval.modref;
-        BCRelocList *reloc = calloc(1, sizeof(*reloc));
+        BCRelocList *reloc = (BCRelocList *)calloc(1, sizeof(*reloc));
         reloc->next = ModData(P)->relocList;
 
         ModData(P)->relocList = reloc;

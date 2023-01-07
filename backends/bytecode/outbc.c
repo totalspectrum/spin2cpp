@@ -225,10 +225,10 @@ Optoken2MathOpKind(int token,bool *unaryOut,bool *needsAbsOut) {
     bool unary = false;
     bool needsAbs = false;
     
-    enum MathOpKind mok = 0;
+    enum MathOpKind mok = MOK_MOD_UNDEFINED;
     //printf("In Optoken2MathOpKind, optoken %03X\n",token);
     switch (token) {
-    default: return 0;
+    default: return mok;
     
     case '^': mok = MOK_BITXOR; break;
     case '|': mok = MOK_BITOR; break;
@@ -583,7 +583,7 @@ static void BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context); 
 
 static ByteOpIR*
 BCNewOrphanLabel(BCContext context) {
-    ByteOpIR *lbl = calloc(sizeof(ByteOpIR),1);
+    ByteOpIR *lbl = (ByteOpIR *)calloc(sizeof(ByteOpIR),1);
     lbl->kind = BOK_LABEL;
     lbl->attr.labelHiddenVars = context.hiddenVariables;
     return lbl;
@@ -597,7 +597,7 @@ BCPushLabel(BCIRBuffer *irbuf,BCContext context) {
 
 static ByteOpIR*
 BCNewNamedLabelRef(BCContext context,const char *name) {
-    ByteOpIR *lbl = calloc(sizeof(ByteOpIR),1);
+    ByteOpIR *lbl = (ByteOpIR*)calloc(sizeof(ByteOpIR),1);
     lbl->kind = BOK_NAMEDLABEL;
     lbl->attr.labelHiddenVars = context.hiddenVariables;
     lbl->data.stringPtr = name;
@@ -738,14 +738,14 @@ BCCompileConditionalJump(BCIRBuffer *irbuf,AST *condition, bool ifNotZero, ByteO
 }
 
 enum MemOpTargetKind {
-   MOT_UHHH,MOT_MEM,MOT_REG,MOT_REGBIT,MOT_REGBITRANGE,MOT_REGIDX
+   MOT_UNDEFINED,MOT_MEM,MOT_REG,MOT_REGBIT,MOT_REGBITRANGE,MOT_REGIDX
 };
 
 static void
 BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind kind, 
     enum MathOpKind modifyMathKind, bool modifyReverseMath, bool pushModifyResult, ByteOpIR *jumpTo, bool repeatPopStep) {
     
-    enum MemOpTargetKind targetKind = 0;
+    enum MemOpTargetKind targetKind = MOT_UNDEFINED;
 
     if (jumpTo != NULL) {
         if (kind != MEMOP_MODIFY || modifyMathKind != MOK_MOD_REPEATSTEP) ERROR(node,"Trying to compile memop with jumpTo that is not a jumping kind");
@@ -795,7 +795,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         switch(sym->kind) {
         case SYM_VARIABLE:
             memberOffset += sym->offset;
-            type = sym->v.ptr;
+            type = (AST *)sym->v.ptr;
             break;
         case SYM_FUNCTION:
             if (kind == MEMOP_ADDRESS) {
@@ -820,7 +820,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
             break;
         case SYM_LABEL:
         {
-            Module *M = sym->module;
+            Module *M = (Module *)sym->module;
             if (!M) {
                 ERROR(node,"Method reference for unknown module");
                 return;
@@ -869,7 +869,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
             sym = LookupSymbol("result");
             if (!sym) {
                 WARNING(node, "unable to find result variable");
-                sym = calloc(sizeof(*sym), 1);
+                sym = (Symbol *)calloc(sizeof(*sym), 1);
                 sym->kind = SYM_RESULT;
             }
         }
@@ -949,7 +949,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
             memOp.attr.memop.base = MEMOP_BASE_PBASE;
             targetKind = MOT_MEM;
 
-            Label *lab = sym->v.ptr;
+            Label *lab = (Label *)sym->v.ptr;
             uint32_t labelval = lab->hubval;
             // Add header offset
             if (sym->module == current || sym->module == 0) {
@@ -957,7 +957,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
                 memOp.data.int32 = labelval;
             } else {
                 WARNING(ident, "bytecode may not always support cross-module label references");
-                labelval += BCgetDAToffset(sym->module, true,node,true);
+                labelval += BCgetDAToffset((Module *)sym->module, true,node,true);
                 memOp.attr.memop.base = MEMOP_BASE_POP;
                 if (baseExpr) ERROR(node,"baseExpr already set?!?!");
                 else baseExpr = AstInteger(labelval);
@@ -1334,7 +1334,7 @@ BCCompileMemOpEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind k
 
 static inline void
 BCCompileMemOp(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind kind) {
-    BCCompileMemOpEx(irbuf,node,context,kind,0,false,false);
+    BCCompileMemOpEx(irbuf,node,context,kind,MOK_MOD_UNDEFINED,false,false);
 }
 
 static void
@@ -1381,7 +1381,7 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
         if (modifyMathKind) ERROR(node,"direct operator AND given modfiyMathKind in AST_ASSIGN is unhandled");
         if (left->kind == AST_EXPRLIST) ERROR(node,"multiple assignment with side effects is unhandled");
         bool isUnary = false;
-        enum MathOpKind mok = 0;
+        enum MathOpKind mok = MOK_MOD_UNDEFINED;
         int optoken = node->d.ival;
         OptimizeOperator(&optoken,NULL,&right);
         switch (optoken) {
@@ -1417,7 +1417,7 @@ BCCompileAssignment(BCIRBuffer *irbuf,AST *node,BCContext context,bool asExpress
     // Try to contract things like "a := a + 1" into a modify op
     if (modifyMathKind == 0 && right && right->kind == AST_OPERATOR) {
         bool isUnary = false;
-        enum MathOpKind mok = 0;
+        enum MathOpKind mok = MOK_MOD_UNDEFINED;
         int optoken = right->d.ival;
         AST *opleft = right->left;
         AST *opright = right->right;
@@ -1660,8 +1660,8 @@ static int getObjID(Module *M,const char *name, AST** gettype) {
 }
 
 // FIXME this seems very convoluted
-static int getObjIDByClass(Module *M, AST *class, bool mustBeStatic, AST** gettype) {
-    Module *classptr = GetClassPtr(class);
+static int getObjIDByClass(Module *M, AST *classBase, bool mustBeStatic, AST** gettype) {
+    Module *classptr = GetClassPtr(classBase);
     if (!classptr) return 0;
     if (!M->bedata) {
         ERROR(NULL,"Internal Error: bedata empty");
@@ -1686,7 +1686,7 @@ static int getObjIDByClass(Module *M, AST *class, bool mustBeStatic, AST** getty
             return i+1+ModData(M)->pub_cnt+ModData(M)->pri_cnt;
         }
     }
-    ERROR(class,"can't find OBJ id for class %s",classptr->classname);
+    ERROR(classBase,"can't find OBJ id for class %s",classptr->classname);
     return 0;
 }
 
@@ -1842,7 +1842,7 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
         }
         return;
     } else if (sym->kind == SYM_BUILTIN) {
-        anchorOp.kind = 0; // Where we're going, we don't need Stack Frames
+        anchorOp.kind = (enum ByteOpKind)0; // Where we're going, we don't need Stack Frames
         if (rescueAbort) ERROR(node,"Can't rescue on builtin call!");
 
         if (!strcmp(sym->our_name,"_locknew")) {
@@ -2219,7 +2219,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 BCCompileCoginit(irbuf,node,context,true);
             } break;
             case AST_ASSIGN: {
-                BCCompileAssignment(irbuf,node,context,!asStatement,0);
+                BCCompileAssignment(irbuf,node,context,!asStatement,MOK_MOD_UNDEFINED);
                 popResults = 0;
             } break;
             case AST_SEQUENCE: {
@@ -2352,7 +2352,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                     AST *modvar = isPostfix?node->left:node->right;
                     if (asStatement) popResults = 0;
 
-                    mok = 0;
+                    mok = MOK_MOD_UNDEFINED;
                     switch(optoken) {
                     case K_INCREMENT: mok = isPostfix ? MOK_MOD_POSTINC : MOK_MOD_PREINC; break;
                     case K_DECREMENT: mok = isPostfix ? MOK_MOD_POSTDEC : MOK_MOD_PREDEC; break;
@@ -2638,7 +2638,7 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
         BCCompileFunCall(irbuf,gosubCall,context,false,false);
     } break;
     case AST_ASSIGN:
-        BCCompileAssignment(irbuf,node,context,false,0);
+        BCCompileAssignment(irbuf,node,context,false,MOK_MOD_UNDEFINED);
         break;
     case AST_WHILE: {
 

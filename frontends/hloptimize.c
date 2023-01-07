@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2022 Total Spectrum Software Inc.
+ * Copyright 2011-2023 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * various high level optimizations
@@ -295,7 +295,7 @@ static int CheckSymbolUsage(Symbol *sym, void *arg) {
     bool needInit;
     bool needWarn;
     if (sym->kind == SYM_RESULT || sym->kind == SYM_LOCALVAR) {
-        where = sym->def;
+        where = (AST *)sym->def;
         needInit = needWarn = false;
         v = doCheckLocalVar(sym, F->body, VAR_USED, &where);
         if (v == VAR_USED) {

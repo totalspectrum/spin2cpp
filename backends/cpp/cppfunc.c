@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2022 Total Spectrum Software Inc.
+ * Copyright 2011-2023 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling functions
@@ -510,7 +510,7 @@ PrintInlineAsm(Flexbuf *f, AST *top, int indent)
     AST *ast;
     CppInlineState *state;
 
-    state = calloc(sizeof(*state), 1);
+    state = (CppInlineState *)calloc(sizeof(*state), 1);
     flexbuf_printf(f, "%*c__asm__ volatile(\n", indent, ' ');
     state->indent = indent + 4;
     while (top) {

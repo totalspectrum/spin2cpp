@@ -590,7 +590,7 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
     }
     if (needExtension) {
         if (!langptr) langptr = ".spin";
-        shortName = malloc(strlen(name) + strlen(langptr) + 2);
+        shortName = (char *)malloc(strlen(name) + strlen(langptr) + 2);
         strcpy(shortName, name);
         strcat(shortName, langptr);
     } else {

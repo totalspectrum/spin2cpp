@@ -98,7 +98,7 @@ enum ByteOpKind {
 extern const char *byteOpKindNames[];
 
 #define MATH_OP_KINDS_XMACRO \
-    X(UHHH)  /* Error/undefined */ \
+    X(MOD_UNDEFINED)  /* Error/undefined */ \
     \
     X(__MOD_FIRST)\
     X(MOD_WRITE)  /* ???? */ \

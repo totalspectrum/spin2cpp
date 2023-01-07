@@ -1,7 +1,7 @@
 //
 // Pasm data output for spin2cpp
 //
-// Copyright 2016-2022 Total Spectrum Software Inc.
+// Copyright 2016-2023 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -798,7 +798,7 @@ DeleteIR(IRList *irl, IR *ir)
 
     // Delete label back reference if present
     if (IsBranch(ir) && ir->aux) {
-        IR *lbl = ir->aux;
+        IR *lbl = (IR *)ir->aux;
         if (lbl->opc == OPC_LABEL && lbl->aux == ir) lbl->aux = NULL;
     }
 }

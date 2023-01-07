@@ -1,7 +1,7 @@
 //
 // C++ source code output for spin2cpp
 //
-// Copyright 2012-2022 Total Spectrum Software Inc.
+// Copyright 2012-2023 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 
@@ -802,7 +802,7 @@ PrintCppRelocs(Flexbuf *f, Module *P, Flexbuf *relocs)
     }
     flexbuf_printf(f, "    { 0, 0, 0 }\n");
     flexbuf_printf(f, "};\n");
-    prefix = calloc(1, strlen(P->datname)+strlen(P->classname)+32);
+    prefix = (char *)calloc(1, strlen(P->datname)+strlen(P->classname)+32);
     if (gl_output == OUTPUT_C) {
         sprintf(prefix, "%s", P->datname);
     } else {

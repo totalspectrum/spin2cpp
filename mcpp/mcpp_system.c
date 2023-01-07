@@ -887,7 +887,7 @@ static void set_a_dir(
         incdir = (const char **) xmalloc( sizeof (char *) * max_inc);
         incend = &incdir[ 0];
     } else if (incend - incdir >= max_inc) {        /* Buffer full  */
-        incdir = (const char **) xrealloc( (void *) incdir
+        incdir = (const char **) xrealloc( (char *) incdir
                 , sizeof (char *) * max_inc * 2);
         incend = &incdir[ max_inc];
         max_inc *= 2;
@@ -1759,7 +1759,7 @@ static int  open_file(
     if (! fullname)                 /* Non-existent or directory    */
         return  FALSE;
     if (included( fullname))        /* Once included    */
-        goto  true;
+        goto  true_case;
 
     if ((max_open != 0 && max_open <= include_nest)
                             /* Exceed the known limit of open files */
@@ -1786,12 +1786,12 @@ static int  open_file(
         if ((fp = mcpp_fopen( fullname, "r")) == NULL) {
             file->fp = mcpp_fopen( cur_fullname, "r");
             fseek( file->fp, file->pos, SEEK_SET);
-            goto  false;
+            goto  false_case;
         }
         if (max_open == 0)      /* Remember the limit of the system */
             max_open = include_nest;
     } else if (fp == NULL)                  /* No read permission   */
-        goto  false;
+        goto  false_case;
     /* Truncate buffer of the includer to save memory   */
     len = (int) (file->bptr - file->buffer);
     if (len) {
@@ -1823,9 +1823,9 @@ static int  open_file(
     if (mkdep && ((mkdep & MD_SYSHEADER) || ! infile->sys_header))
         put_depend( fullname);          /* Output dependency line   */
 
-true:
+true_case:
     return  TRUE;
-false:
+false_case:
     free( fullname);
     return  FALSE;
 }
@@ -1908,7 +1908,7 @@ static const char *     set_fname(
         fname_end = &fnamelist[ 0];
     } else if (fname_end - fnamelist >= max_fnamelist) {
                                 /* Buffer full: double the elements */
-        fnamelist = (INC_LIST *) xrealloc( (void *) fnamelist
+        fnamelist = (INC_LIST *) xrealloc( (char *) fnamelist
                 , sizeof (INC_LIST) * max_fnamelist * 2);
         fname_end = &fnamelist[ max_fnamelist];
         max_fnamelist *= 2;
@@ -2254,7 +2254,7 @@ static void do_once(
         once_end = &once_list[ 0];
     } else if (once_end - once_list >= max_once) {
                                             /* Double the elements  */
-        once_list = (INC_LIST *) xrealloc( (void *) once_list
+        once_list = (INC_LIST *) xrealloc( (char *) once_list
                 , sizeof (INC_LIST) * max_once * 2);
         once_end = &once_list[ max_once];
         max_once *= 2;

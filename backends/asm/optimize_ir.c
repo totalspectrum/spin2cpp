@@ -1,7 +1,7 @@
 //
 // IR optimizer
 //
-// Copyright 2016-2022 Total Spectrum Software Inc.
+// Copyright 2016-2023 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -2745,7 +2745,7 @@ int OptimizeBranchCommonOps(IRList *irl) {
         if (InstrIsVolatile(ir) || IsDummy(ir)) continue;
         if (ir->opc == OPC_JUMP && ir->cond != COND_TRUE && ir->aux) {
             // Check for common ops at top of branch
-            IR *lbl = ir->aux;
+            IR *lbl = (IR *)ir->aux;
             if (lbl->opc == OPC_LABEL && lbl->aux == ir && lbl->prev && lbl->prev->opc == OPC_JUMP && lbl->prev->cond == COND_TRUE && ValidIR(irl,lbl)) {
                 for (;;) {
                     IR *next_stay = ir->next;
@@ -2772,7 +2772,7 @@ int OptimizeBranchCommonOps(IRList *irl) {
 
         } else if (ir->opc == OPC_LABEL && ir->aux) {
             // check for common ops at bottom of branch
-            IR *jump = ir->aux;
+            IR *jump = (IR *)ir->aux;
             if (jump->opc == OPC_JUMP && jump->cond == COND_TRUE && jump->aux == ir && ValidIR(irl,jump)) {
 
                 for (;;) {
@@ -4964,10 +4964,10 @@ OptimizeLongfill(IRList *irl) {
             IR *setq = NewIR(OPC_SETQ);
             setq->cond = COND_NC;
             setq->dst = GetArgReg(2);
-            setq->cond = COND_NC | ir->cond;;
+            setq->cond = (IRCond)(COND_NC | ir->cond);
             setq->addr = addr;
             IR *wrlong = NewIR(OPC_WRLONG);
-            wrlong->cond = COND_NC | ir->cond;;
+            wrlong->cond = (IRCond)(COND_NC | ir->cond);
             wrlong->dst = NewImmediate(setval);
             wrlong->src = GetArgReg(0);
             wrlong->addr = addr;

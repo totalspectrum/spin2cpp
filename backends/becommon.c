@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2022 Total Spectrum Software Inc.
+ * Copyright 2011-2023 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -233,7 +233,7 @@ void StringBuildBuffer(Flexbuf *fb, AST *expr) {
 
 // Printf that auto-allocates some space (and never frees it, lol)
 char *auto_printf(size_t max,const char *format,...) {
-    char *buffer = malloc(max);
+    char *buffer = (char *)malloc(max);
     va_list args;
     va_start(args, format);
     vsnprintf(buffer,max,format,args);
@@ -243,7 +243,7 @@ char *auto_printf(size_t max,const char *format,...) {
 
 /* find the backend name for a symbol */
 const char *BackendNameForSymbol(Symbol *sym) {
-    Module *Q = sym->module ? sym->module : NULL;
+    Module *Q = (Module *)(sym->module ? sym->module : NULL);
     if (NuBytecodeOutput()) {
         return NuCodeSymbolName(sym);
     }

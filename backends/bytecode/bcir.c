@@ -29,7 +29,7 @@ int pbase_offset; // distance of function from PBASE (obj header)
 BCIRBuffer *current_birb;
 
 ByteOpIR *BIRB_MakeCopy(ByteOpIR *ir) {
-    ByteOpIR *newIR = malloc(sizeof(ByteOpIR));
+    ByteOpIR *newIR = (ByteOpIR *)malloc(sizeof(ByteOpIR));
     memcpy(newIR,ir,sizeof(ByteOpIR));
     return newIR;
 }
@@ -257,7 +257,7 @@ bool BCIR_IsConstMemOp(ByteOpIR *ir) {
 bool BCIR_IsEqualMemOpTarget(ByteOpIR *ir1,ByteOpIR *ir2) {
     if (ir1->data.int32 != ir2->data.int32) return false;
     if (!BCIR_IsConstMemOp(ir1) || !BCIR_IsConstMemOp(ir2)) return false;
-    if (memcmp(&ir1->attr.memop,&ir2->attr.memop,sizeof(struct bcir_memop_attr))) {
+    if (memcmp(&ir1->attr.memop,&ir2->attr.memop,sizeof(ir1->attr.memop))) {
         return false;
     }
     return true;
@@ -605,7 +605,7 @@ void BCIR_to_BOB(BCIRBuffer *irbuf,ByteOutputBuffer *bob,int pbase_funoffset) {
             ERROR(NULL,"Internal Errror: IR with negative size");
             continue;
         }
-        instrSpan = calloc(sizeof(OutputSpan)+ir->fixedSize,1);
+        instrSpan = (OutputSpan *)calloc(sizeof(OutputSpan)+ir->fixedSize,1);
         if (!instrSpan) {
             ERROR(NULL,"Out of memory (while allocating instruction span)");
         }

@@ -748,7 +748,7 @@ void AddSourceFile(const char *shortName, const char *fullName)
     // OK, go ahead and add it
     if (numSourceFiles == maxSourceFiles) {
         maxSourceFiles += 1024;
-        sourceData = realloc(sourceData, maxSourceFiles * sizeof(SourceFile));
+        sourceData = (SourceFile *)realloc(sourceData, maxSourceFiles * sizeof(SourceFile));
         if (!sourceData) {
             fprintf(stderr, "Out of memory\n");
             exit(2);

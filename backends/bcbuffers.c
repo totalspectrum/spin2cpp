@@ -1,7 +1,7 @@
 //
 // Commented byte buffer for spin2cpp
 //
-// Copyright 2021 Ada Gottensträter and Total Spectrum Software Inc.
+// Copyright 2021-2023 Ada Gottensträter and Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 
@@ -21,7 +21,7 @@ OutputSpan *BOB_PushSpan(ByteOutputBuffer* buf, OutputSpan* newSpan) {
 }
 
 OutputSpan *BOB_Push(ByteOutputBuffer *buf,uint8_t *data,int data_size,const char *comment) {
-    OutputSpan *newSpan = calloc(sizeof(OutputSpan)+data_size,1);
+    OutputSpan *newSpan = (OutputSpan *)calloc(sizeof(OutputSpan)+data_size,1);
     if (!newSpan) {
         ERROR(NULL,"Out of memory (while allocating OutputSpan)");
         exit(1);

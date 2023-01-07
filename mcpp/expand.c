@@ -1043,13 +1043,13 @@ static char *     remove_magics(
         if (c == MAC_INF) {
             if (mac_n >= max_magics || arg_n >= max_magics * 2) {
                 max_magics *= 2;
-                mac_id = (char (*)[ MAC_S_LEN]) xrealloc( (void *) mac_id
+                mac_id = (char (*)[ MAC_S_LEN]) xrealloc( (char *) mac_id
                         , MAC_S_LEN * max_magics);
-                arg_id = (char (*)[ ARG_S_LEN]) xrealloc( (void *) arg_id
+                arg_id = (char (*)[ ARG_S_LEN]) xrealloc( (char *) arg_id
                         , ARG_S_LEN * max_magics * 2);
-                mac_loc = (char **) xrealloc( (void *) mac_loc
+                mac_loc = (char **) xrealloc( (char *) mac_loc
                         , sizeof (char *) * max_magics);
-                arg_loc = (char **) xrealloc( (void *) arg_loc
+                arg_loc = (char **) xrealloc( (char *) arg_loc
                         , sizeof (char *) * max_magics * 2);
                 mgc_index = xrealloc( mgc_index, max_magics * 3);
             }

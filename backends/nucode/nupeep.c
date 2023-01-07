@@ -1,3 +1,9 @@
+//
+// Bytecode (nucode) compiler for spin2cpp
+//
+// Copyright 2021-2023 Total Spectrum Software Inc.
+// see the file COPYING for conditions of redistribution
+//
 #include "outnu.h"
 #include "nuir.h"
 
@@ -75,7 +81,7 @@ static NuPeepholePattern pat_cbxx[] = {
     { NU_OP_CBxx, PEEP_ARG_ANY, PEEP_FLAGS_NONE },
     { NU_OP_BRA,  PEEP_ARG_ANY, PEEP_FLAGS_NONE },
     { NU_OP_LABEL, 0,           PEEP_FLAGS_MATCH_ARG },
-    { 0, 0, PEEP_FLAGS_DONE }
+    { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
 };
 
 // replace CBxx label; BRA label2; LABEL label -> CBNxx label2; LABEL label
@@ -91,19 +97,19 @@ static int NuReplaceCBxx(int arg, NuIrList *irl, NuIr *ir) {
 static NuPeepholePattern pat_cbnz[] = {
     { NU_OP_PUSHI, 0,            PEEP_FLAGS_MATCH_IMM },
     { NU_OP_CBNE,  PEEP_ARG_ANY, PEEP_FLAGS_NONE },
-    { 0, 0, PEEP_FLAGS_DONE }
+    { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
 };
 
 static NuPeepholePattern pat_cbz[] = {
     { NU_OP_PUSHI, 0,            PEEP_FLAGS_MATCH_IMM },
     { NU_OP_CBEQ,  PEEP_ARG_ANY, PEEP_FLAGS_NONE },
-    { 0, 0, PEEP_FLAGS_DONE }
+    { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
 };
 
 static int NuReplaceCbnz(int arg, NuIrList *irl, NuIr *ir) {
     NuIr *oldir = ir;
     ir = ir->next;
-    ir->op = arg;
+    ir->op = (NuIrOpcode)arg;
     NuDeleteIr(irl, oldir); // delete original pushi
     return 1;
 }
@@ -120,7 +126,7 @@ static NuPeepholePattern pat_djnz[] = {
     { NU_OP_ADD_DBASE,  PEEP_ARG_ANY, PEEP_FLAGS_NONE },         // del 6
     { NU_OP_STL,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },         // del 7
     { NU_OP_BNZ,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },
-    { 0, 0, PEEP_FLAGS_DONE }
+    { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
 };
 
 static int NuReplaceDjnz(int arg, NuIrList *irl, NuIr *ir) {
@@ -137,7 +143,7 @@ static int NuReplaceDjnz(int arg, NuIrList *irl, NuIr *ir) {
         NuDeleteIr(irl, delir);
     }
     // make next ir the djnz
-    ir->op = arg;
+    ir->op = (NuIrOpcode)arg;
     return 1;
 }
 
@@ -149,7 +155,7 @@ static NuPeepholePattern pat_st_ld[] = {
     { NU_OP_PUSHI,     0,            PEEP_FLAGS_MATCH_ARG },
     { NU_OP_ADD_DBASE, PEEP_ARG_ANY, PEEP_FLAGS_NONE },
     { NU_OP_LDL,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
-    { 0, 0, PEEP_FLAGS_DONE }
+    { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
 };
 static int NuReplaceStLd(int arg, NuIrList *irl, NuIr *ir) {
     NuIr *dupit = NuCreateIrOp(NU_OP_DUP);
@@ -170,7 +176,7 @@ static NuPeepholePattern pat_dead_st[] = {
     { NU_OP_PUSHI,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
     { NU_OP_PUSHI,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
     { NU_OP_RET,         PEEP_ARG_ANY, PEEP_FLAGS_NONE },
-    { 0, 0, PEEP_FLAGS_DONE }
+    { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
 };
 // replace "arg" instructions starting at ir with a DROP
 static int NuReplaceWithDrop(int arg, NuIrList *irl, NuIr *ir) {
@@ -187,7 +193,7 @@ static int NuReplaceWithDrop(int arg, NuIrList *irl, NuIr *ir) {
 static NuPeepholePattern pat_dup_drop[] = {
     { NU_OP_DUP,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
     { NU_OP_DROP,      PEEP_ARG_ANY, PEEP_FLAGS_NONE },
-    { 0, 0, PEEP_FLAGS_DONE }
+    { NU_OP_ILLEGAL,   0,            PEEP_FLAGS_DONE }
 };
 static int NuDeleteInst(int arg, NuIrList *irl, NuIr *ir) {
     while (arg > 1) {
@@ -205,7 +211,7 @@ static NuPeepholePattern pat_dup_st_drop[] = {
     { NU_OP_ADD_DBASE, PEEP_ARG_ANY, PEEP_FLAGS_NONE },
     { NU_OP_STL,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
     { NU_OP_DROP,      PEEP_ARG_ANY, PEEP_FLAGS_NONE },
-    { 0, 0, PEEP_FLAGS_DONE }
+    { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
 };
 static int NuDeletePair(int arg, NuIrList *irl, NuIr *ir) {
     NuIr *delir = ir->next;
