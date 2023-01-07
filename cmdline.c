@@ -280,6 +280,9 @@ int ProcessCommandLine(CmdLineOptions *cmd)
                 zipname = ReplaceExtension(P->fullname, zipappend);
             }
             OutputZipFile(zipname);
+            if (gl_errors == 0) {
+                printf("Created %s\n", zipname);
+            }
         } else if (cmd->outputDat) {
             cmd->outname = gl_outname;
             if (gl_gas_dat) {
