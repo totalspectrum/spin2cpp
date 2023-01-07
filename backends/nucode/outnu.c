@@ -1666,6 +1666,9 @@ NuCompileExpression(NuIrList *irl, AST *node) {
     }
     break;
 #endif
+    case AST_RANGEREF:
+        pushed = NuCompileExpression(irl, TransformRangeUse(node));
+        break;
     default:
         ERROR(node, "Unknown expression node %d", node->kind);
         return 1;
