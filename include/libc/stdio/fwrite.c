@@ -28,8 +28,15 @@ size_t fread(void *ptr, size_t size, size_t n, FILE *f)
         }
         return r;
     }
+    if (f->ungot && size) {
+        unsigned char *dst = (unsigned char *)ptr;
+        *dst++ = fgetc(f);
+        --size;
+        r++;
+    }
+    if (size == 0) return r;
     fflush(f); /* re-sync */
-    r = _vfsread(f, ptr, size);
+    r += _vfsread(f, ptr, size);
 #ifdef _DEBUG
     __builtin_printf("vfsread returned %d\n", r);
 #endif    
