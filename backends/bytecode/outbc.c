@@ -2399,6 +2399,14 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                 BIRB_PushCopy(irbuf,&and_op);
             } break;
             case AST_RANGEREF:
+            {
+                if (node->left && node->left->kind == AST_HWREG && node->right && node->right->kind == AST_RANGE) {
+                    BCCompileMemOp(irbuf,node,context,MEMOP_READ);
+                } else {
+                    AST *newexpr = TransformRangeUse(node);
+                    BCCompileExpression(irbuf, newexpr, context, asStatement);
+                }
+            } break;
             case AST_HWREG:
             case AST_SPRREF: {
                 BCCompileMemOp(irbuf,node,context,MEMOP_READ);
@@ -2571,6 +2579,18 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                                           AstInteger(4) )
                                   );
                 BCCompileExpression(irbuf, expr, context, asStatement);
+            } break;
+            case AST_MASKMOVE: {
+                AST *destast = node->left;
+                AST *maskast = node->right->left;
+                AST *valast = node->right->right;
+                AST *newnode;
+
+                ASSERT_AST_KIND(node->right, AST_SEQUENCE, return;);
+                newnode = AstOperator('|',
+                                      AstOperator('&', destast, maskast),
+                                      valast);
+                BCCompileExpression(irbuf, newnode, context, asStatement);
             } break;
             default:
                 ERROR(node,"Unhandled node kind %d in expression",node->kind);
