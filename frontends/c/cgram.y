@@ -1664,7 +1664,7 @@ struct_declaration
                 $$ = NewAST(AST_STMTLIST,
                             NewAST(AST_PRIFUNC, NULL, NULL), NULL);
             }
-        | struct_specifier_qualifier_list struct_declarator_list compound_statement
+        | struct_specifier_qualifier_list struct_declarator_list compound_statement_or_fromfile
             {
                 AST *type;
                 AST *ident = NULL;
