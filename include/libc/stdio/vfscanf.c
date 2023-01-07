@@ -74,7 +74,6 @@ typedef struct mystate {
   size_t size;
   size_t incount;
   mbstate_t mbs;
-  int ungot;
 } MyState;
 
 /* get a single byte */
@@ -83,12 +82,7 @@ mygetc(FILE *stream, MyState *ms)
 {
   int mbc;
 
-  if (ms->ungot) {
-      mbc = (ms->ungot)-1;
-      ms->ungot = 0;
-  } else {
-      mbc = fgetc(stream);
-  }
+  mbc = fgetc(stream);
   ms->size++;
   ms->incount++;
   return mbc;
@@ -119,12 +113,7 @@ mywgetc(int c, wchar_t *wc_ptr, FILE *stream, MyState *ms, const unsigned char *
     count = mbrtowc(wc_ptr, (char *)&c, 1, &ms->mbs);
     if (count != ((size_t)-2)) break;
     /* need more bytes */
-    if (ms->ungot) {
-        c = ms->ungot-1;
-        ms->ungot = 0;
-    } else {
-        c = fgetc(stream);
-    }
+    c = fgetc(stream);
     ms->incount++;
   } while (1);
   if (count == (size_t)-1) {
@@ -140,9 +129,7 @@ myungetc(int c, FILE *stream, MyState *ms)
 {
   ms->size--;
   ms->incount--;
-  // ideally we'd do this in the stream, but for now punt
-  //ungetc(c, stream);
-  ms->ungot = c + 1;  
+  ungetc(c, stream);
 }
 
 /*
