@@ -33,6 +33,7 @@ size_t fread(void *ptr, size_t size, size_t n, FILE *f)
         *dst++ = fgetc(f);
         --size;
         r++;
+        ptr = (void *)dst;
     }
     if (size == 0) return r;
     fflush(f); /* re-sync */
