@@ -37,11 +37,12 @@ FILE *__getftab(int i) _IMPL("libc/unix/posixio.c");
 #define stdout __getftab(1)
 #define stderr __getftab(2)
 
-#define putc(x, f) (((f)->putcf)( (x), (f) ))
-#define getc(f)    (((f)->getcf)( (f) ))
-
 int fputc(int c, FILE *f) _IMPL("libc/stdio/fputs.c");
 int fgetc(FILE *f) _IMPL("libc/stdio/fputs.c");
+int ungetc(int c, FILE *f) _IMPL("libc/stdio/fputs.c");
+
+#define putc(x, f) fputc( (x), (f) )
+#define getc(f)    fgetc( (f) )
 
 #define putchar(x) fputc( (x), stdout)
 #define getchar() fgetc(stdin)

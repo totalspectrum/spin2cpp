@@ -48,6 +48,8 @@ struct s_vfs_file_t {
     unsigned flags; /* O_XXX for rdwr mode and such */
     unsigned state; /* flags for EOF and the like */
     int      lock;  /* lock for multiple I/O */
+    int      ungot;
+
     ssize_t (*read)(vfs_file_t *fil, void *buf, size_t count);
     ssize_t (*write)(vfs_file_t *fil, const void *buf, size_t count);
     int (*putcf)(int c, vfs_file_t *fil);

@@ -13,6 +13,7 @@ int fseek(FILE *f, long offset, int whence)
     int r;
 
     fflush(f);
+    f->ungot = 0;
     r = lseek(fd, offset, whence);
     if (r != -1) {
         r = 0;  // fseek returns 0 on success
@@ -27,5 +28,8 @@ long ftell(FILE *f)
 
     fflush(f);
     r = lseek(fd, 0, SEEK_CUR);
+    if (f->ungot && r > 0) {
+        --r;
+    }
     return r;
 }

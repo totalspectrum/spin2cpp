@@ -31,9 +31,22 @@ int puts(const char *s)
 }
 
 int fputc(int c, FILE *f) {
-    return putc(c, f);
+    return(f->putcf)(c, f);
 }
 
 int fgetc(FILE *f) {
-    return getc(f);
+    int c;
+    if (f->ungot) {
+        c = f->ungot - 1;
+        f->ungot = 0;
+    } else {
+        c = f->getcf(f);
+    }
+    return c;
+}
+
+int ungetc(int c, FILE *f) {
+    if (f->ungot) return -1;
+    f->ungot = c+1;
+    return c;
 }
