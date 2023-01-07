@@ -1,5 +1,6 @@
 Version 5.9.24
 - Added --zip flag to create archive of source files
+- Allowed __fromfile inside classes, and fixed symbol resolution for this case
 - Fixed using local constants for default parameters in methods
 - Fixed a compiler bug affecting fscanf
 - Improved output of -f, and added #include'd files to that output

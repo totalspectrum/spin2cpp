@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2022 Total Spectrum Software Inc.
+ * Copyright 2011-2023 Total Spectrum Software Inc.
  *
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -795,7 +795,7 @@ ParseFile(const char *name, AST *params)
 // now that we've figured out what's reachable, remove
 // uncalled methods from modules
 //
-static void
+static int
 doPruneMethods(Module *P)
 {
     Function *pf;
@@ -815,6 +815,7 @@ doPruneMethods(Module *P)
             oldptr = &pf->next;
         }
     }
+    return 1;
 }
 
 static void MarkStaticFunctionPointers(AST *list);
@@ -869,6 +870,14 @@ CheckUnusedMethods(int isBinary)
         MarkStaticFunctionPointers(P->datblock);
         current = savecurrent;
     }
+    // mark all functions called via pointers
+    for (P = allparse; P; P = P->next) {
+        for (pf = P->functions; pf; pf = pf->next) {
+            if (pf->callSites == 0 && pf->used_as_ptr) {
+                MarkUsed(pf, "__func pointer__");
+            }
+        }
+    }
 }
 
 static void
@@ -902,12 +911,79 @@ MarkStaticFunctionPointers(AST *list)
     }
 }
 
+static int
+VisitModule(Module *P, ModuleFunc fn)
+{
+    int ok = 1;
+    Module *savecurrent = current;
+    while (P && ok) {
+        current = P;
+        ok = (*fn)(P);
+        if (!ok) break;
+        ok = VisitModule(P->subclasses, fn);
+        P = P->next;
+    }
+    current = savecurrent;
+    return ok;
+}
+
+void
+IterateOverModules(ModuleFunc fn)
+{
+    (void)VisitModule(allparse, fn);
+}
+
+static int zeroCallSites(Module *P) {
+    Function *pf;
+    for (pf = P->functions; pf; pf = pf->next) {
+        pf->callSites = 0;
+    }
+    return 1;
+}
+
+static int markPublicFuncsUsed(Module *P) {
+    Function *pf;
+    int keepAll;
+
+    keepAll = (gl_output == OUTPUT_CPP || gl_output == OUTPUT_C);
+
+    if (IsSystemModule(P)) return 1;
+    if (P->superclass) return 1;
+    for (pf = P->functions; pf; pf = pf->next) {
+        if (pf->body && pf->body->kind == AST_STRING) {
+            continue;
+        }
+        if (pf->callSites == 0) {
+            if (pf->is_public && (keepAll || P == allparse)) {
+                MarkUsed(pf, "__public__");
+            } else if (pf->annotations) {
+                MarkUsed(pf, "__annotations__");
+            }
+        }
+    }
+    
+    return 1;
+}
+
+static int
+markFuncPointers(Module *P)
+{
+    Function *pf;
+
+    MarkStaticFunctionPointers(P->datblock);
+
+    for (pf = P->functions; pf; pf = pf->next) {
+        if (pf->callSites == 0 && pf->used_as_ptr) {
+            MarkUsed(pf, "__func_pointer__");
+        }
+    }
+    return 1;
+}
+
 void
 RemoveUnusedMethods(int isBinary)
 {
     Module *P, *LastP;
-    Function *pf;
-    Module *saveCur;
     int keep;
     int keepAll;
 
@@ -918,54 +994,22 @@ RemoveUnusedMethods(int isBinary)
     // FIXME: there's an awful lot of duplication with
     // CheckUnusedMethods; can we simplify that?
     gl_features_used = 0;
-    for (P = allparse; P; P = P->next) {
-        for (pf = P->functions; pf; pf = pf->next) {
-            pf->callSites = 0;
-        }
-    }
 
+    // zero out call sites
+    IterateOverModules(zeroCallSites);
+    
     if (isBinary && !keep) {
         MarkUsed(GetMainFunction(allparse), "__root__");
     } else {
         // mark stuff called via public functions
-        for (P = allparse; P; P = P->next) {
-            if (IsSystemModule(P)) continue;
-            if (P->superclass) continue;
-            for (pf = P->functions; pf; pf = pf->next) {
-                if (pf->body && pf->body->kind == AST_STRING) {
-                    continue;
-                }
-                if (pf->callSites == 0) {
-                    if (pf->is_public && (keepAll || P == allparse)) {
-                        MarkUsed(pf, "__public__");
-                    } else if (pf->annotations) {
-                        MarkUsed(pf, "__annotations__");
-                    }
-                }
-            }
-        }
+        IterateOverModules(markPublicFuncsUsed);
     }
-    // and check for function pointers in data
-    for (P = allparse; P; P = P->next) {
-        saveCur = current;
-        current = P;
-        MarkStaticFunctionPointers(P->datblock);
-        current = saveCur;
 
-    }
     // mark all functions called via pointers
-    for (P = allparse; P; P = P->next) {
-        for (pf = P->functions; pf; pf = pf->next) {
-            if (pf->callSites == 0 && pf->used_as_ptr) {
-                MarkUsed(pf, "__func pointer__");
-            }
-        }
-    }
-
+    IterateOverModules(markFuncPointers);
+    
     // Now remove the ones that are never called
-    for (P = allparse; P; P = P->next) {
-        doPruneMethods(P);
-    }
+    IterateOverModules(doPruneMethods);
 
     // finally remove modules that have no defined functions and
     // no constant definitions or dat sections
@@ -984,38 +1028,43 @@ RemoveUnusedMethods(int isBinary)
     }
 }
 
+static int resolveChanges = 0;
+
+static int
+resolveFuncSymbols(Module *Q)
+{
+    Function *pf;
+    for (pf = Q->functions; pf; pf = pf->next) {
+        if ((pf->callSites > 0) && pf->body) {
+            if (pf->body->kind == AST_STRING) {
+                const char *filename = pf->body->d.string;
+                LoadFileIntoModule(filename, pf->module, NULL);
+                pf->callSites++;
+                if (pf->body->kind == AST_STRING) {
+                    ERROR(NULL, "No implementation for `%s' found in `%s'", pf->name, filename);
+                } else {
+                    resolveChanges = 1;
+                }
+            }
+        }
+    }
+    return 1;
+}
+    
 static int
 ResolveSymbols()
 {
-    Module *Q, *savecurrent;
-    Function *pf;
-    int changes = 0;
+    Module *Q;
 
-    savecurrent = current;
+    resolveChanges = 0;
+
     for (Q = allparse; Q; Q = Q->next) {
         if (Q->funcblock) {
             DeclareFunctions(Q);
         }
     }
-    for (Q = allparse; Q; Q = Q->next) {
-        for (pf = Q->functions; pf; pf = pf->next) {
-            if ((pf->callSites > 0) && pf->body) {
-                if (pf->body->kind == AST_STRING) {
-                    const char *filename = pf->body->d.string;
-                    current = Q;
-                    LoadFileIntoModule(filename, pf->module, NULL);
-                    pf->callSites++;
-                    if (pf->body->kind == AST_STRING) {
-                        ERROR(NULL, "No implementation for `%s' found in `%s'", pf->name, filename);
-                    } else {
-                        changes = 1;
-                    }
-                }
-            }
-        }
-    }
-    current = savecurrent;
-    return changes;
+    IterateOverModules(resolveFuncSymbols);
+    return resolveChanges;
 }
 
 #define MAX_TYPE_PASSES 4

@@ -576,6 +576,11 @@ extern SymbolTable basicReservedWords;
 extern SymbolTable cReservedWords;
 extern Module *systemModule;       // global functions and variables created by system
 
+/* function to iterate over modules */
+/* helper function */
+typedef int (*ModuleFunc)(Module *P);  /* returns 1 to continue iterating */
+void IterateOverModules(ModuleFunc fn);
+
 /* determine whether module is system */
 bool IsSystemModule(Module *P);
 

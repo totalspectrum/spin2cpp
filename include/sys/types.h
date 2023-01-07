@@ -58,15 +58,8 @@ struct s_vfs_file_t {
     off_t (*lseek)(vfs_file_t *fil, off_t offset, int whence);
     
     /* internal functions for formatting routines */
-    int putchar(int c) {
-        int i;
-        if (!putcf) return 0;
-        i = putcf(c, __this); return (i < 0) ? 0 : 1;
-    }
-    int getchar(void)  {
-        if (!getcf) return -1;
-        return getcf(__this);
-    }
+    int putchar(int c) __fromfile("libsys/vfs.c");
+    int getchar(void)  __fromfile("libsys/vfs.c");
 };
 
 typedef int (*putcfunc_t)(int c, vfs_file_t *fil);
