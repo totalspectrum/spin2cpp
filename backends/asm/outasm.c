@@ -2310,7 +2310,8 @@ CompileBasicBoolExpression(IRList *irl, AST *expr)
     IR *ir;
     int flags;
     int isUnsigned = 0;
-
+    ASTReportInfo saveinfo;
+    
     if (expr->kind == AST_OPERATOR) {
         opkind = (int)expr->d.ival;
     } else {
@@ -2319,10 +2320,12 @@ CompileBasicBoolExpression(IRList *irl, AST *expr)
             ERROR(expr, "Internal error, compiler needs explicit comparison to 0.0 for floats");
         } else if (IsInt64Type(typ)) {
             AST *hi, *lo, *newexpr;
+            AstReportAs(expr, &saveinfo);
             hi = NewAST(AST_GETHIGH, expr, NULL);
             lo = NewAST(AST_GETLOW, expr, NULL);
             newexpr = AstOperator('|', hi, lo);
             newexpr = AstOperator(K_NE, newexpr, AstInteger(0));
+            AstReportDone(&saveinfo);
             return CompileBasicBoolExpression(irl, newexpr);
         }
         opkind = -1;
@@ -3236,10 +3239,15 @@ CompileMultipleAssign(IRList *irl, AST *lhs, AST *rhs)
         if (siz <= LONG_SIZE) {
             r = CompileExpression(irl, target, NULL);
         } else if (siz == 8) {
-            Operand *rlo = CompileExpression(irl, NewAST(AST_GETLOW, target, NULL), NULL);
+            ASTReportInfo saveinfo;
+            AstReportAs(target, &saveinfo);
+            AST *loexpr = NewAST(AST_GETLOW, target, NULL);
+            AST *hiexpr = NewAST(AST_GETHIGH, target, NULL);
+            AstReportDone(&saveinfo);
+            Operand *rlo = CompileExpression(irl, loexpr, NULL);
             EmitMove(irl, rlo, ptr->op, lhs);
             ptr = ptr->next;
-            r = CompileExpression(irl, NewAST(AST_GETHIGH, target, NULL), NULL);
+            r = CompileExpression(irl, hiexpr, NULL);
         } else {
             ERROR(lhs, "Unable to multiply assign this target");
         }

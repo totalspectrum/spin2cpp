@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2022 Total Spectrum Software Inc.
+ * Copyright 2011-2023 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for Spin specific features
@@ -687,7 +687,11 @@ doSpinTransform(AST **astptr, int level, AST *parent)
         AST *target;
         AST *tmp;
         AST *seq1, *seq2;
+        AstReportAs(ast, &saveinfo);
         target = ast->right;
+        if (IsConstExpr(ast->left)) {
+            ERROR(ast, "left side of \\ may not be constant");
+        }
         if (level == 1) {
             // at toplevel we can ignore the old result
             // Do this even if we could do it natively, 
@@ -695,6 +699,7 @@ doSpinTransform(AST **astptr, int level, AST *parent)
             *astptr = AstAssign(ast->left, target);
         } else if (TraditionalBytecodeOutput()) {
             // Do nothing except transform the children
+            AstReportDone(&saveinfo);
             doSpinTransform(&ast->left, 0, ast);
             doSpinTransform(&ast->right, 0, ast);
             break; // Prevent infinite recursion
@@ -707,6 +712,7 @@ doSpinTransform(AST **astptr, int level, AST *parent)
             seq2 = NewAST(AST_SEQUENCE, seq1, tmp);
             *astptr = seq2;
         }
+        AstReportDone(&saveinfo);
         // if we did a trandform,
         // we may have a range reference in here, so do the
         // transform on the result
@@ -740,8 +746,10 @@ doSpinTransform(AST **astptr, int level, AST *parent)
             AST *objtype = ExprType(ast->left);
             if(IsArrayType(objtype)) {
                 AST *lookup;
+                AstReportAs(ast, &saveinfo);
                 lookup = NewAST(AST_ARRAYREF, ast->left, AstInteger(0));
                 *ast = *NewAST(ast->kind, lookup, ast->right);
+                AstReportDone(&saveinfo);
             }
         }
         break;
@@ -770,11 +778,13 @@ doSpinTransform(AST **astptr, int level, AST *parent)
                 switch (sym->kind) {
                 case SYM_TYPEDEF:
                 {
+                    AstReportAs(ast, &saveinfo);
                     // change this into a pointer cast
                     //AST *ptrtype = NewAST(AST_PTRTYPE, (AST *)sym->v.ptr, NULL);
                     AST *ptrtype = (AST *)sym->v.ptr;
                     AST *ptrcast = NewAST(AST_MEMREF, ptrtype, ast->right);
                     AST *deref = NewAST(AST_ARRAYREF, ptrcast, AstInteger(0));
+                    AstReportDone(&saveinfo);
                     *ast = *deref;
                     break;
                 }                
@@ -788,6 +798,7 @@ doSpinTransform(AST **astptr, int level, AST *parent)
                     typ = ExprType(ast->left);
                     if (!typ) typ = ast_type_long;
                     if (!IsArrayType(typ)) {
+                        AstReportAs(ast, &saveinfo);
                         AST *ptr = NewAST(AST_ADDROF, ast->left, NULL);
                         AST *memref = NewAST(AST_MEMREF, typ, ptr);
                         *ast = *NewAST(AST_ARRAYREF, memref, ast->right);
@@ -795,6 +806,7 @@ doSpinTransform(AST **astptr, int level, AST *parent)
                             SetLocalArray(curfunc, sym, NULL);
                             curfunc->local_address_taken = 1;
                         }
+                        AstReportDone(&saveinfo);
                     }
                     break;
                 default:
@@ -853,6 +865,7 @@ doSpinTransform(AST **astptr, int level, AST *parent)
             case K_BOOL_NOT:
             case K_DECODE:
             case K_ENCODE:
+                AstReportAs(ast, &saveinfo);
                 if (TraditionalBytecodeOutput()) {
                     lhsast = AstAssign(ast->right, NULL);
                     lhsast->d.ival = ast->d.ival;
@@ -869,6 +882,7 @@ doSpinTransform(AST **astptr, int level, AST *parent)
                     *astptr = ast = AstAssign(lhsast, ast);
                 }
                 doSpinTransform(astptr, level, parent);
+                AstReportDone(&saveinfo);
                 break;
             default:
                 break;
@@ -877,10 +891,12 @@ doSpinTransform(AST **astptr, int level, AST *parent)
             AST *lhsast;
             switch (ast->d.ival) {
             case K_DECODE:
+                AstReportAs(ast, &saveinfo);
                 lhsast = AstOperator(K_SHL, AstInteger(1), ast->right);
                 lhsast->lineidx = ast->lineidx;
                 lhsast->lexdata = ast->lexdata;
                 *astptr = ast = lhsast;
+                AstReportDone(&saveinfo);
                 break;
             }
         }
@@ -889,6 +905,7 @@ doSpinTransform(AST **astptr, int level, AST *parent)
             AST *seq1 = NULL;
             AST *seq2 = NULL;
             AST *lhsast;
+            AstReportAs(ast, &saveinfo);
             if (ExprHasSideEffects(ast->left)) {
                 tmpx = AstTempLocalVariable("_temp_", NULL);
                 seq1 = NewAST(AST_SEQUENCE, AstAssign(tmpx, ast->left), NULL);
@@ -919,12 +936,15 @@ doSpinTransform(AST **astptr, int level, AST *parent)
                 lhsast = NewAST(AST_SEQUENCE, seq1, lhsast);
             }
             *astptr = ast = lhsast;
+            AstReportDone(&saveinfo);
         } else if (ast->d.ival == K_BOOL_XOR) {
             // transform a XOR b to (a<>0) ^ (b<>0)
+            AstReportAs(ast, &saveinfo);
             ast = AstOperator('^',
                               AstOperator(K_NE, ast->left, AstInteger(0)),
                               AstOperator(K_NE, ast->right, AstInteger(0)));
             *astptr = ast;
+            AstReportDone(&saveinfo);
         }
         /* fall through */
     default:
