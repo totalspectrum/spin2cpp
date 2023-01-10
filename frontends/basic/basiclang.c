@@ -583,7 +583,9 @@ adjustFuncCall(AST *ast)
     AST *methodref;
     AST *methodcall;
     Module *P = NULL;
+    ASTReportInfo saveinfo;
 
+    AstReportAs(ast, &saveinfo);
 
     if (left->kind == AST_METHODREF) {
         methodcall = left;
@@ -606,6 +608,7 @@ adjustFuncCall(AST *ast)
             }
             if (!IsClassType(modtyp)) {
                 ERROR(methodref, "Unable to determine class type");
+                AstReportDone(&saveinfo);
                 return;
             }
             P = GetClassPtr(modtyp);
@@ -648,6 +651,7 @@ adjustFuncCall(AST *ast)
             }
         }
     }
+    AstReportDone(&saveinfo);
 }
 
 static AST *
