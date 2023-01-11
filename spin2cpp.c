@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2022 Total Spectrum Software Inc.
+ * Copyright 2011-2023 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -560,6 +560,8 @@ main(int argc, const char **argv)
     if (gl_p2) {
         pp_define(&gl_pp, "__P2__", "1");
         pp_define(&gl_pp, "__propeller2__", "1");
+    } else {
+        pp_define(&gl_pp, "__P1__", "1");
     }
     /* set up the binary offset */
     gl_dat_offset = -1; // by default offset is unknown

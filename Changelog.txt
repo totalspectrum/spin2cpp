@@ -1,3 +1,7 @@
+Version 5.9.25
+- Added __P1__ macro defined only for P1 compiles
+- Improved some error messages
+
 Version 5.9.24
 - Added --zip flag to create archive of source files
 - Allowed __fromfile inside classes, and fixed symbol resolution for this case

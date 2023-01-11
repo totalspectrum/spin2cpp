@@ -59,7 +59,8 @@ Symbol                   | When Defined
 `__propeller__`          | always defined to 1 (for P1) or 2 (for P2)
 `__FLEXC__`              | always defined to the flexspin/flexcc major version number
 `__FLEXSPIN__`           | always defined to the flexspin/flexcc major version number
-`__P2__`                 | only defined if compiling for Propeller 2 (obsolete)
+`__P1__`                 | only defined if compiling for Propeller 1
+`__P2__`                 | only defined if compiling for Propeller 2
 `__propeller2__`         | only defined if compiling for Propeller 2
 `__ILP32__`              | always defined; some programs use this to determine pointer size
 `__HAVE_FCACHE__`        | if the FCACHE optimization is enabled

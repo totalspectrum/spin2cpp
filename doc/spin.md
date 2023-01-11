@@ -92,6 +92,7 @@ There are several predefined symbols:
 Symbol           | When Defined
 -----------------|-------------
 `__propeller__`  | always defined to 1 (for P1) or 2 (for P2)
+`__P1__`         | if compiling for Propeller 1
 `__propeller2__` | if compiling for Propeller 2
 `__P2__`         | if compiling for Propeller 2
 `__FLEXSPIN__`   | if the `flexspin` front end is used

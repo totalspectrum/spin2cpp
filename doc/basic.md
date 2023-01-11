@@ -114,8 +114,9 @@ There are several predefined symbols:
 Symbol           | When Defined
 -----------------|-------------
 `__propeller__`  | always defined to 1 (for P1) or 2 (for P2)
+`__P1__`         | only defined if compiling for Propeller 1`
+`__P2__`         | only defined if compiling for Propeller 2
 `__propeller2__` | only defined if compiling for Propeller 2
-`__P2__`         | obsolete version of `__propeller2__`
 `__FLEXBASIC__`  | always defined to the FlexProp major version number
 `__FLEXSPIN__`   | if the `flexspin` front end is used
 `__SPINCVT__`    | always defined to the FlexProp major version number

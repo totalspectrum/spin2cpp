@@ -177,6 +177,8 @@ int ProcessCommandLine(CmdLineOptions *cmd)
     if (gl_p2) {
         pp_define(&gl_pp, "__P2__", "1");
         pp_define(&gl_pp, "__propeller2__", "1");
+    } else {
+        pp_define(&gl_pp, "__P1__", "1");
     }
     if (gl_fixedreal) {
         pp_define(&gl_pp, "__fixedreal__", "1");
