@@ -2944,7 +2944,7 @@ cgramyyerror(const char *msg)
     ERRORHEADER(current->Lptr->fileName, current->Lptr->lineCounter, "error");
 
     if (!strcmp(msg, "syntax error, unexpected $end")) {
-        fprintf(stderr, "unexpected end of input");
+        fprintf(stderr, "syntax error, unexpected end of file");
         msg = "";
     }
     // massage bison's error messages to make them easier to understand

@@ -1,6 +1,6 @@
 /*
  * BASIC compiler parser
- * Copyright (c) 2011-2022 Total Spectrum Software Inc.
+ * Copyright (c) 2011-2023 Total Spectrum Software Inc.
  * See the file COPYING for terms of use.
  */
 
@@ -2710,7 +2710,7 @@ basicyyerror(const char *msg)
     ERRORHEADER(current->Lptr->fileName, current->Lptr->lineCounter, "error");
 
     if (!strcmp(msg, "syntax error, unexpected $end")) {
-        fprintf(stderr, "unexpected end of input");
+        fprintf(stderr, "syntax error, unexpected end of file");
         msg = "";
     }
     // massage bison's error messages to make them easier to understand
