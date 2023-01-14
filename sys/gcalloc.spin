@@ -184,12 +184,13 @@ pri _gc_tryalloc(size, reserveflag) : ptr | availsize, lastptr, nextptr, heap_ba
   return (ptr + headersize) | POINTER_MAGIC
 
 pri _gc_errmsg(s) | c
-  repeat while ((c:=byte[s++]) <> 0)
-    _tx(c)
-  return 0
+  if (__DEBUG__)
+    repeat while ((c:=byte[s++]) <> 0)
+      _tx(c)
 
 pri _gc_errhex(h)
-  _txhex(h)
+  if (__DEBUG__)
+    _txhex(h)
   
 pri _gc_alloc(size)
   return _gc_doalloc(size, GC_FLAG_RESERVED)

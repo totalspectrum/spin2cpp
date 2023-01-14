@@ -106,10 +106,19 @@ InitGlobalModule(void)
     int oldtmpnum;
     int saveyydebug;
     const char *syscode = "";
-
+    int debugVal = gl_debug;
+    int bcVal = (gl_output == OUTPUT_BYTECODE);
+    
     current = systemModule = NewModule("_system_", LANG_SPIN_SPIN1);
     table = &systemModule->objsyms;
 
+    /* add some useful predefined constants */
+    sym = AddSymbol(table, "__debug__", SYM_CONSTANT, AstInteger(debugVal), NULL);
+    sym->flags |= SYMF_GLOBAL;
+    sym = AddSymbol(table, "__bytecode__", SYM_CONSTANT, AstInteger(bcVal), NULL);
+    sym->flags |= SYMF_GLOBAL;
+
+    /* global variables */
     sym = AddSymbol(table, "__clkfreq_var", SYM_VARIABLE, ast_type_long, NULL);
     sym->flags |= SYMF_GLOBAL;
     sym->offset = gl_p2 ? (P2_CONFIG_BASE+0x4) : 0;
