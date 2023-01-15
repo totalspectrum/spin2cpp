@@ -1841,7 +1841,15 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
             ERROR(node,"Function call has no symbol");
         }
         return;
-    } else if (sym->kind == SYM_BUILTIN) {
+    }
+    if (sym->kind == SYM_ALIAS) {
+        AST *newNode = (AST *)sym->v.ptr;
+        AST *params = node->right;
+        newNode = NewAST(AST_FUNCCALL, newNode, params);
+        BCCompileFunCall(irbuf, newNode, context, asExpression, rescueAbort);
+        return;
+    }
+    if (sym->kind == SYM_BUILTIN) {
         anchorOp.kind = (enum ByteOpKind)0; // Where we're going, we don't need Stack Frames
         if (rescueAbort) ERROR(node,"Can't rescue on builtin call!");
 
