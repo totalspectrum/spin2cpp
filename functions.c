@@ -2750,10 +2750,9 @@ MarkUsedBody(AST *body, const char *caller)
             sym = LookupSymbolInTable(&P->objsyms, GetUserIdentifierName(body->right));
             if (sym && sym->kind == SYM_FUNCTION) {
                 MarkUsed((Function *)sym->v.ptr, sym->our_name);
-                return;
             }
         }
-        break;
+        return;
     case AST_COGINIT:
         UseInternal("_coginit");
         // sanity check that enough arguments are given
