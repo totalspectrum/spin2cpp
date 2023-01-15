@@ -1,0 +1,43 @@
+{ libc bindings for spin2 }
+
+CON
+  { have to keep these in sync with header files manually }
+
+  { stdio }
+  NULL = 0
+  EOF = -1
+  _PATH_MAX = 256
+  FILENAME_MAX = _PATH_MAX
+#ifdef __P2__
+  BUFSIZ = 1024
+#else
+  BUFSIZ = 128
+#endif
+
+  { unistd.h }
+  SEEK_SET = 0
+  SEEK_CUR = 1
+  SEEK_END = 2
+  F_OK = 0
+  R_OK = 4
+  W_OK = 2
+  X_OK = 1
+
+  { stat.h }
+  S_IRUSR = $0100 { octal: 0000400 }
+  S_IWUSR = $0080 { octal: 0000200 }
+  S_IXUSR = $0040 { octal: 0000100 }
+  S_IFMT =  $f000 { octal: 0170000 }
+  S_IFREG = $0000 { octal: 0000000 }
+  S_IFDIR = $1000 { octal: 0010000 }
+  S_IFCHR = $2000 { octal: 0020000 }
+  S_IFBLK = $3000 { octal: 0030000 }
+
+  { stdlib.h }
+  EXIT_FAILURE = 1
+  EXIT_SUCCESS = 0
+
+OBJ _ : "libc.a"
+
+PUB libc_main
+  ' not a top level object
