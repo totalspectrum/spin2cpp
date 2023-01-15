@@ -271,6 +271,7 @@ Aliases basicalias[] = {
     { "rdpin", "_rdpin" },
     { "rnd", "_basic_rnd" },
     { "strerror$", "_strerror" },
+    { "umount", "_umount" },
     { "val", "__builtin_atof" },
     { "val%", "__builtin_atoi" },
     { "varptr", "__addr" },
@@ -2599,8 +2600,10 @@ static int makeAnonAlias(Symbol *sym, void *arg)
     Symbol *newsym;
 
     if (sym->kind == SYM_WEAK_ALIAS) {
+        //printf("ignoring weak alias for %s\n", newname);
         return 1;
     }
+    //printf("adding alias for %s\n", newname);
     symident = AstIdentifier(newname);
     expr = NewAST(AST_METHODREF, prefix, symident);
     newsym = AddSymbolPlaced(&P->objsyms, newname, SYM_ALIAS, expr, NULL, symident);
