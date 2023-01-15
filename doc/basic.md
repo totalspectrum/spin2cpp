@@ -404,6 +404,7 @@ tan
 trim$
 true
 ucase$
+umount
 val
 val%
 varptr
@@ -3431,6 +3432,14 @@ An unsigned 32 bit integer, occupying four bytes of computer memory. The signed 
 ### ULONGINT
 
 An unsigned 64 bit integer, occupying eight bytes of computer memory. The signed version of this is `longint`.
+
+### UMOUNT
+
+Unmounts a file system previously set up by the `mount` command. For example, after:
+```
+   umount "/sd"
+```
+the file system previously mounted at "/sd" will no longer be accessible.
 
 ### UNION
 

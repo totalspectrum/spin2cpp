@@ -1,5 +1,6 @@
 Version 5.9.25
 - Added __P1__ macro defined only for P1 compiles
+- Added UMOUNT command for BASIC
 - Fixed ALIGNL in Spin2 VAR blocks
 - Improved some error messages
 - Made heap corruption code check depend on -g flag
