@@ -1976,7 +1976,7 @@ DeclareMemberVariablesOfSizeFlag(Module *P, int sizeRequest, int offset)
             }
         }
         if (0 != (curSizeFlag & sizeRequest)) {
-            if (sizeRequest & (SIZEFLAG_VAR|SIZEFLAG_OBJ)) {
+            if ( (sizeRequest & (SIZEFLAG_VAR|SIZEFLAG_OBJ)) || !gl_p2 ) {
                 // round offset up to necessary alignment
                 // If you change this, be sure to change code for aligning
                 // initializers, too!
@@ -2115,7 +2115,7 @@ DeclareMemberVariables(Module *P)
         offset = DeclareMemberVariablesOfSizeFlag(P, SIZEFLAG_VAR, offset);
         offset = DeclareMemberVariablesOfSizeFlag(P, SIZEFLAG_OBJ|SIZEFLAG_DONE, offset);
     } else if (P->mainLanguage == LANG_SPIN_SPIN2) {
-        // Spin always declares longs first, then words, then bytes
+        // Spin2 allows the variables to be mixed, but puts the objects at the end
         offset = DeclareMemberVariablesOfSizeFlag(P, SIZEFLAG_LONG|SIZEFLAG_WORD|SIZEFLAG_BYTE, offset);
         offset = DeclareMemberVariablesOfSizeFlag(P, SIZEFLAG_VAR|SIZEFLAG_OBJ|SIZEFLAG_DONE, offset);
     } else {
