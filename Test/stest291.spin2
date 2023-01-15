@@ -1,0 +1,13 @@
+VAR
+
+    long array1
+    word word1
+    alignl
+    long array2
+    
+PUB main()
+    OUTA := array2
+    
+VAR
+   long array3                             ' crashes with this definition
+

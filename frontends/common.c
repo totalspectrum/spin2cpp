@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2022 Total Spectrum Software Inc.
+ * Copyright 2011-2023 Total Spectrum Software Inc.
  *
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -2684,12 +2684,14 @@ static int fixupByteWordLongOffset(Symbol *sym, void *arg)
         return 1;
     }
     int siz = TypeSize(typ);
+    if (sym->offset < A->curOffset) {
+        sym->offset = A->curOffset;
+    } else {
+        A->curOffset = sym->offset;
+    }
 #ifdef DEBUG_OFFSETS
     printf("  VAR %s orig offset %d new offset %d size %d\n", sym->our_name, sym->offset, A->curOffset, siz);
 #endif
-    if (sym->offset != A->curOffset) {
-        sym->offset = A->curOffset;
-    }
     if (A->isUnion) {
         if (A->maxOffset < siz) {
             A->maxOffset = siz;
