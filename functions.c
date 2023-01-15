@@ -2722,15 +2722,21 @@ MarkUsedBody(AST *body, const char *caller)
     case AST_IDENTIFIER:
         name = GetIdentifierName(body);
         sym = LookupSymbol(name);
-        if (sym && sym->kind == SYM_FUNCTION) {
-            Function *func = (Function *)sym->v.ptr;
-            MarkUsed(func, sym->our_name);
-            if (func->attributes & FUNC_ATTR_NEEDSINIT) {
-                sym = LookupSymbol("__init__");
-                if (sym && sym->kind == SYM_FUNCTION) {
-                    func = (Function *)sym->v.ptr;
-                    MarkUsed(func, "needsinit");
+        if (sym) {
+            if (sym->kind == SYM_FUNCTION) {
+                Function *func = (Function *)sym->v.ptr;
+                MarkUsed(func, sym->our_name);
+                if (func->attributes & FUNC_ATTR_NEEDSINIT) {
+                    sym = LookupSymbol("__init__");
+                    if (sym && sym->kind == SYM_FUNCTION) {
+                        func = (Function *)sym->v.ptr;
+                        MarkUsed(func, "needsinit");
+                    }
                 }
+            } else if (sym->kind == SYM_ALIAS) {
+                //printf("alias %s\n", sym->our_name);
+                AST *newexpr = (AST *)sym->v.ptr;
+                MarkUsedBody(newexpr, caller);
             }
         }
         return;

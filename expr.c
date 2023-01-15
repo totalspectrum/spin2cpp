@@ -2389,6 +2389,10 @@ FindFuncSymbol(AST *ast, AST **objrefPtr, int errflag)
         } else if (errflag) {
             ERROR(ast, "NULL pointer in function call");
         }
+        if (sym && sym->kind == SYM_ALIAS) {
+            AST *newexpr = (AST *)sym->v.ptr;
+            return FindFuncSymbol(newexpr, objrefPtr, errflag);
+        }
     }
     if (objrefPtr) *objrefPtr = objref;
     return sym;

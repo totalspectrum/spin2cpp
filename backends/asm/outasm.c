@@ -4300,7 +4300,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
                 break;
             default:
                 ERROR(expr, "Unable to dereference symbol %s in %s", name, P->classname);
-                break;
+                return EmptyOperand();
             }
         }
         finaltype = ExprType(expr);

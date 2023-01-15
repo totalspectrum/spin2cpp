@@ -1174,9 +1174,31 @@ objline:
     {
         AST *paramlist = $4;
         AST *filename = $3;
-        AST *typ = NewObjectWithParams($1, filename, 1, paramlist);
+        AST *ident = $1;
+        AST *typ = NewObjectWithParams(ident, filename, 1, paramlist);
         /* last parameter is 1 for a private member */
-        DeclareOneMemberVar(current, $1, typ, 0);
+        DeclareOneMemberVar(current, ident, typ, 0);
+        $$ = typ;
+    }
+  | SP_EMPTY ':' string optobjparams
+    {
+        AST *paramlist = $4;
+        AST *filename = $3;
+        AST *ident = AstTempIdentifier("__anonymous__");
+        
+        AST *typ = NewObjectWithParams(ident, filename, 1, paramlist);
+        Module *P;
+        
+        /* last parameter is 1 for a private member */
+        DeclareOneMemberVar(current, ident, typ, 0);
+
+        /* create aliases */
+        P = GetClassPtr(typ);
+        if (!P) {
+            SYNTAX_ERROR("Internal error, could not find class for _ declaration");
+        } else {
+            DeclareAnonymousAliases(current, P, ident);
+        }
         $$ = typ;
     }
   | identdecl '=' string optobjparams
