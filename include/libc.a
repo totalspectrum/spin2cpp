@@ -72,7 +72,6 @@ int fclose(_FILE *f) __fromfile("libc/stdio/fopen.c");
 int  fseek(_FILE *f, long offset, int whence) __fromfile("libc/stdio/fseek.c");
 long ftell(_FILE *f)                          __fromfile("libc/stdio/fseek.c");
 
-
 /* libc/stdio/fwrite.c */
 size_t fwrite(const void *ptr, size_t size, size_t n, _FILE *f) __fromfile("libc/stdio/fwrite.c");
 size_t fread(void *ptr, size_t size, size_t n, _FILE *f) __fromfile("libc/stdio/fwrite.c");
@@ -200,9 +199,12 @@ int usleep(unsigned int n) __fromfile("libc/time/usleep.c");
 int chdir(const char *path) __fromfile("libc/unix/_mount.c");
 char *getcwd(char *buf, size_t siz) __fromfile("libc/unix/_mount.c");
 
+#if 0
+// these already have built in aliases in FlexC
 /* libc/unix/mount.c */
 int mount(char *path, void *v) __fromfile("libc/unix/mount.c");
 int umount(char *buf) __fromfile("libc/unix/mount.c");
+#endif
 
 /* libc/unix/opendir.c */
 DIR *opendir(const char *orig_name) __fromfile("libc/unix/opendir.c");
