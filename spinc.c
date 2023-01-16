@@ -830,6 +830,20 @@ doPruneMethods(Module *P)
 static void MarkStaticFunctionPointers(AST *list);
 
 //
+// check to see whether annotations should force a function
+// to be compiled
+//
+static bool
+AnnotationsForceUse(AST *annote) {
+    const char *str = (const char *)annote->d.ptr;
+
+    if (!strcmp(str, "inline")) {
+        return false;
+    }
+    return true;
+}
+
+//
 // remove unused methods
 // if "isBinary" is true we can eliminate any methods not called
 // directly or indirectly from the main function
@@ -866,7 +880,7 @@ CheckUnusedMethods(int isBinary)
                 if (pf->callSites != 0) {
                     if (pf->is_public) {
                         MarkUsed(pf, "__public__");
-                    } else if (pf->annotations) {
+                    } else if (pf->annotations && AnnotationsForceUse(pf->annotations)) {
                         MarkUsed(pf, "__annotations__");
                     }
                 }
@@ -965,7 +979,7 @@ static int markPublicFuncsUsed(Module *P) {
         if (pf->callSites == 0) {
             if (pf->is_public && (keepAll || P == allparse)) {
                 MarkUsed(pf, "__public__");
-            } else if (pf->annotations) {
+            } else if (pf->annotations && AnnotationsForceUse(pf->annotations)) {
                 MarkUsed(pf, "__annotations__");
             }
         }

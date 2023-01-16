@@ -152,16 +152,49 @@ FindClassByAst(AST *astName)
 static AST *MergePrefix(AST *prefix, AST *first)
 {
     if (prefix) {
-        // make sure we migrate STATIC, REGISTER, and EXTERN to the front of the list
+        AST *register_pre = NULL;
+        AST *static_pre = NULL;
+        AST *extern_pre = NULL;
+        AST *annote_pre = NULL;
+        
+        // make sure we migrate INLINE, REGISTER, STATIC and EXTERN to the front of the list
         if (first && first->kind == AST_REGISTER) {
             first = first->left;
             prefix = AddToLeftList(prefix, NewAST(AST_REGISTER, NULL, NULL));
         }
-        if (first && (first->kind == AST_STATIC || first->kind == AST_EXTERN || first->kind == AST_REGISTER || first->kind == AST_ANNOTATION)) {
-            first->left = AddToLeftList(prefix, first->left);
-        } else {
-            first = AddToLeftList(prefix, first);
+        while (first) {
+            if (first->kind == AST_REGISTER) {
+                register_pre = first;
+            } else if (first->kind == AST_STATIC) {
+                static_pre = first;
+            } else if (first->kind == AST_EXTERN) {
+                extern_pre = first;
+            } else if (first->kind == AST_ANNOTATION) {
+                annote_pre = first;
+            } else {
+                break;
+            }
+            first = first->left;
         }
+        // add in reverse order
+        if (extern_pre) {
+            extern_pre->left = prefix;
+            prefix = extern_pre;
+        }
+        if (static_pre) {
+            static_pre->left = prefix;
+            prefix = static_pre;
+        }
+        if (register_pre) {
+            register_pre->left = prefix;
+            prefix = register_pre;
+        }
+        if (annote_pre) {
+            annote_pre->left = prefix;
+            prefix = annote_pre;
+        }
+
+        first = AddToLeftList(prefix, first);
     }
     return first;
 }
@@ -840,9 +873,6 @@ static int IsStatic(AST *ftype) {
 static AST *
 DeclareCTypedFunction(Module *P, AST *ftype, AST *nameAst, int is_public, AST *body, AST *attribute)
 {
-    if (ftype && ftype->kind == AST_EXTERN) {
-        ftype = ftype->left;
-    }
     if (ftype && ftype->kind == AST_ANNOTATION) {
         if (attribute) {
             const char *name = nameAst ? GetUserIdentifierName(nameAst) : "";
@@ -852,6 +882,9 @@ DeclareCTypedFunction(Module *P, AST *ftype, AST *nameAst, int is_public, AST *b
             ftype = ftype->left;
             attribute->left = NULL;
         }
+    }
+    if (ftype && ftype->kind == AST_EXTERN) {
+        ftype = ftype->left;
     }
     if (IsStatic(ftype) && nameAst->kind == AST_IDENTIFIER) {
         /* declare a local alias for the name */
