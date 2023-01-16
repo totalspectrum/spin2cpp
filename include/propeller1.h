@@ -44,6 +44,10 @@
  */
 #define getcnt() _CNT
 
+#ifndef __GNUC__
+#define __inline__
+#endif
+
 /**
  * @brief getpin accessor used to read the state of a pin.
  *
