@@ -2208,6 +2208,7 @@ int TypeSize(AST *typ)
     case AST_MODIFIER_CONST:
     case AST_MODIFIER_VOLATILE:
     case AST_MODIFIER_SEND_ARGS:
+    case AST_ANNOTATION:
         return TypeSize(typ->left);
     case AST_ARRAYTYPE:
         if (!IsConstExpr(typ->right)) {

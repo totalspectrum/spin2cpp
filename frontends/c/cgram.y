@@ -157,7 +157,7 @@ static AST *MergePrefix(AST *prefix, AST *first)
             first = first->left;
             prefix = AddToLeftList(prefix, NewAST(AST_REGISTER, NULL, NULL));
         }
-        if (first && (first->kind == AST_STATIC || first->kind == AST_EXTERN || first->kind == AST_REGISTER)) {
+        if (first && (first->kind == AST_STATIC || first->kind == AST_EXTERN || first->kind == AST_REGISTER || first->kind == AST_ANNOTATION)) {
             first->left = AddToLeftList(prefix, first->left);
         } else {
             first = AddToLeftList(prefix, first);
@@ -181,7 +181,7 @@ CombineTypes(AST *first, AST *second, AST **identifier, Module **module)
     if (!second || first == second) {
         return first;
     }
-    while (first && (first->kind == AST_STATIC || first->kind == AST_TYPEDEF || first->kind == AST_EXTERN || first->kind == AST_REGISTER)) {
+    while (first && (first->kind == AST_STATIC || first->kind == AST_TYPEDEF || first->kind == AST_EXTERN || first->kind == AST_REGISTER || first->kind == AST_ANNOTATION)) {
         AST *dup = DupAST(first);
         first = first->left;
         dup->left = NULL;
@@ -843,6 +843,16 @@ DeclareCTypedFunction(Module *P, AST *ftype, AST *nameAst, int is_public, AST *b
     if (ftype && ftype->kind == AST_EXTERN) {
         ftype = ftype->left;
     }
+    if (ftype && ftype->kind == AST_ANNOTATION) {
+        if (attribute) {
+            const char *name = nameAst ? GetUserIdentifierName(nameAst) : "";
+            ERROR(attribute, "cannot accept multiple annotations (like __attribute__ or inline) on function %s", name);
+        } else {
+            attribute = ftype;
+            ftype = ftype->left;
+            attribute->left = NULL;
+        }
+    }
     if (IsStatic(ftype) && nameAst->kind == AST_IDENTIFIER) {
         /* declare a local alias for the name */
         const char *nameString = GetIdentifierName(nameAst);
@@ -1485,7 +1495,13 @@ storage_class_specifier
 	| C_AUTO
             { $$ = NULL; }
 	| C_INLINE
-            { $$ = NULL; }
+            {
+                AST *attr = NewAST(AST_ANNOTATION, NULL, NULL);
+                attr->d.string = "inline";
+                $$ = attr;
+            }
+        | C_ATTRIBUTE
+            { $$ = $1; }        
 	| C_REGISTER
             { $$ = NewAST(AST_REGISTER, NULL, NULL); }
 	;

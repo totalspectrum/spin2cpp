@@ -403,6 +403,7 @@ typedef struct funcdef {
     unsigned used_as_ptr:1;  // 1 if function's address is taken as a pointer
     unsigned local_address_taken: 1; // 1 if a local variable or parameter has its address taken
     unsigned no_inline:1;    // 1 if function cannot be inlined
+    unsigned prefer_inline:1; // 1 if function should be inlined more often
     unsigned is_leaf:1;      // 1 if function is a leaf function
     unsigned uses_alloca:1;  // 1 if function uses alloca
     unsigned stack_local:1;  // 1 if function has a local that must go on stack
@@ -416,6 +417,7 @@ typedef struct funcdef {
 #define FUNC_ATTR_DESTRUCTOR  0x0002  /* does not actually work yet */
 #define FUNC_ATTR_NEEDSINIT   0x0004  /* triggers call to __init__ method to be inserted at start of main */
 #define FUNC_ATTR_COMPLEXIO   0x0008  /* full file I/O required for program if this function is called */
+    
     /* number of places this function is called from */
     /* 0 == unused function, 1== ripe for inlining */
     unsigned callSites;

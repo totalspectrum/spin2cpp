@@ -928,6 +928,8 @@ doDeclareFunction(AST *funcblock)
     if (FindAnnotation(annotation, "needsinit"))   fdef->attributes |= FUNC_ATTR_NEEDSINIT;
     if (FindAnnotation(annotation, "complexio"))   fdef->attributes |= FUNC_ATTR_COMPLEXIO;
 
+    if (FindAnnotation(annotation, "inline")) fdef->prefer_inline = 1;
+    
     if (fdef->body) {
         // we already saw a definition for the function; if this was just
         // an alias then it may be OK

@@ -5106,7 +5106,9 @@ ShouldBeInlined(Function *f)
     int paramfactor;
     int threshold;
 
-    if (gl_p2) {
+    if (f->prefer_inline) {
+        threshold = 100;
+    } else if (gl_p2) {
         threshold = INLINE_THRESHOLD_P2;
     } else {
         threshold = INLINE_THRESHOLD_P1;

@@ -2,7 +2,7 @@
 // Simple lexical analyzer for a language where indentation
 // may be significant (Spin); also contains lexers for BASIC and C
 //
-// Copyright (c) 2011-2022 Total Spectrum Software Inc.
+// Copyright (c) 2011-2023 Total Spectrum Software Inc.
 //
 #include <stdio.h>
 #include <string.h>
