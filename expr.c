@@ -2862,7 +2862,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
                         return NULL;
                     }
                 }
-                ERROR(expr, "Object called is not a function");
+                ERROR(expr, "%s is not a function but is called like one", sym->user_name);
                 break;
             default:
                 return NULL;
