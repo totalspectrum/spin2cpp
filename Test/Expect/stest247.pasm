@@ -83,8 +83,7 @@ LR__0003
  if_ne	jmp	#__system___float_mul_ret
 	cmps	__system___float_mul_bexp_0011, #255 wc
  if_b	cmp	__system___float_mul_bexp_0011, #0 wz
- if_c_and_nz	jmp	#LR__0004
- if_b	cmp	__system___float_mul_b_0009, #0 wz
+ if_c_and_z	cmp	__system___float_mul_b_0009, #0 wz
  if_c_and_nz	jmp	#LR__0004
  if_b	mov	result1, imm_2146435072_
  if_b	jmp	#__system___float_mul_ret

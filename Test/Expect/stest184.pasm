@@ -501,11 +501,10 @@ LR__0060
 	mov	__system___gc_docollect_ptr, result1 wz
  if_ne	jmp	#LR__0060
 LR__0061
-	mov	_system___gc_docollect_tmp001_, #0
 	mov	arg01, #0
 	call	#__system____topofstack
 	mov	arg02, result1
-	mov	arg01, _system___gc_docollect_tmp001_
+	mov	arg01, #0
 	call	#__system___gc_markhub
 	call	#__system___gc_ptrs
 	mov	__system___gc_markcog_heap_base, result1
@@ -534,37 +533,34 @@ LR__0062
  if_ne	shl	__system___gc_nextBlockPtr_t, #4
  if_ne	add	arg01, __system___gc_nextBlockPtr_t
  if_ne	mov	result1, arg01
-	mov	__system___gc_docollect_nextptr, result1 wz
+	mov	__system___gc_docollect__cse__0001, result1 wz
  if_e	jmp	#__system___gc_docollect_ret
 LR__0063
-	mov	__system___gc_docollect_ptr, __system___gc_docollect_nextptr
+	mov	__system___gc_docollect_ptr, __system___gc_docollect__cse__0001
 	mov	arg01, __system___gc_docollect_ptr
 	rdword	__system___gc_nextBlockPtr_t, arg01 wz
  if_ne	shl	__system___gc_nextBlockPtr_t, #4
  if_ne	add	arg01, __system___gc_nextBlockPtr_t
  if_ne	mov	result1, arg01
-	mov	__system___gc_docollect_nextptr, result1
-	mov	__system___gc_docollect__cse__0002, __system___gc_docollect_ptr
-	add	__system___gc_docollect__cse__0002, #2
-	rdword	_system___gc_docollect_tmp001_, __system___gc_docollect__cse__0002
-	test	_system___gc_docollect_tmp001_, #32 wz
+	mov	__system___gc_docollect__cse__0001, result1
+	mov	__system___gc_docollect__cse__0000, __system___gc_docollect_ptr
+	add	__system___gc_docollect__cse__0000, #2
+	rdword	__system___gc_docollect__cse__0000, __system___gc_docollect__cse__0000
+	test	__system___gc_docollect__cse__0000, #32 wz
+ if_e	mov	_system___gc_docollect_tmp002_, __system___gc_docollect__cse__0000
+ if_e	and	_system___gc_docollect_tmp002_, #16 wz
  if_ne	jmp	#LR__0065
-	mov	_system___gc_docollect_tmp002_, _system___gc_docollect_tmp001_
-	and	_system___gc_docollect_tmp002_, #16 wz
- if_ne	jmp	#LR__0065
-	and	_system___gc_docollect_tmp001_, #15
-	mov	__system___gc_docollect_flags, _system___gc_docollect_tmp001_
-	cmp	__system___gc_docollect_flags, __system___gc_docollect_ourid wz
- if_ne	cmp	__system___gc_docollect_flags, #14 wz
+	and	__system___gc_docollect__cse__0000, #15
+	cmp	__system___gc_docollect__cse__0000, __system___gc_docollect_ourid wz
+ if_ne	cmp	__system___gc_docollect__cse__0000, #14 wz
  if_ne	jmp	#LR__0064
 	mov	arg01, __system___gc_docollect_ptr
 	call	#__system___gc_dofree
-	mov	_system___gc_docollect_tmp001_, result1
-	mov	__system___gc_docollect_nextptr, _system___gc_docollect_tmp001_
+	mov	__system___gc_docollect__cse__0001, result1
 LR__0064
 LR__0065
-	cmp	__system___gc_docollect_nextptr, #0 wz
- if_ne	cmps	__system___gc_docollect_nextptr, __system___gc_docollect_endheap wc
+	cmp	__system___gc_docollect__cse__0001, #0 wz
+ if_ne	cmps	__system___gc_docollect__cse__0001, __system___gc_docollect_endheap wc
  if_c_and_nz	jmp	#LR__0063
 __system___gc_docollect_ret
 	ret
@@ -679,13 +675,7 @@ __system___gc_docollect__cse__0000
 	res	1
 __system___gc_docollect__cse__0001
 	res	1
-__system___gc_docollect__cse__0002
-	res	1
 __system___gc_docollect_endheap
-	res	1
-__system___gc_docollect_flags
-	res	1
-__system___gc_docollect_nextptr
 	res	1
 __system___gc_docollect_ourid
 	res	1
@@ -808,8 +798,6 @@ __system___gc_tryalloc_saveptr
 __system___gc_tryalloc_size
 	res	1
 _system___gc_doalloc_tmp001_
-	res	1
-_system___gc_docollect_tmp001_
 	res	1
 _system___gc_docollect_tmp002_
 	res	1
