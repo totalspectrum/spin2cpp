@@ -723,6 +723,11 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
         }
     }
     c = lexgetc(L);
+    if (c == '%') {
+        // first character may be %
+        flexbuf_addchar(&fb, c);
+        c = lexgetc(L);
+    }
     while (isIdentifierChar(c) || c == '`' || (c == ':' && InDatBlock(L))) {
         if (c == '`') {
             c = lexgetc(L);
@@ -1847,12 +1852,20 @@ getSpinToken(LexStream *L, AST **ast_ptr)
         ast = NewAST(AST_INTEGER, NULL, NULL);
         c = parseNumber(L, 16, &ast->d.ival);
     } else if (c == '%') {
-        ast = NewAST(AST_INTEGER, NULL, NULL);
         c = lexgetc(L);
         if (c == '%') {
+            ast = NewAST(AST_INTEGER, NULL, NULL);
             c = parseNumber(L, 4, &ast->d.ival);
+        } else if (isIdentifierStart(c)) {
+            lexungetc(L, c);
+            lexungetc(L, '%');
+            c = parseSpinIdentifier(L, &ast, NULL);
+            if (c == SP_IDENTIFIER) {
+                SYNTAX_ERROR("unknown keyword %s", ast->d.string);
+            }
         } else {
             lexungetc(L, c);
+            ast = NewAST(AST_INTEGER, NULL, NULL);
             c = parseNumber(L, 2, &ast->d.ival);
         }
     } else if (isIdentifierStart(c)) {
@@ -2168,6 +2181,9 @@ struct reservedword init_spin2_words[] = {
     { "sqrt", SP_SQRT },
     { "wordfit", SP_WORDFIT },
     { "zerox", SP_ZEROX },
+
+    // special % keywords
+    { "%anonymous", SP_EMPTY },
 };
 
 struct reservedword basic_keywords[] = {
