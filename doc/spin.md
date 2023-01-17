@@ -180,10 +180,10 @@ OBJ
 
 ### Calling C standard library functions
 
-A simple way to include the C standard library is to declare an object using `libc.a`. C standard library functions may then be accessed as methods of that object. For example, to call `sprintf` you could do:
+A simple way to include the C standard library is to declare an object using `libc.spin2`. C standard library functions may then be accessed as methods of that object. For example, to call `sprintf` you could do:
 ```
 OBJ
-  c: "libc.a"
+  c: "libc.spin2"
 ...
   c.sprintf(@buf, string("the value is %x", 10), val)
 ```
