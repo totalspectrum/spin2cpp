@@ -2619,6 +2619,9 @@ static int IsSafeShortForwardJump(IR *irbase) {
             if (ir->opc == OPC_LABEL) {
                 if (ir->dst == target) return n;
                 else return 0;
+            } else if ((curfunc->optimize_flags & OPT_EXPERIMENTAL) && ir->opc == OPC_JUMP && ir->dst == target && ir->cond == irbase->cond) {
+                // Found jump that goes where we want to go, anyways.
+                return n;
             }
             // BRK instruction cannot be conditionalized??
             if (ir->opc == OPC_BREAK) {
