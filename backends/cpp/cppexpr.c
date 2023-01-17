@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2022 Total Spectrum Software Inc.
+ * Copyright 2011-2023 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling expressions
@@ -1038,7 +1038,7 @@ PrintLHS(Flexbuf *f, AST *expr, int flags)
         {
             const char *thename = GetIdentifierName(expr->right);
             if (!thename) {
-                ERROR(expr, "Cannot find name %s", thename);
+                ERROR(expr, "Cannot find method name in expression");
                 break;
             }
             flexbuf_addstr(f, thename);
