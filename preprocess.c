@@ -1,6 +1,6 @@
 /*
  * Generic and very simple preprocessor
- * Copyright (c) 2012-2022 Total Spectrum Software Inc.
+ * Copyright (c) 2012-2023 Total Spectrum Software Inc.
  * MIT Licensed, see terms of use at end of file
  *
  * Reads UTF-16LE or UTF-8 encoded files, and returns a
@@ -50,6 +50,7 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include <stdarg.h>
+#include <sys/stat.h>
 #include "preprocess.h"
 #include "util/util.h"
 
@@ -59,6 +60,22 @@ extern void AddSourceFile(const char *shortName, const char *fullName);
 #ifdef _MSC_VER
 #define strdup _strdup
 #endif
+
+// utility function to open a regular file (only), ignoring directories
+FILE *
+fopen_fileonly(const char *name, const char *mode) {
+    FILE *f;
+    struct stat sbuf;
+    int r;
+
+    r = stat(name, &sbuf);
+    if (r) return NULL;
+    if (sbuf.st_mode & S_IFDIR) {
+        return NULL;
+    }
+    f = fopen(name, mode);
+    return f;
+}
 
 // forward declaration
 static void doerror(struct preprocess *pp, const char *msg, ...);
@@ -394,7 +411,7 @@ pp_push_file(struct preprocess *pp, const char *name)
 {
     FILE *f;
 
-    f = fopen(name, "rb");
+    f = fopen_fileonly(name, "rb");
     if (!f) {
         doerror(pp, "Unable to open file %s", name);
         return;
@@ -983,10 +1000,10 @@ find_file_relative(struct preprocess *pp, const char *name, const char *ext, con
       }
   }
   strcat(ret, name);
-  f = fopen(ret, "r");
+  f = fopen_fileonly(ret, "r");
   if (!f && ext) {
     strcat(ret, ext);
-    f = fopen(ret, "r");
+    f = fopen_fileonly(ret, "r");
   }
   //printf("... trying %s\n", ret);
   if (!f) {
