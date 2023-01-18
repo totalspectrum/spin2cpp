@@ -119,6 +119,9 @@ Symbol           | When Defined
 `__propeller2__` | only defined if compiling for Propeller 2
 `__FLEXBASIC__`  | always defined to the FlexProp major version number
 `__FLEXSPIN__`   | if the `flexspin` front end is used
+`__FLEX_MAJOR__`         | always defined to the flexspin/flexcc major version number (e.g. "5" in 5.9.26)
+`__FLEX_MINOR__`         | always defined to the flexspin/flexcc minor version number (e.g. "9" in 5.9.26)
+`__FLEX_REV__`           | always defined to the flexspin/flexcc revision number      (e.g. "26" in 5.9.26)
 `__SPINCVT__`    | always defined to the FlexProp major version number
 `__SPIN2PASM__`  | if --asm is given (PASM output) (always defined by flexspin)
 `__SPIN2CPP__`   | if C++ or C is being output (never in flexspin)

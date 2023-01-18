@@ -130,6 +130,13 @@ int ProcessCommandLine(CmdLineOptions *cmd)
     pp_define(&gl_pp, "__FLEXBASIC__", str_(VERSION_MAJOR));
     pp_define(&gl_pp, "__FLEXC__", str_(VERSION_MAJOR));
     pp_define(&gl_pp, "__SPINCVT__", str_(VERSION_MAJOR));
+
+    // exact version number
+    pp_define(&gl_pp, "__FLEX_MAJOR__", str_(VERSION_MAJOR));
+    pp_define(&gl_pp, "__FLEX_MINOR__", str_(VERSION_MINOR));
+    pp_define(&gl_pp, "__FLEX_REV__",   str_(VERSION_REV));
+    
+    // time and date versions
     {
         // pp_define does not do a strdup() on the data, so we need
         // to do that

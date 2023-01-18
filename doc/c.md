@@ -59,6 +59,9 @@ Symbol                   | When Defined
 `__propeller__`          | always defined to 1 (for P1) or 2 (for P2)
 `__FLEXC__`              | always defined to the flexspin/flexcc major version number
 `__FLEXSPIN__`           | always defined to the flexspin/flexcc major version number
+`__FLEX_MAJOR__`         | always defined to the flexspin/flexcc major version number (e.g. "5" in 5.9.26)
+`__FLEX_MINOR__`         | always defined to the flexspin/flexcc minor version number (e.g. "9" in 5.9.26)
+`__FLEX_REV__`           | always defined to the flexspin/flexcc revision number      (e.g. "26" in 5.9.26)
 `__P1__`                 | only defined if compiling for Propeller 1
 `__P2__`                 | only defined if compiling for Propeller 2
 `__propeller2__`         | only defined if compiling for Propeller 2
