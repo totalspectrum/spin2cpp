@@ -109,10 +109,10 @@ int       _coginit(int cog, void *pgm, void *ptr);
 int _cogstart(void (*func)(void *), void *arg, void *stack_base, uint32_t stack_size);
 #endif
 
-// alias used by Catalina
+// aliases used by Catalina
 #define _cogstart_PASM(cogid, pgm, arg)     _coginit(cogid, pgm, arg)
 #define _cogstart_C(func, arg, stack, size) _cogstart(func, arg, stack, size)
-#define _cogstart_C_cog(cognum, func, arg, stack, size) _cogstart_cog(cognum, func, arg, stack, size)
+#define _cogstart_C_cog(func, arg, stack, size, cog) _cogstart_cog(cog, func, arg, stack, size)
 
 /* stop/check status of COGs */
 void      _cogstop(int cog);
