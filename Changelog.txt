@@ -1,3 +1,7 @@
+Version 5.9.26
+= Fixed a bug when __builtin_clz was applied to memory
+- Improved performance of symbol resolution in sub-modules (some complicated code was so slow it seemed to hang)
+
 Version 5.9.25
 - Added __P1__ macro defined only for P1 compiles
 - Added UMOUNT command for BASIC

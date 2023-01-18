@@ -2668,6 +2668,7 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
         right = CompileExpression(irl, rhs, temp);
         if (gl_p2) {
             IR *ir;
+            right = Dereference(irl, right);
             ir = EmitOp2(irl, OPC_ENCOD, temp, right);
             if (!specialcase) {
                 // the Spin operator returns 0-32; the Spin2 one returns
