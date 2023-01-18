@@ -133,6 +133,8 @@ Flexbuf CompileBrkDebugger(size_t appsize);
 typedef int (*VisitorFunc)(void *irl, Module *P);
 int VisitRecursive(void *irl, Module *P, VisitorFunc func, unsigned visitval);
 
+// the bottom 8 bits are reserved for IterateOverModules
+// the next 8 are reserved for other potential uses elsewhere in code
 #define VISITFLAG_RESERVED      0x0000FFFF
 #define VISITFLAG_COMPILEIR_COG 0x00010000
 #define VISITFLAG_COMPILEIR_HUB 0x00020000
