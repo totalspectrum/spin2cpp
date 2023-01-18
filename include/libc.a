@@ -78,6 +78,7 @@ size_t fread(void *ptr, size_t size, size_t n, _FILE *f) __fromfile("libc/stdio/
 
 /* libc/stdio/gets.c */
 char *gets(char *data) __fromfile("libc/stdio/gets.c");
+char *fgets(char *buf, int size, FILE *f) __fromfile("libc/stdio/fgets.c");
 
 /* libc/stdio/sprintf.c */
 int sprintf(char *str, const char *format, ...) __fromfile("libc/stdio/sprintf.c");
