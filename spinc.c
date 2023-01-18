@@ -935,15 +935,18 @@ MarkStaticFunctionPointers(AST *list)
 }
 
 static int
-VisitModule(Module *P, ModuleFunc fn)
+VisitModule(Module *P, ModuleFunc fn, unsigned visit)
 {
     int ok = 1;
     Module *savecurrent = current;
     while (P && ok) {
         current = P;
-        ok = (*fn)(P);
-        if (!ok) break;
-        ok = VisitModule(P->subclasses, fn);
+        if (P->visitFlag != visit) {
+            P->visitFlag = visit;
+            ok = (*fn)(P);
+            if (!ok) break;
+            ok = VisitModule(P->subclasses, fn, visit);
+        }
         P = P->next;
     }
     current = savecurrent;
@@ -953,7 +956,10 @@ VisitModule(Module *P, ModuleFunc fn)
 void
 IterateOverModules(ModuleFunc fn)
 {
-    (void)VisitModule(allparse, fn);
+    static int visitflag = 0x00;
+
+    visitflag = (visitflag + 1) & 0xff;
+    (void)VisitModule(allparse, fn, visitflag);
 }
 
 static int zeroCallSites(Module *P) {

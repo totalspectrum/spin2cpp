@@ -3,6 +3,7 @@ Version 5.9.25
 - Added UMOUNT command for BASIC
 - Added an `inline` attribute to encourage functions to be inlined
 - Added _cogstart_cog and related defines to propeller2.h
+- Added a new file libc.spin2 to make calling the C library easier from Spin2
 - Fixed ALIGNL in Spin2 VAR blocks
 - Improved some error messages
 - Made heap corruption code check depend on -g flag
