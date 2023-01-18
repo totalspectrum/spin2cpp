@@ -1,3 +1,6 @@
+Version 5.9.27
+- Optimized the 9p filesystem code somewhat
+
 Version 5.9.26
 - Added __FLEX_MAJOR__, __FLEX_MINOR__, and __FLEX_REV__ macros
 - Added __asm__ alias for __asm in C
