@@ -1043,6 +1043,7 @@ ConstructDefaultValue(AST *decl, AST *val)
 
 %token C_BUILTIN_ALLOCA "__builtin_alloca"
 %token C_BUILTIN_COGSTART "__builtin_cogstart"
+%token C_BUILTIN_COGSTART_COG "__builtin_cogstart_cog"
 %token C_BUILTIN_EXPECT "__builtin_expect"
 %token C_BUILTIN_PRINTF "__builtin_printf"
 %token C_BUILTIN_REV    "__builtin_rev"
@@ -1215,6 +1216,11 @@ postfix_expression
                 AST *immval = AstInteger(0x1e);
                 elist = NewAST(AST_EXPRLIST, immval, NULL);
                 elist = AddToList(elist, $3);
+                $$ = NewAST(AST_COGINIT, elist, NULL);
+            }
+        | C_BUILTIN_COGSTART_COG '(' argument_expression_list ')'
+            {
+                AST *elist = $3;
                 $$ = NewAST(AST_COGINIT, elist, NULL);
             }
         | C_BUILTIN_EXPECT '(' assignment_expression ',' assignment_expression ')'

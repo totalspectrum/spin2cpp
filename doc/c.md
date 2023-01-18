@@ -400,6 +400,14 @@ void main() {
 }
 ```
 
+### COGSTART_COG
+
+Starts a function running in a specific COG. This is very similar to `__builtin_cogstart`, but has an additional parameter giving the specific COG to start in, e.g.:
+```
+   int cog = __builtin_cogstart_cog(4, blink(BASEPIN, TOGGLE_DELAY, stack)); // start in COG 4 if possible
+```
+Generally speaking one would prefer to use `__builtin_cogstart` to start the code in any free COG rather than relying on starting in a specific COG, so usually that is the preferred method, but `__builtin_cogstart_cog` is available for the rare cases where a specific COG is required.
+
 ### EXPECT
 
 Indicates the expected value for an expression. `__builtin_expect(x, y)` evaluates `x`, and indicates to the optimizer that the value will normally be `y`. This is provided for GCC compatibility, and the expected value is ignored by FlexC (so `__builtin_expect(x, y)` is treated the same as `(x)`).
