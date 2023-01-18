@@ -40,5 +40,5 @@ CON
 ' %anonymous is an undocumented way to create an anonymous object (one whose methods may be used directly)
 OBJ %anonymous : "libc.a"
 
-PUB libc_main
+PUB libc_main()
   ' not a top level object
