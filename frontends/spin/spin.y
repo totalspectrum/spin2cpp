@@ -1376,6 +1376,7 @@ expr:
     {
         AST *e = $2;
         if (e && e->kind == AST_STRING) {
+            LANGUAGE_WARNING(LANG_SPIN_SPIN1, NULL, "@\"string\" is a flexspin extension to Spin1");
             $$ = NewAST(AST_STRINGPTR,
                         NewAST(AST_EXPRLIST, e, NULL),
                         NULL);
