@@ -1,4 +1,5 @@
 Version 5.9.27
+- Added some more missing functions from libc
 - Optimized the 9p filesystem code somewhat
 
 Version 5.9.26
