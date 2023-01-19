@@ -51,6 +51,7 @@ struct vfs *_vfs_open_host(void) _IMPL("filesys/fs9p/fs9p_vfs.c");
 struct vfs *_vfs_open_sdcard(void) _IMPL("filesys/fatfs/fatfs_vfs.c");
 struct vfs *_vfs_open_sdcardx(int pclk = 61, int pss = 60, int pdi = 59, int pdo = 58) _IMPL("filesys/fatfs/fatfs_vfs.c");
 
+
 /* generic file buffer code */
 /* put a "struct _default_buffer" at the start of your vfsdata to use the
  * default versions of putc and getc
@@ -74,6 +75,9 @@ int __default_getc(vfs_file_t *f) _IMPL("libc/unix/bufio.c");
 int __default_putc(int c, vfs_file_t *f) _IMPL("libc/unix/bufio.c");
 int __default_putc_terminal(int c, vfs_file_t *f) _IMPL("libc/unix/bufio.c");
 int __default_flush(vfs_file_t *f) _IMPL("libc/unix/bufio.c");
+
+int mount(const char *user_name, void *v) _IMPL("libc/unix/mount.c");
+int umount(const char *user_name) _IMPL("libc/unix/mount.c");
 
 /* directory functions */
 char *__getfilebuffer();
