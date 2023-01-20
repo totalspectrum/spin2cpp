@@ -58,7 +58,9 @@
 extern void AddSourceFile(const char *shortName, const char *fullName);
 
 #ifdef _MSC_VER
+# ifndef strdup
 #define strdup _strdup
+# endif
 #endif
 
 // utility function to open a regular file (only), ignoring directories

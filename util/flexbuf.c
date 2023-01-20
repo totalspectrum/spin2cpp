@@ -3,7 +3,7 @@
  * These buffers can grow and shrink as the program progresses.
  *
  * Written by Eric R. Smith
- * Copyright (c) 2012,2016 Total Spectrum Software Inc.
+ * Copyright (c) 2012-2023 Total Spectrum Software Inc.
  * MIT Licensed; see terms at the end of this file.
  */
 

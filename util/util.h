@@ -3,6 +3,7 @@
 
 #include <stdarg.h>
 #include <wchar.h>
+#include "pool.h"
 
 #if 0
 #define va_ptr          va_list
