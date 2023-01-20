@@ -55,12 +55,10 @@ void *pool_calloc(size_t nmeb, size_t siz) {
     return pool_alloc(nmeb * siz);
 }
 
-#define FANCY
-
 void *pool_realloc(void *ptr, size_t siz) {
     if (!ptr) return pool_alloc(siz);
     siz = ALIGN(siz);
-#ifdef FANCYXX
+
     if (ptr == last_alloc) {
         size_t old_pool_size = ((char *)last_alloc) - (char *)pool[cur_pool];
         size_t old_alloc_size = cur_pool_size - old_pool_size;
@@ -74,7 +72,7 @@ void *pool_realloc(void *ptr, size_t siz) {
             return ptr;
         }
     }
-#endif    
+
     void *newptr = pool_alloc(siz);
     if (newptr) {
         memcpy(newptr, ptr, siz);
@@ -84,11 +82,15 @@ void *pool_realloc(void *ptr, size_t siz) {
 
 void pool_free(void *ptr) {    
     if (!ptr) return;
-#ifdef FANCYXX
+#if 1
     if (ptr == last_alloc) {
         size_t old_pool_size = ((char *)last_alloc) - (char *)pool[cur_pool];
-        pool[cur_pool] = ptr;
+        ssize_t delta = cur_pool_size - old_pool_size;
+        if (delta <= 0) {
+            abort();
+        }
         cur_pool_size = old_pool_size;
+        memset(ptr, 0, delta);
         last_alloc = NULL;
     }
 #endif    
