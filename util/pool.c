@@ -22,7 +22,8 @@ static void *last_alloc = NULL;
 static int cur_pool = -1;
 static unsigned cur_pool_size = POOL_ELEM_SIZE;
 
-#define ALIGN(siz) ((siz)+15) & ~15
+// align allocations on an 8 byte boundary
+#define ALIGN(siz) ((siz)+7) & ~7
 
 void *pool_alloc(size_t siz) {
     size_t alloc_siz;
