@@ -27,6 +27,8 @@
  * SUCH DAMAGE.
  */
 
+#include "util/pool.h"
+
 /*
  *                          S Y S T E M . H
  *                  S y s t e m   D e p e n d e n t
