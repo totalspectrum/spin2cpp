@@ -299,6 +299,8 @@ static int AddCases(Flexbuf *fb, AST *ident, AST *expr, AST *label, const char *
 {
     CaseHolder temp;
 
+    memset(&temp, 0, sizeof(temp));
+    
     if (expr->kind != AST_OPERATOR) {
         if (force_reason) {
             ERROR(expr, "%s: case expression is not valid", force_reason);
@@ -407,7 +409,7 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
     if (exprtype && !IsIntOrGenericType(exprtype)) {
         return NULL;
     }
-    flexbuf_init(&fb, 0);
+    flexbuf_init(&fb, 128);
     for (top = switchstmt; top; top = top->right) {
         ast = top->left;
         if (ast->kind != AST_IF) {
@@ -490,7 +492,7 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
         ast->right = AddToList(ast->right,
                                NewAST(AST_LISTHOLDER, curcase->label, NULL));
         curcase++;
-        if (curcase->val == lastval && curcase->label) {
+        if (i < (siz-1) && curcase->val == lastval && curcase->label) {
             ERROR(curcase->label, "Duplicate case value (%d)", curcase->val);
         } else {
             lastval++;
