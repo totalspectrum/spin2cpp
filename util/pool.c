@@ -42,7 +42,6 @@ void *pool_alloc(size_t siz) {
             fprintf(stderr, "Unable to allocate %lu bytes\n", (unsigned long)alloc_siz);
             abort();
         }
-        memset(ptr, 0, alloc_siz);
         cur_pool_size = 0;
     }
     ptr = cur_pool_size + (char *)pool[cur_pool];
@@ -51,8 +50,11 @@ void *pool_alloc(size_t siz) {
     return ptr;
 }
 
-void *pool_calloc(size_t nmeb, size_t siz) {
-    return pool_alloc(nmeb * siz);
+void *pool_calloc(size_t nmeb, size_t elemsiz) {
+    size_t siz = ALIGN(nmeb*elemsiz);
+    void *ptr = pool_alloc(siz);
+    memset(ptr, 0, siz);
+    return ptr;
 }
 
 void *pool_realloc(void *ptr, size_t siz) {
@@ -90,7 +92,6 @@ void pool_free(void *ptr) {
             abort();
         }
         cur_pool_size = old_pool_size;
-        memset(ptr, 0, delta);
         last_alloc = NULL;
     }
 #endif    
