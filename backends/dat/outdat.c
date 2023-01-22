@@ -1183,13 +1183,14 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
        _ret_ cmp 0, #0 can be used to double as a counter
        similarly on P1 for a no-op instruction
     */
+    bool sawRet = false;
     if (gl_p2) {
         mask = 0xf << 28;
     } else {
         mask = 0xf << 18;
     }
     if ((*val & mask) == 0) {
-        sawFlagUsed = true; // do not warn here
+        sawFlagUsed = sawRet = true; // do not warn here
     }
     if (instr->flags == FLAG_P2_CZTEST && !sawFlagUsed) {
         ERROR(line, "instruction %s requires flags to be tested", instr->name);
@@ -1197,7 +1198,8 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
     else if ((instr->flags & FLAG_WARN_NOTUSED) && !sawFlagUsed) {
         WARNING(line, "instruction %s used without flags being set", instr->name);
     }
-    if (instr->opc == OPC_BREAK && (*val & mask) != mask) {
+    if (instr->opc == OPC_BREAK && (*val & mask) != mask && !sawRet) {
+        // _ret_ BRK actually does work
         WARNING(line, "conditional BRK instruction does not work");
     }
     
