@@ -1,6 +1,6 @@
 /*
  * PASM and data compilation
- * Copyright 2011-2022 Total Spectrum Software Inc.
+ * Copyright 2011-2023 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -814,13 +814,18 @@ AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags)
                 ERROR(ast, "RES with negative storage specifier");
                 delta = 0;
             } else if (delta == 0) {
-                // don't issue warning for alignment
+                // don't issue warning for alignment or if the user gave an explicit 0
                 // unfortunately at this point we've already replaced $, so
                 // we have to guess at intention by looking for &
                 if (ast && ast->left && ast->left->kind == AST_OPERATOR && ast->left->d.ival == '&') {
                     // no warning
+                } else if (ast && ast->left && ast->left->kind == AST_INTEGER && ast->left->d.ival == 0) {
+                    // no warning
                 } else {
-                    WARNING(ast, "RES has 0 space");
+                    // suppress this warning the second time around
+                    if (!(gl_warn_flags & WARN_ASM_FIRST_PASS)) {
+                        WARNING(ast, "RES has 0 space");
+                    }
                 }
             }
             cogpc += 4*delta;
