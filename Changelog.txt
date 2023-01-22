@@ -1,5 +1,6 @@
 Version 5.9.27
 - Added some more missing functions from libc
+- Fixed an out of memory crash due to nested structs in -O0
 - Optimized the 9p filesystem code somewhat
 
 Version 5.9.26

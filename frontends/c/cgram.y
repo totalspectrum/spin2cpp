@@ -37,7 +37,7 @@
 #define YYERROR_VERBOSE 1
 
 extern int allow_type_names;
-    
+
 static void
 DisallowTypeNames()
 {
@@ -1608,7 +1608,7 @@ struct_or_union_specifier
             {
                 AST *d = $1;
                 AddStructBody(current, $2);
-                current = current->superclass;
+                PopCurrentModule();
                 $$ = d;
             }
 	| struct_or_union any_identifier
@@ -1659,7 +1659,11 @@ struct_open
                 newstruct = MakeNewStruct(current, $1, $2, NULL);
                 $$ = newstruct;
                 C = GetClassPtr(newstruct);
-                C->superclass = current;
+                if (current != C) {
+                    C->superclass = current;
+                    //printf("class transition: %s -> %s\n", current->classname, C->classname);
+                }
+                PushCurrentModule();
                 current = C;
                 PushCurrentTypes();
             }
@@ -1670,7 +1674,10 @@ struct_open
                 newstruct = MakeNewStruct(current, $1, NULL, NULL);
                 $$ = newstruct;
                 C = GetClassPtr(newstruct);
-                C->superclass = current;
+                if (C != current) {
+                    C->superclass = current;
+                }
+                PushCurrentModule();
                 current = C;
                 PushCurrentTypes();
             }

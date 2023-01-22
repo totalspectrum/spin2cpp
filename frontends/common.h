@@ -908,6 +908,10 @@ void PushCurrentTypes(void);
 /* pop the current types identifier */
 void PopCurrentTypes(void);
 
+/* push the current module (during parsing of structs, for example) */
+void PushCurrentModule(void);
+void PopCurrentModule(void);
+
 /* enter a local alias in a symbol table */
 void EnterLocalAlias(SymbolTable *table, AST *globalName, const char *localName);
 

@@ -1359,6 +1359,31 @@ void PopCurrentTypes(void)
     }
 }
 
+/* push/pop current module */
+#define MAX_NESTED_MODULES 128
+static Module *module_stack[MAX_NESTED_MODULES];
+static int module_sp = 0;
+
+void
+PushCurrentModule()
+{
+    if (module_sp >= MAX_NESTED_MODULES) {
+        SYNTAX_ERROR("structs nested too deep");
+    } else {
+        module_stack[module_sp++] = current;
+    }
+}
+
+void
+PopCurrentModule()
+{
+    if (module_sp > 0) {
+        --module_sp;
+        current = module_stack[module_sp];
+    }
+}
+
+
 /* enter a single alias */
 void
 EnterLocalAlias(SymbolTable *table, AST *globalName, const char *localName)
