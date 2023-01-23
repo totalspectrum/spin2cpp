@@ -203,4 +203,9 @@ void DoAssembleIR(struct flexbuf *, IR *, Module *);
 
 int OutAsm_DebugEval(AST *ast, int regNum, int *addr, void *ourarg);
 
+struct ir_lbljumps {
+   struct ir_lbljumps *next;
+   IR *jump;
+};
+
 #endif
