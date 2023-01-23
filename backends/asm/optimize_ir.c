@@ -1104,9 +1104,13 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
                 // so for caution give up
                 return false;
             }
+            if (level != 0) {
+                // Not sure what this check is for? But moved it out of the check loop
+                continue;
+            }
             for (struct ir_lbljumps *list = ir->aux;list;list=list->next) {
                 IR *comefrom = list->jump;
-                if (level == 0 && comefrom->addr < instr->addr) {
+                if (comefrom->addr < instr->addr) {
                     // go back and see if there are any references before the
                     // jump that brought us here
                     // if so, abort
