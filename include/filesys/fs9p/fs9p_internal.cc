@@ -25,6 +25,10 @@
 #define DMDIR 0x80000000
 #endif
 
+#ifdef __P2__
+#define UNALIGNED_OK
+#endif
+
 static int maxlen = MAXLEN;
 static uint8_t txbuf[MAXLEN];
 
@@ -36,16 +40,26 @@ static uint8_t *doPut1(uint8_t *ptr, unsigned x) {
 
 // send a 16 bit integer to the host
 static uint8_t *doPut2(uint8_t *ptr, unsigned x) {
+#ifdef UNALIGNED_OK
+    *(uint16_t *)ptr = x;
+    ptr += 2;
+#else    
     ptr = doPut1(ptr, x & 0xff);
     ptr = doPut1(ptr, (x>>8) & 0xff);
+#endif    
     return ptr;
 }
 // send a 32 bit integer to the host
 static uint8_t *doPut4(uint8_t *ptr, unsigned x) {
+#ifdef UNALIGNED_OK
+    *(uint32_t*)ptr = x;
+    ptr += 4;
+#else    
     ptr = doPut1(ptr, x & 0xff);
     ptr = doPut1(ptr, (x>>8) & 0xff);
     ptr = doPut1(ptr, (x>>16) & 0xff);
     ptr = doPut1(ptr, (x>>24) & 0xff);
+#endif    
     return ptr;
 }
 
@@ -62,17 +76,25 @@ static uint8_t *doPutStr(uint8_t *ptr, const char *s) {
 static unsigned FETCH2(uint8_t *b)
 {
     unsigned r;
+#ifdef UNALIGNED_OK
+    r = *(uint16_t *)b;
+#else    
     r = b[0];
     r |= (b[1]<<8);
+#endif    
     return r;
 }
 static unsigned FETCH4(uint8_t *b)
 {
     unsigned r;
+#ifdef UNALIGNED_OK
+    r = *(uint32_t *)b;
+#else    
     r = b[0];
     r |= (b[1]<<8);
     r |= (b[2]<<16);
     r |= (b[3]<<24);
+#endif    
     return r;
 }
 

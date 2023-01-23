@@ -3,10 +3,10 @@
  */
 #include <sys/vfs.h>
 
-int mount(char *user_name, void *v) {
-    return _mount(user_name, (struct vfs *)v);
+int mount(const char *user_name, void *v) {
+    return _mount((char *)user_name, (struct vfs *)v);
 }
 
-int umount(char *user_name) {
-    return _umount(user_name);
+int umount(const char *user_name) {
+    return _umount((char *)user_name);
 }

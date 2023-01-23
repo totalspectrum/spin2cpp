@@ -1,5 +1,10 @@
+Version 5.9.27
+- Added some more missing functions from libc
+- Optimized the 9p filesystem code somewhat
+
 Version 5.9.26
 - Added __FLEX_MAJOR__, __FLEX_MINOR__, and __FLEX_REV__ macros
+- Added __asm__ alias for __asm in C
 - Fixed a bug when __builtin_clz was applied to memory
 - Improved performance of symbol resolution in sub-modules (some complicated code was so slow it seemed to hang)
 

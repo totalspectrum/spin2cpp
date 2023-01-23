@@ -318,9 +318,6 @@ Aliases calias[] = {
     { "__builtin_popcount", "_ones" },
     { "__builtin_round", "_float_round" },
 
-    /* useful I/O functions */
-    { "mount", "_mount" },
-    { "umount", "_umount" },
     { NULL, NULL },
 };
 
