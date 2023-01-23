@@ -1091,7 +1091,6 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
             // potential problem: if there is a branch before instr
             // that goes to LABEL then we might miss a set
             // so check
-            IR *comefrom = UniqJumpForLabel(ir);
             if (ir->flags & FLAG_LABEL_NOJUMP) {
                 // this label isn't a jump target, so don't worry about it
                 continue;
@@ -1100,21 +1099,24 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
                 // last label in the function, again, no need to worry
                 continue;
             }
-            if (!comefrom) {
+            if (!ir->aux) {
                 // we don't know what branches come here,
                 // so for caution give up
                 return false;
             }
-            if (level == 0 && comefrom->addr < instr->addr) {
-                // go back and see if there are any references before the
-                // jump that brought us here
-                // if so, abort
-                IR *backir = comefrom;
-                while (backir) {
-                    if (backir->src == op || backir->dst == op) {
-                        return false;
+            for (struct ir_lbljumps *list = ir->aux;list;list=list->next) {
+                IR *comefrom = list->jump;
+                if (level == 0 && comefrom->addr < instr->addr) {
+                    // go back and see if there are any references before the
+                    // jump that brought us here
+                    // if so, abort
+                    IR *backir = comefrom;
+                    while (backir) {
+                        if (backir->src == op || backir->dst == op) {
+                            return false;
+                        }
+                        backir = backir->prev;
                     }
-                    backir = backir->prev;
                 }
             }
             continue;
