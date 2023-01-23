@@ -5124,15 +5124,15 @@ again:
         }
     } while (change != 0);
     if (flags & OPT_TAIL_CALLS) {
-        change = OptimizeTailCalls(irl, f);
+        OPT_PASS(OptimizeTailCalls(irl, f));
     }
     if (change) goto again;
     if (gl_p2 && (flags & OPT_CORDIC_REORDER)) {
-        change = OptimizeCORDIC(irl);
+        OPT_PASS(OptimizeCORDIC(irl));
     }
     if (change) goto again;
     if (flags & OPT_LOCAL_REUSE) {
-        change = ReuseLocalRegisters(irl);
+        OPT_PASS(ReuseLocalRegisters(irl));
     }
     if (change) goto again;
 
