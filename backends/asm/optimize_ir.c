@@ -2245,7 +2245,7 @@ OptimizeMoves(IRList *irl)
     do {
         change = 0;
         ir = irl->head;
-        while (ir != 0) {
+        while (ir) {
             ir_next = ir->next;
             if (InstrIsVolatile(ir)) {
                 /* do nothing */
@@ -4051,6 +4051,7 @@ OptimizeSimpleAssignments(IRList *irl)
     ir = irl->head;
     while (ir) {
         ir_next = ir->next;
+        ir_prev = ir->prev;
         if (ir_prev && ir_next
                 && ir_prev->opc == OPC_MOV && ir_next->opc == OPC_MOV
                 && ir_prev->dst == ir_next->src && ir_prev->src == ir_next->dst
@@ -4058,6 +4059,8 @@ OptimizeSimpleAssignments(IRList *irl)
                 && ir_prev->cond == ir_next->cond
                 && CondIsSubset(ir_prev->cond,ir->cond)
                 && !IsBranch(ir)
+                && !IsDummy(ir)
+                && !IsLabel(ir)
                 && InstrSetsDst(ir)
                 && !InstrIsVolatile(ir) && !InstrIsVolatile(ir_prev) && !InstrIsVolatile(ir_next)
                 && !InstrSetsAnyFlags(ir_prev)
@@ -4066,17 +4069,14 @@ OptimizeSimpleAssignments(IRList *irl)
            )
         {
             ir->dst = ir_next->dst;
-            ir = ir_next;
-            ir_next = ir->next;
             change = 1;
-            DeleteIR(irl, ir);
+            DeleteIR(irl, ir_next);
             if (IsDeadAfter(ir_prev, ir_prev->dst)) {
                 DeleteIR(irl, ir_prev);
                 ir_prev = NULL;
             }
         }
-        ir_prev = ir;
-        ir = ir_next;
+        ir = ir->next;
     }
     return change;
 }
@@ -4342,7 +4342,11 @@ restart_check:
 #if 1
             // bit of a hacky optimization for some tests
             // rdlong a, b + mov c, a -> rdlong c, b if a is dead
-            else if (IsRead(ir) && next_ir && next_ir->opc == OPC_MOV && SameRegister(next_ir->src, ir->dst) && IsLocalOrArg(next_ir->src) && ir->cond == next_ir->cond && IsDeadAfter(next_ir, ir->dst)) {
+            else if (IsRead(ir) && next_ir && next_ir->opc == OPC_MOV
+                    && !InstrIsVolatile(next_ir) && !InstrSetsAnyFlags(next_ir)
+                    && SameRegister(next_ir->src, ir->dst)
+                    && IsLocalOrArg(next_ir->src) && ir->cond == next_ir->cond
+                    && IsDeadAfter(next_ir, ir->dst)) {
                 Operand *tmp = ir->dst;
                 ir->dst = next_ir->dst;
                 next_ir->dst = tmp;
@@ -4985,6 +4989,28 @@ OptimizeLongfill(IRList *irl) {
     return change;
 }
 
+
+static void append_disasm(Flexbuf *fb,IRList *irl) {
+    char *buf = IRAssemble(irl,NULL);
+    flexbuf_addstr(fb,buf);
+    free(buf);
+}
+
+#define OPT_PASS(call) { \
+    int passchg = call;\
+    if (hooked) {\
+        DEBUG(NULL,"%s Opt pass " #call " change: %d",FuncData(curfunc)->asmname->name,passchg);\
+        flexbuf_addstr(&hookfb,"Pass " #call ":\n");\
+        if (passchg) {\
+            append_disasm(&hookfb,irl);\
+        } else {\
+            flexbuf_addstr(&hookfb,"NO CHANGE!\n");\
+        }\
+        flexbuf_addstr(&hookfb,"\n");\
+    }\
+    change |= passchg;\
+}
+
 // optimize an isolated piece of IRList
 // (typically a function)
 void
@@ -4994,6 +5020,16 @@ OptimizeIRLocal(IRList *irl, Function *f)
     int flags = f->optimize_flags;
     if (gl_errors > 0) return;
     if (!irl->head) return;
+    
+    Flexbuf hookfb;
+    bool hooked = false;//!strcmp(FuncData(curfunc)->asmname->name,"_libc_a_fopen");
+    if (hooked) {
+        flexbuf_init(&hookfb,512);
+        flexbuf_addstr(&hookfb,"OPTIMIZE_IR DEBUG HOOK LOG for");
+        flexbuf_addstr(&hookfb,FuncData(curfunc)->asmname->name);
+        flexbuf_addstr(&hookfb,"\n\nInital:\n");
+        append_disasm(&hookfb,irl);
+    }
 
     // multiply divide optimization need only be performed once,
     // and should be done before other optimizations confuse things
@@ -5005,42 +5041,42 @@ again:
         change = 0;
         AssignTemporaryAddresses(irl);
         if (flags & OPT_BASIC_REGS) {
-            change |= CheckLabelUsage(irl);
-            change |= OptimizeReadWrite(irl);
-            change |= EliminateDeadCode(irl);
-            change |= OptimizeCogWrites(irl);
-            change |= OptimizeSimpleAssignments(irl);
-            change |= OptimizeMoves(irl);
+            OPT_PASS(CheckLabelUsage(irl));
+            OPT_PASS(OptimizeReadWrite(irl));
+            OPT_PASS(EliminateDeadCode(irl));
+            OPT_PASS(OptimizeCogWrites(irl));
+            OPT_PASS(OptimizeSimpleAssignments(irl));
+            OPT_PASS(OptimizeMoves(irl));
         }
         if (flags & OPT_CONST_PROPAGATE) {
-            change |= OptimizeImmediates(irl);
+            OPT_PASS(OptimizeImmediates(irl));
         }
         if (flags & OPT_BASIC_REGS) {
-            change |= OptimizeCompares(irl);
-            change |= OptimizeAddSub(irl);
-            change |= OptimizeLoopPtrOffset(irl);
+            OPT_PASS(OptimizeCompares(irl));
+            OPT_PASS(OptimizeAddSub(irl));
+            OPT_PASS(OptimizeLoopPtrOffset(irl));
         }
         if (flags & OPT_PEEPHOLE) {
-            change |= OptimizePeepholes(irl);
-            change |= OptimizePeephole2(irl);
+            OPT_PASS(OptimizePeepholes(irl));
+            OPT_PASS(OptimizePeephole2(irl));
         }
         if (flags & OPT_BRANCHES) {
             if (flags & OPT_EXPERIMENTAL) {
-                change |= OptimizeBranchCommonOps(irl);
+                OPT_PASS(OptimizeBranchCommonOps(irl));
             }
-            change |= OptimizeShortBranches(irl);
+            OPT_PASS(OptimizeShortBranches(irl));
         }
         if (flags & OPT_BASIC_REGS) {
-            change |= OptimizeIncDec(irl);
-            change |= OptimizeJumps(irl);
+            OPT_PASS(OptimizeIncDec(irl));
+            OPT_PASS(OptimizeJumps(irl));
         }
         if (gl_p2 && (flags & OPT_BASIC_REGS)) {
-            change |= OptimizeP2(irl);
+            OPT_PASS(OptimizeP2(irl));
         }
         if (gl_p2) {
-            change |= FixupLoneCORDIC(irl);
+            OPT_PASS(FixupLoneCORDIC(irl));
             if (flags & OPT_CONST_PROPAGATE) {
-                change |= CORDICconstPropagate(irl);
+                OPT_PASS(CORDICconstPropagate(irl));
             }
         }
     } while (change != 0);
@@ -5056,6 +5092,16 @@ again:
         change = ReuseLocalRegisters(irl);
     }
     if (change) goto again;
+
+    if (hooked) {
+        char fbuf[256];
+        static int hookcnt = 0;
+        snprintf(fbuf,255,"opthook_%d_%s.txt",++hookcnt,FuncData(curfunc)->asmname->name);
+        FILE *logf = fopen(fbuf,"w");
+        fputs(flexbuf_peek(&hookfb),logf);
+        fclose(logf);
+        flexbuf_delete(&hookfb);
+    }
 }
 
 //
