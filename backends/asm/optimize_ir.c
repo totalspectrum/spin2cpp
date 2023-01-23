@@ -1378,20 +1378,24 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace, IRCond sette
             }
         }
         if (ir->opc == OPC_LABEL) {
-            IR *comefrom;
             if (ir->flags & FLAG_LABEL_NOJUMP) {
                 // this label is not a jump target, so ignore it
                 continue;
             }
             // do we know who jumps to this label?
-            comefrom = UniqJumpForLabel(ir);
-            if (comefrom) {
-                // if the jumper is before our first instruction, then
+            if (ir->aux) {
+                // if a jumper is before our first instruction, then
                 // we don't know what may have happened before, so
                 // replacement is dangerous
                 // however, in the special case that the register is never
                 // actually used again then it's safe
-                if (comefrom->addr < first_ir->addr) {
+                bool jumpers_before = false;
+                for(struct ir_lbljumps *list = ir->aux;list;list=list->next) {
+                    if (list->jump->addr < first_ir->addr) {
+                        jumpers_before = true;
+                    }
+                }
+                if (jumpers_before) {
                     if (assignments_are_safe && IsDeadAfter(ir, orig) && !isCond) {
                         return ir;
                     }
@@ -1399,7 +1403,7 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace, IRCond sette
                 }
                 assignments_are_safe = false;
             } else {
-                // unknown jumper, assume the worst
+                // unknown jumpers, assume the worst
                 return NULL;
             }
         }
