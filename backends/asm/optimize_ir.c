@@ -3874,7 +3874,10 @@ no_getx:
         if (ir->opc == OPC_TEST && ir->src->kind == IMM_INT) {
             uint32_t testmask = (uint32_t)ir->src->val;
             IR *prev_ir = FindPrevSetterForReplace(ir,ir->dst);
-            if (prev_ir && prev_ir->opc == OPC_SHR && CondIsSubset(prev_ir->cond,ir->cond) && prev_ir->src->kind == IMM_INT && IsDeadAfter(ir,ir->dst)) {
+            if (prev_ir && prev_ir->opc == OPC_SHR 
+                    && !InstrSetsAnyFlags(prev_ir) && !InstrIsVolatile(prev_ir)
+                    && CondIsSubset(prev_ir->cond,ir->cond)
+                    && prev_ir->src->kind == IMM_INT && IsDeadAfter(ir,ir->dst)) {
                 int shiftval = prev_ir->src->val&31;
                 // Note: No need to check if shifted mask looses bits, since those would always be zero, anyways
                 ir->src = NewImmediate(testmask<<shiftval);
