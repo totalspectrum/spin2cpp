@@ -124,7 +124,7 @@ LEXHEADERS = $(BUILD)/spin.tab.h $(BUILD)/basic.tab.h $(BUILD)/cgram.tab.h ast.h
 
 PROGS = $(BUILD)/testlex$(EXT) $(BUILD)/spin2cpp$(EXT) $(BUILD)/flexspin$(EXT) $(BUILD)/flexcc$(EXT)
 
-UTIL = dofmt.c flexbuf.c lltoa_prec.c strupr.c strrev.c strdupcat.c to_utf8.c from_utf8.c pool.c
+UTIL = dofmt.c flexbuf.c lltoa_prec.c strupr.c strrev.c strdupcat.c to_utf8.c from_utf8.c
 
 MCPP = directive.c expand.c mbchar.c mcpp_eval.c mcpp_main.c mcpp_system.c mcpp_support.c
 
