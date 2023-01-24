@@ -206,9 +206,10 @@ extern int gl_warn_flags;     /* flags for warnings */
 #define WARN_ASM_USAGE          0x000004
 #define WARN_UNINIT_VARS        0x000008
 #define WARN_C_CONST_STRING     0x000010
+#define WARN_ASM_FIRST_PASS     0x800000      
 #define WARN_ALL                0xFFFFFF
 
-#define DEFAULT_WARN_FLAGS (WARN_ASM_USAGE | WARN_UNINIT_VARS)
+#define DEFAULT_WARN_FLAGS (WARN_ASM_USAGE | WARN_UNINIT_VARS | WARN_ASM_FIRST_PASS)
 
 extern int gl_list_options;   /* options for listing files */
 #define LIST_INCLUDE_CONSTANTS  0x0001
@@ -907,6 +908,10 @@ void PushCurrentTypes(void);
 
 /* pop the current types identifier */
 void PopCurrentTypes(void);
+
+/* push the current module (during parsing of structs, for example) */
+void PushCurrentModule(void);
+void PopCurrentModule(void);
 
 /* enter a local alias in a symbol table */
 void EnterLocalAlias(SymbolTable *table, AST *globalName, const char *localName);

@@ -3879,11 +3879,15 @@ no_getx:
                     && CondIsSubset(prev_ir->cond,ir->cond)
                     && prev_ir->src->kind == IMM_INT && IsDeadAfter(ir,ir->dst)) {
                 int shiftval = prev_ir->src->val&31;
-                // Note: No need to check if shifted mask looses bits, since those would always be zero, anyways
-                ir->src = NewImmediate(testmask<<shiftval);
-                DeleteIR(irl,prev_ir);
-                changed = 1;
-                goto done;
+
+                if (shiftval == prev_ir->src->val)
+                {
+                    // Note: No need to check if shifted mask looses bits, since those would always be zero, anyways
+                    ir->src = NewImmediate(testmask<<shiftval);
+                    DeleteIR(irl,prev_ir);
+                    changed = 1;
+                    goto done;
+                }
             }
         }
 

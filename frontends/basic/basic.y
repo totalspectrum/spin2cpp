@@ -2137,11 +2137,14 @@ classheader:
       AST *newobj = NewAbstractObject( $2, NULL, 0 );
       newobj->d.ptr = P;
       AddSymbol(currentTypes, $2->d.string, SYM_TYPEDEF, newobj, NULL);
-      P->Lptr = current->Lptr;
-      P->subclasses = current->subclasses;
-      current->subclasses = P;
-      P->superclass = current;
-      P->fullname = current->fullname; // for finding "class using"
+      if (P != current) {
+          P->Lptr = current->Lptr;
+          P->subclasses = current->subclasses;
+          current->subclasses = P;
+          P->superclass = current;
+          P->fullname = current->fullname; // for finding "class using"
+      }
+      PushCurrentModule();
       current = P;
       $$ = NULL;
     }
@@ -2153,12 +2156,15 @@ classheader:
       AST *newobj = NewAbstractObject( $2, NULL, 0 );
       newobj->d.ptr = P;
       AddSymbol(currentTypes, $2->d.string, SYM_TYPEDEF, newobj, NULL);
-      P->Lptr = current->Lptr;
-      P->subclasses = current->subclasses;
-      current->subclasses = P;
-      P->superclass = current;
-      P->fullname = current->fullname; // for finding "class using"
+      if (P != current) {
+          P->Lptr = current->Lptr;
+          P->subclasses = current->subclasses;
+          current->subclasses = P;
+          P->superclass = current;
+          P->fullname = current->fullname; // for finding "class using"
+      }
       P->isUnion = 1;
+      PushCurrentModule();
       current = P;
       $$ = NULL;
     }  
@@ -2175,7 +2181,7 @@ classend:
       if (!current->superclass || current->isUnion) {
         SYNTAX_ERROR("END CLASS not inside class");
       } else {
-        current = current->superclass;
+          PopCurrentModule();
       }
     }
   | BAS_END BAS_UNION
@@ -2183,7 +2189,7 @@ classend:
       if (!current->superclass || !current->isUnion) {
         SYNTAX_ERROR("END UNION not inside union");
       } else {
-        current = current->superclass;
+          PopCurrentModule();
       }
     }  
 ;
