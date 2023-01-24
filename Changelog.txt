@@ -1,7 +1,9 @@
 Version 5.9.27
 - Added some more missing functions from libc
+- Added some additional asm optimizations thanks to Ada
 - Fixed an out of memory crash due to nested structs in -O0
 - Fixed assembly warnings that were accidentally broken
+- Made more fatfs options settable on the command line (thanks, Ada)
 - Optimized the 9p filesystem code somewhat
 
 Version 5.9.26
