@@ -48,6 +48,23 @@ ReplaceOpcode(IR *ir, IROpcode op)
     ir->instr = FindInstrForOpc(op);
 }
 
+// Returns the one unique jump to a given label.
+// NULL if multiple jumps (or none at all)
+static IR *UniqJumpForLabel(IR *lbl) {
+    if (lbl->opc != OPC_LABEL) ERROR(NULL,"internal error, UniqJumpForLabel called on wrong opc %d",lbl->opc);
+    struct ir_lbljumps *list = lbl->aux;
+    if (list && !list->next) return list->jump;
+    else return NULL;
+}
+
+static void AppendLblJump(IR *lbl,IR *jmp) {
+    if (lbl->opc != OPC_LABEL) ERROR(NULL,"internal error, AppendLblJump called on wrong opc %d",lbl->opc);
+    struct ir_lbljumps *entry = malloc(sizeof(struct ir_lbljumps));
+    entry->next = lbl->aux;
+    entry->jump = jmp;
+    lbl->aux = entry;
+}
+
 //
 // return TRUE if an instruction uses its destination
 // (most do)
@@ -1074,7 +1091,6 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
             // potential problem: if there is a branch before instr
             // that goes to LABEL then we might miss a set
             // so check
-            IR *comefrom = (IR *)ir->aux;
             if (ir->flags & FLAG_LABEL_NOJUMP) {
                 // this label isn't a jump target, so don't worry about it
                 continue;
@@ -1083,21 +1099,28 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
                 // last label in the function, again, no need to worry
                 continue;
             }
-            if (!comefrom) {
+            if (!ir->aux) {
                 // we don't know what branches come here,
                 // so for caution give up
                 return false;
             }
-            if (level == 0 && comefrom->addr < instr->addr) {
-                // go back and see if there are any references before the
-                // jump that brought us here
-                // if so, abort
-                IR *backir = comefrom;
-                while (backir) {
-                    if (backir->src == op || backir->dst == op) {
-                        return false;
+            if (level != 0) {
+                // Not sure what this check is for? But moved it out of the check loop
+                continue;
+            }
+            for (struct ir_lbljumps *list = ir->aux;list;list=list->next) {
+                IR *comefrom = list->jump;
+                if (comefrom->addr < instr->addr) {
+                    // go back and see if there are any references before the
+                    // jump that brought us here
+                    // if so, abort
+                    IR *backir = comefrom;
+                    while (backir) {
+                        if (backir->src == op || backir->dst == op) {
+                            return false;
+                        }
+                        backir = backir->prev;
                     }
-                    backir = backir->prev;
                 }
             }
             continue;
@@ -1355,20 +1378,24 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace, IRCond sette
             }
         }
         if (ir->opc == OPC_LABEL) {
-            IR *comefrom;
             if (ir->flags & FLAG_LABEL_NOJUMP) {
                 // this label is not a jump target, so ignore it
                 continue;
             }
             // do we know who jumps to this label?
-            comefrom = (IR *)ir->aux;
-            if (comefrom) {
-                // if the jumper is before our first instruction, then
+            if (ir->aux) {
+                // if a jumper is before our first instruction, then
                 // we don't know what may have happened before, so
                 // replacement is dangerous
                 // however, in the special case that the register is never
                 // actually used again then it's safe
-                if (comefrom->addr < first_ir->addr) {
+                bool jumpers_before = false;
+                for(struct ir_lbljumps *list = ir->aux;list;list=list->next) {
+                    if (list->jump->addr < first_ir->addr) {
+                        jumpers_before = true;
+                    }
+                }
+                if (jumpers_before) {
                     if (assignments_are_safe && IsDeadAfter(ir, orig) && !isCond) {
                         return ir;
                     }
@@ -1376,7 +1403,7 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace, IRCond sette
                 }
                 assignments_are_safe = false;
             } else {
-                // unknown jumper, assume the worst
+                // unknown jumpers, assume the worst
                 return NULL;
             }
         }
@@ -2749,7 +2776,7 @@ int OptimizeBranchCommonOps(IRList *irl) {
         if (ir->opc == OPC_JUMP && ir->cond != COND_TRUE && ir->aux) {
             // Check for common ops at top of branch
             IR *lbl = (IR *)ir->aux;
-            if (lbl->opc == OPC_LABEL && lbl->aux == ir && lbl->prev && lbl->prev->opc == OPC_JUMP && lbl->prev->cond == COND_TRUE && ValidIR(irl,lbl)) {
+            if (lbl->opc == OPC_LABEL && UniqJumpForLabel(lbl) == ir && lbl->prev && lbl->prev->opc == OPC_JUMP && lbl->prev->cond == COND_TRUE && ValidIR(irl,lbl)) {
                 for (;;) {
                     IR *next_stay = ir->next;
                     while (next_stay && IsDummy(next_stay)) next_stay = next_stay->next;
@@ -2773,10 +2800,10 @@ int OptimizeBranchCommonOps(IRList *irl) {
                 }
             }
 
-        } else if (ir->opc == OPC_LABEL && ir->aux) {
+        } else if (ir->opc == OPC_LABEL) {
             // check for common ops at bottom of branch
-            IR *jump = (IR *)ir->aux;
-            if (jump->opc == OPC_JUMP && jump->cond == COND_TRUE && jump->aux == ir && ValidIR(irl,jump)) {
+            IR *jump = UniqJumpForLabel(ir);
+            if (jump && jump->opc == OPC_JUMP && jump->cond == COND_TRUE && jump->aux == ir && ValidIR(irl,jump)) {
 
                 for (;;) {
                     IR *prev_stay = ir->prev;
@@ -3084,18 +3111,16 @@ MarkLabelUses(IRList *irl, IR *irlabel)
             dst = JumpDest(ir);
             if (dst == label) {
                 ir->aux = irlabel; // record where the jump goes to
-                if (irlabel->flags & FLAG_LABEL_USED) {
-                    // the label has more than one use
-                    irlabel->aux = NULL;
-                } else {
+                // Append to list of label uses if not invalidated
+                if (!(irlabel->flags & FLAG_LABEL_USED) || irlabel->aux) {
+                    AppendLblJump(irlabel,ir);
                     irlabel->flags |= FLAG_LABEL_USED;
-                    irlabel->aux = ir;
                 }
             }
         } else if (ir != irlabel) {
             if (ir->src == label || ir->dst == label) {
                 irlabel->flags |= FLAG_LABEL_USED;
-                irlabel->aux = NULL;
+                irlabel->aux = NULL; // invalidate use list
             }
         }
     }
@@ -4172,7 +4197,7 @@ OptimizeP2(IRList *irl)
                     repir->dst = labir->dst;
                     repir->src = var ? var : NewImmediate(0);
                     repir->aux = labir;
-                    labir->aux = repir;
+                    AppendLblJump(labir,repir);
                     InsertAfterIR(irl, pir, repir);
                     InsertAfterIR(irl, ir, labir);
                     ir->dst = dst;
@@ -4436,8 +4461,8 @@ OptimizeLoopPtrOffset(IRList *irl) {
 
     // Find loops
     for (IR *ir=irl->head; ir; ir=ir->next) {
-        if (IsLabel(ir) && ir->prev && ir->aux && IsJump((IR *)ir->aux) && !IsForwardJump((IR *)ir->aux)) {
-            IR *end = (IR *)ir->aux;
+        IR *end;
+        if (IsLabel(ir) && ir->prev && (end = UniqJumpForLabel(ir)) && IsJump(end) && !IsForwardJump(end)) {
             // Find top add/sub
             IR *nexttop;
             for(IR *top=ir->next; top&&top!=end; top=nexttop) {
@@ -5327,7 +5352,7 @@ LoopCanBeFcached(IRList *irl, IR *root, int size_left)
         // this loop is not in HUB memory
         return 0;
     }
-    endjmp = (IR *)ir->aux;
+    endjmp = UniqJumpForLabel(ir);
     if (!endjmp || !IsJump(endjmp)) {
         // we don't know who jumps here
         return 0;

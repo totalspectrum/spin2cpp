@@ -635,16 +635,13 @@ void ReplaceIRWithInline(IRList *irl, IR *origir, Function *func)
             if (ir->dst == FuncData(func)->asmretname) {
                 // do nothing
             } else {
-                IR *jmpir;
                 ir->dst = NewCodeLabel();
-                jmpir = (IR *)ir->aux;
-                if (jmpir) {
-                    ReplaceJumpTarget(jmpir, ir->dst);
-                } else {
-                    // we used to print an error here, but in fact it is legal
-                    // (albeit unusual) for a label to have nothing explicitly jumping to it,
-                    // e.g. the label at the end of a repeat block
+                for (struct ir_lbljumps *list=ir->aux;list;list=list->next) {
+                    ReplaceJumpTarget(list->jump, ir->dst);
                 }
+                // we used to print an error when there were no jumps, but in fact it is legal
+                // (albeit unusual) for a label to have nothing explicitly jumping to it,
+                // e.g. the label at the end of a repeat block
             }
         }
     }
@@ -799,7 +796,13 @@ DeleteIR(IRList *irl, IR *ir)
     // Delete label back reference if present
     if (IsBranch(ir) && ir->aux) {
         IR *lbl = (IR *)ir->aux;
-        if (lbl->opc == OPC_LABEL && lbl->aux == ir) lbl->aux = NULL;
+        if (lbl->opc == OPC_LABEL) {
+            struct ir_lbljumps **prevnext = (struct ir_lbljumps **)&lbl->aux;
+            struct ir_lbljumps *list = *prevnext;
+            for (;list;prevnext = &list->next,list=*prevnext) {
+                if (list->jump == ir) *prevnext = list->next;
+            }
+        }
     }
 }
 
