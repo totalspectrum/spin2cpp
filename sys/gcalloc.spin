@@ -187,7 +187,8 @@ pri _gc_errmsg(s) | c
   if (__DEBUG__)
     repeat while ((c:=byte[s++]) <> 0)
       _tx(c)
-
+  return 0   ' necessary for nucode stack
+  
 pri _gc_errhex(h)
   if (__DEBUG__)
     _txhex(h)
