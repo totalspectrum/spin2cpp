@@ -5,7 +5,7 @@ dat
 entry
 
 _test1
-	cmps	arg01, #0 wz
+	cmp	arg01, #0 wz
  if_e	cmp	arg02, #0 wz
  if_ne	mov	result1, arg03
  if_e	neg	result1, #1

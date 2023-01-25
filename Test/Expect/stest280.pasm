@@ -45,7 +45,29 @@ _blah2
 	sub	fp, #8
 	mov	arg02, ptr__dat__
 	mov	arg03, #8
-	call	#__system____builtin_memmove
+	cmps	arg01, arg02 wc
+ if_ae	jmp	#LR__0011
+	mov	_var01, #8 wz
+LR__0010
+	rdbyte	result1, arg02
+	wrbyte	result1, arg01
+	add	arg01, #1
+	add	arg02, #1
+	djnz	_var01, #LR__0010
+	jmp	#LR__0014
+LR__0011
+	add	arg01, arg03
+	add	arg02, arg03
+	mov	_var02, arg03 wz
+ if_e	jmp	#LR__0013
+LR__0012
+	sub	arg01, #1
+	sub	arg02, #1
+	rdbyte	_var01, arg02
+	wrbyte	_var01, arg01
+	djnz	_var02, #LR__0012
+LR__0013
+LR__0014
 	add	fp, #4
 	rdlong	result1, fp
 	add	fp, #4
@@ -56,36 +78,6 @@ _blah2
 	sub	sp, #4
 	rdlong	fp, sp
 _blah2_ret
-	ret
-
-__system____builtin_memmove
-	mov	_var01, arg01
-	cmps	arg01, arg02 wc
- if_ae	jmp	#LR__0011
-	mov	_var02, arg03 wz
- if_e	jmp	#LR__0014
-LR__0010
-	rdbyte	result1, arg02
-	wrbyte	result1, arg01
-	add	arg01, #1
-	add	arg02, #1
-	djnz	_var02, #LR__0010
-	jmp	#LR__0014
-LR__0011
-	add	arg01, arg03
-	add	arg02, arg03
-	mov	_var03, arg03 wz
- if_e	jmp	#LR__0013
-LR__0012
-	sub	arg01, #1
-	sub	arg02, #1
-	rdbyte	_var04, arg02
-	wrbyte	_var04, arg01
-	djnz	_var03, #LR__0012
-LR__0013
-LR__0014
-	mov	result1, _var01
-__system____builtin_memmove_ret
 	ret
 
 fp
@@ -107,10 +99,6 @@ stackspace
 _var01
 	res	1
 _var02
-	res	1
-_var03
-	res	1
-_var04
 	res	1
 arg01
 	res	1
