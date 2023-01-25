@@ -2024,11 +2024,29 @@ doCompileMul(IRList *irl, Operand *lhs, Operand *rhs, int gethi, Operand *dest)
             EmitOp1(irl, OPC_GETQX, temp);
             return temp;
         }
-        if (isUnsigned && gethi) {
+        if (isUnsigned) {
             lhs = Dereference(irl, lhs);
             rhs = Dereference(irl, rhs);
             EmitOp2(irl, OPC_QMUL, lhs, rhs);
             EmitOp1(irl, OPC_GETQY, temp);
+            return temp;
+        } else {
+            IR *ir;
+            Operand *temp2 = NewFunctionTempRegister();
+            lhs = Dereference(irl, lhs);
+            rhs = Dereference(irl, rhs);
+            EmitOp2(irl, OPC_QMUL, lhs, rhs);
+            EmitMove(irl, temp2, NewImmediate(0), linenum);
+            ir = EmitOp2(irl, OPC_CMPS, lhs, NewImmediate(0));
+            ir->flags |= FLAG_WC;
+            ir = EmitOp2(irl, OPC_ADD, temp2, rhs);
+            ir->cond = COND_LT;
+            ir = EmitOp2(irl, OPC_CMPS, rhs, NewImmediate(0));
+            ir->flags |= FLAG_WC;
+            ir = EmitOp2(irl, OPC_ADD, temp2, lhs);
+            ir->cond = COND_LT;
+            EmitOp1(irl, OPC_GETQY, temp);
+            EmitOp2(irl, OPC_SUB, temp, temp2);
             return temp;
         }
     }
@@ -5677,6 +5695,8 @@ static const char *builtin_mul_p1_fast =
     "	ret\n"
     ;
 
+#if 0
+// no longer needed, expanded inline
 static const char *builtin_mul_p2 =
     "\nunsmultiply_\n"
     "\tqmul\tmuldiva_, muldivb_\n"
@@ -5696,6 +5716,7 @@ static const char *builtin_mul_p2 =
     "\tsub\tmuldivb_, itmp2_\n"
     "\tret\n"
     ;
+#endif
 
 /*
  * signed divide, taken from spin interpreter
@@ -6072,7 +6093,8 @@ EmitBuiltins(IRList *irl)
         Operand *loop;
 
         if (gl_p2) {
-            loop = NewOperand(IMM_STRING, builtin_mul_p2, 0);
+            ERROR(NULL, "Internal compiler error, compiler should not need p2 multiply function");
+            loop = NewOperand(IMM_STRING, "", 0);
         } else if (g_NeedMulHi) {
             loop = NewOperand(IMM_STRING, builtin_mul_p1, 0);
         } else {

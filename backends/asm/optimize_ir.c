@@ -6065,15 +6065,15 @@ static PeepholePattern pat_qmul_qmul1[] = {
     { COND_TRUE, OPC_QMUL, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
     { COND_TRUE, OPC_GETQX, PEEP_OP_SET|2, OPERAND_ANY, PEEP_FLAGS_NONE },
     { COND_TRUE, OPC_QMUL, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_P2 },
-    { COND_TRUE, OPC_GETQY, PEEP_OP_SET|3, OPERAND_ANY, PEEP_FLAGS_NONE },
+//    { COND_TRUE, OPC_GETQY, PEEP_OP_SET|3, OPERAND_ANY, PEEP_FLAGS_NONE },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
-// qmul x, y; getqx z; qmul x, y; getqy w -> qmul x, y; getqx z; getqy w
+// qmul x, y; getqy z; qmul x, y; getqx w -> qmul x, y; getqx z; getqy w
 static PeepholePattern pat_qmul_qmul2[] = {
     { COND_TRUE, OPC_QMUL, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
     { COND_TRUE, OPC_GETQY, PEEP_OP_SET|2, OPERAND_ANY, PEEP_FLAGS_NONE },
     { COND_TRUE, OPC_QMUL, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_P2 },
-    { COND_TRUE, OPC_GETQX, PEEP_OP_SET|3, OPERAND_ANY, PEEP_FLAGS_NONE },
+//    { COND_TRUE, OPC_GETQX, PEEP_OP_SET|3, OPERAND_ANY, PEEP_FLAGS_NONE },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
@@ -6501,7 +6501,7 @@ static int FixupAndAdd(int arg, IRList *irl, IR *ir0)
 //   qmul x, y
 //   getqx z
 //   qmul x, y
-//   getqx w
+//   ... other code ...
 //
 // check that z != x and z != y
 // if so, delete second qmul

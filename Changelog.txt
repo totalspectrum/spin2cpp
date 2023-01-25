@@ -4,6 +4,7 @@ Version 5.9.27
 - Fixed an out of memory crash due to nested structs in -O0
 - Fixed assembly warnings that were accidentally broken
 - Made more fatfs options settable on the command line (thanks, Ada)
+- Made P2 signed multiply always generate inline code
 - Optimized the 9p filesystem code somewhat
 
 Version 5.9.26
