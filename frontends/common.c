@@ -459,6 +459,12 @@ EnterConstant(Module *P, const char *name, AST *expr)
                 return NULL;
             }
             return NULL; /* did not create new symbol */
+        } else {
+            ERROR(expr, "Duplicate definition for %s", name);
+            if (sym->def) {
+                NOTE((AST *)sym->def, "... previous definition was here");
+            }
+            return NULL;
         }
     }
     if (IsFloatConst(expr)) {

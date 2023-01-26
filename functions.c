@@ -140,11 +140,16 @@ EnterVariable(int kind, SymbolTable *stab, AST *astname, AST *type, unsigned sym
 
     sym = AddSymbolPlaced(stab, name, kind, (void *)type, username, astname);
     if (!sym) {
+        Symbol *oldsym;
         // ignore duplicate definitions for SYM_TEMPVAR
         if (kind == SYM_TEMPVAR && (!type || type == ast_type_generic)) {
             return sym;
         }
+        oldsym = LookupSymbolInTable(stab, name);
         ERROR(astname, "duplicate definition for %s", username);
+        if (oldsym && oldsym->def) {
+            NOTE((AST *)oldsym->def, "... previous definition is here");
+        }
     } else {
         sym->flags |= sym_flag;
         sym->module = (void *)current;
@@ -895,7 +900,7 @@ doDeclareFunction(AST *funcblock)
     sym = FindSymbol(&current->objsyms, funcname_internal);
     if (sym && sym->kind == SYM_VARIABLE) {
         AST *typ = (AST *)sym->v.ptr;
-        if (typ->kind == AST_FUNCTYPE) {
+        if (typ && typ->kind == AST_FUNCTYPE) {
             // We are redefining a bare function declaration in a class
             fdef = NewFunction(language);
             sym->v.ptr = (void *)fdef;
@@ -905,6 +910,9 @@ doDeclareFunction(AST *funcblock)
     if (sym && sym->kind != SYM_WEAK_ALIAS) {
         if (sym->kind != SYM_FUNCTION) {
             ERROR(funcdef, "Redefining %s as a function or subroutine", funcname_user);
+            if (sym->def) {
+                NOTE((AST *)sym->def, "... previous definition is here");
+            }
             return NULL;
         }
         fdef = (Function *)sym->v.ptr;
