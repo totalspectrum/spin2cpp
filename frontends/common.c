@@ -1628,6 +1628,9 @@ DeclareTypedRegisterVariables(AST *ast)
         ERROR(ast, "Only 32 bit variables may be placed in registers");
         typ = ast_type_generic;
     }
+    if (TypeGoesOnStack(typ)) {
+        ERROR(ast, "Variables of this type must be placed in memory");
+    }
     if (idlist->kind == AST_LISTHOLDER) {
         while (idlist) {
             ident = idlist->left;
