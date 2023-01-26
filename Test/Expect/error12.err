@@ -1,1 +1,2 @@
 error12.spin:4: error: duplicate definition for c
+error12.spin:4: note: ... previous definition is here
