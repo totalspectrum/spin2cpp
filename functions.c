@@ -2755,14 +2755,19 @@ MarkUsedBody(AST *body, const char *caller)
         objtype = BaseType(ExprType(objref));
         if (!objtype || objtype->kind != AST_OBJECT) {
             //not a direct object reference
+            return;
         } else {
             P = GetClassPtr(objtype);
             sym = LookupSymbolInTable(&P->objsyms, GetUserIdentifierName(body->right));
-            if (sym && sym->kind == SYM_FUNCTION) {
-                MarkUsed((Function *)sym->v.ptr, sym->our_name);
+            if (sym) {
+                if (sym->kind == SYM_FUNCTION) {
+                    MarkUsed((Function *)sym->v.ptr, sym->our_name);
+                }
+                MarkUsedBody(body->left, caller);
+                return;
             }
         }
-        return;
+        break;
     case AST_COGINIT:
         UseInternal("_coginit");
         // sanity check that enough arguments are given
