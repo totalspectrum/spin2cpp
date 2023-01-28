@@ -232,7 +232,7 @@ stk5		pop	stk5
 stk6		pop	stk6
 stk7		pop	stk7
 
-iret		mov	iret,$1FF	'save debug interrupt return address
+iret		mov	iret,$1FF-0	'save debug interrupt return address
 
 		brk	##$800		'show ina/inb (must be disabled before RETI0)
 
