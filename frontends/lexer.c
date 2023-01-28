@@ -1988,7 +1988,7 @@ struct reservedword {
     { "asm_const", SP_ASM_CONST }, // NON-STANDARD
     { "__builtin_alloca", SP_ALLOCA }, // NON-STANDARD
     { "byte", SP_BYTE },
-    { "__bytecode__", SP_BYTECODE },
+    { "%bytecode", SP_BYTECODE },
 
     { "case", SP_CASE },
     { "case_fast", SP_CASE_FAST }, // NON-STANDARD

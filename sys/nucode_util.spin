@@ -3,67 +3,67 @@
 ''
 
 pri _waitx(tim = long)
-  __bytecode__("WAITX")
+  %bytecode("WAITX")
 
 pri _pinr(pin = long) : val
-  __bytecode__("PINR")
+  %bytecode("PINR")
   
 pri _getcnthl : rl = +long, rh = +long
-  __bytecode__("GETCTHL")
+  %bytecode("GETCTHL")
 
 pri _getcnt : r = +long | rh
   r, rh := _getcnthl()
   return r
 
 pri _cogid : r = long
-  __bytecode__("COGID")
+  %bytecode("COGID")
 
 pri _cogatn(mask = +long)
-  __bytecode__("COGATN")
+  %bytecode("COGATN")
 
 pri _pollatn : r = long
-  __bytecode__("POLLATN")
+  %bytecode("POLLATN")
 
 pri _cogstop(x = long)
-  __bytecode__("COGSTOP")
+  %bytecode("COGSTOP")
 
 pri _coginit(id = long, code, param): r
-  __bytecode__("COGINIT")
+  %bytecode("COGINIT")
   
 pri _cogchk(id = long) : r
-  __bytecode__("COGCHK")
+  %bytecode("COGCHK")
 
 pri _drvl(pin = long)
-  __bytecode__("DRVL")
+  %bytecode("DRVL")
 pri _drvh(pin = long)
-  __bytecode__("DRVH")
+  %bytecode("DRVH")
 pri _drvnot(pin = long)
-  __bytecode__("DRVNOT")
+  %bytecode("DRVNOT")
 pri _drvrnd(pin = long)
-  __bytecode__("DRVRND")
+  %bytecode("DRVRND")
 pri _drvw(pin = long, bit = long)
-  __bytecode__("DRVWR")
+  %bytecode("DRVWR")
 
 pri _dirl(pin = long)
-  __bytecode__("DIRL")
+  %bytecode("DIRL")
 pri _dirh(pin = long)
-  __bytecode__("DIRH")
+  %bytecode("DIRH")
 
 pri _fltl(pin = long)
-  __bytecode__("FLTL")
+  %bytecode("FLTL")
 
 pri _wrpin(pin = long, val = long)
-  __bytecode__("WRPIN")
+  %bytecode("WRPIN")
 pri _wxpin(pin = long, val = long)
-  __bytecode__("WXPIN")
+  %bytecode("WXPIN")
 pri _wypin(pin = long, val = long)
-  __bytecode__("WYPIN")
+  %bytecode("WYPIN")
 pri _rdpinx(pin = long) : r, c
-  __bytecode__("RDPINX")
+  %bytecode("RDPINX")
 pri _rqpin(pin = long) : r
-  __bytecode__("RQPIN")
+  %bytecode("RQPIN")
 pri _akpin(pin = long)
-  __bytecode__("AKPIN")
+  %bytecode("AKPIN")
 
 pri _rdpin(pin = long) : r | c
   r,c := _rdpinx(pin)
@@ -85,10 +85,10 @@ pri _pinstart(pin = long, mode, xval, yval)
   _dirh(pin)
 
 pri _waitcnt(x = long)
-  __bytecode__("WAITCNT")
+  %bytecode("WAITCNT")
 
 pri waitcnt(x = long)
-  __bytecode__("WAITCNT")
+  %bytecode("WAITCNT")
   
 dat
     orgh
@@ -263,7 +263,7 @@ pri strcomp(s1, s2) | c1, c2
   return -1
 
 pri _sqrt64(lo, hi) : r
-  __bytecode__("SQRT64")
+  %bytecode("SQRT64")
 
 pri _sqrt(a) : r
   if (a =< 0)
@@ -271,22 +271,22 @@ pri _sqrt(a) : r
   return _sqrt64(a, 0)
 
 pri _lockmem(addr)
-  __bytecode__("LOCKMEM")
+  %bytecode("LOCKMEM")
 
 pri _locknew : rval
-  __bytecode__("LOCKNEW")
+  %bytecode("LOCKNEW")
 
 pri _lockret(id)
-  __bytecode__("LOCKRET")
+  %bytecode("LOCKRET")
 
 pri _lockclr(id) : rval
-  __bytecode__("LOCKCLR")
+  %bytecode("LOCKCLR")
 
 pri _lockset(id) : rval
-  __bytecode__("LOCKSET")
+  %bytecode("LOCKSET")
 
 pri _locktry(id) : rval
-  __bytecode__("LOCKTRY")
+  %bytecode("LOCKTRY")
 
 pri _unlockmem(addr) | oldlock
   long[addr] := 0
@@ -295,7 +295,7 @@ pri __topofstack(ptr) : r
   return @ptr
 
 pri __get_heap_base() : r
-  __bytecode__("GETHEAP")
+  %bytecode("GETHEAP")
 
 pri _lookup(x, b, arr, n) | i
   i := x - b
@@ -313,10 +313,10 @@ pri _lookdown(x, b, arr, n) | i
 ' random number generators
 '
 pri _lfsr_forward(x) : r
-  __bytecode__("XORO")
+  %bytecode("XORO")
 
 pri _lfsr_backward(x) : r
-  __bytecode__("XORO")
+  %bytecode("XORO")
 
 '
 ' time stuff
@@ -349,7 +349,7 @@ pri _getsec() : freq = +long | lo, hi
   return lo
 
 pri _hubset(x)
-  __bytecode__("HUBSET")
+  %bytecode("HUBSET")
   
 pri _clkset(mode, freq) | oldmode, xsel
   xsel := mode & 3
@@ -382,7 +382,7 @@ pri _make_methodptr(o, func) | ptr
 '' divide (n, nlo) by d, producing qlo and rlo (used in FRAC operation)
 ''
 pri _div64(n, nlo, dlo) : qlo, rlo
-  __bytecode__("DIV64")
+  %bytecode("DIV64")
 
 ' signed version
 pri _sdiv64(ahi, alo, b) : q,r | shi, slo, sign
@@ -406,25 +406,25 @@ pri _sdiv64(ahi, alo, b) : q,r | shi, slo, sign
    q := -q
 
 pri _muldiv64(mult1, mult2, divisor) : r
-  __bytecode__("MULDIV64")
+  %bytecode("MULDIV64")
   
 pri _qexp(v) : r
-  __bytecode__("QEXP")
+  %bytecode("QEXP")
 
 pri _qlog(v) : r
-  __bytecode__("QLOG")
+  %bytecode("QLOG")
 
 pri _ones(v = +long) : r = +long
-  __bytecode__("ONES")
+  %bytecode("ONES")
 
 pri __builtin_parity(v = +long) : r = +long
   return _ones(v) & 1
 
 pri _rotxy(x, y, angle) : nx, ny
-  __bytecode__("ROTXY")
+  %bytecode("ROTXY")
 
 pri _xypol(x, y) : d, angle
-  __bytecode__("XYPOL")
+  %bytecode("XYPOL")
 
 pri _qsin(len, angle, twopi) : y | x
   if twopi
@@ -441,7 +441,7 @@ pri _qcos(len, angle, twopi) : x | y
   x, y := _rotxy(len, 0, angle)
 
 pri __builtin_movbyts(v = +long, m = +long) : r = +long
-  __bytecode__("MOVBYTS")
+  %bytecode("MOVBYTS")
 
 pri __builtin_bswap16(x = +long) : y = +long
   y := __builtin_movbyts(x, %%3201)
@@ -451,32 +451,31 @@ pri __builtin_bswap32(x = +long) : y = +long
   y := __builtin_movbyts(x, %%0123)
 
 pri __builtin_mergew(x = +long) : y = +long
-  __bytecode__("MERGEW")
+  %bytecode("MERGEW")
 
 pri __builtin_splitw(x = +long) : y = +long
-  __bytecode__("SPLITW")
+  %bytecode("SPLITW")
 
 pri __builtin_mergeb(x = +long) : y = +long
-  __bytecode__("MERGEB")
+  %bytecode("MERGEB")
 
 pri __builtin_splitb(x = +long) : y = +long
-  __bytecode__("SPLITB")
+  %bytecode("SPLITB")
 
 pri __builtin_seussf(x = +long) : y = +long
-  __bytecode__("SEUSSF")
+  %bytecode("SEUSSF")
 
 pri __builtin_seussr(x = +long) : y = +long
-  __bytecode__("SEUSSR")
+  %bytecode("SEUSSR")
 
 pri _int64_add(alo, ahi, blo, bhi) : rlo, rhi
-  __bytecode__("ADD64")
+  %bytecode("ADD64")
 
 pri _int64_sub(alo, ahi, blo, bhi) : rlo, rhi
-  __bytecode__("SUB64")
+  %bytecode("SUB64")
 
 pri _int64_cmpu(alo, ahi, blo, bhi) : r
-  __bytecode__("CMP64U")
+  %bytecode("CMP64U")
 
 pri _int64_cmps(alo, ahi, blo, bhi) : r
-  __bytecode__("CMP64S")
-
+  %bytecode("CMP64S")
