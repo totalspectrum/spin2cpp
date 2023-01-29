@@ -459,7 +459,7 @@ EnterConstant(Module *P, const char *name, AST *expr)
                 return NULL;
             }
             return NULL; /* did not create new symbol */
-        } else {
+        } else if (sym->kind != SYM_WEAK_ALIAS) {
             ERROR(expr, "Duplicate definition for %s", name);
             if (sym->def) {
                 NOTE((AST *)sym->def, "... previous definition was here");
