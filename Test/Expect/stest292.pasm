@@ -8,28 +8,20 @@ _mul_hi
 	mov	arg04, #0
 	mov	arg03, arg02
 	mov	arg02, #0
-	call	#__system___int64_muls
-	mov	result1, result2
-_mul_hi_ret
-	ret
-
-__system___int64_muls
 	mov	muldiva_, arg01
 	mov	muldivb_, arg03
 	call	#unsmultiply_
-	mov	_var01, muldiva_
-	mov	_var02, muldivb_
+	mov	_var01, muldivb_
 	mov	muldiva_, arg02
 	mov	muldivb_, arg03
 	call	#unsmultiply_
-	add	_var02, muldiva_
+	add	_var01, muldiva_
 	mov	muldiva_, arg04
 	mov	muldivb_, arg01
 	call	#unsmultiply_
-	add	_var02, muldiva_
-	mov	result2, _var02
+	add	_var01, muldiva_
 	mov	result1, _var01
-__system___int64_muls_ret
+_mul_hi_ret
 	ret
 
 multiply_
@@ -74,8 +66,6 @@ COG_BSS_START
 	fit	496
 	org	COG_BSS_START
 _var01
-	res	1
-_var02
 	res	1
 arg01
 	res	1
