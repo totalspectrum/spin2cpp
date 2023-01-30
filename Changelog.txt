@@ -1,4 +1,5 @@
 Version 5.9.28
+- Added some simple loop optimizations to transform loops into DJNZ form at level -O1
 - Fixed incorrect code generated sometimes for fetching the upper 32 bits of a 64 bit function result.
 
 Version 5.9.27
