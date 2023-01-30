@@ -540,11 +540,13 @@ impl_SET_SP
 
 impl_ADD
 	add	tos, nos
-	jmp	#\impl_DOWN
+	alts	cogsp, cogstack_dec
+ _ret_	mov	nos, 0-0
 
 impl_SUB
 	subr	tos, nos
-	jmp	#\impl_DOWN
+	alts	cogsp, cogstack_dec
+ _ret_	mov	nos, 0-0
 
 impl_AND
 	and	tos, nos
