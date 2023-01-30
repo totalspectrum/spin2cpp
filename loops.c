@@ -1,6 +1,7 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2022 Total Spectrum Software Inc.
+ * Copyright 2011-2023 Total Spectrum Software Inc.
+ * MIT Licensed
  * See the file COPYING for terms of use
  *
  * code for handling loops
@@ -1168,6 +1169,7 @@ doLoopOptimizeList(LoopValueSet *lvs, AST *list)
 static void
 doBasicLoopOptimization(AST *list) {
     AST *stmt;
+    
     while (list != NULL) {
         if (list->kind != AST_STMTLIST) return;
         stmt = list->left;
@@ -1182,11 +1184,38 @@ doBasicLoopOptimization(AST *list) {
         case AST_STMTLIST:
             doBasicLoopOptimization(stmt);
             break;
+        case AST_WHILE:
+        case AST_DOWHILE:
+            doBasicLoopOptimization(stmt->right);
+            break;
         case AST_FOR:
         case AST_FORATLEASTONCE:
+        {
+            AST *condtest;
+            AST *updateparent;
+            AST *update;
+            AST *body;
+            AST *initial;
+            ASTReportInfo saveinfo;
+            initial = stmt->left;
+            condtest = stmt->right;
+            updateparent = condtest->right;
+            condtest = condtest->left;
+            body = updateparent->right;
+            update = updateparent->left;
+            (void)update;
+            
+            doBasicLoopOptimization(body);
+            AstReportAs(initial, &saveinfo);
             if (!CheckSimpleDecrementLoop(stmt)) {
                 CheckSimpleIncrementLoop(stmt);
             }
+            AstReportDone(&saveinfo);
+            break;
+        }
+        case AST_IF:
+            doBasicLoopOptimization(stmt->right->left);
+            doBasicLoopOptimization(stmt->right->right);
             break;
         default:
             break;
