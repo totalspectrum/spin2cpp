@@ -431,6 +431,8 @@ static void NuRecalcUsage(NuIrList *lists) {
     qsort(&globalBytecodes, num_bytecodes, sizeof(globalBytecodes[0]), usage_sortfunc);
 }
 
+#define MAX_INSTR_SEQ_LEN 4
+
 // find bytecode to compress
 // this may be either a single PUSHI/PUSHA (which is compressed by creating a single opcode immediate version)
 // or a macro pair (which is compressed by creating a new bytecode which does both macros)
@@ -445,7 +447,7 @@ static NuBytecode *NuFindCompressBytecode(NuIrList *irl, int *savings) {
         bc = globalBytecodes[i];
         if ( (bc->code == PUSHI_BYTECODE || bc->code == PUSHA_BYTECODE) && bc->usage > 1) {
             // cost of implementation is 8 bytes for small, 12 for large
-            int impl_cost = 12;
+            int impl_cost = (MAX_INSTR_SEQ_LEN+1)*4;
             // cost of each invocation is 5 bytes normally (PUSHI + data)
             // so we save 4 bytes by replacing with a singleton
             int invoke_cost = 4;
@@ -455,7 +457,7 @@ static NuBytecode *NuFindCompressBytecode(NuIrList *irl, int *savings) {
                 invoke_cost = 2;
             }
             if (bc->value >= -511 && bc->value <= 511) {
-                impl_cost = 8;
+                impl_cost -= 4; // saves a prefix
             }
             savedBytes = (invoke_cost * bc->usage) - impl_cost;
             if (savedBytes < 1) {
@@ -528,14 +530,17 @@ const char *NuMergeBytecodes(const char *bcname, NuBytecode *first, NuBytecode *
         flexbuf_printf(fb, " _ret_\t%s\ttos, #%d\n", opname, first->value);
         free(opname);
     } else {
-        if (first->impl_size < 2) {
+        if (first->impl_size + second->impl_size <= MAX_INSTR_SEQ_LEN) {
             NuCopyImpl(fb, first->impl_ptr, 1);
-        } else {
+            NuCopyImpl(fb, second->impl_ptr, 0);
+        } else if (first->impl_size + 1 <= MAX_INSTR_SEQ_LEN) {
+            NuCopyImpl(fb, first->impl_ptr, 1);
+            flexbuf_printf(fb, "\tjmp\t#\\impl_%s\n", second->name);
+        } else if (second->impl_size + 1 <= MAX_INSTR_SEQ_LEN) {
             flexbuf_printf(fb, "\tcall\t#\\impl_%s\n", first->name);
-        }
-        if (second->impl_size < 2) {
             NuCopyImpl(fb, second->impl_ptr, 0);
         } else {
+            flexbuf_printf(fb, "\tcall\t#\\impl_%s\n", first->name);
             flexbuf_printf(fb, "\tjmp\t#\\impl_%s\n", second->name);
         }
     }
