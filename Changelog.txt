@@ -1,3 +1,6 @@
+Version 5.9.28
+- Fixed incorrect code generated sometimes for fetching the upper 32 bits of a 64 bit function result.
+
 Version 5.9.27
 - Added some more missing functions from libc
 - Added some additional asm optimizations thanks to Ada

@@ -2241,6 +2241,16 @@ func_ok:
             ast->left = initseq;
             ast->right = NULL;
         }
+    } else if (ast->kind == AST_GETHIGH && ast->left->kind == AST_FUNCCALL) {
+        AST *loval = AstTempLocalVariable("_retval_", NULL);
+        AST *hival = AstTempLocalVariable("_retval_", NULL);
+        AST *assign;
+        AST *seq;
+        loval = NewAST(AST_EXPRLIST, loval,
+                       NewAST(AST_EXPRLIST, hival, NULL));
+        assign = AstAssign(loval, ast->left);
+        seq = NewAST(AST_SEQUENCE, assign, hival);
+        *ast = *seq;
     }
 skipcheck:
     CheckFunctionCalls(ast->left);
