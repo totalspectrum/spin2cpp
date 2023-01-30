@@ -1165,6 +1165,36 @@ doLoopOptimizeList(LoopValueSet *lvs, AST *list)
     }
 }
 
+static void
+doBasicLoopOptimization(AST *list) {
+    AST *stmt;
+    while (list != NULL) {
+        if (list->kind != AST_STMTLIST) return;
+        stmt = list->left;
+        while (stmt && stmt->kind == AST_COMMENTEDNODE) {
+            stmt = stmt->left;
+        }
+        if (!stmt) {
+            list = list->right;
+            continue;
+        }
+        switch (stmt->kind) {
+        case AST_STMTLIST:
+            doBasicLoopOptimization(stmt);
+            break;
+        case AST_FOR:
+        case AST_FORATLEASTONCE:
+            if (!CheckSimpleDecrementLoop(stmt)) {
+                CheckSimpleIncrementLoop(stmt);
+            }
+            break;
+        default:
+            break;
+        }
+        list = list->right;
+    }
+}
+
 void
 PerformLoopOptimization(Module *Q)
 {
@@ -1172,7 +1202,10 @@ PerformLoopOptimization(Module *Q)
     Function *func;
     Function *savefunc = curfunc;
     LoopValueSet lv;
-    
+
+    if (gl_output == OUTPUT_C || gl_output == OUTPUT_CPP) {
+        return;
+    }
     current = Q;
     for (func = Q->functions; func; func = func->next) {
         curfunc = func;
@@ -1182,6 +1215,8 @@ PerformLoopOptimization(Module *Q)
                 doLoopOptimizeList(&lv, func->body);
                 FreeLoopValueSet(&lv);
             }
+        } else if (func->optimize_flags & OPT_LOOP_BASIC) {
+            doBasicLoopOptimization(func->body);
         }
     }
     curfunc = savefunc;
