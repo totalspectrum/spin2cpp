@@ -840,6 +840,7 @@ CheckSimpleDecrementLoop(AST *stmt)
     AST *updateparent;
     AST *updateVar = NULL;
     AST *updateLimit = NULL;
+    
     int updateTestOp = 0;
 
     initial = stmt->left;
@@ -855,6 +856,9 @@ CheckSimpleDecrementLoop(AST *stmt)
     
     // check for a simple count down to 0
     if (!condtest || condtest->kind != AST_OPERATOR) {
+        return false;
+    }
+    if (ExprHasSideEffects(condtest)) {
         return false;
     }
     updateTestOp = condtest->d.ival;
@@ -875,7 +879,7 @@ CheckSimpleDecrementLoop(AST *stmt)
         if (ival != 0) {
             return false;
         }
-    } else {
+    } else if (updateTestOp != K_NE) {
         return false;
     }
 
@@ -902,7 +906,25 @@ CheckSimpleDecrementLoop(AST *stmt)
         condtest->d.ival = K_NE;
         return true;
     }
-    return false;
+    if (condtest->d.ival != K_NE) {
+        return false;
+    }
+    // FIXME: should we change AST_FOR to AST_FORATLEASTONCE here?
+    if (stmt->kind == AST_FOR) {
+        AST *newstmt = NewAST(AST_FORATLEASTONCE, NULL, NULL);
+        AST *skipif;
+        *newstmt = *stmt;
+        newstmt->kind = AST_FORATLEASTONCE;
+        newstmt->left = NULL; // initial will be performed earlier
+        newstmt = NewAST(AST_STMTLIST, newstmt, NULL);
+        newstmt = NewAST(AST_THENELSE, newstmt, NULL);
+        skipif = NewAST(AST_IF, DupAST(condtest), newstmt);
+        skipif = NewAST(AST_STMTLIST, initial,
+                        NewAST(AST_STMTLIST, skipif, NULL));
+        
+        *stmt = *skipif;
+    }
+    return true;
 }
 
 //
