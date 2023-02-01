@@ -263,8 +263,9 @@ impl_CALLA
 	rfword	pb
 	rfbyte	tmp
 	getptr	old_pc
-	shl	tmp, #16
-	or	pb, tmp
+	'shl	tmp, #16
+	'or	pb, tmp
+	setbyte	pb, tmp, #2
 	jmp	#restart_loop
 	
 impl_CALL
