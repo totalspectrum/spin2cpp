@@ -267,31 +267,29 @@ LR__0038
 __system__pack_0007_ret
 	ret
 
-multiply_
-	mov	itmp2_, muldiva_
-	xor	itmp2_, muldivb_
-	abs	muldiva_, muldiva_
-	abs	muldivb_, muldivb_
-	jmp	#do_multiply_
-
 unsmultiply_
-	mov	itmp2_, #0
+       jmpret $, #do_multiply_ nr,wc
+
+multiply_
+       abs    muldiva_, muldiva_ wc
+       negnc  itmp1_,#1
+       abs    muldivb_, muldivb_ wc
+       muxnc  itmp1_,#1 wc
 do_multiply_
-	mov	result1, #0
-	mov	itmp1_, #32
-	shr	muldiva_, #1 wc
+       rcr    muldiva_, #1 wc
+       mov    itmp2_, #0
+       mov    itmp1_, #32
 mul_lp_
- if_c	add	result1, muldivb_ wc
-	rcr	result1, #1 wc
-	rcr	muldiva_, #1 wc
-	djnz	itmp1_, #mul_lp_
-	shr	itmp2_, #31 wz
-	negnz	muldivb_, result1
- if_nz	neg	muldiva_, muldiva_ wz
- if_nz	sub	muldivb_, #1
+ if_c  add    itmp2_, muldivb_ wc
+       rcr    itmp2_, #1 wc
+       rcr    muldiva_, #1 wc
+       djnz    itmp1_, #mul_lp_
+       negc   muldivb_, itmp2_
+ if_c  neg    muldiva_, muldiva_ wz
+ if_c_and_nz sub    muldivb_, #1
 multiply__ret
 unsmultiply__ret
-	ret
+    ret
 
 imm_1199570944_
 	long	1199570944

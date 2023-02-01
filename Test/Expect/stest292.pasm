@@ -11,44 +11,41 @@ _mul_hi
 	mov	muldiva_, arg01
 	mov	muldivb_, arg03
 	call	#unsmultiply_
-	mov	_var01, muldivb_
+	mov	result1, muldivb_
 	mov	muldiva_, arg02
 	mov	muldivb_, arg03
 	call	#unsmultiply_
-	add	_var01, muldiva_
+	add	result1, muldiva_
 	mov	muldiva_, arg04
 	mov	muldivb_, arg01
 	call	#unsmultiply_
-	add	_var01, muldiva_
-	mov	result1, _var01
+	add	result1, muldiva_
 _mul_hi_ret
 	ret
 
-multiply_
-	mov	itmp2_, muldiva_
-	xor	itmp2_, muldivb_
-	abs	muldiva_, muldiva_
-	abs	muldivb_, muldivb_
-	jmp	#do_multiply_
-
 unsmultiply_
-	mov	itmp2_, #0
+       jmpret $, #do_multiply_ nr,wc
+
+multiply_
+       abs    muldiva_, muldiva_ wc
+       negnc  itmp1_,#1
+       abs    muldivb_, muldivb_ wc
+       muxnc  itmp1_,#1 wc
 do_multiply_
-	mov	result1, #0
-	mov	itmp1_, #32
-	shr	muldiva_, #1 wc
+       rcr    muldiva_, #1 wc
+       mov    itmp2_, #0
+       mov    itmp1_, #32
 mul_lp_
- if_c	add	result1, muldivb_ wc
-	rcr	result1, #1 wc
-	rcr	muldiva_, #1 wc
-	djnz	itmp1_, #mul_lp_
-	shr	itmp2_, #31 wz
-	negnz	muldivb_, result1
- if_nz	neg	muldiva_, muldiva_ wz
- if_nz	sub	muldivb_, #1
+ if_c  add    itmp2_, muldivb_ wc
+       rcr    itmp2_, #1 wc
+       rcr    muldiva_, #1 wc
+       djnz    itmp1_, #mul_lp_
+       negc   muldivb_, itmp2_
+ if_c  neg    muldiva_, muldiva_ wz
+ if_c_and_nz sub    muldivb_, #1
 multiply__ret
 unsmultiply__ret
-	ret
+    ret
 
 itmp1_
 	long	0
@@ -65,8 +62,6 @@ result2
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_var01
-	res	1
 arg01
 	res	1
 arg02

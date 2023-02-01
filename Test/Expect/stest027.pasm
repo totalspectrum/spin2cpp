@@ -8,35 +8,26 @@ _hyp
 	mov	muldiva_, arg01
 	mov	muldivb_, arg01
 	call	#unsmultiply_
-	mov	arg01, muldiva_
+	mov	result1, muldiva_
 	mov	muldiva_, arg02
 	mov	muldivb_, arg02
 	call	#unsmultiply_
-	add	arg01, muldiva_
-	mov	result1, arg01
+	add	result1, muldiva_
 _hyp_ret
 	ret
 
-multiply_
-       mov    itmp2_, muldiva_
-       xor    itmp2_, muldivb_
-       abs    muldiva_, muldiva_
-       abs    muldivb_, muldivb_
-       jmp    #do_multiply_
 unsmultiply_
-       mov    itmp2_, #0
-do_multiply_
-	mov    result1, #0
+multiply_
+       mov    itmp1_, #0
 mul_lp_
-	shr    muldivb_, #1 wc,wz
- if_c	add    result1, muldiva_
-	shl    muldiva_, #1
- if_ne	jmp    #mul_lp_
-       shr    itmp2_, #31 wz
-       negnz  muldiva_, result1
+       shr    muldivb_, #1 wc,wz
+ if_c  add    itmp1_, muldiva_
+       shl    muldiva_, #1
+ if_ne jmp    #mul_lp_
+       mov    muldiva_, itmp1_
 multiply__ret
 unsmultiply__ret
-	ret
+       ret
 
 itmp1_
 	long	0
