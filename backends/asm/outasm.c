@@ -5645,55 +5645,92 @@ CompileToIR_hub(IRList *irl, Module *P)
  * emit builtin functions like mul and div
  */
 static const char *builtin_mul_p1 =
-    "\nmultiply_\n"
-    "\tmov\titmp2_, muldiva_\n"
-    "\txor\titmp2_, muldivb_\n"
-    "\tabs\tmuldiva_, muldiva_\n"
-    "\tabs\tmuldivb_, muldivb_\n"
-    "\tjmp\t#do_multiply_\n"
+#if 1
     "\nunsmultiply_\n"
-    "\tmov\titmp2_, #0\n"
+    "       jmpret $, #do_multiply_ nr,wc\n"
+    "\nmultiply_\n"
+    "       abs    muldiva_, muldiva_ wc\n"
+    "       negnc  itmp1_,#1\n" // odd parity if C
+    "       abs    muldivb_, muldivb_ wc\n"
+    "       muxnc  itmp1_,#1 wc\n" // invert parity if C and test. Operation is effectively "if_c xor itmp1_,#1"
     "do_multiply_\n"
-    "\tmov\tresult1, #0\n"
-    "\tmov\titmp1_, #32\n"
-    "\tshr\tmuldiva_, #1 wc\n"
+    "       rcr    muldiva_, #1 wc\n" // Store result sign in muldiva's top bit, which ends up in C after the loop
+    "       mov    itmp2_, #0\n"
+    "       mov    itmp1_, #32\n"
     "mul_lp_\n"
-    " if_c\tadd\tresult1, muldivb_ wc\n"
-    "\trcr\tresult1, #1 wc\n"
-    "\trcr\tmuldiva_, #1 wc\n"
-    "\tdjnz\titmp1_, #mul_lp_\n"
+    " if_c  add    itmp2_, muldivb_ wc\n"
+    "       rcr    itmp2_, #1 wc\n"
+    "       rcr    muldiva_, #1 wc\n"
+    "       djnz    itmp1_, #mul_lp_\n"
 
-    "\tshr\titmp2_, #31 wz\n"
-    "\tnegnz\tmuldivb_, result1\n"
-    " if_nz\tneg\tmuldiva_, muldiva_ wz\n"
-    " if_nz\tsub\tmuldivb_, #1\n"
+    "       negc   muldivb_, itmp2_\n"
+    " if_c  neg    muldiva_, muldiva_ wz\n"
+    " if_c_and_nz sub    muldivb_, #1\n"
     "multiply__ret\n"
     "unsmultiply__ret\n"
-    "\tret\n"
+    "    ret\n"
     ;
-
-static const char *builtin_mul_p1_fast =
+#else
     "\nmultiply_\n"
     "       mov    itmp2_, muldiva_\n"
     "       xor    itmp2_, muldivb_\n"
     "       abs    muldiva_, muldiva_\n"
     "       abs    muldivb_, muldivb_\n"
     "       jmp    #do_multiply_\n"
+    "\nunsmultiply_\n"
+    "       mov    itmp2_, #0\n"
+    "do_multiply_\n"
+    "       mov    result1, #0\n"
+    "       mov    itmp1_, #32\n"
+    "       shr    muldiva_, #1 wc\n"
+    "mul_lp_\n"
+    " if_c  add    result1, muldivb_ wc\n"
+    "       rcr    result1, #1 wc\n"
+    "       rcr    muldiva_, #1 wc\n"
+    "       djnz    itmp1_, #mul_lp_\n"
+
+    "       shr    itmp2_, #31 wz\n"
+    "       negnz    muldivb_, result1\n"
+    " if_nz neg    muldiva_, muldiva_ wz\n"
+    " if_nz sub    muldivb_, #1\n"
+    "multiply__ret\n"
+    "unsmultiply__ret\n"
+    "    ret\n"
+    ;
+#endif
+
+static const char *builtin_mul_p1_fast =
+#if 1
+    "\nunsmultiply_\n"
+    "multiply_\n"
+    "       mov    itmp1_, #0\n"
+    "mul_lp_\n"
+    "       shr    muldivb_, #1 wc,wz\n"
+    " if_c  add    itmp1_, muldiva_\n"
+    "       shl    muldiva_, #1\n"
+    " if_ne jmp    #mul_lp_\n"
+    "       mov    muldiva_, itmp1_\n"
+    "multiply__ret\n"
+    "unsmultiply__ret\n"
+    "       ret\n"
+    ;
+#else
     "unsmultiply_\n"
     "       mov    itmp2_, #0\n"
     "do_multiply_\n"
-    "	mov    result1, #0\n"
+    "       mov    result1, #0\n"
     "mul_lp_\n"
-    "	shr    muldivb_, #1 wc,wz\n"
-    " if_c	add    result1, muldiva_\n"
-    "	shl    muldiva_, #1\n"
-    " if_ne	jmp    #mul_lp_\n"
+    "       shr    muldivb_, #1 wc,wz\n"
+    " if_c  add    result1, muldiva_\n"
+    "       shl    muldiva_, #1\n"
+    " if_ne jmp    #mul_lp_\n"
     "       shr    itmp2_, #31 wz\n"
     "       negnz  muldiva_, result1\n"
     "multiply__ret\n"
     "unsmultiply__ret\n"
-    "	ret\n"
+    "       ret\n"
     ;
+#endif
 
 #if 0
 // no longer needed, expanded inline

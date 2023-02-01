@@ -909,10 +909,14 @@ AddSubVal(IR *ir)
 
 extern Operand *mulfunc, *unsmulfunc, *divfunc, *unsdivfunc, *muldiva, *muldivb;
 
+static bool isMulDivFunc(Operand *func) {
+    return !!func && (func == mulfunc || func == unsmulfunc || func == divfunc || func == unsdivfunc);
+}
+
 // Set "actually" if you only care about the call actually using the current value
 static bool FuncUsesArgEx(Operand *func, Operand *arg, bool actually)
 {
-    if (func == mulfunc || func == unsmulfunc || func == divfunc || func == unsdivfunc) {
+    if (isMulDivFunc(func)) {
         return (arg == muldiva || arg == muldivb);
     } else if (arg == muldiva || arg == muldivb) {
         return !actually;
@@ -937,6 +941,7 @@ static bool IsCallThatUsesReg(IR *ir,Operand *op) {
     if (ir->opc != OPC_CALL) return false;
     if (IsLocal(op)) return false;
     if (IsArg(op) && !FuncUsesArg(ir->dst,op)) return false;
+    if (isResult(op) && ir->dst && isMulDivFunc(ir->dst)) return false;
     return true;
 }
 
@@ -1148,6 +1153,8 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
                     /* OK to continue */
                 } else if (IsArg(op) && !FuncUsesArgEx(ir->dst,op,true)) {
                     return true; // Value not actually used, goes dead.
+                } else if (isResult(op) && isMulDivFunc(ir->dst)) {
+                    /* Result not affected by mul/div */
                 } else if (isResult(op)) {
                     if (ir->cond == COND_TRUE) return true; // Results get set by functions
                 } else {
@@ -2053,7 +2060,7 @@ OptimizeMulDiv(IRList *irl)
             opb = NULL;
             hiresult_used = 0;
         } else if (ir->opc == OPC_CALL) {
-            if (ir->dst == mulfunc || ir->dst == unsmulfunc || ir->dst == divfunc || ir->dst == unsdivfunc) {
+            if (isMulDivFunc(ir->dst)) {
                 lastir = ir;
                 lastop = lastir->dst;
                 hiresult_used = 0;
@@ -5377,7 +5384,7 @@ LoopCanBeFcached(IRList *irl, IR *root, int size_left)
                 return 0;
             }
             // mul/div functions are definitely OK
-            if (ir->dst == mulfunc || ir->dst == unsmulfunc || ir->dst == divfunc || ir->dst == unsdivfunc) {
+            if (isMulDivFunc(ir->dst)) {
                 goto call_ok;
             }
             // otherwise we assume the function may call other
