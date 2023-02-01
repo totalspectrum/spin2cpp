@@ -876,7 +876,7 @@ NuCompileMul(NuIrList *irl, AST *lhs, AST *rhs, int gethi)
         rhs = tmp;
     }
     NuCompileExpression(irl, lhs);
-    if (IsConstExpr(rhs)) {
+    if (IsConstExpr(rhs) && !needHi) {
         // do some simple optimizations
         int r = EvalConstExpr(rhs);
         switch (r) {
@@ -912,16 +912,18 @@ NuCompileMul(NuIrList *irl, AST *lhs, AST *rhs, int gethi)
         }
     }
     NuCompileExpression(irl, rhs);
-    if (isUnsigned) {
-        NuEmitOp(irl, NU_OP_MULU);
-    } else {
-        NuEmitOp(irl, NU_OP_MULS);
-    }
     // lo, hi are placed on stack
     if (needHi) {
+        if (isUnsigned) {
+            NuEmitOp(irl, NU_OP_MULU);
+        } else {
+            NuEmitOp(irl, NU_OP_MULS);
+        }
         NuEmitOp(irl, NU_OP_SWAP);
+        NuEmitOp(irl, NU_OP_DROP);
+    } else {
+        NuEmitOp(irl, NU_OP_MUL);
     }
-    NuEmitOp(irl, NU_OP_DROP);
     return 1;
 }
 

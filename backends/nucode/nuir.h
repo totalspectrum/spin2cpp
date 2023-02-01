@@ -45,6 +45,7 @@
     X(ROL)       /* tos := nos ROL tos */ \
     X(ROR)       /* tos := nos ROR tos */ \
     X(MOVBYTS)   /* execute MOVBYTS tos, nos */ \
+    X(MUL)       /* 32 bit multiply: tos := tos * nos */ \
     \
     /* BINARY math operations end here (ones below leave 2 items on stack */ \
     \
