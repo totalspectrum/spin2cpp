@@ -224,6 +224,33 @@ static int NuDeletePair(int arg, NuIrList *irl, NuIr *ir) {
     return 1;
 }
 
+// turn repeated load into a DUP
+static NuPeepholePattern pat_ld_ld[] = {
+    { NU_OP_PUSHI,     PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_ADD_DBASE, PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_LDL,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_PUSHI,     0,            PEEP_FLAGS_MATCH_ARG },
+    { NU_OP_ADD_DBASE, PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_LDL,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
+};
+
+// replace a sequence of "arg" instructions following a similar sequence with a DUP
+static int NuReplaceDup(int arg, NuIrList *irl, NuIr *ir) {
+    NuIr *delir;
+    int i;
+    for (i = 0; i < arg; i++) {
+        ir = ir->next;
+    }
+    NuIr *dupit = NuCreateIrOp(NU_OP_DUP);
+    NuIrInsertBefore(irl, ir, dupit);
+    for (i = 0; i < arg; i++) {
+        delir = ir;
+        ir = ir->next;
+        NuDeleteIr(irl, delir);
+    }
+}
+        
 // list of patterns and functions to invoke when the patterns are matched
 struct nupeeps {
     NuPeepholePattern *check;
@@ -238,6 +265,7 @@ struct nupeeps {
     { pat_djnz, NU_OP_DJNZ, NuReplaceDjnz },
     { pat_st_ld, 0, NuReplaceStLd },
     { pat_dead_st, 3, NuReplaceWithDrop },
+    { pat_ld_ld, 3, NuReplaceDup },
 };
 
 //
