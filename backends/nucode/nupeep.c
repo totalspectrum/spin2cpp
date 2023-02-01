@@ -174,7 +174,6 @@ static NuPeepholePattern pat_dead_st[] = {
     { NU_OP_ADD_DBASE,   PEEP_ARG_ANY, PEEP_FLAGS_NONE },
     { NU_OP_STL,         PEEP_ARG_ANY, PEEP_FLAGS_NONE },
     { NU_OP_PUSHI,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
-    { NU_OP_PUSHI,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
     { NU_OP_RET,         PEEP_ARG_ANY, PEEP_FLAGS_NONE },
     { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
 };
@@ -189,7 +188,7 @@ static int NuReplaceWithDrop(int arg, NuIrList *irl, NuIr *ir) {
     return 1;
 }
 
-// elimiinate DUP / DROP sequence
+// eliminate DUP / DROP sequence
 static NuPeepholePattern pat_dup_drop[] = {
     { NU_OP_DUP,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
     { NU_OP_DROP,      PEEP_ARG_ANY, PEEP_FLAGS_NONE },
@@ -249,8 +248,9 @@ static int NuReplaceDup(int arg, NuIrList *irl, NuIr *ir) {
         ir = ir->next;
         NuDeleteIr(irl, delir);
     }
+    return 1;
 }
-        
+
 // list of patterns and functions to invoke when the patterns are matched
 struct nupeeps {
     NuPeepholePattern *check;
