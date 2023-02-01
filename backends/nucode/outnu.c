@@ -1035,8 +1035,8 @@ NuCompileOperator(NuIrList *irl, AST *node) {
         pushed = NuCompileDiv(irl, node->left, node->right, 3);
     } else if (optoken == K_REV) {
         NuCompileExpression(irl, lhs);
-        NuCompileExpression(irl, rhs);
         NuEmitOp(irl, NU_OP_REV);
+        NuCompileExpression(irl, AstOperator('-', AstInteger(32), rhs));
         NuEmitOp(irl, NU_OP_SHR);
         pushed = 1;
     } else if (optoken == K_SIGNEXTEND || optoken == K_ZEROEXTEND) {
