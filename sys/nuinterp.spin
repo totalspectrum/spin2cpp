@@ -97,12 +97,25 @@ continue_startup
 	' similar for looping over 0 addresses
 	mov	zero_inc, ##(1<<9)
 
-	jmp	#start_cog
+	jmp	#restart_loop
 	fit	$100
 	
 	org	$100
 start_cog
 	
+'
+' perform relative branch
+' tmp contains offset to add to pb
+'
+do_relbranch_drop2
+	call	#\impl_DROP
+do_relbranch_drop1
+	call	#\impl_DROP
+do_relbranch
+  	getptr	pb
+	add	pb, tmp
+	' fall through
+
 	' interpreter loop
 #ifdef SERIAL_DEBUG
 restart_loop
@@ -124,9 +137,8 @@ main_loop
 	execf	tmp
 #else
 restart_loop
-	rdfast	#0, pb
 	push	#$1ff		' start xbyte loop
-  _ret_	setq	#0		' use table at start of LUT
+  _ret_	rdfast	#0, pb		' use table at start of LUT
   	jmp	#restart_loop
 #endif
 
@@ -234,20 +246,6 @@ impl_SWAP
 	mov	tmp, tos
 	mov	tos, nos
  _ret_	mov	nos, tmp
-
-'
-' perform relative branch
-' tmp contains offset to add to pb
-'
-do_relbranch_drop1
-	call	#\impl_DROP
-	jmp	#do_relbranch
-do_relbranch_drop2
-	call	#\impl_DROP2
-do_relbranch
-  	getptr	pb
-	add	pb, tmp
-	jmp	#\restart_loop
 
 '
 ' call/enter/ret
