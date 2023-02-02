@@ -624,8 +624,8 @@ void NuCreateBytecodes(NuIrList *lists)
             //}
         } else if (NuBcIsRelBranch(globalBytecodes[i])) {
             globalBytecodes[i]->code = code++;
-        } else if (code >= MAX_BYTECODE || globalBytecodes[i]->usage <= 1) {
-            // out of bytecode space, or we don't care about compressing
+        } else if (code >= MAX_BYTECODE) {
+            // out of bytecode space
             globalBytecodes[i]->code = DIRECT_BYTECODE;
         } else {
             globalBytecodes[i]->code = code++;
