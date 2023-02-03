@@ -381,6 +381,8 @@ BuildDebugList(AST *exprlist)
 %token SP_NEXT       "NEXT"
 
 %token SP_ALLOCA     "__BUILTIN_ALLOCA"
+%token SP_REGEXEC    "REGEXEC"
+%token SP_REGLOAD    "REGLOAD"
 
 /* other stuff */
 %token SP_ABORT      "ABORT"
@@ -1936,6 +1938,14 @@ funccall:
     { 
         AST *arr = NewAST(AST_ARRAYREF, $1, $3);
         $$ = NewAST(AST_METHODREF, arr, $6);
+    }
+  | SP_REGEXEC '(' exprlist ')'
+    {
+        SYNTAX_ERROR("REGEXEC is not supported by flexspin");
+    }
+  | SP_REGLOAD '(' exprlist ')'
+    {
+        SYNTAX_ERROR("REGLOAD is not supported by flexspin");
     }
 ;
 

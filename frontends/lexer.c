@@ -2175,6 +2175,8 @@ struct reservedword init_spin2_words[] = {
     { "qexp", SP_QEXP },
     { "qlog", SP_QLOG },
     { "reg", SP_COGREG },
+    { "regexec", SP_REGEXEC },
+    { "regload", SP_REGLOAD },
     { "sca", SP_UNSHIGHMULT },
     { "scas", SP_SCAS },
     { "signx", SP_SIGNX },
