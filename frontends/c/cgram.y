@@ -1706,9 +1706,13 @@ struct_declaration
                 dummy = NewAST(AST_LISTHOLDER, dummy, NULL);
                 decl = MultipleDeclareVar(anonstruct, dummy);
                 // declare aliases for each variable in the object
-                Module *P = GetClassPtr(anonstruct);
-                if (P) {
-                    DeclareAnonymousAliases(current, P, dummy);
+                if (IsClassType(anonstruct)) {
+                    Module *P = GetClassPtr(anonstruct);
+                    if (P) {
+                        DeclareAnonymousAliases(current, P, dummy);
+                    }
+                } else {
+                    SYNTAX_ERROR("Internal error, confusing type declaration");
                 }
                 $$ = decl;
             }
