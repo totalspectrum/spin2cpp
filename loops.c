@@ -884,7 +884,7 @@ CheckSimpleDecrementLoop(AST *stmt)
     }
 
     /* check that the update is a decrement */
-    while (update->kind == AST_SEQUENCE) {
+    while (update && update->kind == AST_SEQUENCE) {
         if (AstUsesName(update->right, updateVar)) {
             return false;
         }
