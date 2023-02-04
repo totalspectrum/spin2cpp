@@ -4276,8 +4276,7 @@ static IR* FindNextRead(IR *irorig, Operand *dest, Operand *src)
             return ir;
         }
         if ((ir->opc == OPC_ADD || ir->opc == OPC_SUB) && ir->dst == src && ir->src && ir->src->kind == IMM_INT) {
-            if (ir->opc == OPC_ADD) offset += ir->src->val;
-            else                    offset -= ir->src->val;
+            offset += AddSubVal(ir);
         } else if (InstrModifies(ir, dest) || InstrModifies(ir, src)) {
             return NULL;
         }
