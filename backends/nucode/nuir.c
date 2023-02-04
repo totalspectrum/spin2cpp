@@ -863,7 +863,7 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
         int code = bc->code;
         if (code >= FIRST_BYTECODE) {
             if (bc->in_hub) {
-                flexbuf_printf(fb, "\tlong\t(impl_%s<<10)|trampoline  ' in HUB\n", bc->name);
+                flexbuf_printf(fb, "\tlong\t(impl_%s<<16)|trampoline  ' in HUB\n", bc->name);
             } else {
                 flexbuf_printf(fb, "\tlong\timpl_%s\n", bc->name);
             }

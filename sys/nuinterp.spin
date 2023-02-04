@@ -1,3 +1,8 @@
+' define ENABLE_DEBUG to get debug output of the interpreter internals
+'    0 = debug messages off by default, 1 = on by default
+' the $ff opcode toggles on/off
+'
+'#define ENABLE_DEBUG 0
 ''
 '' Nu code interpreter
 '' This is the skeleton from which the actual interpreter is built
@@ -58,11 +63,8 @@ spininit
 	rdlong	pb, --ptra		' pb serves as PC
 	mov	dbase, #0
 continue_startup
-#ifdef SERIAL_DEBUG
-       mov	ser_debug_arg1, ##230_400
-       call	#ser_debug_init
-       mov	ser_debug_arg1, ##@init_msg
-       call	#ser_debug_str
+#ifdef ENABLE_DEBUG
+	DEBUG("Nucode interpreter running")
 #endif
 	' set up tos and nos
 	rdlong	 tos, --ptra
@@ -87,8 +89,8 @@ continue_startup
 	' more initialization code
 	mov	old_pc, #0
 	mov	cogsp, #0
-#ifdef SERIAL_DEBUG
-       mov	dbg_flag, #0
+#ifdef ENABLE_DEBUG
+       mov	dbg_flag, #ENABLE_DEBUG
 #endif
 	' cogstack_inc will act in alts/altd to increment the D field
 	mov	cogstack_inc, ##(cogstack) | (1<<9)
@@ -117,13 +119,13 @@ do_relbranch
 	' fall through
 
 	' interpreter loop
-#ifdef SERIAL_DEBUG
+#ifdef ENABLE_DEBUG
 restart_loop
 	rdfast	#0, pb
 main_loop
 	cmp	dbg_flag, #0 wz
   if_z	jmp	#.skipdbg
-  	call	#dump_regs
+	DEBUG("pc: ", uhex_(pb), " sp: ", uhex_(ptra), " tos: ", uhex_(tos), " nos: ", uhex_(nos), " dbase: ", uhex_(dbase), " cogsp: ", uhex_(cogsp))
 	rdfast	#0, pb
 .skipdbg
 	rfbyte	pa
@@ -147,7 +149,7 @@ trampoline
 	skipf	#0
 	push	#restart_loop	' return to restart (hubexec uses the streamer)
 	rdlut	tmp, pa		' retrieve original word
-	shr	tmp, #10
+	shr	tmp, #16
 	jmp	tmp		' jump to HUB address
 	
 impl_DIRECT
@@ -157,28 +159,28 @@ impl_DIRECT
 
 impl_PUSHI
 	call	#\impl_DUP
-#ifdef SERIAL_DEBUG	
-       rflong	tos
- _ret_ getptr	pb
-#else
+#ifdef ENABLE_DEBUG
+	rflong	tos
+  _ret_	getptr	pb
+#else  
   _ret_	rflong	tos
 #endif
-  
+
 impl_PUSHI16
 	call	#\impl_DUP
-#ifdef SERIAL_DEBUG	
-       rfword	tos
- _ret_ getptr	pb
-#else
+#ifdef ENABLE_DEBUG
+	rfword	tos
+  _ret_	getptr	pb
+#else  
   _ret_	rfword	tos
 #endif
 
 impl_PUSHI8
 	call	#\impl_DUP
-#ifdef SERIAL_DEBUG	
-       rfbyte	tos
- _ret_ getptr	pb
-#else
+#ifdef ENABLE_DEBUG
+	rfbyte	tos
+  _ret_	getptr	pb
+#else  
   _ret_	rfbyte	tos
 #endif
 
@@ -187,12 +189,10 @@ impl_PUSHA
 	rfword	tos
 	rfbyte	tmp
 	shl	tmp, #16
-#ifdef SERIAL_DEBUG
-	or	tos, tmp
-  _ret_ getptr	pb
-#else  
-  _ret_	or	tos, tmp
+#ifdef ENABLE_DEBUG
+	getptr	pb
 #endif
+  _ret_	or	tos, tmp
 
 impl_GETHEAP
 	call	#\impl_DUP
@@ -403,17 +403,23 @@ impl_BREAK
 	jmp	#restart_loop
 	
 impl_HALT
-#ifdef SERIAL_DEBUG
-	mov	ser_debug_arg1, ##@halt_msg
-	call	#ser_debug_str
+#ifdef ENABLE_DEBUG
+	DEBUG("Interpreter halted")
 #endif	
 	waitx	##20000000
 	cogid	pa
 	cogstop	pa
+#ifdef ENABLE_DEBUG
+get_offset
+	rfword	tmp
+	getptr	pb
+  _ret_	signx	tmp, #15
+#endif
+
 end_cog
 
 cogstack
-	res	28
+	res	20
 cogstack_inc
 	res	1
 cogstack_dec
@@ -433,17 +439,15 @@ old_dbase res  	1
 old_pc	res    	1
 old_vbase res  	1
 old_cogsp res	1
-#ifdef SERIAL_DEBUG
+#ifdef ENABLE_DEBUG
 dbg_flag res	1  ' for serial debug
 #endif
 
-#ifndef SERIAL_DEBUG
 '	fit	$1d0  ' inline assembly variables start here
 	fit	$1cc  ' inline assembly variables start here
 	org	$1cc
 inline_vars
 	res	20
-#endif
 	fit	$1e0
 	org	$1e0  ' special locals here
 dbase	res    	1     ' $1e0
@@ -1018,8 +1022,12 @@ impl_LONGJMP
 
 ' relative branches
 impl_BRA
+#ifdef ENABLE_DEBUG
+	call	#\get_offset
+#else
 	rfword	tmp
 	signx	tmp, #15
+#endif	
 	jmp	#\do_relbranch
 
 impl_JMPREL
@@ -1029,22 +1037,34 @@ impl_JMPREL
 	jmp	#\do_relbranch
 
 impl_BZ
+#ifdef ENABLE_DEBUG
+	call	#\get_offset
+#else
 	rfword	tmp
 	signx	tmp, #15
+#endif	
 	cmp	tos, #0 wcz
   if_z	jmp	#\do_relbranch_drop1
 	jmp	#\impl_DROP
 
 impl_BNZ
+#ifdef ENABLE_DEBUG
+	call	#\get_offset
+#else
 	rfword	tmp
 	signx	tmp, #15
+#endif	
 	cmp	tos, #0 wcz
   if_nz	jmp	#\do_relbranch_drop1
 	jmp	#\impl_DROP
 
 impl_DJNZ
+#ifdef ENABLE_DEBUG
+	call	#\get_offset
+#else
 	rfword	tmp
 	signx	tmp, #15
+#endif	
 	rdlong	tmp2, tos
 	sub	tmp2, #1 wz
 	wrlong	tmp2, tos
@@ -1052,71 +1072,111 @@ impl_DJNZ
  	jmp	#\impl_DROP
 
 impl_CBEQ
+#ifdef ENABLE_DEBUG
+	call	#\get_offset
+#else
 	rfword	tmp
 	signx	tmp, #15
+#endif	
 	cmp	nos, tos wcz
   if_z	jmp	#\do_relbranch_drop2
   	jmp	#\impl_DROP2
 
 impl_CBNE
+#ifdef ENABLE_DEBUG
+	call	#\get_offset
+#else
 	rfword	tmp
 	signx	tmp, #15
+#endif	
 	cmp	nos, tos wcz
   if_nz	jmp	#\do_relbranch_drop2
   	jmp	#\impl_DROP2
 
 impl_CBLTS
+#ifdef ENABLE_DEBUG
+	call	#\get_offset
+#else
 	rfword	tmp
 	signx	tmp, #15
+#endif	
 	cmps	nos, tos wcz
   if_b	jmp	#\do_relbranch_drop2
   	jmp	#\impl_DROP2
 
 impl_CBLES
+#ifdef ENABLE_DEBUG
+	call	#\get_offset
+#else
 	rfword	tmp
 	signx	tmp, #15
+#endif	
 	cmps	nos, tos wcz
   if_be	jmp	#\do_relbranch_drop2
   	jmp	#\impl_DROP2
 
 impl_CBGTS
+#ifdef ENABLE_DEBUG
+	call	#\get_offset
+#else
 	rfword	tmp
 	signx	tmp, #15
+#endif	
 	cmps	nos, tos wcz
   if_a	jmp	#\do_relbranch_drop2
   	jmp	#\impl_DROP2
 
 impl_CBGES
+#ifdef ENABLE_DEBUG
+	call	#\get_offset
+#else
 	rfword	tmp
 	signx	tmp, #15
+#endif	
 	cmps	nos, tos wcz
   if_ae	jmp	#\do_relbranch_drop2
   	jmp	#\impl_DROP2
 
 impl_CBLTU
+#ifdef ENABLE_DEBUG
+	call	#\get_offset
+#else
 	rfword	tmp
 	signx	tmp, #15
+#endif	
 	cmp	nos, tos wcz
   if_b	jmp	#\do_relbranch_drop2
   	jmp	#\impl_DROP2
 
 impl_CBLEU
+#ifdef ENABLE_DEBUG
+	call	#\get_offset
+#else
 	rfword	tmp
 	signx	tmp, #15
+#endif	
 	cmp	nos, tos wcz
   if_be	jmp	#\do_relbranch_drop2
   	jmp	#\impl_DROP2
 
 impl_CBGTU
+#ifdef ENABLE_DEBUG
+	call	#\get_offset
+#else
 	rfword	tmp
 	signx	tmp, #15
+#endif	
 	cmp	nos, tos wcz
   if_a	jmp	#\do_relbranch_drop2
   	jmp	#\impl_DROP2
 
 impl_CBGEU
+#ifdef ENABLE_DEBUG
+	call	#\get_offset
+#else
 	rfword	tmp
 	signx	tmp, #15
+#endif	
 	cmp	nos, tos wcz
   if_ae	jmp	#\do_relbranch_drop2
   	jmp	#\impl_DROP2
@@ -1163,121 +1223,6 @@ impl_INLINEASM
 
 ' final tail stuff for interpreter
 	orgh
-#ifdef SERIAL_DEBUG
-' debug code
-#include "spin/ser_debug_p2.spin2"
-
-init_msg
-	byte	"Nucode interpreter", 13, 10, 0
-halt_msg
-	byte	"Interpreter halt", 13, 10, 0
-pc_msg
-	byte	" pc: ", 0
-sp_msg
-	byte	" sp: ", 0
-tos_msg
-	byte	" tos: ", 0
-nos_msg
-	byte	" nos: ", 0
-dbase_msg
-	byte	" dbase: ", 0
-cogsp_msg
-	byte	" cogsp: ", 0
-stack_msg
-	byte    "   stack:", 0
-	alignl
-dump_regs
-	mov	ser_debug_arg1, ##pc_msg
-	call	#ser_debug_str
-	mov	ser_debug_arg1, pb
-	call	#ser_debug_hex
-	
-	mov	ser_debug_arg1, ##sp_msg
-	call	#ser_debug_str
-	mov	ser_debug_arg1, ptra
-	call	#ser_debug_hex
-
-	mov	ser_debug_arg1, ##dbase_msg
-	call	#ser_debug_str
-	mov	ser_debug_arg1, dbase
-	call	#ser_debug_hex
-
-	mov	ser_debug_arg1, ##cogsp_msg
-	call	#ser_debug_str
-	mov	ser_debug_arg1, cogsp
-	call	#ser_debug_hex
-
-	mov	ser_debug_arg1, ##tos_msg
-	call	#ser_debug_str
-	mov	ser_debug_arg1, tos
-	call	#ser_debug_hex
-
-	mov	ser_debug_arg1, ##nos_msg
-	call	#ser_debug_str
-	mov	ser_debug_arg1, nos
-	call	#ser_debug_hex
-
-	call	#ser_debug_nl
-
-#ifdef NEVER
-	mov	ser_debug_arg1, ##stack_msg
-	call	#ser_debug_str
-	sub	dbase, #8
-	mov	ser_debug_arg1, dbase
-	call	#ser_debug_hex
-	mov	ser_debug_arg1, #":"
-	call	#ser_debug_tx
-	
-	rdlong	ser_debug_arg1, dbase
-	call	#ser_debug_hex
-
-	add	dbase, #4
-	rdlong	ser_debug_arg1, dbase
-	call	#ser_debug_hex
-	add	dbase, #4
-	rdlong	ser_debug_arg1, dbase
-	call	#ser_debug_hex
-	add	dbase, #4
-	rdlong	ser_debug_arg1, dbase
-	call	#ser_debug_hex
-	add	dbase, #4
-	rdlong	ser_debug_arg1, dbase
-	call	#ser_debug_hex
-	add	dbase, #4
-	rdlong	ser_debug_arg1, dbase
-	call	#ser_debug_hex
-	add	dbase, #4
-	rdlong	ser_debug_arg1, dbase
-	call	#ser_debug_hex
-	sub	dbase, #16
-
-	call	#ser_debug_nl
-#endif	
-	ret
-
-	' dump buffer pointed to by tmp2 (4 longs)
-dump_buf
-	mov	ser_debug_arg1, tmp2
-	call	#ser_debug_hex
-	mov	ser_debug_arg1, #":"
-	call	#ser_debug_tx
-	
-	rdlong	ser_debug_arg1, tmp2
-	add	tmp2, #4
-	call	#ser_debug_hex
-	rdlong	ser_debug_arg1, tmp2
-	add	tmp2, #4
-	call	#ser_debug_hex
-	rdlong	ser_debug_arg1, tmp2
-	add	tmp2, #4
-	call	#ser_debug_hex
-	rdlong	ser_debug_arg1, tmp2
-	add	tmp2, #4
-	call	#ser_debug_hex
-	
-	jmp	#ser_debug_nl
-
-#endif ' SERIAL_DEBUG
 
 ' labels at and of code/data
 	alignl
