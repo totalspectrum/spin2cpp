@@ -4263,12 +4263,7 @@ static IR* FindNextRead(IR *irorig, Operand *dest, Operand *src)
             return NULL;
         }
         if (IsBranch(ir)) {
-            if (ir->opc == OPC_CALL &&
-                    (ir->dst == mulfunc || ir->dst == divfunc || ir->dst == unsdivfunc) &&
-                    !FuncUsesArg(ir->dst, src) &&
-                    !FuncUsesArg(ir->dst, dest
-                                )
-               ) {
+            if (ir->opc == OPC_CALL && isMulDivFunc(ir->dst) && !IsCallThatUsesReg(ir, src) && !IsCallThatUsesReg(ir, dest)) {
                 // Do nothing
             } else {
                 return NULL;
@@ -4281,8 +4276,7 @@ static IR* FindNextRead(IR *irorig, Operand *dest, Operand *src)
             return ir;
         }
         if ((ir->opc == OPC_ADD || ir->opc == OPC_SUB) && ir->dst == src && ir->src && ir->src->kind == IMM_INT) {
-            if (ir->opc == OPC_ADD) offset += ir->src->val;
-            else                    offset -= ir->src->val;
+            offset += AddSubVal(ir);
         } else if (InstrModifies(ir, dest) || InstrModifies(ir, src)) {
             return NULL;
         }
