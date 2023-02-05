@@ -742,6 +742,8 @@ static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs)
         }
         return NuCompileLhsAddress(irl, lhs);
     }
+    case AST_EMPTY:
+        return NU_OP_DROP;  // just discard this value
     default:
         ERROR(lhs, "Address type not handled yet");
         break;
