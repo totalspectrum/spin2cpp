@@ -22,6 +22,9 @@ ExprInt EvalConstExpr(AST *expr);
 /* similar but for PASM */
 ExprInt EvalPasmExpr(AST *expr);
 
+/* determine whether an expression is defined */
+bool IsDefinedExpr(AST *expr);
+
 /* determine whether an expression is constant */
 /* note that strings, as pointers to memory, are not "constant"
    in that their value is not known until link time */

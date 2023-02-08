@@ -65,20 +65,29 @@ InstrSize(AST *instr)
     return size;
 }
 
+static int expect_undefined_labels = 0;
+static int found_undefined_labels = 0;
+
 /*
  * find number of bytes required for an FVAR item
+ * this is slightly tricky because it can change after
+ * labels are assigned
  */
 unsigned
 BytesForFvar(AST *item, int isSigned)
 {
     int32_t val;
-
+    
     if (!item || item->kind != AST_EXPRLIST) {
         return 0;
     }
-    
-    val = EvalPasmExpr(item->left);
 
+    if (expect_undefined_labels && !IsDefinedExpr(item->left)) {
+        found_undefined_labels++;
+        return 4;
+    } else {
+        val = EvalPasmExpr(item->left);
+    }
     if (isSigned) {
         if (val >= -64 && val < 64) return 1;
         if (val >= -(1<<13) && val < (1<<13)) return 2;
@@ -166,9 +175,10 @@ align(unsigned pc, int size)
 
 /*
  * enter a label
+ * we may need to make multiple passes, 
  */
 void
-EnterLabel(SymbolTable *symtab, AST *origLabel, long hubpc, long cogpc, AST *ltype, Symbol *lastorg, int inHub, unsigned flags)
+EnterLabel(SymbolTable *symtab, AST *origLabel, long hubpc, long cogpc, AST *ltype, Symbol *lastorg, int inHub, unsigned flags, unsigned pass)
 {
     const char *name;
     Label *labelref;
@@ -191,12 +201,12 @@ EnterLabel(SymbolTable *symtab, AST *origLabel, long hubpc, long cogpc, AST *lty
             return;
         }
         labelref = (Label *)sym->v.ptr;
-#if 1
-        if (labelref->hubval != hubpc) {
+
+        if (labelref->hubval != hubpc && labelref->pass == pass) {
             ERROR(origLabel, "Changing hub value for symbol %s", name);
             return;
         }
-        if (labelref->cogval != cogpc) {
+        if (labelref->cogval != cogpc && labelref->pass == pass) {
             ERROR(origLabel, "Changing cog value for symbol %s", name);
             return;
         }
@@ -227,8 +237,6 @@ EnterLabel(SymbolTable *symtab, AST *origLabel, long hubpc, long cogpc, AST *lty
             ERROR(origLabel, "Changing inhub value of symbol %s", name);
             return;
         }
-        return;
-#endif        
     } else {
         labelref = (Label *)calloc(1, sizeof(*labelref));
     }
@@ -241,6 +249,7 @@ EnterLabel(SymbolTable *symtab, AST *origLabel, long hubpc, long cogpc, AST *lty
     labelref->type = ltype;
     labelref->org = lastorg;
     labelref->size = ltype ? TypeSize(ltype) : 4;
+    labelref->pass = pass;
     if (inHub) {
         flags |= LABEL_IN_HUB;
     }
@@ -256,10 +265,10 @@ EnterLabel(SymbolTable *symtab, AST *origLabel, long hubpc, long cogpc, AST *lty
  * emit pending labels
  */
 AST *
-emitPendingLabels(SymbolTable *symtab, AST *label, unsigned hubpc, unsigned cogpc, AST *ltype, Symbol *lastorg, int inHub, unsigned flags)
+emitPendingLabels(SymbolTable *symtab, AST *label, unsigned hubpc, unsigned cogpc, AST *ltype, Symbol *lastorg, int inHub, unsigned flags, unsigned pass)
 {
     while (label) {
-        EnterLabel(symtab, label->left, hubpc, cogpc, ltype, lastorg, inHub, flags);
+        EnterLabel(symtab, label->left, hubpc, cogpc, ltype, lastorg, inHub, flags, pass);
         //printf("label: %s = %x\n", label->left->d.string, hubpc);
         label = label->right;
     }
@@ -649,7 +658,19 @@ AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags)
     Symbol *lastOrg = NULL;
     const char *tmpName;
     unsigned label_flags = 0;
+    unsigned pass = 0;
+    unsigned orig_datoff = 0;
     
+    expect_undefined_labels = 1;
+
+again:
+
+    cogpc = hubpc = coglimit = hublimit = 0;
+    datoff = 0;
+    inc = 0;
+    inHub = 0;
+    
+    pass++;
     if (startFlags == ADDRESS_STARTFLAG_HUB) {
         // insert an implicit orgh P2_HUB_BASE
         hubpc = gl_hub_base;
@@ -677,7 +698,7 @@ AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags)
         case AST_BYTELIST:
         case AST_BYTEFITLIST:
             MARK_DATA(label_flags);
-            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_byte, lastOrg, inHub, label_flags);
+            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_byte, lastOrg, inHub, label_flags, pass);
             replaceHereDataList(ast->left, inHub, inHub ? hubpc : cogpc, 1, lastOrg);
             INCPC(dataListLen(ast->left, 1));
             lasttype = ast_type_byte;
@@ -686,7 +707,7 @@ AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags)
         case AST_WORDFITLIST:
             MARK_DATA(label_flags);
             MAYBEALIGNPC(2);
-            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_word, lastOrg, inHub, label_flags);
+            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_word, lastOrg, inHub, label_flags, pass);
             replaceHereDataList(ast->left, inHub, inHub ? hubpc : cogpc, 2, lastOrg);
             INCPC(dataListLen(ast->left, 2));
             lasttype = ast_type_word;
@@ -694,7 +715,7 @@ AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags)
         case AST_LONGLIST:
             MARK_DATA(label_flags);
             MAYBEALIGNPC(4);
-            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub, label_flags);
+            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub, label_flags, pass);
             replaceHereDataList(ast->left, inHub, inHub ? hubpc : cogpc, 4, lastOrg);
             INCPC(dataListLen(ast->left, 4));
             lasttype = ast_type_long;
@@ -708,9 +729,9 @@ AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags)
             }
             /* check to see if the following instruction is a "ret" */
             if (!gl_p2 && IsJmpRetInstruction(ast->left)) {
-                pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub, label_flags | LABEL_HAS_JMP);
+                pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub, label_flags | LABEL_HAS_JMP, pass);
             } else {
-                pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub, label_flags);
+                pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub, label_flags, pass);
             }
             replaceHeres(ast->left, HEREPC, lastOrg);
             ast->d.ival = inHub ? hubpc : (cogpc | (1<<30));
@@ -727,7 +748,7 @@ AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags)
             } else {
                 ALIGNPC(4);
             }
-            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub, label_flags);
+            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub, label_flags, pass);
             replaceHeres(ast->left, HEREPC, lastOrg);
             INCPC(4); // BRK is always 4 byte
             lasttype = ast_type_long;
@@ -738,7 +759,7 @@ AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags)
             break;
         case AST_ORG:
             MAYBEALIGNPC(4);
-            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub, label_flags);
+            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub, label_flags, pass);
             if (ast->left) {
                 AST *addr = ast->left;
                 if (addr->kind == AST_RANGE) {
@@ -760,7 +781,7 @@ AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags)
             MARK_COG(label_flags);
             break;
         case AST_ORGH:
-            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub, label_flags);
+            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub, label_flags, pass);
             ast->d.ival = hubpc; // temporary
             if (ast->left) {
                 AST *addr = ast->left;
@@ -807,7 +828,7 @@ AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags)
                 ERROR(ast, "res not valid after orgh");
             }
             cogpc = align(cogpc, 4);
-            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_void, lastOrg, inHub, label_flags);
+            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_void, lastOrg, inHub, label_flags, pass);
             replaceHeres(ast->left, cogpc / 4, lastOrg);
             delta = EvalPasmExpr(ast->left);
             if ( ((int)delta) < 0) {
@@ -834,7 +855,7 @@ AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags)
             break;
         case AST_FIT:
             cogpc = align(cogpc, 4);
-            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub, label_flags);
+            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub, label_flags, pass);
             if (ast->left) {
                 int32_t max = EvalPasmExpr(ast->left);
                 int32_t cur = (cogpc) / 4;
@@ -846,17 +867,17 @@ AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags)
             break;
         case AST_FILE:
             MARK_DATA(label_flags);
-            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_byte, lastOrg, inHub, label_flags);
+            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_byte, lastOrg, inHub, label_flags, pass);
             INCPC(filelen(ast->left));
             break;
         case AST_LINEBREAK:
-            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, lasttype, lastOrg, inHub, label_flags);
+            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, lasttype, lastOrg, inHub, label_flags, pass);
             break;
         case AST_COMMENT:
         case AST_SRCCOMMENT:
             break;
         case AST_ALIGN:
-            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, lasttype, lastOrg, inHub, label_flags);
+            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, lasttype, lastOrg, inHub, label_flags, pass);
             ALIGNPC(EvalPasmExpr(ast->left));
             break;
         case AST_DECLARE_VAR:
@@ -904,7 +925,7 @@ AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags)
                 } else {
                     pendingLabels = AddToList(pendingLabels, NewAST(AST_LISTHOLDER, ident, NULL));
                 }
-                pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, type, lastOrg, inHub, label_flags);
+                pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, type, lastOrg, inHub, label_flags, pass);
                 INCPC(typsize);
                 
                 fixupInitializer(current, initializer, type);
@@ -918,8 +939,17 @@ AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags)
     }
 
     // emit any labels that come at the end
-    pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, lasttype, lastOrg, inHub, label_flags);
-    
+    pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, lasttype, lastOrg, inHub, label_flags, pass);
+
+    if (found_undefined_labels) {
+        expect_undefined_labels = found_undefined_labels = 0;
+        orig_datoff = datoff;
+        goto again;
+    }
+    if (orig_datoff && datoff < orig_datoff) {
+        orig_datoff = datoff;
+        goto again;
+    }
     return datoff;
 }
 

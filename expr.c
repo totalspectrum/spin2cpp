@@ -1530,6 +1530,7 @@ EvalOperator(int op, ExprVal left, ExprVal right, int *valid)
 }
 
 #define PASM_FLAG 0x01
+#define CHECK_DEFINED_FLAG 0x02
 
 static ExprVal EvalExpr(AST *expr, unsigned flags, int *valid, int depth);
 
@@ -1991,6 +1992,15 @@ IsConstExpr(AST *expr)
     int valid;
     valid = 1;
     EvalExpr(expr, 0, &valid, 0);
+    return valid;
+}
+
+bool
+IsDefinedExpr(AST *expr)
+{
+    int valid;
+    valid = 1;
+    EvalExpr(expr, PASM_FLAG | CHECK_DEFINED_FLAG, &valid, 0);
     return valid;
 }
 

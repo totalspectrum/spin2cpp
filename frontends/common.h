@@ -331,6 +331,7 @@ typedef struct label {
 #define LABEL_HAS_INSTR         0x08 /* an instruction follows the label */
 #define LABEL_HAS_JMP           0x10 /* a jmp instruction follows the label */
     unsigned size;
+    unsigned pass;   // pass this label was entered in
 } Label;
 
 
