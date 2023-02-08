@@ -755,7 +755,7 @@ outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs, int checkSize)
             outputFvar(f, relocs, sub->left, 0, &relocOff);
             reps = 0;
         } else if (sub->kind == AST_FVARS_LIST) {
-            outputFvar(f, relocs, sub->left, 0, &relocOff);
+            outputFvar(f, relocs, sub->left, 1, &relocOff);
             reps = 0;
         } else {
             origval = EvalRelocPasmExpr(sub, f, relocs, &relocOff, false, RELOC_KIND_I32);
