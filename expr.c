@@ -1599,6 +1599,10 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             goto invalid_const_expr;
         }
         return lval;
+    case AST_HERE:
+        if (!gl_gas_dat) {
+            return intExpr(expr->d.ival);
+        }
     case AST_INTEGER:
     case AST_BITVALUE:
         return intExpr(expr->d.ival);

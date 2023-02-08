@@ -288,7 +288,6 @@ replaceHeres(AST *ast, uint32_t newpc, Symbol *lastOrg)
         if (gl_gas_dat) {
             ast->d.ptr = (void *)lastOrg;
         } else {
-            ast->kind = AST_INTEGER;
             ast->d.ival = newpc;
         }
         return;
