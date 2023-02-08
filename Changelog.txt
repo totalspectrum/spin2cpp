@@ -1,5 +1,6 @@
 Version 5.9.29
 - Fixed _ assignment in nucode output
+- Fixed calculation of FVAR/FVARS when labels are unknown
 - Some internal cleanups in the code generators
 
 Version 5.9.28
