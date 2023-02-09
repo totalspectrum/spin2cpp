@@ -947,12 +947,16 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
     NuIr *ir;
     NuIrOpcode op;
     NuBytecode *bc;
+    const char *comment;
+    static int labelNum = 0;
+    
     if (!irl || !irl->head) {
         return;
     }
     for (ir = irl->head; ir; ir = ir->next) {
         op = ir->op;
         bc = ir->bytecode;
+        comment = ir->comment;
         switch(op) {
         case NU_OP_LABEL:
             NuOutputLabel(fb, ir->label);
@@ -974,9 +978,15 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
         case NU_OP_CBGES:
         case NU_OP_CBGTU:
         case NU_OP_CBGEU:
-            flexbuf_printf(fb, "\tbyte\t%s, word (", NuBytecodeString(bc));
+            ++labelNum;
+            flexbuf_printf(fb, "\tbyte\t%s, fvars (", NuBytecodeString(bc));
             NuOutputLabel(fb, ir->label);
-            flexbuf_printf(fb, " - ($+2))");
+            flexbuf_printf(fb, " - __L_relbranch_%05u)", labelNum);
+            if (comment) {
+                flexbuf_printf(fb, "\t' %s", comment);
+                comment = NULL;
+            }
+            flexbuf_printf(fb, "\n__L_relbranch_%05u", labelNum);
             break;
         default:
             if (bc) {
@@ -1001,8 +1011,8 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
             }
             break;
         }
-        if (ir->comment) {
-            flexbuf_printf(fb, "\t' %s", ir->comment);
+        if (comment) {
+            flexbuf_printf(fb, "\t' %s", comment);
         }
         flexbuf_addchar(fb, '\n');
     }

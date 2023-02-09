@@ -411,9 +411,8 @@ impl_HALT
 	cogstop	pa
 #ifdef ENABLE_DEBUG
 get_offset
-	rfword	tmp
-	getptr	pb
-  _ret_	signx	tmp, #15
+	rfvars	tmp
+ _ret_	getptr	pb
 #endif
 
 end_cog
@@ -1025,8 +1024,7 @@ impl_BRA
 #ifdef ENABLE_DEBUG
 	call	#\get_offset
 #else
-	rfword	tmp
-	signx	tmp, #15
+	rfvars	tmp
 #endif	
 	jmp	#\do_relbranch
 
@@ -1040,8 +1038,7 @@ impl_BZ
 #ifdef ENABLE_DEBUG
 	call	#\get_offset
 #else
-	rfword	tmp
-	signx	tmp, #15
+	rfvars	tmp
 #endif	
 	cmp	tos, #0 wcz
   if_z	jmp	#\do_relbranch_drop1
@@ -1051,8 +1048,7 @@ impl_BNZ
 #ifdef ENABLE_DEBUG
 	call	#\get_offset
 #else
-	rfword	tmp
-	signx	tmp, #15
+	rfvars	tmp
 #endif	
 	cmp	tos, #0 wcz
   if_nz	jmp	#\do_relbranch_drop1
@@ -1062,8 +1058,7 @@ impl_DJNZ
 #ifdef ENABLE_DEBUG
 	call	#\get_offset
 #else
-	rfword	tmp
-	signx	tmp, #15
+	rfvars	tmp
 #endif	
 	rdlong	tmp2, tos
 	sub	tmp2, #1 wz
@@ -1075,8 +1070,7 @@ impl_CBEQ
 #ifdef ENABLE_DEBUG
 	call	#\get_offset
 #else
-	rfword	tmp
-	signx	tmp, #15
+	rfvars	tmp
 #endif	
 	cmp	nos, tos wcz
   if_z	jmp	#\do_relbranch_drop2
@@ -1086,8 +1080,7 @@ impl_CBNE
 #ifdef ENABLE_DEBUG
 	call	#\get_offset
 #else
-	rfword	tmp
-	signx	tmp, #15
+	rfvars	tmp
 #endif	
 	cmp	nos, tos wcz
   if_nz	jmp	#\do_relbranch_drop2
@@ -1097,8 +1090,7 @@ impl_CBLTS
 #ifdef ENABLE_DEBUG
 	call	#\get_offset
 #else
-	rfword	tmp
-	signx	tmp, #15
+	rfvars	tmp
 #endif	
 	cmps	nos, tos wcz
   if_b	jmp	#\do_relbranch_drop2
@@ -1108,8 +1100,7 @@ impl_CBLES
 #ifdef ENABLE_DEBUG
 	call	#\get_offset
 #else
-	rfword	tmp
-	signx	tmp, #15
+	rfvars	tmp
 #endif	
 	cmps	nos, tos wcz
   if_be	jmp	#\do_relbranch_drop2
@@ -1119,8 +1110,7 @@ impl_CBGTS
 #ifdef ENABLE_DEBUG
 	call	#\get_offset
 #else
-	rfword	tmp
-	signx	tmp, #15
+	rfvars	tmp
 #endif	
 	cmps	nos, tos wcz
   if_a	jmp	#\do_relbranch_drop2
@@ -1130,8 +1120,7 @@ impl_CBGES
 #ifdef ENABLE_DEBUG
 	call	#\get_offset
 #else
-	rfword	tmp
-	signx	tmp, #15
+	rfvars	tmp
 #endif	
 	cmps	nos, tos wcz
   if_ae	jmp	#\do_relbranch_drop2
@@ -1141,8 +1130,7 @@ impl_CBLTU
 #ifdef ENABLE_DEBUG
 	call	#\get_offset
 #else
-	rfword	tmp
-	signx	tmp, #15
+	rfvars	tmp
 #endif	
 	cmp	nos, tos wcz
   if_b	jmp	#\do_relbranch_drop2
@@ -1152,8 +1140,7 @@ impl_CBLEU
 #ifdef ENABLE_DEBUG
 	call	#\get_offset
 #else
-	rfword	tmp
-	signx	tmp, #15
+	rfvars	tmp
 #endif	
 	cmp	nos, tos wcz
   if_be	jmp	#\do_relbranch_drop2
@@ -1163,8 +1150,7 @@ impl_CBGTU
 #ifdef ENABLE_DEBUG
 	call	#\get_offset
 #else
-	rfword	tmp
-	signx	tmp, #15
+	rfvars	tmp
 #endif	
 	cmp	nos, tos wcz
   if_a	jmp	#\do_relbranch_drop2
@@ -1174,8 +1160,7 @@ impl_CBGEU
 #ifdef ENABLE_DEBUG
 	call	#\get_offset
 #else
-	rfword	tmp
-	signx	tmp, #15
+	rfvars	tmp
 #endif	
 	cmp	nos, tos wcz
   if_ae	jmp	#\do_relbranch_drop2
