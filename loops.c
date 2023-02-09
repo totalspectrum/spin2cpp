@@ -1378,7 +1378,7 @@ TransformCountRepeat(AST *ast)
     /* create new ast elements using this ast's line info, at least for now */
     AstReportAs(ast, &saveinfo);
 
-    if (curfunc && curfunc->language == LANG_SPIN_SPIN2) {
+    if (curfunc && curfunc->language == LANG_SPIN_SPIN2 && 0) {  // Spin2 used to have weird loop finishing
         delayedUpdate = true;
     }
     if (ast->left) {
