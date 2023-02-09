@@ -697,6 +697,18 @@ impl_ABS
 impl_ONES
   _ret_	ones	tos, tos
 
+impl_INC
+  _ret_	add	tos, #1
+
+impl_DEC
+  _ret_	sub	tos, #1
+
+impl_DOUBLE
+  _ret_	shl	tos, #1
+
+impl_X4
+  _ret_	shl	tos, #2
+
 impl_MERGEW
   _ret_	mergew	tos, tos
 
