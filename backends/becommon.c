@@ -101,6 +101,14 @@ bool interp_can_unsigned() {
     }
 }
 
+static bool interp_prefers_decode() {
+    switch(gl_interp_kind) {
+    case INTERP_KIND_P1ROM: return true;
+    default:
+        return false;
+    }
+}
+
 // get number of parameters
 // adjust for possible varargs (indicated by negative)
 static int BCGetNumParams(Function *F) {
@@ -348,7 +356,7 @@ bool OptimizeOperator(int *optoken, AST **left,AST **right) {
     int32_t addValue;
 
     // Try special cases first
-    if (*optoken == K_SHL && left && IsConstEqual(*left,1)) {
+    if (*optoken == K_SHL && left && IsConstEqual(*left,1) && interp_prefers_decode()) {
         // 1<<x can be |<x
         *left = NULL;
         *optoken = K_DECODE;
