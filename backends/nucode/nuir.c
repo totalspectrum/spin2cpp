@@ -993,9 +993,11 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
                 if (bc->is_const) {
                     const char *name = NuBytecodeString(bc);
                     if (bc->is_label) {
-                        flexbuf_printf(fb, "\tbyte\tlong %s | (", name);
+                        //flexbuf_printf(fb, "\tbyte\tlong %s | (", name);
+                        //NuOutputLabel(fb, ir->label);
+                        //flexbuf_printf(fb, "<< 8)");
+                        flexbuf_printf(fb, "\tbyte\t%s, fvar ", name);
                         NuOutputLabel(fb, ir->label);
-                        flexbuf_printf(fb, "<< 8)");
                     } else if (ir->val >= 0 && ir->val <= 0xff) {
                         name = "NU_OP_PUSHI8";
                         flexbuf_printf(fb, "\tbyte\t%s, %d", name, ir->val);

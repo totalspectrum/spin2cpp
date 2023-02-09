@@ -186,13 +186,13 @@ impl_PUSHI8
 
 impl_PUSHA
 	call	#\impl_DUP
-	rfword	tos
-	rfbyte	tmp
-	shl	tmp, #16
 #ifdef ENABLE_DEBUG
-	getptr	pb
+	rfvar	tos
+  _ret_	getptr	pb
+#else	
+  _ret_	rfvar	tos
 #endif
-  _ret_	or	tos, tmp
+
 
 impl_GETHEAP
 	call	#\impl_DUP
@@ -258,12 +258,8 @@ impl_SWAP
 '
 impl_CALLA
 	mov	old_vbase, vbase
-	rfword	pb
-	rfbyte	tmp
+	rfvar	pb
 	getptr	old_pc
-	'shl	tmp, #16
-	'or	pb, tmp
-	setbyte	pb, tmp, #2
 	jmp	#restart_loop
 	
 impl_CALL
