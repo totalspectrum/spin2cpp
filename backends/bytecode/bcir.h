@@ -270,9 +270,4 @@ void BCIR_to_BOB(BCIRBuffer *irbuf,ByteOutputBuffer *bob,int pbase_funoffset);
 
 void BCIR_Init();
 
-static inline bool isPowerOf2(uint32_t x)
-{
-    return (x & (x-1)) == 0;
-}
-
 #endif

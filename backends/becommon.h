@@ -145,5 +145,19 @@ int VisitRecursive(void *irl, Module *P, VisitorFunc func, unsigned visitval);
 #define VISITFLAG_EMITDAT       0x00400000
 #define VISITFLAG_BC_OPTIMIZE   0x00800000
 
+// interpreter ability functions
+bool interp_can_unsigned();
+bool interp_can_multireturn();
+
+// some common optimization functions
+bool CanUseEitherSignedOrUnsigned(AST *node);
+
+bool isBoolOperator(int optoken);
+bool OptimizeOperator(int *optoken, AST **left,AST **right);
+
+static inline bool isPowerOf2(uint32_t x)
+{
+    return (x & (x-1)) == 0;
+}
 
 #endif /* BACKEND_COMMON_H */

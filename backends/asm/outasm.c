@@ -1922,11 +1922,6 @@ CompileHWReg(IRList *irl, AST *expr)
     return GetOneGlobal(REG_HW, hw->name, 0);
 }
 
-static int isPowerOf2(unsigned x)
-{
-    return (x & (x-1)) == 0;
-}
-
 //
 // Decompose val into a sequence of a shift, add/sub
 // returns 0 if failure, 1 if success
