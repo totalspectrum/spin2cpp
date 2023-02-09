@@ -788,6 +788,7 @@ static const char *astnames[] = {
     "global_registers",
     "typeof",
     "assign_init",
+    "here_imm",
 };
 
 //
@@ -824,6 +825,10 @@ static void doASTDump(AST *ast, int indent)
         break;
     case AST_INTEGER:
         sprintf(buf, "<integer %" PRId64 "/>", ast->d.ival);
+        leaf = 1;
+        break;
+    case AST_HERE_IMM:
+        sprintf(buf, "<here %" PRId64 "/>", ast->d.ival);
         leaf = 1;
         break;
     case AST_INLINEASM:

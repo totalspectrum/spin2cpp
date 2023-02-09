@@ -276,7 +276,7 @@ emitPendingLabels(SymbolTable *symtab, AST *label, unsigned hubpc, unsigned cogp
 }
 
 /*
- * replace AST_HERE with AST_INTEGER having pc as its value, if necessary
+ * replace AST_HERE with AST_HERE_IMM having pc as its value, if necessary
  * otherwise update the AST_HERE with the value of the last origin symbol
  */
 static void
@@ -288,9 +288,12 @@ replaceHeres(AST *ast, uint32_t newpc, Symbol *lastOrg)
         if (gl_gas_dat) {
             ast->d.ptr = (void *)lastOrg;
         } else {
+            ast->kind = AST_HERE_IMM;
             ast->d.ival = newpc;
         }
         return;
+    } else if (ast->kind == AST_HERE_IMM) {
+        ast->d.ival = newpc;
     }
     replaceHeres(ast->left, newpc, lastOrg);
     replaceHeres(ast->right, newpc, lastOrg);
