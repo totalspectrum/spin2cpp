@@ -175,6 +175,7 @@
     X(CBxx)      /* matches any CBxx instruction */ \
     X(MathBinary) /* matches any binary math operations */ \
     X(MathUnary)  /* matches any unary math operations */ \
+    X(ADD_xBASE)  /* matches ADD_VBASE or ADD_DBASE */ \
     X(ANY)        /* matches any opcode */ \
 
 
