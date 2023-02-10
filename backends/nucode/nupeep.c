@@ -22,26 +22,43 @@ static NuIr *match_ops[MAX_IR_IN_PATTERN];
 
 #define PEEP_ARG_ANY (-1)
 
-#define PEEP_FLAGS_NONE      0x0000
-#define PEEP_FLAGS_MATCH_ARG 0x0001
-#define PEEP_FLAGS_MATCH_IMM 0x0002
-#define PEEP_FLAGS_DONE      0xffff
+#define PEEP_FLAGS_NONE        0x0000
+#define PEEP_FLAGS_MATCH_ARG   0x0001
+#define PEEP_FLAGS_MATCH_IMM   0x0002
+#define PEEP_FLAGS_MATCH_OP    0x0004
+#define PEEP_FLAGS_REPLACE   0x400000
+#define PEEP_FLAGS_DONE      0x800000
 
 /* verify that the argument of srcir matches that in origir */
 static bool NuMatchArg(NuIr *srcir, NuIr *origir) {
     if (srcir->val != origir->val) return 0;
     return 1;
 }
+/* verify that the opcode of srcir matches that in origir */
+static bool NuMatchOpcode(NuIr *srcir, NuIr *origir) {
+    if (srcir->op != origir->op) return 0;
+    return 1;
+}
 
 /* check for a match, return 0 if none */
-static int NuMatchPattern(NuPeepholePattern *patrn, NuIr *ir)
+/* otherwise do whatever replacement is called for and return 1 */
+static int NuMatchPattern(NuIrList *irl, NuPeepholePattern *patrn, NuIr *origir)
 {
     int ircount = 0;
+    int i;
     unsigned flags;
+    NuIr *ir = origir;
+    NuIrOpcode opc;
+    
     for(;;) {
         flags = patrn->flags;
         if (flags == PEEP_FLAGS_DONE) {
-            break; // we've matched so far
+            // printf("PEEP_FLAGS_DONE without PEEP_FLAGS_REPLACE\n");
+            return ircount;
+        }
+        if (flags & PEEP_FLAGS_REPLACE) {
+            // match achieved, break out
+            break;
         }
         if (!ir) {
             return 0; // no match, ran out of instructions
@@ -56,6 +73,12 @@ static int NuMatchPattern(NuPeepholePattern *patrn, NuIr *ir)
             }
         }
 
+        // see if we have to match opcode
+        if ( (patrn->flags & PEEP_FLAGS_MATCH_OP) ) {
+            if (patrn->arg >= ircount || !NuMatchOpcode(ir, match_ops[patrn->arg])) {
+                return 0;
+            }
+        }
         // see if we have to match an argument
         if ( (patrn->flags & PEEP_FLAGS_MATCH_ARG) ) {
             if (patrn->arg >= ircount || !NuMatchArg(ir, match_ops[patrn->arg])) {
@@ -70,11 +93,96 @@ static int NuMatchPattern(NuPeepholePattern *patrn, NuIr *ir)
         match_ops[ircount++] = ir;
         ir = ir->next;
     }
-    return ircount;
+
+    /* OK, we have a match, need to replace it */
+    /* first, delete the old pattern */
+    for (i = 0; i < ircount; i++) {
+        ir = origir;
+        origir = origir->next;
+        NuDeleteIr(irl, ir);
+    }
+    /* and now insert the new pattern */
+    while ( (patrn->flags & PEEP_FLAGS_REPLACE) && !(patrn->flags & PEEP_FLAGS_DONE) ) {
+        if (patrn->flags & PEEP_FLAGS_MATCH_OP) {
+            opc = match_ops[patrn->arg]->op;
+        } else {
+            opc = patrn->op;
+        }
+        ir = NuCreateIrOp(opc);
+        NuIrInsertBefore(irl, origir, ir);
+        patrn++;
+    }
+
+    /* replacement made */
+    return 1;
 }
 
+
+//////////////////////////////////////////////////////////////
+// Simple patterns with inline replacement
+//////////////////////////////////////////////////////////////
+// eliminate DUP / DROP sequence
+static NuPeepholePattern pat_dup_drop[] = {
+    { NU_OP_DUP,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_DROP,      PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+
+    /* just delete */
+    { NU_OP_ILLEGAL,   0,            PEEP_FLAGS_REPLACE|PEEP_FLAGS_DONE },
+    
+};
+
+// pattern for INC/DEC
+static NuPeepholePattern pat_dec[] = {
+    { NU_OP_PUSHI,      1,            PEEP_FLAGS_MATCH_IMM },
+    { NU_OP_SUB,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+
+    // replace with
+    { NU_OP_DEC,        PEEP_ARG_ANY, PEEP_FLAGS_REPLACE },
+    { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
+};
+static NuPeepholePattern pat_inc[] = {
+    { NU_OP_PUSHI,      1,            PEEP_FLAGS_MATCH_IMM },
+    { NU_OP_ADD,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+
+    // replace with
+    { NU_OP_INC,        PEEP_ARG_ANY, PEEP_FLAGS_REPLACE },
+    { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
+};
+
+// pattern for SHL -> DOUBLE or X4
+static NuPeepholePattern pat_shl_1[] = {
+    { NU_OP_PUSHI,      1,            PEEP_FLAGS_MATCH_IMM },
+    { NU_OP_SHL,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+
+    // replace with
+    { NU_OP_DOUBLE,     PEEP_ARG_ANY, PEEP_FLAGS_REPLACE },
+    { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
+};
+static NuPeepholePattern pat_shl_2[] = {
+    { NU_OP_PUSHI,      2,            PEEP_FLAGS_MATCH_IMM },
+    { NU_OP_SHL,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+
+    // replace with
+    { NU_OP_X4,     PEEP_ARG_ANY, PEEP_FLAGS_REPLACE },
+    { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
+};
+
+// pattern for dup/add -> DOUBLE
+static NuPeepholePattern pat_dup_add[] = {
+    { NU_OP_DUP,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_ADD,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+
+    // replace
+    { NU_OP_DOUBLE,     PEEP_ARG_ANY, PEEP_FLAGS_REPLACE },    
+    { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
+};
+
+//////////////////////////////////////////////////////////////
+// patterns requiring more sophisticated handling
+//////////////////////////////////////////////////////////////
+
 //
-// simple pattern: CBXX label ; BRA label2; label:
+// CBXX label ; BRA label2; label:
 // can become CBNXX label2; label:
 //
 static NuPeepholePattern pat_cbxx[] = {
@@ -114,37 +222,6 @@ static int NuReplaceSecond(int arg, NuIrList *irl, NuIr *ir) {
     NuDeleteIr(irl, oldir); // delete original pushi
     return 1;
 }
-
-// pattern for INC/DEC
-static NuPeepholePattern pat_dec[] = {
-    { NU_OP_PUSHI,      1,            PEEP_FLAGS_MATCH_IMM },
-    { NU_OP_SUB,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },
-    { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
-};
-static NuPeepholePattern pat_inc[] = {
-    { NU_OP_PUSHI,      1,            PEEP_FLAGS_MATCH_IMM },
-    { NU_OP_ADD,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },
-    { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
-};
-
-// pattern for SHL -> DOUBLE or X4
-static NuPeepholePattern pat_shl_1[] = {
-    { NU_OP_PUSHI,      1,            PEEP_FLAGS_MATCH_IMM },
-    { NU_OP_SHL,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },
-    { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
-};
-static NuPeepholePattern pat_shl_2[] = {
-    { NU_OP_PUSHI,      2,            PEEP_FLAGS_MATCH_IMM },
-    { NU_OP_SHL,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },
-    { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
-};
-
-// pattern for dup/add -> DOUBLE
-static NuPeepholePattern pat_dup_add[] = {
-    { NU_OP_DUP,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },
-    { NU_OP_ADD,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },
-    { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
-};
 
 // pattern for DJNZ
 static NuPeepholePattern pat_djnz[] = {
@@ -219,21 +296,6 @@ static int NuReplaceWithDrop(int arg, NuIrList *irl, NuIr *ir) {
     return 1;
 }
 
-// eliminate DUP / DROP sequence
-static NuPeepholePattern pat_dup_drop[] = {
-    { NU_OP_DUP,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
-    { NU_OP_DROP,      PEEP_ARG_ANY, PEEP_FLAGS_NONE },
-    { NU_OP_ILLEGAL,   0,            PEEP_FLAGS_DONE }
-};
-static int NuDeleteInst(int arg, NuIrList *irl, NuIr *ir) {
-    while (arg > 1) {
-        NuDeleteIr(irl, ir->next);
-        --arg;
-    }
-    NuDeleteIr(irl, ir);
-    return 1;
-}
-
 // elimiinate DUP / ST / DROP sequence
 static NuPeepholePattern pat_dup_st_drop[] = {
     { NU_OP_DUP,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
@@ -289,16 +351,16 @@ struct nupeeps {
     int (*replace)(int arg, NuIrList *irl, NuIr *ir);
 } nupeep[] = {
     { pat_dup_st_drop, 3, NuDeletePair },
-    { pat_dup_drop, 2, NuDeleteInst },
+    { pat_dup_drop, 0, NULL },
     { pat_cbxx, 0, NuReplaceCBxx },
     { pat_cbnz, NU_OP_BNZ, NuReplaceSecond },
     { pat_cbz,  NU_OP_BZ,  NuReplaceSecond },
-    { pat_inc,  NU_OP_INC, NuReplaceSecond },
-    { pat_dec,  NU_OP_DEC,  NuReplaceSecond },
+    { pat_inc,  0,         NULL },
+    { pat_dec,  0,         NULL },
     { pat_djnz, NU_OP_DJNZ, NuReplaceDjnz },
-    { pat_shl_1, NU_OP_DOUBLE, NuReplaceSecond },
-    { pat_shl_2, NU_OP_X4, NuReplaceSecond },
-    { pat_dup_add, NU_OP_DOUBLE, NuReplaceSecond },
+    { pat_shl_1, 0, NULL },
+    { pat_shl_2, 0, NULL },
+    { pat_dup_add, 0, NULL },
     { pat_st_ld, 0, NuReplaceStLd },
     { pat_dead_st, 3, NuReplaceWithDrop },
     { pat_ld_ld, 3, NuReplaceDup },
@@ -325,9 +387,12 @@ int NuOptimizePeephole(NuIrList *irl) {
                 printf("??\n");
             }
 #endif
-            match = NuMatchPattern(nupeep[i].check, ir);
+            match = NuMatchPattern(irl, nupeep[i].check, ir);
             if (match) {
-                match = (*nupeep[i].replace)(nupeep[i].arg, irl, ir);
+                if (nupeep[i].replace) {
+                    // further processing required
+                    match = (*nupeep[i].replace)(nupeep[i].arg, irl, ir);
+                }
                 if (match) {
                     change++;
                     break;
