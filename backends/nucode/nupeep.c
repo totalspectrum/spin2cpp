@@ -523,13 +523,129 @@ int NuRemoveDeadCode(NuIrList *irl)
                 inDeadCode = false;
             }
         } else if (inJumpTable) {
-            if (ir->op < NU_OP_DUMMY && ir->op != NU_OP_BRA) {
+            if (ir->op < NU_OP_DUMMY && ir->op != NU_OP_BRA3) {
                 inJumpTable = false;
             }
         } else if (ir->op == NU_OP_JMPREL) {
             inJumpTable = true;
-        } else if (ir->op == NU_OP_BRA) {
+        } else if (ir->op == NU_OP_BRA3) {
             if (!inJumpTable) inDeadCode = true;
+        }
+    }
+    return changes;
+}
+
+// utility function: check for DJNZ variable used within loop
+static bool
+NoDjnzConflict(NuIrList *irl, NuIr *labelir, NuIr *djnzir, int varOffset)
+{
+    NuIr *ir;
+    
+    for (ir = labelir->next; ir != djnzir; ir = ir->next) {
+        if (ir->op == NU_OP_PUSHI && ir->val == varOffset && ir->next && ir->next->op == NU_OP_ADD_DBASE) {
+            // potential conflict here, unless this is the end of the loop
+            if (ir->next->next == djnzir) {
+                return true; // all good
+            }
+            return false;
+        }
+        // branches out of the loop are bad
+        if (ir->op == NU_OP_JMP || ir->op == NU_OP_RET || ir->op == NU_OP_LONGJMP || ir->op == NU_OP_JMPREL) {
+            return false;
+        }
+        // so are calls, for now
+        if (ir->op == NU_OP_CALLA || ir->op == NU_OP_CALLM || ir->op == NU_OP_CALL) {
+            return false;
+        }
+        // hmmm, how about labels where someone could jump into the loop? bail for now
+        if (ir->op == NU_OP_LABEL) {
+            return false;
+        }
+        // relative branches should be checked for being within the loop
+        // for now, punt
+        if (ir->op >= NU_OP_CBEQ && ir->op <= NU_OP_CBGEU) {
+            return false;
+        }
+    }
+    // shouldn't get here, but bail if we do
+    return false;
+}
+
+//
+// convert DJNZ to DJNZ_FAST where we can
+//
+int NuConvertDjnz(NuIrList *irl)
+{
+    int changes = 0;
+    NuIr *ir;
+    NuIrLabel *label;
+    NuIr *labelir;
+    
+    for (ir = irl->head; ir; ir = ir->next) {
+        if (ir->op == NU_OP_DJNZ) {
+            if (ir->prev->op == NU_OP_ADD_DBASE && ir->prev->prev->op == NU_OP_PUSHI) {
+                int offset = ir->prev->prev->val;
+                label = ir->label;
+                // look back to find the label
+                labelir = ir->prev->prev;
+                while (labelir) {
+                    if (labelir->op == NU_OP_LABEL && labelir->label == label) break;
+                    labelir = labelir->prev;
+                }
+                if (labelir && NoDjnzConflict(irl, labelir, ir, offset)) {
+                    NuIr *newIr;
+                    const char *comment1 = ir->prev->prev->comment;
+                    const char *comment2 = ir->prev->comment;
+                    NuDeleteIr(irl, ir->prev->prev);
+                    NuDeleteIr(irl, ir->prev);
+                    ir->op = NU_OP_DJNZ_FAST;
+                    newIr = NuCreateIrOp(NU_OP_PUSHI);
+                    newIr->val = offset;
+                    newIr->comment = comment1;
+                    NuIrInsertBefore(irl, labelir, newIr);
+                    newIr = NuCreateIrOp(NU_OP_ADD_DBASE);
+                    newIr->comment = comment2;
+                    NuIrInsertBefore(irl, labelir, newIr);
+                    newIr = NuCreateIrOp(NU_OP_LDL);
+                    NuIrInsertBefore(irl, labelir, newIr);
+                    changes++;
+                }
+            }
+        }
+    }
+    return changes;
+}
+
+// remove unused labels
+static bool
+LabelUsed(NuIrList *irl, NuIrLabel *label)
+{
+    NuIr *ir;
+    for (ir = irl->head; ir; ir = ir->next) {
+        if (ir->op == NU_OP_LABEL) {
+            continue;
+        }
+        if (ir->label == label) {
+            return true;
+        }
+    }
+    return false;
+}
+
+int
+NuRemoveUnusedLabels(NuIrList *irl)
+{
+    int changes = 0;
+    NuIr *ir;
+
+    ir = irl->head;
+    if (ir && ir->op == NU_OP_LABEL) {
+        ir = ir->next;
+    }
+    for (; ir; ir = ir->next) {
+        if (ir->op == NU_OP_LABEL && !LabelUsed(irl, ir->label)) {
+            NuDeleteIr(irl, ir);
+            changes++;
         }
     }
     return changes;

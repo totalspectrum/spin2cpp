@@ -25,6 +25,8 @@ typedef struct {
 int NuOptimizePeephole(NuIrList *irl);
 int NuRemoveDupDrop(NuIrList *irl);
 int NuRemoveDeadCode(NuIrList *irl);
+int NuConvertDjnz(NuIrList *irl);
+int NuRemoveUnusedLabels(NuIrList *irl);
 
 /* utility functions */
 NuIrOpcode NuFlipCondition(NuIrOpcode op);

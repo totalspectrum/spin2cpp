@@ -2167,8 +2167,10 @@ static int NuOptimizeFunction(Function *pf, NuIrList *irl) {
     do {
         change = 0;
         if (flags & OPT_PEEPHOLE) {
+            change += NuRemoveUnusedLabels(irl);
             change += NuOptimizePeephole(irl);
             change += NuRemoveDupDrop(irl);
+            change += NuConvertDjnz(irl);
         }
         if (flags & OPT_DEADCODE) {
             change += NuRemoveDeadCode(irl);

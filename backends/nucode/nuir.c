@@ -1024,6 +1024,7 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
         case NU_OP_BZ:
         case NU_OP_BNZ:
         case NU_OP_DJNZ:
+        case NU_OP_DJNZ_FAST:
         case NU_OP_CBEQ:
         case NU_OP_CBNE:
         case NU_OP_CBLTS:

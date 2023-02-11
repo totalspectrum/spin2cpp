@@ -1081,6 +1081,16 @@ impl_DJNZ
  if_nz	jmp	#\do_relbranch_drop1
  	jmp	#\impl_DROP
 
+impl_DJNZ_FAST
+#ifdef ENABLE_DEBUG
+	call	#\get_offset
+#else
+	rfvars	tmp
+#endif	
+	sub	tos, #1 wz
+ if_nz	jmp	#\do_relbranch
+ 	jmp	#\impl_DROP
+
 impl_CBEQ
 #ifdef ENABLE_DEBUG
 	call	#\get_offset

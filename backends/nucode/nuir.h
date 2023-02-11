@@ -154,15 +154,15 @@
     X(CALLA)     /* call subroutine direct */ \
     X(GOSUB)     /* combo CALL+ENTER */ \
     X(LONGJMP)   /* longjmp(buf, n, nocatch_flag): sets n as return value from setjmp */ \
-    \
+    /* keep relative branches together here between BRA and DJNZ */     \
     X(BRA)       /* branch always */ \
     X(JMPREL)    /* jump forward 3*n bytes */ \
     X(BRA3)       /* branch always (fixed 3 byte length) */ \
-    X(CBEQ)      /* compare branch if equal */ \
-    X(CBNE)      /* compare branch if not equal */ \
+    \
     X(BZ)        /* branch if tos is zero */ \
     X(BNZ)       /* branch if tos is non-zero */ \
-    X(DJNZ)      /* decrement *tos, branch if result non-zero */ \
+    X(CBEQ)      /* compare branch if equal   NOTE: keep at start of CBxx */ \
+    X(CBNE)      /* compare branch if not equal */ \
     X(CBLTS)     /* compare branch if < signed */ \
     X(CBLES)     /* compare branch if <= signed */ \
     X(CBLTU)     /* compare branch if < unsigned */ \
@@ -170,7 +170,9 @@
     X(CBGTS)     /* compare branch if > signed */ \
     X(CBGES)     /* compare branch if >= signed */ \
     X(CBGTU)     /* compare branch if > unsigned */ \
-    X(CBGEU)     /* compare branch if >= unsigned */ \
+    X(CBGEU)     /* compare branch if >= unsigned   NOTE: keep at end of CBxx */ \
+    X(DJNZ_FAST) /* decrement *tos, branch if result non-zero, leaves result on stack */ \
+    X(DJNZ)      /* decrement *tos, branch if result non-zero: always last in branch list */ \
     \
     X(DUMMY)     /* this and everything following needs no code */ \
     X(COMMENT)   /* just a comment */ \
