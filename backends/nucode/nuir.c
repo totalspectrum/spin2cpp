@@ -458,7 +458,7 @@ static NuBytecode *NuFindCompressBytecode(NuIrList *irl, int *savings) {
                 impl_cost -= 4; // saves a prefix
             }
             savedBytes = (invoke_cost * bc->usage) - impl_cost;
-            if (savedBytes < 1) {
+            if (savedBytes < 0) {
                 return NULL;
             }
             *savings = savedBytes;
@@ -646,6 +646,8 @@ void NuCreateBytecodes(NuIrList *lists)
     int code;
     NuBytecode *bc;
 
+    int lut_size = 0x300;
+    
     // create an initial set of bytecodes
     irl = lists;
     while (irl) {
@@ -683,6 +685,7 @@ void NuCreateBytecodes(NuIrList *lists)
     // while there's room for more bytecodes, find ways to compress the code
     while (code < (MAX_BYTECODE-1) && (gl_optimize_flags & OPT_MAKE_MACROS)) {
         int32_t val;
+        int cost;
         int compressValue, macroValue;
         const char *instr = "mov";
         const char *opname;
@@ -692,12 +695,28 @@ void NuCreateBytecodes(NuIrList *lists)
         NuRecalcUsage(lists);
         bc = NuFindCompressBytecode(lists, &compressValue);
         macro = NuScanForMacros(lists, &macroValue);
-        if (bc && macro) {
-            // pick which is better
-            if (compressValue >= macroValue) {
-                macro = NULL;
+        if (bc) {
+            if (macro) {
+                // pick which is better
+                if (compressValue >= macroValue) {
+                    cost = compressValue;
+                    macro = NULL;
+                } else {
+                    cost = macroValue;
+                    bc = NULL;
+                }
             } else {
+                cost = compressValue;
+            }
+        } else {
+            cost = macroValue;
+        }
+        if (cost <= 0) {
+            // no space savings, do we get performance savings?
+            if (lut_size > 0x3f8) {
+                // nope, bail
                 bc = NULL;
+                macro = NULL;
             }
         }
         if (bc) {
@@ -741,6 +760,7 @@ void NuCreateBytecodes(NuIrList *lists)
             break;
         }
         bc->code = code++;
+        lut_size += bc->impl_size;
     }
     // finally, sort byte bytecode
     qsort(&globalBytecodes, num_bytecodes, elemsize, codenum_sortfunc);
