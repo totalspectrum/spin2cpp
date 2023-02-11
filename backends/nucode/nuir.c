@@ -528,7 +528,12 @@ const char *NuMergeBytecodes(const char *bcname, NuBytecode *first, NuBytecode *
         flexbuf_printf(fb, " _ret_\t%s\ttos, #%d\n", opname, first->value);
         free(opname);
     } else {
-        if (first->impl_size + second->impl_size <= MAX_INSTR_SEQ_LEN) {
+        /* special case a few things */
+        if (!strcmp(bcname, "PUSH_0_ADD_DBASE_LDL")) {
+            flexbuf_printf(fb, "\tcall\t#\\impl_DUP\n  _ret_\trdlong\ttos, dbase\n");
+        } else if (!strcmp(bcname, "PUSH_0_ADD_VBASE_LDL")) {
+            flexbuf_printf(fb, "\tcall\t#\\impl_DUP\n  _ret_\trdlong\ttos, vbase\n");
+        } else if (first->impl_size + second->impl_size <= MAX_INSTR_SEQ_LEN) {
             NuCopyImpl(fb, first->impl_ptr, 1);
             NuCopyImpl(fb, second->impl_ptr, 0);
         } else if (first->impl_size + 1 <= MAX_INSTR_SEQ_LEN) {
