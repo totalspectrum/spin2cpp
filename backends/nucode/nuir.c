@@ -98,7 +98,7 @@ void NuIrInit(NuContext *ctxt) {
     impl_ptrs[NU_OP_CALLA] = "";
     impl_ptrs[NU_OP_BREAK] = "";
     impl_ptrs[NU_OP_GETHEAP] = "";
-
+    
     // find the other implementations that we may need
     while (c) {
         linestart = ptr;
@@ -958,7 +958,7 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
         case NU_OP_ALIGN:
             flexbuf_printf(fb, "\talignl");
             break;
-        case NU_OP_BRA:
+        case NU_OP_BRA3:
             /* must always take 3 bytes because of its use with JMPREL */
             ++labelNum;
             flexbuf_printf(fb, "\tbyte\t%s, word (", NuBytecodeString(bc));
@@ -970,6 +970,7 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
             }
             flexbuf_printf(fb, "\n__L_relbranch_%05u", labelNum);
             break;
+        case NU_OP_BRA:
         case NU_OP_BZ:
         case NU_OP_BNZ:
         case NU_OP_DJNZ:

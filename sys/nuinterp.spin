@@ -112,8 +112,10 @@ start_cog
 do_relbranch_drop2
 	push	#do_relbranch
 	jmp	#\impl_DROP2
+
 do_relbranch_drop1
 	call	#\impl_DROP
+	' fall through
 do_relbranch
   	getptr	pb
 	add	pb, tmp
@@ -1012,7 +1014,14 @@ impl_LONGJMP
 
 ' relative branches
 impl_BRA
-	rfword	tmp		' BRA is always 3 bytes long
+	rfvars	tmp		' BRA3 is always 3 bytes long
+#ifdef ENABLE_DEBUG
+	getptr	pb
+#endif
+	jmp	#\do_relbranch
+
+impl_BRA3
+	rfword	tmp		' BRA3 is always 3 bytes long
 #ifdef ENABLE_DEBUG
 	getptr	pb
 #endif

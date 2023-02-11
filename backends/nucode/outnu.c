@@ -1867,7 +1867,7 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
         while (ast && ast->kind == AST_LISTHOLDER) {
             op = NuGetLabelFromSymbol( ast, GetUserIdentifierName(ast->left) );
             if (op) {
-                NuEmitBranch(irl, NU_OP_BRA, op);
+                NuEmitBranch(irl, NU_OP_BRA3, op);
             }
             ast = ast->right;
         }
