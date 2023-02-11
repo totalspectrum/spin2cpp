@@ -568,9 +568,9 @@ const char *NuMergeBytecodes(const char *bcname, NuBytecode *first, NuBytecode *
     } else {
         int n;
         /* special case a few things */
-        if ( (n = isPushAddDbaseLdl(bcname)) >= 0 && 0 == (n & 3) ) {
+        if ( (n = isPushAddDbaseLdl(bcname)) >= 0 && n < 128 && 0 == (n & 3) ) {
             flexbuf_printf(fb, "\tcall\t#\\impl_DUP\n _ret_\trdlong\ttos, ptrb[%d]\n", n/4);
-        } else if ( (n = isPushAddDbaseStl(bcname)) >= 0 && 0 == (n & 3) ) {
+        } else if ( (n = isPushAddDbaseStl(bcname)) >= 0 && n < 128 && 0 == (n & 3) ) {
             flexbuf_printf(fb, "\twrlong\ttos, ptrb[%d]\n\tjmp\t#\\impl_DROP", n/4);            
         } else if (!strcmp(bcname, "PUSH_0_ADD_DBASE")) {
             flexbuf_printf(fb, "\tcall\t#\\impl_DUP\n  _ret_\tmov\ttos, dbase\n");
