@@ -903,6 +903,10 @@ impl_XORO
 	xoro32	tos
   _ret_	mov	tos, tos
 
+impl_GETRND
+	call	#\impl_DUP
+  _ret_	getrnd	tos
+
 impl_XYPOL
 	qvector	nos, tos
 	getqx	nos

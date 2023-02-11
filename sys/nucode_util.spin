@@ -318,6 +318,9 @@ pri _lfsr_forward(x) : r
 pri _lfsr_backward(x) : r
   %bytecode("XORO")
 
+pri _getrnd : r = +long
+  %bytecode("GETRND")
+
 '
 ' time stuff
 '

@@ -132,7 +132,8 @@
     X(LOCKSET)   /* try to get a hw lock (P1 style return value) */ \
     X(LOCKCLR)   /* try to free a hw lock */ \
     \
-    X(XORO)    /* xoro32 random number generation */ \
+    X(XORO)      /* xoro32 random number generation */ \
+    X(GETRND)    /* getrnd random number generation */ \
     \
     X(PUSHI)     /* push immediate 32 bit */ \
     X(PUSHA)     /* push address */ \
