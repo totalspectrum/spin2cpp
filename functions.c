@@ -1112,6 +1112,7 @@ doDeclareFunction(AST *funcblock)
     fdef->overalltype->right = fdef->params;
 
     /* set up default values for parameters, if any present */
+    /* also provide dummy names for missing parameters */
     {
         AST *a, *p;
         AST *defval;
@@ -1122,7 +1123,12 @@ doDeclareFunction(AST *funcblock)
             p = a->left;
             if (p->kind == AST_DECLARE_VAR) {
                 aptr = &p->right;
-                p = p->right;
+                if (!p->right) {
+                    p->right = AstTempIdentifier("_dummy_param_");
+                    p = NULL;
+                } else {
+                    p = p->right;
+                }
             }
             if (p && p->kind == AST_ASSIGN) {
                 *aptr = p->left;
