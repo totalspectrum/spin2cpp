@@ -389,9 +389,9 @@ static NuMacro *NuScanForMacros(NuIrList *lists, int *savings) {
         irl = irl->nextList;
     }
     // figure out the benefit of doing this replacement
-    // the new macro requires at least 10 bytes implementation
+    // the new macro requires at least 8 bytes implementation
     // it will save 1 byte per invocation
-    savedBytes = maxCount - 10;
+    savedBytes = maxCount - 7;
     if (savedBytes < 0) {
         return NULL;
     }
