@@ -153,7 +153,7 @@
     X(LONGJMP)   /* longjmp(buf, n, nocatch_flag): sets n as return value from setjmp */ \
     \
     X(BRA)       /* branch always */ \
-    X(JMPREL)    /* jump forward relative 3*n bytes */ \
+    X(JMPREL)    /* jump forward relative based on table */ \
     X(CBEQ)      /* compare branch if equal */ \
     X(CBNE)      /* compare branch if not equal */ \
     X(BZ)        /* branch if tos is zero */ \

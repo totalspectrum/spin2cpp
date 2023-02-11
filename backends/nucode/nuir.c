@@ -15,9 +15,7 @@
 #define PUSHI_BYTECODE  1
 #define PUSHA_BYTECODE  2
 #define CALLA_BYTECODE  3
-#define PUSHI16_BYTECODE 4
-#define PUSHI8_BYTECODE 5
-#define FIRST_BYTECODE  6
+#define FIRST_BYTECODE  4
 #define MAX_BYTECODE 0xf8
 
 static const char *NuOpName[] = {
@@ -855,8 +853,6 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     flexbuf_printf(fb, "\tlong\timpl_PUSHI\n");
     flexbuf_printf(fb, "\tlong\timpl_PUSHA\n");
     flexbuf_printf(fb, "\tlong\timpl_CALLA\n");
-    flexbuf_printf(fb, "\tlong\timpl_PUSHI16\n");
-    flexbuf_printf(fb, "\tlong\timpl_PUSHI8\n");
 
     for (i = 0; i < num_bytecodes; i++) {
         NuBytecode *bc = globalBytecodes[i];
@@ -879,8 +875,6 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     flexbuf_printf(fb, "\tNU_OP_PUSHI = %d\n", PUSHI_BYTECODE);
     flexbuf_printf(fb, "\tNU_OP_PUSHA = %d\n", PUSHA_BYTECODE);
     flexbuf_printf(fb, "\tNU_OP_CALLA = %d\n", CALLA_BYTECODE);
-    flexbuf_printf(fb, "\tNU_OP_PUSHI16 = %d\n", PUSHI16_BYTECODE);
-    flexbuf_printf(fb, "\tNU_OP_PUSHI8 = %d\n", PUSHI8_BYTECODE);
     // others
     for (i = 0; i < num_bytecodes; i++) {
         NuBytecode *bc = globalBytecodes[i];
@@ -965,6 +959,17 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
             flexbuf_printf(fb, "\talignl");
             break;
         case NU_OP_BRA:
+            /* must always take 3 bytes because of its use with JMPREL */
+            ++labelNum;
+            flexbuf_printf(fb, "\tbyte\t%s, word (", NuBytecodeString(bc));
+            NuOutputLabel(fb, ir->label);
+            flexbuf_printf(fb, " - __L_relbranch_%05u)", labelNum);
+            if (comment) {
+                flexbuf_printf(fb, "\t' %s", comment);
+                comment = NULL;
+            }
+            flexbuf_printf(fb, "\n__L_relbranch_%05u", labelNum);
+            break;
         case NU_OP_BZ:
         case NU_OP_BNZ:
         case NU_OP_DJNZ:
@@ -998,12 +1003,9 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
                         //flexbuf_printf(fb, "<< 8)");
                         flexbuf_printf(fb, "\tbyte\t%s, fvar ", name);
                         NuOutputLabel(fb, ir->label);
-                    } else if (ir->val >= 0 && ir->val <= 0xff) {
-                        name = "NU_OP_PUSHI8";
-                        flexbuf_printf(fb, "\tbyte\t%s, %d", name, ir->val);
-                    } else if (ir->val >= 0 && ir->val <= 0xffff) {
-                        name = "NU_OP_PUSHI16";
-                        flexbuf_printf(fb, "\tbyte\t%s, word %d", name, ir->val);
+                    } else if (ir->val >= 0 && ir->val <= 0xffffff) {
+                        name = "NU_OP_PUSHA";
+                        flexbuf_printf(fb, "\tbyte\t%s, fvar %d", name, ir->val);
                     } else {
                         flexbuf_printf(fb, "\tbyte\t%s, long %d", name, ir->val);
                     }

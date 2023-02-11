@@ -110,7 +110,8 @@ start_cog
 ' tmp contains offset to add to pb
 '
 do_relbranch_drop2
-	call	#\impl_DROP
+	push	#do_relbranch
+	jmp	#\impl_DROP2
 do_relbranch_drop1
 	call	#\impl_DROP
 do_relbranch
@@ -164,24 +165,6 @@ impl_PUSHI
   _ret_	getptr	pb
 #else  
   _ret_	rflong	tos
-#endif
-
-impl_PUSHI16
-	call	#\impl_DUP
-#ifdef ENABLE_DEBUG
-	rfword	tos
-  _ret_	getptr	pb
-#else  
-  _ret_	rfword	tos
-#endif
-
-impl_PUSHI8
-	call	#\impl_DUP
-#ifdef ENABLE_DEBUG
-	rfbyte	tos
-  _ret_	getptr	pb
-#else  
-  _ret_	rfbyte	tos
 #endif
 
 impl_PUSHA
@@ -1029,11 +1012,11 @@ impl_LONGJMP
 
 ' relative branches
 impl_BRA
+	rfword	tmp		' BRA is always 3 bytes long
 #ifdef ENABLE_DEBUG
-	call	#\get_offset
-#else
-	rfvars	tmp
-#endif	
+	getptr	pb
+#endif
+	signx	tmp, #15
 	jmp	#\do_relbranch
 
 impl_JMPREL
