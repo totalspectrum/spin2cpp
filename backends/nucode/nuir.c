@@ -392,6 +392,7 @@ static NuMacro *NuScanForMacros(NuIrList *lists, int *savings) {
     // the new macro requires at least 8 bytes implementation
     // it will save 1 byte per invocation
     savedBytes = maxCount - 7;
+
     if (savedBytes < 0) {
         return NULL;
     }
@@ -929,7 +930,7 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
         int code = bc->code;
         if (code >= FIRST_BYTECODE) {
             if (bc->in_hub) {
-                flexbuf_printf(fb, "\tlong\t(impl_%s<<16)|trampoline  ' in HUB\n", bc->name);
+                flexbuf_printf(fb, "\tlong\t(impl_%s<<12)|trampoline  ' in HUB\n", bc->name);
             } else {
                 flexbuf_printf(fb, "\tlong\timpl_%s\n", bc->name);
             }

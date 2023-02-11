@@ -153,7 +153,7 @@ trampoline
 	skipf	#0
 	push	#restart_loop	' return to restart (hubexec uses the streamer)
 	rdlut	tmp, pa		' retrieve original word
-	shr	tmp, #16
+	shr	tmp, #12
 	jmp	tmp		' jump to HUB address
 	
 impl_DIRECT
