@@ -63,6 +63,7 @@ spininit
 	rdlong	pb, --ptra		' pb serves as PC
 	mov	dbase, #0
 continue_startup
+	mov	ptrb, dbase
 #ifdef ENABLE_DEBUG
 	DEBUG("Nucode interpreter running")
 #endif
@@ -298,6 +299,7 @@ do_enter
 
 	shl	nargs, #2
 	sub	dbase, nargs	' roll back over arguments
+	mov	ptrb, dbase
 	
 	' reset local stack
 	mov	cogsp, #0
@@ -341,7 +343,7 @@ impl_ret_body
 	setq	#3
 	rdlong	dbase, ptra
 	mov	pb, new_pc
-	cmp	dbase, #0 wz
+	mov	ptrb, dbase wz
 	
   if_z	jmp	#impl_HALT		' if old dbase was NULL, nothing to return to
 
@@ -1005,6 +1007,7 @@ impl_LONGJMP
 	add	nos, #4
 	setq	#4-1
 	rdlong	dbase, nos
+	mov	ptrb, dbase
 	' restore COG stack
 	mov	tmp, cogsp
   	djf	tmp, #.nocogstack

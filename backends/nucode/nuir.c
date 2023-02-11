@@ -497,6 +497,44 @@ NuCopyImpl(Flexbuf *fb, const char *lineptr, int skipRet) {
     }
 }
 
+// check for special pattern like PUSH_n_ADD_DBASE_LDL; if found return n
+static int
+isPushAddDbaseLdl(const char *bcname) {
+    int n = 0;
+    const char *ptr = bcname;
+    
+    if (strncmp(ptr, "PUSH_", 5) != 0)
+        return -1;
+    ptr += 5;
+    while (*ptr && isdigit(*ptr)) {
+        n = 10*n + (*ptr) - '0';
+        ptr++;
+    }
+    if (strcmp(ptr, "_ADD_DBASE_LDL") != 0) {
+        return -1;
+    }
+    return n;
+}
+
+// check for special pattern like PUSH_n_ADD_DBASE_LDL; if found return n
+static int
+isPushAddDbaseStl(const char *bcname) {
+    int n = 0;
+    const char *ptr = bcname;
+    
+    if (strncmp(ptr, "PUSH_", 5) != 0)
+        return -1;
+    ptr += 5;
+    while (*ptr && isdigit(*ptr)) {
+        n = 10*n + (*ptr) - '0';
+        ptr++;
+    }
+    if (strcmp(ptr, "_ADD_DBASE_STL") != 0) {
+        return -1;
+    }
+    return n;
+}
+
 static
 const char *NuMergeBytecodes(const char *bcname, NuBytecode *first, NuBytecode *second) {
     Flexbuf *fb;
@@ -528,13 +566,16 @@ const char *NuMergeBytecodes(const char *bcname, NuBytecode *first, NuBytecode *
         flexbuf_printf(fb, " _ret_\t%s\ttos, #%d\n", opname, first->value);
         free(opname);
     } else {
+        int n;
         /* special case a few things */
-        if (!strcmp(bcname, "PUSH_0_ADD_DBASE")) {
+        if ( (n = isPushAddDbaseLdl(bcname)) >= 0 && 0 == (n & 3) ) {
+            flexbuf_printf(fb, "\tcall\t#\\impl_DUP\n _ret_\trdlong\ttos, ptrb[%d]\n", n/4);
+        } else if ( (n = isPushAddDbaseStl(bcname)) >= 0 && 0 == (n & 3) ) {
+            flexbuf_printf(fb, "\twrlong\ttos, ptrb[%d]\n\tjmp\t#\\impl_DROP", n/4);            
+        } else if (!strcmp(bcname, "PUSH_0_ADD_DBASE")) {
             flexbuf_printf(fb, "\tcall\t#\\impl_DUP\n  _ret_\tmov\ttos, dbase\n");
         } else if (!strcmp(bcname, "PUSH_0_ADD_VBASE")) {
             flexbuf_printf(fb, "\tcall\t#\\impl_DUP\n  _ret_\tmov\ttos, vbase\n");
-        } else if (!strcmp(bcname, "PUSH_0_ADD_DBASE_LDL")) {
-            flexbuf_printf(fb, "\tcall\t#\\impl_DUP\n  _ret_\trdlong\ttos, dbase\n");
         } else if (!strcmp(bcname, "PUSH_0_ADD_VBASE_LDL")) {
             flexbuf_printf(fb, "\tcall\t#\\impl_DUP\n  _ret_\trdlong\ttos, vbase\n");
         } else if (first->impl_size + second->impl_size <= MAX_INSTR_SEQ_LEN) {
