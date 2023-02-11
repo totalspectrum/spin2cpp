@@ -529,7 +529,11 @@ const char *NuMergeBytecodes(const char *bcname, NuBytecode *first, NuBytecode *
         free(opname);
     } else {
         /* special case a few things */
-        if (!strcmp(bcname, "PUSH_0_ADD_DBASE_LDL")) {
+        if (!strcmp(bcname, "PUSH_0_ADD_DBASE")) {
+            flexbuf_printf(fb, "\tcall\t#\\impl_DUP\n  _ret_\tmov\ttos, dbase\n");
+        } else if (!strcmp(bcname, "PUSH_0_ADD_VBASE")) {
+            flexbuf_printf(fb, "\tcall\t#\\impl_DUP\n  _ret_\tmov\ttos, vbase\n");
+        } else if (!strcmp(bcname, "PUSH_0_ADD_DBASE_LDL")) {
             flexbuf_printf(fb, "\tcall\t#\\impl_DUP\n  _ret_\trdlong\ttos, dbase\n");
         } else if (!strcmp(bcname, "PUSH_0_ADD_VBASE_LDL")) {
             flexbuf_printf(fb, "\tcall\t#\\impl_DUP\n  _ret_\trdlong\ttos, vbase\n");
