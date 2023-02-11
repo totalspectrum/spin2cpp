@@ -140,6 +140,29 @@ static NuPeepholePattern pat_dup_drop[] = {
     
 };
 
+// change LDW / SIGNX #15 into LDWS
+static NuPeepholePattern pat_ldws[] = { 
+    { NU_OP_LDW,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_PUSHI,     15,           PEEP_FLAGS_MATCH_IMM },
+    { NU_OP_SIGNX,     PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+
+    /* replace */
+    { NU_OP_LDWS,      PEEP_ARG_ANY, PEEP_FLAGS_REPLACE },
+    { NU_OP_ILLEGAL,   0,            PEEP_FLAGS_DONE },
+    
+};
+// change LDB / SIGNX #7 into LDBS
+static NuPeepholePattern pat_ldbs[] = { 
+    { NU_OP_LDB,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_PUSHI,     7,           PEEP_FLAGS_MATCH_IMM },
+    { NU_OP_SIGNX,     PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+
+    /* replace */
+    { NU_OP_LDBS,      PEEP_ARG_ANY, PEEP_FLAGS_REPLACE },
+    { NU_OP_ILLEGAL,   0,            PEEP_FLAGS_DONE },
+    
+};
+
 // pattern for INC/DEC
 static NuPeepholePattern pat_dec[] = {
     { NU_OP_PUSHI,      1,            PEEP_FLAGS_MATCH_IMM },
@@ -270,6 +293,32 @@ static NuPeepholePattern pat_st_ld[] = {
     { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
 };
 
+// replace ST / LD / LD with DUP / ST / LD / SWAP
+static NuPeepholePattern pat_st_ld_ld[] = {
+    { NU_OP_PUSHI,     PEEP_ARG_ANY, PEEP_FLAGS_NONE },       // op 0
+    { NU_OP_ADD_xBASE, PEEP_ARG_ANY, PEEP_FLAGS_NONE },       // op 1
+    { NU_OP_STL,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },       // op 2
+    { NU_OP_PUSHI,     PEEP_ARG_ANY, PEEP_FLAGS_NONE },       // op 3
+    { NU_OP_ADD_xBASE, PEEP_ARG_ANY, PEEP_FLAGS_NONE },       // op 4
+    { NU_OP_LDL,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },       // op 5
+    { NU_OP_PUSHI,     0,            PEEP_FLAGS_MATCH_ARG },  // op 6
+    { NU_OP_ADD_xBASE, 1,            PEEP_FLAGS_MATCH_OP },   // op 7
+    { NU_OP_LDL,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },       // op 8
+
+    // replace with
+    { NU_OP_DUP,       PEEP_ARG_ANY, PEEP_FLAGS_REPLACE },
+    { NU_OP_PUSHI,     0,            PEEP_FLAGS_REPLACE | PEEP_FLAGS_MATCH_ARG },
+    { NU_OP_ADD_xBASE, 1,            PEEP_FLAGS_REPLACE | PEEP_FLAGS_MATCH_OP },
+    { NU_OP_STL,       PEEP_ARG_ANY, PEEP_FLAGS_REPLACE },
+    
+    { NU_OP_PUSHI,     3,            PEEP_FLAGS_REPLACE | PEEP_FLAGS_MATCH_ARG },       // op 3
+    { NU_OP_ADD_xBASE, 4,            PEEP_FLAGS_REPLACE | PEEP_FLAGS_MATCH_OP },
+    { NU_OP_LDL,       PEEP_ARG_ANY, PEEP_FLAGS_REPLACE },       // op 5
+
+    { NU_OP_SWAP,      PEEP_ARG_ANY, PEEP_FLAGS_REPLACE },
+    { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
+};
+
 // eliminate local ST before RET
 static NuPeepholePattern pat_dead_st[] = {
     { NU_OP_PUSHI,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
@@ -344,6 +393,8 @@ struct nupeeps {
 } nupeep[] = {
     { pat_dup_st_drop, 0, NULL },
     { pat_dup_drop, 0, NULL },
+    { pat_ldws, 0, NULL },
+    { pat_ldbs, 0, NULL },
     { pat_cbxx, 0, NuReplaceCBxx },
     { pat_cbnz, NU_OP_BNZ, NuReplaceSecond },
     { pat_cbz,  NU_OP_BZ,  NuReplaceSecond },
@@ -354,6 +405,7 @@ struct nupeeps {
     { pat_shl_2, 0, NULL },
     { pat_dup_add, 0, NULL },
     { pat_st_ld, 0, NULL },
+    { pat_st_ld_ld, 0, NULL },
     { pat_dead_st, 3, NuReplaceWithDrop },
     { pat_ld_ld, 3, NuReplaceDup },
 };

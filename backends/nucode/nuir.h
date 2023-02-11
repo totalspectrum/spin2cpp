@@ -8,8 +8,10 @@
 
 #define NU_OP_XMACRO \
     X(ILLEGAL) /* illegal instruction: must always come first */ \
-    X(LDB)     /* load byte */ \
-    X(LDW)     /* load word */ \
+    X(LDB)     /* load unsigned byte */ \
+    X(LDBS)    /* load signed byte */ \
+    X(LDW)     /* load unsigned word */ \
+    X(LDWS)    /* load signed word */ \
     X(LDL)     /* load long */ \
     X(LDD)     /* load double */ \
     X(STB)     /* store byte */ \
