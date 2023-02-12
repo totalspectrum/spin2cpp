@@ -1594,7 +1594,6 @@ TransformCountRepeat(AST *ast)
             op = isUnsignedLoop ? K_LTU : '<';
         }
         if (knownStepDir == 0 && knownStepVal == 1 && op == K_GE) {
-            printf("hit\n");
             stepdir = AstOperator(K_SAR,
                                   AstOperator('-', toval, fromval),
                                   AstInteger(31));
