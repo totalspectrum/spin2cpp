@@ -1244,6 +1244,12 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
             ERROR(line, "Unable to convert function result to pointer");
         }
     }
+    // allow pair of 32 bit untyped to fill in a 64 bit
+    if (IsInt64Type(desttype) && srctype && srctype->kind == AST_TUPLE_TYPE) {
+        if (srctype->left == NULL && srctype->right && srctype->right->kind == AST_TUPLE_TYPE && srctype->right->right == NULL && srctype->right->left == NULL) {
+            srctype = desttype;
+        }
+    }
     if (!CompatibleTypes(desttype, srctype)) {
         const char *desttype_name, *srctype_name;
         desttype_name = TypeName(desttype);
