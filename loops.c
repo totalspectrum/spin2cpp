@@ -1588,16 +1588,24 @@ TransformCountRepeat(AST *ast)
         }
     } else {
         AST *stepvar = AstTempLocalVariable("_step_", looptype);
+        AST *stepdir;
         int op = isUnsignedLoop ? K_GEU : K_GE;
         if (knownStepDir < 0) {
             op = isUnsignedLoop ? K_LTU : '<';
         }
+        if (knownStepDir == 0 && knownStepVal == 1 && op == K_GE) {
+            printf("hit\n");
+            stepdir = AstOperator(K_SAR,
+                                  AstOperator('-', toval, fromval),
+                                  AstInteger(31));
+            stepdir = AstOperator('|', stepdir, AstInteger(1));
+        } else {
+            stepdir = NewAST(AST_CONDRESULT, AstOperator(op, toval, fromval),
+                             NewAST(AST_THENELSE, stepval,
+                                    AstOperator(K_NEGATE, NULL, stepval)));
+        }
         initstmt = NewAST(AST_SEQUENCE, initstmt,
-                          AstAssign(stepvar,
-                                    NewAST(AST_CONDRESULT,
-                                           AstOperator(op, toval, fromval),
-                                           NewAST(AST_THENELSE, stepval,
-                                                  AstOperator(K_NEGATE, NULL, stepval)))));
+                          AstAssign(stepvar, stepdir));
         stepval = stepvar;
     }
 
