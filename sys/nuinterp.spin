@@ -703,8 +703,20 @@ impl_ONES
 impl_INC
   _ret_	add	tos, #1
 
+impl_INC2
+  _ret_	add	tos, #2
+
+impl_INC4
+  _ret_	add	tos, #4
+
 impl_DEC
   _ret_	sub	tos, #1
+
+impl_DEC2
+  _ret_	sub	tos, #2
+
+impl_DEC4
+  _ret_	sub	tos, #4
 
 impl_DOUBLE
   _ret_	shl	tos, #1

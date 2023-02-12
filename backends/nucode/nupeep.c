@@ -172,12 +172,44 @@ static NuPeepholePattern pat_dec[] = {
     { NU_OP_DEC,        PEEP_ARG_ANY, PEEP_FLAGS_REPLACE },
     { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
 };
+static NuPeepholePattern pat_dec2[] = {
+    { NU_OP_PUSHI,      2,            PEEP_FLAGS_MATCH_IMM },
+    { NU_OP_SUB,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+
+    // replace with
+    { NU_OP_DEC2,        PEEP_ARG_ANY, PEEP_FLAGS_REPLACE },
+    { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
+};
+static NuPeepholePattern pat_dec4[] = {
+    { NU_OP_PUSHI,      4,            PEEP_FLAGS_MATCH_IMM },
+    { NU_OP_SUB,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+
+    // replace with
+    { NU_OP_DEC4,        PEEP_ARG_ANY, PEEP_FLAGS_REPLACE },
+    { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
+};
 static NuPeepholePattern pat_inc[] = {
     { NU_OP_PUSHI,      1,            PEEP_FLAGS_MATCH_IMM },
     { NU_OP_ADD,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },
 
     // replace with
     { NU_OP_INC,        PEEP_ARG_ANY, PEEP_FLAGS_REPLACE },
+    { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
+};
+static NuPeepholePattern pat_inc2[] = {
+    { NU_OP_PUSHI,      2,            PEEP_FLAGS_MATCH_IMM },
+    { NU_OP_ADD,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+
+    // replace with
+    { NU_OP_INC2,        PEEP_ARG_ANY, PEEP_FLAGS_REPLACE },
+    { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
+};
+static NuPeepholePattern pat_inc4[] = {
+    { NU_OP_PUSHI,      4,            PEEP_FLAGS_MATCH_IMM },
+    { NU_OP_ADD,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+
+    // replace with
+    { NU_OP_INC4,        PEEP_ARG_ANY, PEEP_FLAGS_REPLACE },
     { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
 };
 
@@ -399,7 +431,11 @@ struct nupeeps {
     { pat_cbnz, NU_OP_BNZ, NuReplaceSecond },
     { pat_cbz,  NU_OP_BZ,  NuReplaceSecond },
     { pat_inc,  0,         NULL },
+    { pat_inc2,  0,         NULL },
+    { pat_inc4,  0,         NULL },
     { pat_dec,  0,         NULL },
+    { pat_dec2,  0,         NULL },
+    { pat_dec4,  0,         NULL },
     { pat_djnz,  0, NULL },
     { pat_shl_1, 0, NULL },
     { pat_shl_2, 0, NULL },

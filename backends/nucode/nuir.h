@@ -67,7 +67,11 @@
     X(ABS)       /* abs value tos */ \
     X(REV)       /* reverse bits of tos */ \
     X(INC)       /* tos := tos+1 */ \
+    X(INC2)      /* tos := tos+2 */ \
+    X(INC4)      /* tos := tos+4 */ \
     X(DEC)       /* tos := tos-1 */ \
+    X(DEC2)      /* tos := tos-2 */ \
+    X(DEC4)      /* tos := tos-4 */ \
     X(DOUBLE)    /* tos := tos*2 */ \
     X(X4)        /* tos := tos*4 */                \
     X(ONES)      /* count one bits of tos */ \
