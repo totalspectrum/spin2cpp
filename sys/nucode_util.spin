@@ -330,7 +330,7 @@ pri _getus() : freq = +long | lo, hi
   if freq == 0
     __clkfreq_us := freq := __clkfreq_var +/ 1000000
   hi := hi +// freq
-  lo, hi := _div64(lo, hi, freq)
+  lo, hi := _div64(hi, lo, freq)
   return lo
 
 pri _getms() : freq = +long | lo, hi
@@ -339,7 +339,7 @@ pri _getms() : freq = +long | lo, hi
   if freq == 0
     __clkfreq_ms := freq := __clkfreq_var +/ 1000
   hi := hi +// freq
-  lo, hi := _div64(lo, hi, freq)
+  lo, hi := _div64(hi, lo, freq)
   return lo
 
 pri _getsec() : freq = +long | lo, hi
@@ -348,7 +348,7 @@ pri _getsec() : freq = +long | lo, hi
   if freq == 0
     freq := 22_000_000
   hi := hi +// freq
-  lo, hi := _div64(lo, hi, freq)
+  lo, hi := _div64(hi, lo, freq)
   return lo
 
 pri _hubset(x)
