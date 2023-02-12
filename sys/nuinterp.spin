@@ -681,10 +681,9 @@ impl_MULDIV64
 
 impl_DIV64
 	' 3 things on stack: nnos=hi, nos=lo, tos=divisor
-	mov	tmp, tos
-	call	#\impl_DROP	' now nos=hi, tos=lo, tmp=divisor
+	call	#\impl_POP	' now nos=hi, tos=lo, popval=divisor
 	setq	nos
-	qdiv	tos, tmp
+	qdiv	tos, popval
 	getqx	nos
  _ret_	getqy	tos
 
