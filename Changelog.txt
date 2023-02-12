@@ -2,6 +2,7 @@ Version 5.9.29
 - Fixed _ assignment in nucode output
 - Fixed calculation of FVAR/FVARS when labels are unknown
 - Fixed a problem with unnamed parameters not being counted in code generation
+- Fixed _getus() and _getms() in -2nu
 - Made Spin2 loop behaviour match that of other languages (like PNut v38)
 - Some internal cleanups in the code generators
 
