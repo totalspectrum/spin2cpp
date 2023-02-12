@@ -63,7 +63,6 @@ spininit
 	rdlong	pb, --ptra		' pb serves as PC
 	mov	dbase, #0
 continue_startup
-	mov	ptrb, dbase
 #ifdef ENABLE_DEBUG
 	DEBUG("Nucode interpreter running")
 #endif
@@ -71,7 +70,6 @@ continue_startup
 	rdlong	 tos, --ptra
 	rdlong	 nos, --ptra
 
-	' load LUT code
 	' user LUT code (various impl_XXX)
 	loc	pa, #@IMPL_LUT
 	setq2	#$ff  ' fill the rest of LUT
@@ -81,11 +79,18 @@ continue_startup
 	loc	pa, #@start_cog
 	setq	#(end_cog - start_cog)
 	rdlong	start_cog, pa
-	
+
+	' fill the first part of the jump table with push_direct
+	loc	ptrb, #$0
+	mov	tmp, #push_direct
+	rep	@.fill0, #$80
+	wrlut	tmp, ptrb
+	add	ptrb, #1
+.fill0
 	' copy jump table to final location at start of LUT
 	loc    pa, #@OPC_TABLE
 	setq2   #((OPC_TABLE_END-OPC_TABLE)/4)-1
-	rdlong 0, pa
+	rdlong $80, pa
 	
 	' more initialization code
 	mov	old_pc, #0
@@ -99,6 +104,8 @@ continue_startup
 	mov	cogstack_dec, ##((cogstack-1) | ($fffffe00))
 	' similar for looping over 0 addresses
 	mov	zero_inc, ##(1<<9)
+
+	mov	ptrb, dbase
 
 	jmp	#restart_loop
 	fit	$100
@@ -147,6 +154,11 @@ restart_loop
   _ret_	rdfast	#0, pb		' use table at start of LUT
   	jmp	#restart_loop
 #endif
+
+	' const push code
+push_direct
+	call	#\impl_DUP
+  _ret_	mov	tos, pa
 
 	' hook for jumping into HUB
 trampoline

@@ -11,11 +11,11 @@
 #include "sys/nuinterp.spin.h"
 #include "becommon.h"
 
-#define DIRECT_BYTECODE 0
-#define PUSHI_BYTECODE  1
-#define PUSHA_BYTECODE  2
-#define CALLA_BYTECODE  3
-#define FIRST_BYTECODE  4
+#define DIRECT_BYTECODE 0x80  /* must always come first */
+#define PUSHI_BYTECODE  0x81
+#define PUSHA_BYTECODE  0x82
+#define CALLA_BYTECODE  0x83
+#define FIRST_BYTECODE  0x84
 #define MAX_BYTECODE 0xf8
 
 static const char *NuOpName[] = {
