@@ -11,6 +11,7 @@
 #include "sys/nuinterp.spin.h"
 #include "becommon.h"
 
+#define MAX_DIRECT_CONST 0x7f
 #define DIRECT_BYTECODE 0x80  /* must always come first */
 #define PUSHI_BYTECODE  0x81
 #define PUSHA_BYTECODE  0x82
@@ -353,6 +354,10 @@ static NuMacro macros[256][256];
 
 #define MAX_MACRO_DEPTH 4
 
+static bool Mergeable(int code) {
+    return (code <= MAX_DIRECT_CONST) || (code >= FIRST_BYTECODE);
+}
+
 // scan for potential macro pairs
 static NuMacro *NuScanForMacros(NuIrList *lists, int *savings) {
     NuIrList *irl = lists;
@@ -379,7 +384,7 @@ static NuMacro *NuScanForMacros(NuIrList *lists, int *savings) {
                 int bc1, bc2;
                 bc1 = prevCode->code;
                 bc2 = curCode->code;
-                if (bc1 >= FIRST_BYTECODE && bc2 >= FIRST_BYTECODE) {
+                if (Mergeable(bc1) && Mergeable(bc2) ) {
                     macros[bc1][bc2].count++;
                     if (macros[bc1][bc2].count > maxCount) {
                         maxCount = macros[bc1][bc2].count;
@@ -449,11 +454,17 @@ static NuBytecode *NuFindCompressBytecode(NuIrList *irl, int *savings) {
     int i;
     NuBytecode *bc;
     int savedBytes;
-
+    bool smallConst = false;
     // globalBytecodes are assumed sorted by usage...
     for (i = 0; i < num_bytecodes; i++) {
         bc = globalBytecodes[i];
-        if ( (bc->code == PUSHI_BYTECODE || bc->code == PUSHA_BYTECODE) && bc->usage > 1) {
+        if ( (bc->code == PUSHI_BYTECODE || bc->code == PUSHA_BYTECODE) && bc->usage >= 1) {
+            // if this is a small const
+            smallConst = (bc->code == PUSHI_BYTECODE && bc->value >= 0 && bc->value <= MAX_DIRECT_CONST);
+            if (smallConst) {
+                *savings = 9999999;  // these ones are free
+                return bc;
+            }
             // cost of implementation is 8 bytes for small, 12 for large
             int impl_cost = (MAX_INSTR_SEQ_LEN+1)*4;
             // cost of each invocation is 5 bytes normally (PUSHI + data)
@@ -588,7 +599,7 @@ const char *NuMergeBytecodes(const char *bcname, NuBytecode *first, NuBytecode *
             flexbuf_printf(fb, "\tcall\t#\\impl_DUP\n  _ret_\tmov\ttos, vbase\n");
         } else if (!strcmp(bcname, "PUSH_0_ADD_VBASE_LDL")) {
             flexbuf_printf(fb, "\tcall\t#\\impl_DUP\n  _ret_\trdlong\ttos, vbase\n");
-        } else if (first->impl_size + second->impl_size <= MAX_INSTR_SEQ_LEN) {
+        } else if (first->impl_size + second->impl_size <= MAX_INSTR_SEQ_LEN || first->no_call || second->no_call ) {
             NuCopyImpl(fb, first->impl_ptr, 1);
             NuCopyImpl(fb, second->impl_ptr, 0);
         } else if (first->impl_size + 1 <= MAX_INSTR_SEQ_LEN) {
@@ -700,6 +711,7 @@ void NuCreateBytecodes(NuIrList *lists)
         const char *instr = "mov";
         const char *opname;
         NuMacro *macro;
+        bool isBuiltin = false;
 
         compressValue = 0;
         NuRecalcUsage(lists);
@@ -746,6 +758,10 @@ void NuCreateBytecodes(NuIrList *lists)
                 }
             } else {
                 val = (int32_t)bc->value;
+                if (val >= 0 && val <= MAX_DIRECT_CONST) {
+                    isBuiltin = true;
+                    bc->code = val;
+                }
                 if (val < 0) {
                     val = -val;
                     instr = "neg";
@@ -761,7 +777,12 @@ void NuCreateBytecodes(NuIrList *lists)
             // impl_PUSH_0
             //       call #\impl_DUP
             // _ret_ mov  tos, #0
-            bc->impl_ptr = auto_printf(128, "impl_%s\n\tcall\t#\\impl_DUP\n _ret_\t%s\ttos, #%s%s\n\n", bc->name, instr, immflag, valstr);
+            if (isBuiltin) {
+                bc->impl_ptr = auto_printf(128, "\tcall\t#\\impl_DUP\n _ret_\t%s\ttos, #%s%s\n\n", instr, immflag, valstr);
+                bc->no_call = 1;
+            } else {
+                bc->impl_ptr = auto_printf(128, "impl_%s\n\tcall\t#\\impl_DUP\n _ret_\t%s\ttos, #%s%s\n\n", bc->name, instr, immflag, valstr);
+            }
             bc->impl_size = (immflag[0]) ? 3 : 2;
             bc->is_const = 0; // don't need to emit PUSHI for this one
         } else if (macro) {
@@ -769,8 +790,10 @@ void NuCreateBytecodes(NuIrList *lists)
         } else {
             break;
         }
-        bc->code = code++;
-        lut_size += bc->impl_size;
+        if (!isBuiltin) {
+            bc->code = code++;
+            lut_size += bc->impl_size;
+        }
     }
     // finally, sort byte bytecode
     qsort(&globalBytecodes, num_bytecodes, elemsize, codenum_sortfunc);
@@ -950,7 +973,11 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
 
     // emit constants for everything
     flexbuf_printf(fb, "\ncon\n");
-    // predefined
+    // direct constants
+    for (i = 0; i <= MAX_DIRECT_CONST; i++) {
+        flexbuf_printf(fb, "\tNU_OP_PUSH_%d = %d\n", i, i);
+    }
+    // other predefined
     flexbuf_printf(fb, "\tNU_OP_DIRECT = %d\n", DIRECT_BYTECODE);
     flexbuf_printf(fb, "\tNU_OP_PUSHI = %d\n", PUSHI_BYTECODE);
     flexbuf_printf(fb, "\tNU_OP_PUSHA = %d\n", PUSHA_BYTECODE);
