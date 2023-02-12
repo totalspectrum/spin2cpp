@@ -210,6 +210,7 @@ impl_OVER
 	' A B -> A B A
 	altd	cogsp, cogstack_inc
 	mov	0-0, nos
+impl_SWAP
 	mov	tmp, nos
 	mov	nos, tos
   _ret_	mov	tos, tmp
@@ -227,11 +228,6 @@ impl_DROP2
  	mov	tos, 0-0
 	alts	cogsp, cogstack_dec
  _ret_	mov	nos, 0-0
-
-impl_SWAP
-	mov	tmp, tos
-	mov	tos, nos
- _ret_	mov	nos, tmp
 
 '
 ' call/enter/ret

@@ -26,6 +26,7 @@ static const char *NuOpName[] = {
 
 static const char *impl_ptrs[NU_OP_DUMMY];
 static int impl_sizes[NU_OP_DUMMY];
+static char impl_builtin[NU_OP_DUMMY];
 
 static int usage_sortfunc(const void *Av, const void *Bv) {
     NuBytecode **A = (NuBytecode **)Av;
@@ -67,6 +68,11 @@ static int NuImplSize(const char *lineptr) {
     return size;
 }
 
+static void CreateBuiltin(NuIrOpcode op, const char *impl) {
+    impl_ptrs[op] = impl;
+    impl_builtin[op] = 1;
+}
+
 void NuIrInit(NuContext *ctxt) {
     const char *ptr = (char *)sys_nuinterp_spin;
     const char *linestart;
@@ -82,22 +88,22 @@ void NuIrInit(NuContext *ctxt) {
         if (!c || c == '\014') break;
     }
     // some functions are always built in to the interpreter
-    impl_ptrs[NU_OP_DROP] = "";
-    impl_ptrs[NU_OP_DROP2] = "";
-    impl_ptrs[NU_OP_DUP] = "";
-    impl_ptrs[NU_OP_SWAP] = "";
-    impl_ptrs[NU_OP_DUP2] = "";
-    impl_ptrs[NU_OP_SWAP2] = "";
-    impl_ptrs[NU_OP_OVER] = "";
-    impl_ptrs[NU_OP_CALL] = "";
-    impl_ptrs[NU_OP_CALLM] = "";
-    impl_ptrs[NU_OP_ENTER] = "";
-    impl_ptrs[NU_OP_RET] = "";
-    impl_ptrs[NU_OP_PUSHI] = "";
-    impl_ptrs[NU_OP_PUSHA] = "";
-    impl_ptrs[NU_OP_CALLA] = "";
-    impl_ptrs[NU_OP_BREAK] = "";
-    impl_ptrs[NU_OP_GETHEAP] = "";
+    CreateBuiltin(NU_OP_DROP, "");
+    CreateBuiltin(NU_OP_DROP2, "");
+    CreateBuiltin(NU_OP_DUP, "");
+    CreateBuiltin(NU_OP_DUP2, "");
+    CreateBuiltin(NU_OP_SWAP, "");
+    CreateBuiltin(NU_OP_SWAP2, "");
+    CreateBuiltin(NU_OP_OVER, "");
+    CreateBuiltin(NU_OP_CALL, "");
+    CreateBuiltin(NU_OP_CALLM, "");
+    CreateBuiltin(NU_OP_ENTER, "");
+    CreateBuiltin(NU_OP_RET, "");
+    CreateBuiltin(NU_OP_PUSHI, "");
+    CreateBuiltin(NU_OP_PUSHA, "");
+    CreateBuiltin(NU_OP_CALLA, "");
+    CreateBuiltin(NU_OP_BREAK, "");
+    CreateBuiltin(NU_OP_GETHEAP, "");
     
     // find the other implementations that we may need
     while (c) {
@@ -322,6 +328,9 @@ GetBytecodeFor(NuIr *ir)
         }
         if (ir->op == NU_OP_INLINEASM) {
             b->is_inline_asm = 1;
+        }
+        if (impl_builtin[ir->op]) {
+            b->is_builtin = 1;
         }
     } else {
         ERROR(NULL, "Internal error, too many bytecodes\n");
