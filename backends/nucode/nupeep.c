@@ -495,11 +495,22 @@ static int NuStackChange(NuIr *ir) {
     case NU_OP_NEG:
     case NU_OP_INC:
     case NU_OP_DEC:
+    case NU_OP_INC2:
+    case NU_OP_DEC2:
+    case NU_OP_INC4:
+    case NU_OP_DEC4:
     case NU_OP_DOUBLE:
     case NU_OP_X4:
         return 0;
     case NU_OP_ADD:
     case NU_OP_SUB:
+    case NU_OP_AND:
+    case NU_OP_IOR:
+    case NU_OP_XOR:
+    case NU_OP_SHL:
+    case NU_OP_SHR:
+    case NU_OP_SAR:
+    case NU_OP_MUL:
         return -1;
     case NU_OP_STL:
         return -2;
