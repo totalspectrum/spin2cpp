@@ -1593,7 +1593,10 @@ TransformCountRepeat(AST *ast)
         if (knownStepDir < 0) {
             op = isUnsignedLoop ? K_LTU : '<';
         }
-        if (knownStepDir == 0 && knownStepVal == 1 && op == K_GE) {
+        // the asm backend already has good code for CONDRESULT,
+        // so do the ((to-from)>>31)|1 stuff only for bytecode
+        //
+        if (gl_output == OUTPUT_BYTECODE && knownStepDir == 0 && knownStepVal == 1 && op == K_GE) {
             stepdir = AstOperator(K_SAR,
                                   AstOperator('-', toval, fromval),
                                   AstInteger(31));
