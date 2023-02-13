@@ -123,6 +123,7 @@ void NuIrInit(NuContext *ctxt) {
     CreateBuiltinOp(NU_OP_BRA, NULL);
     CreateBuiltinOp(NU_OP_BZ, NULL);
     CreateBuiltinOp(NU_OP_BNZ, NULL);
+    CreateBuiltinOp(NU_OP_DJNZ, NULL);
 
     CreateBuiltinOp(NU_OP_CBEQ, NULL);
     CreateBuiltinOp(NU_OP_CBNE, NULL);

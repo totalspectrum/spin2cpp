@@ -241,17 +241,24 @@ cmp0_branch
 #else
 	rfvars	tmp
 #endif	
-	cmp	tos, #0 wcz
+	cmps	tos, #0 wcz		' for regular compare
+
+	rdlong	tmp2, tos		' for djnz
+	sub	tmp2, #1 wz		' for djnz
+	
   if_z	push	#do_relbranch
   if_nz	push	#do_relbranch
 
-  	' drop tos
+	wrlong	tmp2, tos		' for djnz only
+
+	' drop tos
 	mov	tos, nos
 	alts	cogsp, cogstack_dec
  _ret_	mov	nos, 0-0
 
-#define impl_BZ  cmp0_branch | (%000_10_00 << 10)
-#define impl_BNZ cmp0_branch | (%000_01_00 << 10)
+#define impl_BZ   cmp0_branch | (%000_1_10_11_0_0 << 10)
+#define impl_BNZ  cmp0_branch | (%000_1_01_11_0_0 << 10)
+#define impl_DJNZ cmp0_branch | (%000_0_01_00_1_0 << 10)
 
 ' compare and branch insns go here so they
 ' can fall through to impl_DROP2
@@ -1109,18 +1116,6 @@ impl_JMPREL
 	add	tmp, tos
 	add	tmp, tos
 	jmp	#\do_relbranch
-
-impl_DJNZ
-#ifdef ENABLE_DEBUG
-	call	#\get_offset
-#else
-	rfvars	tmp
-#endif	
-	rdlong	tmp2, tos
-	sub	tmp2, #1 wz
-	wrlong	tmp2, tos
- if_nz	push	#do_relbranch
- 	jmp	#\impl_DROP
 
 impl_DJNZ_FAST
 #ifdef ENABLE_DEBUG
