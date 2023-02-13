@@ -105,7 +105,18 @@ void NuIrInit(NuContext *ctxt) {
     CreateBuiltin(NU_OP_CALLA, "");
     CreateBuiltin(NU_OP_BREAK, "");
     CreateBuiltin(NU_OP_GETHEAP, "");
-    
+
+    CreateBuiltin(NU_OP_CBEQ, "");
+    CreateBuiltin(NU_OP_CBNE, "");
+    CreateBuiltin(NU_OP_CBLTU, "");
+    CreateBuiltin(NU_OP_CBLEU, "");
+    CreateBuiltin(NU_OP_CBGTU, "");
+    CreateBuiltin(NU_OP_CBGEU, "");
+    CreateBuiltin(NU_OP_CBLTS, "");
+    CreateBuiltin(NU_OP_CBLES, "");
+    CreateBuiltin(NU_OP_CBGTS, "");
+    CreateBuiltin(NU_OP_CBGES, "");
+
     // find the other implementations that we may need
     while (c) {
         linestart = ptr;

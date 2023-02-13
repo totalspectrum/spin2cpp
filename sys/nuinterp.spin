@@ -231,6 +231,37 @@ impl_DOWN
 	alts	cogsp, cogstack_dec
  _ret_	mov	nos, 0-0
 
+
+' compare and branch insns go here so they
+' can fall through to impl_DROP2
+
+cmp_branch
+#ifdef ENABLE_DEBUG
+	call	#\get_offset
+#else
+	rfvars	tmp
+#endif
+	cmp	nos, tos wcz  ' for unsigned
+	cmps	nos, tos wcz  ' for signed
+  if_z	push	#do_relbranch
+  if_nz	push	#do_relbranch
+  if_b	push	#do_relbranch
+  if_be	push	#do_relbranch
+  if_a	push	#do_relbranch
+  if_ae	push	#do_relbranch
+  
+#define impl_CBEQ   cmp_branch | (%111110_10_0<<10)
+#define impl_CBNE   cmp_branch | (%111101_10_0<<10)
+#define impl_CBLTU  cmp_branch | (%111011_10_0<<10)
+#define impl_CBLEU  cmp_branch | (%110111_10_0<<10)
+#define impl_CBGTU  cmp_branch | (%101111_10_0<<10)
+#define impl_CBGEU  cmp_branch | (%011111_10_0<<10)
+
+#define impl_CBLTS  cmp_branch | (%111011_01_0<<10)
+#define impl_CBLES  cmp_branch | (%110111_01_0<<10)
+#define impl_CBGTS  cmp_branch | (%101111_01_0<<10)
+#define impl_CBGES  cmp_branch | (%011111_01_0<<10)
+
 impl_DROP2
 	alts	cogsp, cogstack_dec
  	mov	tos, 0-0
@@ -1105,106 +1136,6 @@ impl_DJNZ_FAST
 	sub	tos, #1 wz
  if_nz	jmp	#\do_relbranch
  	jmp	#\impl_DROP
-
-impl_CBEQ
-#ifdef ENABLE_DEBUG
-	call	#\get_offset
-#else
-	rfvars	tmp
-#endif	
-	cmp	nos, tos wcz
-  if_z	push	#do_relbranch
-  	jmp	#\impl_DROP2
-
-impl_CBNE
-#ifdef ENABLE_DEBUG
-	call	#\get_offset
-#else
-	rfvars	tmp
-#endif	
-	cmp	nos, tos wcz
-  if_nz	push	#do_relbranch
-  	jmp	#\impl_DROP2
-
-impl_CBLTS
-#ifdef ENABLE_DEBUG
-	call	#\get_offset
-#else
-	rfvars	tmp
-#endif	
-	cmps	nos, tos wcz
-  if_b	push	#do_relbranch
-  	jmp	#\impl_DROP2
-
-impl_CBLES
-#ifdef ENABLE_DEBUG
-	call	#\get_offset
-#else
-	rfvars	tmp
-#endif	
-	cmps	nos, tos wcz
-  if_be	push	#do_relbranch
-  	jmp	#\impl_DROP2
-
-impl_CBGTS
-#ifdef ENABLE_DEBUG
-	call	#\get_offset
-#else
-	rfvars	tmp
-#endif	
-	cmps	nos, tos wcz
-  if_a	push	#do_relbranch
-  	jmp	#\impl_DROP2
-
-impl_CBGES
-#ifdef ENABLE_DEBUG
-	call	#\get_offset
-#else
-	rfvars	tmp
-#endif	
-	cmps	nos, tos wcz
-  if_ae	push	#do_relbranch
-  	jmp	#\impl_DROP2
-
-impl_CBLTU
-#ifdef ENABLE_DEBUG
-	call	#\get_offset
-#else
-	rfvars	tmp
-#endif	
-	cmp	nos, tos wcz
-  if_b	push	#do_relbranch
-  	jmp	#\impl_DROP2
-
-impl_CBLEU
-#ifdef ENABLE_DEBUG
-	call	#\get_offset
-#else
-	rfvars	tmp
-#endif	
-	cmp	nos, tos wcz
-  if_be	push	#do_relbranch
-  	jmp	#\impl_DROP2
-
-impl_CBGTU
-#ifdef ENABLE_DEBUG
-	call	#\get_offset
-#else
-	rfvars	tmp
-#endif	
-	cmp	nos, tos wcz
-  if_a	push	#do_relbranch
-  	jmp	#\impl_DROP2
-
-impl_CBGEU
-#ifdef ENABLE_DEBUG
-	call	#\get_offset
-#else
-	rfvars	tmp
-#endif	
-	cmp	nos, tos wcz
-  if_ae	push	#do_relbranch
-  	jmp	#\impl_DROP2
 
 '
 ' GOSUB:
