@@ -69,8 +69,22 @@ static int NuImplSize(const char *lineptr) {
     return size;
 }
 
-static void CreateBuiltin(NuIrOpcode op, const char *impl) {
+// declare a builtin opcode, with its implementation for inline purposes
+// if impl is "" then use the default jmp #\impl_OPCODE
+// if impl is NULL then the builtin is not accessible from inline
+
+static void CreateBuiltinOp(NuIrOpcode op, const char *impl) {
+    if (impl && impl[0] == 0) {
+        // asking for a default jmp
+        impl = auto_printf(64, "\tjmp\t#\\impl_%s\n\n", NuOpName[op]);
+    }
     impl_ptrs[op] = impl;
+    if (impl) {
+        impl_sizes[op] = NuImplSize(impl);
+    } else {
+        /* cannot directly call this?? */
+        impl_sizes[op] = 99999;
+    }
     impl_builtin[op] = 1;
 }
 
@@ -89,35 +103,37 @@ void NuIrInit(NuContext *ctxt) {
         if (!c || c == '\014') break;
     }
     // some functions are always built in to the interpreter
-    CreateBuiltin(NU_OP_DROP, "");
-    CreateBuiltin(NU_OP_DROP2, "");
-    CreateBuiltin(NU_OP_DUP, "");
-    CreateBuiltin(NU_OP_DUP2, "");
-    CreateBuiltin(NU_OP_SWAP, "");
-    CreateBuiltin(NU_OP_SWAP2, "");
-    CreateBuiltin(NU_OP_OVER, "");
-    CreateBuiltin(NU_OP_CALL, "");
-    CreateBuiltin(NU_OP_CALLM, "");
-    CreateBuiltin(NU_OP_ENTER, "");
-    CreateBuiltin(NU_OP_RET, "");
-    CreateBuiltin(NU_OP_PUSHI, "");
-    CreateBuiltin(NU_OP_PUSHA, "");
-    CreateBuiltin(NU_OP_CALLA, "");
-    CreateBuiltin(NU_OP_BREAK, "");
-    CreateBuiltin(NU_OP_GETHEAP, "");
+    CreateBuiltinOp(NU_OP_DROP, "");
+    CreateBuiltinOp(NU_OP_DROP2, "");
+    CreateBuiltinOp(NU_OP_DUP, "");
+    CreateBuiltinOp(NU_OP_DUP2, "");
+    CreateBuiltinOp(NU_OP_SWAP, "");
+    CreateBuiltinOp(NU_OP_SWAP2, "");
+    CreateBuiltinOp(NU_OP_OVER, "");
+    CreateBuiltinOp(NU_OP_CALL, "");
+    CreateBuiltinOp(NU_OP_CALLM, "");
+    CreateBuiltinOp(NU_OP_ENTER, "");
+    CreateBuiltinOp(NU_OP_RET, "");
+    CreateBuiltinOp(NU_OP_PUSHI, "");
+    CreateBuiltinOp(NU_OP_PUSHA, "");
+    CreateBuiltinOp(NU_OP_CALLA, "");
+    CreateBuiltinOp(NU_OP_BREAK, "");
+    CreateBuiltinOp(NU_OP_GETHEAP, "");
 
-    CreateBuiltin(NU_OP_BRA, "");
+    CreateBuiltinOp(NU_OP_BRA, NULL);
+    CreateBuiltinOp(NU_OP_BZ, NULL);
+    CreateBuiltinOp(NU_OP_BNZ, NULL);
 
-    CreateBuiltin(NU_OP_CBEQ, "");
-    CreateBuiltin(NU_OP_CBNE, "");
-    CreateBuiltin(NU_OP_CBLTU, "");
-    CreateBuiltin(NU_OP_CBLEU, "");
-    CreateBuiltin(NU_OP_CBGTU, "");
-    CreateBuiltin(NU_OP_CBGEU, "");
-    CreateBuiltin(NU_OP_CBLTS, "");
-    CreateBuiltin(NU_OP_CBLES, "");
-    CreateBuiltin(NU_OP_CBGTS, "");
-    CreateBuiltin(NU_OP_CBGES, "");
+    CreateBuiltinOp(NU_OP_CBEQ, NULL);
+    CreateBuiltinOp(NU_OP_CBNE, NULL);
+    CreateBuiltinOp(NU_OP_CBLTU, NULL);
+    CreateBuiltinOp(NU_OP_CBLEU, NULL);
+    CreateBuiltinOp(NU_OP_CBGTU, NULL);
+    CreateBuiltinOp(NU_OP_CBGEU, NULL);
+    CreateBuiltinOp(NU_OP_CBLTS, NULL);
+    CreateBuiltinOp(NU_OP_CBLES, NULL);
+    CreateBuiltinOp(NU_OP_CBGTS, NULL);
+    CreateBuiltinOp(NU_OP_CBGES, NULL);
 
     // find the other implementations that we may need
     while (c) {
@@ -602,6 +618,14 @@ const char *NuMergeBytecodes(const char *bcname, NuBytecode *first, NuBytecode *
     } else {
         int n;
         /* special case a few things */
+        if (!first->impl_ptr) {
+            ERROR(NULL, "Internal error issing implementation for %s", first->name);
+            first->impl_ptr = "\tnop\n";
+        }
+        if (!second->impl_ptr) {
+            ERROR(NULL, "Internal error issing implementation for %s", second->name);
+            second->impl_ptr = "\tnop\n";
+        }
         if ( (n = isPushAddDbaseLdl(bcname)) >= 0 && n < 128 && 0 == (n & 3) ) {
             flexbuf_printf(fb, "\tcall\t#\\impl_DUP\n _ret_\trdlong\ttos, ptrb[%d]\n", n/4);
         } else if ( (n = isPushAddDbaseStl(bcname)) >= 0 && n < 128 && 0 == (n & 3) ) {
@@ -927,7 +951,7 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
         NuBytecode *bc = globalBytecodes[i];
         const char *ptr = bc->impl_ptr;
         if (!ptr) {
-            if ( ! (bc->is_const) ) {
+            if ( ! (bc->is_const || bc->is_builtin) ) {
                 WARNING(NULL, "no implementation for %s", bc->name);
             }
             continue;

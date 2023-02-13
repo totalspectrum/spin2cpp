@@ -234,6 +234,24 @@ impl_DOWN
 	alts	cogsp, cogstack_dec
  _ret_	mov	nos, 0-0
 
+' simple branches
+cmp0_branch
+#ifdef ENABLE_DEBUG
+	call	#\get_offset
+#else
+	rfvars	tmp
+#endif	
+	cmp	tos, #0 wcz
+  if_z	push	#do_relbranch
+  if_nz	push	#do_relbranch
+
+  	' drop tos
+	mov	tos, nos
+	alts	cogsp, cogstack_dec
+ _ret_	mov	nos, 0-0
+
+#define impl_BZ  cmp0_branch | (%000_10_00 << 10)
+#define impl_BNZ cmp0_branch | (%000_01_00 << 10)
 
 ' compare and branch insns go here so they
 ' can fall through to impl_DROP2
@@ -1091,26 +1109,6 @@ impl_JMPREL
 	add	tmp, tos
 	add	tmp, tos
 	jmp	#\do_relbranch
-
-impl_BZ
-#ifdef ENABLE_DEBUG
-	call	#\get_offset
-#else
-	rfvars	tmp
-#endif	
-	cmp	tos, #0 wcz
-  if_z	push	#do_relbranch
-	jmp	#\impl_DROP
-
-impl_BNZ
-#ifdef ENABLE_DEBUG
-	call	#\get_offset
-#else
-	rfvars	tmp
-#endif	
-	cmp	tos, #0 wcz
-  if_nz	push	#do_relbranch
-	jmp	#\impl_DROP
 
 impl_DJNZ
 #ifdef ENABLE_DEBUG
