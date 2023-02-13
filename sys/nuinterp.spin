@@ -117,10 +117,6 @@ start_cog
 ' perform relative branch
 ' tmp contains offset to add to pb
 '
-do_relbranch_drop2
-	push	#do_relbranch
-	jmp	#\impl_DROP2
-
 do_relbranch_drop1
 	call	#\impl_DROP
 	' fall through
@@ -1117,7 +1113,7 @@ impl_CBEQ
 	rfvars	tmp
 #endif	
 	cmp	nos, tos wcz
-  if_z	jmp	#\do_relbranch_drop2
+  if_z	push	#do_relbranch
   	jmp	#\impl_DROP2
 
 impl_CBNE
@@ -1127,7 +1123,7 @@ impl_CBNE
 	rfvars	tmp
 #endif	
 	cmp	nos, tos wcz
-  if_nz	jmp	#\do_relbranch_drop2
+  if_nz	push	#do_relbranch
   	jmp	#\impl_DROP2
 
 impl_CBLTS
@@ -1137,7 +1133,7 @@ impl_CBLTS
 	rfvars	tmp
 #endif	
 	cmps	nos, tos wcz
-  if_b	jmp	#\do_relbranch_drop2
+  if_b	push	#do_relbranch
   	jmp	#\impl_DROP2
 
 impl_CBLES
@@ -1147,7 +1143,7 @@ impl_CBLES
 	rfvars	tmp
 #endif	
 	cmps	nos, tos wcz
-  if_be	jmp	#\do_relbranch_drop2
+  if_be	push	#do_relbranch
   	jmp	#\impl_DROP2
 
 impl_CBGTS
@@ -1157,7 +1153,7 @@ impl_CBGTS
 	rfvars	tmp
 #endif	
 	cmps	nos, tos wcz
-  if_a	jmp	#\do_relbranch_drop2
+  if_a	push	#do_relbranch
   	jmp	#\impl_DROP2
 
 impl_CBGES
@@ -1167,7 +1163,7 @@ impl_CBGES
 	rfvars	tmp
 #endif	
 	cmps	nos, tos wcz
-  if_ae	jmp	#\do_relbranch_drop2
+  if_ae	push	#do_relbranch
   	jmp	#\impl_DROP2
 
 impl_CBLTU
@@ -1177,7 +1173,7 @@ impl_CBLTU
 	rfvars	tmp
 #endif	
 	cmp	nos, tos wcz
-  if_b	jmp	#\do_relbranch_drop2
+  if_b	push	#do_relbranch
   	jmp	#\impl_DROP2
 
 impl_CBLEU
@@ -1187,7 +1183,7 @@ impl_CBLEU
 	rfvars	tmp
 #endif	
 	cmp	nos, tos wcz
-  if_be	jmp	#\do_relbranch_drop2
+  if_be	push	#do_relbranch
   	jmp	#\impl_DROP2
 
 impl_CBGTU
@@ -1197,7 +1193,7 @@ impl_CBGTU
 	rfvars	tmp
 #endif	
 	cmp	nos, tos wcz
-  if_a	jmp	#\do_relbranch_drop2
+  if_a	push	#do_relbranch
   	jmp	#\impl_DROP2
 
 impl_CBGEU
@@ -1207,7 +1203,7 @@ impl_CBGEU
 	rfvars	tmp
 #endif	
 	cmp	nos, tos wcz
-  if_ae	jmp	#\do_relbranch_drop2
+  if_ae	push	#do_relbranch
   	jmp	#\impl_DROP2
 
 '
