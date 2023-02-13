@@ -112,14 +112,17 @@ continue_startup
 	
 	org	$100
 start_cog
-	
+
+impl_BRA
+#ifdef ENABLE_DEBUG
+	call	#\get_offset
+#else
+	rfvars	tmp
+#endif
 '
 ' perform relative branch
 ' tmp contains offset to add to pb
 '
-do_relbranch_drop1
-	call	#\impl_DROP
-	' fall through
 do_relbranch
   	getptr	pb
 	add	pb, tmp
@@ -1074,12 +1077,6 @@ impl_LONGJMP
   	jmp	#\impl_DROP2	' yes - just throw away the args and return
 
 ' relative branches
-impl_BRA
-	rfvars	tmp		' BRA3 is always 3 bytes long
-#ifdef ENABLE_DEBUG
-	getptr	pb
-#endif
-	jmp	#\do_relbranch
 
 impl_BRA3
 	rfword	tmp		' BRA3 is always 3 bytes long
@@ -1102,7 +1099,7 @@ impl_BZ
 	rfvars	tmp
 #endif	
 	cmp	tos, #0 wcz
-  if_z	jmp	#\do_relbranch_drop1
+  if_z	push	#do_relbranch
 	jmp	#\impl_DROP
 
 impl_BNZ
@@ -1112,7 +1109,7 @@ impl_BNZ
 	rfvars	tmp
 #endif	
 	cmp	tos, #0 wcz
-  if_nz	jmp	#\do_relbranch_drop1
+  if_nz	push	#do_relbranch
 	jmp	#\impl_DROP
 
 impl_DJNZ
@@ -1124,7 +1121,7 @@ impl_DJNZ
 	rdlong	tmp2, tos
 	sub	tmp2, #1 wz
 	wrlong	tmp2, tos
- if_nz	jmp	#\do_relbranch_drop1
+ if_nz	push	#do_relbranch
  	jmp	#\impl_DROP
 
 impl_DJNZ_FAST

@@ -106,6 +106,8 @@ void NuIrInit(NuContext *ctxt) {
     CreateBuiltin(NU_OP_BREAK, "");
     CreateBuiltin(NU_OP_GETHEAP, "");
 
+    CreateBuiltin(NU_OP_BRA, "");
+
     CreateBuiltin(NU_OP_CBEQ, "");
     CreateBuiltin(NU_OP_CBNE, "");
     CreateBuiltin(NU_OP_CBLTU, "");
