@@ -79,6 +79,7 @@ Usage(FILE *f)
     fprintf(f, "           xxx = orig uses original flexspin LMM\n");
     fprintf(f, "           xxx = slow uses traditional (slow) LMM\n");
     fprintf(f, "  [ --nostdlib]      skip searching in the standard library location for include files\n");
+    fprintf(f, "  [ --sizes]         print info about program sizes\n");
     fprintf(f, "  [ --verbose ]      print additional diagnostic messages\n");
     fprintf(f, "  [ --version ]      just show compiler version\n");
     
@@ -259,6 +260,8 @@ main(int argc, const char **argv)
             argv++; --argc;
         } else if (!strcmp(argv[0], "--verbose")) {
             gl_verbosity = 1;
+            argv++; --argc;
+        } else if (!strcmp(argv[0], "--sizes")) {
             cmd->printSizes = 1;
             argv++; --argc;
         } else if (!strcmp(argv[0], "-v")) {

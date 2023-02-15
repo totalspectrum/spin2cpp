@@ -90,8 +90,12 @@ PrintFileSize(const char *fname)
         end_interpreter = FindLabelValue("__SIZE_INTERPRETER_END", -1);
         start_code = FindLabelValue("__SIZE_CODE_START", -1);
         end_code = FindLabelValue("__SIZE_CODE_END", -1);
-        printf(" Interpreter size=%6d bytes\n", end_interpreter - start_interpreter);
-        printf(" Code size       =%6d bytes\n", end_code - start_code);
+        if (start_interpreter >= 0 && end_interpreter >= 0) {
+            printf(" Interpreter size=%6d bytes\n", end_interpreter - start_interpreter);
+        }
+        if (start_code >= 0 && end_code >= 0) {
+            printf(" Code size       =%6d bytes\n", end_code - start_code);
+        }
     }
 }
 

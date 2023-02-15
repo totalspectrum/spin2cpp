@@ -1,5 +1,5 @@
 Version 6.0.0
-- Added interpreter and code sizes to --verbose output
+- Added interpreter and code size printing if --sizes is given
 - Fixed _ assignment in nucode output
 - Fixed calculation of FVAR/FVARS when labels are unknown
 - Fixed a problem with unnamed parameters not being counted in code generation
