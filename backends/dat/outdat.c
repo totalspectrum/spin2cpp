@@ -655,32 +655,40 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
 static void
 outputFvar(Flexbuf *f, Flexbuf *relocs, AST *ast, int isSigned, int32_t *relocOff)
 {
-    int32_t val;
+    int32_t val, origVal;
     int32_t maxval;
     int i;
-
+    unsigned count = 0;
+    extern unsigned BytesForFvar(int val, int isSigned, AST *line);
+    
     if (!ast || ast->kind != AST_EXPRLIST) {
         ERROR(ast, "bad FVAR expression");
         return;
     }
     ast = ast->left;
-    val = EvalRelocPasmExpr(ast, f, relocs, relocOff, false, RELOC_KIND_I32);
+    val = origVal = EvalRelocPasmExpr(ast, f, relocs, relocOff, false, RELOC_KIND_I32);
     if (!isSigned && val < 0) {
         ERROR(ast, "FVAR item is out of range");
         return;
     }
     maxval = isSigned ? (1<<6) : (1<<7);
+    count = 0;
     for (i = 0; i < 3; i++) {
         if (val >= -maxval && val < maxval) {
-            outputByte(f, val & 0x7f);
-            return;
+            val = val & 0x7f;
+            break;
         }
         outputByte(f, 0x80 | (val & 0x7f));
+        count++;
         val = val >> 7;
     }
     outputByte(f, val);
+    count++;
+    if (count != BytesForFvar(origVal, isSigned, ast)) {
+        ERROR(ast, "INTERNAL: mismatch in FVAR production");
+    }
 }
-        
+
 /* output a data list as found in PASM "long", "byte", etc. */
 /* checkSize = 1 says the output must fit in an unsigned */
 /* checkSize = 2 says the output must fit in a signed */

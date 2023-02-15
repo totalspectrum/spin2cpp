@@ -1,7 +1,7 @@
 //
 // listing file output for spin2cpp
 //
-// Copyright 2012-2021 Total Spectrum Software Inc.
+// Copyright 2012-2023 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -201,6 +201,7 @@ static int ignoreAst(AST *ast)
 static void lstStartAst(Flexbuf *f, AST *ast)
 {
     bool needsStart;
+    uint32_t expectHubPc;
     
     if (ignoreAst(ast)) {
         return;
@@ -235,7 +236,11 @@ static void lstStartAst(Flexbuf *f, AST *ast)
         if (inCog) {
             cogPc = (ast->d.ival & 0x00ffffff);
         } else {
-            hubPc = (ast->d.ival & 0x00ffffff);
+            expectHubPc = (ast->d.ival & 0x00ffffff);
+            if (expectHubPc != hubPc) {
+                ERROR(ast, "mismatch in hub PC: expected %u got %u", expectHubPc, hubPc);
+                abort();
+            }
         }
         break;
     default:
@@ -255,6 +260,21 @@ static void lstEndAst(Flexbuf *f, AST *ast)
     switch (ast->kind) {
     case AST_IDENTIFIER:
         /* do not catch up to line, yet */
+#if 1
+        /* sanity check on label */
+        {
+            const char *name = ast->d.string;
+            Symbol *sym = LookupSymbol(name);
+            Label *labelref;
+            if (sym && sym->kind == SYM_LABEL) {
+//                printf("got label %s\n", name);
+                labelref = (Label *)sym->v.ptr;
+                if (labelref->hubval != hubPc) {
+                    ERROR(ast, "HUB PC mismatch for %s: at $%x but label value is $%x", name, hubPc, labelref->hubval);
+                }
+            }
+        }
+#endif    
         break; // return;
     case AST_ORGH:
         break;
