@@ -122,7 +122,7 @@ InitGlobalModule(void)
     sym = AddSymbol(table, "__clkfreq_var", SYM_VARIABLE, ast_type_long, NULL);
     sym->flags |= SYMF_GLOBAL;
     sym->offset = gl_p2 ? (P2_CONFIG_BASE+0x4) : 0;
-    sym = AddSymbol(table, "__clkmode_var", SYM_VARIABLE, ast_type_byte, NULL);
+    sym = AddSymbol(table, "__clkmode_var", SYM_VARIABLE, gl_p2 ? ast_type_long : ast_type_byte, NULL);
     sym->flags |= SYMF_GLOBAL;
     sym->offset = gl_p2 ? (P2_CONFIG_BASE+0x8) : 4;
 
