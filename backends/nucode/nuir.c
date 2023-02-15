@@ -1151,7 +1151,7 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
                         flexbuf_printf(fb, "\tbyte\t%s, fvar ", name);
                         NuOutputLabel(fb, ir->label);
                     } else if (ir->val >= 0 && ir->val <= MAX_DIRECT_CONST) {
-                        flexbuf_printf(fb, "\tbyte\tNU_OP_PUSH_%d\n", (int)ir->val);
+                        flexbuf_printf(fb, "\tbyte\tNU_OP_PUSH_%d", (int)ir->val);
                     } else if (ir->val >= 0 && ir->val <= 0xffffff) {
                         name = "NU_OP_PUSHA";
                         flexbuf_printf(fb, "\tbyte\t%s, fvar %d", name, ir->val);
