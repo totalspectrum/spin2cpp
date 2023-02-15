@@ -842,8 +842,11 @@ IR *EmitLabel(IRList *irl, Operand *op)
     }
     return ir;
 }
-IR *EmitVolatileLabel(IRList *irl, Operand *op) {
-    IR *ir = EmitLabel(irl, op);
+IR *EmitInfoLabel(IRList *irl, Operand *op) {
+    IR *ir;
+    extern int gl_print_sizes;
+    if (!gl_print_sizes) return NULL;
+    ir = EmitLabel(irl, op);
     if (ir) {
         ir->flags |= FLAG_KEEP_INSTR;
     }
@@ -6774,7 +6777,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         CompileIntermediate(systemModule);
 
         // output the main stub
-        EmitVolatileLabel(&cogcode, NewOperand(IMM_COG_LABEL, "__SIZE_INTERPRETER_START", 0));
+        EmitInfoLabel(&cogcode, NewOperand(IMM_COG_LABEL, "__SIZE_INTERPRETER_START", 0));
         EmitLabel(&cogcode, entrylabel);
         if (gl_have_lut) {
             lutstart = NewOperand(STRING_DEF, "lutentry", 0);
@@ -6807,7 +6810,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
                 EmitJump(&hubcode, COND_TRUE,
                          NewOperand(IMM_COG_LABEL, "LMM_CALL_FROM_COG_ret", 0));
             }
-            EmitVolatileLabel(&hubcode, NewOperand(IMM_HUB_LABEL, "__SIZE_CODE_START", 0));
+            EmitInfoLabel(&hubcode, NewOperand(IMM_HUB_LABEL, "__SIZE_CODE_START", 0));
             EmitLabel(&hubcode, NewOperand(IMM_HUB_LABEL, "hubentry", 0));
             if (!CompileToIR_hub(&hubcode, P)) {
                 return;
@@ -6908,7 +6911,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         }
         limitop = NewImmediate(cog_limit);
         // now insert the cog data after the cog code, before the orgh
-        EmitVolatileLabel(&cogdata, NewOperand(IMM_COG_LABEL, "__SIZE_INTERPRETER_END", 0));
+        EmitInfoLabel(&cogdata, NewOperand(IMM_COG_LABEL, "__SIZE_INTERPRETER_END", 0));
         EmitLabel(&cogdata, cog_bss_start);
         EmitOp1(&cogdata, OPC_FIT, limitop);
 
@@ -6916,7 +6919,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         if (orgh) {
             InsertAfterIR(&cogcode, orgh->prev, cogdata.head);
         }
-        EmitVolatileLabel(&hubcode, NewOperand(IMM_HUB_LABEL, "__SIZE_CODE_END", 0));
+        EmitInfoLabel(&hubcode, NewOperand(IMM_HUB_LABEL, "__SIZE_CODE_END", 0));
     }
     // and the hub data at the end
     AppendIR(&cogcode, hubdata.head);
