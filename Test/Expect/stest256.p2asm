@@ -36,21 +36,14 @@ __system___waitms
 	mov	_var01, arg01
 	rdlong	_var02, #20
 LR__0020
-	cmps	_var01, ##1001 wc
+	cmps	_var01, ##1000 wc
  if_ae	waitx	_var02
  if_ae	sub	_var01, ##1000
  if_ae	jmp	#LR__0020
-	add	ptr___system__dat__, #12
-	rdlong	_var03, ptr___system__dat__ wz
- if_e	qdiv	_var02, ##1000
-	sub	ptr___system__dat__, #12
 	cmps	_var01, #1 wc
- if_e	getqx	_var02
- if_e	mov	_var03, _var02
- if_ae	qmul	_var01, _var03
- if_e	add	ptr___system__dat__, #12
- if_e	wrlong	_var02, ptr___system__dat__
- if_e	sub	ptr___system__dat__, #12
+ if_ae	qmul	_var01, ##1000
+ if_ae	getqx	_var01
+ if_ae	qdiv	_var01, _var02
  if_ae	getqx	arg01
  if_ae	waitx	arg01
 __system___waitms_ret
@@ -72,21 +65,13 @@ builtin_longfill_
  if_nz  wflong	arg02
         ret
 
-ptr___system__dat__
-	long	@__system__dat_
 COG_BSS_START
 	fit	480
 	orgh
-	alignl
-__system__dat_
-	byte	$00[8]
-	byte	$03, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
 	org	COG_BSS_START
 _var01
 	res	1
 _var02
-	res	1
-_var03
 	res	1
 arg01
 	res	1
