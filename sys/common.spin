@@ -5,7 +5,7 @@
 con
   _rxtx_echo = 1
   _rxtx_crnl = 2
-  
+   
 dat
 __rxtxflags
     long _rxtx_echo | _rxtx_crnl
@@ -212,21 +212,23 @@ pri _waitsec(m=long) | freq
 '' pause for m milliseconds
 pri _waitms(m=long) | freq, freqms
   freq := __clkfreq_var
-  repeat while m > 1000
+  repeat while m => 1000
     _waitx(freq)
     m -= 1000
-  freqms := __clkfreq_ms
-  if freqms == 0
-    __clkfreq_ms := freqms := freq +/ 1000
   if m > 0
-    _waitx(m * freqms)
+    m := (m * 1000) +/ freq
+    _waitx(m)
 
 '' pause for m microseconds
 pri _waitus(m=long) | freq
-  freq := __clkfreq_us
-  if freq == 0
-    __clkfreq_us := freq := __clkfreq_var +/ 1000000
-  _waitx(m * freq)
+  freq := __clkfreq_var
+  repeat while m => 1000000
+    _waitx(freq)
+    m -= 1000000
+  if m > 0
+     m := (m * 1000000) +/ freq
+    _waitx(m)
+
 
 ' check to see if cnt > x
 pri _pollct(x) : flag
