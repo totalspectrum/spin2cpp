@@ -22,6 +22,7 @@ typedef struct CmdLineOptions {
     int eepromSize;
     int quiet;
     int bstcMode;
+    int printSizes;
     const char *outname;
 #define MAX_FILES_ON_CMD_LINE 1024
     int file_argc;

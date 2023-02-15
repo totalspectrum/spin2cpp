@@ -304,6 +304,7 @@ main(int argc, const char **argv)
             argv++; --argc;
         } else if (!strcmp(argv[0], "--verbose")) {
             gl_verbosity = 1;
+            cmd->printSizes = 1;
             argv++; --argc;
         } else if (!strcmp(argv[0], "-w")) {
             gl_output = OUTPUT_COGSPIN;

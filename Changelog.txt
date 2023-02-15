@@ -1,8 +1,10 @@
 Version 6.0.0
+- Added interpreter and code sizes to --verbose output
 - Fixed _ assignment in nucode output
 - Fixed calculation of FVAR/FVARS when labels are unknown
 - Fixed a problem with unnamed parameters not being counted in code generation
 - Fixed _getus() and _getms() in -2nu
+- Fixed type of `_clkmode` on P2 (it was byte instead of long)
 - Made Spin2 loop behaviour match that of other languages (like PNut v38)
 - Optimized nucode
 - Some internal cleanups in the code generators

@@ -122,7 +122,7 @@ NuPrepareModuleBedata(Module *P) {
     // Init bedata
     if (P->bedata) return;
 
-    DEBUG(NULL,"Preparing object %s",P->fullname);
+    //DEBUG(NULL,"Preparing object %s",P->fullname);
 
     P->bedata = calloc(sizeof(NuModData), 1);
     ModData(P)->datLabel = NuCreateLabel();

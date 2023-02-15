@@ -46,6 +46,7 @@ const char *gl_cc = NULL;
 const char *gl_intstring = "int32_t";
 
 const char *gl_outname = NULL;
+bool gl_print_sizes = false;
 
 void InitializeSystem(CmdLineOptions *cmd, const char **argv)
 {
@@ -59,6 +60,16 @@ void InitializeSystem(CmdLineOptions *cmd, const char **argv)
     current_print_color = PRINT_NORMAL;
 }
 
+int FindLabelValue(const char *name, int defaultval) {
+    Symbol *sym;
+    sym = LookupSymbol(name);
+    if (sym && sym->kind == SYM_LABEL) {
+        Label *lab = (Label *)sym->v.ptr;
+        return lab->hubval;
+    }
+    return defaultval;
+}
+    
 void
 PrintFileSize(const char *fname)
 {
@@ -70,6 +81,17 @@ PrintFileSize(const char *fname)
         len = ftell(f);
         fclose(f);
         printf("Program size is %u bytes\n", len);
+    }
+    if (gl_print_sizes) {
+        int start_interpreter, end_interpreter;
+        int start_code, end_code;
+        
+        start_interpreter = FindLabelValue("__SIZE_INTERPRETER_START", -1);
+        end_interpreter = FindLabelValue("__SIZE_INTERPRETER_END", -1);
+        start_code = FindLabelValue("__SIZE_CODE_START", -1);
+        end_code = FindLabelValue("__SIZE_CODE_END", -1);
+        printf(" Interpreter size=%6d bytes\n", end_interpreter - start_interpreter);
+        printf(" Code size       =%6d bytes\n", end_code - start_code);
     }
 }
 
@@ -238,7 +260,9 @@ int ProcessCommandLine(CmdLineOptions *cmd)
     if (!cmd->quiet) {
         gl_printprogress = 1;
     }
-
+    if (cmd->printSizes) {
+        gl_print_sizes = true;
+    }
     P = ParseTopFiles(cmd->file_argv, cmd->file_argc, cmd->outputBin);
 
     if (cmd->outputFiles) {

@@ -918,6 +918,8 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     flexbuf_printf(fb, "  clock_mode_addr = $18\n\n");
 
     flexbuf_printf(fb, "dat\n");
+    flexbuf_addstr(fb, "\torgh\n");
+    flexbuf_addstr(fb, "__SIZE_INTERPRETER_START\n");
     if (!gl_no_coginit && gl_output != OUTPUT_COGSPIN) {
         flexbuf_addstr(fb, "\torg 0\n");
         flexbuf_addstr(fb, "\tnop\n");
@@ -1030,6 +1032,8 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
 
     // after this comes the actual bytecode
     flexbuf_printf(fb, "\ndat\n\torgh\n");
+    flexbuf_addstr(fb, "__SIZE_INTERPRETER_END\n");
+    flexbuf_addstr(fb, "__SIZE_CODE_START\n");
 }
 
 void NuOutputFinish(Flexbuf *fb, NuContext *ctxt)
@@ -1054,6 +1058,7 @@ void NuOutputFinish(Flexbuf *fb, NuContext *ctxt)
             flexbuf_addchar(fb, c);
         }
     }
+    flexbuf_printf(fb, "\n__SIZE_CODE_END\n");
 }
 
 static const char *
