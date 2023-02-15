@@ -67,6 +67,29 @@ InstrSize(AST *instr)
 
 static int expect_undefined_labels = 0;
 static int found_undefined_labels = 0;
+static int labels_changed = 0;
+
+unsigned
+BytesForFvar(int val, int isSigned, AST *line)
+{
+    if (isSigned) {
+        if (val >= -(1<<6)  && val < (1<<6))  return 1;
+        if (val >= -(1<<13) && val < (1<<13)) return 2;
+        if (val >= -(1<<20) && val < (1<<20)) return 3;
+        if (val >= -(1<<28) && val < (1<<28)) return 4;
+        ERROR(line, "FVARS value ($%lx) out of range", (unsigned long)val);
+    } else {
+        if (val < 0) {
+            ERROR(line, "FVARS value ($%lx) out of range", (unsigned long)val);
+        }
+        if (val < (1<<7)) return 1;
+        if (val < (1<<14)) return 2;
+        if (val < (1<<21)) return 3;
+        if (val < (1<<29)) return 4;
+        ERROR(line, "FVARS value ($%lx) out of range", (unsigned long)val);
+    }
+    return 4;
+}
 
 /*
  * find number of bytes required for an FVAR item
@@ -74,7 +97,7 @@ static int found_undefined_labels = 0;
  * labels are assigned
  */
 unsigned
-BytesForFvar(AST *item, int isSigned)
+BytesForFvarAst(AST *item, int isSigned)
 {
     int32_t val;
     
@@ -88,22 +111,7 @@ BytesForFvar(AST *item, int isSigned)
     } else {
         val = EvalPasmExpr(item->left);
     }
-    if (isSigned) {
-        if (val >= -64 && val < 64) return 1;
-        if (val >= -(1<<13) && val < (1<<13)) return 2;
-        if (val >= -(1<<20) && val < (1<<20)) return 3;
-        if (val >= -(1<<28) && val < (1<<28)) return 4;
-        ERROR(item, "FVARS value ($%lx) out of range", (unsigned long)val);
-    } else {
-        if (val < 0) {
-            ERROR(item, "FVARS value ($%lx) out of range", (unsigned long)val);
-        }
-        if (val < (1<<7)) return 1;
-        if (val < (1<<14)) return 2;
-        if (val < (1<<21)) return 3;
-        if (val < (1<<29)) return 4;
-    }
-    return 4;
+    return BytesForFvar(val, isSigned, item);
 }
 
 /*
@@ -149,10 +157,10 @@ dataListLen(AST *ast, int elemsize)
                 }
             } else if (sub->kind == AST_FVAR_LIST) {
                 elemsize = 1;
-                numelems = BytesForFvar(sub->left, 0);
+                numelems = BytesForFvarAst(sub->left, 0);
             } else if (sub->kind == AST_FVARS_LIST) {
                 elemsize = 1;
-                numelems = BytesForFvar(sub->left, 1);
+                numelems = BytesForFvarAst(sub->left, 1);
             } else {
                 numelems = 1;
             }
@@ -202,9 +210,12 @@ EnterLabel(SymbolTable *symtab, AST *origLabel, long hubpc, long cogpc, AST *lty
         }
         labelref = (Label *)sym->v.ptr;
 
-        if (labelref->hubval != hubpc && labelref->pass == pass) {
-            ERROR(origLabel, "Changing hub value for symbol %s", name);
-            return;
+        if (labelref->hubval != hubpc) {
+            if (labelref->pass == pass) {
+                ERROR(origLabel, "Changing hub value for symbol %s", name);
+                return;
+            }
+            labels_changed++;
         }
         if (labelref->cogval != cogpc && labelref->pass == pass) {
             ERROR(origLabel, "Changing cog value for symbol %s", name);
@@ -666,7 +677,8 @@ AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags)
     expect_undefined_labels = 1;
 
 again:
-
+    labels_changed = 0;
+    
     cogpc = hubpc = coglimit = hublimit = 0;
     datoff = 0;
     inc = 0;
@@ -948,7 +960,7 @@ again:
         orig_datoff = datoff;
         goto again;
     }
-    if (orig_datoff && datoff < orig_datoff) {
+    if (orig_datoff && (labels_changed && datoff <= orig_datoff)) {
         orig_datoff = datoff;
         goto again;
     }
