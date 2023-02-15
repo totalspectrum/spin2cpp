@@ -190,11 +190,6 @@ impl_PUSHA
   _ret_	rfvar	tos
 #endif
 
-
-impl_GETHEAP
-	call	#\impl_DUP
-  _ret_	mov	tos, ##3 + 4*(7)	' set heap base
-
 impl_DUP2
 	' A B -> A B A B
 	altd	cogsp, cogstack_inc
@@ -460,6 +455,9 @@ get_offset
 	rfvars	tmp
  _ret_	getptr	pb
 #endif
+
+__heapbase
+	long	3 + 4*(7)  ' location of heap base
 
 end_cog
 
@@ -1164,7 +1162,11 @@ impl_INLINEASM
 	' save local variables
 	setq	#19
 	wrlong	inline_vars, dbase
-	ret
+  _ret_	mov	ptrb, dbase	' restore ptrb in case user changed it
+
+impl_GETHEAP
+	call	#\impl_DUP
+  _ret_	mov	tos, __heapbase
 
 
 ' final tail stuff for interpreter

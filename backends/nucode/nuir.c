@@ -118,7 +118,6 @@ void NuIrInit(NuContext *ctxt) {
     CreateBuiltinOp(NU_OP_PUSHA, "");
     CreateBuiltinOp(NU_OP_CALLA, "");
     CreateBuiltinOp(NU_OP_BREAK, "");
-    CreateBuiltinOp(NU_OP_GETHEAP, "");
 
     CreateBuiltinOp(NU_OP_BRA, NULL);
     CreateBuiltinOp(NU_OP_BZ, NULL);
