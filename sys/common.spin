@@ -155,6 +155,9 @@ pri __builtin_inf : r=float
 pri __builtin_nan(p) : r=float
   return $7fc00000
 
+pri __builtin_nanf(p) : r=float
+  return $7fc00000
+
 pri __builtin_bitreverse32(x = +long) : r = +long
   return x >< 32
 
