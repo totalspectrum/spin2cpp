@@ -80,7 +80,7 @@ Usage(void)
     fprintf(stderr, "  -o file:    place final output in file\n");
     fprintf(stderr, "  -Wall:      enable all warnings\n");
     fprintf(stderr, "  -y:         debug parser\n");
-    fprintf(stderr, "  --verbose:  print additional diagnostic messages\n");
+    fprintf(stderr, "  --verbose:  print additional diagnostic messages (for debugging the compiler)\n");
     fprintf(stderr, "  --version:  print version and exit\n");
     exit(2);
 }

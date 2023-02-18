@@ -578,7 +578,9 @@ There are various command line options for the compiler which may modify the com
            xxx = orig uses original flexspin LMM
            xxx = slow uses traditional (slow) LMM
   [ --nostdlib ]     do not check for include files in the standard place (../include relative to the flexspin binary)
+  [ --sizes ]        print interpreter and code sizes
   [ --tabs=N ]       specifify number of spaces between tab stops (default 8)
+  [ --verbose ]      prints some internal debugging messages (mainly for debugging the compiler)
   [ --zip ]          create a zip file containing the source inputs
 ```
 

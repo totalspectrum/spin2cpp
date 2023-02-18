@@ -105,9 +105,9 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "           xxx = orig uses original flexspin LMM\n");
     fprintf(f, "           xxx = slow uses traditional (slow) LMM\n");
     fprintf(f, "  [ --nostdlib]      skip searching in the standard library location for include files\n");
-    fprintf(f, "  [ --sizes]         print code size\n");
+    fprintf(f, "  [ --sizes]         print code and interpreter sizes\n");
     fprintf(f, "  [ --tabs=N ]       assume tabs are set every N spaces for indentation purposes\n");
-    fprintf(f, "  [ --verbose ]      print additional diagnostic messages\n");
+    fprintf(f, "  [ --verbose ]      print additional diagnostic messages (for debugging the compiler)\n");
     fprintf(f, "  [ --version ]      just show compiler version\n");
     fprintf(f, "  [ --zip ]          create zip archive of source files\n");
     

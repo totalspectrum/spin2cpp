@@ -80,7 +80,7 @@ Usage(FILE *f)
     fprintf(f, "           xxx = slow uses traditional (slow) LMM\n");
     fprintf(f, "  [ --nostdlib]      skip searching in the standard library location for include files\n");
     fprintf(f, "  [ --sizes]         print info about program sizes\n");
-    fprintf(f, "  [ --verbose ]      print additional diagnostic messages\n");
+    fprintf(f, "  [ --verbose ]      print additional diagnostic messages (for debugging the compiler)\n");
     fprintf(f, "  [ --version ]      just show compiler version\n");
     
     fflush(stderr);
