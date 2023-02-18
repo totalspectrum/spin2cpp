@@ -750,7 +750,7 @@ void NuCreateBytecodes(NuIrList *lists)
         NuMacro *macro;
         bool isBuiltin = false;
 
-        compressValue = 0;
+        compressValue = macroValue = -1;
         NuRecalcUsage(lists);
         bc = NuFindCompressBytecode(lists, &compressValue);
         macro = NuScanForMacros(lists, &macroValue);
