@@ -140,6 +140,16 @@ static NuPeepholePattern pat_dup_drop[] = {
     
 };
 
+// eliminate PUSH 0 / ADD sequence
+static NuPeepholePattern pat_add_0[] = {
+    { NU_OP_PUSHI,     0,            PEEP_FLAGS_MATCH_IMM },
+    { NU_OP_ADD,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+
+    /* just delete */
+    { NU_OP_ILLEGAL,   0,            PEEP_FLAGS_REPLACE|PEEP_FLAGS_DONE },
+    
+};
+
 // change LDW / SIGNX #15 into LDWS
 static NuPeepholePattern pat_ldws[] = { 
     { NU_OP_LDW,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
@@ -385,6 +395,7 @@ struct nupeeps {
 } nupeep[] = {
     { pat_dup_st_drop, 0, NULL },
     { pat_dup_drop, 0, NULL },
+    { pat_add_0, 0, NULL },
     { pat_ldws, 0, NULL },
     { pat_ldbs, 0, NULL },
     { pat_cbxx, 0, NuReplaceCBxx },
