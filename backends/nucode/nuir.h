@@ -28,11 +28,15 @@
     X(ADD_PC)    /* add program counter to tos */ \
     X(SET_SP)    /* set stack pointer to tos */ \
     /* BINARY math operations start here */     \
+    /* keep the first 8 together, code generation relies on this */ \
     X(ADD)       /* tos := nos + tos */ \
     X(SUB)       /* tos := nos - tos */ \
     X(AND)       /* tos := nos & tos */ \
     X(IOR)        /* tos := nos | tos */ \
     X(XOR)       /* tos := nos ^ tos */ \
+    X(SHL)       /* tos := nos << tos */ \
+    X(SHR)       /* tos := nos >> tos (unsigned right shift) */ \
+    X(SAR)       /* tos := nos SAR tos (signed right shift) */ \
     \
     X(MINS)      /* tos := min(nos, tos) (signed) */ \
     X(MAXS)      /* tos := max(nos, tos) (signed) */ \
@@ -41,9 +45,6 @@
     \
     X(SIGNX)     /* sign extend tos := nos SIGNX tos */ \
     X(ZEROX)     /* zero extend tos := nos ZEROX tos */ \
-    X(SHL)       /* tos := nos << tos */ \
-    X(SHR)       /* tos := nos >> tos (unsigned right shift) */ \
-    X(SAR)       /* tos := nos SAR tos (signed right shift) */ \
     X(ROL)       /* tos := nos ROL tos */ \
     X(ROR)       /* tos := nos ROR tos */ \
     X(MOVBYTS)   /* execute MOVBYTS tos, nos */ \
@@ -67,13 +68,8 @@
     X(ABS)       /* abs value tos */ \
     X(REV)       /* reverse bits of tos */ \
     X(INC)       /* tos := tos+1 */ \
-    X(INC2)      /* tos := tos+2 */ \
-    X(INC4)      /* tos := tos+4 */ \
     X(DEC)       /* tos := tos-1 */ \
-    X(DEC2)      /* tos := tos-2 */ \
-    X(DEC4)      /* tos := tos-4 */ \
     X(DOUBLE)    /* tos := tos*2 */ \
-    X(X4)        /* tos := tos*4 */                \
     X(ONES)      /* count one bits of tos */ \
     X(MERGEW)    /* merge words (pit permute) */ \
     X(SPLITW)    /* split words (pit permute) */ \

@@ -11,12 +11,21 @@
 #include "sys/nuinterp.spin.h"
 #include "becommon.h"
 
-#define MAX_DIRECT_CONST 0x7f
-#define DIRECT_BYTECODE 0x80  /* must always come first */
-#define PUSHI_BYTECODE  0x81
-#define PUSHA_BYTECODE  0x82
-#define CALLA_BYTECODE  0x83
-#define FIRST_BYTECODE  0x84
+#define MAX_DIRECT_CONST 0x6f
+#define DIRECT_BYTECODE 0x70  /* must always come first */
+#define PUSHI_BYTECODE  0x71
+#define PUSHA_BYTECODE  0x72
+#define CALLA_BYTECODE  0x73
+#define ADDI_BYTECODE   0x74
+#define SUBI_BYTECODE   0x75
+#define ANDI_BYTECODE   0x76
+#define IORI_BYTECODE   0x77
+#define XORI_BYTECODE   0x78
+#define SHLI_BYTECODE   0x79
+#define SHRI_BYTECODE   0x7a
+#define SARI_BYTECODE   0x7b
+
+#define FIRST_BYTECODE  0x7c
 #define MAX_BYTECODE 0xf8
 
 static const char *NuOpName[] = {
@@ -996,6 +1005,15 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     flexbuf_printf(fb, "\tlong\timpl_PUSHA\n");
     flexbuf_printf(fb, "\tlong\timpl_CALLA\n");
 
+    flexbuf_printf(fb, "\tlong\timpl_ADDI\n");
+    flexbuf_printf(fb, "\tlong\timpl_SUBI\n");
+    flexbuf_printf(fb, "\tlong\timpl_ANDI\n");
+    flexbuf_printf(fb, "\tlong\timpl_IORI\n");
+    flexbuf_printf(fb, "\tlong\timpl_XORI\n");
+    flexbuf_printf(fb, "\tlong\timpl_SHLI\n");
+    flexbuf_printf(fb, "\tlong\timpl_SHRI\n");
+    flexbuf_printf(fb, "\tlong\timpl_SARI\n");
+    
     for (i = 0; i < num_bytecodes; i++) {
         NuBytecode *bc = globalBytecodes[i];
         int code = bc->code;
@@ -1021,6 +1039,16 @@ void NuOutputInterpreter(Flexbuf *fb, NuContext *ctxt)
     flexbuf_printf(fb, "\tNU_OP_PUSHI = %d\n", PUSHI_BYTECODE);
     flexbuf_printf(fb, "\tNU_OP_PUSHA = %d\n", PUSHA_BYTECODE);
     flexbuf_printf(fb, "\tNU_OP_CALLA = %d\n", CALLA_BYTECODE);
+
+    flexbuf_printf(fb, "\tNU_OP_ADDI = %d\n", ADDI_BYTECODE);
+    flexbuf_printf(fb, "\tNU_OP_SUBI = %d\n", SUBI_BYTECODE);
+    flexbuf_printf(fb, "\tNU_OP_ANDI = %d\n", ANDI_BYTECODE);
+    flexbuf_printf(fb, "\tNU_OP_IORI = %d\n", IORI_BYTECODE);
+    flexbuf_printf(fb, "\tNU_OP_XORI = %d\n", XORI_BYTECODE);
+    flexbuf_printf(fb, "\tNU_OP_SHLI = %d\n", SHLI_BYTECODE);
+    flexbuf_printf(fb, "\tNU_OP_SHRI = %d\n", SHRI_BYTECODE);
+    flexbuf_printf(fb, "\tNU_OP_SARI = %d\n", SARI_BYTECODE);
+
     // others
     for (i = 0; i < num_bytecodes; i++) {
         NuBytecode *bc = globalBytecodes[i];
@@ -1101,6 +1129,9 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
         bc = ir->bytecode;
         comment = ir->comment;
         switch(op) {
+        case NU_OP_DUMMY:
+            // do nothing
+            break;
         case NU_OP_LABEL:
             NuOutputLabel(fb, ir->label);
             break;
@@ -1154,11 +1185,41 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
                         //flexbuf_printf(fb, "<< 8)");
                         flexbuf_printf(fb, "\tbyte\t%s, fvar ", name);
                         NuOutputLabel(fb, ir->label);
-                    } else if (ir->val >= 0 && ir->val <= MAX_DIRECT_CONST) {
-                        flexbuf_printf(fb, "\tbyte\tNU_OP_PUSH_%d", (int)ir->val);
                     } else if (ir->val >= 0 && ir->val <= 0xffffff) {
+                        bool merged = false;
+                        NuIr *nextir = ir->next;
                         name = "NU_OP_PUSHA";
-                        flexbuf_printf(fb, "\tbyte\t%s, fvar %d", name, ir->val);
+                        // check for next byte being an immediate
+                        if (nextir) {
+                            switch (nextir->op) {
+                            case NU_OP_ADD:
+                                name = "NU_OP_ADDI"; merged = true; break;
+                            case NU_OP_SUB:
+                                name = "NU_OP_SUBI"; merged = true; break;
+                            case NU_OP_AND:
+                                name = "NU_OP_ANDI"; merged = true; break;
+                            case NU_OP_IOR:
+                                name = "NU_OP_IORI"; merged = true; break;
+                            case NU_OP_XOR:
+                                name = "NU_OP_XORI"; merged = true; break;
+                            case NU_OP_SHL:
+                                name = "NU_OP_SHLI"; merged = true; break;
+                            case NU_OP_SHR:
+                                name = "NU_OP_SHRI"; merged = true; break;
+                            case NU_OP_SAR:
+                                name = "NU_OP_SARI"; merged = true; break;
+                            default:
+                                break;
+                            }
+                            if (merged) {
+                                nextir->op = NU_OP_DUMMY;
+                            }
+                        }
+                        if (!merged && ir->val >= 0 && ir->val <= MAX_DIRECT_CONST) {
+                            flexbuf_printf(fb, "\tbyte\tNU_OP_PUSH_%d", (int)ir->val);
+                        } else {
+                            flexbuf_printf(fb, "\tbyte\t%s, fvar %d", name, ir->val);
+                        }
                     } else {
                         flexbuf_printf(fb, "\tbyte\t%s, long %d", name, ir->val);
                     }

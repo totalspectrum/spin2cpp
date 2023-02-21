@@ -83,14 +83,14 @@ continue_startup
 	' fill the first part of the jump table with push_direct
 	loc	ptrb, #$0
 	mov	tmp, #push_direct
-	rep	@.fill0, #$80
+	rep	@.fill0, #$70
 	wrlut	tmp, ptrb
 	add	ptrb, #1
 .fill0
 	' copy jump table to final location at start of LUT
 	loc    pa, #@OPC_TABLE
 	setq2   #((OPC_TABLE_END-OPC_TABLE)/4)-1
-	rdlong $80, pa
+	rdlong $70, pa
 	
 	' more initialization code
 	mov	old_pc, #0
@@ -455,6 +455,31 @@ get_offset
 	rfvars	tmp
  _ret_	getptr	pb
 #endif
+
+'
+' immediate math operations
+'
+imm_math
+	rfvar	popval
+  _ret_	add	tos, popval
+  _ret_	sub	tos, popval
+  _ret_	and	tos, popval
+  _ret_	or	tos, popval
+  
+  _ret_	xor	tos, popval
+  _ret_	shl	tos, popval
+  _ret_	shr	tos, popval
+  _ret_	sar	tos, popval
+
+#define impl_ADDI  imm_math | (%1111_1110_0 << 10)
+#define impl_SUBI  imm_math | (%1111_1101_0 << 10)
+#define impl_ANDI  imm_math | (%1111_1011_0 << 10)
+#define impl_IORI  imm_math | (%1111_0111_0 << 10)
+
+#define impl_XORI  imm_math | (%1110_1111_0 << 10)
+#define impl_SHLI  imm_math | (%1101_1111_0 << 10)
+#define impl_SHRI  imm_math | (%1011_1111_0 << 10)
+#define impl_SARI  imm_math | (%0111_1111_0 << 10)
 
 __heapbase
 	long	3 + 4*(7)  ' location of heap base
