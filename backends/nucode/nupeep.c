@@ -211,6 +211,43 @@ static NuPeepholePattern pat_dup_add[] = {
     { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
 };
 
+// pattern for swap/add -> add
+static NuPeepholePattern pat_swap_add[] = {
+    { NU_OP_SWAP,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_ADD,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+
+    // replace
+    { NU_OP_ADD,     PEEP_ARG_ANY, PEEP_FLAGS_REPLACE },    
+    { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
+};
+// pattern for swap/and -> and
+static NuPeepholePattern pat_swap_and[] = {
+    { NU_OP_SWAP,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_AND,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+
+    // replace
+    { NU_OP_AND,     PEEP_ARG_ANY, PEEP_FLAGS_REPLACE },    
+    { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
+};
+// pattern for swap/ior -> ior
+static NuPeepholePattern pat_swap_ior[] = {
+    { NU_OP_SWAP,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_IOR,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+
+    // replace
+    { NU_OP_IOR,     PEEP_ARG_ANY, PEEP_FLAGS_REPLACE },    
+    { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
+};
+// pattern for swap/xor -> xor
+static NuPeepholePattern pat_swap_xor[] = {
+    { NU_OP_SWAP,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_XOR,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+
+    // replace
+    { NU_OP_XOR,     PEEP_ARG_ANY, PEEP_FLAGS_REPLACE },    
+    { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
+};
+
 //////////////////////////////////////////////////////////////
 // patterns requiring more sophisticated handling
 //////////////////////////////////////////////////////////////
@@ -406,6 +443,10 @@ struct nupeeps {
     { pat_djnz,  0, NULL },
     { pat_shl_1, 0, NULL },
     { pat_dup_add, 0, NULL },
+    { pat_swap_add, 0, NULL },
+    { pat_swap_and, 0, NULL },
+    { pat_swap_ior, 0, NULL },
+    { pat_swap_xor, 0, NULL },
     { pat_st_ld, 0, NULL },
     { pat_st_ld_ld, 0, NULL },
     { pat_dead_st, 3, NuReplaceWithDrop },
