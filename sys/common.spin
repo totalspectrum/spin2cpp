@@ -219,7 +219,7 @@ pri _waitms(m=long) | freq, freqms
     _waitx(freq)
     m -= 1000
   if m > 0
-    m := (m * 1000) +/ freq
+    m := _muldiv64(m, freq, 1000)
     _waitx(m)
 
 '' pause for m microseconds
@@ -229,7 +229,7 @@ pri _waitus(m=long) | freq
     _waitx(freq)
     m -= 1000000
   if m > 0
-     m := (m * 1000000) +/ freq
+     m := _muldiv64(m, freq, 1000000)
     _waitx(m)
 
 
