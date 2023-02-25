@@ -272,6 +272,25 @@ static int NuReplaceCBxx(int arg, NuIrList *irl, NuIr *ir) {
     return 1;
 }
 
+//
+// SWAP; CBxx label
+// can become CBNxx label
+//
+static NuPeepholePattern pat_swap_cbxx[] = {
+    { NU_OP_SWAP,  PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_CBxx,  PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
+};
+
+// replace CBxx label; BRA label2; LABEL label -> CBNxx label2; LABEL label
+static int NuReplaceSwapCBxx(int arg, NuIrList *irl, NuIr *ir) {
+    NuIr *nextir = ir->next;
+    NuIrOpcode new_opc = NuFlipCondition(nextir->op);
+    nextir->op = new_opc;
+    NuDeleteIr(irl, ir);
+    return 1;
+}
+
 // replace PUSHI 0; CBNE x -> BNZ x
 static NuPeepholePattern pat_cbnz[] = {
     { NU_OP_PUSHI, 0,            PEEP_FLAGS_MATCH_IMM },
@@ -436,6 +455,7 @@ struct nupeeps {
     { pat_ldws, 0, NULL },
     { pat_ldbs, 0, NULL },
     { pat_cbxx, 0, NuReplaceCBxx },
+    { pat_swap_cbxx, 0, NuReplaceSwapCBxx },
     { pat_cbnz, NU_OP_BNZ, NuReplaceSecond },
     { pat_cbz,  NU_OP_BZ,  NuReplaceSecond },
     { pat_inc,  0,         NULL },
