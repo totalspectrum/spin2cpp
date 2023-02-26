@@ -2,6 +2,10 @@ pri waitcnt(x)
   asm
     waitcnt x,#0
   endasm
+pri _waitcnt(x)
+  asm
+    waitcnt x,#0
+  endasm
 
 pri _getcnt : r = +long
   r := cnt
@@ -137,10 +141,10 @@ pri _txraw(c) | val, nextcnt, bitcycles
   val := ((c | 256) << 1)
   nextcnt := cnt
   repeat 10
-    waitcnt(nextcnt += bitcycles)
+    _waitcnt(nextcnt += bitcycles)
     outa[_txpin] := val
     val >>= 1
-  waitcnt(nextcnt += bitcycles)
+  _waitcnt(nextcnt += bitcycles)
   outa[_txpin] := 1
   dira[_txpin] := 0  ' release DIR so other COGs can print
   return 1
@@ -165,9 +169,9 @@ pri _rxraw(timeout = 0) | val, waitcycles, i, bitcycles
   waitcycles := cnt + (bitcycles>>1)
   val := 0
   repeat 8
-    waitcnt(waitcycles += bitcycles)
+    _waitcnt(waitcycles += bitcycles)
     val := (ina[_rxpin] << 7) | (val>>1)
-  waitcnt(waitcycles + bitcycles)
+  _waitcnt(waitcycles + bitcycles)
   return val
 
 pri _setbaud(rate) : r

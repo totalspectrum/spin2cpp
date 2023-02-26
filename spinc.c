@@ -117,6 +117,8 @@ InitGlobalModule(void)
     sym->flags |= SYMF_GLOBAL;
     sym = AddSymbol(table, "__bytecode__", SYM_CONSTANT, AstInteger(bcVal), NULL);
     sym->flags |= SYMF_GLOBAL;
+    sym = AddSymbol(table, "__propeller__", SYM_CONSTANT, AstInteger(gl_p2 ? 2 : 1), NULL);
+    sym->flags |= SYMF_GLOBAL;
 
     /* global variables */
     sym = AddSymbol(table, "__clkfreq_var", SYM_VARIABLE, ast_type_long, NULL);

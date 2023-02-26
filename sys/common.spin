@@ -213,24 +213,27 @@ pri _waitsec(m=long) | freq
     m--
     
 '' pause for m milliseconds
-pri _waitms(m=long) | freq, freqms
+pri _waitms(m=long) | freq, c
+  c := _getcnt
   freq := __clkfreq_var
   repeat while m => 1000
-    _waitx(freq)
+    waitcnt(c += freq)
     m -= 1000
   if m > 0
     m := _muldiv64(m, freq, 1000)
-    _waitx(m)
+    waitcnt(m + c)
 
 '' pause for m microseconds
-pri _waitus(m=long) | freq
+pri _waitus(m=long) | freq, c, offset
+  c := _getcnt
   freq := __clkfreq_var
   repeat while m => 1000000
-    _waitx(freq)
+    waitcnt(c += freq)
     m -= 1000000
-  if m > 0
-     m := _muldiv64(m, freq, 1000000)
-    _waitx(m)
+  offset := (__propeller__ == 1) ? 20 : 0
+  if m > offset
+     m := _muldiv64(m-offset, freq, 1000000)
+     waitcnt( c + m )
 
 
 ' check to see if cnt > x

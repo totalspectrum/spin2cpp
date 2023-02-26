@@ -1591,6 +1591,9 @@ BCCompileFunCall(BCIRBuffer *irbuf,AST *node,BCContext context, bool asExpressio
             } else if (!strcmp(sym->our_name,"waitcnt")) {
                 callOp.kind = BOK_WAIT;
                 callOp.attr.wait.type = BCW_WAITCNT;
+            } else if (!strcmp(sym->our_name,"_waitcnt")) {
+                callOp.kind = BOK_WAIT;
+                callOp.attr.wait.type = BCW_WAITCNT;
             } else if (!strcmp(sym->our_name,"waitpeq")) {
                 callOp.kind = BOK_WAIT;
                 callOp.attr.wait.type = BCW_WAITPEQ;
