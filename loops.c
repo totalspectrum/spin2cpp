@@ -885,7 +885,7 @@ CheckSimpleDecrementLoop(AST *stmt)
 
     /* check that the update is a decrement */
     while (update && update->kind == AST_SEQUENCE) {
-        if (AstUsesName(update->right, updateVar)) {
+        if (update->right && AstUsesName(update->right, updateVar)) {
             return false;
         }
         update = update->left;
@@ -909,7 +909,7 @@ CheckSimpleDecrementLoop(AST *stmt)
     if (condtest->d.ival != K_NE) {
         return false;
     }
-    // FIXME: should we change AST_FOR to AST_FORATLEASTONCE here?
+    // change AST_FOR to AST_FORATLEASTONCE here, for better performance
     if (stmt->kind == AST_FOR) {
         AST *newstmt = NewAST(AST_FORATLEASTONCE, NULL, NULL);
         AST *skipif;
