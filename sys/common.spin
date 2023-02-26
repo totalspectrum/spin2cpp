@@ -230,10 +230,14 @@ pri _waitus(m=long) | freq, c, offset
   repeat while m => 1000000
     waitcnt(c += freq)
     m -= 1000000
-  offset := (__propeller__ == 1) ? 20 : 0
-  if m > offset
-     m := _muldiv64(m-offset, freq, 1000000)
-     waitcnt( c + m )
+  if m > 0
+    m := _muldiv64(m, freq, 1000000)
+    if (__propeller__ == 1)
+      ' watch out for wrapping around
+      if m > 600
+        waitcnt( c + m )
+    else
+      waitcnt( c + m )
 
 
 ' check to see if cnt > x
