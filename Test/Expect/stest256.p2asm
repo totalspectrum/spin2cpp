@@ -34,20 +34,26 @@ _sub2_ret
 
 __system___waitms
 	mov	_var01, arg01
-	rdlong	_var02, #20
+	getct	_var02
+	rdlong	_var03, #20
 LR__0020
 	cmps	_var01, ##1000 wc
- if_ae	waitx	_var02
+ if_ae	add	_var02, _var03
+ if_ae	mov	arg01, _var02
+ if_ae	addct1	arg01, #0
+ if_ae	waitct1
  if_ae	sub	_var01, ##1000
  if_ae	jmp	#LR__0020
 	cmps	_var01, #1 wc
- if_ae	qmul	_var01, _var02
+ if_ae	qmul	_var01, _var03
  if_ae	getqy	result1
  if_ae	getqx	arg01
  if_ae	setq	result1
  if_ae	qdiv	arg01, ##1000
  if_ae	getqx	arg01
- if_ae	waitx	arg01
+ if_ae	add	arg01, _var02
+ if_ae	addct1	arg01, #0
+ if_ae	waitct1
 __system___waitms_ret
 	ret
 builtin_bytefill_
@@ -76,6 +82,8 @@ COG_BSS_START
 _var01
 	res	1
 _var02
+	res	1
+_var03
 	res	1
 arg01
 	res	1
