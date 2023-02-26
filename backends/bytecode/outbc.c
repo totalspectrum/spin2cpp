@@ -2801,7 +2801,10 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
     case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER: {
         Symbol *sym = LookupAstSymbol(node,NULL);
-        if (!sym) ERROR(node,"Internal Error: Can't get symbol");
+        if (!sym) {
+            ERROR(node,"Unknown symbol %s", GetUserIdentifierName(node));
+            return;
+        }
         switch (sym->kind) {
         case SYM_BUILTIN:
         case SYM_FUNCTION: {
