@@ -1983,6 +1983,7 @@ struct reservedword {
     { "abort", SP_ABORT },
     { "abs", SP_ABS },
     { "and", SP_AND },
+    { "%andthen", SP_ANDTHEN },
     { "__andthen__", SP_ANDTHEN },
     { "asm", SP_ASM },  // NON-STANDARD
     { "asm_const", SP_ASM_CONST }, // NON-STANDARD
@@ -2023,6 +2024,7 @@ struct reservedword {
 
     { "obj", SP_OBJ },
     { "or", SP_OR },
+    { "%orelse", SP_ORELSE },
     { "__orelse__", SP_ORELSE },
     { "org", SP_ORG },
     { "orgh", SP_ORGH }, // NON-STANDARD
