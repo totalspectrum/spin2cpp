@@ -331,6 +331,24 @@ pri _unsigned_himul(a, b) : r
   if b < 0
     r += a
 
+'
+' calculate a*b/d, using the full 64 bit product a*b
+'
+' we start by calculating a*b = 2^32 * y + x
+' the result is then
+'    (x / d) + 2^32 * (y/d)
+'
+pri _muldiv64(a, b, d) : r | x, y, p1, p2
+
+  x := a * b
+  y := a ** b
+
+  if (y == 0) %andthen (x => 0)  ' this is a common case
+    return x / d
+
+  ' we need the full 64 bit division
+  r, x := _div64(y, x, d)
+
 pri _waitx(tim = long)
   tim += cnt
   waitcnt(tim)
