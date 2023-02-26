@@ -234,7 +234,7 @@ pri _waitus(m=long) | freq, c, offset
     m := _muldiv64(m, freq, 1000000)
     if (__propeller__ == 1)
       ' watch out for wrapping around
-      if m > 600
+      if m > 20000
         waitcnt( c + m )
     else
       waitcnt( c + m )
