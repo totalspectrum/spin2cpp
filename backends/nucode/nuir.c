@@ -807,6 +807,7 @@ void NuCreateBytecodes(NuIrList *lists)
                 if (val >= 0 && val <= MAX_DIRECT_CONST) {
                     isBuiltin = true;
                     bc->code = val;
+                    bc->is_builtin_const = 1;
                 }
                 if (val < 0) {
                     val = -val;
@@ -1177,7 +1178,13 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
             break;
         default:
             if (bc) {
-                if (bc->is_const) {
+                bool use_const = false;
+                if (bc->is_builtin_const) {
+                    use_const = true;
+                } else if (bc->is_const) {
+                    use_const = true;
+                }
+                if (use_const) {
                     const char *name = NuBytecodeString(bc);
                     if (bc->is_label) {
                         //flexbuf_printf(fb, "\tbyte\tlong %s | (", name);
