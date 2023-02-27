@@ -108,9 +108,13 @@ continue_startup
 	mov	ptrb, dbase
 
 	jmp	#restart_loop
+#ifdef ENABLE_DEBUG
+	fit	$c0
+	org	$c0
+#else
 	fit	$100
-	
 	org	$100
+#endif
 start_cog
 
 impl_BRA
@@ -459,8 +463,18 @@ get_offset
 '
 ' immediate math operations
 '
-imm_math
+#ifdef ENABLE_DEBUG
+get_imm
 	rfvar	popval
+  _ret_	getptr	pb
+#endif
+
+imm_math
+#ifdef ENABLE_DEBUG
+	call	#\get_imm
+#else
+	rfvar	popval
+#endif
   _ret_	add	tos, popval
   _ret_	sub	tos, popval
   _ret_	and	tos, popval
