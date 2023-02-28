@@ -108,13 +108,14 @@ continue_startup
 	mov	ptrb, dbase
 
 	jmp	#restart_loop
-#ifdef ENABLE_DEBUG
-	fit	$c0
-	org	$c0
-#else
-	fit	$100
+	nop
+	nop
+	fit	$80
+cogstack
+	nop
+	
 	org	$100
-#endif
+
 start_cog
 
 impl_BRA
@@ -500,8 +501,6 @@ __heapbase
 
 end_cog
 
-cogstack
-	res	20
 cogstack_inc
 	res	1
 cogstack_dec
