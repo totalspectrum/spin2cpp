@@ -2128,7 +2128,9 @@ NuCompileFunction(Function *F) {
 
         // verify that we ended with a RET
         if (irl->tail && irl->tail->op != NU_OP_RET) {
-            if (NumRetLongs(F) == 0) {
+            int expectRets;
+            expectRets = NumRetLongs(F);
+            if (expectRets == 0) {
                 // just insert RET
                 NuEmitConst(irl, NumArgLongs(curfunc));
                 NuEmitOp(irl, NU_OP_RET);
@@ -2136,6 +2138,16 @@ NuCompileFunction(Function *F) {
                 // FIXME: maybe we don't actually need to do this?
                 // it's possible there are already returns before this
                 int n = NuCompileExpression(irl, F->resultexpr);
+
+                // make sure stack has expected number of longs
+                if (n > expectRets) {
+                    ERROR(F->resultexpr, "Unexpected number of returns in function %s", curfunc->name);
+                } else {
+                    while (n < expectRets) {
+                        NuEmitConst(irl, 0);
+                        n++;
+                    }
+                }
                 NuEmitConst(irl, (n<<8) | NumArgLongs(curfunc));
                 NuEmitOp(irl, NU_OP_RET);
             }
