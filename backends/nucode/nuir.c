@@ -1118,7 +1118,7 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
 {
     NuIr *ir;
     NuIrOpcode op;
-    NuBytecode *bc;
+    NuBytecode *bc, *nextbc;
     const char *comment;
     static int labelNum = 0;
     
@@ -1195,12 +1195,15 @@ NuOutputIrList(Flexbuf *fb, NuIrList *irl)
                     } else if (ir->val >= 0 && ir->val <= 0xffffff) {
                         bool merged = false;
                         NuIr *nextir = ir->next;
+                        nextbc = nextir ? nextir->bytecode : NULL;
                         name = "NU_OP_PUSHA";
-                        // check for next byte being an immediate
-                        if (nextir) {
+                        // check for next byte being an immediate op
+                        // that was not merged
+                        if (nextbc && nextbc->macro_depth == 0) {
                             switch (nextir->op) {
                             case NU_OP_ADD:
-                                name = "NU_OP_ADDI"; merged = true; break;
+                                name = "NU_OP_ADDI"; merged = true;
+                                break;
                             case NU_OP_SUB:
                                 name = "NU_OP_SUBI"; merged = true; break;
                             case NU_OP_AND:
