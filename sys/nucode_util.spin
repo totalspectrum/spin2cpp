@@ -312,11 +312,31 @@ pri _lookdown(x, b, arr, n) | i
 '
 ' random number generators
 '
-pri _lfsr_forward(x) : r
-  %bytecode("XORO")
+pri _lfsr_forward(x) | a
+  if (x == 0)
+    x := 1
+  a := $8000000b
+  org
+      rep @.loopr, #32
+      test x, a wc
+      rcl  x, #1
+.loopr
+  end
+  return x
+  
 
-pri _lfsr_backward(x) : r
-  %bytecode("XORO")
+pri _lfsr_backward(x) | a
+  if (x == 0)
+    x := 1
+  a := $17
+  org
+      rep @.loopr, #32
+      test x, a wc
+      rcr  x, #1
+.loopr
+  end
+  return x
+
 
 pri _getrnd : r = +long
   %bytecode("GETRND")
