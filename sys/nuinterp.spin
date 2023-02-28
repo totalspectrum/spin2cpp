@@ -1184,16 +1184,19 @@ impl_GOSUB
 
 ' load inline assembly and jump to it
 impl_INLINEASM
+	' save variables
+	mov	nlocals, tos	' old tos
+	mov	nargs, nos	' old nos
+	call	#\impl_DROP2
+	
 	pop	tmp
 	push	#restart_loop
 	' load local variables
 	setq	#19
 	rdlong	inline_vars, dbase
 	' load code to $0
-	setq	tos
-	rdlong	$0, nos
-	' drop from stack
-	call	#\impl_DROP2
+	setq	nlocals
+	rdlong	$0, nargs
 	
 	' call inline code
 	call	#\0-0
