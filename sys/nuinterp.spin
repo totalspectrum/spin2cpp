@@ -1127,8 +1127,7 @@ impl_LONGJMP
 	mov	nos, tos	' set new return value
 	mov	tos, #1		' indicate we jumped
 	mov	pb, new_pc
-	jmp	#\restart_loop
-	
+	jmp	#\restart_loop	
   	'
 	' come to .nocatch if the jmpbuf is <null>
 	'
