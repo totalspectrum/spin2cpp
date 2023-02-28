@@ -1187,7 +1187,13 @@ impl_INLINEASM
 	mov	nlocals, tos	' old tos
 	mov	nargs, nos	' old nos
 	call	#\impl_DROP2
-	
+	'
+	' save stack data
+	djf	cogsp, #.skipsave
+	setq	cogsp
+	wrlong	cogstack, ptra
+.skipsave
+	'
 	pop	tmp
 	push	#restart_loop
 	' load local variables
@@ -1196,13 +1202,22 @@ impl_INLINEASM
 	' load code to $0
 	setq	nlocals
 	rdlong	$0, nargs
-	
+	'
 	' call inline code
 	call	#\0-0
-	
-	' save local variables
+	'
+	' write back local variables
 	setq	#19
 	wrlong	inline_vars, dbase
+	'
+	' restore stack data
+	tjf	cogsp, #.skiprestore
+	setq	cogsp
+	rdlong	cogstack, ptra
+.skiprestore
+	add	cogsp, #1
+	'
+	'
   _ret_	mov	ptrb, dbase	' restore ptrb in case user changed it
 
 impl_GETHEAP
