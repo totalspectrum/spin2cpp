@@ -897,19 +897,29 @@ NuCompileMul(NuIrList *irl, AST *lhs, AST *rhs, int gethi)
             NuEmitOp(irl, NU_OP_ADD);
             NuEmitOp(irl, NU_OP_ADD);
             return 1;
-        case 4:
-            NuEmitConst(irl, 2);
-            NuEmitOp(irl, NU_OP_SHL);
-            return 1;
-        case 8:
-            NuEmitConst(irl, 3);
-            NuEmitOp(irl, NU_OP_SHL);
-            return 1;
-        case 16:
-            NuEmitConst(irl, 4);
-            NuEmitOp(irl, NU_OP_SHL);
-            return 1;
         default:
+            if (r > 0) {
+                int shifts[3];
+                // lhs is already on the stack
+                if (DecomposeBits(r, shifts)) {
+                    if (shifts[1] == 0) {
+                        NuEmitConst(irl, shifts[0]);
+                        NuEmitOp(irl, NU_OP_SHL);
+                        return 1;
+                    }
+                    NuEmitOp(irl, NU_OP_DUP);
+                    NuEmitConst(irl, shifts[2]);
+                    NuEmitOp(irl, NU_OP_SHL);
+                    if (shifts[1] > 0) {
+                        NuEmitOp(irl, NU_OP_ADD);
+                    } else {
+                        NuEmitOp(irl, NU_OP_SUB);
+                    }
+                    NuEmitConst(irl, shifts[0]);
+                    NuEmitOp(irl, NU_OP_SHL);
+                    return 1;
+                }
+            }
             break;
         }
     }

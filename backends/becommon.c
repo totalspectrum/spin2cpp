@@ -590,3 +590,38 @@ bool CanUseEitherSignedOrUnsigned(AST *node) {
     return false;
 }
 
+//
+// Decompose val into a sequence of a shift, add/sub
+// returns 0 if failure, 1 if success
+// sets shifts[0] to final shift
+// shifts[1] to +1 for add, -1 for sub, 0 if done
+// shifts[2] to initial shift
+//
+int DecomposeBits(unsigned val, int *shifts)
+{
+    int shift = 0;
+
+    while (val != 0) {
+        if (val & 1) {
+            break;
+        }
+        shift++;
+        val = val >> 1;
+    }
+    shifts[0] = shift;
+    if (val == 1) {
+        // we had a power of 2
+        shifts[1] = 0;
+        return 1;
+    }
+    // OK, can the new val itself be decomposed?
+    if (isPowerOf2(val-1)) {
+        shifts[1] = +1;
+        return DecomposeBits(val-1, &shifts[2]);
+    } else if (isPowerOf2(val+1)) {
+        shifts[1] = -1;
+        return DecomposeBits(val+1, &shifts[2]);
+    } else {
+        return 0;
+    }
+}

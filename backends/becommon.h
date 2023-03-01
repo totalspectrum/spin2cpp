@@ -160,4 +160,11 @@ static inline bool isPowerOf2(uint32_t x)
     return (x & (x-1)) == 0;
 }
 
+// Decompose val into a sequence of a shift, add/sub
+// returns 0 if failure, 1 if success
+// sets shifts[0] to final shift
+// shifts[1] to +1 for add, -1 for sub, 0 if done
+// shifts[2] to initial shift
+int DecomposeBits(unsigned val, int *shifts);
+
 #endif /* BACKEND_COMMON_H */
