@@ -2011,10 +2011,18 @@ doCompileMul(IRList *irl, Operand *lhs, Operand *rhs, int gethi, Operand *dest)
             ir->flags |= FLAG_WC;
             ir = EmitOp2(irl, OPC_ADD, temp2, rhs);
             ir->cond = COND_LT;
-            ir = EmitOp2(irl, OPC_CMPS, rhs, NewImmediate(0));
-            ir->flags |= FLAG_WC;
-            ir = EmitOp2(irl, OPC_ADD, temp2, lhs);
-            ir->cond = COND_LT;
+            // watch out for rhs constant
+            if (rhs->kind == IMM_INT) {
+                int32_t rval = rhs->val;
+                if (rval < 0) {
+                    ir = EmitOp2(irl, OPC_ADD, temp2, lhs);
+                }
+            } else {
+                ir = EmitOp2(irl, OPC_CMPS, rhs, NewImmediate(0));
+                ir->flags |= FLAG_WC;
+                ir = EmitOp2(irl, OPC_ADD, temp2, lhs);
+                ir->cond = COND_LT;
+            }
             EmitOp1(irl, OPC_GETQY, temp);
             EmitOp2(irl, OPC_SUB, temp, temp2);
             return temp;
