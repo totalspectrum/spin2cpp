@@ -1229,8 +1229,9 @@ impl_GETHEAP
 
 ' labels at and of code/data
 	alignl
-#ifdef OLDWAY	
-' variable space
+{
+   ' this was the old code
+   ' variable space
 3	long	0[7]
 
 __heap_base
@@ -1239,7 +1240,6 @@ __heap_base
 
 ' stack space
 5	long	0	' stack
+}
 
-#else
 3
-#endif
