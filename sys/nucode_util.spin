@@ -92,6 +92,7 @@ pri waitcnt(x = long)
   
 dat
     orgh
+_bitcycles long 0
 _rx_temp   long 0
 
 con
@@ -108,29 +109,29 @@ pri _txwait | w, c
   while c <> 0
 
 pri _setbaud(baudrate) | bitperiod, bit_mode
-  _txwait()
   bitperiod := (__clkfreq_var / baudrate)
-  _fltl(_txpin)
-  _fltl(_rxpin)
-  long[$1c] := baudrate
+  _txwait()
+  _dirl(_txpin)
+  _dirl(_rxpin)
+  _bitcycles := bitperiod
   bit_mode := 7 + (bitperiod << 16)
   _wrpin(_txpin, _txmode)
   _wxpin(_txpin, bit_mode)
   _wrpin(_rxpin, _rxmode)
   _wxpin(_rxpin, bit_mode)
-  _drvl(_txpin)
-  _drvl(_rxpin)
+  _dirh(_txpin)
+  _dirh(_rxpin)
   
 pri _txraw(c) | z
   _txwait()
-  if long[$1c] == 0
+  if _bitcycles == 0
     _setbaud(__default_baud__)  ' set up in common.c
   _wypin(_txpin, c)
   return 1
 
 ' timeout is approximately in milliseconds (actually in 1024ths of a second)
 pri _rxraw(timeout = 0) : rxbyte = long | z, endtime, temp2, rxpin
-  if long[$1c] == 0
+  if _bitcycles == 0
     _setbaud(__default_baud__)
   if timeout
     endtime := _getcnt() + timeout * (__clkfreq_var >> 10)
