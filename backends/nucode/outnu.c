@@ -375,7 +375,7 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
             NuPrepareModuleBedata(Q);
         }
         nulabel = ModData(Q)->datLabel;
-        nulabel = NuIrOffsetLabel(nulabel, offset);
+        nulabel = NuIrOffsetLabel(nulabel, offset - gl_hub_base);
         ir = NuEmitCommentedAddress(irl, nulabel, name);
         return loadOp;
     }
@@ -716,7 +716,7 @@ static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs)
                 NuPrepareModuleBedata(Q);
             }
             nulabel = ModData(Q)->datLabel;
-            nulabel = NuIrOffsetLabel(nulabel, offset);
+            nulabel = NuIrOffsetLabel(nulabel, offset - gl_hub_base);
             NuEmitCommentedAddress(irl, nulabel, memberName);
             return op;
         }
