@@ -28,6 +28,7 @@ static void initOutput(Module *P)
     if (hubPc == (uint32_t)-1) {
         hubPc = 0;
     }
+    hubPc += gl_hub_base;
     bytesOnLine = 0;
     current_lex = P->Lptr;
     current_lex->lineCounter = 0;
