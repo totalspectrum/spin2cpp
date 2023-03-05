@@ -1182,6 +1182,8 @@ impl_GOSUB
 
 ' load inline assembly and jump to it
 impl_INLINEASM
+	' save pc
+	getptr	old_pc
 	' save variables
 	mov	nlocals, tos	' old tos
 	mov	nargs, nos	' old nos
@@ -1192,7 +1194,6 @@ impl_INLINEASM
 	setq	cogsp
 	wrlong	cogstack, ptra
 .skipsave
-	'
 	pop	tmp
 	push	#restart_loop
 	' load local variables
@@ -1215,8 +1216,8 @@ impl_INLINEASM
 	rdlong	cogstack, ptra
 .skiprestore
 	add	cogsp, #1
-	'
-	'
+	' restore pc
+	mov	pb, old_pc
   _ret_	mov	ptrb, dbase	' restore ptrb in case user changed it
 
 impl_GETHEAP
