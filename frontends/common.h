@@ -816,8 +816,9 @@ void FixupOffsets(Module *P);
 AST *ExtractSideEffects(AST *expr, AST **preseq);
 
 // start of HUB memory
+#define P2_DEFAULT_HUB_BASE 0x400
 extern unsigned int gl_hub_base;
-#define P2_HUB_BASE gl_hub_base
+
 #define P2_CONFIG_BASE 0x10   /* clkfreq and such go here */
 /* we use the same layout as TAQOZ for config:
    0x10 == crystal frequency (not used by fastspin)

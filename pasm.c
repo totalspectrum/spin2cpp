@@ -656,7 +656,7 @@ unsigned
 AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags)
 {
     unsigned cogpc = 0;
-    unsigned hubpc = 0;
+    unsigned hubpc = gl_hub_base;
     unsigned coglimit = 0;
     unsigned hublimit = 0;
     unsigned datoff = 0;
@@ -680,6 +680,7 @@ again:
     labels_changed = 0;
     
     cogpc = hubpc = coglimit = hublimit = 0;
+    hubpc = gl_hub_base;
     datoff = 0;
     inc = 0;
     inHub = 0;
