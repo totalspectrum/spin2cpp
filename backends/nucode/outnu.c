@@ -639,6 +639,16 @@ NuCompileBoolBranches(NuIrList *irl, AST *expr, NuIrLabel *truedest, NuIrLabel *
 static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs)
 {
     NuIrOpcode op = NU_OP_ILLEGAL;
+    int origSize = 0;
+    int siz;
+    if (lhs->kind == AST_CAST) {
+        origSize = TypeSize(lhs->left);
+        lhs = lhs->right;
+        siz = TypeSize(ExprType(lhs));
+        if (origSize != siz) {
+            ERROR(lhs, "Cannot cast assign to different size yet");
+        }
+    }
     switch (lhs->kind) {
     case AST_SYMBOL:
     case AST_IDENTIFIER:
