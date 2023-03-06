@@ -1185,7 +1185,7 @@ LabelRef(IRList *irl, Symbol *sym)
         WARNING(NULL, "Internal error, unexpected COG label");
     }
 #endif
-    temp = TypedHubMemRef(lab->type, datbase, (int)lab->hubval);
+    temp = TypedHubMemRef(lab->type, datbase, (int)(lab->hubval - gl_hub_base));
     return temp;
 }
 
