@@ -984,7 +984,11 @@ NuCompileOperator(NuIrList *irl, AST *node) {
     optoken = node->d.ival;
 
     OptimizeOperator(&optoken, &lhs, &rhs);
- 
+    if (optoken != node->d.ival) {
+        node->d.ival = optoken;
+        node->left = lhs;
+        node->right = rhs;
+    }
     switch (optoken) {
     case K_BOOL_NOT:
     case K_BOOL_AND:
