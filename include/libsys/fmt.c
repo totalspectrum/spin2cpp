@@ -881,7 +881,7 @@ typedef int (*VFS_CloseFunc)(vfs_file_t *);
 #ifdef SIMPLE_IO
 #define _gettxfunc(h) ((void *)1)
 #define _getrxfunc(h) ((void *)1)
-# ifdef __FEATURE_MULTICOG__
+# if defined(__FEATURE_MULTICOG__) && !defined(_NO_LOCKIO)
 static int __iolock;
 int __lockio(int h)   { _lockmem(&__iolock); return 0; }
 int __unlockio(int h) { _unlockmem(&__iolock); return 0; }
@@ -925,10 +925,16 @@ static int *_getiolock(unsigned h) {
     return &v->lock;
 }
 int __lockio(unsigned h) {
-    _lockmem(_getiolock(h)); return 0;
+#ifndef _NO_LOCKIO    
+    _lockmem(_getiolock(h));
+#endif    
+    return 0;
 }
 int __unlockio(unsigned h) {
-    _unlockmem(_getiolock(h)); return 0;
+#ifndef _NO_LOCKIO
+    _unlockmem(_getiolock(h));
+#endif
+    return 0;
 }
 
 #endif
