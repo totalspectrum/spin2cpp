@@ -263,7 +263,7 @@ GetAddrOffset(AST *ast)
         return 0;
     }
     label = (Label *)sym->v.ptr;
-    r = label->hubval;
+    r = label->hubval - gl_hub_base;
     if (offsetExpr) {
         int offset = EvalPasmExpr(offsetExpr);
         if (label->type) {
