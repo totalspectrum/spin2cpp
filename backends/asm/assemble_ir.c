@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2016-2022 Total Spectrum Software Inc.
+ * Copyright 2016-2023 Total Spectrum Software Inc.
  *
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -929,12 +929,12 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                 }
                 flexbuf_addstr(fb, "\tnop\n");
                 flexbuf_addstr(fb, "\tcogid\tpa\n");
-                flexbuf_printf(fb, "\tcoginit\tpa,##$%x\n", P2_DEFAULT_HUB_BASE + 4);
+                flexbuf_printf(fb, "\tcoginit\tpa,##$%x\n", P2_HUB_BASE + 4);
                 flexbuf_printf(fb, "\torgh\t$%x\n", P2_CONFIG_BASE);
                 flexbuf_printf(fb, "\tlong\t0\t'reserved\n");
                 flexbuf_printf(fb, "\tlong\t0 ' clock frequency: will default to %d\n", clkfreq);
                 flexbuf_printf(fb, "\tlong\t0 ' clock mode: will default to $%x\n", clkreg);
-                flexbuf_printf(fb, "\torgh\t$%x\n", P2_DEFAULT_HUB_BASE);
+                flexbuf_printf(fb, "\torgh\t$%x\n", P2_HUB_BASE);
                 flexbuf_printf(fb, " _ret_\tmov\tresult1, #0\n");
             }
             flexbuf_addstr(fb, "\torg\t0\n");

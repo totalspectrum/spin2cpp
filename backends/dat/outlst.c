@@ -239,7 +239,7 @@ static void lstStartAst(Flexbuf *f, AST *ast)
         } else {
             expectHubPc = (ast->d.ival & 0x00ffffff);
             if (expectHubPc != hubPc) {
-                ERROR(ast, "mismatch in hub PC: expected %u got %u", expectHubPc, hubPc);
+                ERROR(ast, "mismatch in hub PC: expected 0x%x got 0x%x", expectHubPc, hubPc);
                 abort();
             }
         }

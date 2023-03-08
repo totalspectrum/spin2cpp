@@ -1185,7 +1185,7 @@ LabelRef(IRList *irl, Symbol *sym)
         WARNING(NULL, "Internal error, unexpected COG label");
     }
 #endif
-    temp = TypedHubMemRef(lab->type, datbase, (int)(lab->hubval - gl_hub_base));
+    temp = TypedHubMemRef(lab->type, datbase, (int)lab->hubval);
     return temp;
 }
 
@@ -1208,13 +1208,13 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func, AST *ast)
                 if (off == -1) {
                     // this is a special internal COG variable
                     if (!sendreg) {
-                        sendreg = GetOneGlobal(REG_REG, "__sendreg", P2_DEFAULT_HUB_BASE);
+                        sendreg = GetOneGlobal(REG_REG, "__sendreg", P2_HUB_BASE);
                     }
                     return sendreg;
                 } else if (off == -2) {
                     // this is a special internal COG variable
                     if (!recvreg) {
-                        recvreg = GetOneGlobal(REG_REG, "__recvreg", P2_DEFAULT_HUB_BASE);
+                        recvreg = GetOneGlobal(REG_REG, "__recvreg", P2_HUB_BASE);
                     }
                     return recvreg;
                 } else if (off == -3) {
@@ -6655,7 +6655,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         if (gl_p2) {
             gl_no_coginit = 1;
             gl_nospin = 1;
-//            gl_hub_base = 0; // why was this here?
+            gl_hub_base = 0;
         }
     }
     InitAsmCode();
