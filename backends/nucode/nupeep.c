@@ -285,7 +285,11 @@ static NuPeepholePattern pat_swap_cbxx[] = {
 // replace CBxx label; BRA label2; LABEL label -> CBNxx label2; LABEL label
 static int NuReplaceSwapCBxx(int arg, NuIrList *irl, NuIr *ir) {
     NuIr *nextir = ir->next;
-    NuIrOpcode new_opc = NuFlipCondition(nextir->op);
+    NuIrOpcode old_opc = nextir->op;
+    if (old_opc == NU_OP_CBEQ || old_opc == NU_OP_CBNE) {
+        return 0;
+    }
+    NuIrOpcode new_opc = NuFlipCondition(old_opc);
     nextir->op = new_opc;
     NuDeleteIr(irl, ir);
     return 1;
