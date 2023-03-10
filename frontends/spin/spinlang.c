@@ -16,10 +16,19 @@ bool
 IsLocalVariable(AST *ast) {
     Symbol *sym;
 
+    if (!ast) return false;
+    if (ast->kind == AST_STMTLIST || ast->kind == AST_SEQUENCE) {
+        while (ast && ast->right) {
+            ast = ast->right;
+        }
+        ast = ast->left;
+    }
     if (ast->kind == AST_LOCAL_IDENTIFIER) {
         ast = ast->left;
     }
     switch (ast->kind) {
+    case AST_CAST:
+        return IsLocalVariable(ast->right);
     case AST_IDENTIFIER:
         sym = LookupSymbol(ast->d.string);
         if (!sym) return false;
@@ -32,6 +41,7 @@ IsLocalVariable(AST *ast) {
             return false;
         }
         break;
+    case AST_METHODREF:
     case AST_ARRAYREF:
         if (IsLocalVariable(ast->left)) {
             // check for pointer dereference, which is not
