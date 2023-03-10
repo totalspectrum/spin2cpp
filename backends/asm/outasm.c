@@ -4473,7 +4473,7 @@ static IR *EmitCogwrite(IRList *irl, Operand *src, Operand *dst)
     }
 }
 
-#define MAX_TMP_REGS 4
+#define MAX_TMP_REGS 16
 
 static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc, AST *linenum)
 {
@@ -4565,6 +4565,10 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc, AST *linenu
         // do not work out well
         if (src->kind == IMM_INT || src->kind == IMM_COG_LABEL || SrcOnlyHwReg(src) || (off && src == dst) || src->kind == STRING_DEF) {
             num_tmp_regs = origdst->size;
+            if (num_tmp_regs > MAX_TMP_REGS) {
+                ERROR(linenum, "too many temporary registers needed");
+                return ir;
+            }
             temp2 = NewFunctionTempRegister();
             EmitMove(irl, temp2, src, linenum);
             src = temp2;
