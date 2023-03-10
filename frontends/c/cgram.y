@@ -408,7 +408,7 @@ MultipleDeclareVar(AST *first, AST *second)
             /* declare a register global variable */
             ident = NewAST(AST_DECLARE_VAR, regtype, ident);
             DeclareTypedRegisterVariables(ident);
-        } else if (type && (type->kind == AST_EXTERN || IsConstArrayType(type)) ) {
+        } else if (type && (type->kind == AST_EXTERN || (IsConstArrayType(type) && IsConstInitializer(ident)) ) ) {
             if (type->kind == AST_EXTERN) type = type->left;
             /* declare a global variable */
             ident = NewAST(AST_DECLARE_VAR, type, ident);

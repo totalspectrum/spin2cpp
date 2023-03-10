@@ -2605,6 +2605,29 @@ IsConstArrayType(AST *type)
     return 0;
 }
 
+int
+IsConstInitializer(AST *ident)
+{
+    AST *expr;
+    if (ident->kind == AST_ASSIGN) {
+        expr = ident->right;
+    } else {
+        expr = ident;
+    }
+    if (expr && expr->kind == AST_EXPRLIST) {
+        AST *item;
+        while (expr) {
+            item = expr->left;
+            expr = expr->right;
+            if (!IsConstExpr(item)) {
+                return 0;
+            }
+        }
+        return 1;
+    }    
+    return IsConstExpr(expr);
+}
+
 //
 // find the wider of the numeric types "left" and "right"
 // if one type is unsigned and the other is signed, return ast_type_long

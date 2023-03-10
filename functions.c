@@ -501,7 +501,7 @@ AddInitializers(AST *seq, AST *ident, AST *expr, AST *basetype)
             seq = AddToList(seq, NewAST(AST_SEQUENCE, assign, NULL));
             AstReportDone(&saveinfo);
             return seq;
-        } else {
+        } else if (IsConstInitializer(expr)) {
             AST *tmpname = AstTempIdentifier("_init_");
             AST *tmpvar = NewAST(AST_ASSIGN, tmpname, expr);
             DeclareOneGlobalVar(current, tmpvar, basetype, 1);

@@ -30,6 +30,8 @@ bool IsDefinedExpr(AST *expr);
    in that their value is not known until link time */
 int IsConstExpr(AST *expr);
 
+int IsConstInitializer(AST *ident);
+
 /* determine whether an expression is a constant zero */
 bool IsConstZero(AST *ast);
 
