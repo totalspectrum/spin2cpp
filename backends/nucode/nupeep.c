@@ -150,6 +150,16 @@ static NuPeepholePattern pat_add_0[] = {
     
 };
 
+// eliminate PUSH 1 / BZ sequence
+static NuPeepholePattern pat_push_1_bz[] = {
+    { NU_OP_PUSHI,     1,            PEEP_FLAGS_MATCH_IMM },
+    { NU_OP_BZ,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+
+    /* just delete */
+    { NU_OP_ILLEGAL,   0,            PEEP_FLAGS_REPLACE|PEEP_FLAGS_DONE },
+    
+};
+
 // change LDW / SIGNX #15 into LDWS
 static NuPeepholePattern pat_ldws[] = { 
     { NU_OP_LDW,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
@@ -274,7 +284,8 @@ static int NuReplaceCBxx(int arg, NuIrList *irl, NuIr *ir) {
 
 //
 // SWAP; CBxx label
-// can become CBNxx label
+// can become CBNxx label for <, > type comparisons
+// for == and <>, just remove the SWAP
 //
 static NuPeepholePattern pat_swap_cbxx[] = {
     { NU_OP_SWAP,  PEEP_ARG_ANY, PEEP_FLAGS_NONE },
@@ -282,14 +293,17 @@ static NuPeepholePattern pat_swap_cbxx[] = {
     { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
 };
 
-// replace CBxx label; BRA label2; LABEL label -> CBNxx label2; LABEL label
+// replace SWAP; CBxx label; -> CBNxx label
+//
 static int NuReplaceSwapCBxx(int arg, NuIrList *irl, NuIr *ir) {
     NuIr *nextir = ir->next;
     NuIrOpcode old_opc = nextir->op;
+    NuIrOpcode new_opc;
     if (old_opc == NU_OP_CBEQ || old_opc == NU_OP_CBNE) {
-        return 0;
+        new_opc = old_opc;
+    } else {
+        new_opc = NuFlipCondition(old_opc);
     }
-    NuIrOpcode new_opc = NuFlipCondition(old_opc);
     nextir->op = new_opc;
     NuDeleteIr(irl, ir);
     return 1;
@@ -456,6 +470,7 @@ struct nupeeps {
     { pat_dup_st_drop, 0, NULL },
     { pat_dup_drop, 0, NULL },
     { pat_add_0, 0, NULL },
+    { pat_push_1_bz, 0, NULL },
     { pat_ldws, 0, NULL },
     { pat_ldbs, 0, NULL },
     { pat_cbxx, 0, NuReplaceCBxx },
