@@ -494,9 +494,23 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
             if (calledSym && calledSym->kind == SYM_FUNCTION) {
                 Function *calledFunc = (Function *)calledSym->v.ptr;
                 AST *calledParam = calledFunc->params;
+                if (calledFunc->numparams < 0 && NoVarargsOutput()) {
+                    // special case: varargs function with NoVarargsOutput()
+                    // normally this is handled in CheckTypes(), but Spin doesn't call CheckTypes
+                    ScanFunctionBody(fdef, body->left, body, NULL);
+                    ScanFunctionBody(fdef, body->right, body, NULL);
+                    CheckTypes(body);
+                    return;
+                }
                 while (calledParam && actualParamList) {
                     AST *paramId = calledParam->left;
-                    
+
+                    if (paramId->kind == AST_VARARGS) {
+                        // for bytecode, we have to handle specially
+                        if (NoVarargsOutput()) {
+                            ERROR(body, "varargs calls in Spin need special handling");
+                        }
+                    }
                     actualParam = actualParamList->left;
                     paramType = NULL;
                     if (paramId && paramId->kind == AST_IDENTIFIER) {
