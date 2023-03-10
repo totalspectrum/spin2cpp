@@ -1252,6 +1252,10 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
     }
     if (!CompatibleTypes(desttype, srctype)) {
         const char *desttype_name, *srctype_name;
+        // special case: pointers can be passed as parameters to generic types
+        if (kind == AST_FUNCCALL && IsGenericType(desttype) && IsPointerType(srctype)) {
+            return desttype;
+        }
         desttype_name = TypeName(desttype);
         srctype_name = TypeName(srctype);
         if (IsPointerType(desttype) && IsPointerType(srctype)) {
