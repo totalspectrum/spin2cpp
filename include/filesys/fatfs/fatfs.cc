@@ -26,6 +26,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+unsigned long long f_pinmask;
+
 unsigned int _get_fattime()
 {
     time_t now;
@@ -424,6 +426,9 @@ int v_open(vfs_file_t *fil, const char *name, int flags)
  */
 int v_init(const char *mountname)
 {
+    if (!_usepins(f_pinmask)) {
+        return -EBUSY;
+    }
     return 0;
 }
 
@@ -431,9 +436,11 @@ int v_init(const char *mountname)
 int v_deinit(const char *mountname)
 {
     int r = f_mount(0, "", 0);
+    
 #if defined(_DEBUG_FATFS) && defined(__FLEXC__)
     __builtin_printf("  deinit: f_mount returned %d\n", r);
-#endif                        
+#endif
+    _freepins(f_pinmask);
     return 0;
 }
 

@@ -13,6 +13,10 @@ __clkfreq_ms
     long 0
 __clkfreq_us
     long 0
+__pinsused_lo
+    long 0
+__pinsused_hi
+    long 0
 
 ''
 '' Spin2 FRAC operator: divide (n<<32) by d producing q
@@ -518,3 +522,16 @@ pri __builtin_bit_permute_step(x = +long,m = +long,shift = +long) : r = +long
   m &= (x >> shift) ^ x
   return m ^ (m << shift) ^ x
 
+''
+'' reserve some pins; returns TRUE or FALSE
+''
+pri _usepins(plo, phi) : r
+  if (plo AND __pinsused_lo) %orelse (phi AND __pinsused_hi)
+    return 0
+  __pinsused_lo |= plo
+  __pinsused_hi |= phi
+  return -1
+
+pri _freepins(plo, phi)
+  __pinsused_lo &= !plo
+  __pinsused_hi &= !phi
