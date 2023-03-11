@@ -206,7 +206,7 @@ int _mount(char *user_name, struct vfs *v)
 #ifdef _DEBUG
                 __builtin_printf("mount: init failed with error %d for %s\n", r, name);
 #endif
-                return _seterror(EIO);
+                return _seterror(-r);
             }
         }   
         mounttab[i] = name;
