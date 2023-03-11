@@ -245,11 +245,11 @@ __system___gc_doalloc
 	add	__system___gc_doalloc_size, #23
 	andn	__system___gc_doalloc_size, #15
 	shr	__system___gc_doalloc_size, #4
-	add	ptr___system__dat__, #36
+	add	ptr___system__dat__, #44
 	mov	__system___gc_doalloc__cse__0005, ptr___system__dat__
 	cogid	result1
 	add	result1, #256
-	sub	ptr___system__dat__, #36
+	sub	ptr___system__dat__, #44
 LR__0030
 	rdlong	arg01, __system___gc_doalloc__cse__0005 wz
  if_e	wrlong	result1, __system___gc_doalloc__cse__0005
@@ -589,7 +589,7 @@ _dat_
 __system__dat_
 	byte	$00, $00, $00, $00, $f0, $09, $bc, $0a, $00, $00, $68, $5c, $01, $08, $fc, $0c
 	byte	$03, $08, $7c, $0c, $00, $00, $00, $00, $03, $00, $00, $00, $00, $00, $00, $00
-	byte	$00, $00, $00, $00, $00, $00, $00, $00
+	byte	$00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
 __heap_base
 	long	0[258]
 stackspace
