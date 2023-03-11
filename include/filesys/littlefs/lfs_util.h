@@ -113,7 +113,7 @@ static inline uint32_t lfs_alignup(uint32_t a, uint32_t alignment) {
 
 // Find the smallest power of 2 greater than or equal to a
 static inline uint32_t lfs_npw2(uint32_t a) {
-#if !defined(LFS_NO_INTRINSICS) && (defined(__GNUC__) || defined(__CC_ARM))
+#if !defined(LFS_NO_INTRINSICS) && (defined(__GNUC__) || defined(__CC_ARM) || defined(__FLEXC__))
     return 32 - __builtin_clz(a-1);
 #else
     uint32_t r = 0;
@@ -139,7 +139,7 @@ static inline uint32_t lfs_ctz(uint32_t a) {
 
 // Count the number of binary ones in a
 static inline uint32_t lfs_popc(uint32_t a) {
-#if !defined(LFS_NO_INTRINSICS) && (defined(__GNUC__) || defined(__CC_ARM))
+#if !defined(LFS_NO_INTRINSICS) && (defined(__GNUC__) || defined(__CC_ARM) || defined(__FLEXC__))
     return __builtin_popcount(a);
 #else
     a = a - ((a >> 1) & 0x55555555);
@@ -203,7 +203,7 @@ static inline uint32_t lfs_tobe32(uint32_t a) {
 }
 
 // Calculate CRC-32 with polynomial = 0x04c11db7
-uint32_t lfs_crc(uint32_t crc, const void *buffer, size_t size);
+uint32_t lfs_crc(uint32_t crc, const void *buffer, size_t size) _IMPL("filesys/littlefs/lfs_util.c");
 
 // Allocate memory, only used if buffers are not provided to littlefs
 // Note, memory must be 64-bit aligned
