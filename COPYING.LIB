@@ -7,7 +7,7 @@ code, and MIT licensed. Jeff Roark (user JRoark on the forums)
 generously contributed some floating point and math routines which he
 has agreed to have distributed under the same terms.
 
-Copyright (c) 2011-2020 Total Spectrum Software Inc.
+Copyright (c) 2011-2023 Total Spectrum Software Inc.
 Copyright (c) 2006-2019 Parallax, Inc.
 Copyright (c) 2020 Jeff Roark
 
@@ -47,3 +47,48 @@ Some code used was explicitly placed in the public domain:
 
 String code written by Henry Spencer
 strtoul written by Matthias Fleischer nad Gunther Nikl
+----
+The FatFs file system code used in _vfs_open_sdcardx has a BSD style license:
+/
+/ Copyright (C) 2021, ChaN, all right reserved.
+/
+/ FatFs module is an open source software. Redistribution and use of FatFs in
+/ source and binary forms, with or without modification, are permitted provided
+/ that the following condition is met:
+/
+/ 1. Redistributions of source code must retain the above copyright notice,
+/    this condition and the following disclaimer.
+/
+/ This software is provided by the copyright holder and contributors "AS IS"
+/ and any warranties related to this software are DISCLAIMED.
+/ The copyright owner or contributors be NOT LIABLE for any damages caused
+/ by use of this software.
+/----------------------------------------------------------------------------*/
+
+----
+The littlefs file system code used in _vfs_open_littlefs_flash is:
+
+Copyright (c) 2017, Arm Limited. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+-  Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+-  Redistributions in binary form must reproduce the above copyright notice, this
+   list of conditions and the following disclaimer in the documentation and/or
+   other materials provided with the distribution.
+-  Neither the name of ARM nor the names of its contributors may be used to
+   endorse or promote products derived from this software without specific prior
+   written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
