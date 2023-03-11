@@ -277,12 +277,13 @@ int ProcessCommandLine(CmdLineOptions *cmd)
     if (P) {
         int compile_original = 0;
         
-        if (gl_errors >= gl_max_errors) {
-            return 1;
-        }
         /* set up output file names */
         if (gl_listing) {
             listFile = ReplaceExtension(P->fullname, ".lst");
+            if (gl_errors >= gl_max_errors) {
+                remove(listFile);
+            }
+            
         }
 
         if (cmd->outputDependencies) {
@@ -306,6 +307,10 @@ int ProcessCommandLine(CmdLineOptions *cmd)
             if (!binname) {
                 binname = ReplaceExtension(P->fullname, ".o");
             }
+            if (gl_errors >= gl_max_errors) {
+                remove(binname);
+                return 1;
+            }
             OutputObjFile(binname, P);
         } else if (gl_output == OUTPUT_ZIP) {
             const char *zipname = gl_outname;
@@ -328,7 +333,7 @@ int ProcessCommandLine(CmdLineOptions *cmd)
                 }
                 OutputGasFile(cmd->outname, P);
             } else {
-	            if (!cmd->outname) {
+                if (!cmd->outname) {
                     if (cmd->outputBin) {
                         if (cmd->useEeprom) {
                             cmd->outname = ReplaceExtension(P->fullname, ".eeprom");
@@ -341,6 +346,10 @@ int ProcessCommandLine(CmdLineOptions *cmd)
                 }
                 if (cmd->bstcMode && !listFile) {
                     cmd->outname = ReplaceExtension(cmd->outname, ".binary");
+                }
+                if (gl_errors >= gl_max_errors) {
+                    remove(cmd->outname);
+                    return 1;
                 }
                 if (listFile) {
                     OutputLstFile(listFile, P);
@@ -378,6 +387,11 @@ int ProcessCommandLine(CmdLineOptions *cmd)
                     asmname = ReplaceExtension(P->fullname, gl_p2 ? ".p2asm" : ".pasm");
                 }
             }
+            if (gl_errors >= gl_max_errors) {
+                if (asmname) remove(asmname);
+                if (binname) remove(binname);
+                return 1;
+            }
             if (TrivialSpinFunction(P)) {
                 // we can just assemble the .spin file directly
                 asmname = strdup(P->fullname);
@@ -412,6 +426,10 @@ int ProcessCommandLine(CmdLineOptions *cmd)
                 }
             }
 
+            if (gl_errors >= gl_max_errors) {
+                remove(cmd->outname);
+                return 1;
+            }
             if (gl_interp_kind == INTERP_KIND_NUCODE) {
                 ERROR(NULL, "How did we get here?");
             } else {
