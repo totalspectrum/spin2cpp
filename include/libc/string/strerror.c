@@ -22,6 +22,11 @@ static char *_sys_errlist[] = {
   "Directory not empty",
   "Name too long",
   "Device not seekable",
+  "Bad address",
+  "Broken connection",
+  "Device or resource busy",
+  "Cross device link",
+  "No space on device",
   "Unknown error",
 };
 
