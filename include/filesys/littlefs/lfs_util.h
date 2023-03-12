@@ -8,7 +8,6 @@
 #define LFS_UTIL_H
 
 #ifdef __FLEXC__
-#define LFS_NO_MALLOC
 #ifndef _DEBUG
 # define LFS_NO_ASSERT
 # define LFS_NO_DEBUG
