@@ -2,10 +2,15 @@
 
 #pragma once
 
-#if defined(__FEATURE_COMPLEXIO__) && !defined(SIMPLE_IO)
+#if 0
+// disabled for now, the __FEATURE_COMPLEXIO__ detection doesn't work correctly
+// on functions pulled in by symbol resolution
+// so the user will have to define _SIMPLE_IO explicitly
+#if defined(__FEATURE_COMPLEXIO__) && !defined(_SIMPLE_IO)
 //#error "complexio" // debug
 #else
-#define SIMPLE_IO
+#define _SIMPLE_IO
+#endif
 #endif
 
 #ifndef _COMPLEXIO
@@ -29,7 +34,7 @@
 #endif
 #define BITCOUNT (8*sizeof(UITYPE))
 
-#ifdef SIMPLE_IO
+#if defined(_SIMPLE_IO)
 #define PUTC(fn, c) (_tx(c), 1)
 #else
 #define PUTC(fn, c) (*fn)(c)

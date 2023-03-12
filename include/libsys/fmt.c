@@ -7,14 +7,14 @@
 #include <errno.h>
 
 #define INCLUDE_FLOATS
-#undef SIMPLE_IO
+#undef _SIMPLE_IO
 
 #ifdef __FLEXC__
 
 #define SMALL_INT
 #define strlen __builtin_strlen
 #define strcpy __builtin_strcpy
-#ifdef SIMPLE_IO
+#ifdef _SIMPLE_IO
 #define THROW_RETURN(err) return -1
 #else
 #define THROW_RETURN(x) do { __throwifcaught(x); return -1; } while (0)
@@ -878,7 +878,7 @@ typedef int (*RxFunc)(void);
 typedef int (*CloseFunc)(void);
 typedef int (*VFS_CloseFunc)(vfs_file_t *);
 
-#ifdef SIMPLE_IO
+#ifdef _SIMPLE_IO
 #define _gettxfunc(h) ((void *)1)
 #define _getrxfunc(h) ((void *)1)
 # if defined(__FEATURE_MULTICOG__) && !defined(_NO_LOCKIO)
@@ -945,7 +945,7 @@ int __unlockio(unsigned h) {
 
 int _basic_open(unsigned h, TxFunc sendf, RxFunc recvf, CloseFunc closef)
 {
-#ifdef SIMPLE_IO
+#ifdef _SIMPLE_IO
     THROW_RETURN(EIO);
 #else    
     struct _bas_wrap_sender *wrapper = 0;
@@ -992,7 +992,7 @@ int _basic_open(unsigned h, TxFunc sendf, RxFunc recvf, CloseFunc closef)
 
 int _basic_open_string(unsigned h, char *fname, unsigned iomode)
 {
-#ifdef SIMPLE_IO
+#ifdef _SIMPLE_IO
     THROW_RETURN(EIO);
 #else    
     vfs_file_t *v;
@@ -1166,7 +1166,7 @@ int _basic_print_longinteger(unsigned h, long long int x, unsigned fmt, int base
 
 int _basic_get_char(unsigned h)
 {
-#ifdef SIMPLE_IO
+#ifdef _SIMPLE_IO
     return _rx();
 #else    
     RxFunc rf;
