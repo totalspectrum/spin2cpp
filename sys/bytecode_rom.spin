@@ -294,7 +294,7 @@ pri {++needsinit} _remotecall(cmd, arg0 = 0, arg1 = 0, arg2 = 0) | rlock
   
 pri _setbaud(rate)
   _remotecall(1, __clkfreq_var / rate)
-  
+
 pri _txraw(c)
   _remotecall(2, c)
   return 1

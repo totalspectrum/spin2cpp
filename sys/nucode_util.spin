@@ -390,6 +390,7 @@ pri _clkset(mode, freq) | oldmode, xsel
   _hubset(mode)     ' activate new mode
   __clkfreq_ms := freq / 1000
   __clkfreq_us := freq / 1000000
+  _bitcycles := 0
 
 pri _reboot
   _clkset(0, 0)

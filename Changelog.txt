@@ -1,6 +1,7 @@
 Version 6.0.0
 - Added interpreter and code size printing if --sizes is given
 - Added atof() and strtof() functions
+- Automatically reset baud rate on _clkset()
 - Disabled SIMPLE_IO printf optimization because it was interacting poorly with symbol resolution
 - Fixed _ assignment in nucode output
 - Fixed calculation of FVAR/FVARS when labels are unknown

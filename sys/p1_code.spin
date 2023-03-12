@@ -42,6 +42,7 @@ pri _clkset(mode, freq)
   __clkmode_var := mode
   __clkfreq_ms := freq / 1000
   __clkfreq_us := freq / 1000000
+  _bitcycles := 0
   asm
     clkset mode
   endasm

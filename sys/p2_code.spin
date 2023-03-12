@@ -101,7 +101,8 @@ pri _clkset(mode, freq) | oldmode, xsel
   endasm
   __clkfreq_ms := freq / 1000
   __clkfreq_us := freq / 1000000
-  
+  _bitcycles := 0
+
 pri _sqrt(a) | r
   if (a =< 0)
     return 0
