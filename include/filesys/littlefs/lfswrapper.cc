@@ -13,7 +13,12 @@ static char read_cache[SPI_PROG_SIZE];
 static char prog_cache[SPI_PROG_SIZE];
 static char lookahead_cache[SPI_PROG_SIZE];
 
-typedef struct __using("SpiFlash.spin2") _SpiFlash;
+typedef struct __using("filesys/littlefs/SpiFlash.spin2") _SpiFlash;
+
+typedef struct _buffered_lfs_file {
+    struct __default_buffer b;
+    lfs_file_t       fd;
+} BufferedLfsFile;
 
 static _SpiFlash default_spi;
 
@@ -31,6 +36,9 @@ static int _flash_prog(const struct lfs_config *cfg, lfs_block_t block, lfs_off_
     unsigned PAGE_SIZE = cfg->prog_size;
     unsigned PAGE_MASK = PAGE_SIZE-1; // assumes PAGE_SIZE is a power of 2
 
+#ifdef _DEBUG_LFS
+    __builtin_printf(" *** flash_prog: block=%d flashAdr=%x size=%x\n", block, flashAdr, size);
+#endif        
     // make sure size and address are page multiples
     if ( (flashAdr & PAGE_MASK) || (size & PAGE_MASK) ) {
         return -EINVAL;
@@ -48,6 +56,9 @@ static int _flash_erase(const struct lfs_config *cfg, lfs_block_t block) {
     _SpiFlash *spi = cfg->context;
     unsigned long flashAdr = block * cfg->block_size;
 
+#ifdef _DEBUG_LFS
+    __builtin_printf(" *** flash_erase: flashAdr=%x\n", flashAdr);
+#endif        
     // check if erase is valid
     if (block >= cfg->block_count)
         return -1;
@@ -158,10 +169,13 @@ static int _set_lfs_error(int lerr)
 static int v_open(vfs_file_t *fil, const char *name, int flags)
 {
   int r;
-  lfs_file_t *f = malloc(sizeof(*f));
+  BufferedLfsFile *f = malloc(sizeof(*f));
   unsigned fs_flags;
 
   if (!f) {
+#ifdef _DEBUG_LFS
+      __builtin_printf("lfs_open: ENOMEM\n");
+#endif  
       return _seterror(ENOMEM);
   }
   memset(f, 0, sizeof(*f));
@@ -186,12 +200,15 @@ static int v_open(vfs_file_t *fil, const char *name, int flags)
   if (flags & O_CREAT) {
       fs_flags |= LFS_O_CREAT;
   }
-  r = lfs_file_open(&lfs, f, name, fs_flags);
+#ifdef _DEBUG_LFS
+  __builtin_printf("calling lfs_open(%s, 0x%x)", name, fs_flags);
+#endif  
+  r = lfs_file_open(&lfs, &f->fd, name, fs_flags);
+#if defined(_DEBUG_LFS) && defined(__FLEXC__)
+  __builtin_printf("  lfs_open returned %d\n", r);
+#endif                        
   if (r) {
     free(f);
-#if defined(_DEBUG_LFS) && defined(__FLEXC__)
-    __builtin_printf("  lfs_open returned %d\n", r);
-#endif                        
     return _set_lfs_error(r);
   }
   fil->vfsdata = f;
@@ -200,37 +217,57 @@ static int v_open(vfs_file_t *fil, const char *name, int flags)
 
 static int v_creat(vfs_file_t *fil, const char *pathname, mode_t mode)
 {
+#ifdef _DEBUG_LFS
+    __builtin_printf(" v_creat(%s)\n", pathname);
+#endif    
     return v_open(fil, pathname, O_CREAT|O_WRONLY|O_TRUNC);
 }
 
 static int v_flush(vfs_file_t *fil)
 {
-    lfs_file_t *f = fil->vfsdata;
-    lfs_file_sync(&lfs, f);
+    BufferedLfsFile *f = fil->vfsdata;
+
+    __default_flush(&f->b);
+#ifdef _DEBUG_LFS
+    __builtin_printf("v_flush...");
+#endif    
+    int r = lfs_file_sync(&lfs, &f->fd);
+#ifdef _DEBUG_LFS
+    __builtin_printf(" returned %d\n", r);
+#endif    
     return 0;
 }
 
 static int v_close(vfs_file_t *fil)
 {
     int r;
-    lfs_file_t *f = fil->vfsdata;
-    r = lfs_file_close(&lfs, f);
+    BufferedLfsFile *f = fil->vfsdata;
+
+    v_flush(fil);
+    
+    r = lfs_file_close(&lfs, &f->fd);
+#ifdef _DEBUG_LFS
+    __builtin_printf("lfs_file_close returned %d\n", r);
+#endif    
     free(f);
     return _set_lfs_error(r);
 }
 
 static ssize_t v_read(vfs_file_t *fil, void *buf, size_t siz)
 {
-    lfs_file_t *f = fil->vfsdata;
+    BufferedLfsFile *f = fil->vfsdata;
     int r;
 
+#ifdef _DEBUG_LFS    
+    __builtin_printf("v_read: f_read %d bytes:", siz);
+#endif    
     if (!f) {
+#ifdef _DEBUG_FS
+        __builtin_printf(" EBADF\n");
+#endif        
         return _seterror(EBADF);
     }
-#ifdef _DEBUG_LFS    
-    __builtin_printf("v_write: f_write %d bytes:", siz);
-#endif    
-    r = lfs_file_read(&lfs, f, buf, siz);
+    r = lfs_file_read(&lfs, &f->fd, buf, siz);
 #ifdef _DEBUG_LFS
     __builtin_printf("returned %d\n", r);
 #endif    
@@ -243,16 +280,19 @@ static ssize_t v_read(vfs_file_t *fil, void *buf, size_t siz)
 
 static ssize_t v_write(vfs_file_t *fil, void *buf, size_t siz)
 {
-    lfs_file_t *f = fil->vfsdata;
+    BufferedLfsFile *f = fil->vfsdata;
     int r;
 
-    if (!f) {
-        return _seterror(EBADF);
-    }
 #ifdef _DEBUG_LFS    
     __builtin_printf("v_write: f_write %d bytes:", siz);
 #endif    
-    r = lfs_file_write(&lfs, f, buf, siz);
+    if (!f) {
+#ifdef _DEBUG_LFS
+        __builtin_printf("EBADF\n");
+#endif        
+        return _seterror(EBADF);
+    }
+    r = lfs_file_write(&lfs, &f->fd, buf, siz);
 #ifdef _DEBUG_LFS
     __builtin_printf("returned %d\n", r);
 #endif    
@@ -260,21 +300,22 @@ static ssize_t v_write(vfs_file_t *fil, void *buf, size_t siz)
         fil->state |= _VFS_STATE_ERR;
         return _set_lfs_error(r);
     }
+    //lfs_file_sync(&lfs, &f->fd);
     return r;
 }
 
 static off_t v_lseek(vfs_file_t *fil, off_t offset, int whence)
 {
-    lfs_file_t *f = fil->vfsdata;
+    BufferedLfsFile *f = fil->vfsdata;
     int r;
     
-    if (!f) {
-        return _seterror(EBADF);
-    }
 #ifdef _DEBUG_LFS
     __builtin_printf("v_lseek(%d, %d) ", offset, whence);
 #endif
-    r = lfs_file_seek(&lfs, f, offset, whence);
+    if (!f) {
+        return _seterror(EBADF);
+    }
+    r = lfs_file_seek(&lfs, &f->fd, offset, whence);
 #ifdef _DEBUG_LFS
     __builtin_printf("result=%d\n", r);
 #endif
@@ -286,30 +327,45 @@ static off_t v_lseek(vfs_file_t *fil, off_t offset, int whence)
 
 static int v_ioctl(vfs_file_t *fil, unsigned long req, void *argp)
 {
+#ifdef _DEBUG_LFS
+    __builtin_printf("v_ioctl\n");
+#endif    
     return _seterror(EINVAL);
 }
 
 static int v_remove(const char *name)
 {
     int r = lfs_remove(&lfs, name);
+#ifdef _DEBUG_LFS
+    __builtin_printf("lfs_remove(%s) returned %d\n", name, r);
+#endif    
     return _set_lfs_error(r);
 }
 
 static int v_rename(const char *oldpath, const char *newpath)
 {
     int r = lfs_rename(&lfs, oldpath, newpath);
+#ifdef _DEBUG_LFS
+    __builtin_printf("lfs_rename(%s, %s) returned %d\n", oldpath, newpath, r);
+#endif    
     return _set_lfs_error(r);
 }
 
 static int v_mkdir(const char *name, mode_t mode)
 {
     int r = lfs_mkdir(&lfs, name);
+#ifdef _DEBUG_LFS
+    __builtin_printf("lfs_mkdir(%s) returned %d\n", name, r);
+#endif    
     return _set_lfs_error(r);
 }
 
 static int v_rmdir(const char *name)
 {
     int r = lfs_remove(&lfs, name);
+#ifdef _DEBUG_LFS
+    __builtin_printf("lfs_rmdir(%s) returned %d\n", name, r);
+#endif    
     return _set_lfs_error(r);
 }
 
@@ -324,19 +380,29 @@ static int v_stat(const char *name, struct stat *buf)
     memset(buf, 0, sizeof(*buf));
 
     r = lfs_stat(&lfs, name, &finfo);
+    if (r < 0) {
+#ifdef _DEBUG_LFS
+        __builtin_printf("v_stat returning %d mode=0%o file size=%d\n", r, buf->st_mode, (int)buf->st_size);
+#endif
+        return _set_lfs_error(r);
+    }
+    
     mode = S_IRUSR | S_IRGRP | S_IROTH;
     mode |= S_IWUSR | S_IWGRP | S_IWOTH;
     if (finfo.type == LFS_TYPE_DIR) {
+#ifdef _DEBUG_LFS
+        __builtin_printf("v_stat: is a directory\n");
+#endif        
         mode |= S_IFDIR | S_IXUSR | S_IXGRP | S_IXOTH;
     }
     buf->st_mode = mode;
     buf->st_nlink = 1;
     buf->st_size = finfo.size;
     buf->st_blksize = 256;
-    buf->st_blocks = buf->st_size / 256;
+    buf->st_blocks = (buf->st_size+255) / 256;
     buf->st_atime = buf->st_mtime = buf->st_ctime = 0;
 #ifdef _DEBUG_LFS
-    __builtin_printf("v_stat returning %d mode=0x%x\n", r, buf->st_mode);
+    __builtin_printf("v_stat returning %d mode=0%o file size=%d\n", r, buf->st_mode, (int)buf->st_size);
 #endif
     return r;    
 }
@@ -346,8 +412,11 @@ static int v_opendir(DIR *dir, const char *name)
     lfs_dir_t *f = malloc(sizeof(*f));
     int r;
 
+    if (name[0] == 0) {
+        name = ".";
+    }
 #ifdef _DEBUG_LFS    
-    __builtin_printf("v_opendir(%s) this=%x\n", name, __this);
+    __builtin_printf("v_opendir(%s)\n", name);
 #endif    
     if (!f) {
 #ifdef _DEBUG_LFS
@@ -374,6 +443,9 @@ static int v_closedir(DIR *dir)
     lfs_dir_t *f = dir->vfsdata;
     r = lfs_dir_close(&lfs, f);
     free(f);
+#ifdef _DEBUG_LFS
+    __builtin_printf("lfs_dir_close returned %d\n", r);
+#endif    
     return _set_lfs_error(r);
 }
 
@@ -383,15 +455,21 @@ static int v_readdir(DIR *dir, struct dirent *ent)
     int r;
 
     r = lfs_dir_read(&lfs, dir->vfsdata, &finfo);
-#ifdef _DEBUG_LFS       
+#ifdef _DEBUG_LFS
     __builtin_printf("readdir fs_read: %d\n", r);
 #endif	
-    if (r != 0) {
-        return _set_lfs_error(r); // error
+    if (r < 0) {
+        return _set_lfs_error(-r); // error
     }
     if (finfo.name[0] == 0) {
+#ifdef _DEBUG_LFS
+    __builtin_printf("readdir fs_read: EOF\n");
+#endif	
         return -1; // EOF
     }
+#ifdef _DEBUG_LFS
+    __builtin_printf("readdir fs_read: name=%s\n", finfo.name);
+#endif	
     strcpy(ent->d_name, finfo.name);
 
     if (finfo.type & LFS_TYPE_DIR) {
@@ -424,22 +502,26 @@ static int v_deinit(const char *mountname)
 {
     lfs_unmount(&lfs);
     _freepins(f_pinmask);
+    lfs_in_use = 0;
     return 0;
 }
 
 
 static struct vfs *
-get_vfs(struct littlefs_flash_config *fcfg, int do_format)
+get_lfs_vfs(struct littlefs_flash_config *fcfg, int do_format)
 {
     struct vfs *v;
+    static struct vfs temp;
     int r;
-    
+#ifdef _DEBUG_LFS
+    __builtin_printf("get_vfs for littlefs\n");
+#endif
     if (lfs_in_use) {
         _seterror(EBUSY);
         return 0;
     }
 
-    v = _gc_alloc_managed(sizeof(*v));
+    v = &temp;
     if (!v) {
         _seterror(ENOMEM);
         return 0;
@@ -505,6 +587,21 @@ _vfs_open_littlefs_flash(int do_format = 1, struct littlefs_flash_config *fcfg =
     if (!fcfg) {
         fcfg = &default_cfg;
     }
-    v = get_vfs(fcfg, do_format);
+    v = get_lfs_vfs(fcfg, do_format);
+#ifdef _DEBUG_LFS
+    __builtin_printf("get_lfs_vfs returned %x\n", (unsigned)v);
+#endif    
     return v;
+}
+
+int
+_mkfs_littlefs_flash(struct littlefs_flash_config *fcfg)
+{
+    int r;
+    if (!fcfg) {
+        fcfg = &default_cfg;
+    }
+    _flash_create(&lfs_cfg, fcfg);
+    r = lfs_format(&lfs, &lfs_cfg);
+    return _set_lfs_error(r);
 }
