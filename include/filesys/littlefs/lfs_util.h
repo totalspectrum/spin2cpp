@@ -8,12 +8,14 @@
 #define LFS_UTIL_H
 
 #ifdef __FLEXC__
-#ifndef _DEBUG
-# define LFS_NO_ASSERT
-# define LFS_NO_DEBUG
-# define LFS_NO_WARN
-# define LFS_NO_ERROR
-#endif
+# ifdef _DEBUG_LFS_EXTRA
+#  define LFS_YES_TRACE
+# else
+#  define LFS_NO_ASSERT
+#  define LFS_NO_DEBUG
+#  define LFS_NO_WARN
+#  define LFS_NO_ERROR
+# endif
 #endif
 
 // Users can override lfs_util.h with their own configuration by defining
