@@ -128,6 +128,10 @@ pri _txhex(h) | c
     _txraw(c)
   _txraw(" ")
 
+pri _txstr(s) | c
+  repeat while (c := byte[s++]) <> 0
+    _tx(c)
+
 pri _rx : r
   repeat
     r := _rxraw()
@@ -526,10 +530,16 @@ pri __builtin_bit_permute_step(x = +long,m = +long,shift = +long) : r = +long
 '' reserve some pins; returns TRUE or FALSE
 ''
 pri _usepins(plo, phi) : r
+  '_txstr(@"usepins: need ")
+  '_txhex(plo)
+  '_txhex(phi)
+
   if (plo AND __pinsused_lo) %orelse (phi AND __pinsused_hi)
+    '_txstr(string("usepins: some pins in use", 13, 01))
     return 0
   __pinsused_lo |= plo
   __pinsused_hi |= phi
+  '_txstr(string(" OK", 13, 10))
   return -1
 
 pri _freepins(plo, phi)
