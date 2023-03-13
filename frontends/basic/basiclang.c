@@ -510,6 +510,7 @@ genPrintf(AST *ast)
                 case 'u':
                     seq = addPrintDec(seq, Handle, basic_print_unsigned, thisarg, AstInteger(fmt));
                     break;
+                case 'p':
                 case 'x':
                     if (longflag > 1) {
                         seq = addPrintHex(seq, Handle, basic_print_longunsigned, thisarg, AstInteger(fmt));

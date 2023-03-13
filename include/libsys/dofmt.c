@@ -241,6 +241,7 @@ int _dofmt(putfunc fn, const char *fmtstr, va_list *args)
             }
             break;
         case 'x':
+        case 'p':
             if (prec == 0 && padchar == PADCHAR_ZERO) {
                 flags |= ((width+1)<<PREC_BIT);
             }
