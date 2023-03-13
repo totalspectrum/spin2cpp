@@ -152,7 +152,13 @@ int _mount(char *user_name, struct vfs *v)
     
 #ifdef _DEBUG
     __builtin_printf("mount(%s, %x) called\n", user_name, (unsigned)v);
-#endif    
+#endif
+    if (!v) {
+#ifdef _DEBUG
+        __builtin_printf("ignoring NULL file system\n");
+#endif        
+        return -1;
+    }
     if (user_name[0] != '/' || strlen(user_name) > MAX_MOUNT_CHARS) {
 #ifdef _DEBUG
         __builtin_printf("mount %s: EINVAL\n", user_name);
