@@ -1357,11 +1357,11 @@ EvalIntOperator(int op, ExprInt lval, ExprInt rval, int *valid)
     case K_SCAS:
         return (int32_t)(((int_fast64_t)lval * (int_fast64_t)rval) >> 30LL);
     case K_SHL:
-        return lval << (rval & 0x1f);
+        return lval << (rval & 0x3f);
     case K_SHR:
-        return ((UExprInt)lval) >> (rval & 0x1f);
+        return ((UExprInt)lval) >> (rval & 0x3f);
     case K_SAR:
-        return ((ExprInt)lval) >> (rval & 0x1f);
+        return ((ExprInt)lval) >> (rval & 0x3f);
     case K_ROTL:
         return ((uint32_t)lval << rval) | ((uint32_t) lval) >> (32-rval);
     case K_ROTR:
