@@ -955,6 +955,7 @@ Available file systems are:
   * `_vfs_open_host()` (for the loadp2 Plan 9 file system)
   * `_vfs_open_sdcard()` for a FAT file system on the P2 SD card.
   * `_vfs_open_sdcardx(clk, ss, di, do)` is the same, but allows explicit specifications of the pins to use.
+  * `_vfs_open_littlefs_flash(doFormat, cfg)` is to use the LittleFs file system on the built in flash.
   
 It is OK to make multiple mount calls, but they should have different names.
 

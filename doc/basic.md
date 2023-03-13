@@ -2653,7 +2653,10 @@ Available file systems are:
   * `_vfs_open_host()` (for the loadp2 Plan 9 file system)
   * `_vfs_open_sdcard()` for a FAT file system on the P2 SD card.
   * `_vfs_open_sdcardx(clk, sel, di, do)` is the same, but allows explicit specification of which pins to use for the SD card
-  
+  * `_vfs_open_littlefs_flash()` is the LittleFS file system, using 6MB of flash starting at offset 2MB.
+
+Note that the LittleFS file system may not be used in the same program as the FAT file system on the default pins, because the pins conflict.
+
 ### NEW
 
 Allocates memory from the heap for a new object, and returns a pointer to it. May also be used to allocate arrays of objects. The name of the type of the new object appears after the `new`, optionally followed by an array limit. Note that as in `dim` statements, the value given is the last valid index, so for arrays starting at 0 (the default) it is one greater than the number of elements.

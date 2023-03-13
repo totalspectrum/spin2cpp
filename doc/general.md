@@ -522,14 +522,28 @@ Available file systems are:
   * `_vfs_open_host()` (for the loadp2 Plan 9 file system)
   * `_vfs_open_sdcard()` for a FAT file system on the P2 SD card (using default pins 58-61)
   * `_vfs_open_sdcardx()` for a FAT file system on SD card using custom pins
-
+  * `_vfs_open_littlefs_flash()` for LittleFS file system on (part of) the built in flash.
+  
 It is OK to make multiple mount calls, but they should have different names.
+
+*NOTE* : the built in flash and the SD card on the P2 Eval and Edge boards use the same pin, so they may *not* be used at the same time.
 
 ### Options for SD Card
 
 If you define the symbol `FF_USE_LFN` on the command line with an option like `-DFF_USE_LFN` then long file names will be enabled for the SD card.
 
 The pins to use for the SD card may be changed by using `_vfs_open_sdcardx` instead of `_vfs_open_sdcard`. The parameters for `_vfs_open_sdcardx` are the clock pin, select pin, data in, and data out pins, in that order. Thus, `_vfs_open_sdcard` is actually equivalent to `_vfs_open_sdcardx(61, 60, 59, 58)`.
+
+Use of the SD Card on the default pins is mutually exclusive with use of the flash for littlefs.
+
+### Options for flash
+
+The LittleFS file system by default uses 6MB of memory, starting at offset 2MB (thus leaving plenty of space for boot code and overlays). This may be changed by passing a structure describing the flash layout to the `_vfs_open_littlefs_flash`. The call is `_vfs_open_littlefs_flash(doFormat, config)` where:
+
+  * `doFormat` is 1 to automatically format the flash if it is not already formatted
+  * `config` is a pointer to a `struct littlefs_flash_config` structure giving the flash memory layout
+
+
 
 ## Command Line Options
 
