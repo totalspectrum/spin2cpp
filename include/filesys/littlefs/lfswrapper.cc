@@ -16,7 +16,7 @@ static char lookahead_cache[SPI_PROG_SIZE];
 typedef struct __using("filesys/littlefs/SpiFlash.spin2") _SpiFlash;
 
 typedef struct _buffered_lfs_file {
-    struct __default_buffer b;
+    struct _default_buffer b;
     lfs_file_t       fd;
 } BufferedLfsFile;
 
@@ -227,7 +227,8 @@ static int v_flush(vfs_file_t *fil)
 {
     BufferedLfsFile *f = fil->vfsdata;
 
-    __default_flush(&f->b);
+    __default_flush(fil); // write out buffered data
+
 #ifdef _DEBUG_LFS
     __builtin_printf("v_flush...");
 #endif    
@@ -243,8 +244,6 @@ static int v_close(vfs_file_t *fil)
     int r;
     BufferedLfsFile *f = fil->vfsdata;
 
-    v_flush(fil);
-    
     r = lfs_file_close(&lfs, &f->fd);
 #ifdef _DEBUG_LFS
     __builtin_printf("lfs_file_close returned %d\n", r);
