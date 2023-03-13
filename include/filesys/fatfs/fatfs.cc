@@ -426,9 +426,6 @@ int v_open(vfs_file_t *fil, const char *name, int flags)
  */
 int v_init(const char *mountname)
 {
-    if (!_usepins(f_pinmask)) {
-        return -EBUSY;
-    }
     return 0;
 }
 

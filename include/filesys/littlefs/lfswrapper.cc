@@ -485,14 +485,10 @@ static unsigned long long f_pinmask;
 
 /* initialize (do first mount) */
 /* for now this is a dummy function, but eventually some of the work
- * in _vfs_open_sdcardx could be done here
+ * in _vfs_open could be done here
  */
 static int v_init(const char *mountname)
 {
-    f_pinmask = (1ULL << 61) | (1ULL << 60) | (1ULL << 59) | (1ULL << 58);
-    if (!_usepins(f_pinmask)) {
-        return -EBUSY;
-    }
     return 0;
 }
 
@@ -523,6 +519,11 @@ get_lfs_vfs(struct littlefs_flash_config *fcfg, int do_format)
     v = &temp;
     if (!v) {
         _seterror(ENOMEM);
+        return 0;
+    }
+    f_pinmask = (1ULL << 61) | (1ULL << 60) | (1ULL << 59) | (1ULL << 58);
+    if (!_usepins(f_pinmask)) {
+        _seterror(EBUSY);
         return 0;
     }
     r = _flash_create(&lfs_cfg, fcfg);
@@ -600,7 +601,12 @@ _mkfs_littlefs_flash(struct littlefs_flash_config *fcfg)
     if (!fcfg) {
         fcfg = &default_cfg;
     }
+    f_pinmask = (1ULL << 61) | (1ULL << 60) | (1ULL << 59) | (1ULL << 58);
+    if (!_usepins(f_pinmask)) {
+        return _seterror(EBUSY);
+    }
     _flash_create(&lfs_cfg, fcfg);
     r = lfs_format(&lfs, &lfs_cfg);
+    _freepins(f_pinmask);
     return _set_lfs_error(r);
 }
