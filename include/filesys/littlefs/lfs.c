@@ -145,6 +145,7 @@ static int lfs_bd_flush(lfs_t *lfs,
                 pcache->off, pcache->buffer, diff);
         LFS_ASSERT(err <= 0);
         if (err) {
+            LFS_TRACE("prog returned %d", err);
             return err;
         }
 
@@ -155,10 +156,12 @@ static int lfs_bd_flush(lfs_t *lfs,
                     NULL, rcache, diff,
                     pcache->block, pcache->off, pcache->buffer, diff);
             if (res < 0) {
+                LFS_TRACE("lfs_bd_cmp failed: res=", res);
                 return res;
             }
 
             if (res != LFS_CMP_EQ) {
+                LFS_TRACE("validate failure: res=", res);
                 return LFS_ERR_CORRUPT;
             }
         }
@@ -208,7 +211,9 @@ static int lfs_bd_prog(lfs_t *lfs,
             if (pcache->size == lfs->cfg->cache_size) {
                 // eagerly flush out pcache if we fill up
                 int err = lfs_bd_flush(lfs, pcache, rcache, validate);
+                LFS_TRACE("lfs_bd_prog: lfs_bd_flush -> %d", err);
                 if (err) {
+                    LFS_ERROR("lfs_bd_flush failed: %d", err);
                     return err;
                 }
             }
@@ -1105,8 +1110,8 @@ static lfs_stag_t lfs_dir_find(lfs_t *lfs, lfs_mdir_t *dir,
     while (true) {
 nextname:
         // skip slashes
-        name += strspn(name, "/");
-        lfs_size_t namelen = strcspn(name, "/");
+        name += strspn((char *)name, "/");
+        lfs_size_t namelen = strcspn((char *)name, "/");
 
         // skip '.' and root '..'
         if ((namelen == 1 && memcmp(name, ".", 1) == 0) ||
@@ -1120,8 +1125,8 @@ nextname:
         lfs_size_t sufflen;
         int depth = 1;
         while (true) {
-            suffix += strspn(suffix, "/");
-            sufflen = strcspn(suffix, "/");
+            suffix += strspn((char *)suffix, "/");
+            sufflen = strcspn((char *)suffix, "/");
             if (sufflen == 0) {
                 break;
             }
@@ -1206,6 +1211,7 @@ static int lfs_dir_commitprog(lfs_t *lfs, struct lfs_commit *commit,
             &lfs->pcache, &lfs->rcache, false,
             commit->block, commit->off ,
             (const uint8_t*)buffer, size);
+    LFS_TRACE("lfs_dir_commitprog: lfs_bd_prog -> %d", err);
     if (err) {
         return err;
     }
@@ -1480,6 +1486,7 @@ static int lfs_dir_compact(lfs_t *lfs,
                 begin, end, -begin,
                 lfs_dir_commit_size, &size);
         if (err) {
+            LFS_TRACE("lfs_dir_compact failed");
             return err;
         }
 
@@ -1506,6 +1513,7 @@ static int lfs_dir_compact(lfs_t *lfs,
             if (err == LFS_ERR_NOSPC && size <= lfs->cfg->block_size - 36) {
                 break;
             }
+            LFS_TRACE("lfs_dir_compact failed");
             return err;
         }
 
@@ -1537,6 +1545,7 @@ static int lfs_dir_compact(lfs_t *lfs,
                 int err = lfs_dir_split(lfs, dir, attrs, attrcount,
                         source, begin, end);
                 if (err && err != LFS_ERR_NOSPC) {
+                    LFS_TRACE("lfs_dir_compact failed");
                     return err;
                 }
 
@@ -1582,6 +1591,7 @@ static int lfs_dir_compact(lfs_t *lfs,
                 if (err == LFS_ERR_CORRUPT) {
                     goto relocate;
                 }
+                LFS_TRACE("lfs_dir_compact failed");
                 return err;
             }
 
@@ -1594,6 +1604,7 @@ static int lfs_dir_compact(lfs_t *lfs,
                 if (err == LFS_ERR_CORRUPT) {
                     goto relocate;
                 }
+                LFS_TRACE("lfs_dir_compact failed");
                 return err;
             }
 
@@ -1609,6 +1620,7 @@ static int lfs_dir_compact(lfs_t *lfs,
                 if (err == LFS_ERR_CORRUPT) {
                     goto relocate;
                 }
+                LFS_TRACE("lfs_dir_compact failed");
                 return err;
             }
 
@@ -1623,6 +1635,7 @@ static int lfs_dir_compact(lfs_t *lfs,
                     if (err == LFS_ERR_CORRUPT) {
                         goto relocate;
                     }
+                    LFS_TRACE("lfs_dir_compact failed");
                     return err;
                 }
             }
@@ -1638,6 +1651,7 @@ static int lfs_dir_compact(lfs_t *lfs,
 
             err = lfs_dir_getgstate(lfs, dir, &delta);
             if (err) {
+                LFS_TRACE("lfs_dir_compact failed");
                 return err;
             }
 
@@ -1650,6 +1664,7 @@ static int lfs_dir_compact(lfs_t *lfs,
                     if (err == LFS_ERR_CORRUPT) {
                         goto relocate;
                     }
+                    LFS_TRACE("lfs_dir_compact failed");
                     return err;
                 }
             }
@@ -1660,6 +1675,7 @@ static int lfs_dir_compact(lfs_t *lfs,
                 if (err == LFS_ERR_CORRUPT) {
                     goto relocate;
                 }
+                LFS_TRACE("lfs_dir_compact failed");
                 return err;
             }
 
@@ -1679,6 +1695,7 @@ static int lfs_dir_compact(lfs_t *lfs,
 
 relocate:
         // commit was corrupted, drop caches and prepare to relocate block
+        LFS_TRACE("lfs_dir_compact relocate");
         relocated = true;
         lfs_cache_drop(lfs, &lfs->pcache);
         if (!tired) {
@@ -1726,6 +1743,7 @@ static int lfs_dir_commit(lfs_t *lfs, lfs_mdir_t *dir,
                 f->ctz.size > lfs->cfg->cache_size) {
             int err = lfs_file_outline(lfs, f);
             if (err) {
+                LFS_ERROR("lfs_file_outline -> %d", err);
                 return err;
             }
 
@@ -1760,12 +1778,14 @@ static int lfs_dir_commit(lfs_t *lfs, lfs_mdir_t *dir,
         int err = lfs_fs_pred(lfs, dir->pair, &pdir);
         if (err && err != LFS_ERR_NOENT) {
             *dir = olddir;
+            LFS_TRACE("err != LFS_ERR_NOENT");
             return err;
         }
 
         if (err != LFS_ERR_NOENT && pdir.split) {
             err = lfs_dir_drop(lfs, &pdir, dir);
             if (err) {
+                LFS_TRACE("err -> %d", err);
                 *dir = olddir;
                 return err;
             }
@@ -1797,6 +1817,7 @@ static int lfs_dir_commit(lfs_t *lfs, lfs_mdir_t *dir,
                 goto compact;
             }
             *dir = olddir;
+            LFS_TRACE("err -> %d", err);
             return err;
         }
 
@@ -1810,6 +1831,7 @@ static int lfs_dir_commit(lfs_t *lfs, lfs_mdir_t *dir,
             err = lfs_dir_getgstate(lfs, dir, &delta);
             if (err) {
                 *dir = olddir;
+                LFS_TRACE("err -> %d", err);
                 return err;
             }
 
@@ -1822,6 +1844,7 @@ static int lfs_dir_commit(lfs_t *lfs, lfs_mdir_t *dir,
                     goto compact;
                 }
                 *dir = olddir;
+                LFS_TRACE("err -> %d", err);
                 return err;
             }
         }
@@ -1833,6 +1856,7 @@ static int lfs_dir_commit(lfs_t *lfs, lfs_mdir_t *dir,
                 goto compact;
             }
             *dir = olddir;
+            LFS_TRACE("err -> %d", err);
             return err;
         }
 
@@ -1852,6 +1876,7 @@ compact:
                 dir, 0, dir->count);
         if (err) {
             *dir = olddir;
+            LFS_TRACE("err -> %d", err);
             return err;
         }
     }
@@ -2666,7 +2691,7 @@ static int lfs_file_flush(lfs_t *lfs, lfs_file_t *file) {
 
         if (!(file->flags & LFS_F_INLINE)) {
 #ifdef __FLEXC__
-            lfs_file_t orig;
+            lfs_file_t orig = { 0 };
             orig.ctz.head = file->ctz.head;
             orig.ctz.size = file->ctz.size;
             orig.flags = LFS_O_RDONLY | LFS_F_OPENED;
