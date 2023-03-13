@@ -57,6 +57,7 @@ struct littlefs_flash_config {
     unsigned erase_size;     // size of erase blocks, typically 4K or 64K; must be a power of 2 and multiple of page_size
     unsigned offset;         // base address within flash, must be a multiple of erase_size
     unsigned used_size;      // size to be used within flash, must be a multiple of erase_size
+    unsigned reserved[4];    // reserved for future use (pins and whatnot)
 };
 struct vfs *_vfs_open_littlefs_flash(int do_format = 1, struct littlefs_flash_config *cfg = 0) _IMPL("filesys/littlefs/lfswrapper.cc");
 int _mkfs_littlefs_flash(struct littlefs_flash_config *cfg = 0) _IMPL("filesys/littlefs/lfswrapper.cc");
