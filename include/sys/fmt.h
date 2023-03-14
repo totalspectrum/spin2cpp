@@ -2,7 +2,10 @@
 
 #pragma once
 
-#if 0
+#if defined(__P1__) && defined(__OUTPUT_BYTECODE__)
+// (enabled only for bytecode output, even though it's buggy, because
+//  printf there doesn't work right without it)
+
 // disabled for now, the __FEATURE_COMPLEXIO__ detection doesn't work correctly
 // on functions pulled in by symbol resolution
 // so the user will have to define _SIMPLE_IO explicitly
