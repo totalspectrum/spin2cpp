@@ -12,6 +12,7 @@ Version 6.0.0
 - Fixed type of `_clkmode` on P2 (it was byte instead of long)
 - Fixed compilation error on some signed multiplies
 - Fixed calling varargs functions from Spin in bytecode
+- Fixed BASIC LINE INPUT when no explicit file handle is given
 - Implemented _muldiv64 for bytecode
 - Made Spin2 loop behaviour match that of other languages (like PNut v38)
 - Optimized nucode output considerably

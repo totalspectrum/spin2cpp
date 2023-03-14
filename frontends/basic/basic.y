@@ -877,7 +877,7 @@ iostmt:
     { $$ = NewCommentedAST(AST_PRINT, $4, $2, $1); }
   | BAS_LINE BAS_INPUT file_handle varexpr
     {
-        AST *handle = $3;
+        AST *handle = InputHandle($3);
         AST *var = $4;
         AST *readit = NewAST(AST_FUNCCALL,
                              AstIdentifier("_basic_read_line"),
