@@ -29,7 +29,8 @@ int NuConvertDjnz(NuIrList *irl);
 int NuRemoveUnusedLabels(NuIrList *irl);
 
 /* utility functions */
-NuIrOpcode NuFlipCondition(NuIrOpcode op);
+NuIrOpcode NuInvertCondition(NuIrOpcode op);
+NuIrOpcode NuReverseDirCondition(NuIrOpcode op);
 void NuDeleteIr(NuIrList *irl, NuIr *ir);
 void NuIrInsertBefore(NuIrList *irl, NuIr *anchor, NuIr *newitem);
 

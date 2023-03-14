@@ -19,7 +19,7 @@ void myexit(int n)
 #endif    
 }
 
-int main()
+void main()
 {
     long long x = 0x1122334455667788;
     long long y;

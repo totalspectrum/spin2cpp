@@ -449,7 +449,8 @@ NuCompileArrayAddress(NuIrList *irl, AST *node, int isLoad)
 }
 
 /* find opposite comparison for branch */
-NuIrOpcode NuFlipCondition(NuIrOpcode op) {
+/* that is, == becomes !=, < becomes >= */
+NuIrOpcode NuInvertCondition(NuIrOpcode op) {
     switch (op) {
     case NU_OP_BZ:
         return NU_OP_BNZ;
@@ -480,9 +481,33 @@ NuIrOpcode NuFlipCondition(NuIrOpcode op) {
     case NU_OP_CBGTU:
         return NU_OP_CBLEU;
     default:
-        ERROR(NULL, "Bad opcode to NuFlipCondition");
+        ERROR(NULL, "Bad opcode to NuInvertCondition");
     }
     return NU_OP_ILLEGAL;
+}
+
+/* reverse direction of condition (<= becomes >=) */
+NuIrOpcode NuReverseDirCondition(NuIrOpcode op) {
+    switch (op) {
+    case NU_OP_CBLTS:
+        return NU_OP_CBGTS;
+    case NU_OP_CBGES:
+        return NU_OP_CBLES;
+    case NU_OP_CBLES:
+        return NU_OP_CBGES;
+    case NU_OP_CBGTS:
+        return NU_OP_CBLTS;
+    case NU_OP_CBLTU:
+        return NU_OP_CBGTU;
+    case NU_OP_CBGEU:
+        return NU_OP_CBLEU;
+    case NU_OP_CBLEU:
+        return NU_OP_CBGEU;
+    case NU_OP_CBGTU:
+        return NU_OP_CBLTU;
+    default:
+        return op;
+    }
 }
 
 /* compile a boolean expression */
@@ -621,7 +646,7 @@ NuCompileBoolBranches(NuIrList *irl, AST *expr, NuIrLabel *truedest, NuIrLabel *
     default:
         opc = NuCompileBasicBoolExpression(irl, expr);
         if (!truedest) {
-            opc = NuFlipCondition(opc);
+            opc = NuInvertCondition(opc);
             truedest = falsedest;
             falsedest = NULL;
         }

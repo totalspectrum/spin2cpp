@@ -276,7 +276,7 @@ static NuPeepholePattern pat_cbxx[] = {
 // replace CBxx label; BRA label2; LABEL label -> CBNxx label2; LABEL label
 static int NuReplaceCBxx(int arg, NuIrList *irl, NuIr *ir) {
     NuIr *nextir = ir->next;
-    NuIrOpcode new_opc = NuFlipCondition(ir->op);
+    NuIrOpcode new_opc = NuInvertCondition(ir->op);
     nextir->op = new_opc;
     NuDeleteIr(irl, ir);
     return 1;
@@ -284,8 +284,7 @@ static int NuReplaceCBxx(int arg, NuIrList *irl, NuIr *ir) {
 
 //
 // SWAP; CBxx label
-// can become CBNxx label for <, > type comparisons
-// for == and <>, just remove the SWAP
+// can become CByy label xx -> reverse(yy) (e.g. <= becomes >=)
 //
 static NuPeepholePattern pat_swap_cbxx[] = {
     { NU_OP_SWAP,  PEEP_ARG_ANY, PEEP_FLAGS_NONE },
@@ -299,13 +298,10 @@ static int NuReplaceSwapCBxx(int arg, NuIrList *irl, NuIr *ir) {
     NuIr *nextir = ir->next;
     NuIrOpcode old_opc = nextir->op;
     NuIrOpcode new_opc;
-    if (old_opc == NU_OP_CBEQ || old_opc == NU_OP_CBNE) {
-        new_opc = old_opc;
-    } else {
-        new_opc = NuFlipCondition(old_opc);
-    }
+    new_opc = NuReverseDirCondition(old_opc);
+
     nextir->op = new_opc;
-    NuDeleteIr(irl, ir);
+    NuDeleteIr(irl, ir);  /* remove the swap */
     return 1;
 }
 
