@@ -7,6 +7,12 @@
 #include "lfs.h"
 #include "lfs_util.h"
 
+#ifdef __FLEXC__
+#define staticfn
+#else
+#define staticfn static
+#endif
+
 #define LFS_BLOCK_NULL ((lfs_block_t)-1)
 #define LFS_BLOCK_INLINE ((lfs_block_t)-2)
 
@@ -418,29 +424,29 @@ static inline void lfs_superblock_tole32(lfs_superblock_t *superblock) {
 
 
 /// Internal operations predeclared here ///
-static int lfs_dir_commit(lfs_t *lfs, lfs_mdir_t *dir,
+staticfn int lfs_dir_commit(lfs_t *lfs, lfs_mdir_t *dir,
         const struct lfs_mattr *attrs, int attrcount);
-static int lfs_dir_compact(lfs_t *lfs,
+staticfn int lfs_dir_compact(lfs_t *lfs,
         lfs_mdir_t *dir, const struct lfs_mattr *attrs, int attrcount,
         lfs_mdir_t *source, uint16_t begin, uint16_t end);
-static int lfs_file_outline(lfs_t *lfs, lfs_file_t *file);
-static int lfs_file_flush(lfs_t *lfs, lfs_file_t *file);
-static void lfs_fs_preporphans(lfs_t *lfs, int8_t orphans);
-static void lfs_fs_prepmove(lfs_t *lfs,
+staticfn int lfs_file_outline(lfs_t *lfs, lfs_file_t *file);
+staticfn int lfs_file_flush(lfs_t *lfs, lfs_file_t *file);
+staticfn void lfs_fs_preporphans(lfs_t *lfs, int8_t orphans);
+staticfn void lfs_fs_prepmove(lfs_t *lfs,
         uint16_t id, const lfs_block_t pair[2]);
-static int lfs_fs_pred(lfs_t *lfs, const lfs_block_t dir[2],
+staticfn int lfs_fs_pred(lfs_t *lfs, const lfs_block_t dir[2],
         lfs_mdir_t *pdir);
-static lfs_stag_t lfs_fs_parent(lfs_t *lfs, const lfs_block_t dir[2],
+staticfn lfs_stag_t lfs_fs_parent(lfs_t *lfs, const lfs_block_t dir[2],
         lfs_mdir_t *parent);
-static int lfs_fs_relocate(lfs_t *lfs,
+staticfn int lfs_fs_relocate(lfs_t *lfs,
         const lfs_block_t oldpair[2], lfs_block_t newpair[2]);
 int lfs_fs_traverseraw(lfs_t *lfs,
         int (*cb)(void *data, lfs_block_t block), void *data,
         bool includeorphans);
-static int lfs_fs_forceconsistency(lfs_t *lfs);
-static int lfs_deinit(lfs_t *lfs);
+staticfn int lfs_fs_forceconsistency(lfs_t *lfs);
+staticfn int lfs_deinit(lfs_t *lfs);
 #ifdef LFS_MIGRATE
-static int lfs1_traverse(lfs_t *lfs,
+staticfn int lfs1_traverse(lfs_t *lfs,
         int (*cb)(void*, lfs_block_t), void *data);
 #endif
 
@@ -1205,7 +1211,7 @@ struct lfs_commit {
     lfs_off_t end;
 };
 
-static int lfs_dir_commitprog(lfs_t *lfs, struct lfs_commit *commit,
+staticfn int lfs_dir_commitprog(lfs_t *lfs, struct lfs_commit *commit,
         const void *buffer, lfs_size_t size) {
     int err = lfs_bd_prog(lfs,
             &lfs->pcache, &lfs->rcache, false,
@@ -1221,7 +1227,7 @@ static int lfs_dir_commitprog(lfs_t *lfs, struct lfs_commit *commit,
     return 0;
 }
 
-static int lfs_dir_commitattr(lfs_t *lfs, struct lfs_commit *commit,
+staticfn int lfs_dir_commitattr(lfs_t *lfs, struct lfs_commit *commit,
         lfs_tag_t tag, const void *buffer) {
     // check if we fit
     lfs_size_t dsize = lfs_tag_dsize(tag);
@@ -1266,7 +1272,7 @@ static int lfs_dir_commitattr(lfs_t *lfs, struct lfs_commit *commit,
     return 0;
 }
 
-static int lfs_dir_commitcrc(lfs_t *lfs, struct lfs_commit *commit) {
+staticfn int lfs_dir_commitcrc(lfs_t *lfs, struct lfs_commit *commit) {
     const lfs_off_t off1 = commit->off;
     const uint32_t crc1 = commit->crc;
     // align to program units
@@ -1397,7 +1403,7 @@ static int lfs_dir_alloc(lfs_t *lfs, lfs_mdir_t *dir) {
     return 0;
 }
 
-static int lfs_dir_drop(lfs_t *lfs, lfs_mdir_t *dir, lfs_mdir_t *tail) {
+staticfn int lfs_dir_drop(lfs_t *lfs, lfs_mdir_t *dir, lfs_mdir_t *tail) {
     // steal state
     int err = lfs_dir_getgstate(lfs, tail, &lfs->gdelta);
     if (err) {
@@ -1416,7 +1422,7 @@ static int lfs_dir_drop(lfs_t *lfs, lfs_mdir_t *dir, lfs_mdir_t *tail) {
     return 0;
 }
 
-static int lfs_dir_split(lfs_t *lfs,
+staticfn int lfs_dir_split(lfs_t *lfs,
         lfs_mdir_t *dir, const struct lfs_mattr *attrs, int attrcount,
         lfs_mdir_t *source, uint16_t split, uint16_t end) {
     // create tail directory
@@ -1462,12 +1468,12 @@ struct lfs_dir_commit_commit {
     struct lfs_commit *commit;
 };
 
-static int lfs_dir_commit_commit(void *p, lfs_tag_t tag, const void *buffer) {
+staticfn int lfs_dir_commit_commit(void *p, lfs_tag_t tag, const void *buffer) {
     struct lfs_dir_commit_commit *commit = p;
     return lfs_dir_commitattr(commit->lfs, commit->commit, tag, buffer);
 }
 
-static int lfs_dir_compact(lfs_t *lfs,
+staticfn int lfs_dir_compact(lfs_t *lfs,
         lfs_mdir_t *dir, const struct lfs_mattr *attrs, int attrcount,
         lfs_mdir_t *source, uint16_t begin, uint16_t end) {
     // save some state in case block is bad
@@ -1733,7 +1739,7 @@ relocate:
     return 0;
 }
 
-static int lfs_dir_commit(lfs_t *lfs, lfs_mdir_t *dir,
+staticfn int lfs_dir_commit(lfs_t *lfs, lfs_mdir_t *dir,
         const struct lfs_mattr *attrs, int attrcount) {
     // check for any inline files that aren't RAM backed and
     // forcefully evict them, needed for filesystem consistency
@@ -2664,7 +2670,7 @@ relocate:
     }
 }
 
-static int lfs_file_outline(lfs_t *lfs, lfs_file_t *file) {
+staticfn int lfs_file_outline(lfs_t *lfs, lfs_file_t *file) {
     file->off = file->pos;
     lfs_alloc_ack(lfs);
     int err = lfs_file_relocate(lfs, file);
@@ -2676,7 +2682,7 @@ static int lfs_file_outline(lfs_t *lfs, lfs_file_t *file) {
     return 0;
 }
 
-static int lfs_file_flush(lfs_t *lfs, lfs_file_t *file) {
+staticfn int lfs_file_flush(lfs_t *lfs, lfs_file_t *file) {
     LFS_ASSERT(file->flags & LFS_F_OPENED);
 
     if (file->flags & LFS_F_READING) {
@@ -3601,7 +3607,7 @@ cleanup:
     return err;
 }
 
-static int lfs_deinit(lfs_t *lfs) {
+staticfn int lfs_deinit(lfs_t *lfs) {
     // free allocated memory
     if (!lfs->cfg->read_buffer) {
         lfs_free(lfs->rcache.buffer);
@@ -3957,7 +3963,7 @@ int lfs_fs_traverse(lfs_t *lfs,
     return err;
 }
 
-static int lfs_fs_pred(lfs_t *lfs,
+staticfn int lfs_fs_pred(lfs_t *lfs,
         const lfs_block_t pair[2], lfs_mdir_t *pdir) {
     // iterate over all directory directory entries
     pdir->tail[0] = 0;
@@ -4034,7 +4040,7 @@ static lfs_stag_t lfs_fs_parent(lfs_t *lfs, const lfs_block_t pair[2],
     return LFS_ERR_NOENT;
 }
 
-static int lfs_fs_relocate(lfs_t *lfs,
+staticfn int lfs_fs_relocate(lfs_t *lfs,
         const lfs_block_t oldpair[2], lfs_block_t newpair[2]) {
     // update internal root
     if (lfs_pair_cmp(oldpair, lfs->root) == 0) {
@@ -4129,14 +4135,14 @@ static int lfs_fs_relocate(lfs_t *lfs,
     return 0;
 }
 
-static void lfs_fs_preporphans(lfs_t *lfs, int8_t orphans) {
+staticfn void lfs_fs_preporphans(lfs_t *lfs, int8_t orphans) {
     LFS_ASSERT(lfs_tag_size(lfs->gstate.tag) > 0 || orphans >= 0);
     lfs->gstate.tag += orphans;
     lfs->gstate.tag = ((lfs->gstate.tag & ~LFS_MKTAG(0x800, 0, 0)) |
             ((uint32_t)lfs_gstate_hasorphans(&lfs->gstate) << 31));
 }
 
-static void lfs_fs_prepmove(lfs_t *lfs,
+staticfn void lfs_fs_prepmove(lfs_t *lfs,
         uint16_t id, const lfs_block_t pair[2]) {
     lfs->gstate.tag = ((lfs->gstate.tag & ~LFS_MKTAG(0x7ff, 0x3ff, 0)) |
             ((id != 0x3ff) ? LFS_MKTAG(LFS_TYPE_DELETE, id, 0) : 0));
@@ -4144,7 +4150,7 @@ static void lfs_fs_prepmove(lfs_t *lfs,
     lfs->gstate.pair[1] = (id != 0x3ff) ? pair[1] : 0;
 }
 
-static int lfs_fs_demove(lfs_t *lfs) {
+staticfn int lfs_fs_demove(lfs_t *lfs) {
     if (!lfs_gstate_hasmove(&lfs->gdisk)) {
         return 0;
     }
@@ -4174,7 +4180,7 @@ static int lfs_fs_demove(lfs_t *lfs) {
     return 0;
 }
 
-static int lfs_fs_deorphan(lfs_t *lfs) {
+staticfn int lfs_fs_deorphan(lfs_t *lfs) {
     if (!lfs_gstate_hasorphans(&lfs->gstate)) {
         return 0;
     }
@@ -4248,7 +4254,7 @@ static int lfs_fs_deorphan(lfs_t *lfs) {
     return 0;
 }
 
-static int lfs_fs_forceconsistency(lfs_t *lfs) {
+staticfn int lfs_fs_forceconsistency(lfs_t *lfs) {
     int err = lfs_fs_demove(lfs);
     if (err) {
         return err;
@@ -4262,7 +4268,7 @@ static int lfs_fs_forceconsistency(lfs_t *lfs) {
     return 0;
 }
 
-static int lfs_fs_size_count(void *p, lfs_block_t block) {
+staticfn int lfs_fs_size_count(void *p, lfs_block_t block) {
     (void)block;
     lfs_size_t *size = p;
     *size += 1;

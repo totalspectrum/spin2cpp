@@ -4,8 +4,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 
-#include "lfs.h"
-#include "lfs_util.h"
+#include "lfs.c"
 
 #define SPI_PROG_SIZE          256
 
@@ -502,8 +501,8 @@ static int v_deinit(const char *mountname)
 }
 
 
-static struct vfs *
-get_lfs_vfs(struct littlefs_flash_config *fcfg, int do_format)
+struct vfs *
+get_vfs(struct littlefs_flash_config *fcfg, int do_format)
 {
     struct vfs *v;
     static struct vfs temp;
@@ -571,36 +570,10 @@ get_lfs_vfs(struct littlefs_flash_config *fcfg, int do_format)
     return v;
 }
 
-static struct littlefs_flash_config default_cfg = {
-    .page_size = 256,
-    .erase_size = 65536,
-    .offset = 2*1024*1024,      // where to start in flash
-    .used_size = 6*1024*1024,   // how much of flash to use
-};
-
-struct vfs *
-_vfs_open_littlefs_flash(int do_format = 1, struct littlefs_flash_config *fcfg = 0)
-{
-    struct vfs *v;
-    int r;
-
-    if (!fcfg) {
-        fcfg = &default_cfg;
-    }
-    v = get_lfs_vfs(fcfg, do_format);
-#ifdef _DEBUG_LFS
-    __builtin_printf("get_lfs_vfs returned %x\n", (unsigned)v);
-#endif    
-    return v;
-}
-
 int
-_mkfs_littlefs_flash(struct littlefs_flash_config *fcfg)
+v_mkfs(struct littlefs_flash_config *fcfg)
 {
     int r;
-    if (!fcfg) {
-        fcfg = &default_cfg;
-    }
     f_pinmask = (1ULL << 61) | (1ULL << 60) | (1ULL << 59) | (1ULL << 58);
     if (!_usepins(f_pinmask)) {
         return _seterror(EBUSY);

@@ -59,8 +59,8 @@ struct littlefs_flash_config {
     unsigned used_size;      // size to be used within flash, must be a multiple of erase_size
     unsigned reserved[4];    // reserved for future use (pins and whatnot)
 };
-struct vfs *_vfs_open_littlefs_flash(int do_format = 1, struct littlefs_flash_config *cfg = 0) _IMPL("filesys/littlefs/lfswrapper.cc");
-int _mkfs_littlefs_flash(struct littlefs_flash_config *cfg = 0) _IMPL("filesys/littlefs/lfswrapper.cc");
+struct vfs *_vfs_open_littlefs_flash(int do_format = 1, struct littlefs_flash_config *cfg = 0) _IMPL("filesys/littlefs/lfs_spi_vfs.c");
+int _mkfs_littlefs_flash(struct littlefs_flash_config *cfg = 0) _IMPL("filesys/littlefs/lfs_spi_vfs.c");
 
 /* generic file buffer code */
 /* put a "struct _default_buffer" at the start of your vfsdata to use the
