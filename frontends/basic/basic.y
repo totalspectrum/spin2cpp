@@ -1885,6 +1885,20 @@ optexprlist:
     { $$ = $1; }
 ;
 
+initexprlist:
+  initexpritem
+    { $$ = $1; }
+ | initexprlist ',' initexpritem
+   { $$ = AddToList($1, $3); }
+ ;
+
+initexpritem:
+  expr
+   { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+  | eolnseq expr
+   { $$ = NewAST(AST_EXPRLIST, $2, NULL); }
+;
+
 exprlist:
   expritem
     { $$ = $1; }
@@ -2486,7 +2500,9 @@ dimitem:
     { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
   | identdecl '=' expr
     { $$ = NewAST(AST_LISTHOLDER, AstAssign($1, $3), NULL); }
-  | identdecl '=' '{' exprlist '}'
+  | identdecl '=' '{' initexprlist '}'
+    { $$ = NewAST(AST_LISTHOLDER, AstAssign($1, $4), NULL); }
+  | identdecl '=' '{' initexprlist BAS_EOLN '}'
     { $$ = NewAST(AST_LISTHOLDER, AstAssign($1, $4), NULL); }
 ;
 

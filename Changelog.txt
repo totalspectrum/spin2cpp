@@ -2,6 +2,7 @@ Version 6.0.0
 - Added interpreter and code size printing if --sizes is given
 - Added atof() and strtof() functions
 - Added %p format flag to printf
+- Allow newlines inside BASIC initializations
 - Automatically reset baud rate on _clkset()
 - Disabled SIMPLE_IO printf optimization because it was interacting poorly with symbol resolution
 - Fixed _ assignment in nucode output

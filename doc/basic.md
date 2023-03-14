@@ -661,14 +661,7 @@ It is possible to extend a long expression or array initializer over several lin
   x = y + _
       z
 ```
-is parsed like `x = y + z`. This is especially useful for array initializers, which can often be quite long:
-```
-dim shared as integer a(5) = { _
-  1, 2, 3, _
-  4, 5 _
-  }
-```
-Note that only shared arrays may be initialized like this.
+is parsed like `x = y + z`.
 
 IMPORTANT: the `_` character *must* be the last thing on the line. Nothing can come after it, not even space or comments.
 
@@ -3617,11 +3610,13 @@ Returns the bit-wise exclusive or of x and y. If x or y is a floating point numb
 
 There are a variety of ways to include binary data in a BASIC program. You can use an initialized array. So for example to declare an array `mydata` with bytes from 1 to 8 you could do:
 ```
-dim shared as ubyte mydata(8) = { _
-   0x01, 0x02, 0x03, 0x04,   _
-   0x05, 0x06, 0x07, 0x08    _
+dim shared as ubyte mydata(8) = {
+   0x01, 0x02, 0x03, 0x04,
+   0x05, 0x06, 0x07, 0x08
 }
 ```
+Note that only `shared` arrays may be initialized in this way (all of the copies must have the same initial values, hence the requirement for `shared`).
+
 #### Data in inline assembly
 
 Another alternative is to use the `asm shared` directive, and the assembler `byte`, `word`, and `long` directives. There is an important difference between the `asm shared` way and the initialized array. The initialized array has an array type. The `asm shared` declares a plain label which isn't intrinsically an array. That means that in practice you will usually want to use a pointer to the label.
