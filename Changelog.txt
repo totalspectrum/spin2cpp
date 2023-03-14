@@ -14,6 +14,7 @@ Version 6.0.0
 - Fixed compilation error on some signed multiplies
 - Fixed calling varargs functions from Spin in bytecode
 - Fixed BASIC LINE INPUT when no explicit file handle is given
+- Fixed umount of SD card to clear pins in use
 - Implemented _muldiv64 for bytecode
 - Made Spin2 loop behaviour match that of other languages (like PNut v38)
 - Optimized nucode output considerably

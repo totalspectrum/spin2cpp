@@ -3642,6 +3642,7 @@ FRESULT f_mount (
 #if FF_FS_REENTRANT						/* Discard sync object of the current volume */
 		if (!ff_del_syncobj(cfs->sobj)) return FR_INT_ERR;
 #endif
+                disk_deinitialize(cfs->pdrv);                   /* shut down the drive */
 		cfs->fs_type = 0;				/* Clear old fs object */
 	}
 
@@ -3650,7 +3651,7 @@ FRESULT f_mount (
 #if FF_FS_REENTRANT						/* Create sync object for the new volume */
 		if (!ff_cre_syncobj((BYTE)vol, &fs->sobj)) return FR_INT_ERR;
 #endif
-	}
+        }
 	FatFs[vol] = fs;					/* Register new fs object */
 
 	if (opt == 0) return FR_OK;			/* Do not mount now, it will be mounted later */

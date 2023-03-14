@@ -782,3 +782,32 @@ DRESULT disk_setpins(int drv, int pclk, int pss, int pdi, int pdo)
     __builtin_printf("&_pin_clk=%x, _pin_clk = %d\n", (unsigned)&_pin_clk, _pin_clk);
 #endif    
 }
+
+//
+// new routine: deinitialize (clean up pins, if necessary)
+//
+DSTATUS disk_deinitialize( BYTE drv )
+{
+    int PIN_SS = _pin_ss;
+    int PIN_CLK = _pin_clk;
+    int PIN_DI = _pin_di;
+    int PIN_DO = _pin_do;
+    if (drv) {
+#ifdef _DEBUG_SDMM
+        __builtin_printf("deinitialize: bad drv %d\n", drv);
+#endif	    
+        return RES_NOTRDY;
+    }
+#ifdef _smartpins_mode_eh
+#ifdef _DEBUG_SDMM
+    __builtin_printf("clear pins %d %d %d %d\n", PIN_SS, PIN_CLK, PIN_DI, PIN_DO);
+#endif	    
+    _pinclear(PIN_SS);
+    _pinclear(PIN_CLK);
+    _pinclear(PIN_DI);
+    _pinclear(PIN_DO);
+    
+    _waitms(10);
+#endif    
+    return 0;
+}
