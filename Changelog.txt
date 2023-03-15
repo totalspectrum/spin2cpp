@@ -1,3 +1,6 @@
+Version 6.0.1
+- Added missing file for LittleFS file system.
+
 Version 6.0.0
 - Added interpreter and code size printing if --sizes is given
 - Added atof() and strtof() functions
