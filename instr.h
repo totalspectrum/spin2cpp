@@ -1,6 +1,6 @@
 /*
  * Spin to Pasm converter
- * Copyright 2016-2022 Total Spectrum Software Inc.
+ * Copyright 2016-2023 Total Spectrum Software Inc.
  * Intermediate representation definitions
  */
 
@@ -348,10 +348,10 @@ enum OperandEffect {
     OPEFFECT_POSTDEC = 2,
     OPEFFECT_PREINC = 3,
     OPEFFECT_POSTINC = 4,
-    
     OPEFFECT_FORCEABS = 0x100,
     OPEFFECT_FORCEHUB = 0x200,
     OPEFFECT_NOIMM    = 0x400,
+    OPEFFECT_DUMMY_ZERO = 0x800,
     
     OPEFFECT_OFFSET_MASK = 0xfffff000,
 };

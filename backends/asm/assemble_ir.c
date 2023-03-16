@@ -112,6 +112,7 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
     int useabsaddr;
     int opoffset;
     int skipimm;
+    int addDummyZero;
     unsigned effect = (unsigned)effect_orig;
 
     opoffset = ((int)effect) >> OPEFFECT_OFFSET_SHIFT;
@@ -122,6 +123,10 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
 
     usehubaddr = effect & OPEFFECT_FORCEHUB;
     effect &= ~(OPEFFECT_FORCEHUB);
+
+    addDummyZero = effect & OPEFFECT_DUMMY_ZERO;
+    effect &= ~(OPEFFECT_DUMMY_ZERO);
+    
     if (gl_p2) {
         useabsaddr = effect & OPEFFECT_FORCEABS;
         effect &= ~OPEFFECT_FORCEABS;
@@ -166,6 +171,9 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
         } else {
             // the immediate actually got processed as a register
             flexbuf_addstr(fb, RemappedName(reg->name));
+        }
+        if (addDummyZero) {
+            flexbuf_addstr(fb, " - 0");
         }
         break;
     case HUBMEM_REF:
@@ -238,13 +246,15 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
             regname = reg->name;
         }
         flexbuf_addstr(fb, RemappedName(regname));
-        if ( (reg->kind == REG_HW || reg->kind == IMM_COG_LABEL) && reg->val != 0) {
+        if ( (reg->kind == REG_HW || reg->kind == IMM_COG_LABEL) && ( (reg->val != 0) || addDummyZero ) ) {
             int32_t off = reg->val;
-            if (off < 0) {
+            if (off < 0 || (off == 0) ) {
                 flexbuf_printf(fb, " - %d", -off);
             } else {
                 flexbuf_printf(fb, " + %d", off);
             }
+        } else if (addDummyZero) {
+            flexbuf_addstr(fb, " - 0");
         }
         if (effect == OPEFFECT_POSTINC) {
             flexbuf_printf(fb, "++");
@@ -1236,7 +1246,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
             if (ir->opc == OPC_REPEAT && ir->dst->kind != IMM_INT) {
                 flexbuf_addstr(fb, "@");
             }
-            if (ir->instr->ops == P2_RDWR_OPERANDS) {
+            if (ir->instr->ops == P2_RDWR_OPERANDS || (ir->dsteffect & OPEFFECT_DUMMY_ZERO) ) {
                 PrintOperandSrc(fb, ir->dst, ir->dsteffect);
             } else {
                 PrintOperand(fb, ir->dst);

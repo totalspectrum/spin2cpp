@@ -17,7 +17,7 @@ entry
 _xoro_test
 	rdlong	result1, arg01
 	xoro32	result1
-	mov	_var01, 0
+	mov	_var01, 0 - 0
 	wrlong	result1, arg01
 	mov	result1, _var01
 _xoro_test_ret

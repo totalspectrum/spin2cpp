@@ -231,6 +231,9 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
         return NewPcRelative(0);
     } else if (IsConstExpr(expr)) {
         int32_t val = EvalConstExpr(expr);
+        if (val == 0 && !immflag && expr->kind == AST_OPERATOR && expr->d.ival == '-' && expr->left && expr->right && expr->right->kind == AST_INTEGER && expr->right->d.ival == 0) {
+            *effects |= OPEFFECT_DUMMY_ZERO;
+        }
         return ImmediateRef(immflag, val);
     } else if (expr->kind == AST_RANGEREF && expr->left && expr->left->kind == AST_HWREG) {
         // something like ptrb[4]
