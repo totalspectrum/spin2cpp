@@ -2359,7 +2359,9 @@ FindFuncSymbol(AST *ast, AST **objrefPtr, int errflag)
     }
     if (expr->kind != AST_METHODREF) {
         if (expr->kind != AST_FUNCCALL && expr->kind != AST_ADDROF && expr->kind != AST_ABSADDROF) {
-            ERROR(expr, "Internal error expecting function call");
+            //ERROR(expr, "Internal error expecting function call");
+            // actually this can happen in some cases (e.g. in BASIC while some array refs still look
+            // like function calls
             return NULL;
         }
         expr = expr->left;
