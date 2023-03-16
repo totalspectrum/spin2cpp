@@ -241,7 +241,7 @@ int v_stat(const char *name, struct stat *buf)
     buf->st_nlink = 1;
     buf->st_size = finfo.fsize;
     buf->st_blksize = 512;
-    buf->st_blocks = buf->st_size / 512;
+    buf->st_blocks = (buf->st_size + 511) / 512;
     buf->st_atime = buf->st_mtime = buf->st_ctime = unixtime(finfo.fdate, finfo.ftime);
 #ifdef _DEBUG_FATFS
     __builtin_printf("v_stat returning %d mode=0x%x\n", r, buf->st_mode);
