@@ -2,6 +2,7 @@ Version 6.0.2
 - Fixed an internal error where BASIC array references sometimes look like calls
 - Fixed some spurious warnings about 0-0 style operands in inline assembly
 - Fixed number of blocks calculation in FatFS stat() function.
+- Fixed some "unknown type xx passed to IsArrayType" errors
 
 Version 6.0.1
 - Added missing file for LittleFS file system.

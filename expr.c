@@ -2138,6 +2138,9 @@ IsArrayType(AST *ast)
     ast = RemoveTypeModifiers(ast);
     if (!ast) return 0;
     switch (ast->kind) {
+    case AST_STATIC:
+    case AST_ANNOTATION:
+        return IsArrayType(ast->left);
     case AST_ARRAYTYPE:
         return 1;
     case AST_INTTYPE:
@@ -2220,6 +2223,7 @@ int TypeSize(AST *typ)
     case AST_MODIFIER_VOLATILE:
     case AST_MODIFIER_SEND_ARGS:
     case AST_ANNOTATION:
+    case AST_STATIC:
         return TypeSize(typ->left);
     case AST_ARRAYTYPE:
         if (!IsConstExpr(typ->right)) {
