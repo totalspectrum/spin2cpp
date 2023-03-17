@@ -1,3 +1,7 @@
+Version 6.0.3
+- Handle REG[x] in -2nu output
+- Accept REG[x][y] as a valid Spin2 expression
+
 Version 6.0.2
 - Fixed an internal error where BASIC array references sometimes look like calls
 - Fixed some spurious warnings about 0-0 style operands in inline assembly

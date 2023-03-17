@@ -700,8 +700,16 @@ static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs)
         if (n != 1) {
             ERROR(lhs, "too many values pushed on stack");
         }
+        break;
     }
-    break;
+    case AST_SPRREF: {
+        int n = NuCompileExpression(irl, lhs->left);
+        op = NU_OP_STREG;
+        if (n != 1) {
+            ERROR(lhs, "too many values pushed on stack");
+        }
+        break;
+    }
     case AST_METHODREF: {
         AST *objref = lhs->left;
         AST *methodname = lhs->right;
@@ -1479,6 +1487,7 @@ NuCompileExpression(NuIrList *irl, AST *node) {
     case AST_ARRAYREF:
     case AST_METHODREF:
     case AST_MEMREF:
+    case AST_SPRREF:
     case AST_POSTSET:
     {
         AST *typ;
