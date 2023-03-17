@@ -1797,6 +1797,12 @@ lhs: identifier
     { $$ = AstSprRef($3, 0x1f0); }
   | SP_COGREG '[' expr ']'
     { $$ = AstSprRef($3, 0x0); }
+  | SP_COGREG '[' expr ']' '[' expr ']'
+    {
+        AST *cogmem = $3;
+        AST *off = $6;
+        $$ = AstSprRef(AstOperator('+', cogmem, off), 0x0);
+    }
   | identifier '.' '[' range ']'
     { $$ = NewAST(AST_RANGEREF, $1, $4);
     }
