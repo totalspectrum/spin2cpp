@@ -531,7 +531,7 @@ Most of these are also in Spin2.
 
 ### Additional Spin2 operators
 
-flexspin accepts some other Spin2 operators:
+flexspin accepts some other Spin2 operators even in Spin1 mode:
 ```
   a \ b   uses the value of a, but then sets a to b
   x <=> y returns -1, 0, or 1 if x < y, x == y, or x > y
@@ -608,7 +608,7 @@ Flexspin supports some new builtin functions. These typically start with an unde
 
 In Spin2 mode all of the above are available without the underscore.
 
-# Compatibility with other Spin 1 compilers
+# Compatibility with other Spin compilers
 
 ## Limitations
 
@@ -632,11 +632,11 @@ I2C, SPI and similar functions.
 
 ### @ and @@ Operator address truncation
 
-The Spin1 `@` and `@@` operators always truncate their result to 16 bits; flexspin does not do this. This won't matter in typical use (on the P1 addresses always fit in 16 bits anyway) but may be noticeable for some exotic uses.
+The Spin1 `@` and `@@` operators always truncate their result to 16 bits; flexspin does not do this. This won't matter in typical use (on the P1 addresses always fit in 16 bits anyway) but may be noticeable for some exotic uses. On the P2 addresses are 20 bits, so this doesn't apply.
 
 ### CHIPVER
 
-The Spin1 CHIPVER command always evaluates as 1, regardless of the actual chip version stored at $FFFF.
+The Spin1 CHIPVER command always evaluates as 1 on P1, and 2 on P2, regardless of the actual chip version stored at $FFFF.
 
 ## Symbol Differences
 
@@ -684,7 +684,7 @@ which will be the same as
 ```
 The difference is rarely noticeable, because flexspin does convert string literals to lists in many places.
 
-As an extension, flexspin allows you to write:
+As a Spin1 extension, flexspin allows you to write:
 ```
    foo(@"ABC")
 ```
@@ -692,6 +692,7 @@ instead of
 ```
    foo(string("ABC"))
 ```
+(The official Spin2 compiler has added this feature as well.)
 
 ## Known Bugs
 
@@ -766,7 +767,7 @@ COG memory is also laid out differently. See the general compiler documentation 
 
 ### DEBUG statements
 
-In flexspin, `DEBUG` statements are accepted only in Spin2 methods, *not* in PASM (they are ignored in PASM). This restriction is relaxed if the P2 only `-gbrk` flag is used instead of plain `-g`.
+If the FlexProp "Print debug" mode (option `-g`) is selected, `DEBUG` statements are accepted only in Spin2 methods, *not* in PASM (they are ignored in PASM). This restriction is relaxed if the P2 only BRK debug mode (`-gbrk` flag) is used instead of plain `-g`.
 
 Debug statements are output only when some variant of the `-g` flag (e.g. `-g` or `-gbrk` is given to flexspin.
 
@@ -780,11 +781,15 @@ With plain `-g` debugging `DEBUG` in flexspin is implemented differently than in
 
 `DEBUG` statements containing backticks are (partially) translated so as to output the correct strings, but FlexProp only interprets a limited subset of these strings so graphical debug capabiliites are restricted in FlexProp.
 
-Thanks to Ada Gottensträter, flexspin also now supports a `-gbrk` flag to enable `DEBUG` using the standard PNut method (using a BRK) instruction. This method will work inside PASM code, and is generally more compatible with the standard PNut Spin2 code.
+Thanks to Ada Gottensträter, flexspin also now supports a `-gbrk` flag to enable `DEBUG` using the standard PNut method (using a BRK) instruction. This method will work inside PASM code, and is generally more compatible with the standard PNut Spin2 code, so it is recommended for P2 projects.
 
 ### ASMCLK instruction
 
 The `ASMCLK` pseudo-instruction is supported as a preprocessor macro in FlexSpin, so only the most common spellings like `ASMCLK`, `AsmClk`, and `asmclk` will work (e.g. `aSmClk` will not work).
+
+### FIELD pointers
+
+Spin2 FIELD pointers (`^@`) are not supported yet.
 
 ### REGLOAD/REGEXEC
 
