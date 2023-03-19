@@ -2646,7 +2646,7 @@ Available file systems are:
   * `_vfs_open_host()` (for the loadp2 Plan 9 file system)
   * `_vfs_open_sdcard()` for a FAT file system on the P2 SD card.
   * `_vfs_open_sdcardx(clk, sel, di, do)` is the same, but allows explicit specification of which pins to use for the SD card
-  * `_vfs_open_littlefs_flash()` is the LittleFS file system, using 6MB of flash starting at offset 2MB.
+  * `_vfs_open_littlefs_flash(fmt, config)` is the LittleFS file system, using 6MB of flash starting at offset 2MB (this may be changed by changing the array used for `config`). `fmt` if non-zero enables formatting of the flash if no file system is found; `config` is an array specifying the flash characteristics, or 0 to use the default.
 
 Note that the LittleFS file system may not be used in the same program as the FAT file system on the default pins, because the pins conflict.
 
