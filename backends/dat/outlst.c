@@ -20,7 +20,7 @@ static int cogPcUpdate = 0;
 
 static LexStream *current_lex = NULL;
 
-static void initOutput(Module *P)
+static void initLstOutput(Module *P)
 {
     inCog = 0;
     cogPc = 0;
@@ -263,8 +263,9 @@ static void lstEndAst(Flexbuf *f, AST *ast)
     switch (ast->kind) {
     case AST_IDENTIFIER:
         /* do not catch up to line, yet */
-#if 1
+
         /* sanity check on label */
+        if (gl_p2) /* FIXME: should work for P1 too, but hub offset is handled differently there, so for now punt */
         {
             const char *name = ast->d.string;
             Symbol *sym = LookupSymbol(name);
@@ -277,7 +278,6 @@ static void lstEndAst(Flexbuf *f, AST *ast)
                 }
             }
         }
-#endif    
         break; // return;
     case AST_ORGH:
         break;
@@ -405,7 +405,7 @@ OutputLstFile(const char *fname, Module *P)
     }
     current = P;
     flexbuf_init(&fb, BUFSIZ);
-    initOutput(P);
+    initLstOutput(P);
     
     PrintDataBlock(&fb, P->datblock, &lstOutputFuncs, NULL);
 

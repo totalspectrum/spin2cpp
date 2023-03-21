@@ -1,6 +1,5 @@
 Version 6.0.3
-- Handle REG[x] in -2nu output
-- Accept REG[x][y] as a valid Spin2 expression
+- Fix a bug in P1 listing file output
 
 Version 6.0.2
 - Fixed an internal error where BASIC array references sometimes look like calls
