@@ -1308,18 +1308,17 @@ getFileName(const char *name, const char *orig)
 #ifdef WINDOWS
             && !strchr(orig, '\\')
 #endif
+        && strlen(ptr) > strlen(orig)
        )
     {
         siz = strlen(ptr) - strlen(orig);
-        if ( 1L <= (long)siz ) {
-            if ( ( ptr[siz-1] == '/'
+        if ( ( ptr[siz-1] == '/'
 #ifdef WINDOWS
-                  || ptr[siz-1] == '\\'
+               || ptr[siz-1] == '\\'
 #endif                  
-                     ) && !strcmp(ptr + siz, orig))
-            {
-                memmove(ptr, ptr+siz, strlen(orig)+1);
-            }
+                 ) && !strcmp(ptr + siz, orig))
+        {
+            memmove(ptr, ptr+siz, strlen(orig)+1);
         }
     }
 
