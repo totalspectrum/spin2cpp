@@ -1301,7 +1301,7 @@ getFileName(const char *name, const char *orig)
             memmove(ptr, ptr+1, siz-1);
             ptr[siz-2] = 0;
         }
-    }
+    }    
     // special case: if the original file name matches the last part
     // of the new one, just return the original
     if (!strchr(orig, '/')
@@ -1311,12 +1311,18 @@ getFileName(const char *name, const char *orig)
        )
     {
         siz = strlen(ptr) - strlen(orig);
-        if ( 0L <= (long)siz ) {
-            if (!strcmp(ptr + siz, orig)) {
+        if ( 1L <= (long)siz ) {
+            if ( ( ptr[siz-1] == '/'
+#ifdef WINDOWS
+                  || ptr[siz-1] == '\\'
+#endif                  
+                     ) && !strcmp(ptr + siz, orig))
+            {
                 memmove(ptr, ptr+siz, strlen(orig)+1);
             }
         }
     }
+
     return ptr;
 }
 
