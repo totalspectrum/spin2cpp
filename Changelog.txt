@@ -1,5 +1,6 @@
 Version 6.0.5
 - Fixed a spurious "use before set" warning in sizeof()
+- Improved the error message for try blocks in bytecode output
 
 Version 6.0.4
 - Fixed incorrect file name after #include in some rare cases (when the included file's name exactly matches the end of the original file)

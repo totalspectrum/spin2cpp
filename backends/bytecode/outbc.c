@@ -1,7 +1,7 @@
 //
 // Bytecode compiler for spin2cpp
 //
-// Copyright 2021-2022 Ada Gottensträter and Total Spectrum Software Inc.
+// Copyright 2021-2023 Ada Gottensträter and Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 
@@ -2897,6 +2897,9 @@ BCCompileStatement(BCIRBuffer *irbuf,AST *node, BCContext context) {
     } break;
     case AST_INLINEASM: {
         ERROR(node, "Inline assembly is not supported in bytecode output");
+    } break;
+    case AST_TRYENV: {
+        ERROR(node, "try/catch is not supported yet in bytecode output");
     } break;
     default:
         ERROR(node,"Unhandled node kind %d in statement",node->kind);
