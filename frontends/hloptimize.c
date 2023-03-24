@@ -240,6 +240,9 @@ again:
         // not, strictly speaking, accurate, but it makes things
         // like memset(foo, 0, sizeof(foo)) work
         return doCheckLocalVar(sym, body->left, VAR_SET, where);
+    case AST_SIZEOF:
+        /* these expressions do not actually evaluate their parameters */
+        return VAR_UNUSED;
     case AST_ASSIGN:
     case AST_VA_START:
         right = doCheckLocalVar(sym, body->right, VAR_USED, where);
