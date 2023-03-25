@@ -1393,8 +1393,7 @@ expr:
   | SP_FIELDPTR expr
     {
         AST *ref = $2;
-        SYNTAX_ERROR("^@ is not supported by flexspin");
-        $$ = NewAST(AST_ABSADDROF, ref, NULL); // placeholder
+        $$ = NewAST(AST_FIELDADDR, ref, NULL); // placeholder
     }
   | lhs SP_ASSIGN expr
     { $$ = AstAssign($1, $3); }

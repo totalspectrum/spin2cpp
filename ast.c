@@ -789,6 +789,9 @@ static const char *astnames[] = {
     "typeof",
     "assign_init",
     "here_imm",
+
+    "^@",
+    "field",
 };
 
 //

@@ -107,6 +107,7 @@ static OperandList *CompileFunccall(IRList *irl, AST *expr);
 static void CompileStatement(IRList *irl, AST *ast); /* forward declaration */
 
 static Operand *GetAddressOf(IRList *irl, AST *expr);
+static Operand *GetFieldAddressOf(IRList *irl, AST *expr);
 static IR *EmitMove(IRList *irl, Operand *dst, Operand *src, AST *linenum);
 static void EmitBuiltins(IRList *irl);
 static void CompileConsts(IRList *irl, Module *P);
@@ -3872,19 +3873,56 @@ CompileLookupDown(IRList *irl, AST *expr)
 }
 
 //
+// OR some flags into a result
+//
+static Operand *
+OrFlags(IRList *irl, Operand *res, unsigned flags, AST *line) {
+    Operand *orval = NewImmediate(flags);
+    Operand *tmp = NewFunctionTempRegister();
+
+    EmitMove(irl, tmp, res, line);
+    EmitOp2(irl, OPC_OR, tmp, orval);
+    return tmp;
+}
+
+//
 // get the address of an expression
 //
 static Operand *
-GetAddressOf(IRList *irl, AST *expr)
+doGetAddress(IRList *irl, AST *expr, bool isField)
 {
     Operand *res;
     Operand *tmp;
+    unsigned flags = 0;
+
+    if (isField) {
+        AST *typ = ExprType(expr);
+        switch (TypeSize(typ)) {
+        case 1:
+            flags = 0x4e000000;
+            break;
+        case 2:
+            flags = 0x9e000000;
+            break;
+        default:
+            flags = 0xfe000000;
+            break;
+        }
+    }
     switch (expr->kind) {
     case AST_RESULT:
     case AST_IDENTIFIER:
     case AST_LOCAL_IDENTIFIER:
         res = CompileExpression(irl, expr, NULL);
         tmp = GetLea(irl, res);
+        if (isField) {
+            if (IsCogMem(res)) {
+                flags = 0x3e000000;
+            }
+        }
+        if (flags) {
+            return OrFlags(irl, tmp, flags, expr);
+        }
         return tmp;
     case AST_ARRAYREF:
     {
@@ -3901,6 +3939,9 @@ GetAddressOf(IRList *irl, AST *expr)
         siz = TypeSize(ExprType(expr));
         res = ApplyArrayIndex(irl, base, offset, siz);
         tmp = GetLea(irl, res);
+        if (flags) {
+            return OrFlags(irl, tmp, flags, expr);
+        }
         return tmp;
     }
     case AST_METHODREF:
@@ -3928,6 +3969,8 @@ GetAddressOf(IRList *irl, AST *expr)
         if (!res) {
             ERROR(expr, "Internal error, cannot take address of %s", name);
             res = OPERAND_DUMMY;
+        } else if (flags) {
+            res = OrFlags(irl, res, flags, expr);
         }
         return res;
     }
@@ -3936,9 +3979,9 @@ GetAddressOf(IRList *irl, AST *expr)
     {
         if (expr->right) {
             CompileExpression(irl, expr->left, NULL);
-            return GetAddressOf(irl, expr->right);
+            return doGetAddress(irl, expr->right, isField);
         } else {
-            return GetAddressOf(irl, expr->left);
+            return doGetAddress(irl, expr->left, isField);
         }
     }
     default:
@@ -3946,6 +3989,16 @@ GetAddressOf(IRList *irl, AST *expr)
         break;
     }
     return NewImmediate(-1);
+}
+
+static Operand *GetAddressOf(IRList *irl, AST *expr)
+{
+    return doGetAddress(irl, expr, false);
+}
+
+static Operand *GetFieldAddressOf(IRList *irl, AST *expr)
+{
+    return doGetAddress(irl, expr, true);
 }
 
 static void
@@ -4228,6 +4281,8 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
     case AST_ADDROF:
     case AST_ABSADDROF:
         return GetAddressOf(irl, expr->left);
+    case AST_FIELDADDR:
+        return GetFieldAddressOf(irl, expr->left);
     case AST_DATADDROF:
         /* this requires that we add an offset to the value we get */
     {

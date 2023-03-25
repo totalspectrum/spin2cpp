@@ -1572,7 +1572,8 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
     const char *name;
     AST *offsetExpr = NULL;
     unsigned long offset;
-
+    AST *typ = NULL;
+    
     if (!expr)
         return intExpr(0);
     if (depth > MAX_DEPTH) {
@@ -1874,9 +1875,12 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
         break;
     case AST_ADDROF:
     case AST_ABSADDROF:
+    case AST_FIELDADDR:
+    {
         /* it's OK to take the address of a label; in that case, just
            send back the offset into the dat section
         */
+        bool isRegister = false;
         expr = expr->left;
         offset = 0;
         if (expr->kind == AST_ARRAYREF) {
@@ -1887,6 +1891,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             }
             expr = expr->left;
             offset = rval.val;
+            typ = rval.type;
         }
         if (expr->kind != AST_IDENTIFIER && expr->kind != AST_SYMBOL && expr->kind != AST_LOCAL_IDENTIFIER) {
             if (reportError)
@@ -1907,8 +1912,12 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
         }
         if (sym && sym->kind == SYM_LABEL) {
             Label *lref = (Label *)sym->v.ptr;
+            if (0 == (lref->flags & LABEL_IN_HUB)) {
+                isRegister = true;
+            }
             if (offset) {
-                offset *= TypeSize(BaseType(lref->type));
+                typ = BaseType(lref->type);
+                offset *= TypeSize(BaseType(typ));
             }
             if ( (gl_dat_offset == -1 && kind == AST_ABSADDROF && gl_output != OUTPUT_BYTECODE) || 0 == (flags & PASM_FLAG)) {
                 if (reportError) {
@@ -1924,8 +1933,23 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
                     if (valid) *valid = 0;   // Error (BCgetDAToffset will have already printed it if needed)
                 }
                 else offset += datoffset;
-            } else if (kind == AST_ABSADDROF) {
+            } else if (kind == AST_ABSADDROF || kind == AST_FIELDADDR) {
                 offset += gl_dat_offset > 0 ? gl_dat_offset : 0;
+            }
+            if (kind == AST_FIELDADDR) {
+                int x = TypeSize(typ);
+                switch (x) {
+                case 1:  offset |= 0x4e000000; break;
+                case 2:  offset |= 0x9e000000; break;
+                default:
+                case 4:
+                    if (isRegister) {
+                        offset |= 0x3e000000;
+                    } else {
+                        offset |= 0xfe000000;
+                    }
+                    break;
+                }
             }
             return intExpr(lref->hubval + offset);
         } else if (sym && sym->kind == SYM_VARIABLE && (sym->flags & SYMF_GLOBAL)) {
@@ -1943,6 +1967,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             return intExpr(0);
         }
         break;
+    }
     case AST_CAST:
         rval = EvalExpr(expr->right, flags, valid, depth+1);
         if (IsGenericType(expr->left)) {
