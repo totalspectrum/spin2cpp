@@ -3984,6 +3984,42 @@ doGetAddress(IRList *irl, AST *expr, bool isField)
             return doGetAddress(irl, expr->left, isField);
         }
     }
+    case AST_RANGEREF:
+    {
+        if (isField) {
+            Operand *base = doGetAddress(irl, expr->left, true);
+            Operand *bits;
+            AST *range = expr->right;
+            if (!range) return base;
+            if (range->kind != AST_RANGE) {
+                ERROR(expr, "invalid range in ^@ expression");
+                return base;
+            }
+            if (range->left && !range->right) {
+                bits = CompileExpression(irl, range->left, NULL);
+            } else if (range->right && !range->left) {
+                bits = CompileExpression(irl, range->right, NULL);
+            } else {
+                Operand *basebit;
+                basebit = CompileExpression(irl, range->right, NULL);
+                bits = CompileExpression(irl, range->left, NULL);
+                basebit = Dereference(irl, basebit);
+                bits = Dereference(irl, bits);
+                EmitOp2(irl, OPC_SUB, bits, basebit);
+                EmitOp2(irl, OPC_SHL, bits, NewImmediate(5));
+                EmitOp2(irl, OPC_OR, bits, basebit);
+            }
+            EmitOp2(irl, OPC_ANDN, base, NewImmediate(0x3e000000));
+            if (bits->kind == IMM_INT) {
+                bits->val = bits->val << 20;
+            } else {
+                EmitOp2(irl, OPC_SHL, bits, NewImmediate(20));
+            }
+            EmitOp2(irl, OPC_OR, base, bits);
+            return base;
+        }
+        /* otherwise fall through */
+    }
     default:
         ERROR(expr, "Cannot take address of expression");
         break;

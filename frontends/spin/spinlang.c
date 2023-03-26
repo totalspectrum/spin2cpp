@@ -353,6 +353,7 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
     case AST_ADDROF:
     case AST_ABSADDROF:
     case AST_ARRAYREF:
+    case AST_FIELDADDR:
         /* see if it's a parameter whose address is being taken */
         ast = body->left;
         if (IsIdentifier(ast)) {
@@ -783,6 +784,14 @@ doSpinTransform(AST **astptr, int level, AST *parent)
     case AST_ALLOCA:
         doSpinTransform(&ast->right, 0, ast);
         curfunc->uses_alloca = 1;
+        break;
+    case AST_FIELDADDR:
+        if (ast->left && ast->left->kind != AST_RANGEREF) {
+            doSpinTransform(&ast->left, 0, ast);
+        }
+        if (IsLocalVariable(ast->left)) {
+            curfunc->local_address_taken = 1;
+        }
         break;
     case AST_ADDROF:
     case AST_ABSADDROF:
