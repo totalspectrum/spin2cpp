@@ -15,12 +15,12 @@ dat
 entry
 
 _demo
-	mov	_func1_b, #0
+	mov	_inline_00000__func1_b, #0
 	rep	@LR__0001, #8
 	testp	#15 wc
-	rcl	_func1_b, #1
+	rcl	_inline_00000__func1_b, #1
 LR__0001
-	mov	outb, _func1_b
+	mov	outb, _inline_00000__func1_b
 	call	#_func2
 	mov	outb, result1
 _demo_ret
@@ -68,7 +68,7 @@ COG_BSS_START
 	fit	480
 	orgh
 	org	COG_BSS_START
-_func1_b
+_inline_00000__func1_b
 	res	1
 _var01
 	res	1

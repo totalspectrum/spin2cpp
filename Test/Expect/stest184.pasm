@@ -23,25 +23,25 @@ _fetchv
 	mov	arg02, arg01
 	cmps	arg01, fetchv_tmp002_ wc
  if_ae	jmp	#LR__0002
-	mov	__system____builtin_memmove__idx__0000, #20 wz
+	mov	_inline_00014__inline_00000___system____builtin_memmove__idx__0000, #20 wz
 LR__0001
 	rdbyte	result1, fetchv_tmp002_
 	wrbyte	result1, arg01
 	add	arg01, #1
 	add	fetchv_tmp002_, #1
-	djnz	__system____builtin_memmove__idx__0000, #LR__0001
+	djnz	_inline_00014__inline_00000___system____builtin_memmove__idx__0000, #LR__0001
 	jmp	#LR__0005
 LR__0002
 	add	arg01, arg03
 	add	fetchv_tmp002_, arg03
-	mov	__system____builtin_memmove__idx__0001, arg03 wz
+	mov	_inline_00014__inline_00000___system____builtin_memmove__idx__0001, arg03 wz
  if_e	jmp	#LR__0004
 LR__0003
 	sub	arg01, #1
 	sub	fetchv_tmp002_, #1
-	rdbyte	__system____builtin_memmove__idx__0000, fetchv_tmp002_
-	wrbyte	__system____builtin_memmove__idx__0000, arg01
-	djnz	__system____builtin_memmove__idx__0001, #LR__0003
+	rdbyte	_inline_00014__inline_00000___system____builtin_memmove__idx__0000, fetchv_tmp002_
+	wrbyte	_inline_00014__inline_00000___system____builtin_memmove__idx__0000, arg01
+	djnz	_inline_00014__inline_00000___system____builtin_memmove__idx__0001, #LR__0003
 LR__0004
 LR__0005
 	add	arg02, #12
@@ -348,52 +348,52 @@ LR__0051
 	call	#__system____topofstack
 	mov	arg02, result1
 	mov	arg01, #0
-	mov	__system___gc_markhub_startaddr, #0
-	mov	__system___gc_markhub_endaddr, arg02
+	mov	_inline_00009___system___gc_markhub_startaddr, #0
+	mov	_inline_00009___system___gc_markhub_endaddr, arg02
 	call	#__system___gc_ptrs
-	mov	__system___gc_markhub_heap_base, result1
-	mov	__system___gc_markhub_heap_end, result2
+	mov	_inline_00009___system___gc_markhub_heap_base, result1
+	mov	_inline_00009___system___gc_markhub_heap_end, result2
 LR__0052
-	cmps	__system___gc_markhub_startaddr, __system___gc_markhub_endaddr wc
+	cmps	_inline_00009___system___gc_markhub_startaddr, _inline_00009___system___gc_markhub_endaddr wc
  if_ae	jmp	#LR__0053
-	rdlong	arg03, __system___gc_markhub_startaddr
-	add	__system___gc_markhub_startaddr, #4
-	mov	arg02, __system___gc_markhub_heap_end
-	mov	arg01, __system___gc_markhub_heap_base
+	rdlong	arg03, _inline_00009___system___gc_markhub_startaddr
+	add	_inline_00009___system___gc_markhub_startaddr, #4
+	mov	arg02, _inline_00009___system___gc_markhub_heap_end
+	mov	arg01, _inline_00009___system___gc_markhub_heap_base
 	call	#__system___gc_isvalidptr
-	mov	__system___gc_markhub_ptr, result1 wz
+	mov	_inline_00009___system___gc_markhub_ptr, result1 wz
  if_e	jmp	#LR__0052
-	mov	arg01, __system___gc_markhub_ptr
+	mov	arg01, _inline_00009___system___gc_markhub_ptr
 	call	#__system___gc_isFree
 	cmp	result1, #0 wz
- if_e	add	__system___gc_markhub_ptr, #2
- if_e	rdword	__system___gc_markhub_flags, __system___gc_markhub_ptr
- if_e	andn	__system___gc_markhub_flags, #15
- if_e	or	__system___gc_markhub_flags, #46
- if_e	wrword	__system___gc_markhub_flags, __system___gc_markhub_ptr
+ if_e	add	_inline_00009___system___gc_markhub_ptr, #2
+ if_e	rdword	_inline_00009___system___gc_markhub_flags, _inline_00009___system___gc_markhub_ptr
+ if_e	andn	_inline_00009___system___gc_markhub_flags, #15
+ if_e	or	_inline_00009___system___gc_markhub_flags, #46
+ if_e	wrword	_inline_00009___system___gc_markhub_flags, _inline_00009___system___gc_markhub_ptr
 	jmp	#LR__0052
 LR__0053
 	call	#__system___gc_ptrs
-	mov	__system___gc_markcog_heap_base, result1
-	mov	__system___gc_markcog_heap_end, result2
-	mov	__system___gc_markcog_cogaddr, #495
+	mov	_inline_00010___system___gc_markcog_heap_base, result1
+	mov	_inline_00010___system___gc_markcog_heap_end, result2
+	mov	_inline_00010___system___gc_markcog_cogaddr, #495
 LR__0054
-	'.live	__system___gc_markcog_ptr
-	movs	wrcog, __system___gc_markcog_cogaddr
+	'.live	_inline_00010___system___gc_markcog_ptr
+	movs	wrcog, _inline_00010___system___gc_markcog_cogaddr
 	movd	wrcog, #__system___gc_markcog_ptr
 	call	#wrcog
-	mov	arg02, __system___gc_markcog_heap_end
-	mov	arg01, __system___gc_markcog_heap_base
-	mov	arg03, __system___gc_markcog_ptr
+	mov	arg02, _inline_00010___system___gc_markcog_heap_end
+	mov	arg01, _inline_00010___system___gc_markcog_heap_base
+	mov	arg03, _inline_00010___system___gc_markcog_ptr
 	call	#__system___gc_isvalidptr
-	mov	__system___gc_markcog_ptr, result1 wz
- if_ne	mov	__system___gc_markcog__cse__0000, __system___gc_markcog_ptr
- if_ne	add	__system___gc_markcog__cse__0000, #2
- if_ne	rdword	__system___gc_markcog__cse__0001, __system___gc_markcog__cse__0000
- if_ne	or	__system___gc_markcog__cse__0001, #32
- if_ne	wrword	__system___gc_markcog__cse__0001, __system___gc_markcog__cse__0000
-	sub	__system___gc_markcog_cogaddr, #1
-	cmps	__system___gc_markcog_cogaddr, #0 wc
+	mov	_inline_00010___system___gc_markcog_ptr, result1 wz
+ if_ne	mov	_inline_00010___system___gc_markcog__cse__0000, _inline_00010___system___gc_markcog_ptr
+ if_ne	add	_inline_00010___system___gc_markcog__cse__0000, #2
+ if_ne	rdword	_inline_00010___system___gc_markcog__cse__0001, _inline_00010___system___gc_markcog__cse__0000
+ if_ne	or	_inline_00010___system___gc_markcog__cse__0001, #32
+ if_ne	wrword	_inline_00010___system___gc_markcog__cse__0001, _inline_00010___system___gc_markcog__cse__0000
+	sub	_inline_00010___system___gc_markcog_cogaddr, #1
+	cmps	_inline_00010___system___gc_markcog_cogaddr, #0 wc
  if_ae	jmp	#LR__0054
 	mov	arg01, __system___gc_docollect_startheap
 	call	#__system___gc_nextBlockPtr
@@ -415,115 +415,115 @@ LR__0055
  if_ne	cmp	__system___gc_docollect_startheap, #14 wz
  if_ne	jmp	#LR__0063
 	mov	arg01, __system___gc_docollect_ptr
-	mov	__system___gc_dofree_ptr, arg01
+	mov	_inline_00012___system___gc_dofree_ptr, arg01
 	call	#__system___gc_ptrs
-	mov	__system___gc_dofree_heapend, result2
-	mov	__system___gc_dofree_heapbase, result1
-	mov	__system___gc_dofree__cse__0000, __system___gc_dofree_ptr
-	add	__system___gc_dofree__cse__0000, #2
+	mov	_inline_00012___system___gc_dofree_heapend, result2
+	mov	_inline_00012___system___gc_dofree_heapbase, result1
+	mov	_inline_00012___system___gc_dofree__cse__0000, _inline_00012___system___gc_dofree_ptr
+	add	_inline_00012___system___gc_dofree__cse__0000, #2
 	mov	result1, imm_27791_
-	wrword	result1, __system___gc_dofree__cse__0000
-	mov	__system___gc_dofree_prevptr, __system___gc_dofree_ptr
-	mov	arg01, __system___gc_dofree_ptr
+	wrword	result1, _inline_00012___system___gc_dofree__cse__0000
+	mov	_inline_00012___system___gc_dofree_prevptr, _inline_00012___system___gc_dofree_ptr
+	mov	arg01, _inline_00012___system___gc_dofree_ptr
 	call	#__system___gc_nextBlockPtr
-	mov	__system___gc_dofree_nextptr, result1
+	mov	_inline_00012___system___gc_dofree_nextptr, result1
 LR__0056
-	add	__system___gc_dofree_prevptr, #4
-	rdword	arg02, __system___gc_dofree_prevptr
-	mov	arg01, __system___gc_dofree_heapbase
+	add	_inline_00012___system___gc_dofree_prevptr, #4
+	rdword	arg02, _inline_00012___system___gc_dofree_prevptr
+	mov	arg01, _inline_00012___system___gc_dofree_heapbase
 	call	#__system___gc_pageptr
-	mov	__system___gc_dofree_prevptr, result1 wz
+	mov	_inline_00012___system___gc_dofree_prevptr, result1 wz
  if_e	jmp	#LR__0057
-	mov	arg01, __system___gc_dofree_prevptr
+	mov	arg01, _inline_00012___system___gc_dofree_prevptr
 	call	#__system___gc_isFree
 	cmp	result1, #0 wz
  if_e	jmp	#LR__0056
 LR__0057
-	cmp	__system___gc_dofree_prevptr, #0 wz
- if_e	mov	__system___gc_dofree_prevptr, __system___gc_dofree_heapbase
-	mov	__system___gc_dofree__cse__0002, __system___gc_dofree_prevptr
-	add	__system___gc_dofree__cse__0002, #6
-	mov	__system___gc_dofree__cse__0003, __system___gc_dofree_ptr
-	rdword	arg02, __system___gc_dofree__cse__0002
-	add	__system___gc_dofree__cse__0003, #6
-	wrword	arg02, __system___gc_dofree__cse__0003
-	mov	arg01, __system___gc_dofree_heapbase
-	mov	arg02, __system___gc_dofree_ptr
+	cmp	_inline_00012___system___gc_dofree_prevptr, #0 wz
+ if_e	mov	_inline_00012___system___gc_dofree_prevptr, _inline_00012___system___gc_dofree_heapbase
+	mov	_inline_00012___system___gc_dofree__cse__0002, _inline_00012___system___gc_dofree_prevptr
+	add	_inline_00012___system___gc_dofree__cse__0002, #6
+	mov	_inline_00012___system___gc_dofree__cse__0003, _inline_00012___system___gc_dofree_ptr
+	rdword	arg02, _inline_00012___system___gc_dofree__cse__0002
+	add	_inline_00012___system___gc_dofree__cse__0003, #6
+	wrword	arg02, _inline_00012___system___gc_dofree__cse__0003
+	mov	arg01, _inline_00012___system___gc_dofree_heapbase
+	mov	arg02, _inline_00012___system___gc_dofree_ptr
 	call	#__system___gc_pageindex
-	wrword	result1, __system___gc_dofree__cse__0002
-	cmp	__system___gc_dofree_prevptr, __system___gc_dofree_heapbase wz
+	wrword	result1, _inline_00012___system___gc_dofree__cse__0002
+	cmp	_inline_00012___system___gc_dofree_prevptr, _inline_00012___system___gc_dofree_heapbase wz
  if_e	jmp	#LR__0060
-	mov	arg01, __system___gc_dofree_prevptr
+	mov	arg01, _inline_00012___system___gc_dofree_prevptr
 	call	#__system___gc_nextBlockPtr
-	cmp	result1, __system___gc_dofree_ptr wz
+	cmp	result1, _inline_00012___system___gc_dofree_ptr wz
  if_ne	jmp	#LR__0059
-	rdword	arg01, __system___gc_dofree_prevptr
-	rdword	result1, __system___gc_dofree_ptr
+	rdword	arg01, _inline_00012___system___gc_dofree_prevptr
+	rdword	result1, _inline_00012___system___gc_dofree_ptr
 	add	arg01, result1
-	wrword	arg01, __system___gc_dofree_prevptr
-	mov	__system___gc_dofree_nextptr, #0
-	wrword	__system___gc_dofree_nextptr, __system___gc_dofree__cse__0000
-	mov	arg01, __system___gc_dofree_ptr
+	wrword	arg01, _inline_00012___system___gc_dofree_prevptr
+	mov	_inline_00012___system___gc_dofree_nextptr, #0
+	wrword	_inline_00012___system___gc_dofree_nextptr, _inline_00012___system___gc_dofree__cse__0000
+	mov	arg01, _inline_00012___system___gc_dofree_ptr
 	call	#__system___gc_nextBlockPtr
-	mov	__system___gc_dofree_nextptr, result1
-	cmps	__system___gc_dofree_nextptr, __system___gc_dofree_heapend wc
+	mov	_inline_00012___system___gc_dofree_nextptr, result1
+	cmps	_inline_00012___system___gc_dofree_nextptr, _inline_00012___system___gc_dofree_heapend wc
  if_ae	jmp	#LR__0058
-	mov	__system___gc_dofree__cse__0000, __system___gc_dofree_nextptr
-	add	__system___gc_dofree__cse__0000, #4
-	mov	arg01, __system___gc_dofree_heapbase
-	mov	arg02, __system___gc_dofree_prevptr
+	mov	_inline_00012___system___gc_dofree__cse__0000, _inline_00012___system___gc_dofree_nextptr
+	add	_inline_00012___system___gc_dofree__cse__0000, #4
+	mov	arg01, _inline_00012___system___gc_dofree_heapbase
+	mov	arg02, _inline_00012___system___gc_dofree_prevptr
 	call	#__system___gc_pageindex
-	wrword	result1, __system___gc_dofree__cse__0000
+	wrword	result1, _inline_00012___system___gc_dofree__cse__0000
 LR__0058
-	rdword	__system___gc_dofree__cse__0000, __system___gc_dofree__cse__0003
-	wrword	__system___gc_dofree__cse__0000, __system___gc_dofree__cse__0002
-	mov	__system___gc_dofree__cse__0002, #0
-	wrword	__system___gc_dofree__cse__0002, __system___gc_dofree__cse__0003
-	mov	__system___gc_dofree_ptr, __system___gc_dofree_prevptr
+	rdword	_inline_00012___system___gc_dofree__cse__0000, _inline_00012___system___gc_dofree__cse__0003
+	wrword	_inline_00012___system___gc_dofree__cse__0000, _inline_00012___system___gc_dofree__cse__0002
+	mov	_inline_00012___system___gc_dofree__cse__0002, #0
+	wrword	_inline_00012___system___gc_dofree__cse__0002, _inline_00012___system___gc_dofree__cse__0003
+	mov	_inline_00012___system___gc_dofree_ptr, _inline_00012___system___gc_dofree_prevptr
 LR__0059
 LR__0060
-	mov	arg01, __system___gc_dofree_ptr
+	mov	arg01, _inline_00012___system___gc_dofree_ptr
 	call	#__system___gc_nextBlockPtr
-	mov	__system___gc_dofree__cse__0003, result1 wz
+	mov	_inline_00012___system___gc_dofree__cse__0003, result1 wz
  if_e	jmp	#LR__0062
-	cmps	__system___gc_dofree__cse__0003, __system___gc_dofree_heapend wc
+	cmps	_inline_00012___system___gc_dofree__cse__0003, _inline_00012___system___gc_dofree_heapend wc
  if_ae	jmp	#LR__0062
-	mov	arg01, __system___gc_dofree__cse__0003
+	mov	arg01, _inline_00012___system___gc_dofree__cse__0003
 	call	#__system___gc_isFree
 	cmp	result1, #0 wz
  if_e	jmp	#LR__0062
-	mov	__system___gc_dofree_prevptr, __system___gc_dofree_ptr
-	rdword	__system___gc_dofree__cse__0002, __system___gc_dofree_prevptr
-	mov	arg01, __system___gc_dofree__cse__0003
-	rdword	__system___gc_dofree__cse__0003, arg01
-	add	__system___gc_dofree__cse__0002, __system___gc_dofree__cse__0003
-	wrword	__system___gc_dofree__cse__0002, __system___gc_dofree_prevptr
-	mov	__system___gc_dofree_nextptr, arg01
-	add	__system___gc_dofree_nextptr, #6
-	mov	__system___gc_dofree__cse__0003, __system___gc_dofree_prevptr
-	rdword	__system___gc_dofree__cse__0002, __system___gc_dofree_nextptr
-	add	__system___gc_dofree__cse__0003, #6
-	wrword	__system___gc_dofree__cse__0002, __system___gc_dofree__cse__0003
-	mov	__system___gc_dofree__cse__0002, arg01
-	add	__system___gc_dofree__cse__0002, #2
-	mov	__system___gc_dofree__cse__0003, #170
-	wrword	__system___gc_dofree__cse__0003, __system___gc_dofree__cse__0002
-	mov	__system___gc_dofree__cse__0003, #0
-	wrword	__system___gc_dofree__cse__0003, __system___gc_dofree_nextptr
+	mov	_inline_00012___system___gc_dofree_prevptr, _inline_00012___system___gc_dofree_ptr
+	rdword	_inline_00012___system___gc_dofree__cse__0002, _inline_00012___system___gc_dofree_prevptr
+	mov	arg01, _inline_00012___system___gc_dofree__cse__0003
+	rdword	_inline_00012___system___gc_dofree__cse__0003, arg01
+	add	_inline_00012___system___gc_dofree__cse__0002, _inline_00012___system___gc_dofree__cse__0003
+	wrword	_inline_00012___system___gc_dofree__cse__0002, _inline_00012___system___gc_dofree_prevptr
+	mov	_inline_00012___system___gc_dofree_nextptr, arg01
+	add	_inline_00012___system___gc_dofree_nextptr, #6
+	mov	_inline_00012___system___gc_dofree__cse__0003, _inline_00012___system___gc_dofree_prevptr
+	rdword	_inline_00012___system___gc_dofree__cse__0002, _inline_00012___system___gc_dofree_nextptr
+	add	_inline_00012___system___gc_dofree__cse__0003, #6
+	wrword	_inline_00012___system___gc_dofree__cse__0002, _inline_00012___system___gc_dofree__cse__0003
+	mov	_inline_00012___system___gc_dofree__cse__0002, arg01
+	add	_inline_00012___system___gc_dofree__cse__0002, #2
+	mov	_inline_00012___system___gc_dofree__cse__0003, #170
+	wrword	_inline_00012___system___gc_dofree__cse__0003, _inline_00012___system___gc_dofree__cse__0002
+	mov	_inline_00012___system___gc_dofree__cse__0003, #0
+	wrword	_inline_00012___system___gc_dofree__cse__0003, _inline_00012___system___gc_dofree_nextptr
 	call	#__system___gc_nextBlockPtr
-	mov	__system___gc_dofree_nextptr, result1 wz
+	mov	_inline_00012___system___gc_dofree_nextptr, result1 wz
  if_e	jmp	#LR__0061
-	cmps	__system___gc_dofree_nextptr, __system___gc_dofree_heapend wc
+	cmps	_inline_00012___system___gc_dofree_nextptr, _inline_00012___system___gc_dofree_heapend wc
  if_ae	jmp	#LR__0061
-	mov	__system___gc_dofree__cse__0003, __system___gc_dofree_nextptr
-	add	__system___gc_dofree__cse__0003, #4
-	mov	arg01, __system___gc_dofree_heapbase
-	mov	arg02, __system___gc_dofree_prevptr
+	mov	_inline_00012___system___gc_dofree__cse__0003, _inline_00012___system___gc_dofree_nextptr
+	add	_inline_00012___system___gc_dofree__cse__0003, #4
+	mov	arg01, _inline_00012___system___gc_dofree_heapbase
+	mov	arg02, _inline_00012___system___gc_dofree_prevptr
 	call	#__system___gc_pageindex
-	wrword	result1, __system___gc_dofree__cse__0003
+	wrword	result1, _inline_00012___system___gc_dofree__cse__0003
 LR__0061
 LR__0062
-	mov	__system___gc_docollect__cse__0001, __system___gc_dofree_nextptr
+	mov	__system___gc_docollect__cse__0001, _inline_00012___system___gc_dofree_nextptr
 LR__0063
 LR__0064
 	cmp	__system___gc_docollect__cse__0001, #0 wz
@@ -595,10 +595,6 @@ __heap_base
 stackspace
 	long	0[1]
 	org	COG_BSS_START
-__system____builtin_memmove__idx__0000
-	res	1
-__system____builtin_memmove__idx__0001
-	res	1
 __system___gc_doalloc__cse__0005
 	res	1
 __system___gc_doalloc__idx__0000
@@ -621,46 +617,6 @@ __system___gc_docollect_ptr
 	res	1
 __system___gc_docollect_startheap
 	res	1
-__system___gc_dofree__cse__0000
-	res	1
-__system___gc_dofree__cse__0002
-	res	1
-__system___gc_dofree__cse__0003
-	res	1
-__system___gc_dofree_heapbase
-	res	1
-__system___gc_dofree_heapend
-	res	1
-__system___gc_dofree_nextptr
-	res	1
-__system___gc_dofree_prevptr
-	res	1
-__system___gc_dofree_ptr
-	res	1
-__system___gc_markcog__cse__0000
-	res	1
-__system___gc_markcog__cse__0001
-	res	1
-__system___gc_markcog_cogaddr
-	res	1
-__system___gc_markcog_heap_base
-	res	1
-__system___gc_markcog_heap_end
-	res	1
-__system___gc_markcog_ptr
-	res	1
-__system___gc_markhub_endaddr
-	res	1
-__system___gc_markhub_flags
-	res	1
-__system___gc_markhub_heap_base
-	res	1
-__system___gc_markhub_heap_end
-	res	1
-__system___gc_markhub_ptr
-	res	1
-__system___gc_markhub_startaddr
-	res	1
 __system___gc_tryalloc__cse__0002
 	res	1
 __system___gc_tryalloc_availsize
@@ -682,6 +638,50 @@ __system___gc_tryalloc_reserveflag
 __system___gc_tryalloc_saveptr
 	res	1
 __system___gc_tryalloc_size
+	res	1
+_inline_00009___system___gc_markhub_endaddr
+	res	1
+_inline_00009___system___gc_markhub_flags
+	res	1
+_inline_00009___system___gc_markhub_heap_base
+	res	1
+_inline_00009___system___gc_markhub_heap_end
+	res	1
+_inline_00009___system___gc_markhub_ptr
+	res	1
+_inline_00009___system___gc_markhub_startaddr
+	res	1
+_inline_00010___system___gc_markcog__cse__0000
+	res	1
+_inline_00010___system___gc_markcog__cse__0001
+	res	1
+_inline_00010___system___gc_markcog_cogaddr
+	res	1
+_inline_00010___system___gc_markcog_heap_base
+	res	1
+_inline_00010___system___gc_markcog_heap_end
+	res	1
+_inline_00010___system___gc_markcog_ptr
+	res	1
+_inline_00012___system___gc_dofree__cse__0000
+	res	1
+_inline_00012___system___gc_dofree__cse__0002
+	res	1
+_inline_00012___system___gc_dofree__cse__0003
+	res	1
+_inline_00012___system___gc_dofree_heapbase
+	res	1
+_inline_00012___system___gc_dofree_heapend
+	res	1
+_inline_00012___system___gc_dofree_nextptr
+	res	1
+_inline_00012___system___gc_dofree_prevptr
+	res	1
+_inline_00012___system___gc_dofree_ptr
+	res	1
+_inline_00014__inline_00000___system____builtin_memmove__idx__0000
+	res	1
+_inline_00014__inline_00000___system____builtin_memmove__idx__0001
 	res	1
 _system___gc_doalloc_tmp001_
 	res	1

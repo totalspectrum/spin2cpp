@@ -553,6 +553,41 @@ IR *DupIR(IR *old)
     return ir;
 }
 
+static Operand *DupOperandWithPrefix(Operand *oldOperand, const char *prefix) {
+    Operand *newOperand;
+    char *newName;
+    bool needSubreg = false;
+    int subRegId = 0;
+    if (oldOperand->kind == REG_SUBREG) {
+        subRegId = oldOperand->val;
+        oldOperand = (Operand *)oldOperand->name;
+        needSubreg = true;
+    }
+    newName = calloc(1, strlen(prefix)+strlen(oldOperand->name)+1);
+    strcpy(newName, prefix);
+    strcat(newName, oldOperand->name);
+    if (needSubreg) {
+        newOperand = GetSizedGlobal(oldOperand->kind, newName, 0, 2);
+    } else {
+        newOperand = GetOneGlobal(oldOperand->kind, newName, 0);
+    }
+    if (needSubreg) {
+        newOperand = SubRegister(newOperand, subRegId * LONG_SIZE);
+    }
+    return newOperand;
+}
+
+IR *DupIRWithPrefix(IR *old, const char *prefix) {
+    IR *newir = DupIR(old);
+    if (newir->dst && IsLocal(newir->dst)) {
+        newir->dst = DupOperandWithPrefix(newir->dst, prefix);
+    }
+    if (newir->src && IsLocal(newir->src)) {
+        newir->src = DupOperandWithPrefix(newir->src, prefix);
+    }
+    return newir;
+}
+
 static void
 ReplaceJumpTarget(IR *jmpir, Operand *dst)
 {
@@ -584,7 +619,11 @@ void ReplaceIRWithInline(IRList *irl, IR *origir, Function *func)
     IR *ir;
     IRCond cond = origir->cond;
     Operand *condlbl = NULL;
+    char prefix[32];
+    static int replace = 0;
 
+    sprintf(prefix, "_inline_%05u_", replace);
+    replace++;
     DeleteIR(irl, origir);
     if (cond != COND_TRUE) {
         condlbl = NewCodeLabel();
@@ -596,7 +635,7 @@ void ReplaceIRWithInline(IRList *irl, IR *origir, Function *func)
     }
     ir = insert->head;
     while (ir) {
-        newir = DupIR(ir);
+        newir = DupIRWithPrefix(ir, prefix);
         newir->flags |= FLAG_INSTR_NEW;
         if (newir->opc == OPC_LABEL) {
             // leave off the asm return name, if it's there
