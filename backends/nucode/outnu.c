@@ -794,6 +794,54 @@ static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs)
     return op;
 }
 
+static void NuCompileFieldAddress(NuIrList *irl, AST *lhs)
+{
+    AST *typ = ExprType(lhs);
+    AST *flagExpr = NULL;
+    AST *baseaddr;
+    unsigned flags;
+
+    if (lhs && lhs->kind == AST_RANGEREF) {
+        baseaddr = lhs->left;
+    } else {
+        baseaddr = lhs;
+    }
+    typ = ExprType(baseaddr);
+    switch (TypeSize(typ)) {
+    case 1:
+        flags = 0x4e000000; break;
+    case 2:
+        flags = 0x9e000000; break;
+    default:
+        flags = 0xfe000000; break;
+    }
+    NuCompileLhsAddress(irl, baseaddr);
+    if (lhs && lhs->kind == AST_RANGEREF) {
+        AST *range = lhs->right;
+        AST *basebit;
+        AST *numbits = NULL;
+        flags &= ~0x3e000000;
+        if (range->left && !range->right) {
+            basebit = range->left;
+        } else if (range->right && !range->left) {
+            basebit = range->right;
+        } else {
+            basebit = range->right;
+            numbits = AstOperator('-', range->left, range->right);
+            numbits = AstOperator(K_SHL, numbits, AstInteger(5));
+            basebit = AstOperator('|', basebit, numbits);
+        }
+        basebit = AstOperator(K_SHL, basebit, AstInteger(20));
+        flagExpr = AstOperator('|', basebit, AstInteger(flags));
+    } else {
+        if (flags) flagExpr = AstInteger(flags);
+    }
+    if (flagExpr) {
+        NuCompileExpression(irl, flagExpr);
+        NuEmitOp(irl, NU_OP_IOR);
+    }
+}
+
 /* pop multiple things off the stack, in reverse order */
 static int NuPopMultiple(NuIrList *irl, AST *lhs, int numRhs) {
     int popped = 0;
@@ -1548,8 +1596,12 @@ NuCompileExpression(NuIrList *irl, AST *node) {
     {
         (void)NuCompileLhsAddress(irl, node->left); // don't care about load op, we will not use it
         pushed = 1;
-    }
-    break;
+    } break;
+    case AST_FIELDADDR:
+    {
+        NuCompileFieldAddress(irl, node->left);
+        pushed = 1;
+    } break;
     case AST_DATADDROF:
     {
         pushed = NuCompileExpression(irl, node->left); // don't care about load op, we will not use it
