@@ -787,10 +787,6 @@ Thanks to Ada Gottensträter, flexspin also now supports a `-gbrk` flag to enabl
 
 The `ASMCLK` pseudo-instruction is supported as a preprocessor macro in FlexSpin, so only the most common spellings like `ASMCLK`, `AsmClk`, and `asmclk` will work (e.g. `aSmClk` will not work).
 
-### FIELD pointers
-
-Spin2 FIELD pointers (`^@`) are not supported yet.
-
 ### REGLOAD/REGEXEC
 
 The `REGLOAD` and `REGEXEC` Spin2 instructions are not supported at this time, mainly because they depend on a particular layout of memory in the Spin2 interpreter.
