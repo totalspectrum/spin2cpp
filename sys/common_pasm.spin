@@ -39,10 +39,11 @@ pri __builtin_memcpy(dst, src, count=long)
   return __builtin_memmove(dst, src, count)
   
 pri __builtin_strlen(str) : r=long
-  r := 0
-  repeat while byte[str] <> 0
+  r := str
+  repeat while byte[r] <> 0
     r++
-    str++
+  r -= str
+
 pri __builtin_strcpy(dst, src) : r=@byte | c
   r := dst
   repeat
