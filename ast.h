@@ -233,6 +233,9 @@ enum astkind {
     AST_TYPEOF = 166,
     AST_ASSIGN_INIT = 167,
     AST_HERE_IMM = 168,
+
+    AST_FIELDADDR = 169,
+    AST_FIELDREF =  170,
 };
 
 /* forward reference */
