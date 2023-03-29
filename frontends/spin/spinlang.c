@@ -41,6 +41,7 @@ IsLocalVariable(AST *ast) {
             return false;
         }
         break;
+    case AST_RANGEREF:
     case AST_METHODREF:
     case AST_ARRAYREF:
         if (IsLocalVariable(ast->left)) {

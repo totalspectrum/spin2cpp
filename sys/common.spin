@@ -593,7 +593,7 @@ pri _set_field(p, i, x) | val, bb, ss, cc, mask
        val := long[p]
   mask := ((1<<ss)-1)
   x := x & mask
-  val := (val & ((!mask)<<bb)) | (x<<bb)
+  val := (val & !(mask<<bb)) | (x<<bb)
   if cc == 0
     spr[p - $1f0] := val
   else

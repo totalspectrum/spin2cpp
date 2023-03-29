@@ -1467,6 +1467,7 @@ NormalizeFunc(AST *ast, Function *func)
         return NULL;
     case AST_ADDROF:
     case AST_ABSADDROF:
+    case AST_FIELDADDR:
         return NormalizeFunc(ast->left, func);
     case AST_RESULT:
         func->result_used = 1;
