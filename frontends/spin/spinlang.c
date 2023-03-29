@@ -745,7 +745,20 @@ doSpinTransform(AST **astptr, int level, AST *parent)
 	break;
     }
     case AST_ASSIGN:
-        if (ast->left && ast->left->kind == AST_RANGEREF) {
+        if (ast->left && ast->left->kind == AST_FIELDREF) {
+            // change field[p][i] := x to _set_field(p, i, x)
+            AST *func = AstIdentifier("_set_field");
+            AST *p = ast->left->left;
+            AST *i = ast->left->right;
+            AST *x = ast->right;
+            AST *args = NewAST(AST_EXPRLIST, p,
+                               NewAST(AST_EXPRLIST, i,
+                                      NewAST(AST_EXPRLIST, x, NULL)));
+            ASTReportInfo saveinfo;
+            AstReportAs(ast, &saveinfo);
+            *astptr = ast = NewAST(AST_FUNCCALL, func, args);
+            AstReportDone(&saveinfo);
+        } else if (ast->left && ast->left->kind == AST_RANGEREF) {
             *astptr = ast = TransformRangeAssign(ast->left, ast->right, ast->d.ival, level == 1);
         }
         if (ast->left && IsIdentifier(ast->left)) {
@@ -778,6 +791,16 @@ doSpinTransform(AST **astptr, int level, AST *parent)
             }
         }
         break;
+    case AST_FIELDREF:
+    {
+        // transform FIELD[p][i] into _get_field(p, i)
+        AstReportAs(ast, &saveinfo);
+        AST *func = AstIdentifier("_get_field");
+        AST *args = NewAST(AST_EXPRLIST, ast->left,
+                           NewAST(AST_EXPRLIST, ast->right, NULL));
+        *ast = *NewAST(AST_FUNCCALL, func, args);
+        AstReportDone(&saveinfo);
+    } break;
     case AST_RANGEREF:
         *astptr = ast = TransformRangeUse(ast);
         break;

@@ -1808,8 +1808,14 @@ lhs: identifier
   | SP_FIELD '[' expr ']'
     {
         AST *ref = $3;
-        SYNTAX_ERROR("FIELD is not supported by flexspin yet");
-        $$ = AstSprRef(ref, 0x0); // placeholder
+        AST *idx = AstInteger(0);
+        $$ = NewAST(AST_FIELDREF, ref, idx);
+    }
+  | SP_FIELD '[' expr ']' '[' expr ']'
+    {
+        AST *ref = $3;
+        AST *idx = $6;
+        $$ = NewAST(AST_FIELDREF, ref, idx);
     }
   ;
 

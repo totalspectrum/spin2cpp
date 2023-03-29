@@ -545,3 +545,62 @@ pri _usepins(plo, phi) : r
 pri _freepins(plo, phi)
   __pinsused_lo &= !plo
   __pinsused_hi &= !phi
+
+'
+' field accesses
+'
+pri _get_field(p, i) : val | bb, ss, cc
+  bb := (p>>20) & $1f      ' base bit
+  ss := ((p>>25) & $1f)+1  ' number of bits
+  cc := (p>>30)            ' type
+  p := p & $fffff          ' address
+
+  bb += (i * ss)
+  if cc == 0
+     ' register
+     p := (bb>>5)
+     bb &= $1f
+     val := spr[p - $1f0]
+  else
+     ' hub value
+     p += (bb >> 3)           ' offset to start of byte
+     bb &= $7                 '
+     if __propeller__ == 1
+       val := byte[p] + (byte[p+1]<<8) + (byte[p+2]<<16) + (byte[p+3]<<24)
+     else
+       val := long[p]
+  val := (val >> bb) & ((1<<ss)-1)
+
+pri _set_field(p, i, x) | val, bb, ss, cc, mask
+  bb := (p>>20) & $1f      ' base bit
+  ss := ((p>>25) & $1f)+1  ' number of bits
+  cc := (p>>30)            ' type
+  p := p & $fffff          ' address
+
+  bb += (i * ss)
+  if cc == 0
+     ' register
+     p := (bb>>5)
+     bb &= $1f
+     val := spr[p - $1f0]
+  else
+     ' hub value
+     p += (bb >> 3)           ' offset to start of byte
+     bb &= $7                 '
+     if __propeller__ == 1
+       val := byte[p] + (byte[p+1]<<8) + (byte[p+2]<<16) + (byte[p+3]<<24)
+     else
+       val := long[p]
+  mask := ((1<<ss)-1)
+  x := x & mask
+  val := (val & ((!mask)<<bb)) | (x<<bb)
+  if cc == 0
+    spr[p - $1f0] := val
+  else
+    if __propeller__ == 1
+      byte[p] := val
+      byte[p+1] := val>>8
+      byte[p+2] := val>>16
+      byte[p+3] := val>>24
+    else
+      long[p] := val
