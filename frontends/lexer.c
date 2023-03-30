@@ -2004,17 +2004,20 @@ struct reservedword {
 
     { "dat", SP_DAT },
 
+    { "%else", SP_ASM_ELSE },
     { "else", SP_ELSE },
+    { "%elseif", SP_ASM_ELSEIF },
     { "elseif", SP_ELSEIF },
     { "elseifnot", SP_ELSEIFNOT },
     { "end",   SP_END },   // NON-STANDARD
     { "endasm", SP_ENDASM }, // NON-STANDARD
-
+    { "%endif", SP_ASM_ENDIF },
     { "file", SP_FILE },
     { "fit", SP_FIT },
     { "float", SP_FLOAT },
     { "from", SP_FROM },
 
+    { "%if", SP_ASM_IF },
     { "if", SP_IF },
     { "ifnot", SP_IFNOT },
 

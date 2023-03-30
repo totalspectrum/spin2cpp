@@ -236,6 +236,10 @@ enum astkind {
 
     AST_FIELDADDR = 169,
     AST_FIELDREF =  170,
+    AST_ASM_IF    =  171,
+    AST_ASM_ELSEIF = 172,
+    
+    AST_ASM_ENDIF  = 173,
 };
 
 /* forward reference */

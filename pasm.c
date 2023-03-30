@@ -675,7 +675,9 @@ AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags)
     unsigned orig_datoff = 0;
     
     expect_undefined_labels = 1;
-
+    unsigned asm_nest;
+    AsmState state[MAX_ASM_NEST] = { 0 };
+    
 again:
     labels_changed = 0;
     
@@ -684,6 +686,9 @@ again:
     datoff = 0;
     inc = 0;
     inHub = 0;
+
+    asm_nest = 0;
+    state[asm_nest].is_active = true;
     
     pass++;
     if (startFlags == ADDRESS_STARTFLAG_HUB) {
@@ -709,6 +714,52 @@ again:
                 coglimit = 0;
             }
         }
+        if (ast->kind == AST_ASM_IF) {
+            int val;
+            bool was_active = state[asm_nest].is_active;
+            asm_nest++;
+            if (asm_nest == MAX_ASM_NEST) {
+                ERROR(ast, "conditional assembly nested too deep");
+                --asm_nest;
+            }
+            if (!IsConstExpr(ast->left)) {
+                ERROR(ast, "expression in conditional assembly must be constant");
+                val = 0;
+            } else {
+                val = EvalConstExpr(ast->left);
+            }
+            if (val && was_active) {
+                state[asm_nest].is_active = true;
+                state[asm_nest].needs_else = false;
+                ast->d.ival = 1;
+            } else {
+                state[asm_nest].is_active = false;
+                state[asm_nest].needs_else = was_active;
+                ast->d.ival = 0;
+            }
+        } else if (ast->kind == AST_ASM_ELSEIF) {
+            int val;
+            if (!IsConstExpr(ast->left)) {
+                ERROR(ast, "expression in conditional assembly must be constant");
+                val = 0;
+            } else {
+                val = EvalConstExpr(ast->left);
+            }
+            if (state[asm_nest].needs_else && val) {
+                state[asm_nest].needs_else = false;
+                state[asm_nest].is_active = true;
+                ast->d.ival = 1;
+            } else {
+                ast->d.ival = 0;
+            }
+        } else if (ast->kind == AST_ASM_ENDIF) {
+            if (asm_nest == 0) {
+                ERROR(ast, "conditional assembly endif without if");
+            } else {
+                --asm_nest;
+            }
+            ast->d.ival = state[asm_nest].is_active ? 1 : 0;
+        } else if (state[asm_nest].is_active) {
         switch (ast->kind) {
         case AST_BYTELIST:
         case AST_BYTEFITLIST:
@@ -952,7 +1003,8 @@ again:
             break;
         }
     }
-
+    }
+    
     // emit any labels that come at the end
     pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, lasttype, lastOrg, inHub, label_flags, pass);
 

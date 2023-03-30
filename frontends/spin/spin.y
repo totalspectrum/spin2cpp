@@ -326,6 +326,10 @@ BuildDebugList(AST *exprlist)
 %token SP_ASM_CONST  "ASM_CONST"
 %token SP_ENDASM     "ENDASM"
 %token SP_END        "END"
+%token SP_ASM_IF     "%IF"
+%token SP_ASM_ELSEIF "%ELSEIF"
+%token SP_ASM_ELSE   "%ELSE"
+%token SP_ASM_ENDIF  "%ENDIF"
 %token SP_INLINECCODE "CCODE"
 %token SP_BYTE       "BYTE"
 %token SP_WORD       "WORD"
@@ -1098,6 +1102,22 @@ basedatline:
     { $$ = NewCommentedInstr(AddToList($1, $2)); }
   | instruction operandlist modifierlist SP_EOLN
     { $$ = NewCommentedInstr(AddToList($1, AddToList($2, $3))); }
+  | SP_ASM_IF expr SP_EOLN
+    {
+        $$ = NewCommentedAST(AST_ASM_IF, $2, NULL, $1);
+    }  
+  | SP_ASM_ELSEIF expr SP_EOLN
+    {
+        $$ = NewCommentedAST(AST_ASM_ELSEIF, $2, NULL, $1);
+    }  
+  | SP_ASM_ELSE SP_EOLN
+    {
+        $$ = NewCommentedAST(AST_ASM_ELSEIF, AstInteger(1), NULL, $1);
+    }  
+  | SP_ASM_ENDIF SP_EOLN
+    {
+        $$ = NewCommentedAST(AST_ASM_ENDIF, NULL, NULL, $1);
+    }  
   | SP_ALIGNL SP_EOLN
     { $$ = NewCommentedAST(AST_ALIGN, AstInteger(4), NULL, $1); }
   | SP_ALIGNW SP_EOLN

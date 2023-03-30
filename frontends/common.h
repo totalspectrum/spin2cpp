@@ -318,6 +318,13 @@ extern AST *ast_type_generic_funcptr;
 extern AST *ast_type_sendptr;
 extern AST *ast_type_recvptr;
 
+/* structure used for conditional assembly */
+#define MAX_ASM_NEST 16
+typedef struct asmstate {
+    bool needs_else;
+    bool is_active;
+} AsmState;
+
 /* structure describing a dat block label */
 typedef struct label {
     uint32_t hubval;  // for P1, offset in dat block; for P2, a real address

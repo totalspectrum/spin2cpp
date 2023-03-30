@@ -1977,6 +1977,7 @@ PrintDataBlock(Flexbuf *f, AST *list, DataBlockOutFuncs *funcs, Flexbuf *relocs)
     AST *ast;
     AST *top;
     int inHub = 0;
+    bool isActive = true;
     
     void (*startAst)(Flexbuf *f, AST *ast) = NULL;
     void (*endAst)(Flexbuf *f, AST *ast) = NULL;
@@ -2010,6 +2011,9 @@ PrintDataBlock(Flexbuf *f, AST *list, DataBlockOutFuncs *funcs, Flexbuf *relocs)
         if (startAst) {
             (*startAst)(f, ast);
         }
+        if (ast->kind == AST_ASM_IF || ast->kind == AST_ASM_ELSEIF || ast->kind == AST_ASM_ENDIF) {
+            isActive = ast->d.ival != 0;
+        } else if (isActive) {
         switch (ast->kind) {
         case AST_BYTELIST:
             outputAlignedDataList(f, 1, ast->left, relocs, 0);
@@ -2096,6 +2100,7 @@ PrintDataBlock(Flexbuf *f, AST *list, DataBlockOutFuncs *funcs, Flexbuf *relocs)
         default:
             ERROR(ast, "unknown element in data block");
             break;
+        }
         }
         if (endAst) {
             (*endAst)(f, ast);

@@ -792,6 +792,10 @@ static const char *astnames[] = {
 
     "^@",
     "field",
+    "asm_if",
+    "asm_elseif",
+
+    "asm_endif",
 };
 
 //
