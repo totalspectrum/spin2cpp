@@ -582,6 +582,25 @@ If an address is given, then the code must not have exceeded that address yet, a
 
 Note that labels normally have two values, their COG memory address (specified by the last ORG) and their hub memory address (specified implicitly by how they are placed in RAM). After `orgh` the COG memory address is no longer valid, and the hub memory address may be explicitly given if the `orgh` had a value.
 
+### Conditional Assembly
+
+In assembly it is possible to include some conditional directives that use constant expressions. This is similar to `#ifdef`, but somewhat more flexible since the expressions may include constants defined in the CON section, not just preprocessor variables. For example:
+```
+CON
+FOO = 123
+
+DAT
+
+%if FOO < 0
+   ' nothing
+%elseif FOO > 511
+    mov pa,##FOO
+%else
+    mov pa,#FOO
+%end
+```
+Available conditional compilation directives are: `%if`, `%elseif`, `%else`, and `%endif`.
+
 ## New intrinsics for both P1 and P2
 
 Flexspin supports some new builtin functions. These typically start with an underscore to avoid confusion with existing variable names. Note that in Spin2 mode many of these are available without the leading underscore, and in fact it's better to use the non-underscore versions since those are also supported in the official Parallax compiler.
