@@ -1,5 +1,6 @@
 Version 6.1.0
 - Implemented ^@ and FIELD[] for Spin2
+- Implemented conditional assembly instructions %if, %elseif, %else, and %endif
 - Merged Ada's improved strlen() function
 
 Version 6.0.5
