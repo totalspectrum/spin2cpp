@@ -599,7 +599,7 @@ else
     mov pa,#FOO
 end
 ```
-Available conditional compilation directives are: `if`, `elseif`, `else`, and `end`.
+Available conditional compilation directives are: `if`, `elseif`, `else`, and `end`. These may also be prefixed with `%` (so `%if`. `%elseif`, `%else`, and `%end`) to remove any ambiguity with future Spin syntax.
 
 ## New intrinsics for both P1 and P2
 

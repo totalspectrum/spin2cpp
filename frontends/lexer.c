@@ -2037,8 +2037,8 @@ struct reservedword {
     { "elseif", SP_ELSEIF },
     { "elseifnot", SP_ELSEIFNOT },
     { "end",   SP_END },   // NON-STANDARD
+    { "%end", SP_ASM_ENDIF },
     { "endasm", SP_ENDASM }, // NON-STANDARD
-    { "%endif", SP_ASM_ENDIF },
     { "file", SP_FILE },
     { "fit", SP_FIT },
     { "float", SP_FLOAT },

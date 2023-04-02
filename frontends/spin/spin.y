@@ -329,7 +329,7 @@ BuildDebugList(AST *exprlist)
 %token SP_ASM_IF     "%IF"
 %token SP_ASM_ELSEIF "%ELSEIF"
 %token SP_ASM_ELSE   "%ELSE"
-%token SP_ASM_ENDIF  "%ENDIF"
+%token SP_ASM_ENDIF  "%END"
 %token SP_INLINECCODE "CCODE"
 %token SP_BYTE       "BYTE"
 %token SP_WORD       "WORD"
