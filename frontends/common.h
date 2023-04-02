@@ -101,6 +101,9 @@ struct lexstream {
     char indent_saw_spaces;
     char indent_saw_tabs;
 
+    /* if/end nesting for ASM */
+    int if_nest;
+
     /* current expression state stack */
 #define MAX_EXPR_STACK 64
     int exprSp;

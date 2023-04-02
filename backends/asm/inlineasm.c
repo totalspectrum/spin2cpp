@@ -501,7 +501,11 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
     bool isConst = asmFlags & INLINE_ASM_FLAG_CONST;
     bool isInFcache = false;
     bool ptraSaved = false;
+    AsmState state[MAX_ASM_NEST] = { 0 };
+    unsigned asmNest;
 
+    asmNest = 0;
+    state[asmNest].is_active = true;
     if (!curfunc) {
         ERROR(origtop, "Internal error, no context for inline assembly");
         return;
@@ -539,13 +543,58 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
         }
     }
     // first run through and define all the labels
+    asmNest = 0;
+    state[asmNest].is_active = true;
     while (top) {
         ast = top;
         top = top->right;
         while (ast && ast->kind == AST_COMMENTEDNODE) {
             ast = ast->left;
         }
-        if (ast && ast->kind == AST_IDENTIFIER) {
+        if (!ast) continue;
+        if (ast->kind == AST_ASM_IF) {
+            int val;
+            bool wasActive = state[asmNest].is_active;
+            asmNest++;
+            if (asmNest == MAX_ASM_NEST) {
+                ERROR(ast, "conditional assembly nested too deep");
+                --asmNest;
+            }
+            if (!IsConstExpr(ast->left)) {
+                ERROR(ast, "expression in conditional assembly must be constant");
+                val = 0;
+            } else {
+                val = EvalConstExpr(ast->left);
+            }
+            if (val && wasActive) {
+                state[asmNest].is_active = true;
+                state[asmNest].needs_else = false;
+            } else {
+                state[asmNest].is_active = false;
+                state[asmNest].needs_else = wasActive;
+            }
+        } else if (ast->kind == AST_ASM_ELSEIF) {
+            int val;
+            if (!IsConstExpr(ast->left)) {
+                ERROR(ast, "expression in conditional assembly must be constant");
+                val = 0;
+            } else {
+                val = EvalConstExpr(ast->left);
+            }
+            if (state[asmNest].needs_else && val) {
+                state[asmNest].needs_else = false;
+                state[asmNest].is_active = true;
+            } else {
+            }
+        } else if (ast->kind == AST_ASM_ENDIF) {
+            if (asmNest == 0) {
+                ERROR(ast, "conditional assembly endif without if");
+            } else {
+                --asmNest;
+            }
+        } else if (!state[asmNest].is_active) {
+            /* do nothing, if'd out */
+        } else if (ast->kind == AST_IDENTIFIER) {
             void *labelop = (void *)GetLabelOperand(ast->d.string, isInFcache);
             AddSymbol(&curfunc->localsyms, ast->d.string, SYM_LOCALLABEL, labelop, NULL);
         }
@@ -573,6 +622,49 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
         }
         if (!ast) {
             /* do nothing */
+        } else if (ast->kind == AST_ASM_IF) {
+            int val;
+            bool wasActive = state[asmNest].is_active;
+            asmNest++;
+            if (asmNest == MAX_ASM_NEST) {
+                ERROR(ast, "conditional assembly nested too deep");
+                --asmNest;
+            }
+            if (!IsConstExpr(ast->left)) {
+                ERROR(ast, "expression in conditional assembly must be constant");
+                val = 0;
+            } else {
+                val = EvalConstExpr(ast->left);
+            }
+            if (val && wasActive) {
+                state[asmNest].is_active = true;
+                state[asmNest].needs_else = false;
+            } else {
+                state[asmNest].is_active = false;
+                state[asmNest].needs_else = wasActive;
+            }
+        } else if (ast->kind == AST_ASM_ELSEIF) {
+            int val;
+            if (!IsConstExpr(ast->left)) {
+                ERROR(ast, "expression in conditional assembly must be constant");
+                val = 0;
+            } else {
+                val = EvalConstExpr(ast->left);
+            }
+            if (state[asmNest].needs_else && val) {
+                state[asmNest].needs_else = false;
+                state[asmNest].is_active = true;
+            } else {
+                state[asmNest].is_active = false;
+            }
+        } else if (ast->kind == AST_ASM_ENDIF) {
+            if (asmNest == 0) {
+                ERROR(ast, "conditional assembly endif without if");
+            } else {
+                --asmNest;
+            }
+        } else if (!state[asmNest].is_active) {
+            /* do nothing, if'd out */
         } else if (ast->kind == AST_INSTRHOLDER) {
             IR *ir = CompileInlineInstr_only(irl, ast->left);
             if (!ir) break;

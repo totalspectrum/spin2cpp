@@ -841,22 +841,49 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                 }
                 break;
             case SP_END:
-                if (L->block_type != BLOCK_ASM || L->colCounter - L->firstNonBlank > 4) {
+                if ( (!InDatBlock(L)) || L->colCounter - L->firstNonBlank > 4) {
                     goto is_identifier;
                 }
-            /* fall through */
+                if (L->if_nest > 0) {
+                    --L->if_nest;
+                    c = SP_ASM_ENDIF;
+                } else {
+                    L->block_type = L->save_block;
+                }
+                break;
             case SP_ENDASM:
                 L->block_type = L->save_block;
                 break;
             case SP_IF:
-            case SP_IFNOT:
+                if (InDatBlock(L)) {
+                    L->if_nest++;
+                    c = SP_ASM_IF;
+                } else {
+                    EstablishIndent(L, startColumn);
+                }
+                break;
             case SP_ELSE:
+                if (InDatBlock(L) && L->if_nest > 0) {
+                    c = SP_ASM_ELSE;
+                } else {
+                    EstablishIndent(L, startColumn);
+                }
+                break;
             case SP_ELSEIF:
+                if (InDatBlock(L) && L->if_nest > 0) {
+                    c = SP_ASM_ELSEIF;
+                } else {
+                    EstablishIndent(L, startColumn);
+                }
+                break;
+            case SP_IFNOT:
             case SP_ELSEIFNOT:
             case SP_REPEAT:
             case SP_CASE:
             case SP_CASE_FAST:
-                EstablishIndent(L, startColumn);
+                if (!InDatBlock(L)) {
+                    EstablishIndent(L, startColumn);
+                }
                 break;
             case SP_LONG:
             case SP_BYTE:

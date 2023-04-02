@@ -591,15 +591,15 @@ FOO = 123
 
 DAT
 
-%if FOO < 0
+if FOO < 0
    ' nothing
-%elseif FOO > 511
+elseif FOO > 511
     mov pa,##FOO
-%else
+else
     mov pa,#FOO
-%end
+end
 ```
-Available conditional compilation directives are: `%if`, `%elseif`, `%else`, and `%endif`.
+Available conditional compilation directives are: `if`, `elseif`, `else`, and `end`.
 
 ## New intrinsics for both P1 and P2
 

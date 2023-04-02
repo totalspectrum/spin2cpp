@@ -4,23 +4,23 @@ CON
   B = 3
   
 DAT
-  %if A == 1
-    %if B == 3
+  if A == 1
+    if B == 3
       long $13131313
-    %else
+    else
       long $11111111
-    %endif
-  %elseif A == 2
-    %if B == 1
+    end
+  elseif A == 2
+    if B == 1
       long 0
-    %elseif B == 2
+    elseif B == 2
       long 2
-    %else
+    else
       long $23232323
-    %endif
+    end
     long $aaaaaaaa
-  %else
+  else
     long $1111111a
-  %endif
+  end
 
   long $FFFFFFFF
