@@ -2667,6 +2667,12 @@ basedatline:
     { $$ = NewCommentedAST(AST_FIT, $2, NULL, $1); }
   | BAS_FIT BAS_EOLN
     { $$ = NewCommentedAST(AST_FIT, AstInteger(0x1f0), NULL, $1); }
+  | BAS_IF expr BAS_EOLN
+    { $$ = NewCommentedAST(AST_ASM_IF, $2, NULL, $1); }
+  | BAS_ELSE BAS_EOLN
+    { $$ = NewCommentedAST(AST_ASM_ELSEIF, AstInteger(1), NULL, $1); }
+  | BAS_END BAS_EOLN
+    { $$ = NewCommentedAST(AST_ASM_ENDIF, NULL, NULL, $1); }
   | BAS_FILE BAS_STRING BAS_EOLN
     { $$ = NewCommentedAST(AST_FILE, GetFullFileName($2), NULL, $1); }
   ;
