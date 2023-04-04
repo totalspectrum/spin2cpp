@@ -1022,6 +1022,8 @@ ConstructDefaultValue(AST *decl, AST *val)
 %token C_ALIGNL "alignl"
 %token C_ALIGNW "alignw"
 %token C_BYTE "byte"
+%token C_ELSEIF "elseif"
+%token C_END  "end"
 %token C_FILE "file"
 %token C_FIT "fit"
 %token C_ORG  "org"
@@ -2297,6 +2299,14 @@ asm_baseline:
     { $$ = NewCommentedAST(AST_ORGF, $2, NULL, $1); }
   | C_RES asmexpr asm_eoln
     { $$ = NewCommentedAST(AST_RES, $2, NULL, $1); }
+  | C_IF asmexpr asm_eoln
+    { $$ = NewCommentedAST(AST_ASM_IF, $2, NULL, $1); }  
+  | C_ELSEIF asmexpr asm_eoln
+    { $$ = NewCommentedAST(AST_ASM_ELSEIF, $2, NULL, $1); }  
+  | C_ELSE asm_eoln
+    { $$ = NewCommentedAST(AST_ASM_ELSEIF, AstInteger(1), NULL, $1); }  
+  | C_END asm_eoln
+    { $$ = NewCommentedAST(AST_ASM_ENDIF, NULL, NULL, $1); }  
   | C_FIT asmexpr asm_eoln
     { $$ = NewCommentedAST(AST_FIT, $2, NULL, $1); }
   | C_FIT asm_eoln

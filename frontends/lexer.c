@@ -2459,6 +2459,8 @@ struct reservedword c_pasm_keywords[] = {
     { "alignw", C_ALIGNW },
     { "byte", C_BYTE },
     { "debug", C_DEBUG },
+    { "elseif", C_ELSEIF },
+    { "end", C_END },
     { "file", C_FILE },
     { "fit", C_FIT },
     { "org", C_ORG },
