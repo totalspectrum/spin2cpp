@@ -5,13 +5,12 @@ dat
 entry
 
 _mylen
-	mov	_var01, arg01
+	mov	result1, arg01
 LR__0001
-	rdbyte	result1, _var01 wz
- if_ne	add	_var01, #1
+	rdbyte	_var01, result1 wz
+ if_ne	add	result1, #1
  if_ne	jmp	#LR__0001
-	sub	_var01, arg01
-	mov	result1, _var01
+	sub	result1, arg01
 _mylen_ret
 	ret
 

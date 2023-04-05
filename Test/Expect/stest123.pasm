@@ -5,15 +5,14 @@ dat
 entry
 
 _total
-	mov	_var01, #0
-	mov	_var02, ptr__dat__
-	mov	_var03, #4
+	mov	result1, #0
+	mov	_var01, ptr__dat__
+	mov	_var02, #4
 LR__0001
-	rdlong	result1, _var02
-	add	_var01, result1
-	add	_var02, #4
-	djnz	_var03, #LR__0001
-	mov	result1, _var01
+	rdlong	_var03, _var01
+	add	result1, _var03
+	add	_var01, #4
+	djnz	_var02, #LR__0001
 _total_ret
 	ret
 

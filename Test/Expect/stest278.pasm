@@ -5,16 +5,17 @@ dat
 entry
 
 _bump1
-	rdlong	result1, ptr__dat__
-	add	ptr__dat__, #4
 	rdlong	arg04, ptr__dat__
-	mov	_var02, arg04
-	sub	ptr__dat__, #4
-	add	result1, #1 wc
-	addx	arg04, #0
-	wrlong	result1, ptr__dat__
 	add	ptr__dat__, #4
+	rdlong	arg03, ptr__dat__
+	mov	result1, arg04
+	mov	_var02, arg03
+	sub	ptr__dat__, #4
+	add	arg04, #1 wc
+	addx	arg03, #0
 	wrlong	arg04, ptr__dat__
+	add	ptr__dat__, #4
+	wrlong	arg03, ptr__dat__
 	sub	ptr__dat__, #4
 	mov	result2, _var02
 	mov	_var04, result2

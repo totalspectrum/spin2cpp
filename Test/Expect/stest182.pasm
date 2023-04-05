@@ -5,15 +5,14 @@ dat
 entry
 
 _checkit
-	mov	_var01, #0
+	mov	muldiva_, #0
 LR__0001
-	mov	_var02, ina
-	and	_var02, #255
-	cmp	_var02, #121 wz
- if_ne	cmp	_var02, #89 wz
- if_ne	add	_var01, #1
+	mov	_var01, ina
+	and	_var01, #255
+	cmp	_var01, #121 wz
+ if_ne	cmp	_var01, #89 wz
+ if_ne	add	muldiva_, #1
  if_ne	jmp	#LR__0001
-	mov	muldiva_, _var01
 	mov	muldivb_, #27
 	call	#unsmultiply_
 	mov	result1, muldiva_
@@ -47,7 +46,5 @@ COG_BSS_START
 	fit	496
 	org	COG_BSS_START
 _var01
-	res	1
-_var02
 	res	1
 	fit	496

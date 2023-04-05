@@ -26,14 +26,13 @@ _main2_ret
 _main3
 	mov	_var01, #2
 LR__0020
-	mov	arg01, _var01 wz
- if_e	mov	arg01, #1
+	cmps	_var01, #0 wz
+ if_e	mov	_var01, #1
 	mov	_var02, #32
 LR__0021
-	test	arg01, #23 wc
-	rcr	arg01, #1
+	test	_var01, #23 wc
+	rcr	_var01, #1
 	djnz	_var02, #LR__0021
-	mov	_var01, arg01
 	abs	outb, _var01
 	jmp	#LR__0020
 _main3_ret

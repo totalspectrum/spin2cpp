@@ -5,13 +5,12 @@ dat
 entry
 
 _foo
-	mov	_var01, #0
+	mov	result1, #0
 LR__0001
-	rdbyte	result1, arg01 wz
+	rdbyte	_var01, arg01 wz
  if_ne	add	arg01, #1
- if_ne	add	_var01, #1
+ if_ne	add	result1, #1
  if_ne	jmp	#LR__0001
-	mov	result1, _var01
 _foo_ret
 	ret
 

@@ -5,14 +5,13 @@ dat
 entry
 
 _addlist
-	mov	_var01, #0
+	mov	result1, #0
 LR__0001
 	cmps	arg01, #1 wc
- if_ae	rdlong	_var02, arg02
+ if_ae	rdlong	_var01, arg02
  if_ae	add	arg02, #4
- if_ae	add	_var01, _var02
+ if_ae	add	result1, _var01
  if_ae	jmp	#LR__0001
-	mov	result1, _var01
 _addlist_ret
 	ret
 
@@ -46,8 +45,6 @@ stackspace
 	long	0[1]
 	org	COG_BSS_START
 _var01
-	res	1
-_var02
 	res	1
 arg01
 	res	1

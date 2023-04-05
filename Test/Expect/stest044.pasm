@@ -5,13 +5,12 @@ dat
 entry
 
 _strlen
-	neg	_var01, #1
+	neg	result1, #1
 LR__0001
-	rdbyte	result1, arg01 wz
+	rdbyte	_var01, arg01 wz
 	add	arg01, #1
-	add	_var01, #1
+	add	result1, #1
  if_ne	jmp	#LR__0001
-	mov	result1, _var01
 _strlen_ret
 	ret
 

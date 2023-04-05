@@ -9,27 +9,26 @@ _get
 	add	sp, #4
 	mov	fp, sp
 	add	sp, #60
-	mov	_var01, #0
-	mov	_var02, objptr
-	mov	_var03, #0
+	mov	result1, #0
+	mov	_var01, objptr
+	mov	_var02, #0
 	add	fp, #4
 LR__0001
-	mov	result1, _var03
-	shl	result1, #2
-	rdlong	_var04, _var02
-	add	result1, fp
-	wrlong	_var04, result1
-	mov	_var04, _var03
+	mov	_var03, _var02
+	shl	_var03, #2
+	rdlong	_var04, _var01
+	add	_var03, fp
+	wrlong	_var04, _var03
+	mov	_var04, _var02
 	shl	_var04, #2
 	add	_var04, fp
 	rdlong	_var04, _var04
-	add	_var01, _var04
-	add	_var03, #1
-	add	_var02, #4
-	cmps	_var03, #10 wc
+	add	result1, _var04
+	add	_var02, #1
+	add	_var01, #4
+	cmps	_var02, #10 wc
  if_b	jmp	#LR__0001
 	sub	fp, #4
-	mov	result1, _var01
 	mov	sp, fp
 	sub	sp, #4
 	rdlong	fp, sp

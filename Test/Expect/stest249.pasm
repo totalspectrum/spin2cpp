@@ -19,8 +19,10 @@ _main
 	mov	arg01, _main_p_0007
 	mov	arg03, #99
 	call	#_insertstr
-	mov	outb, result1
+	mov	_main_q_0008, result1
+	mov	_main_q_0008_01, result2
 	mov	outa, _main_p_0007
+	mov	outb, _main_q_0008
 _main_ret
 	ret
 
@@ -34,6 +36,10 @@ COG_BSS_START
 _main_p_0007
 	res	1
 _main_p_0007_01
+	res	1
+_main_q_0008
+	res	1
+_main_q_0008_01
 	res	1
 _var01
 	res	1
