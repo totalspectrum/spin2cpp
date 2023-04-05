@@ -24,6 +24,50 @@ int gl_fcache_size = -1;
 // helper functions
 //
 
+
+// a kingdom for a std::vector....
+struct dependency {
+    struct dependency *link;
+    Operand *reg;
+};
+
+static void DeleteDependencyList(struct dependency **list) {
+    for (struct dependency *tmp=*list; tmp;) {
+        struct dependency *tmp2 = tmp->link;
+        free(tmp);
+        tmp=tmp2;
+    }
+    *list = NULL;
+}
+
+static void PrependDependency(struct dependency **list,Operand *reg) {
+    struct dependency *tmp = (struct dependency *)malloc(sizeof(struct dependency));
+    tmp->link = *list;
+    tmp->reg = reg;
+    *list = tmp;
+}
+
+static bool CheckDependency(struct dependency **list, Operand *reg) {
+    for (struct dependency *tmp=*list; tmp; tmp=tmp->link) {
+        if (tmp->reg == reg) return true;
+    }
+    return false;
+}
+
+static void DeleteDependencies(struct dependency **list,Operand *reg) {
+    struct dependency **prevlink = list;
+    for (struct dependency *tmp=*list; tmp;) {
+        struct dependency *next = tmp->link;
+        if (tmp->reg == reg) {
+            *prevlink = next;
+            free(tmp);
+        } else {
+            prevlink = &tmp->link;
+        }
+        tmp=next;
+    }
+}
+
 /* IR instructions that have no effect on the generated code */
 bool IsDummy(IR *op)
 {
@@ -1210,56 +1254,72 @@ IsDeadAfter(IR *instr, Operand *op)
     return doIsDeadAfter(instr, op, 1, stack);
 }
 
-static bool
+static IR*
 SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
 {
-    IR *ir;
+    IR *last_ir = NULL;
     int usecount = 0;
 
     if (SrcOnlyHwReg(replace) || !IsRegister(replace->kind))
-        return false;
+        return NULL;
     if (replace->kind == REG_SUBREG || (orig && orig->kind == REG_SUBREG) ) {
-        return false;
+        return NULL;
     }
-    for (ir = instr; ir; ir = ir->prev) {
+
+    struct dependency *up_labels = NULL; // Outstanding loop label list
+
+    for (IR *ir = instr; ir; ir = ir->prev) {
+        last_ir = ir;
         if (IsDummy(ir)) {
             continue;
         }
         if (ir->opc == OPC_LABEL) {
             if (ir->flags & FLAG_LABEL_NOJUMP) {
                 continue;
+            } else if (CheckDependency(&up_labels,ir->dst)) {
+                DeleteDependencies(&up_labels,ir->dst);
+                continue;
             }
-            return false;
+            goto fail;
         }
         if (ir->opc == OPC_LIVE) {
-            return false;
+            goto fail;
         }
         if (IsJump(ir)) {
-            return false;
+            if (!(curfunc->optimize_flags & OPT_EXPERIMENTAL) || IsHwReg(replace)) {
+                // Safety fail
+                goto fail;
+            } else if (IsForwardJump(ir)) {
+                // Could probably also handle down labels in separate list...
+                goto fail;
+            } else {
+                PrependDependency(&up_labels,JumpDest(ir));
+            }
         }
         if (IsCallThatUsesReg(ir,orig) || IsCallThatUsesReg(ir,replace)) {
-            return false;
+            goto fail;
         }
-        if (InstrModifies(ir, orig) && !InstrReadsDst(ir)) {
-            if (InstrIsVolatile(ir)) return false;
+        // Note: InstrModifies does some weird stuff with subregisters, so check like this instead
+        if (ir->dst == orig && InstrSetsDst(ir) && !InstrReadsDst(ir)) {
+            if (InstrIsVolatile(ir)) goto fail;
             if (IsHwReg(replace) && ir->src && IsHwReg(ir->src) && ir->src != replace)
             {
-                return false;
+                goto fail;
             }
             if (usecount > 0 && IsHwReg(replace) && ir->src != replace) {
-                return false;
+                goto fail;
             }
             // this was perhaps overly cautious, but I can remember a lot of headaches
             // around optimization, so we may need to revert to it
             //return ir->cond == COND_TRUE;
-            if (ir->cond == COND_TRUE) return true;
+            if (ir->cond == COND_TRUE && !up_labels) return ir;
         }
         if (InstrUses(ir, replace) || ir->dst == replace) {
-            return false;
+            goto fail;
         }
-        if ( (InstrUses(ir, orig) || InstrModifies(ir, orig)) && IsHwReg(replace)) {
+        if (IsHwReg(replace) && (InstrUses(ir, orig) || InstrModifies(ir, orig))) {
             if (usecount > 0) {
-                return false;
+                goto fail;
             }
             usecount++;
         }
@@ -1267,7 +1327,11 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
     // we've reached the start
     // is orig dead here? if so we can replace it
     // args are live, and so are globals
-    return IsLocal(orig);
+    if (!up_labels && IsLocal(orig)) return last_ir;
+    // Fall into fail case
+fail:
+    DeleteDependencyList(&up_labels);
+    return NULL;
 }
 
 //
@@ -1486,25 +1550,13 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace, IRCond sette
 
 
 static void
-ReplaceBack(IR *instr, Operand *orig, Operand *replace)
+ReplaceBack(IR *instr, Operand *orig, Operand *replace, IR *stop_ir)
 {
     IR *ir;
     for (ir = instr; ir; ir = ir->prev) {
-        if (ir->opc == OPC_LABEL) {
-            if (ir->flags & FLAG_LABEL_NOJUMP) {
-                continue;
-            }
-            break;
-        }
-        if (ir->dst == orig) {
-            ir->dst = replace;
-            if (InstrSetsDst(ir) && !InstrReadsDst(ir) && ir->cond == COND_TRUE) {
-                break;
-            }
-        }
-        if (ir->src == orig) {
-            ir->src = replace;
-        }
+        if (ir->dst == orig) ir->dst = replace;
+        if (ir == stop_ir) break;
+        if (ir->src == orig) ir->src = replace;
     }
 }
 
@@ -2317,8 +2369,8 @@ OptimizeMoves(IRList *irl)
                 if (ir->src == ir->dst && !InstrSetsAnyFlags(ir)) {
                     DeleteIR(irl, ir);
                     change = 1;
-                } else if (!InstrSetsAnyFlags(ir) && ir->cond == COND_TRUE && IsDeadAfter(ir, ir->src) && SafeToReplaceBack(ir->prev, ir->src, ir->dst)) {
-                    ReplaceBack(ir->prev, ir->src, ir->dst);
+                } else if (!InstrSetsAnyFlags(ir) && ir->cond == COND_TRUE && IsDeadAfter(ir, ir->src) && (stop_ir = SafeToReplaceBack(ir->prev, ir->src, ir->dst))) {
+                    ReplaceBack(ir->prev, ir->src, ir->dst, stop_ir);
                     DeleteIR(irl, ir);
                     change = 1;
                 }
@@ -4609,50 +4661,6 @@ struct reorder_block {
     unsigned count; // If zero, everything else is invalid
     IR *top,*bottom;
 };
-
-
-// a kingdom for a std::vector....
-struct dependency {
-    struct dependency *link;
-    Operand *reg;
-};
-
-static void DeleteDependencyList(struct dependency **list) {
-    for (struct dependency *tmp=*list; tmp;) {
-        struct dependency *tmp2 = tmp->link;
-        free(tmp);
-        tmp=tmp2;
-    }
-    *list = NULL;
-}
-
-static void PrependDependency(struct dependency **list,Operand *reg) {
-    struct dependency *tmp = (struct dependency *)malloc(sizeof(struct dependency));
-    tmp->link = *list;
-    tmp->reg = reg;
-    *list = tmp;
-}
-
-static bool CheckDependency(struct dependency **list, Operand *reg) {
-    for (struct dependency *tmp=*list; tmp; tmp=tmp->link) {
-        if (tmp->reg == reg) return true;
-    }
-    return false;
-}
-
-static void DeleteDependencies(struct dependency **list,Operand *reg) {
-    struct dependency **prevlink = list;
-    for (struct dependency *tmp=*list; tmp;) {
-        struct dependency *next = tmp->link;
-        if (tmp->reg == reg) {
-            *prevlink = next;
-            free(tmp);
-        } else {
-            prevlink = &tmp->link;
-        }
-        tmp=next;
-    }
-}
 
 static struct reorder_block
 FindBlockForReorderingDownward(IR *after) {
