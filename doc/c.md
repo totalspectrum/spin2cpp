@@ -225,6 +225,15 @@ typedef struct __using("FullDuplexSerial.spin") FDS;
 FDS ser1, *serptr;
 ```
 
+#### Optional constant overrides
+
+It's possible to override Spin CON values (and BASIC const values) in a structure defined with `struct __using`, by appending the new values after the class name, e.g.:
+```
+struct __using("someclass.spin2", pin=2, delay=100) pin2;
+struct __using("someclass.spin2", pin=3, delay=150) pin3;
+```
+will include the Spin2 object "someclass.spin2" twice, with overrides for the constants `pin` and `delay`.
+
 #### Name resolution in Spin and BASIC classes
 
 Because Spin and BASIC are case insensitive languages, their identifiers may be accessed in a case insensitive way (e.g. `x.Vga`, `x.VGA`, and `x.vga` are all equivalent if `x` is a Spin or BASIC class. It is strongly recommended to be consistent though, because this will avoid confusion for readers who are used to C being a case sensitive language.

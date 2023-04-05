@@ -699,7 +699,7 @@ AddStructBody(Module *C, AST *body)
 // file name and line number
 //
 static AST *
-MakeNewStruct(Module *Parent, AST *skind, AST *identifier, AST *body)
+MakeNewStruct(Module *Parent, AST *skind, AST *identifier, AST *body, AST *options)
 {
     int is_union;
     int is_class;
@@ -772,10 +772,14 @@ MakeNewStruct(Module *Parent, AST *skind, AST *identifier, AST *body)
         if (C->isUnion != is_union) {
             SYNTAX_ERROR("Inconsistent use of union/struct for %s", typname);
         }
-        C->Lptr = current->Lptr;
+        if (options) {
+            SYNTAX_ERROR("typdef use with options not supported yet");
+        } else {
+            C->Lptr = current->Lptr;
+        }
     } else {
         if (body && body->kind == AST_STRING) {
-            class_type = NewAbstractObject(AstIdentifier(typname), body, 1);
+            class_type = NewAbstractObjectWithParams(AstIdentifier(typname), body, 1, options);
             Parent->objblock = AddToList(Parent->objblock, class_type);
             body = NULL;
             C = NULL;
@@ -784,7 +788,7 @@ MakeNewStruct(Module *Parent, AST *skind, AST *identifier, AST *body)
             C->defaultPrivate = is_class;
             C->Lptr = current->Lptr;
             C->isUnion = is_union;
-            class_type = NewAbstractObject(AstIdentifier(typname), NULL, 0);
+            class_type = NewAbstractObjectWithParams(AstIdentifier(typname), NULL, 0, options);
             class_type->d.ptr = C;
             AddSymbol(currentTypes, typname, SYM_TYPEDEF, class_type, NULL);
             AddSymbol(&Parent->objsyms, typname, SYM_TYPEDEF, class_type, NULL);
@@ -1614,9 +1618,17 @@ struct_or_union_specifier
                 $$ = d;
             }
 	| struct_or_union any_identifier
-            { $$ = MakeNewStruct(current, $1, $2, NULL); }
-        | struct_or_union C_USING fromfile_clause
-            { $$ = MakeNewStruct(current, $1, NULL, $3); }
+            { $$ = MakeNewStruct(current, $1, $2, NULL, NULL); }
+        | struct_or_union C_USING using_clause
+            {
+                AST *body = $3;
+                AST *options = NULL;
+                if (body && body->kind == AST_EXPRLIST) {
+                    options = body->right;
+                    body = body->left;
+                }
+                $$ = MakeNewStruct(current, $1, NULL, body, options);
+            }
 	;
 
 any_identifier
@@ -1642,23 +1654,50 @@ struct_or_union
             { $$ = NewAST(AST_UNION, NULL, NULL); }
 	;
 
-fromfile_clause
-        : '(' C_STRING_LITERAL ')'
+using_clause
+        : '(' C_STRING_LITERAL optobjarguments ')'
             {
                 AST *str = $2;
+                AST *options = $3;
                 if (str && str->kind == AST_EXPRLIST) {
                     str = str->left;
+                }
+                if (options) {
+                    str = NewAST(AST_EXPRLIST, str, options);
                 }
                 $$ = str;
             }
         ;
+
+optobjarguments
+        : ',' objargs
+          { $$ = $2; }
+        | /* empty */
+          { $$ = NULL; }
+        ;
+
+objargs
+       : one_objarg
+         { $$ = CommentedListHolder($1); }
+       | objargs ',' one_objarg
+         {
+             $$ = AddToList($1, CommentedListHolder($3));
+         }
+       ;
+
+one_objarg
+    : C_IDENTIFIER '=' constant_expression
+        {
+            $$ = NewAST(AST_ASSIGN, $1, $3);
+        }
+;
 
 struct_open
         : struct_or_union any_identifier '{'
             {
                 AST *newstruct;
                 Module *C;
-                newstruct = MakeNewStruct(current, $1, $2, NULL);
+                newstruct = MakeNewStruct(current, $1, $2, NULL, NULL);
                 $$ = newstruct;
                 C = GetClassPtr(newstruct);
                 if (current != C) {
@@ -1673,7 +1712,7 @@ struct_open
             {
                 AST *newstruct;
                 Module *C;
-                newstruct = MakeNewStruct(current, $1, NULL, NULL);
+                newstruct = MakeNewStruct(current, $1, NULL, NULL, NULL);
                 $$ = newstruct;
                 C = GetClassPtr(newstruct);
                 if (C != current) {
