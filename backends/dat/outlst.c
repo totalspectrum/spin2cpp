@@ -18,6 +18,7 @@ static int inCog;
 static int bytesOnLine;
 static int cogPcUpdate = 0;
 
+static bool isActive = true;
 static LexStream *current_lex = NULL;
 
 static void initLstOutput(Module *P)
@@ -188,7 +189,7 @@ static bool catchUpToLine(Flexbuf *f, LexStream *L, int line, bool needsStart)
     return needsStart;
 }
 
-static int ignoreAst(AST *ast)
+static bool ignoreAst(AST *ast)
 {
     if (!ast) return 1;
     switch (ast->kind) {
@@ -197,9 +198,15 @@ static int ignoreAst(AST *ast)
     case AST_COMMENTEDNODE:
     case AST_LINEBREAK:
         return 1;
+    case AST_ASM_IF:
+    case AST_ASM_ELSEIF:
+    case AST_ASM_ENDIF:
+        isActive = ast->d.ival != 0;
+        break;
     default:
-        return 0;
+        break;
     }
+    return !isActive;
 }
 static void lstStartAst(Flexbuf *f, AST *ast)
 {
