@@ -3,7 +3,7 @@
 //
 // See the debugger code for more insight.
 //
-// Copyright 2021-2022 Ada Gottensträter and Total Spectrum Software Inc.
+// Copyright 2021-2023 Ada Gottensträter and Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 
@@ -278,10 +278,13 @@ int AsmDebug_CodeGen(AST *ast, BackendDebugEval evalFunc, void *evalArg) {
                     emitAsmRegref(f, addr);
                     regNum++;
                     addr++;
-                    opcode &= ~DBC_FLAG_NOCOMMA;
-                    opcode |= DBC_FLAG_NOEXPR;
                     for (int n = PASM_EVAL_ISREG; n < addrKind; n++) {
-                        flexbuf_putc(opcode, f);
+                        if (gotArgs == expectedArgs) {
+                            opcode &= ~DBC_FLAG_NOCOMMA;
+                            flexbuf_putc(opcode|DBC_FLAG_NOEXPR, f);
+                        } else {
+                            gotArgs++;
+                        }
                         emitAsmRegref(f, addr);
                         addr++; regNum++;
                     }
