@@ -1391,19 +1391,140 @@ FixupCode(Module *P, int isBinary)
 #endif
 }
 
+static FILE *
+OpenIdeFile(const char *name)
+{
+    FILE *f;
+    int len = strlen(name);
+    if (len > 4 && !strcasecmp(name+len-5, ".side")) {
+        f = fopen(name, "r");
+        return f;
+    }
+    return NULL;
+}
+
+static bool
+IsHeaderFile(const char *name)
+{
+    const char *suffix = strrchr(name, '.');
+    if (!suffix) return false;
+    if (!strcmp(suffix, ".h")) return true;
+    if (!strcmp(suffix, ".hh")) return true;
+    if (!strcmp(suffix, ".hpp")) return true;
+    if (!strcmp(suffix, ".bi")) return true;
+    return false;
+}
+
+static void
+ProcessOneIdeDef(char *def) {
+    //printf("DEF: [%s]\n", def);
+    if (!strncmp(def, "-D", 2)) {
+        char *name;
+        def += 2;
+        while (*def && isspace(*def)) def++;
+        if (!*def) return;
+        name = strdup(def);
+        while (*def && *def != '=') {
+            def++;
+        }
+        if (*def == '=') {
+            *def++ = 0;
+        } else {
+            def = "1";
+        }
+        pp_define(&gl_pp, name, def);
+    }
+}
+
+static void
+ProcessIdeDefs(char *defs) {
+    char *lastdef = defs;
+    int c;
+    while ( (c = *defs++) != 0) {
+        if (c == '"' || c == '\'') {
+            while (*defs && *defs != c) {
+                defs++;
+            }
+            if (*defs) {
+                defs++;
+            }
+        } else if (isspace(c)) {
+            defs[-1] = 0;
+            // skip spaces
+            while (*defs && isspace(*defs)) {
+                defs++;
+            }
+            ProcessOneIdeDef(lastdef);
+            lastdef = defs;
+        } else if (c == 0) {
+            ProcessOneIdeDef(lastdef);
+            break;
+        }
+    }
+    if (*lastdef) {
+        ProcessOneIdeDef(lastdef);
+    }
+}
+
+#define MAX_IDE_FILES 256
+
 Module *
 ParseTopFiles(const char *argv[], int argc, int outputBin)
 {
     const char *name;
     Module *P = NULL;
     int is_dup = 0; // not really used
-
+    FILE *F = NULL;
+    const char *ide_files[MAX_IDE_FILES] = { 0 };
+    int num_ide_files = 0;
     current = allparse = NULL;
 
     while (argc > 0) {
         name = *argv++;
         currentTypes = NULL;
-        P = doParseFile(name, P, &is_dup, NULL);
+        if ( 0 != (F = OpenIdeFile(name)) ) {
+            static char fileBuf[512];
+            num_ide_files = 0;
+            while (fgets(fileBuf, sizeof(fileBuf)-1, F)) {
+                char *s;
+                for (s = fileBuf; *s; s++) {
+                    if (*s == '\n' || *s == '\r') {
+                        *s = 0;
+                        break;
+                    }
+                }
+                if (fileBuf[0] == '>') {
+                    // side directive
+                    char *def = &fileBuf[1];
+                    if (!strncmp(def, "defs::", 6)) {
+                        def += 6;
+                        ProcessIdeDefs(def);
+                    } else if (!strncmp(def, "-D", 2)) {
+                        ProcessIdeDefs(def);
+                    } else {
+                        // for now ignore everything else
+                    }
+                } else if (fileBuf[0] == '#') {
+                    // comment?
+                } else if (IsHeaderFile(name)) {
+                    // ignore, simple IDE includes header files in the .side file
+                } else {
+                    if (num_ide_files == MAX_IDE_FILES) {
+                        ERROR(NULL, "too many files in .side project %s", name);
+                    } else {
+                        printf("File: [%s]\n", fileBuf);
+                        ide_files[num_ide_files++] = strdup(fileBuf);
+                    }
+                }
+            }
+            fclose(F);
+            // process IDE files now (deferred until after -D processing was done)
+            for (int i = 0; i < num_ide_files; i++) {
+                P = doParseFile(ide_files[i], P, &is_dup, NULL);
+            }
+        } else {
+            P = doParseFile(name, P, &is_dup, NULL);
+        }
         --argc;
     }
     ProcessModule(P);
