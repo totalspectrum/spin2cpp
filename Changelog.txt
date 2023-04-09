@@ -1,5 +1,5 @@
 Version 6.1.0
-- Added basic support for compiling .side files
+- Added basic support for compiling project files (.fpide or .side)
 - Implemented ^@ and FIELD[] for Spin2
 - Implemented conditional assembly instructions if, elseif, else, and endif
 - Merged Ada's improved strlen() function

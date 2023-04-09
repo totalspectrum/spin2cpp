@@ -2,6 +2,25 @@
 
 This document describes compiler features common to all of the Flex languages.
 
+## Project Files
+
+Both flexspin and flexcc can process simple project files, in a format based on the SimpleIDE project file. These look like:
+```
+# Lines starting with # are comments and are ignored;
+# this is a flexspin feature, and may cause problems if imported
+# into SimpleIDE
+main.c
+file1.c
+file1.h
+file2.c
+file2.h
+>-DDEF1=10
+>-DDEF2=20
+```
+Basically they are a list of all files in the project. Lines beginning with `#` are ignored. Lines beginning with `>` indicate compiler configuration or defines; the only such lines flexspin understand are definitions like `-DNAME=value`, which define macros.
+
+When the compiler sees a file with an extension of `.fpide` or `.side` it assumes the file is a project file, and parses it accordingly. Projects may include sub-projects.
+
 ## Languages
 
 The compiler supports Spin (in both Spin 1 and Spin 2 variants), C (and a subset of C++), and BASIC. The choice of which language to use is determined by the file extension.
