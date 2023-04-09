@@ -1481,6 +1481,8 @@ ParseTopFiles(const char *argv[], int argc, int outputBin)
     FILE *F = NULL;
     const char *ide_files[MAX_IDE_FILES] = { 0 };
     int num_ide_files = 0;
+    bool needName = true;
+    
     current = allparse = NULL;
 
     while (argc > 0) {
@@ -1531,8 +1533,12 @@ ParseTopFiles(const char *argv[], int argc, int outputBin)
             for (int i = 0; i < num_ide_files; i++) {
                 P = doParseFile(ide_files[i], P, &is_dup, NULL);
             }
+            if (needName) {
+                P->fullname = name;
+            }
         } else {
             P = doParseFile(name, P, &is_dup, NULL);
+            needName = false;
         }
         --argc;
     }
