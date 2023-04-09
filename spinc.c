@@ -1400,6 +1400,10 @@ OpenIdeFile(const char *name)
         f = fopen(name, "r");
         return f;
     }
+    if (len > 5 && !strcasecmp(name+len-6, ".fpide")) {
+        f = fopen(name, "r");
+        return f;
+    }
     return NULL;
 }
 
@@ -1486,16 +1490,21 @@ ParseTopFiles(const char *argv[], int argc, int outputBin)
             static char fileBuf[512];
             num_ide_files = 0;
             while (fgets(fileBuf, sizeof(fileBuf)-1, F)) {
-                char *s;
+                char *s, *ptr;
                 for (s = fileBuf; *s; s++) {
                     if (*s == '\n' || *s == '\r') {
                         *s = 0;
                         break;
                     }
                 }
-                if (fileBuf[0] == '>') {
+                ptr = fileBuf;
+                while (*ptr && isspace(*ptr)) {
+                    ptr++;
+                }
+                if (!*ptr) continue;
+                if (ptr[0] == '>') {
                     // side directive
-                    char *def = &fileBuf[1];
+                    char *def = &ptr[1];
                     if (!strncmp(def, "defs::", 6)) {
                         def += 6;
                         ProcessIdeDefs(def);
@@ -1504,16 +1513,16 @@ ParseTopFiles(const char *argv[], int argc, int outputBin)
                     } else {
                         // for now ignore everything else
                     }
-                } else if (fileBuf[0] == '#') {
+                } else if (ptr[0] == '#') {
                     // comment?
-                } else if (IsHeaderFile(name)) {
+                } else if (IsHeaderFile(ptr)) {
                     // ignore, simple IDE includes header files in the .side file
                 } else {
                     if (num_ide_files == MAX_IDE_FILES) {
-                        ERROR(NULL, "too many files in .side project %s", name);
+                        ERROR(NULL, "too many files in project file %s", name);
                     } else {
-                        printf("File: [%s]\n", fileBuf);
-                        ide_files[num_ide_files++] = strdup(fileBuf);
+//                        printf("File: [%s]\n", ptr);
+                        ide_files[num_ide_files++] = strdup(ptr);
                     }
                 }
             }
