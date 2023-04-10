@@ -22,19 +22,15 @@ There are several known bugs and deviations from the C99 standard:
 
 #### Name Spaces
 
-The namespaces for types and variable names are not separated as they should be, so some C code that uses the same identifiers for types and variables or struct members may not work properly.
+The namespaces for types and variable names are not seperated as they should be, so some C code that uses the same identifiers for types and variables or struct members may not work properly.
 
 #### Doubles
 
 The `double` type is implemented as a 32 bit IEEE single precision float (the same as `float`). This doesn't meet the requirements in the C99 and later standards for the range available for double.
 
-#### long long
-
-The 64 bit integer type ("long long") is only partially implemented at this time, and does not work properly.
-
 #### Designated initializers
 
-C99 desginated initializers are supported only in their simplest form, that is, for only one level of initializer. So for example a statement like:
+C99 designated initializers are supported only in their simplest form, that is, for only one level of initializer. So for example a statement like:
 ```
   struct point c = { .x = 1, .y = 2 };
 ```
@@ -966,7 +962,7 @@ Available file systems are:
   * `_vfs_open_sdcardx(clk, ss, di, do)` is the same, but allows explicit specifications of the pins to use.
   * `_vfs_open_littlefs_flash(doFormat, cfg)` is to use the LittleFs file system on the built in flash.
   
-It is OK to make multiple mount calls, but they should have different names.
+It is OK to make multiple mount calls, but they should have different mount point names as their first parameters.
 
 ### Stdio
 
