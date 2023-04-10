@@ -1391,16 +1391,24 @@ FixupCode(Module *P, int isBinary)
 #endif
 }
 
+static bool
+IsIdeFileName(const char *name)
+{
+    char *ext = strrchr(name, '.');
+    if (ext) {
+        if (!strcasecmp(ext, ".side"))
+            return true;
+        if (!strcasecmp(ext, ".fpide"))
+            return true;
+    }
+    return false;
+}
+
 static FILE *
 OpenIdeFile(const char *name)
 {
     FILE *f;
-    int len = strlen(name);
-    if (len > 4 && !strcasecmp(name+len-5, ".side")) {
-        f = fopen(name, "r");
-        return f;
-    }
-    if (len > 5 && !strcasecmp(name+len-6, ".fpide")) {
+    if (IsIdeFileName(name)) {
         f = fopen(name, "r");
         return f;
     }
@@ -1472,69 +1480,85 @@ ProcessIdeDefs(char *defs) {
 
 #define MAX_IDE_FILES 256
 
+static Module *
+ParseIdeFile(Module *P, const char *name, int *is_dup_ptr)
+{
+    FILE *F = NULL;
+    const char *ide_files[MAX_IDE_FILES] = { 0 };
+    int num_ide_files = 0;
+    
+    if ( 0 != (F = OpenIdeFile(name)) ) {
+        char fileBuf[256] = {0};
+        num_ide_files = 0;
+        while (fgets(fileBuf, sizeof(fileBuf)-1, F)) {
+            char *s, *ptr;
+            for (s = fileBuf; *s; s++) {
+                if (*s == '\n' || *s == '\r') {
+                    *s = 0;
+                    break;
+                }
+            }
+            ptr = fileBuf;
+            while (*ptr && isspace(*ptr)) {
+                ptr++;
+            }
+            if (!*ptr) continue;
+            if (ptr[0] == '>') {
+                // side directive
+                char *def = &ptr[1];
+                if (!strncmp(def, "defs::", 6)) {
+                    def += 6;
+                    ProcessIdeDefs(def);
+                } else if (!strncmp(def, "-D", 2)) {
+                    ProcessIdeDefs(def);
+                } else {
+                    // for now ignore everything else
+                }
+            } else if (ptr[0] == '#') {
+                // comment?
+            } else if (IsHeaderFile(ptr)) {
+                // ignore, simple IDE includes header files in the .side file
+            } else {
+                if (num_ide_files == MAX_IDE_FILES) {
+                    ERROR(NULL, "too many files in project file %s", name);
+                } else {
+//                        printf("File: [%s]\n", ptr);
+                    ide_files[num_ide_files++] = strdup(ptr);
+                }
+            }
+        }
+        fclose(F);
+        // process IDE files now (deferred until after -D processing was done)
+        for (int i = 0; i < num_ide_files; i++) {
+            if (IsIdeFileName(ide_files[i])) {
+                P = ParseIdeFile(P, ide_files[i], is_dup_ptr);
+            } else {
+                P = doParseFile(ide_files[i], P, is_dup_ptr, NULL);
+            }
+        }
+    } else {
+        ERROR(NULL, "Unable to open file %s", name);
+    }
+    return P;
+}
+
 Module *
 ParseTopFiles(const char *argv[], int argc, int outputBin)
 {
     const char *name;
-    Module *P = NULL;
     int is_dup = 0; // not really used
-    FILE *F = NULL;
-    const char *ide_files[MAX_IDE_FILES] = { 0 };
-    int num_ide_files = 0;
     bool needName = true;
-    
+    Module *P = NULL;
     current = allparse = NULL;
 
     while (argc > 0) {
         name = *argv++;
         currentTypes = NULL;
-        if ( 0 != (F = OpenIdeFile(name)) ) {
-            static char fileBuf[512];
-            num_ide_files = 0;
-            while (fgets(fileBuf, sizeof(fileBuf)-1, F)) {
-                char *s, *ptr;
-                for (s = fileBuf; *s; s++) {
-                    if (*s == '\n' || *s == '\r') {
-                        *s = 0;
-                        break;
-                    }
-                }
-                ptr = fileBuf;
-                while (*ptr && isspace(*ptr)) {
-                    ptr++;
-                }
-                if (!*ptr) continue;
-                if (ptr[0] == '>') {
-                    // side directive
-                    char *def = &ptr[1];
-                    if (!strncmp(def, "defs::", 6)) {
-                        def += 6;
-                        ProcessIdeDefs(def);
-                    } else if (!strncmp(def, "-D", 2)) {
-                        ProcessIdeDefs(def);
-                    } else {
-                        // for now ignore everything else
-                    }
-                } else if (ptr[0] == '#') {
-                    // comment?
-                } else if (IsHeaderFile(ptr)) {
-                    // ignore, simple IDE includes header files in the .side file
-                } else {
-                    if (num_ide_files == MAX_IDE_FILES) {
-                        ERROR(NULL, "too many files in project file %s", name);
-                    } else {
-//                        printf("File: [%s]\n", ptr);
-                        ide_files[num_ide_files++] = strdup(ptr);
-                    }
-                }
-            }
-            fclose(F);
-            // process IDE files now (deferred until after -D processing was done)
-            for (int i = 0; i < num_ide_files; i++) {
-                P = doParseFile(ide_files[i], P, &is_dup, NULL);
-            }
+        if (IsIdeFileName(name)) {
+            P = ParseIdeFile(P, name, &is_dup);
             if (needName) {
                 P->fullname = name;
+                needName = false;
             }
         } else {
             P = doParseFile(name, P, &is_dup, NULL);
