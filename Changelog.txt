@@ -1,3 +1,6 @@
+Version 6.1.1
+- Fixed IF in assembly debug
+
 Version 6.1.0
 - Added basic support for compiling project files (.fpide or .side)
 - Implemented ^@ and FIELD[] for Spin2

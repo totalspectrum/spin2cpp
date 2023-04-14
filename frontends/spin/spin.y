@@ -755,6 +755,8 @@ asmdebug_func:
     { $$ = MakeFunccall(AstIdentifier("if"),$3,NULL);}
   | SP_IFNOT '(' operandlist ')'
     { $$ = MakeFunccall(AstIdentifier("ifnot"),$3,NULL);}
+  | SP_ASM_IF '(' operandlist ')'
+    { $$ = MakeFunccall(AstIdentifier("if"),$3,NULL);}
 ;
 
 asmdebug_exprlist:
