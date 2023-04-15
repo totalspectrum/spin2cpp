@@ -1557,9 +1557,9 @@ found_name:
         /* 'fname' should not be free()ed, it is used as file->         */
         /*      real_fname and has been registered into fnamelist[]     */
         if (!sys_header) {
-            extern void AddSourceFile(const char *, const char *);
-            extern char *MakeAbsolutePath(const char *);
-            AddSourceFile(filename, MakeAbsolutePath(filename));
+            extern void AddSourceFile(const char *, const char *);            
+            // open_include sets cur_fullname to the full path
+            AddSourceFile(filename, cur_fullname);
         }
         return  TRUE;
     }

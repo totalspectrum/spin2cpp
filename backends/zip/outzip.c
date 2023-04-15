@@ -37,6 +37,8 @@ OutputZipFile(const char *zipname)
         zip_entry_open(zip, zipEntryName);
         if (zip_entry_fwrite(zip, sf->fullName) != 0) {
             ERROR(NULL, "Unable to write file %s to zip", sf->fullName);
+            zip_close(zip);
+            remove(zipname);
             return;
         }
         zip_entry_close(zip);

@@ -1,5 +1,7 @@
 Version 6.1.1
 - Fixed IF in assembly debug
+- Use proper full name for C include files in zip creation
+- Remove .zip file on failed creation
 
 Version 6.1.0
 - Added basic support for compiling project files (.fpide or .side)
