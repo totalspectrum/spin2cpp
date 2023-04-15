@@ -764,12 +764,6 @@ The flexspin parser works differently from the PNut parser, and in complicated n
   - Do not use `:` in `lookup`/`lookdown` type expressions except as the separator between the selection expression and the list of results
   - Make liberal use of parentheses to resolve ambiguity, e.g. write `a ? (b()) : 1` or `a ? (b():1) : 2` to distinguish between `:1` as an indirect method marker nad `:1` as the "else" part of the `?` operator.
   
-### @ Operator
-
-The `@` operator always gives an absolute address in flexspin's Spin2 dialect, even inside assembly code. This is different from the standard Spin2 interpreter, where it produces an address relative to the start of the current object. In most contexts the flexspin behavior is more convenient, but it is something to keep in mind.
-
-If you really need a relative offset, declare a label like `entry` at the start of your assembly and use `@label - @entry` to find the offset of `label` from `entry`. This will work in all compilers.
-
 ### ORG/END
 
 No address may be given in an ORG/END pair. If no FCACHE is available (e.g. -O0 is given) then the code is run as hubexec, in which case no self-modifying code or local data is permitted.
