@@ -1,5 +1,6 @@
 Version 6.1.1
 - Fixed IF in assembly debug
+- Made the preprocessor ignore characters after a line comment start (like ')
 - Use proper full name for C include files in zip creation
 - Remove .zip file on failed creation
 

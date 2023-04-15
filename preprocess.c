@@ -700,7 +700,8 @@ do_expand(struct preprocess *pp, struct flexbuf *dst, char *src, int doMacros)
     char *word;
     const char *def;
     int len;
-
+    bool in_linecomment = false;
+    
     if (!pp_active(pp))
         return 0;
 
@@ -710,7 +711,9 @@ do_expand(struct preprocess *pp, struct flexbuf *dst, char *src, int doMacros)
         if (!*word)
             break;
         if (pp->incomment) {
-            if (strstr(word, pp->endcomment)) {
+            if (in_linecomment) {
+                // do nothing with regular comments
+            } else if (strstr(word, pp->endcomment)) {
                 --pp->incomment;
             } else {
                 if (strstr(word, pp->startcomment)) {
@@ -727,12 +730,19 @@ do_expand(struct preprocess *pp, struct flexbuf *dst, char *src, int doMacros)
                 def = word;
             }
         } else {
-            if (pp->startcomment && strstr(word, pp->startcomment)) {
+            if (pp->linecomment && !strncmp(word, pp->linecomment, strlen(pp->linecomment))) {
+                pp->incomment++;
+                in_linecomment = true;
+            } else if (pp->startcomment && strstr(word, pp->startcomment)) {
                 pp->incomment++;
             }
             def = word;
         }
         flexbuf_addstr(dst, def);
+        if (in_linecomment && strchr(def, '\n')) {
+            pp->incomment--;
+            in_linecomment = false;
+        }
     }
     len = flexbuf_curlen(dst);
     flexbuf_addchar(dst, 0);
