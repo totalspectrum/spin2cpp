@@ -784,6 +784,14 @@ int ParseCharset(int *var, const char *name)
 SourceFile *sourceData = NULL;
 int numSourceFiles = 0;
 int maxSourceFiles = 0;
+static char *sourcePrefix = NULL;
+
+void InitSourceFiles() {
+    sourceData = NULL;
+    numSourceFiles = 0;
+    maxSourceFiles = 0;
+    sourcePrefix = NULL;
+}
 
 static bool IsSysFile(const char *name) {
     if (strstr(name, "../include/libc/")) return true;
@@ -802,7 +810,28 @@ void AddSourceFile(const char *shortName, const char *fullName)
             return;
         }
     }
-    
+    // check for prefix for short name
+    if (!sourcePrefix) {
+        char *ptr;
+        sourcePrefix = strdup(shortName);
+        ptr = strrchr(sourcePrefix, '/');
+#ifdef WIN32
+        if (ptr && strrchr(ptr, '\\')) {
+            ptr = strrchr(ptr, '\\');
+        } else if (!ptr) {
+            ptr = strrchr(sourcePrefix, '\\');
+        }
+#endif
+        if (ptr) {
+            ptr[1] = 0;
+        }
+    }
+        
+    size_t n = strlen(sourcePrefix);
+    if (n && !strncmp(shortName, sourcePrefix, n)) {
+        shortName += n;
+    }
+
     // OK, go ahead and add it
     if (numSourceFiles == maxSourceFiles) {
         maxSourceFiles += 1024;
