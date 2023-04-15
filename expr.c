@@ -1433,7 +1433,7 @@ EvalIntOperator(int op, ExprInt lval, ExprInt rval, int *valid)
     case K_SIGNEXTEND:
     {
         int shift = 32 - rval;
-        return ((ExprInt)lval << shift) >> shift;
+        return ((int32_t)lval << shift) >> shift;
     }
     break;
     case K_DECREMENT:
