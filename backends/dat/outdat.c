@@ -1721,11 +1721,8 @@ decode_instr:
             } else {
                 if (isrc >= 0x400) {
                     isRelJmp = 0;
-                } else if (isrc >= 0x200) {
-                    // destination in LUT
-                    isRelJmp = (curpc >= 0x800);
                 } else {
-                    isRelJmp = (curpc < 0x800);
+                    isRelJmp = 1;
                 }
             }
         }

@@ -1,0 +1,14 @@
+DAT
+	org $1c0
+again
+	{
+	asmclk
+	}
+	jmp	#far
+d
+	long	$8000 signx 15
+
+	org $200
+far
+	tjnz d, #again
+	nop

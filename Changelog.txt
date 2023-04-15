@@ -2,6 +2,7 @@ Version 6.1.1
 - Fixed IF in assembly debug
 - Fixed constant SIGNX evaluation
 - Made the preprocessor ignore characters after a line comment start (like ')
+- Made jmp relative calculations act more like the official compiler
 - Use proper full name for C include files in zip creation
 - Remove .zip file on failed creation
 
