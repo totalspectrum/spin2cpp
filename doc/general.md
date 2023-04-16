@@ -52,16 +52,6 @@ BASIC and C also allow inline declarations of classes, using `class`. See the re
 
 Every language may call functions written in the other languages. Spin and BASIC are case-insensitive, but C is case sensitive. This means that even in a Spin or BASIC program, you must use the proper case in order to access C functions or variables.
 
-## Fast Cache (Fcache)
-
-Fcache is a special feature of the compiler whereby small loops are copied from HUB memory into local (COG) memory before execution. This speeds up repated loops quite a bit. Fcache is available only if optimization is enabled.
-
-Some inline assembly blocks may also be marked to be copied to fcache before execution; see the section on inline assembly for a description of this.
-
-### What loops will be placed in fcache
-
-Loops will be placed in fcache only if (a) they will fit, and (b) they contain no branches to outside the loop (including subroutine calls). The size of the fcache may be set by the `--fcache` flag, but is generally 1024 bytes on P2 and 128 bytes on P1.
-
 ## Inline assembly
 
 All of the languages allow inline assembly within functions. There are 3 different forms of inline assembly:
@@ -160,6 +150,16 @@ If a function should be inlined more aggressively, add the `inline` attribute to
 ### Inline functions in bytecode
 
 At the present time neither of the bytecode compilers (P1 ROM or P2 nucode) supports inlining of functions.
+
+## Fast Cache (Fcache)
+
+Fcache is a special feature of the compiler whereby small loops are copied from HUB memory into local (COG) memory before execution. This speeds up repated loops quite a bit. Fcache is available only if optimization is enabled.
+
+Some inline assembly blocks may also be marked to be copied to fcache before execution; see the section on inline assembly for a description of this.
+
+### What loops will be placed in fcache
+
+Loops will be placed in fcache only if (a) they will fit, and (b) they contain no branches to outside the loop (including subroutine calls). The size of the fcache may be set by the `--fcache` flag, but is generally 1024 bytes on P2 and 128 bytes on P1.
 
 ## Interrupt Service Routines
 
@@ -661,6 +661,22 @@ To compile a program to start at address 65536 (at the 64K boundary), do:
 ```
 flexspin -2 -H 0x10000 -E fibo.bas
 ```
+
+## Special defines
+
+There are some special defines that may be made with `-DDEF=xxx`. The special features of these defines are only activated when given on the command line; that is, they do not have any special effects when defined with `#define`.
+
+### _BAUD
+
+Defining `_BAUD` on the command line sets the default baud rate to be used for both debugging and regular output; for example, `-D_BAUD=230400` sets output to be 230400 baud.
+
+### _XTLFREQ
+
+Defining `_XTLFREQ` on the command line sets a default XI/XO crystal+PLL frequency, e.g. `-D_XTLFREQ=20000000`.
+
+### _XINFREQ
+
+Defining `_XINFREQ` on the command line sets a default XI input + PLL frequency.
 
 ## Common low level functions
 

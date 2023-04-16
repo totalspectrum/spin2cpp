@@ -83,6 +83,8 @@ int gl_relocatable = 0;
 int gl_nostdlib = 0;
 
 int gl_default_baud = 0;
+int gl_default_xtlfreq = 0;
+int gl_default_xinfreq = 0;
 
 // bytes and words are unsigned by default, but longs are signed by default
 // this is confusing, and someday we should make all of these explicit
@@ -2412,15 +2414,23 @@ CalcClkFreqP2(Module *P)
     } else {
         clkfreq = 160000000.0;
     }
-    if (xinfreqsym) {
-        if (xtlfreqsym) {
+    if (xinfreqsym || gl_default_xinfreq) {
+        if (xtlfreqsym || gl_default_xtlfreq) {
             ERROR(NULL, "Only one of _xtlfreq or _xinfreq may be specified");
             return 0;
         }
-        clkfreq = xinfreq = (double)EvalConstSym(xinfreqsym);
+        if (gl_default_xinfreq) {
+            clkfreq = xinfreq = (double)gl_default_xinfreq;
+        } else {
+            clkfreq = xinfreq = (double)EvalConstSym(xinfreqsym);
+        }
         zzzz = 7; // 0b01_11
-    } else if (xtlfreqsym) {
-        clkfreq = xinfreq = (double)EvalConstSym(xtlfreqsym);
+    } else if (xtlfreqsym || gl_default_xtlfreq) {
+        if (gl_default_xtlfreq) {
+            clkfreq = xinfreq = (double)gl_default_xtlfreq;
+        } else {
+            clkfreq = xinfreq = (double)EvalConstSym(xtlfreqsym);
+        }
         if (xinfreq >= 16000000.0) {
             zzzz = 11; // 0b10_11
         } else {

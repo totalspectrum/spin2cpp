@@ -751,6 +751,12 @@ void check_special_define(const char *name, const char *def)
     if (!strcmp(name, "_BAUD")) {
         val = strtoul(def, NULL, 0);
         gl_default_baud = val;
+    } else if (!strcmp(name, "_XINFREQ")) {
+        val = strtoul(def, NULL, 0);
+        gl_default_xinfreq = val;
+    } else if (!strcmp(name, "_XTLFREQ")) {
+        val = strtoul(def, NULL, 0);
+        gl_default_xtlfreq = val;
     }
 }
 

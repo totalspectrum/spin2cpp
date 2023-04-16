@@ -293,6 +293,12 @@ extern void ActivateFeature(unsigned flag);
 /* default value for baud rate (set on command line with -D_BAUD=) */
 extern int gl_default_baud;
 
+/* default value for xtlfreq (set on command line with -D_XTLFREQ=) */
+extern int gl_default_xtlfreq;
+
+/* default value for xinfreq (set on command line with -D_XINFREQ=) */
+extern int gl_default_xinfreq;
+
 /* tab stop setting (in lexer.c) */
 extern int gl_tab_stops;
 
