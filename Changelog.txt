@@ -1,4 +1,5 @@
 Version 6.1.1
+- Added special -D_XTLFREQ=x and -D_XINFREQ=x command line defines
 - Fixed IF in assembly debug
 - Fixed constant SIGNX evaluation
 - Made the preprocessor ignore characters after a line comment start (like ')
