@@ -884,7 +884,7 @@ IR *EmitLabel(IRList *irl, Operand *op)
 }
 IR *EmitInfoLabel(IRList *irl, Operand *op) {
     IR *ir;
-    extern int gl_print_sizes;
+    extern bool gl_print_sizes;
     if (!gl_print_sizes) return NULL;
     ir = EmitLabel(irl, op);
     if (ir) {
