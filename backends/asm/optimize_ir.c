@@ -1347,6 +1347,8 @@ SrcOnlyHwReg(Operand *orig)
         return true;
     }
     if (!strcasecmp(orig->name, "CNT")
+            || !strcasecmp(orig->name, "PHSA") // Not actually source-only, but dest reads last written value
+            || !strcasecmp(orig->name, "PHSB") // ^^
             || !strcasecmp(orig->name, "INA")
             || !strcasecmp(orig->name, "INB"))
     {
@@ -1977,6 +1979,7 @@ PropagateConstForward(IRList *irl, IR *orig_ir, Operand *orig, Operand *immval)
     int change = 0;
     bool unconditional;
     int32_t tmp;
+    if (SrcOnlyHwReg(orig)) return 0;
     if (!isConstMove(orig_ir,&tmp)) ERROR(NULL,"isConstMove == false in PropagateConstForward");
     if (immval->val != tmp) {
         immval = NewImmediate(tmp);
