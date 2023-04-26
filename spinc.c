@@ -1087,6 +1087,8 @@ ResolveSymbols()
 {
     Module *Q;
 
+    if (gl_output == OUTPUT_OBJ) return 0;
+    
     resolveChanges = 0;
 
     for (Q = allparse; Q; Q = Q->next) {
