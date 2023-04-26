@@ -163,31 +163,32 @@ extern int gl_listing;     /* if set, produce an assembly listing */
 extern int gl_expand_constants; /* flag: if set, print constant values rather than symbolic references */
 extern int gl_infer_ctypes; /* flag: use inferred types for generated C/C++ code */
 extern int gl_optimize_flags; /* flags for optimization */
-#define OPT_REMOVE_UNUSED_FUNCS 0x000001
-#define OPT_PERFORM_CSE         0x000002
-#define OPT_REMOVE_HUB_BSS      0x000004
-#define OPT_BASIC_REGS          0x000008  /* basic register optimization */
-#define OPT_INLINE_SMALLFUNCS   0x000010  /* inline small functions */
-#define OPT_INLINE_SINGLEUSE    0x000020  /* inline single use functions */
-#define OPT_AUTO_FCACHE         0x000040  /* use FCACHE for P2 */
-#define OPT_PERFORM_LOOPREDUCE  0x000080  /* loop reduction */
-#define OPT_DEADCODE            0x000100  /* dead code elimination */
-#define OPT_BRANCHES            0x000200  /* branch conditionalization */
-#define OPT_PEEPHOLE            0x000400  /* peephole optimization */
-#define OPT_CONST_PROPAGATE     0x000800  /* constant propagation */
-#define OPT_LOOP_BASIC          0x001000  /* simple loop conversion */
-#define OPT_TAIL_CALLS          0x002000  /* tail call optimization */
-#define OPT_CASETABLE           0x004000  /* convert CASE to CASE_FAST (only for bytecode mode) */
-#define OPT_EXTRASMALL          0x008000  /* Use smaller-but-slower constructs */
-#define OPT_REMOVE_FEATURES     0x010000  /* remove unused features in libraries */
-#define OPT_MAKE_MACROS         0x020000  /* combine multiple bytecodes */
-#define OPT_SPECIAL_FUNCS       0x040000  /* optimize some special functions like pinr and pinw */
-#define OPT_CORDIC_REORDER      0x080000  /* reorder instructions around CORDIC operations */
-#define OPT_LOCAL_REUSE         0x100000  /* reuse local registers inside functions */
-#define OPT_AGGRESSIVE_MEM      0x200000  /* aggressive load/store optimization */
+#define OPT_REMOVE_UNUSED_FUNCS 0x00000001
+#define OPT_PERFORM_CSE         0x00000002
+#define OPT_REMOVE_HUB_BSS      0x00000004
+#define OPT_BASIC_REGS          0x00000008  /* basic register optimization */
+#define OPT_INLINE_SMALLFUNCS   0x00000010  /* inline small functions */
+#define OPT_INLINE_SINGLEUSE    0x00000020  /* inline single use functions */
+#define OPT_AUTO_FCACHE         0x00000040  /* use FCACHE for P2 */
+#define OPT_PERFORM_LOOPREDUCE  0x00000080  /* loop reduction */
+#define OPT_DEADCODE            0x00000100  /* dead code elimination */
+#define OPT_BRANCHES            0x00000200  /* branch conditionalization */
+#define OPT_PEEPHOLE            0x00000400  /* peephole optimization */
+#define OPT_CONST_PROPAGATE     0x00000800  /* constant propagation */
+#define OPT_LOOP_BASIC          0x00001000  /* simple loop conversion */
+#define OPT_TAIL_CALLS          0x00002000  /* tail call optimization */
+#define OPT_CASETABLE           0x00004000  /* convert CASE to CASE_FAST (only for bytecode mode) */
+#define OPT_EXTRASMALL          0x00008000  /* Use smaller-but-slower constructs */
+#define OPT_REMOVE_FEATURES     0x00010000  /* remove unused features in libraries */
+#define OPT_MAKE_MACROS         0x00020000  /* combine multiple bytecodes */
+#define OPT_SPECIAL_FUNCS       0x00040000  /* optimize some special functions like pinr and pinw */
+#define OPT_CORDIC_REORDER      0x00080000  /* reorder instructions around CORDIC operations */
+#define OPT_LOCAL_REUSE         0x00100000  /* reuse local registers inside functions */
+#define OPT_AGGRESSIVE_MEM      0x00200000  /* aggressive load/store optimization */
+#define OPT_COLD_CODE           0x00400000  /* move cold code to end of function */
 
-#define OPT_EXPERIMENTAL        0x800000  /* gate new or experimental optimizations */
-#define OPT_FLAGS_ALL           0xffffff
+#define OPT_EXPERIMENTAL        0x80000000  /* gate new or experimental optimizations */
+#define OPT_FLAGS_ALL           0xffffffff
 
 #define OPT_ASM_BASIC  (OPT_BASIC_REGS|OPT_BRANCHES|OPT_PEEPHOLE|OPT_CONST_PROPAGATE|OPT_REMOVE_FEATURES|OPT_MAKE_MACROS)
 

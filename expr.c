@@ -1987,6 +1987,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
         }
         rval.type = expr->left;
         return rval;
+    case AST_EXPECT: return EvalExpr(expr->left,flags,valid,depth+1);
     default:
         break;
     }

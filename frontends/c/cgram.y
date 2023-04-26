@@ -1243,7 +1243,9 @@ postfix_expression
                 $$ = NewAST(AST_COGINIT, elist, NULL);
             }
         | C_BUILTIN_EXPECT '(' assignment_expression ',' assignment_expression ')'
-            { $$ = $3; }
+            { 
+                $$ = NewAST(AST_EXPECT, $3, $5);
+            }
         | C_BUILTIN_LONGJMP '(' assignment_expression ',' assignment_expression ')'
             {
                 $$ = NewAST(AST_THROW, $5, $3);

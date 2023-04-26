@@ -382,6 +382,7 @@ BCCompileConditionalJump(BCIRBuffer *irbuf,AST *condition, bool ifNotZero, ByteO
     condjmp.jumpTo = label;
     int stackdiff = context.hiddenVariables - label->attr.labelHiddenVars;
     if (stackdiff) ERROR(condition,"Conditional jump to label with unequal hidden var count");
+    if (condition && condition->kind == AST_EXPECT) condition = condition->left;
     if (!condition) {
         ERROR(NULL,"Null condition!");
         return;
@@ -2310,6 +2311,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                                       valast);
                 BCCompileExpression(irbuf, newnode, context, asStatement);
             } break;
+            case AST_EXPECT: return BCCompileExpression(irbuf,node->left,context,asStatement);
             default:
                 ERROR(node,"Unhandled node kind %d in expression",node->kind);
                 return;

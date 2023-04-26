@@ -583,6 +583,7 @@ NuCompileBoolBranches(NuIrList *irl, AST *expr, NuIrLabel *truedest, NuIrLabel *
         if (x && truedest) NuEmitBranch(irl, NU_OP_BRA, truedest);
         if (!x && falsedest) NuEmitBranch(irl, NU_OP_BRA, falsedest);
     }
+    if (expr->kind == AST_EXPECT) expr = expr->left;
     if (expr->kind == AST_ISBETWEEN) {
         int n;
         bool needNewFalsedest = false;
@@ -1785,6 +1786,7 @@ NuCompileExpression(NuIrList *irl, AST *node) {
     case AST_RANGEREF:
         pushed = NuCompileExpression(irl, TransformRangeUse(node));
         break;
+    case AST_EXPECT: return NuCompileExpression(irl,node->left);
     default:
         ERROR(node, "Unknown expression node %d", node->kind);
         return 1;
