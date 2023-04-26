@@ -877,6 +877,8 @@ PrintCompressCondJump(struct flexbuf *fb, int cond, Operand *dst)
 // pick a conservative value
 // 127 would be the absolute maximum here
 #define MAX_REL_JUMP_OFFSET 100
+// On P2 conditional jumps have a range +/- 256
+#define MAX_REL_JUMP_OFFSET_P2 200
 
 /* convert IR list into assembly language */
 static int didPub = 0;
@@ -989,7 +991,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
             if (ir->aux) {
                 IR *dest = (IR *)ir->aux;
                 int offset = dest->addr - ir->addr;
-                if (offset < -MAX_REL_JUMP_OFFSET || offset > MAX_REL_JUMP_OFFSET) {
+                if (offset < -MAX_REL_JUMP_OFFSET_P2 || offset > MAX_REL_JUMP_OFFSET_P2) {
                     static int djzlab = 0;
                     djzlab++;
                     flexbuf_printf(fb, "\tdjz\t");
