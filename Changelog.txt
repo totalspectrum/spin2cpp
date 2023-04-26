@@ -1,5 +1,6 @@
 Version 6.1.2
 - Fixed an optimizer bug around the P1 PHSx registers
+- Minor optimization for expressions like 2*x
 
 Version 6.1.1
 - Added special -D_XTLFREQ=x and -D_XINFREQ=x command line defines

@@ -2137,8 +2137,16 @@ static enum SixteenBitSafe is16BitCompatible(enum SixteenBitSafe left,enum Sixte
 static Operand *
 CompileMul(IRList *irl, AST *expr, int gethi, Operand *dest)
 {
-    Operand *lhs = CompileExpression(irl, expr->left, NULL);
-    Operand *rhs = CompileExpression(irl, expr->right, NULL);
+    Operand *lhs;
+    Operand *rhs;
+    if (IsConstExpr(expr->left)) {
+        // normalize 2 * a to a * 2, we get better code
+        AST *tmp = expr->left;
+        expr->left = expr->right;
+        expr->right = tmp;
+    }
+    lhs = CompileExpression(irl, expr->left, NULL);
+    rhs = CompileExpression(irl, expr->right, NULL);
     if (gl_p2 && gethi == 0) {
         enum SixteenBitSafe sixteen_safe = is16BitCompatible(is16BitSafe(expr->left),is16BitSafe(expr->left));
         if (sixteen_safe) {
