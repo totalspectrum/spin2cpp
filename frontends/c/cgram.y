@@ -1069,8 +1069,21 @@ primary_expression
             { $$ = $1; }
 	| C_CONSTANT
             { $$ = $1; }
-	| C_HWREG
-            { $$ = $1; }
+	| C_HWREG optpasmrange
+            {
+                AST *reg = $1;
+                AST *range = $2;
+                if (range) {
+                    AST *index = NewAST(AST_RANGE, range->left, NULL);
+                    AST *base = NewAST(AST_RANGEREF, reg, index);
+                    if (range->kind == AST_BIGIMMHOLDER) {
+                        base = NewAST(AST_BIGIMMHOLDER, base, NULL);
+                    }
+                    $$ = base;
+                } else {
+                    $$ = reg;
+                }
+            }
 	| C_THIS
             { $$ = NewAST(AST_SELF, NULL, NULL); }
         | C_TRUE
