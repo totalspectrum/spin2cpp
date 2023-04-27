@@ -104,7 +104,7 @@ static Operand *Dereference(IRList *irl, Operand *op);
 static Operand *CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func);
 static Operand *CompileFunccallFirstResult(IRList *irl, AST *expr);
 static OperandList *CompileFunccall(IRList *irl, AST *expr);
-static void CompileStatement(IRList *irl, AST *ast); /* forward declaration */
+static void CompileStatement(IRList *irl, IRList *cold_irl, AST *ast); /* forward declaration */
 
 static Operand *GetAddressOf(IRList *irl, AST *expr);
 static Operand *GetFieldAddressOf(IRList *irl, AST *expr);
@@ -2452,6 +2452,8 @@ CompileBoolBranches(IRList *irl, AST *expr, Operand *truedest, Operand *falsedes
     Operand *dummylabel = NULL;
     IR *ir;
 
+    if (expr->kind == AST_EXPECT) expr = expr->left;
+
     if (expr->kind == AST_ISBETWEEN) {
         Operand *lo, *hi;
         Operand *val;
@@ -3239,7 +3241,7 @@ CompileMultipleAssign(IRList *irl, AST *lhs, AST *rhs)
         // down, compiling the parts, until we get to the final
         // function call
         if (rhs->right) {
-            CompileStatement(irl, rhs->left);
+            CompileStatement(irl, NULL, rhs->left);
             rhs = rhs->right;
         } else {
             rhs = rhs->left;
@@ -4351,7 +4353,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
     {
         AST *list = expr;
         if (list && list->right) {
-            CompileStatement(irl, list->left);
+            CompileStatement(irl, NULL, list->left);
             return CompileExpression(irl, list->right, dest);
         }
         if (list) {
@@ -4372,7 +4374,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
                 case AST_ENDCASE:
                 case AST_QUITLOOP:
                 case AST_LABEL:
-                    CompileStatement(irl, list);
+                    CompileStatement(irl, NULL, list);
                     WARNING(expr, "statement expression does not produce a value");
                     return OPERAND_DUMMY;
                 default:
@@ -4497,6 +4499,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
         }
         return r;
     }
+    case AST_EXPECT: return CompileExpression(irl,expr->left,dest);
     case AST_EXPRLIST: {
         /* a singleton expression list is just like an expression */
         if (!expr->right) {
@@ -4511,7 +4514,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
 }
 
 static void
-CompileStatementList(IRList *irl, AST *ast)
+CompileStatementList(IRList *irl, IRList *cold_irl, AST *ast)
 {
     while (ast) {
         if (ast->kind != AST_STMTLIST) {
@@ -4519,7 +4522,7 @@ CompileStatementList(IRList *irl, AST *ast)
                   ast->kind);
             return;
         }
-        CompileStatement(irl, ast->left);
+        CompileStatement(irl, cold_irl, ast->left);
         ast = ast->right;
     }
 }
@@ -4791,7 +4794,7 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc, AST *linenu
 // Lexit
 //
 
-static void CompileForLoop(IRList *irl, AST *ast, int atleastonce)
+static void CompileForLoop(IRList *irl, IRList *cold_irl, AST *ast, int atleastonce)
 {
     AST *initstmt;
     AST *loopcond;
@@ -4835,9 +4838,9 @@ static void CompileForLoop(IRList *irl, AST *ast, int atleastonce)
     if (!atleastonce) {
         CompileBoolBranches(irl, loopcond, NULL, exitlabel);
     }
-    CompileStatementList(irl, body);
+    CompileStatementList(irl, cold_irl, body);
     EmitLabel(irl, nextlabel);
-    CompileStatement(irl, update);
+    CompileStatement(irl, cold_irl, update);
     if (atleastonce) {
         CompileBoolBranches(irl, loopcond, toplabel, NULL);
     } else {
@@ -4847,7 +4850,7 @@ static void CompileForLoop(IRList *irl, AST *ast, int atleastonce)
     PopQuitNext();
 }
 
-static void CompileCaseStmt(IRList *irl, AST *ast)
+static void CompileCaseStmt(IRList *irl, IRList *cold_irl, AST *ast)
 {
     Operand *labeldone = NewCodeLabel();
     Operand *labelnext = NULL;
@@ -4883,7 +4886,7 @@ static void CompileCaseStmt(IRList *irl, AST *ast)
         labelnext = NewCodeLabel();
         CompileBoolBranches(irl, booltest, NULL, labelnext);
         FreeTempRegisters(irl, starttempreg);
-        CompileStatementList(irl, stmts);
+        CompileStatementList(irl, cold_irl, stmts);
         FreeTempRegisters(irl, starttempreg);
     }
     if (labelnext) {
@@ -4953,7 +4956,7 @@ single_value:
     return PASM_EVAL_ISREG;
 }
 
-static void CompileStatement(IRList *irl, AST *ast)
+static void CompileStatement(IRList *irl, IRList *cold_irl, AST *ast)
 {
     AST *retval;
     Operand *op;
@@ -4969,7 +4972,7 @@ static void CompileStatement(IRList *irl, AST *ast)
     switch (ast->kind) {
     case AST_COMMENTEDNODE:
         EmitComments(irl, ast->right);
-        CompileStatement(irl, ast->left);
+        CompileStatement(irl, cold_irl, ast->left);
         break;
     case AST_RETURN:
         EmitDebugComment(irl, ast);
@@ -4981,7 +4984,7 @@ static void CompileStatement(IRList *irl, AST *ast)
             // extract the return value if it's buried in a sequence
             while (retval->kind == AST_SEQUENCE) {
                 if (retval->right) {
-                    CompileStatement(irl, retval->left);
+                    CompileStatement(irl, cold_irl, retval->left);
                     retval = retval->right;
                 } else {
                     retval = retval->left;
@@ -5100,7 +5103,7 @@ static void CompileStatement(IRList *irl, AST *ast)
         EmitLabel(irl, toploop);
         CompileBoolBranches(irl, ast->left, NULL, botloop);
         FreeTempRegisters(irl, starttempreg);
-        CompileStatementList(irl, ast->right);
+        CompileStatementList(irl, cold_irl, ast->right);
         EmitJump(irl, COND_TRUE, toploop);
         EmitLabel(irl, botloop);
         PopQuitNext();
@@ -5111,7 +5114,7 @@ static void CompileStatement(IRList *irl, AST *ast)
         exitloop = NewCodeLabel();
         PushQuitNext(exitloop, botloop);
         EmitLabel(irl, toploop);
-        CompileStatementList(irl, ast->right);
+        CompileStatementList(irl, cold_irl, ast->right);
         EmitLabel(irl, botloop);
         CompileBoolBranches(irl, ast->left, toploop, NULL);
         FreeTempRegisters(irl, starttempreg);
@@ -5127,7 +5130,7 @@ static void CompileStatement(IRList *irl, AST *ast)
         if (ast->left && ast->left->kind != AST_STMTLIST) {
             (void)CompileExpression(irl, ast->left, NULL);
         } else {
-            CompileStatementList(irl, ast->left);
+            CompileStatementList(irl, cold_irl, ast->left);
         }
         EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(SETJMP_BUF_SIZE));
         EmitPop(irl, abortchain, ast);
@@ -5135,7 +5138,7 @@ static void CompileStatement(IRList *irl, AST *ast)
     }
     case AST_FORATLEASTONCE:
     case AST_FOR:
-        CompileForLoop(irl, ast, ast->kind == AST_FORATLEASTONCE);
+        CompileForLoop(irl, cold_irl, ast, ast->kind == AST_FORATLEASTONCE);
         break;
     case AST_INLINEASM:
     {
@@ -5148,7 +5151,7 @@ static void CompileStatement(IRList *irl, AST *ast)
         break;
     }
     case AST_CASE:
-        CompileCaseStmt(irl, ast);
+        CompileCaseStmt(irl, cold_irl, ast);
         break;
     case AST_QUITLOOP:
     case AST_ENDCASE:
@@ -5167,29 +5170,64 @@ static void CompileStatement(IRList *irl, AST *ast)
             EmitJump(irl, COND_TRUE, nextlabel);
         }
         break;
-    case AST_IF:
+    case AST_IF: {
         EmitDebugComment(irl, ast->left);
-        toploop = NewCodeLabel();
-        CompileBoolBranches(irl, ast->left, NULL, toploop);
-        FreeTempRegisters(irl, starttempreg);
+        int likely = 0; // 1 if top branch is likely, -1 if not
+        AST *condition = ast->left;
+        if (condition->kind == AST_EXPECT) {
+            if (IsConstExpr(condition->right)) {
+                likely = EvalConstExpr(condition->right) ? 1 : -1;
+            } else {
+                DEBUG(condition,"AST_EXPECT ignored, value not constant");
+            }
+        }
+
         ast = ast->right;
         if (ast->kind == AST_COMMENTEDNODE) {
             pendingComments = ast->right;
             ast = ast->left;
         }
-        /* ast should be an AST_THENELSE */
-        CompileStatementList(irl, ast->left);
-        if (ast->right) {
-            EmitComments(irl, pendingComments);
+        ASSERT_AST_KIND(ast,AST_THENELSE,;);
+        if (likely != 0 && cold_irl) { // emit to cold irl
+            toploop = NewCodeLabel();
             botloop = NewCodeLabel();
-            EmitJump(irl, COND_TRUE, botloop);
-            EmitLabel(irl, toploop);
-            CompileStatementList(irl, ast->right);
-            EmitLabel(irl, botloop);
-        } else {
-            EmitLabel(irl, toploop);
+            AST *top_body,*bottom_body;
+            Operand *falselbl,*truelbl;
+            // Swap _unlikely_ branch to the top
+            if (likely > 0 && ast->right) top_body = ast->right, bottom_body = ast->left, truelbl = NULL, falselbl = toploop; 
+            else                          top_body = ast->left, bottom_body = ast->right, truelbl = toploop, falselbl = NULL;
+            CompileBoolBranches(irl, condition, truelbl, falselbl);
+            FreeTempRegisters(irl, starttempreg);
+            EmitLabel(cold_irl,toploop);
+            CompileStatementList(cold_irl, NULL, top_body);
+            EmitJump(cold_irl,COND_TRUE,botloop);
+            if (bottom_body) {
+                EmitComments(irl, pendingComments);
+                CompileStatementList(irl, cold_irl, bottom_body);
+            }
+            EmitLabel(irl,botloop);
+        } else { // Normal case
+            AST *top_body,*bottom_body;
+            Operand *falselbl,*truelbl;
+            toploop = NewCodeLabel();
+            // Swap _likely_ branch to the top
+            if (likely < 0 && ast->right) top_body = ast->right, bottom_body = ast->left, truelbl = toploop, falselbl = NULL; 
+            else                          top_body = ast->left, bottom_body = ast->right, truelbl = NULL, falselbl = toploop;
+            CompileBoolBranches(irl, condition, truelbl, falselbl);
+            FreeTempRegisters(irl, starttempreg);
+            CompileStatementList(irl, cold_irl, top_body);
+            if (bottom_body) {
+                botloop = NewCodeLabel();
+                EmitJump(irl,COND_TRUE,botloop);
+                EmitLabel(irl, toploop);
+                EmitComments(irl, pendingComments);
+                CompileStatementList(irl, cold_irl, bottom_body);
+                EmitLabel(irl, botloop);
+            } else {
+                EmitLabel(irl, toploop);
+            }
         }
-        break;
+    } break;
     case AST_YIELD:
         /* do nothing in assembly for YIELD */
         break;
@@ -5197,7 +5235,7 @@ static void CompileStatement(IRList *irl, AST *ast)
         ast = ast->left;
     /* fall through */
     case AST_STMTLIST:
-        CompileStatementList(irl, ast);
+        CompileStatementList(irl, cold_irl, ast);
         break;
     case AST_JUMPTABLE:
     {
@@ -5252,7 +5290,7 @@ static void CompileStatement(IRList *irl, AST *ast)
             ERROR(ast, "Expected statement list!");
             break;
         }
-        CompileStatementList(irl, ast);
+        CompileStatementList(irl, cold_irl, ast);
         break;
     }
     case AST_BRKDEBUG: {
@@ -5285,6 +5323,8 @@ CompileFunctionBody(Function *f)
 {
     IRList *irl = FuncIRL(f);
     IRList *irheader = &FuncData(f)->irheader;
+    IRList cold_irl = {};
+    IRList *cold_irl_ptr = (f->optimize_flags & OPT_COLD_CODE) ? &cold_irl : NULL;
 
     EmitComments(irheader, f->doccomment);
 
@@ -5303,7 +5343,7 @@ CompileFunctionBody(Function *f)
             AST *zero = AstInteger(0);
             if (IsIdentifier(init) || init->kind == AST_RESULT) {
                 AST *resinit = AstAssign(init, zero);
-                CompileStatement(irl, resinit);
+                CompileStatement(irl, cold_irl_ptr, resinit);
             } else if (init->kind == AST_EXPRLIST) {
                 AST *var;
 
@@ -5311,13 +5351,19 @@ CompileFunctionBody(Function *f)
                     var = init->left;
                     init = init->right;
                     if (var && (IsIdentifier(var) || var->kind == AST_RESULT)) {
-                        CompileStatement(irl, AstAssign(var, zero));
+                        CompileStatement(irl, cold_irl_ptr, AstAssign(var, zero));
                     }
                 }
             }
         }
     }
-    CompileStatementList(irl, f->body);
+    CompileStatementList(irl, cold_irl_ptr, f->body);
+    if (cold_irl.head) {
+        Operand *jumpover = NewCodeLabel();
+        EmitJump(irl,COND_TRUE,jumpover);
+        AppendIRList(irl,&cold_irl);
+        EmitLabel(irl,jumpover);
+    }
     EmitFunctionEpilog(irl, f);
     OptimizeIRLocal(irl, f);
 }

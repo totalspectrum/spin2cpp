@@ -512,6 +512,7 @@ static FlagTable optflag[] = {
     { "cordic-reorder", OPT_CORDIC_REORDER},
     { "local-reuse", OPT_LOCAL_REUSE},
     { "aggressive-mem", OPT_AGGRESSIVE_MEM},
+    { "cold-code", OPT_COLD_CODE},
     
     { "experimental", OPT_EXPERIMENTAL },
     { "all", OPT_FLAGS_ALL },
