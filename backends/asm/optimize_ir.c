@@ -2004,24 +2004,26 @@ PropagateConstForward(IRList *irl, IR *orig_ir, Operand *orig, Operand *immval)
             }
             return change;
         }
-        if (ir->opc == OPC_MOV && !InstrSetsAnyFlags(ir) && SameImmediate(ir->src, immval)) {
-            if ( ir->dst == orig ) {
-                // updating same register, so kill it
-                ir->opc = OPC_DUMMY;
+        if (!InstrIsVolatile(ir)) {
+            if (ir->opc == OPC_MOV && !InstrSetsAnyFlags(ir) && SameImmediate(ir->src, immval)) {
+                if ( ir->dst == orig ) {
+                    // updating same register, so kill it
+                    ir->opc = OPC_DUMMY;
+                    change = 1;
+                } else {
+                    // it would be nice here to substitute forward the
+                    // register "dst" with "orig", so as to eliminate some
+                    // redundant register usage; but my original attempt to
+                    // do this ran into infinite loops, so putting that on hold
+                    // for now
+                }
+            } else if (ir->dst == orig) {
+                // we can perhaps replace the operation with a mov
+                change |= TransformConstDst(ir, immval);
+            } else if (ir->src == orig) {
+                ir->src = immval;
                 change = 1;
-            } else {
-                // it would be nice here to substitute forward the
-                // register "dst" with "orig", so as to eliminate some
-                // redundant register usage; but my original attempt to
-                // do this ran into infinite loops, so putting that on hold
-                // for now
             }
-        } else if (ir->dst == orig) {
-            // we can perhaps replace the operation with a mov
-            change |= TransformConstDst(ir, immval);
-        } else if (ir->src == orig) {
-            ir->src = immval;
-            change = 1;
         }
         if (InstrModifies(ir, orig)) {
             // our register has changed, so we must stop
