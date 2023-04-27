@@ -876,7 +876,7 @@ PrintCompressCondJump(struct flexbuf *fb, int cond, Operand *dst)
 // LMM jumps +- this amount are turned into add/sub of the pc
 // pick a conservative value
 // 127 would be the absolute maximum here
-#define MAX_REL_JUMP_OFFSET 100
+#define MAX_REL_JUMP_OFFSET_LMM 100
 // On P2 conditional jumps have a range +/- 256
 #define MAX_REL_JUMP_OFFSET_P2 200
 
@@ -1162,13 +1162,13 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                     int offset;
                     dest = (IR *)ir->aux;
                     offset = dest->addr - ir->addr;
-                    if ( offset > 0 && offset < MAX_REL_JUMP_OFFSET) {
+                    if ( offset > 0 && offset < MAX_REL_JUMP_OFFSET_LMM) {
                         flexbuf_printf(fb, "add\t__pc, #4*(");
                         PrintOperand(fb, ir->dst);
                         flexbuf_printf(fb, " - ($+1))\n");
                         return;
                     }
-                    if ( offset < 0 && offset > -MAX_REL_JUMP_OFFSET) {
+                    if ( offset < 0 && offset > -MAX_REL_JUMP_OFFSET_LMM) {
                         flexbuf_printf(fb, "sub\t__pc, #4*(($+1) - ");
                         PrintOperand(fb, ir->dst);
                         flexbuf_printf(fb, ")\n");
