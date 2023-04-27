@@ -5989,21 +5989,21 @@ static const char *builtin_div_p2 =
 
 const char *builtin_fcache_p2 =
     "FCACHE_LOAD_\n"
-    "    pop\tfcache_tmpb_\n"
-    "    add\tfcache_tmpb_, pa\n"
-    "    push\tfcache_tmpb_\n"
-    "    sub\tfcache_tmpb_, pa\n"
-    "    shr\tpa, #2\n" // convert to words
-    "    altd\tpa\n"
+    "    mov\tfcache_tmpb_,ptrb\n"
+    "    pop\tptrb\n"
+    "    altd\tpa,ret_instr_\n"
     "    mov\t 0-0, ret_instr_\n"
-    "    sub\tpa, #1\n"
     "    setq\tpa\n"
-    "    rdlong\t$0, fcache_tmpb_\n"
+    "    rdlong\t$0, ptrb++\n"
+    "    push\tptrb\n"
+    "    mov ptrb,fcache_tmpb_\n"
     "    jmp\t#\\$0 ' jmp to cache\n"
     "ret_instr_\n"
-    "    ret\n"
+    "    _ret_ cmp inb,#0\n" // Return instruction that also works as an ALTD post-decrement
     "fcache_tmpb_\n"
     "    long 0\n"
+    "fcache_load_ptr_\n"
+    "    long FCACHE_LOAD_\n"
     ;
 
 //

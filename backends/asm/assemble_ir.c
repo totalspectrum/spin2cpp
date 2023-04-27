@@ -1355,12 +1355,11 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         break;
     case OPC_FCACHE:
         if (gl_p2) {
-            flexbuf_printf(fb, "\tloc\tpa,\t#(");
+            flexbuf_printf(fb, "\tcallpa\t#(");
             PrintOperandAsValue(fb, ir->dst);
             flexbuf_printf(fb, "-");
             PrintOperandAsValue(fb, ir->src);
-            flexbuf_printf(fb, ")\n");
-            flexbuf_printf(fb, "\tcall\t#FCACHE_LOAD_\n");
+            flexbuf_printf(fb, ")>>2,fcache_load_ptr_\n");
         } else {
             flexbuf_printf(fb, "\tcall\t#LMM_FCACHE_LOAD\n");
             flexbuf_printf(fb, "\tlong\t(");
