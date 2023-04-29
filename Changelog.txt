@@ -4,6 +4,7 @@ Version 6.1.2
 - Skip symbol resolution when outputting .o files, fixes some output bugs
 - Implemented __builtin_expect (thanks, Ada!)
 - Several additional optimizations contributed by Ada
+- Fixed incorrect constant optimization of inline assembly (again, Ada caught this one)
 
 Version 6.1.1
 - Added special -D_XTLFREQ=x and -D_XINFREQ=x command line defines

@@ -46,10 +46,11 @@ LR__0020
  if_ae	jmp	#LR__0020
 	cmps	_var01, #1 wc
  if_ae	qmul	_var01, _var03
+ if_ae	mov	arg03, ##1000
  if_ae	getqy	result1
  if_ae	getqx	arg01
  if_ae	setq	result1
- if_ae	qdiv	arg01, ##1000
+ if_ae	qdiv	arg01, arg03
  if_ae	getqx	arg01
  if_ae	add	arg01, _var02
  if_ae	addct1	arg01, #0
