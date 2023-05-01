@@ -831,6 +831,8 @@ void AddSourceFile(const char *shortName, const char *fullName)
 #endif
         if (ptr) {
             ptr[1] = 0;
+        } else {
+            sourcePrefix[0] = 0;
         }
     }
         
