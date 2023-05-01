@@ -897,9 +897,13 @@ DeclareCTypedFunction(Module *P, AST *ftype, AST *nameAst, int is_public, AST *b
         AST *origName = nameAst;
         EnterLocalAlias(currentTypes, globalName, nameString);
         nameAst = NewAST(AST_LOCAL_IDENTIFIER, globalName, nameAst);
-        // we have to fix up the body of the function so that references
-        // to the original name are replaced with the new name
-        ReplaceAst(body, origName, nameAst);
+        if (body && body->kind == AST_STRING) {
+            ERROR(body, "__fromfile references cannot be declared static");
+        } else {
+            // we have to fix up the body of the function so that references
+            // to the original name are replaced with the new name
+            ReplaceAst(body, origName, nameAst);
+        }
     }
     return DeclareTypedFunction(P, ftype, nameAst, is_public, body, attribute, NULL);
 }
