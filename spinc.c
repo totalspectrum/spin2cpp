@@ -334,6 +334,7 @@ GetFullFileName(AST *baseString)
     if (!newname) {
         newname = strdup(basename);
     }
+    AddSourceFile(basename, newname);
     ret = NewAST(AST_STRING, NULL, NULL);
     ret->d.string = newname;
     return ret;
