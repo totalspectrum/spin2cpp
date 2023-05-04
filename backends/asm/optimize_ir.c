@@ -83,6 +83,17 @@ bool IsDummy(IR *op)
 }
 
 //
+// fetch the real next opcode
+//
+IR *NextIR(IR *ir) {
+    do {
+        ir = ir->next;
+    } while (ir && ir->opc == OPC_COMMENT);
+    return ir;
+}
+
+    
+//
 // replace an opcode
 //
 void
@@ -5659,7 +5670,7 @@ static int MatchPattern(PeepholePattern *patrn, IR *ir)
             return 0;
         }
         patrn++;
-        ir = ir->next;
+        ir = NextIR(ir); //ir->next;
         ircount++;
     }
     return ircount;
@@ -6188,30 +6199,33 @@ static int FixupDeleteInstr(int arg, IRList *irl, IR *ir) {
 
 static int ReplaceMaxMin(int arg, IRList *irl, IR *ir)
 {
+    IR *irnext;
     if (!InstrSetsFlags(ir, FLAG_WZ|FLAG_WC)) {
         return 0;
     }
-    if (!FlagsDeadAfter(irl, ir->next, FLAG_WZ|FLAG_WC)) {
+    irnext = NextIR(ir);
+    if (!FlagsDeadAfter(irl, irnext, FLAG_WZ|FLAG_WC)) {
         return 0;
     }
     ReplaceOpcode(ir, (IROpcode)arg);
     // note: one of the patterns checks for cmp with GT instead of GE, so
     // we have to use the second instruction's operand
-    ir->src = ir->next->src;
-    DeleteIR(irl, ir->next);
+    ir->src = irnext->src;
+    DeleteIR(irl, irnext);
     return 1;
 }
 static int ReplaceExtend(int arg, IRList *irl, IR *ir)
 {
     Operand *src = ir->src;
     int zbit;
+    IR *irnext = NextIR(ir);
     if (src->kind != IMM_INT) {
         return 0;
     }
     zbit = 31 - src->val;
     ir->src = NewImmediate(zbit);
     ReplaceOpcode(ir, (IROpcode)arg);
-    DeleteIR(irl, ir->next);
+    DeleteIR(irl, irnext);
     return 1;
 }
 
@@ -6219,9 +6233,10 @@ static int ReplaceExtend(int arg, IRList *irl, IR *ir)
 // (wz also allowed)
 static int ReplaceCmpsAbs(int arg, IRList *irl, IR *ir)
 {
+    IR *irnext = NextIR(ir);
     ReplaceOpcode(ir,OPC_ABS);
     ir->src = ir->dst;
-    DeleteIR(irl,ir->next);
+    DeleteIR(irl,irnext);
     return 1;
 }
 
@@ -6236,14 +6251,14 @@ static int ReplaceCmpsAbs(int arg, IRList *irl, IR *ir)
 static int ReplaceWrcCmp(int arg, IRList *irl, IR *ir)
 {
     IR *ir0 = ir;
-    IR *ir1 = ir->next;
+    IR *ir1 = NextIR(ir);
     IR *lastir = NULL;
 
     if (InstrIsVolatile(ir0) || !ir1 || InstrIsVolatile(ir1)) {
         return 0;
     }
-    ir = arg == 0 ? ir1->next : ir0->next;
-    for(lastir = ir; lastir; lastir = lastir->next) {
+    ir = arg == 0 ? NextIR(ir1) : NextIR(ir0);
+    for(lastir = ir; lastir; lastir = NextIR(lastir)) {
         if (!lastir) {
             // End of function, safe.
             break;
@@ -6267,7 +6282,7 @@ static int ReplaceWrcCmp(int arg, IRList *irl, IR *ir)
     // OK, let's go ahead and change Z to NC
     while (ir != lastir) {
         ReplaceZWithNC(ir);
-        ir = ir->next;
+        ir = NextIR(ir);
     }
     if (lastir && IsBranch(lastir)) {
         ReplaceZWithNC(lastir);
@@ -6283,7 +6298,7 @@ static int ReplaceWrcCmp(int arg, IRList *irl, IR *ir)
 
 static int ReplaceWrcTest(int arg, IRList *irl, IR *ir)
 {
-    IR *ir1 = ir->next;
+    IR *ir1 = NextIR(ir);
 
     // make sure the TEST only sets WC
     if (!ir1) return 0;
@@ -6302,10 +6317,10 @@ static int RemoveNFlagged(int arg, IRList *irl, IR *ir)
 {
     IR *irlast, *irnext;
     unsigned wcz_flags = 0;
-    irnext = ir->next;
+    irnext = NextIR(ir);
     while (arg > 0 && irnext) {
         irlast = irnext;
-        irnext = irlast->next;
+        irnext = NextIR(irlast);
         --arg;
         if (arg == 0) {
             wcz_flags = irlast->flags & 0xff;
@@ -6319,7 +6334,7 @@ static int RemoveNFlagged(int arg, IRList *irl, IR *ir)
 static int FixupMovAdd(int arg, IRList *irl, IR *ir)
 {
     Operand *newsrc = ir->src;
-    ir = ir->next;
+    ir = NextIR(ir);
     if (ir->src != newsrc) {
         ir->src = newsrc;
         return 1;
@@ -6330,7 +6345,7 @@ static int FixupMovAdd(int arg, IRList *irl, IR *ir)
 /* mov x, #0 ; test x, #1 wc => mov x, #0 wc */
 static int FixupClrC(int arg, IRList *irl, IR *ir)
 {
-    IR *testir = ir->next;
+    IR *testir = NextIR(ir);
     int newflags;
     newflags = (testir->flags & (FLAG_WC|FLAG_WZ));
     ir->flags |= newflags;
@@ -6340,15 +6355,16 @@ static int FixupClrC(int arg, IRList *irl, IR *ir)
      * a "drvc x" instruction following, replace it with
      * "drvl x"
      */
-    if (ir->next && ir->next->opc == OPC_DRVC) {
-        ReplaceOpcode(ir->next, OPC_DRVL);
+    IR *irnext = NextIR(ir);
+    if (irnext && irnext->opc == OPC_DRVC) {
+        ReplaceOpcode(irnext, OPC_DRVL);
     }
     return 1;
 }
 /* mov x, #1 ; test x, #1 wc => neg x, #1 wc */
 static int FixupSetC(int arg, IRList *irl, IR *ir)
 {
-    IR *testir = ir->next;
+    IR *testir = NextIR(ir);
     int newflags;
     ReplaceOpcode(ir, OPC_NEG);
     newflags = (testir->flags & (FLAG_WC|FLAG_WZ));
@@ -6358,8 +6374,9 @@ static int FixupSetC(int arg, IRList *irl, IR *ir)
      * a "drvc x" instruction following, replace it with
      * "drvh x"
      */
-    if (ir->next && ir->next->opc == OPC_DRVC) {
-        ReplaceOpcode(ir->next, OPC_DRVH);
+    IR *irnext = NextIR(ir);
+    if (irnext && irnext->opc == OPC_DRVC) {
+        ReplaceOpcode(irnext, OPC_DRVH);
     }
     return 1;
 }
@@ -6369,12 +6386,12 @@ static int FixupSetC(int arg, IRList *irl, IR *ir)
 #if 0
 static int FixupGetByteWord(int arg, IRList *irl, IR *ir0)
 {
-    IR *ir1 = ir0->next;
+    IR *ir1 = NextIR(ir0);
     IR *ir2;
     int shift = 0;
 
     if (ir1->opc == OPC_SHR || ir1->opc == OPC_SAR) {
-        ir2 = ir1->next;
+        ir2 = NextIR(ir1);
         shift = ir1->src->val;
     } else if (ir1->opc == OPC_AND) {
         ir2 = ir1;
@@ -6402,8 +6419,8 @@ static int FixupGetByteWord(int arg, IRList *irl, IR *ir0)
 
 static int FixupSetByteWord(int arg, IRList *irl, IR *ir0)
 {
-    IR *ir1 = ir0->next;
-    IR *ir2 = ir1->next;
+    IR *ir1 = NextIR(ir0);
+    IR *ir2 = NextIR(ir1);
     int shift = 0;
 
     if (ir0->opc == OPC_SHL || ir0->opc == OPC_ROL) {
@@ -6430,8 +6447,8 @@ static int FixupBmask(int arg, IRList *irl, IR *ir)
 {
     IR *irnext, *irnext2;
 
-    irnext = ir->next;
-    irnext2 = irnext->next;
+    irnext = NextIR(ir);
+    irnext2 = NextIR(irnext);
 
     ReplaceOpcode(irnext2, OPC_BMASK);
     irnext2->src = peep_ops[1];
@@ -6444,7 +6461,7 @@ static int FixupWaitx(int arg, IRList *irl, IR *ir)
 {
     IR *irnext;
 
-    irnext = ir->next;
+    irnext = NextIR(ir);
     irnext->dst = peep_ops[1];
     DeleteIR(irl, ir);
     return 1;
@@ -6461,8 +6478,8 @@ static int FixupEq(int arg, IRList *irl, IR *ir)
 {
     IR *irnext, *irnext2;
 
-    irnext = ir->next;
-    irnext2 = irnext->next;
+    irnext = NextIR(ir);
+    irnext2 = NextIR(irnext);
     ReplaceOpcode(irnext2, (IROpcode)arg);
     irnext2->src = NULL;
     irnext2->cond = COND_TRUE;
@@ -6474,7 +6491,7 @@ static int ReplaceDrvc(int arg, IRList *irl, IR *ir)
 {
     ReplaceOpcode(ir, (IROpcode)arg);
     ir->cond = COND_TRUE;
-    DeleteIR(irl, ir->next);
+    DeleteIR(irl, NextIR(ir));
     return 1;
 }
 
@@ -6497,8 +6514,8 @@ static int FixupAndAdd(int arg, IRList *irl, IR *ir0)
 {
     IR *ir1, *ir2;
 
-    ir1 = ir0->next;
-    ir2 = ir1->next;
+    ir1 = NextIR(ir0);
+    ir2 = NextIR(ir1);
 
     ir1->dst = ir0->src;
     ReplaceOpcode(ir1, OPC_TEST);
@@ -6525,8 +6542,8 @@ static int FixupQmuls(int arg, IRList *irl, IR *ir0)
 {
     IR *ir1, *ir2;
 
-    ir1 = ir0->next;
-    ir2 = ir1->next;
+    ir1 = NextIR(ir0);
+    ir2 = NextIR(ir1);
 
     if (InstrModifies(ir1, ir0->src) || InstrModifies(ir2, ir0->dst)) {
         return 0;
@@ -6546,11 +6563,11 @@ static int FixupQmuls(int arg, IRList *irl, IR *ir0)
 //  neg* w,d
 static int FixupQdivSigned(int arg, IRList *irl, IR *ir0)
 {
-    IR* ir1 = ir0->next; // qdiv 1
-    IR* ir2 = ir1->next; // getq* 1
-    IR* ir3 = ir2->next; // neg* 1
-    IR* ir4 = ir3->next; // abs 2
-    IR* ir5 = ir4->next; // qdiv 2
+    IR* ir1 = NextIR(ir0); // qdiv 1
+    IR* ir2 = NextIR(ir1); // getq* 1
+    IR* ir3 = NextIR(ir2); // neg* 1
+    IR* ir4 = NextIR(ir3); // abs 2
+    IR* ir5 = NextIR(ir4); // qdiv 2
 
     if (ir3->opc != OPC_NEGC && ir3->opc != OPC_NEGNC) return 0;
 
@@ -6574,11 +6591,11 @@ static int FixupQdivSigned(int arg, IRList *irl, IR *ir0)
 //  neg w,d (maybe)
 static int FixupQdivSigned2(int arg, IRList *irl, IR *ir0)
 {
-    IR* ir1 = ir0->next; // qdiv 1
-    IR* ir2 = ir1->next; // getq* 1
-    IR* ir3 = ir2->next; // neg* 1
-    IR* ir4 = ir3->next; // abs 2
-    IR* ir5 = ir4->next; // qdiv 2
+    IR* ir1 = NextIR(ir0); // qdiv 1
+    IR* ir2 = NextIR(ir1); // getq* 1
+    IR* ir3 = NextIR(ir2); // neg* 1
+    IR* ir4 = NextIR(ir3); // abs 2
+    IR* ir5 = NextIR(ir4); // qdiv 2
 
     if (ir3->opc != OPC_NEGC && ir3->opc != OPC_NEGNC && ir3->opc != OPC_NEG) return 0;
 
@@ -6602,11 +6619,11 @@ static int FixupQdivSigned2(int arg, IRList *irl, IR *ir0)
 //  neg* w,d
 static int FixupQdivSigned3(int arg, IRList *irl, IR *ir0)
 {
-    IR* ir1 = ir0->next; // qdiv 1
-    IR* ir2 = ir1->next; // getq* 1
-    //IR* ir3 = ir2->next; // neg* 1
-    IR* ir4 = ir2->next; // abs 2
-    IR* ir5 = ir4->next; // qdiv 2
+    IR* ir1 = NextIR(ir0); // qdiv 1
+    IR* ir2 = NextIR(ir1); // getq* 1
+    //IR* ir3 = NextIR(ir2); // neg* 1
+    IR* ir4 = NextIR(ir2); // abs 2
+    IR* ir5 = NextIR(ir4); // qdiv 2
 
     if (InstrModifies(ir2,ir4->src)||
             InstrModifies(ir2,ir5->dst)  ) {
@@ -6661,18 +6678,18 @@ static int FixupQMux(int arg, IRList *irl, IR *ir)
 
     if (arg == 1) {
         andir = ir;
-        getir = andir->next;
-        andnotir = getir->next;
+        getir = NextIR(andir);
+        andnotir = NextIR(getir);
     } else if (arg == 2) {
         getir = ir;
-        andir = ir->next;
-        andnotir = andir->next;
+        andir = NextIR(ir);
+        andnotir = NextIR(andir);
     } else {
         ERROR(NULL, "internal peephole error");
         return 0;
     }
-    orir = andnotir->next;
-    setir = orir->next;
+    orir = NextIR(andnotir);
+    setir = NextIR(orir);
 
     val_2 = andir->dst;
     mask_1 = andir->src;
@@ -6833,7 +6850,7 @@ static int OptimizePeephole2(IRList *irl)
                 }
             }
         }
-        ir = ir->next;
+        ir = NextIR(ir);
     }
     return change;
 }
