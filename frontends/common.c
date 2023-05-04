@@ -636,10 +636,16 @@ DeclareConstants(Module *P, AST **conlist_ptr)
 }
 
 void
-ProcessConstants(Module *P)
+ProcessConstantOverrides(Module *P)
 {
+    Module *saveCurrent = current;
+    if (P->parent) {
+        // evaluate constants in context of parent class
+        current = P->parent;
+    }
     /* override constants */
     if (P->objparams) {
+        DeclareConstants(current, &current->conblock);
         AST *list = P->objparams;
         AST *item;
         while (list) {
@@ -659,7 +665,7 @@ ProcessConstants(Module *P)
                     } else if (!IsConstExpr(valast)) {
                         ERROR(ident, "new value for %s is not constant", name);
                     } else {
-                        sym->v.ptr = valast;
+                        sym->v.ptr = AstInteger(EvalConstExpr(valast));
                     }
                 } else {
                     ERROR(item, "parameter override must be an identifier");
@@ -669,6 +675,7 @@ ProcessConstants(Module *P)
             }
         }
     }
+    current = saveCurrent;
     /* for the top level module, calculate frequency and declare constants if necessary */
     if (IsTopLevel(P)) {
         if (gl_p2) {

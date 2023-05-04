@@ -568,6 +568,9 @@ struct modulestate {
     /* superclass of this one */
     struct modulestate *superclass;
 
+    /* parent of this class: not technically a superclass, but used for constant evals */
+    struct modulestate *parent;
+    
     /* type of this class */
     AST *type;
 
@@ -1003,7 +1006,7 @@ int ParseWarnString(AST *lineNum, const char *str, int *flags);
 void DeclareConstants(Module *P, AST **conlist);
 
 /* process constants to set clock frequency and such */
-void ProcessConstants(Module *P);
+void ProcessConstantOverrides(Module *P);
 
 /* declare all functions */
 void DeclareFunctions(Module *);

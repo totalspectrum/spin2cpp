@@ -398,7 +398,7 @@ ProcessModule(Module *P)
 
     /* now declare all the symbols that weren't already declared */
     DeclareConstants(P, &P->conblock);
-    ProcessConstants(P);
+    ProcessConstantOverrides(P);
     DeclareMemberVariables(P);
     DeclareFunctions(P);
 
@@ -687,6 +687,7 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
         else
             allparse = P;
     }
+    P->parent = current;
     current = P;
     saveCurrentTypes = currentTypes;
     currentTypes = (SymbolTable *)calloc(1, sizeof(*currentTypes));
