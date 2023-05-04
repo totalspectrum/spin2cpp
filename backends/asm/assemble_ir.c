@@ -102,6 +102,17 @@ static const char *RemappedName(const char *name)
     return buf;
 }
 
+// return \n if the string does not already end in it
+static const char *
+NeedLineEnd(const char *str) {
+    const char *r = "\n";
+    while (*str && str[1]) {
+        str++;
+    }
+    if (*str == '\n') r = "";
+    return r;
+}
+
 // helper function for printing operands
 static void
 doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect effect_orig)
@@ -492,7 +503,8 @@ again:
                 if (nextreloc->kind == RELOC_KIND_DEBUG) {
                     LineInfo *info = (LineInfo *)nextreloc->sym;
                     if (info && info->linedata) {
-                        flexbuf_printf(fb, "'-' %s", info->linedata);
+                        const char *lineend = NeedLineEnd(info->linedata);
+                        flexbuf_printf(fb, "'-' %s%s", info->linedata, lineend);
                     }
                     nextreloc++;
                     --relocs;
@@ -601,7 +613,8 @@ again:
         if (nextreloc->kind == RELOC_KIND_DEBUG) {
             LineInfo *info = (LineInfo *)nextreloc->sym;
             if (info && info->linedata) {
-                flexbuf_printf(fb, "'-' %s", info->linedata);
+                const char *lineend = NeedLineEnd(info->linedata);
+                flexbuf_printf(fb, "'-' %s%s", info->linedata, lineend);
             }
         }
         nextreloc++;
