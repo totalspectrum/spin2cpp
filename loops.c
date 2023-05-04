@@ -933,23 +933,31 @@ CheckSimpleDecrementLoop(AST *stmt)
 // transforms that can affect variables in memory
 //
 static bool
-HasBranch(AST *body)
+doHasBranch(AST *body, bool inCase)
 {
     if (!body) return false;
     switch (body->kind) {
     case AST_GOTO:
     case AST_GOSUB:
     case AST_LABEL:
+    case AST_QUITLOOP:
         return true;
+    case AST_ENDCASE:
+        return !inCase; // "break" outside of case
+    case AST_CASE:
+        return doHasBranch(body->left, inCase) || doHasBranch(body->right, true);
     default:
-        return HasBranch(body->left) || HasBranch(body->right);
+        return doHasBranch(body->left, inCase) || doHasBranch(body->right, inCase);
     }
 }
+
+static bool HasBranch(AST *body) { return doHasBranch(body, false); }
 
 //
 // check for "simple" loops using increments (like "repeat i from 0 to 9") these may be further
 // optimized into "repeat 10" if we discover that the loop index is not
-// used inside the body
+// used inside the body -- but beware that if the variable is used after
+// the loop we have to make it have the correct value
 //
 static void
 CheckSimpleIncrementLoop(AST *stmt)
@@ -962,6 +970,7 @@ CheckSimpleIncrementLoop(AST *stmt)
     AST *updateVar = NULL;
     AST *updateInit = NULL;
     AST *updateLimit = NULL;
+    AST *finalValue = NULL;
     AST *newInitial = NULL;
     AST *ifskip = NULL;
     AST *thenelseskip = NULL;
@@ -1010,7 +1019,7 @@ CheckSimpleIncrementLoop(AST *stmt)
         return;
 
     updateTestOp = condtest->d.ival;
-    updateLimit = condtest->right;
+    finalValue = updateLimit = condtest->right;
     if (updateTestOp == K_LE || updateTestOp == '<'
         || updateTestOp == K_LEU || updateTestOp == K_LTU)
     {
@@ -1083,6 +1092,15 @@ CheckSimpleIncrementLoop(AST *stmt)
         *newstmt = *stmt;
         thenelseskip->left = NewAST(AST_STMTLIST, newstmt, NULL);
         *stmt = *ifskip;
+    }
+    /* make sure the final value is there */
+    if (finalValue) {
+        AST *finalUpdate = AstAssign(updateVar, finalValue);
+        AST *newstmt = NewAST(AST_STMTLIST, NULL, NULL);
+        *newstmt = *stmt;
+        stmt->kind = AST_STMTLIST;
+        stmt->left = newstmt;
+        stmt->right = NewAST(AST_STMTLIST, finalUpdate, NULL);
     }
     AstReportDone(&saveinfo);
 }
