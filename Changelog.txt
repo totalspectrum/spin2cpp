@@ -9,6 +9,7 @@ Version 6.1.2
 - Fixed some missing optimizations when -l was enabled
 - Fixed incorrect assembly output for files not ending in newline when -l is on
 - Fixed final value of loop variables after loop is transformed to djnz
+- Fixed PTRx offsetting in C inline asm
 - Made object constant override expressions be evaluated in the parent object
 
 Version 6.1.1

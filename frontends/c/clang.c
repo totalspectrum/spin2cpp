@@ -154,7 +154,7 @@ doCTransform(AST **astptr, unsigned cflags)
         }
         break;
     }
-    case AST_BIGIMMHOLDER:
+    case AST_INLINEASM:
         /* don't mess with RANGEREFs in here */
         break;
     default:

@@ -80,16 +80,16 @@ do
   fi
 done
 
-for i in stest*.cpp
+for i in stest*.cc
 do
-  j=`basename $i .cpp`
+  j=`basename $i .cc`
   # NOTE: optimize 250 is all optimizations except
   #   remove_unused_funcs (0x01)
   #   remove_hub_bss (0x04)
-  $PROG --asm --optimize 'all,!remove-unused,!remove-bss' --noheader $i
-  if  diff -ub Expect/$j.pasm $j.pasm
+  $PROG --p2 --asm --optimize 'all,!remove-unused,!remove-bss' --noheader $i
+  if  diff -ub Expect/$j.p2asm $j.p2asm
   then
-      rm -f $j.pasm
+      rm -f $j.p2asm
       echo $j passed
   else
       echo $j failed

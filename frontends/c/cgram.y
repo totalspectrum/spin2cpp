@@ -1078,7 +1078,7 @@ primary_expression
                 AST *reg = $1;
                 AST *range = $2;
                 if (range) {
-                    AST *index = NewAST(AST_RANGE, range->left, NULL);
+                    AST *index = NewAST(AST_RANGE, range, NULL);
                     AST *base = NewAST(AST_RANGEREF, reg, index);
                     if (range->kind == AST_BIGIMMHOLDER) {
                         base = NewAST(AST_BIGIMMHOLDER, base, NULL);
@@ -2943,7 +2943,10 @@ pasm_operandlist:
 
 optpasmrange
       : '[' pasmexpr ']'
-            { $$ = $2; }
+            {
+                AST *expr = $2;
+                $$ = expr;
+            }
       | '[' '#' '#' pasmexpr ']'
             { $$ = NewAST(AST_BIGIMMHOLDER, $4, NULL); }
       | '[' C_EQ_OP pasmexpr ']'
