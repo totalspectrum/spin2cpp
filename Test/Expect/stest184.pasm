@@ -247,37 +247,38 @@ __system___gc_doalloc
 	shr	__system___gc_doalloc_size, #4
 	add	ptr___system__dat__, #44
 	mov	__system___gc_doalloc__cse__0005, ptr___system__dat__
+	mov	arg01, __system___gc_doalloc__cse__0005
+	sub	ptr___system__dat__, #44
 	cogid	result1
 	add	result1, #256
-	sub	ptr___system__dat__, #44
 LR__0030
-	rdlong	arg01, __system___gc_doalloc__cse__0005 wz
- if_e	wrlong	result1, __system___gc_doalloc__cse__0005
- if_e	rdlong	arg01, __system___gc_doalloc__cse__0005
- if_e	rdlong	arg01, __system___gc_doalloc__cse__0005
-	cmp	arg01, result1 wz
+	rdlong	_inline_00006___system___lockmem_r, arg01 wz
+ if_e	wrlong	result1, arg01
+ if_e	rdlong	_inline_00006___system___lockmem_r, arg01
+ if_e	rdlong	_inline_00006___system___lockmem_r, arg01
+	cmp	_inline_00006___system___lockmem_r, result1 wz
  if_ne	jmp	#LR__0030
 	mov	arg01, __system___gc_doalloc_size
 	mov	arg02, __system___gc_doalloc_reserveflag
 	call	#__system___gc_tryalloc
-	mov	__system___gc_doalloc_ptr, result1 wz
+	mov	_inline_00006___system___lockmem_r, result1 wz
  if_ne	jmp	#LR__0031
 	call	#__system___gc_docollect
 	mov	arg01, __system___gc_doalloc_size
 	mov	arg02, __system___gc_doalloc_reserveflag
 	call	#__system___gc_tryalloc
-	mov	__system___gc_doalloc_ptr, result1
+	mov	_inline_00006___system___lockmem_r, result1
 LR__0031
 	mov	__system___gc_doalloc_reserveflag, #0
 	wrlong	__system___gc_doalloc_reserveflag, __system___gc_doalloc__cse__0005
-	cmp	__system___gc_doalloc_ptr, #0 wz
+	cmp	_inline_00006___system___lockmem_r, #0 wz
  if_e	jmp	#LR__0034
 	shl	__system___gc_doalloc_size, #4
 	sub	__system___gc_doalloc_size, #8
 	abs	_system___gc_doalloc_tmp001_, __system___gc_doalloc_size wc
 	shr	_system___gc_doalloc_tmp001_, #2
 	negc	__system___gc_doalloc__idx__0000, _system___gc_doalloc_tmp001_ wz
-	mov	__system___gc_doalloc_zptr, __system___gc_doalloc_ptr
+	mov	__system___gc_doalloc_zptr, _inline_00006___system___lockmem_r
  if_e	jmp	#LR__0033
 LR__0032
 	mov	_system___gc_doalloc_tmp001_, #0
@@ -286,7 +287,7 @@ LR__0032
 	djnz	__system___gc_doalloc__idx__0000, #LR__0032
 LR__0033
 LR__0034
-	mov	result1, __system___gc_doalloc_ptr
+	mov	result1, _inline_00006___system___lockmem_r
 __system___gc_doalloc_ret
 	ret
 
@@ -599,8 +600,6 @@ __system___gc_doalloc__cse__0005
 	res	1
 __system___gc_doalloc__idx__0000
 	res	1
-__system___gc_doalloc_ptr
-	res	1
 __system___gc_doalloc_reserveflag
 	res	1
 __system___gc_doalloc_size
@@ -638,6 +637,8 @@ __system___gc_tryalloc_reserveflag
 __system___gc_tryalloc_saveptr
 	res	1
 __system___gc_tryalloc_size
+	res	1
+_inline_00006___system___lockmem_r
 	res	1
 _inline_00009___system___gc_markhub_endaddr
 	res	1

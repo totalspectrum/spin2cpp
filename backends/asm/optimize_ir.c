@@ -4996,7 +4996,7 @@ ReuseLocalRegisters(IRList *irl) {
     bool change = false;
     IR *stop_ir;
 
-    for(IR *ir=irl->head; ir; ir=ir->next) {
+     for(IR *ir=irl->head; ir; ir=ir->next) {
         // Find all the arg/result regs first
         addKnownReg(&known_regs,ir->src,true);
         addKnownReg(&known_regs,ir->dst,true);
@@ -5004,7 +5004,7 @@ ReuseLocalRegisters(IRList *irl) {
 
     for (IR *ir=irl->head; ir; ir=ir->next) {
         // Start of new dependency chain
-        if (ir->dst && ir->dst != ir->src && IsLocal(ir->dst) && ir->dst->kind != REG_SUBREG && InstrModifies(ir,ir->dst) && !InstrUses(ir,ir->dst) && !CheckDependency(&known_regs,ir->dst)) {
+        if (ir->dst && ir->dst != ir->src && IsLocal(ir->dst) && ir->dst->kind != REG_SUBREG && InstrModifies(ir,ir->dst) && !InstrUses(ir,ir->dst) && !InstrIsVolatile(ir) && !CheckDependency(&known_regs,ir->dst)) {
             for (struct dependency *tmp=known_regs; tmp; tmp=tmp->link) {
                 if (tmp->reg!=ir->dst && IsDeadAfter(ir,tmp->reg) && (stop_ir = SafeToReplaceForward(ir->next,ir->dst,tmp->reg,ir->cond))) {
                     //DEBUG(NULL,"Using %s instead of %s",tmp->reg->name,ir->dst->name);
