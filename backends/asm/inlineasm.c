@@ -244,11 +244,15 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
             ERROR(rhs, "bad ptra/ptrb expression");
             offset = 0;
         } else {
-            if (!IsConstExpr(rhs->left)) {
+            AST *val = rhs->left;
+            if (val && (val->kind == AST_BIGIMMHOLDER || val->kind == AST_IMMHOLDER)) {
+                val = val->left;
+            }
+            if (!IsConstExpr(val)) {
                 ERROR(rhs, "ptra/ptrb offset must be constant");
                 offset = 0;
             } else {
-                offset = EvalConstExpr(rhs->left);
+                offset = EvalConstExpr(val);
             }
         }
         r = GetOneGlobal(REG_HW, hw->name, 0);
