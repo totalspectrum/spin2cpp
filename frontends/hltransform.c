@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2022 Total Spectrum Software Inc.
+ * Copyright 2011-2023 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * various high level transformations that should take
@@ -30,7 +30,8 @@ ExtractSideEffects(AST *expr, AST **preseq)
 {
     AST *temp;
     AST *sideexpr = NULL;
-
+    ASTReportInfo saveinfo;
+    
     if (!expr) {
         return expr;
     }
@@ -38,6 +39,7 @@ ExtractSideEffects(AST *expr, AST **preseq)
     case AST_ARRAYREF:
     case AST_MEMREF:
         if (ExprHasSideEffects(expr->right)) {
+            AstReportAs(expr, &saveinfo);
             temp = AstTempLocalVariable("_temp_", NULL);
             sideexpr = AstAssign(temp, expr->right);
             expr->right = temp;
@@ -46,6 +48,7 @@ ExtractSideEffects(AST *expr, AST **preseq)
             } else {
                 *preseq = sideexpr;
             }
+            AstReportDone(&saveinfo);
         }
         expr->left = ExtractSideEffects(expr->left, preseq);
         break;
@@ -130,6 +133,8 @@ TransformAssignChainNoCasts(AST **astptr)
     AST *tmp = NULL;
     AST *lhs, *rhs;
     AST *newseq;
+    ASTReportInfo saveinfo;
+    
     if (!ast) return tmp;
     if (ast->kind != AST_ASSIGN) return tmp;
     lhs = ast->left;
@@ -151,16 +156,20 @@ TransformAssignChainNoCasts(AST **astptr)
             tmp = rhs;
             break;
         default:
+            AstReportAs(rhs, &saveinfo);
             tmp = AstTempLocalVariable("_temp_", NULL);
             newseq = NewAST(AST_SEQUENCE, AstAssign(tmp, rhs), AstAssign(lhs, tmp));
             *astptr = newseq;
+            AstReportDone(&saveinfo);
             break;
         }
     } else {
         tmp = TransformAssignChainNoCasts(&ast->right);
         if (!tmp) return tmp;
+        AstReportAs(rhs, &saveinfo);
         newseq = NewAST(AST_SEQUENCE, ast->right, AstAssign(lhs, tmp));
         *astptr = newseq;
+        AstReportDone(&saveinfo);
     }
     return tmp;
 }
@@ -178,6 +187,8 @@ TransformAssignChainWithCasts(AST **astptr)
     AST *tmp = NULL;
     AST *lhs, *rhs;
     AST *newseq;
+    ASTReportInfo saveinfo;
+    
     if (!ast) return tmp;
     if (ast->kind != AST_ASSIGN) return tmp;
     lhs = ast->left;
@@ -195,9 +206,11 @@ TransformAssignChainWithCasts(AST **astptr)
     } else {
         tmp = TransformAssignChainWithCasts(&ast->right);
         if (!tmp) return tmp;
+        AstReportAs(ast, &saveinfo);
         newseq = NewAST(AST_SEQUENCE, ast->right, AstAssign(lhs, tmp));
         *astptr = newseq;
         tmp = lhs;
+        AstReportDone(&saveinfo);
     }
     return tmp;
 }
@@ -212,6 +225,8 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
     AST *chain;
     int siz;
     int lhsTopLevel, rhsTopLevel;
+    ASTReportInfo saveinfo;
+    
     if (!ast) return;
 
     lhsTopLevel = rhsTopLevel = atTopLevel;
@@ -223,6 +238,7 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
         typ = ast->left;
         lhs = ast->right;
         siz = TypeSize(typ);
+        AstReportAs(ast, &saveinfo);
         rhs = AstTempLocalVariable("_arg_", typ);
         chain = AstAssign(lhs, AstOperator('+', lhs, AstInteger(siz)));
         chain = NewAST(AST_SEQUENCE, chain, rhs);
@@ -233,6 +249,7 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
                                         AstInteger(0))),
                        chain);
         *astptr = ast = chain;
+        AstReportDone(&saveinfo);
         break;
     case AST_SEQUENCE:
     case AST_STMTLIST:
@@ -297,7 +314,6 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
         }
         else if (op && op != K_ASSIGN )
         {
-            ASTReportInfo saveinfo;
             AstReportAs(ast, &saveinfo);
             // if B has side effects,
             // transform A op= B
@@ -386,7 +402,6 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
                 if ( gl_output != OUTPUT_BYTECODE || (op == K_LOGIC_XOR || gl_interp_kind == INTERP_KIND_NUCODE) ) {
                     // bytecode has native support for logic AND/OR,
                     // but transform them for other backends
-                    ASTReportInfo saveinfo;
                     AstReportAs(ast, &saveinfo);
                     ast->left = AstOperator(K_NE, ast->left, AstInteger(0));
                     ast->right = AstOperator(K_NE, ast->right, AstInteger(0));
@@ -419,6 +434,7 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
                 AST *typ = ExprType(ast->left);
                 if (typ) {
                     if (IsFloatType(typ) || IsInt64Type(typ)) {
+                        AstReportAs(ast, &saveinfo);
                         AST *temp = AstTempLocalVariable("_temp_", typ);
                         AST *save = AstAssign(temp, ast->left);
                         AST *update = AstAssign(ast->left, AstOperator('+', ast->left, AstInteger(1)));
@@ -426,6 +442,7 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
                         ast = *astptr = NewAST(AST_SEQUENCE,
                                                NewAST(AST_SEQUENCE, save, update),
                                                temp);
+                        AstReportDone(&saveinfo);
                     }
                 }
             } else {
