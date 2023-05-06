@@ -293,13 +293,12 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
         int op = ast->d.ival;
         lhs = ast->left;
         rhs = ast->right;
-        if (IsIdentifier(lhs)) {
-            // check for CON := x
-            Symbol *sym = LookupAstSymbol(lhs, NULL);
-            if (sym) {
-                if (sym->kind == SYM_CONSTANT || sym->kind == SYM_FLOAT_CONSTANT) {
-                    ERROR(ast, "assignment to constant `%s'", sym->user_name);
-                }
+        if (IsConstExpr(lhs)) {
+            if (IsIdentifier(lhs)) {
+                // check for CON := x
+                ERROR(ast, "assignment to constant `%s'", GetUserIdentifierName(lhs));
+            } else {
+                ERROR(ast, "assignment to constant value");
             }
         }
         if (lhs->kind == AST_EXPRLIST) {
