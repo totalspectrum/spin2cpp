@@ -589,6 +589,7 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
                 state[asmNest].needs_else = false;
                 state[asmNest].is_active = true;
             } else {
+                state[asmNest].is_active = false;
             }
         } else if (ast->kind == AST_ASM_ENDIF) {
             if (asmNest == 0) {

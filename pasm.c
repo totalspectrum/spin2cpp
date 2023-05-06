@@ -750,6 +750,7 @@ again:
                 state[asm_nest].is_active = true;
                 ast->d.ival = 1;
             } else {
+                state[asm_nest].is_active = false;
                 ast->d.ival = 0;
             }
         } else if (ast->kind == AST_ASM_ENDIF) {

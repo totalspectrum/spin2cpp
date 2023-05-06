@@ -11,6 +11,7 @@ Version 6.1.2
 - Fixed final value of loop variables after loop is transformed to djnz
 - Fixed PTRx offsetting in C inline asm
 - Made object constant override expressions be evaluated in the parent object
+- Fixed bugs in ELSE conditional assembly parsing.
 
 Version 6.1.1
 - Added special -D_XTLFREQ=x and -D_XINFREQ=x command line defines
