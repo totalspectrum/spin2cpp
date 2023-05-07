@@ -686,6 +686,11 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
             ir->addr = relpc;
             if (!firstir) firstir = ir;
             relpc++;
+            if (ir->opc == OPC_REPEAT && !isConst) {
+                WARNING(ast, "REP in inline assembly may interfere with optimization");
+                isConst = true;
+                ir->flags |= FLAG_KEEP_INSTR;
+            }
             if (ir->opc == OPC_MOV || ir->opc == OPC_WRLONG) {
                 if (IsPtra(ir->src)) {
                     ptraSaved = true;
