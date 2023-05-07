@@ -1,17 +1,17 @@
 Version 6.1.2
-- Fixed an optimizer bug around the P1 PHSx registers
-- Minor optimization for expressions like 2*x
-- Skip symbol resolution when outputting .o files, fixes some output bugs
-- Implemented __builtin_expect (thanks, Ada!)
-- Several additional optimizations contributed by Ada
-- Fixed incorrect constant optimization of inline assembly (again, Ada caught this one)
 - Added files included by FILE directive to .zip files
+- Fixed an optimizer bug around the P1 PHSx registers
+- Fixed incorrect constant optimization of inline assembly (caught by Ada Gottensträter)
 - Fixed some missing optimizations when -l was enabled
 - Fixed incorrect assembly output for files not ending in newline when -l is on
 - Fixed final value of loop variables after loop is transformed to djnz
 - Fixed PTRx offsetting in C inline asm
-- Made object constant override expressions be evaluated in the parent object
 - Fixed bugs in ELSE conditional assembly parsing.
+- Implemented __builtin_expect (thanks, Ada!)
+- Several additional optimizations contributed by Ada
+- Skip symbol resolution when outputting .o files, fixes some output bugs
+- Made object constant override expressions be evaluated in the parent object
+- Minor optimization for expressions like 2*x
 
 Version 6.1.1
 - Added special -D_XTLFREQ=x and -D_XINFREQ=x command line defines
