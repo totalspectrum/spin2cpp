@@ -1673,6 +1673,7 @@ RenameSubregs(IRList *irl, Operand *base, int numlocals, int isLeaf)
     Operand *dummy;
 
     replace = GetLocalReg(numlocals, isLeaf);
+    if (!replace) return 0;
     replace->used++;
     for (int i = 1; i < num; i++) {
         dummy = GetLocalReg(numlocals + i, isLeaf);
