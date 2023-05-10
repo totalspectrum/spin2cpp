@@ -1440,6 +1440,7 @@ ProcessOneIdeDef(char *def) {
         while (*def && isspace(*def)) def++;
         if (!*def) return;
         name = strdup(def);
+        def = name;
         while (*def && *def != '=') {
             def++;
         }
@@ -1514,7 +1515,7 @@ ParseIdeFile(Module *P, const char *name, int *is_dup_ptr)
                     def += 6;
                     ProcessIdeDefs(def);
                 } else if (!strncmp(def, "-D", 2)) {
-                    ProcessIdeDefs(def);
+                    ProcessOneIdeDef(def);
                 } else {
                     // for now ignore everything else
                 }
