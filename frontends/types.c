@@ -1190,11 +1190,13 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
     if (!desttype || !srctype) {
         return desttype;
     }
+    
     AstReportAs(expr, &saveinfo);
     if (IsFloatType(desttype)) {
         if (IsIntType(srctype)) {
             if (!astptr) {
                 ERROR(line, "Unable to convert multiple function result to float");
+                AstReportDone(&saveinfo);
                 return ast_type_float;
             }
             *astptr = domakefloat(srctype, expr);
@@ -1254,6 +1256,7 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
         const char *desttype_name, *srctype_name;
         // special case: pointers can be passed as parameters to generic types
         if (kind == AST_FUNCCALL && IsGenericType(desttype) && IsPointerType(srctype)) {
+            AstReportDone(&saveinfo);
             return desttype;
         }
         desttype_name = TypeName(desttype);
@@ -1279,6 +1282,7 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
             } else {
                 ERROR(line, "incompatible types in %s: expected %s but got %s", msg, desttype_name, srctype_name);
             }
+            AstReportDone(&saveinfo);
             return desttype;
         }
     }
@@ -1369,6 +1373,7 @@ doCast(AST *desttype, AST *srctype, AST *src)
             srctype = ast_type_long;
         }
         if (IsArrayType(srctype)) {
+            AstReportDone(&saveinfo);
             return ArrayAddress(src);
         }
         if (IsFunctionType(srctype) && IsFunctionType(desttype)) {
@@ -1388,13 +1393,16 @@ doCast(AST *desttype, AST *srctype, AST *src)
                     WARNING(src, "cast removes const from pointer type");
                 }
             }
+            AstReportDone(&saveinfo);
             return src;
         }
         if (IsIntType(srctype)) {
             /* FIXME: should probably check size here */
+            AstReportDone(&saveinfo);
             return src;
         }
         if (srctype->kind == AST_FUNCTYPE) {
+            AstReportDone(&saveinfo);
             return NewAST(AST_ADDROF, src, NULL);
         }
         ERROR(src, "unable to convert %s to a pointer type", name);

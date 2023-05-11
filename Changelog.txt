@@ -1,5 +1,6 @@
 Version 6.1.3
 - Fixed incorrect macro definitions in .fpide files
+- Fixed a number of places where incorrect line numbers were used for errors
 
 Version 6.1.2
 - Added files included by FILE directive to .zip files
