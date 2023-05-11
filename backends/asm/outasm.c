@@ -18,7 +18,7 @@
 
 #define MAX_COGSPIN_ARGS 8
 #define MAX_ARG_REGISTER 32
-#define MAX_LOCAL_REGISTER 150
+#define MAX_LOCAL_REGISTER 256
 
 #define SETJMP_BUF_SIZE (8*LONG_SIZE)
 
@@ -620,11 +620,8 @@ void ReplaceIRWithInline(IRList *irl, IR *origir, Function *func)
     IR *ir;
     IRCond cond = origir->cond;
     Operand *condlbl = NULL;
-    char prefix[32];
-    static int replace = 0;
+    static char *prefix = "_inline_";
 
-    sprintf(prefix, "_inline_%05u_", replace);
-    replace++;
     DeleteIR(irl, origir);
     if (cond != COND_TRUE) {
         condlbl = NewCodeLabel();
