@@ -1033,20 +1033,6 @@ CheckSimpleIncrementLoop(AST *stmt)
     if (!AstMatchName(updateVar, condtest->left))
         return;
 
-    /* if this is a FOR rather than FORATLEASTONCE, we have to construct
-     * an IF to skip it if the initial condition is false
-     */
-    if (stmt->kind == AST_FOR) {
-        AST *revisedTest;
-        revisedTest = NewAST(AST_OPERATOR, NULL, NULL);
-        revisedTest->left = AstInteger(initVal);
-        revisedTest->right = condtest->right;
-        revisedTest->d.ival = condtest->d.ival;
-        thenelseskip = NewAST(AST_THENELSE, NULL, NULL);
-        ifskip = NewAST(AST_IF, revisedTest, thenelseskip);
-        stmt->kind = AST_FORATLEASTONCE;
-    }
-    
     /* check that the update is i++, and the variable is not used anywhere else */
     while (update->kind == AST_SEQUENCE) {
         if (AstUsesName(update->right, updateVar)) {
@@ -1068,6 +1054,20 @@ CheckSimpleIncrementLoop(AST *stmt)
     if (HasBranch(body)) {
         return;
     }
+    /* if this is a FOR rather than FORATLEASTONCE, we have to construct
+     * an IF to skip it if the initial condition is false
+     */
+    if (stmt->kind == AST_FOR) {
+        AST *revisedTest;
+        revisedTest = NewAST(AST_OPERATOR, NULL, NULL);
+        revisedTest->left = AstInteger(initVal);
+        revisedTest->right = condtest->right;
+        revisedTest->d.ival = condtest->d.ival;
+        thenelseskip = NewAST(AST_THENELSE, NULL, NULL);
+        ifskip = NewAST(AST_IF, revisedTest, thenelseskip);
+        stmt->kind = AST_FORATLEASTONCE; // NOT YET, until we know for sure
+    }
+    
     AstReportAs(update, &saveinfo); // new ASTs should be associated with the "update" line
     /* flip the update to -- */
     update->d.ival = K_DECREMENT;
@@ -1209,7 +1209,7 @@ doLoopOptimizeList(LoopValueSet *lvs, AST *list)
 static void
 doBasicLoopOptimization(AST *list) {
     AST *stmt;
-    
+
     while (list != NULL) {
         if (list->kind != AST_STMTLIST) return;
         stmt = list->left;
