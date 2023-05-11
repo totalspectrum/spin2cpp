@@ -388,6 +388,9 @@ ProcessModule(Module *P)
         AST *funcvars = NewAST(AST_FUNCVARS, NULL, NULL);
         AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
 
+        /* switch to using the main language for the module */
+        P->curLanguage = P->mainLanguage;
+        
         /* if there is a basic DATA block, add an initializer */
         if (P->bas_data) {
             InitBasicData(P);
