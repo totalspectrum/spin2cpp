@@ -1,4 +1,5 @@
 Version 6.1.3
+- Allowed -I directives in .fpide files
 - Fixed incorrect macro definitions in .fpide files
 - Fixed a number of places where incorrect line numbers were used for errors
 

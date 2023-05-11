@@ -1483,6 +1483,19 @@ ProcessIdeDefs(char *defs) {
     }
 }
 
+static void
+ProcessOneIdeInc(char *def) {
+    //printf("INC: [%s]\n", def);
+    if (!strncmp(def, "-I", 2)) {
+        char *name;
+        def += 2;
+        while (*def && isspace(*def)) def++;
+        if (!*def) return;
+        name = strdup(def);
+        pp_add_to_path(&gl_pp, name);
+    }
+}
+
 #define MAX_IDE_FILES 256
 
 static Module *
@@ -1516,8 +1529,11 @@ ParseIdeFile(Module *P, const char *name, int *is_dup_ptr)
                     ProcessIdeDefs(def);
                 } else if (!strncmp(def, "-D", 2)) {
                     ProcessOneIdeDef(def);
+                } else if (!strncmp(def, "-I", 2)) {
+                    ProcessOneIdeInc(def);
                 } else {
                     // for now ignore everything else
+                    WARNING(NULL, "Ignoring IDE directive: %s", ptr);
                 }
             } else if (ptr[0] == '#') {
                 // comment?
