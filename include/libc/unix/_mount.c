@@ -2,6 +2,7 @@
 #include <sys/limits.h>
 #include <sys/stat.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
 #include <errno.h>
 
@@ -75,6 +76,53 @@ struct vfs __rootvfs =
 };
 
 
+void
+_normalizeName(char *buf) {
+    char *dst, *src;
+    bool needSlash = false;
+    
+    dst = src = buf;
+    while (*src) {
+        if (needSlash) {
+            *dst++ = '/';
+            needSlash = false;
+        }
+        // special cases
+        if (src[0] == '.') {
+            if (src[1] == '/' || src[1] == 0) {
+                src++;
+                goto skipSlashes;
+            } else if (src[1] == '.') {
+                if (src[2] == '/' || src[2] == 0) {
+                    char *p;
+                    src += 2;
+                    // roll back dst
+                    if (dst > buf) {
+                        char *p = dst-1;
+                        while (*p == '/' && p > buf) --p;
+                        while (p > buf && *p != '/') {
+                            --p;
+                        }
+                        dst = p;
+                    }
+                    needSlash = true;
+                    goto skipSlashes;
+                }
+            }
+        }
+        while (*src && *src != '/') {
+            *dst++ = *src++;
+        }
+        if (*src == '/') {
+            needSlash = true;
+    skipSlashes:            
+            while (*src == '/')
+                src++;
+        }
+    }
+    *dst++ = 0;
+}
+
 struct vfs *
 __getvfsforfile(char *name, const char *orig_name, char *full_path)
 {
@@ -97,6 +145,7 @@ __getvfsforfile(char *name, const char *orig_name, char *full_path)
             strncat(name, orig_name, _PATH_MAX);
         }
     }
+    _normalizeName(name);
     if (name[0] == 0 || (name[0] == '/' && name[1] == 0) ) {
         return &__rootvfs;
     }

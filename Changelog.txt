@@ -4,6 +4,7 @@ Version 6.1.3
 - Fixed a number of places where incorrect line numbers were used for errors
 - Fixed an incorrect partially applied loop optimization
 - Fixed language type used for BASIC main program when mixed languages are in use
+- Improved handling of .. and . in C library
 - Reduced register requirements for inlined functions
 - Reduced some C/BASIC file I/O incompatibilities
 
