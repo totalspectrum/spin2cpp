@@ -270,7 +270,7 @@ int _umount(char *name)
     return 0;
 }
 
-char *getcwd(char *buf, size_t size)
+char *_getcwd(char *buf, size_t size)
 {
     size_t needed = 2 + strlen(curdir);
 
@@ -286,7 +286,7 @@ char *getcwd(char *buf, size_t size)
     return buf;
 }
 
-int chdir(const char *path)
+int _chdir(const char *path)
 {
     struct stat s;
     char *tmp;

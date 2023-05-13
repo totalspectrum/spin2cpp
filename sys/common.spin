@@ -307,6 +307,8 @@ pri {++complexio} file "libc/unix/vfs.c" _getrootvfs()
 pri {++complexio} file "libc/unix/vfs.c" _setrootvfs(root)
 pri {++complexio} file "libc/unix/_mount.c" _mount(name=string, volume)
 pri {++complexio} file "libc/unix/_mount.c" _umount(name=string)
+pri {++complexio} file "libc/unix/_mount.c" _chdir(name=string)
+pri {++complexio} file "libc/unix/_mount.c" _getcwd(buf=@byte, bufsiz=long) : r=@byte
 pri {++complexio} file "libc/unix/_mount.c" __getfilebuffer() : r=@byte
 pri {++complexio} file "libc/unix/_mount.c" __getvfsforfile(name, orig_name, full_path)
 pri {++complexio} file "libc/unix/exec.c" _execve(name=string, argv=0, envp=0)
