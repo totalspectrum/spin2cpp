@@ -200,8 +200,8 @@ time_t time(time_t *tp) __fromfile("libc/time/time.c");
 int usleep(unsigned int n) __fromfile("libc/time/usleep.c");
 
 /* libc/unix/_mount.c */
-int chdir(const char *path) __fromfile("libc/unix/_mount.c");
-char *getcwd(char *buf, size_t siz) __fromfile("libc/unix/_mount.c");
+int chdir(const char *path) __fromfile("libc/unix/mount.c");
+char *getcwd(char *buf, size_t siz) __fromfile("libc/unix/mount.c");
 
 int mount(const char *path, void *v) __fromfile("libc/unix/mount.c");
 int umount(const char *buf) __fromfile("libc/unix/mount.c");
