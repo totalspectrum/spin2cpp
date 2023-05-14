@@ -4974,6 +4974,9 @@ FixupLoneCORDIC(IRList *irl) {
         if (IsCordicCommand(ir)) {
             if (seenCommand && !InstrIsVolatile(ir)) {
                 if (IsPrefixOpcode(ir->prev)) DeleteIR(irl,ir->prev);
+                if (ir->flags & FLAG_USER_INSTR) {
+                    WARNING(ir->line, "Deleting apparently unused cordic instruction %s", ir->instr->name);
+                }
                 DeleteIR(irl,ir);
                 change = true;
             } else seenCommand = true;

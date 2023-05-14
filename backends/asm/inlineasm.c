@@ -1,3 +1,9 @@
+//
+// Inline assembly code
+//
+// Copyright 2016-2023 Total Spectrum Software Inc.
+// see the file COPYING for conditions of redistribution
+//
 #include "spinc.h"
 #include "outasm.h"
 #include "backends/becommon.h"
@@ -351,7 +357,8 @@ CompileInlineInstr_only(IRList *irl, AST *ast)
     instr = (Instruction *)ast->d.ptr;
     ir = NewIR(instr->opc);
     ir->instr = instr;
-
+    ir->line = ast;
+    
     /* parse operands and put them in place */
     ival = instr->binary;
     ival |= (gl_p2) ? (0xf<<28) : (0xf<<18); // set initial condition flags
@@ -364,6 +371,7 @@ CompileInlineInstr_only(IRList *irl, AST *ast)
         effectFlags |= (FLAG_WZ|FLAG_WC);
     }
     ir->flags = effectFlags;
+    ir->flags |= FLAG_USER_INSTR;
     // check for conditional execution
     if (gl_p2) {
         condbits = ival >> 28;

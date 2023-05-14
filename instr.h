@@ -283,11 +283,14 @@ enum flags {
 
     // label is not associated with any jump
     FLAG_LABEL_NOJUMP = 0x4000,
+
+    // instruction came from user inline assembly
+    FLAG_USER_INSTR   = 0x8000,
     
     // rest of the bits are used by the optimizer
-    FLAG_LABEL_USED = 0x10000,
-    FLAG_INSTR_NEW  = 0x20000,
-    FLAG_OPTIMIZER = 0xFFF0000,
+    FLAG_LABEL_USED = 0x100000,
+    FLAG_INSTR_NEW  = 0x200000,
+    FLAG_OPTIMIZER = 0xFFF00000,
 };
 
 #define FLAG_P1_STD (FLAG_WZ|FLAG_WC|FLAG_NR|FLAG_WR)
@@ -442,6 +445,7 @@ struct IR {
     enum OperandEffect srceffect; // special effect (e.g. postinc) for source
     enum OperandEffect dsteffect; // special effect for dest
     Operand *fcache;   // if non-NULL, fcache root
+    AST *line;         // line number for user error messages
 };
 
 void AppendOperand(OperandList **listptr, Operand *op);
