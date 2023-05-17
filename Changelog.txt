@@ -1,3 +1,7 @@
+Version 6.1.5
+- Added warning about deleting unused user CORDIC instructions
+- Fixed a bug in handling of (*X++) ^= N
+
 Version 6.1.4
 - Fixed incorrect paths in libc.a
 

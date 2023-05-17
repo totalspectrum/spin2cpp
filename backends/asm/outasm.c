@@ -4092,7 +4092,10 @@ validateArrayRef(AST *ast)
     case AST_IDENTIFIER:
     case AST_LOCAL_IDENTIFIER:
     case AST_METHODREF:
-        return IsArrayType(ExprType(ast));
+    {
+        AST *typ = ExprType(ast);
+        return typ && (typ->kind == AST_PTRTYPE || IsArrayType(typ));
+    }
     default:
         return validateArrayRef(ast->left) || validateArrayRef(ast->right);
     }

@@ -23,6 +23,7 @@
  *
  * beware though of post effects:
  *   X[I++] := I  --> X[I]:=I, I++
+ *   *X++ ^= N  --> *X ^= N, X++
  */
 
 AST*
@@ -43,6 +44,19 @@ ExtractSideEffects(AST *expr, AST **preseq)
             temp = AstTempLocalVariable("_temp_", NULL);
             sideexpr = AstAssign(temp, expr->right);
             expr->right = temp;
+            if (*preseq) {
+                *preseq = NewAST(AST_SEQUENCE, *preseq, sideexpr);
+            } else {
+                *preseq = sideexpr;
+            }
+            AstReportDone(&saveinfo);
+        }
+        if (ExprHasSideEffects(expr->left) && expr->kind == AST_ARRAYREF && expr->left->kind != AST_MEMREF) {
+            AstReportAs(expr, &saveinfo);
+            AST *typ = ExprType(expr->left);
+            temp = AstTempLocalVariable("_arr_", typ);
+            sideexpr = AstAssign(temp, expr->left);
+            expr->left = temp;
             if (*preseq) {
                 *preseq = NewAST(AST_SEQUENCE, *preseq, sideexpr);
             } else {
