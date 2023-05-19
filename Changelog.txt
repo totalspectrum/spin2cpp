@@ -1,6 +1,7 @@
 Version 6.1.5
 - Added warning about deleting unused user CORDIC instructions
 - Fixed a bug in handling of (*X++) ^= N
+- Fixed a bug when inlining functions with small local arrays
 
 Version 6.1.4
 - Fixed incorrect paths in libc.a

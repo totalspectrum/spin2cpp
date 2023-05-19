@@ -3392,6 +3392,9 @@ OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type)
             temp = NewFunctionTempRegister();
             EmitMove(irl, temp, addr, linenum);
             base = CogMemRef(temp, 0);
+            // this will interfere with inlining the function
+            //printf("prevent inlining of %s\n", curfunc->name);
+            curfunc->no_inline = 1;
             break;
         default:
             break;
@@ -3469,6 +3472,9 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset, int siz)
             temp = NewFunctionTempRegister();
             EmitMove(irl, temp, addr, linenum);
             base = CogMemRef(temp, 0);
+            // this will interfere with inlining the function
+            //printf("prevent inlining of %s\n", curfunc->name);
+            curfunc->no_inline = 1;
             break;
         default:
             break;
