@@ -707,8 +707,8 @@ ConvertPrintToPrintf(AST *ast)
         }
         type = ExprType(expr);
         if (!type) {
-            ERROR(ast, "Unknown type in print");
-            continue;
+            //ERROR(ast, "Unknown type in print");
+            type = ast_type_generic;
         }
         if (IsFloatType(type)) {
             flexbuf_addstr(&fbstr, "%f");
