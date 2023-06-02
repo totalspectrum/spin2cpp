@@ -1858,14 +1858,14 @@ CheckRetStatement(Function *func, AST *ast)
         break;
     case AST_RETURN:
         if (ast->left) {
-            SetFunctionReturnType(func, ForceExprType(ast->left));
+            SetFunctionReturnType(func, ForceExprType(ast->left), ast);
         }
         sawreturn = 1;
         break;
     case AST_THROW:
         if (ast->left) {
             (void)CheckRetStatement(func, ast->left);
-            SetFunctionReturnType(func, ForceExprType(ast->left));
+            SetFunctionReturnType(func, ForceExprType(ast->left), ast);
         }
         func->has_throw = 1;
         break;
@@ -1890,7 +1890,7 @@ CheckRetStatement(Function *func, AST *ast)
         lhs = ast->left; // count variable
         if (lhs) {
             if (IsResultVar(func, lhs)) {
-                SetFunctionReturnType(func, ast_type_long);
+                SetFunctionReturnType(func, ast_type_long, ast);
             }
         }
         ast = ast->right; // from value
@@ -1909,7 +1909,7 @@ CheckRetStatement(Function *func, AST *ast)
             // watch out for multiple returns
             AST *typ = ForceExprType(rhs);
             if (typ && typ->kind != AST_TUPLE_TYPE) {
-                SetFunctionReturnType(func, typ);
+                SetFunctionReturnType(func, typ, lhs);
             }
         }
         sawreturn = 0;
@@ -2316,7 +2316,7 @@ ProcessOneFunc(Function *pf)
 
     if ( GetFunctionReturnType(pf) == NULL && (pf->result_used || (IsSpinLang(pf->language) && pf->has_throw)) ) {
         /* there really is a return type */
-        SetFunctionReturnType(pf, ast_type_generic);
+        SetFunctionReturnType(pf, ast_type_generic, NULL);
     }
     if (GetFunctionReturnType(pf) == NULL || GetFunctionReturnType(pf) == ast_type_void) {
         if (!pf->overalltype) {
@@ -3003,7 +3003,7 @@ MarkUsed(Function *f, const char *caller)
 }
 
 void
-SetFunctionReturnType(Function *f, AST *typ)
+SetFunctionReturnType(Function *f, AST *typ, AST *line)
 {
     if (typ && !f->overalltype->left) {
         if (typ == ast_type_byte || typ == ast_type_word) {
@@ -3013,7 +3013,7 @@ SetFunctionReturnType(Function *f, AST *typ)
             f->overalltype->left = typ;
             if (f->numresults > 1) {
                 if (f->numresults != AstListLen(typ)) {
-                    ERROR(NULL, "inconsistent return values from function %s", f->name);
+                    ERROR(line, "inconsistent return values from function %s: expected %d elements but found %d", f->name, f->numresults, AstListLen(typ));
                 }
             }
             f->numresults = typ->d.ival;
@@ -3029,7 +3029,7 @@ SetFunctionReturnType(Function *f, AST *typ)
             f->numresults = len;
         }
         else if (f->numresults != len) {
-            ERROR(NULL, "inconsistent return values from function %s", f->name);
+            ERROR(line, "inconsistent return values from function %s: expected %d elements but found %d", f->name, f->numresults, AstListLen(typ));
         }
     }
 }

@@ -1,4 +1,6 @@
 Version 6.1.6
+- Implemented flush() for FATFS files (thanks to Ada)
+- Improved some error messages
 - In C++ output, treat unknown types in prints as generic
 
 Version 6.1.5

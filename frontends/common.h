@@ -746,7 +746,7 @@ void OutputZipFile(const char *name);
 bool IsSpinCoginit(AST *body, Function **thefunc);
 
 /* set a function type, checking for errors */
-void SetFunctionReturnType(Function *func, AST *type);
+void SetFunctionReturnType(Function *func, AST *type, AST *line);
 
 /* get the return type for a function */
 AST *GetFunctionReturnType(Function *func);

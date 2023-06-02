@@ -3959,7 +3959,7 @@ AggregateCount(AST *typ)
 /* utility: construct a name for a type */
 const char *TypeName(AST *typ)
 {
-    static char buf[512];
+    static char buf[1024];
     int size;
     int lang;
     int isUnsigned = 0;
@@ -4083,7 +4083,7 @@ const char *TypeName(AST *typ)
             nexttyp = NULL;
             break;
         case AST_TUPLE_TYPE:
-            strcat(buf, "list of values ");
+            sprintf(buf, "list of %d values ", AstListLen(typ));
             nexttyp = NULL;
             break;
         case AST_OBJECT:
