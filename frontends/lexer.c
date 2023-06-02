@@ -999,7 +999,7 @@ parseLineAsString(LexStream *L, AST **ast_ptr)
     *ast_ptr = ast;
 }
 
-/* parse a string */
+/* parse a string (Spin version) */
 static void
 parseString(LexStream *L, AST **ast_ptr)
 {
@@ -1019,6 +1019,43 @@ parseString(LexStream *L, AST **ast_ptr)
         }
         flexbuf_addchar(&fb, c);
         c = lexgetc(L);
+    }
+    flexbuf_addchar(&fb, '\0');
+
+    ast->d.string = getTranslatedString(&fb);
+    *ast_ptr = ast;
+}
+
+static void
+parseBASICString(LexStream *L, AST **ast_ptr)
+{
+    int c;
+    struct flexbuf fb;
+    AST *ast;
+
+    ast = NewAST(AST_STRING, NULL, NULL);
+    flexbuf_init(&fb, INCSTR);
+    c = lexgetc(L);
+again:
+    while (c != '"' && c > 0 && c < 256) {
+        if (c == 10 || c == 13) {
+            // newline in mid-string, this is bad news
+            SYNTAX_ERROR("unterminated string");
+            lexungetc(L, c);
+            break;
+        }
+        flexbuf_addchar(&fb, c);
+        c = lexgetc(L);
+    }
+    // check for double quotes
+    if (c == '"') {
+        int nextc = lexgetc(L);
+        if (nextc == c) {
+            flexbuf_addchar(&fb, c);
+            c = lexgetc(L);
+            goto again;
+        }
+        lexungetc(L, nextc);
     }
     flexbuf_addchar(&fb, '\0');
 
@@ -4365,7 +4402,7 @@ again:
             parseLineAsString(L, &ast);
         }
     } else if (c == '"') {
-        parseString(L, &ast);
+        parseBASICString(L, &ast);
         c = BAS_STRING;
     } else if (c == '<' || c == '>' || c == '=') {
         int c2 = lexgetc(L);

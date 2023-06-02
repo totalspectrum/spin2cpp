@@ -186,6 +186,20 @@ For example, the following are all ways to represent the decimal number `10`:
    &o12
 ```
 
+### String literals
+
+String literals begin with the character `"` and go until the next `"`. They may not contain newlines, so they must all fit on one line. If two quotes are seen in a row they will be escaped, so for example:
+```
+print """hello, world"""
+```
+will print the string `"hello world"` (with the quotes included).
+
+To include newlines or other control characters in strings it is necessary to use the `chr$()` function, e.g.:
+```
+x$ = "hello" + chr$(13) + chr$(10) + "goodbye"
+```
+sets `x$` to be a string with an embedded carriage return and newline.
+
 ### Keywords
 
 Keywords are always treated specially by the compiler, and no identifier may be named the same as a keyword.

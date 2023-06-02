@@ -1,4 +1,5 @@
 Version 6.1.6
+- Added ability to double quote to include quotes in literal BASIC strings
 - Implemented flush() for FATFS files (thanks to Ada)
 - Improved some error messages
 - In C++ output, treat unknown types in prints as generic
