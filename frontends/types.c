@@ -162,7 +162,14 @@ MakeOperatorCall(AST *func, AST *left, AST *right, AST *extraArg)
     if (extraArg) {
         params = AddToList(params, NewAST(AST_EXPRLIST, extraArg, NULL));
     }
-    call = NewAST(AST_FUNCCALL, func, params);
+
+    // do some optimizations on constant values
+    if (func == string_concat && left && right && left->kind == AST_STRINGPTR && right->kind == AST_STRINGPTR)
+    {
+        call = AstMergeStrings(left, right);
+    } else {
+        call = NewAST(AST_FUNCCALL, func, params);
+    }
     AstReportDone(&saveinfo);
     return call;
 }

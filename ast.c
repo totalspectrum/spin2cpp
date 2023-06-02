@@ -519,7 +519,61 @@ AstStringLen(AST *list)
         }
         list = list->right;
     }
+    if (list && list->kind == AST_STRING) {
+        len += strlen(list->d.string);
+    }
     return len;
+}
+
+static char *
+CopyString(char *p, AST *list)
+{
+    list = list->left;
+    while (list && list->kind == AST_EXPRLIST) {
+        if (!list->left) continue;
+        if (list->left->kind == AST_STRING) {
+            strcpy(p, list->left->d.string);
+            p += strlen(list->left->d.string);
+        } else {
+            *p++ = list->left->d.ival;
+        }
+        list = list->right;
+    }
+    if (list && list->kind == AST_STRING) {
+        strcpy(p, list->d.string);
+        p += strlen(list->d.string);
+    }
+    return p;
+}
+
+/* merge two AST string pointers */
+AST *
+AstMergeStrings(AST *left, AST *right)
+{
+    int newLen = 1;
+    if (left) {
+        if (left->kind != AST_STRINGPTR) {
+            ERROR(left, "Internal errors, expected string");
+            return left;
+        }
+        newLen += AstStringLen(left);
+    }
+    if (right) {
+        if (right->kind != AST_STRINGPTR) {
+            ERROR(right, "Internal errors, expected string");
+            return left;
+        }
+        newLen += AstStringLen(right);
+    }
+    char *newBuf = malloc(newLen);
+    char *p = newBuf;
+    if (left) {
+        p = CopyString(p, left);
+    }
+    if (right) {
+        p = CopyString(p, right);
+    }
+    return AstStringPtr(newBuf);
 }
 
 /* return length of an AST list; data is on left, ptr to next on right */

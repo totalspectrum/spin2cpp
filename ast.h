@@ -309,6 +309,9 @@ int AstListLen(AST *a);
 /* length of an AST stringptr list */
 int AstStringLen(AST *a);
 
+/* merge two AST string lists */
+AST *AstMergeStrings(AST *lhs, AST *rhs);
+
 /* mark new ASTs to be created to have the same line as AST old */
 /* used when we're transforming ASTs */
 void AstReportAs(AST *old, ASTReportInfo *save);

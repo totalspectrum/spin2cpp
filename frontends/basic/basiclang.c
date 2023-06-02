@@ -924,11 +924,24 @@ doBasicTransform(AST **astptr, bool transformFuncall)
     case AST_FUNCCALL:
         doBasicTransform(&ast->left, transformFuncall);
         doBasicTransform(&ast->right, transformFuncall);
-        if (transformFuncall)
-        {
+        if (transformFuncall) {
             // the parser treats a(x) as a function call (always), but in
             // fact it may be an array reference; change it to one if applicable
             adjustFuncCall(ast);
+        }
+        // check for some special cases like chr$(65)
+        if (ast->kind == AST_FUNCCALL && IsIdentifier(ast->left)) {
+            const char *funcName = GetIdentifierName(ast->left);
+            if (!strcasecmp(funcName, "chr$")) {
+                AST *arg = ast->right->left;
+                if (arg && ast->right->right == NULL && IsConstExpr(arg)) {
+                    int n = EvalConstExpr(arg);
+                    char *s = malloc(2);
+                    s[0] = n;
+                    s[1] = 0;
+                    *ast = *AstStringPtr(s);
+                }
+            }
         }
         break;
     case AST_METHODREF:
