@@ -2002,7 +2002,7 @@ for i = 1 to 10 step 2
 next i
 ```
 
-If the variable given in the loop is not already defined, it is created as a local variable (local to the current sub or function, or to the implicit program function for loops outside of any sub or function).
+If the variable given in the loop is not already defined, it is created as a local variable (local to the current sub or function, or to the implicit program function for loops outside of any sub or function). Note however that if there is a global variable already with the same name as the loop variable, even if only an implicitly declared variable, then it will be used. So if you really want the loop variable to be local then declare it explicitly.
 
 #### As a function modifier
 
