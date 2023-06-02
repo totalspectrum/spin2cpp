@@ -3028,8 +3028,12 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
             if (IsFloatType(ltype) || IsFloatType(rtype)) {
                 return ast_type_float;
             }
-            if (expr->d.ival == '+' && IsStringType(ltype)) {
-                return ltype;
+            if (expr->d.ival == '+') {
+                if (IsStringType(ltype)) {
+                    return ltype;
+                } else if (IsStringType(rtype)) {
+                    return ltype;
+                }
             }
             if (curfunc && IsSpinLang(curfunc->language)) {
                 if (ltype) {

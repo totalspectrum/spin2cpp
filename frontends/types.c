@@ -107,6 +107,10 @@ static AST *struct_copy;
 static AST *struct_memset;
 static AST *string_cmp;
 static AST *string_concat;
+
+static AST *string_tointeger;
+static AST *string_frominteger;
+
 static AST *gc_alloc_managed;
 static AST *gc_free;
 
@@ -958,7 +962,25 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
         return HandleTwoNumerics(ast->d.ival, ast, lefttype, righttype);
     case '+':
         if (IsStringType(lefttype) || IsStringType(righttype)) {
-            *ast = *MakeOperatorCall(string_concat, ast->left, ast->right, NULL);
+            AST *lhs = ast->left;
+            AST *rhs = ast->right;
+            if (IsStringType(lefttype)) {
+                /* convert rhs to a string */
+                if (IsStringType(righttype)) {
+                    /* nothing to do */
+                } else if (IsIntType(righttype)) {
+                    /* convert to string */
+                    rhs = MakeOperatorCall(string_frominteger, rhs, NULL, NULL);
+                } else {
+                    ERROR(rhs, "Unable to convert right side of + to a string");
+                    rhs = lhs;
+                }                
+                *ast = *MakeOperatorCall(string_concat, lhs, rhs, NULL);
+            } else if (IsIntType(lefttype)) {
+                // x + "0" case
+                rhs = MakeOperatorCall(string_tointeger, rhs, NULL, NULL);
+                ast->right = rhs;
+            }
             return lefttype;
         }
         if (IsPointerType(lefttype) && IsIntOrGenericType(righttype)) {
@@ -971,10 +993,14 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
             return HandleTwoNumerics(ast->d.ival, ast, lefttype, righttype);
         }
     case '-':
+        if (IsStringType(lefttype) || IsStringType(righttype)) {
+            ERROR(ast, "- cannot be applied to strings");
+            return ast_type_generic;
+        }
         if (IsPointerType(lefttype) && IsPointerType(righttype)) {
             // we actually want to compute (a - b) / sizeof(*a)
             if (!CompatibleTypes(lefttype, righttype)) {
-                ERROR(lefttype, "- applied to incompatible pointer types");
+                ERROR(ast, "- applied to incompatible pointer types");
             } else {
                 AST *diff;
                 diff = AstOperator('-', ast->left, ast->right);
@@ -2136,6 +2162,8 @@ InitGlobalFuncs(void)
 
         string_cmp = getBasicPrimitive("_string_cmp");
         string_concat = getBasicPrimitive("_string_concat");
+        string_tointeger = getBasicPrimitive("__builtin_atoi");
+        string_frominteger = getBasicPrimitive("strint$");
         gc_alloc_managed = getBasicPrimitive("_gc_alloc_managed");
         gc_free = getBasicPrimitive("_gc_free");
 
