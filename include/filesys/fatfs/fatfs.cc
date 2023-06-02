@@ -420,6 +420,24 @@ int v_open(vfs_file_t *fil, const char *name, int flags)
   return 0;
 }
 
+int v_flush(vfs_file_t *fil) {
+    FAT_FIL *vf = fil->vfsdata;
+    FIL *f = &vf->fil;
+    int result;
+    
+    if (!f) {
+        return _seterror(EBADF);
+    }
+#ifdef DEBUG
+    __builtin_printf("v_flush() ");
+#endif
+    result = f_sync(f);
+#ifdef DEBUG
+    __builtin_printf("result=%d\n", result);
+#endif
+    return _set_dos_error(result);
+}
+
 /* initialize (do first mount) */
 /* for now this is a dummy function, but eventually some of the work
  * in _vfs_open_sdcardx could be done here
@@ -449,7 +467,7 @@ static struct vfs fat_vfs =
     &v_lseek,
     
     &v_ioctl,
-    0, /* no flush function */
+    &v_flush,
     0, /* vfs_data */
     0, /* reserved2 */
     
