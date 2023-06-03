@@ -41,7 +41,10 @@ enum OpToken {
     K_LEU,
     K_GTU,
     K_GEU,
-    K_ASC,
+    
+    K_ASC,  /* BASIC ASC operator */
+    K_LEN,  /* BASIC LEN operator */
+    
     K_LIMITMIN_UNS,
     K_LIMITMAX_UNS,
     K_POWER,

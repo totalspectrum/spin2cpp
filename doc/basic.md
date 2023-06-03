@@ -255,6 +255,7 @@ if
 import
 input
 integer
+len
 let
 lib
 line
@@ -367,7 +368,6 @@ instrrev
 lcase$
 kill
 left$
-len
 _lockclr
 _locknew
 _lockrel

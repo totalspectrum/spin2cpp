@@ -2318,6 +2318,7 @@ struct reservedword basic_keywords[] = {
     { "input", BAS_INPUT },
     { "int", BAS_CAST_INT },
     { "integer", BAS_INTEGER_KW },
+    { "len", BAS_LEN },
     { "let", BAS_LET },
     { "lib", BAS_LIB },
     { "line", BAS_LINE },

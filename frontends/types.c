@@ -107,6 +107,7 @@ static AST *struct_copy;
 static AST *struct_memset;
 static AST *string_cmp;
 static AST *string_concat;
+static AST *string_length;
 
 static AST *string_tointeger;
 static AST *string_frominteger;
@@ -1125,6 +1126,26 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
                 newast = NewAST(AST_MEMREF, ast_type_byte, ast->right);
                 *ast = *newast;
             }
+        }
+        return ast_type_long;
+    case K_LEN:
+        if (!CompatibleTypes(righttype, ast_type_string)) {
+            if (curfunc && IsBasicLang(curfunc->language)) {
+                ERROR(ast, "expected string argument to LEN");
+            } else {
+                ERROR(ast, "expected string argument to __builtin_strlen");
+            }
+        } else {
+            AST *newast;
+            AST *sexpr = ast->right;
+            
+            if (sexpr && sexpr->kind == AST_STRINGPTR) {
+                /* the -1 is to remove the trailing 0 */
+                newast = AstInteger(AstStringLen(sexpr) - 1);
+            } else {
+                newast = MakeOperatorCall(string_length, sexpr, NULL, NULL);
+            }
+            *ast = *newast;
         }
         return ast_type_long;
     case K_BOOL_NOT:
@@ -2169,6 +2190,7 @@ InitGlobalFuncs(void)
 
         string_cmp = getBasicPrimitive("_string_cmp");
         string_concat = getBasicPrimitive("_string_concat");
+        string_length = getBasicPrimitive("__builtin_strlen");
         string_tointeger = getBasicPrimitive("__builtin_atoi");
         string_frominteger = getBasicPrimitive("strint$");
         gc_alloc_managed = getBasicPrimitive("_gc_alloc_managed");

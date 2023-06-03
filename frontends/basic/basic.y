@@ -461,6 +461,7 @@ AdjustParamForByVal(AST *param)
 %token BAS_INPUT      "input"
 %token BAS_CAST_INT   "int"
 %token BAS_INTEGER_KW "integer"
+%token BAS_LEN        "len"
 %token BAS_LET        "let"
 %token BAS_LIB        "lib"
 %token BAS_LINE       "line"
@@ -1640,6 +1641,8 @@ unary_op:
     { $$ = AstOperator(K_ABS, NULL, NULL); }
   | BAS_ASC
     { $$ = AstOperator(K_ASC, NULL, NULL); }
+  | BAS_LEN
+    { $$ = AstOperator(K_LEN, NULL, NULL); }
   | BAS_SQRT
     { $$ = AstOperator(K_SQRT, NULL, NULL); }
 ;
