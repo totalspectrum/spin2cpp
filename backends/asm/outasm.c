@@ -564,7 +564,7 @@ static Operand *DupOperandWithPrefix(Operand *oldOperand, const char *prefix) {
         oldOperand = (Operand *)oldOperand->name;
         needSubreg = true;
     }
-    newName = calloc(1, strlen(prefix)+strlen(oldOperand->name)+1);
+    newName = (char *)calloc(1, strlen(prefix)+strlen(oldOperand->name)+1);
     strcpy(newName, prefix);
     strcat(newName, oldOperand->name);
     if (needSubreg) {
@@ -673,7 +673,7 @@ void ReplaceIRWithInline(IRList *irl, IR *origir, Function *func)
                 // do nothing
             } else {
                 ir->dst = NewCodeLabel();
-                for (struct ir_lbljumps *list=ir->aux;list;list=list->next) {
+                for (struct ir_lbljumps *list=(struct ir_lbljumps *)ir->aux;list;list=list->next) {
                     ReplaceJumpTarget(list->jump, ir->dst);
                 }
                 // we used to print an error when there were no jumps, but in fact it is legal

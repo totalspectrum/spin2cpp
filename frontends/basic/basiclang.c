@@ -936,7 +936,7 @@ doBasicTransform(AST **astptr, bool transformFuncall)
                 AST *arg = ast->right->left;
                 if (arg && ast->right->right == NULL && IsConstExpr(arg)) {
                     int n = EvalConstExpr(arg);
-                    char *s = malloc(2);
+                    char *s = (char *)malloc(2);
                     s[0] = n;
                     s[1] = 0;
                     *ast = *AstStringPtr(s);

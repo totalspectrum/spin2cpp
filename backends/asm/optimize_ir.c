@@ -107,15 +107,15 @@ ReplaceOpcode(IR *ir, IROpcode op)
 // NULL if multiple jumps (or none at all)
 static IR *UniqJumpForLabel(IR *lbl) {
     if (lbl->opc != OPC_LABEL) ERROR(NULL,"internal error, UniqJumpForLabel called on wrong opc %d",lbl->opc);
-    struct ir_lbljumps *list = lbl->aux;
+    struct ir_lbljumps *list = (struct ir_lbljumps *)lbl->aux;
     if (list && !list->next) return list->jump;
     else return NULL;
 }
 
 static void AppendLblJump(IR *lbl,IR *jmp) {
     if (lbl->opc != OPC_LABEL) ERROR(NULL,"internal error, AppendLblJump called on wrong opc %d",lbl->opc);
-    struct ir_lbljumps *entry = malloc(sizeof(struct ir_lbljumps));
-    entry->next = lbl->aux;
+    struct ir_lbljumps *entry = (struct ir_lbljumps *)malloc(sizeof(struct ir_lbljumps));
+    entry->next = (struct ir_lbljumps *)lbl->aux;
     entry->jump = jmp;
     lbl->aux = entry;
 }
@@ -1168,7 +1168,7 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
                 // Not sure what this check is for? But moved it out of the check loop
                 continue;
             }
-            for (struct ir_lbljumps *list = ir->aux;list;list=list->next) {
+            for (struct ir_lbljumps *list = (struct ir_lbljumps *)ir->aux;list;list=list->next) {
                 IR *comefrom = list->jump;
                 if (comefrom->addr < instr->addr) {
                     // go back and see if there are any references before the
@@ -1474,7 +1474,7 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace, IRCond sette
                 // however, in the special case that the register is never
                 // actually used again then it's safe
                 bool jumpers_before = false;
-                for(struct ir_lbljumps *list = ir->aux;list;list=list->next) {
+                for(struct ir_lbljumps *list = (struct ir_lbljumps *)ir->aux;list;list=list->next) {
                     if (list->jump->addr < first_ir->addr) {
                         jumpers_before = true;
                     }

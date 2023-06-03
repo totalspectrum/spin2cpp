@@ -565,7 +565,7 @@ AstMergeStrings(AST *left, AST *right)
         }
         newLen += AstStringLen(right);
     }
-    char *newBuf = malloc(newLen);
+    char *newBuf = (char *)malloc(newLen);
     char *p = newBuf;
     if (left) {
         p = CopyString(p, left);
