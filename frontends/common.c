@@ -253,7 +253,6 @@ Aliases basicalias[] = {
     { "getus", "_getus" },
     { "getsec", "_getsec" },
     { "kill", "_remove" },
-    { "len", "__builtin_strlen" },
     { "lpeek", "__lpeek" },
     { "lpoke", "__lpoke" },
     { "mount", "_mount" },

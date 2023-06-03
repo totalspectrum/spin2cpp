@@ -1128,7 +1128,7 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
             }
         }
         return ast_type_long;
-    case K_LEN:
+    case K_STRLEN:
         if (!CompatibleTypes(righttype, ast_type_string)) {
             if (curfunc && IsBasicLang(curfunc->language)) {
                 ERROR(ast, "expected string argument to LEN");

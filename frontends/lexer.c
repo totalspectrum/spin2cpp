@@ -2405,6 +2405,7 @@ struct reservedword c_keywords[] = {
     { "__builtin_propeller_rev", C_BUILTIN_REV },
     { "__builtin_setjmp", C_BUILTIN_SETJMP },
     { "__builtin_sqrt", C_BUILTIN_SQRT },
+    { "__builtin_strlen", C_BUILTIN_STRLEN },
     { "__builtin_va_arg", C_BUILTIN_VA_ARG },
     { "__builtin_va_start", C_BUILTIN_VA_START },
     { "case", C_CASE },

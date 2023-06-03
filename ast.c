@@ -1013,7 +1013,7 @@ static void doASTDump(AST *ast, int indent)
             case K_ASC:
                 opString = "asc";
                 break;
-            case K_LEN:
+            case K_STRLEN:
                 opString = "strlen";
                 break;
             case K_POWER:

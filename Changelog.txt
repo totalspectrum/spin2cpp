@@ -3,7 +3,8 @@ Version 6.1.6
 - Implemented flush() for FATFS files (thanks to Ada)
 - Improved some error messages
 - In C++ output, treat unknown types in prints as generic
-- Optimized a few BASIC string expressions 
+- Optimized a few BASIC string expressions
+- Optimized calculating length of string literals
 - Revised BASIC use of + operator on strings
 
 Version 6.1.5

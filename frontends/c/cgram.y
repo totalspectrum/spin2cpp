@@ -1062,6 +1062,8 @@ ConstructDefaultValue(AST *decl, AST *val)
 %token C_BUILTIN_SETJMP   "__builtin_setjmp"
 %token C_BUILTIN_LONGJMP  "__builtin_longjmp"
 
+%token C_BUILTIN_STRLEN   "__builtin_strlen"
+
 %token C_EOF "end of file"
 
 %start translation_unit
@@ -1253,6 +1255,10 @@ postfix_expression
         | C_BUILTIN_LONGJMP '(' assignment_expression ',' assignment_expression ')'
             {
                 $$ = NewAST(AST_THROW, $5, $3);
+            }
+        | C_BUILTIN_STRLEN '(' assignment_expression ')'
+            {
+                $$ = AstOperator(K_STRLEN, NULL, $3);
             }
 	| postfix_expression '[' expression ']'
             { $$ = NewAST(AST_ARRAYREF, $1, $3); }

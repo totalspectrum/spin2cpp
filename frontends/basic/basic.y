@@ -1642,7 +1642,7 @@ unary_op:
   | BAS_ASC
     { $$ = AstOperator(K_ASC, NULL, NULL); }
   | BAS_LEN
-    { $$ = AstOperator(K_LEN, NULL, NULL); }
+    { $$ = AstOperator(K_STRLEN, NULL, NULL); }
   | BAS_SQRT
     { $$ = AstOperator(K_SQRT, NULL, NULL); }
 ;
