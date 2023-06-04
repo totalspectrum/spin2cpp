@@ -1023,6 +1023,9 @@ void DeclareAnonymousAliases(Module *Parent, Module *sub, AST *prefix);
 // add a source file to our internal list
 void AddSourceFile(const char *shortName, const char *fullName);
 
+// find a constant or other declaration in a list
+AST *FindDeclaration(AST *datlist, const char *name);
+
 // external vars
 extern AST *basic_get_float;
 extern AST *basic_get_string;

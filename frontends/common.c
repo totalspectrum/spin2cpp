@@ -509,6 +509,7 @@ DeclareConstants(Module *P, AST **conlist_ptr)
 
                 switch (ast->kind) {
                 case AST_ASSIGN:
+                {
                     if (IsConstExpr(ast->right)) {
                         if (!IsIdentifier(ast->left)) {
                             ERROR(ast, "Internal error, bad constant declaration");
@@ -522,8 +523,20 @@ DeclareConstants(Module *P, AST **conlist_ptr)
                         completed_declarations = AddToList(completed_declarations, upper);
                         conlist = *conlist_ptr;
                     } else {
+                        AST *setExpr = ast->right;
+                        // check for declarations of old constants
+                        if (IsIdentifier(setExpr)) {
+                            const char *name = GetIdentifierName(setExpr);
+                            AST *olddecl = FindDeclaration(current->datblock, name);
+                            if (olddecl && olddecl->kind == AST_DECLARE_VAR && olddecl->left && IsConstType(olddecl->left)) {
+                                AST *assign = olddecl->right;
+                                if (assign && assign->right) {
+                                    setExpr = ast->right = assign->right;
+                                }
+                            }
+                        }
                         AST *typ;
-                        typ = ExprType(ast->right);
+                        typ = ExprType(setExpr);
                         if (typ && (IsStringType(typ) || IsPointerType(typ))) {
                             if (!IsIdentifier(ast->left)) {
                                 ERROR(ast, "Internal error, bad constant declaration");
@@ -538,6 +551,7 @@ DeclareConstants(Module *P, AST **conlist_ptr)
                         }
                     }
                     break;
+                }
                 case AST_ENUMSET:
                     if (IsConstExpr(ast->left)) {
                         default_val = EvalConstExpr(ast->left);
@@ -1727,7 +1741,7 @@ GetExprlistLen(AST *list)
 //
 // find any previous declaration of name
 //
-static AST *
+AST *
 FindDeclaration(AST *datlist, const char *name)
 {
     AST *ident;
