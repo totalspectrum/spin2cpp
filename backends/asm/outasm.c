@@ -999,7 +999,16 @@ static int EmitLongPtr(IRList *irl, Operand *op)
 static int EmitStringNoTrailingZero(IRList *irl, AST *ast)
 {
     Operand *op;
+    int count = 0;
     switch (ast->kind) {
+    case AST_EXPRLIST:
+        while (ast && ast->kind == AST_EXPRLIST) {
+            count += EmitStringNoTrailingZero(irl, ast->left);
+            ast = ast->right;
+        }
+        return count;
+    case AST_STRINGPTR:
+        return EmitStringNoTrailingZero(irl, ast->left);
     case AST_STRING:
         if (irl) {
             op = NewOperand(IMM_STRING, ast->d.string, 0);
@@ -1012,6 +1021,22 @@ static int EmitStringNoTrailingZero(IRList *irl, AST *ast)
             EmitOp1(irl, OPC_BYTE, op);
         }
         return 1;
+    case AST_IDENTIFIER:
+    case AST_LOCAL_IDENTIFIER:
+    {
+        const char *name = GetIdentifierName(ast);
+        Symbol *sym = LookupSymbol(name);
+        if (!sym) {
+            ERROR(ast, "Unknown identifier `%s'", name);
+            return 0;
+        }
+        if (sym->kind == SYM_CONSTANT || sym->kind == SYM_ALIAS) {
+            return EmitStringNoTrailingZero(irl, (AST *)sym->v.ptr);
+        } else {
+            ERROR(ast, "Expected a constant, found `%s'", name);
+            return 0;
+        }
+    }
     default:
         if (IsConstExpr(ast)) {
             if (irl) {
@@ -1028,10 +1053,6 @@ static int EmitStringNoTrailingZero(IRList *irl, AST *ast)
 int EmitString(IRList *irl, AST *ast)
 {
     int count = 0;
-    while (ast && ast->kind == AST_EXPRLIST) {
-        count += EmitStringNoTrailingZero(irl, ast->left);
-        ast = ast->right;
-    }
     if (ast) {
         count += EmitStringNoTrailingZero(irl, ast);
     }
@@ -6386,10 +6407,14 @@ CompileConstant(IRList *irl, AST *ast, bool skip_clkfreq, bool skip_clkmode)
         return;
     }
     expr = (AST *)sym->v.ptr;
+    if (!expr) return;
     if (skip_clkfreq && !strcasecmp(name, "_clkfreq")) {
         return;
     }
     if (skip_clkmode && !strcasecmp(name, "_clkmode")) {
+        return;
+    }
+    if (expr->kind == AST_STRING) {
         return;
     }
     CompileConstOperand(irl, name, expr);
