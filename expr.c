@@ -1757,12 +1757,12 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             switch (sym->kind) {
             case SYM_CONSTANT:
             {
-                ExprVal e = EvalExpr((AST *)sym->v.ptr, 0, NULL, depth+1);
+                ExprVal e = EvalExpr((AST *)sym->v.ptr, 0, valid, depth+1);
                 return intExpr(e.val);
             }
             case SYM_FLOAT_CONSTANT:
             {
-                ExprVal e = EvalExpr((AST *)sym->v.ptr, 0, NULL, depth+1);
+                ExprVal e = EvalExpr((AST *)sym->v.ptr, 0, valid, depth+1);
                 if (gl_fixedreal) {
                     return fixedExpr(e.val);
                 } else {
