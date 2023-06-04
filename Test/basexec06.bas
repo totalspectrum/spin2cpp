@@ -81,6 +81,12 @@ testread
 ' some basic 64 bit stuff
 test64bits
 
+' test constant strings
+const S1 = "hello"
+const S2 = S1
+
+doshow(@S2)
+
 ' and exit
 doexit 0
 
@@ -115,4 +121,8 @@ sub test64bits()
   y = (x * 1000) - 1
   print
   print "64 bits: x="; x; " y="; y
+end sub
+
+sub doshow(sp as const string ptr)
+  print "S=["; sp(0); "]"
 end sub
