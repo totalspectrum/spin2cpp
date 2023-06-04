@@ -1025,7 +1025,9 @@ enumlist:
 
 enumitem:
   identifier '=' expr
-  { $$ = NewAST(AST_ASSIGN, $1, $3); }
+  {   AST *decl = NewAST(AST_ASSIGN, $1, $3);
+      $$ = decl;
+  }
   | identifier
   { $$ = $1; }
   | identifier '[' expr ']'
