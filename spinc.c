@@ -247,11 +247,12 @@ int
 CheckedTypeSize(AST *type)
 {
     Module *P;
+    AST *subtype = type;
     if (IsArrayType(type)) {
-        type = BaseType(type);
+        subtype = BaseType(type);
     }
-    if (IsClassType(type)) {
-        P = GetClassPtr(type);
+    if (IsClassType(subtype)) {
+        P = GetClassPtr(subtype);
         if (P && P->pendingvarblock) {
             DeclareMemberVariables(P);
         }
