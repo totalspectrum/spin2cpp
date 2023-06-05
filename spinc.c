@@ -247,6 +247,9 @@ int
 CheckedTypeSize(AST *type)
 {
     Module *P;
+    if (IsArrayType(type)) {
+        type = BaseType(type);
+    }
     if (IsClassType(type)) {
         P = GetClassPtr(type);
         if (P && P->pendingvarblock) {
