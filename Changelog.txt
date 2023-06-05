@@ -5,6 +5,7 @@ Version 6.1.6
 - Implemented flush() for FATFS files (thanks to Ada)
 - Improved some error messages
 - In C++ output, treat unknown types in prints as generic
+- Made `interface` and `implements` reserved keywords in BASIC
 - Optimized a few BASIC string expressions
 - Optimized calculating length of string literals
 - Revised BASIC use of + operator on strings

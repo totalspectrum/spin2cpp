@@ -253,8 +253,10 @@ goto
 _hasmethod
 if
 import
+implements
 input
 integer
+interface
 len
 let
 lib
@@ -1347,8 +1349,7 @@ Used in a `try` statement to indicate the start of an error handling block.
 
 ### CHR$
 
-Not actually a reserved word, but a built-in function. Converts an ascii
-value to a string (so the reverse of ASC). For example:
+A special built-in function which converts an ascii value to a string (so the reverse of ASC). For example:
 ```
 print chr$(65)
 ```
@@ -2386,6 +2387,10 @@ else
 end if
 ```
 
+### IMPLEMENTS
+
+Keyword reserved for future use.
+
 ### IMPORT
 
 Keyword reserved for future use.
@@ -2479,6 +2484,10 @@ Warning: truncation will sometimes result in surprising results (e.g. `int(23.99
 ### INTEGER
 
 A 32 bit signed integer type. The unsigned 32 bit integer type is `uinteger`.
+
+### INTERFACE
+
+Keyword reserved for future use.
 
 ### KILL
 
