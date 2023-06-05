@@ -490,6 +490,17 @@ ReplaceExprWithVariable(const char *prefix, AST *expr, AST **inits)
     return exprvar;
 }
 
+/* mask off a bit number */
+static AST *
+BitNumber(AST *x)
+{
+    if (curfunc && IsSpinLang(curfunc->language)) return x;
+    if (!IsConstExpr(x)) return x;
+
+    // make sure we don't turn 1<<n into a big 64 bit number
+    return AstOperator('&', x, AstInteger(31));
+}
+
 /*
  * special case an assignment like outa[2..1] ^= -1
  */
@@ -506,7 +517,7 @@ RangeXor(AST *dst, AST *src)
 
     AstReportAs(dst, &saveinfo);
     if (dst->right->right == NULL) {
-        loexpr = FoldIfConst(dst->right->left);
+        loexpr = FoldIfConst(BitNumber(dst->right->left));
         nbits = AstInteger(1);
         /* special case: if src is -1 or 0
          * then we don't have to construct a mask,
@@ -529,8 +540,8 @@ RangeXor(AST *dst, AST *src)
             }
         }
     } else {
-        hiexpr = FoldIfConst(dst->right->left);
-        loexpr = FoldIfConst(dst->right->right);
+        hiexpr = FoldIfConst(BitNumber(dst->right->left));
+        loexpr = FoldIfConst(BitNumber(dst->right->right));
         //nbits = (hi - lo + 1);
         nbits = AstOperator('+',
                             AstOperator(K_ABS, NULL,
@@ -578,11 +589,11 @@ RangeBitSet(AST *dst, uint32_t mask, int bitset)
 
     AstReportAs(dst, &saveinfo);
     if (dst->right->right == NULL) {
-        loexpr = dst->right->left;
+        loexpr = BitNumber(dst->right->left);
     } else {
         AST *hiexpr;
-        loexpr = dst->right->right;
-        hiexpr = dst->right->left;
+        loexpr = BitNumber(dst->right->right);
+        hiexpr = BitNumber(dst->right->left);
         loexpr = AstOperator(K_LIMITMAX, loexpr, hiexpr);
         loexpr = FoldIfConst(loexpr);
     }
