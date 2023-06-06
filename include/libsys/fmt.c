@@ -909,13 +909,19 @@ TxFunc _gettxfunc(unsigned h) {
     vfs_file_t *v;
     v = __getftab(h);
     if (!v || !v->state) return 0;
-    return (TxFunc)&v->putchar;
+    if (!v->putchar_ptr) {
+        v->putchar_ptr = &v->putchar;
+    }
+    return (TxFunc)v->putchar_ptr;
 }
 RxFunc _getrxfunc(unsigned h) {
     vfs_file_t *v;
     v = __getftab(h);
     if (!v || !v->state) return 0;
-    return (RxFunc)&v->getchar;
+    if (!v->getchar_ptr) {
+        v->getchar_ptr = &v->getchar;
+    }
+    return (RxFunc)v->getchar_ptr;
 }
 static int *_getiolock(unsigned h) {
     vfs_file_t *v;

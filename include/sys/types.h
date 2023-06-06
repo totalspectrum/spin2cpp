@@ -62,6 +62,10 @@ struct s_vfs_file_t {
     /* internal functions for formatting routines */
     int putchar(int c) __fromfile("libsys/vfs.c");
     int getchar(void)  __fromfile("libsys/vfs.c");
+
+    /* cache for pointers of the above functions */
+    int (*putchar_ptr)(int c);
+    int (*getchar_ptr)(void);
 };
 
 typedef int (*putcfunc_t)(int c, vfs_file_t *fil);

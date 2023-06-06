@@ -1,5 +1,6 @@
 Version 6.2.0
 - Made `virtual` a reserved keyword in C++
+- Reduced memory usage of default printf
 
 Version 6.1.6
 - Added ability to double quote to include quotes in literal BASIC strings
