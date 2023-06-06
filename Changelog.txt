@@ -7,9 +7,9 @@ Version 6.1.6
 - Improved some error messages
 - In C++ output, treat unknown types in prints as generic
 - Made `interface` and `implements` reserved keywords in BASIC
+- Made BASIC use of + operator on strings more consistent
 - Optimized a few BASIC string expressions
 - Optimized calculating length of string literals
-- Revised BASIC use of + operator on strings
 
 Version 6.1.5
 - Added warning about deleting unused user CORDIC instructions
