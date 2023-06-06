@@ -1025,6 +1025,7 @@ ConstructDefaultValue(AST *decl, AST *val)
 %token C_THROW "throw"
 %token C_THROWIF "__throwifcaught"
 %token C_TRY "try"
+%token C_VIRTUAL "virtual"
 
 // asm only tokens
 %token C_ALIGNL "alignl"
