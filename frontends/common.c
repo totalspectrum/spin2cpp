@@ -2084,25 +2084,22 @@ DeclareOneMemberVar(Module *P, AST *ident, AST *type, int is_private)
     return r;
 }
 
+//
+// check to see if an identifier is already declared
+// if it is, return the typ of it
+// slightly different from FindDeclaration, which returns
+// the declaration itself
+//
 static AST *
 AlreadyDeclared(AST *pendinglist, AST *newIdentifier)
 {
-    AST *entry;
-    AST *ident;
-    AST *typ;
-    while (pendinglist) {
-        entry = pendinglist->left;
-        pendinglist = pendinglist->right;
-        if (entry && entry->kind == AST_DECLARE_VAR) {
-            ident = entry->right;
-            if (AstUses(ident, newIdentifier)) {
-                typ = entry->left;
-                if (typ == NULL) {
-                    typ = ast_type_generic;
-                }
-                return typ;
-            }
-        }
+    const char *name = GetIdentifierName(newIdentifier);
+    AST *decl = FindDeclaration(pendinglist, name);
+    if (!decl) return decl;
+    if (decl && decl->kind == AST_DECLARE_VAR) {
+        AST *typ = decl->left;
+        if (!typ) typ = ast_type_generic;
+        return typ;
     }
     return NULL;
 }
