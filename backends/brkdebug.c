@@ -161,7 +161,12 @@ int AsmDebug_CodeGen(AST *ast, BackendDebugEval evalFunc, void *evalArg) {
     AST *exprbase;
     int regNum = 0;
     bool do_cogn = false;
-    
+
+    /* check for DEBUG_DISABLE */
+    if (const_or_default(current, "DEBUG_DISABLE", 0) != 0) {
+        return -1;
+    }
+    /* sanity check on codes */
     if (brkCode >= MAX_BRK) {
         ERROR(ast,"MAX_BRK exceeded!");
         return -1;
@@ -328,16 +333,6 @@ static void patch_long(char *where,int32_t val) {
     *where++ = (val>>16)&255;
     *where++ = (val>>24)&255;
 }
-
-static int32_t const_or_default(Module *M,const char *name,int32_t defaultval) {
-    Symbol *sym = FindSymbol(&M->objsyms,name);
-    if (sym && sym->kind == SYM_CONSTANT) {
-        return EvalConstExpr((AST *)sym->v.ptr);
-    } else {
-        return defaultval;
-    }
-}
-
 
 
 Flexbuf CompileBrkDebugger(size_t appsize) {

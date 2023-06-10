@@ -130,7 +130,10 @@ CreatePrintfDebug(AST *exprlist)
     struct flexbuf fb;
     const char *fmtstr;
     int needcomma = 0;
-    
+
+    if (0 != const_or_default(current, "DEBUG_DISABLE", 0)) {
+        return NULL;
+    }
     flexbuf_init(&fb, 1024);
 
     if (exprlist && exprlist->left && exprlist->left->kind == AST_LABEL) {   

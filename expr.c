@@ -4137,3 +4137,11 @@ AST *DerefType(AST *typ) {
     return typ;
 }
 
+int32_t const_or_default(Module *M, const char *name, int32_t defaultval) {
+    Symbol *sym = FindSymbol(&M->objsyms,name);
+    if (sym && sym->kind == SYM_CONSTANT) {
+        return EvalConstExpr((AST *)sym->v.ptr);
+    } else {
+        return defaultval;
+    }
+}
