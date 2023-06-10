@@ -240,8 +240,8 @@ enum astkind {
     AST_ASM_ELSEIF = 172,
     
     AST_ASM_ENDIF  = 173,
-
     AST_EXPECT = 174,
+    AST_PRINTDEBUG = 175,
 };
 
 /* forward reference */

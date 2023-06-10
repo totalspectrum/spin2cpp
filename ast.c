@@ -850,6 +850,8 @@ static const char *astnames[] = {
     "asm_elseif",
 
     "asm_endif",
+    "expect",
+    "print_debug",
 };
 
 //

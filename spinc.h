@@ -62,4 +62,11 @@ int NumExprItemsOnStack(AST *param);
 // find the "main" function in a module, if any
 Function *GetMainFunction(Module *P);
 
+// construct an AST corresponding to a DEBUG() statement
+// see (frontends/printdebug.c)
+AST *BuildDebugList(AST *exprlist);
+
+// convert AST debug list into printf
+AST *CreatePrintfDebug(AST *exprlist);
+
 #endif

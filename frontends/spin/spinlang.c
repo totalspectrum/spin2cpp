@@ -910,7 +910,13 @@ doSpinTransform(AST **astptr, int level, AST *parent)
             }
         }
         break;
-    }        
+    }
+    case AST_PRINTDEBUG:
+    {
+        AST *debugprint = CreatePrintfDebug(ast->left);
+        *astptr = debugprint;
+        break;
+    }
     case AST_OPERATOR:
         if (level == 1) {
             AST *lhsast;
