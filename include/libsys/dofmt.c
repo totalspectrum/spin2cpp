@@ -252,6 +252,17 @@ int _dofmt(putfunc fn, const char *fmtstr, va_list *args)
                 q = _fmtnumlong(fn, flags, val_LL, 16);
             }
             break;
+        case 'b':
+            if (prec == 0 && padchar == PADCHAR_ZERO) {
+                flags |= ((width+1)<<PREC_BIT);
+            }
+            flags |= SIGNCHAR_UNSIGNED << SIGNCHAR_BIT;
+            if (!is_ll) {
+                q = _fmtnum(fn, flags, val, 2);
+            } else {
+                q = _fmtnumlong(fn, flags, val_LL, 2);
+            }
+            break;
 #ifdef INCLUDE_FLOATS            
         case 'a':
         case 'e':
