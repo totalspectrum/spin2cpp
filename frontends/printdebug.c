@@ -32,6 +32,10 @@ static struct s_dbgfmt {
     { "uhex_byte", "$%02x", 8 },
     { "uhex_word", "$%04x", 16 },
     { "uhex_long", "$%08x", 0 },
+    { "ubin", "%%%b", 0 },
+    { "ubin_byte", "%%%08b", 8 },
+    { "ubin_word", "%%%016b", 16 },
+    { "ubin_long", "%%%032b", 0 },
     { "dly", "%.0s", DBG_BITS_DELAY },
     { 0, 0, 0 }
 };

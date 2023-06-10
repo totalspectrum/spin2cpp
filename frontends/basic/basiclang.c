@@ -128,6 +128,22 @@ addPrintHex(AST *seq, AST *handle, AST *func, AST *expr, AST *fmtAst)
     return ast;
 }
 
+// create a hex print integer call
+static AST *
+addPrintBinary(AST *seq, AST *handle, AST *func, AST *expr, AST *fmtAst)
+{
+    AST *ast;
+    AST *params;
+
+    params = NewAST(AST_EXPRLIST, handle,
+                    NewAST(AST_EXPRLIST, expr,
+                           NewAST(AST_EXPRLIST, fmtAst,
+                                  NewAST(AST_EXPRLIST, AstInteger(2), NULL))));
+    ast = NewAST(AST_FUNCCALL, func, params);
+    ast = addToPrintSeq(seq, ast);
+    return ast;
+}
+
 // create a decimal print integer call
 static AST *
 addPrintDec(AST *seq, AST *handle, AST *func, AST *expr, AST *fmtAst)
@@ -516,6 +532,13 @@ genPrintf(AST *ast)
                         seq = addPrintHex(seq, Handle, basic_print_longunsigned, thisarg, AstInteger(fmt));
                     } else {
                         seq = addPrintHex(seq, Handle, basic_print_unsigned, thisarg, AstInteger(fmt));
+                    }
+                    break;
+                case 'b':
+                    if (longflag > 1) {
+                        seq = addPrintBinary(seq, Handle, basic_print_longunsigned, thisarg, AstInteger(fmt));
+                    } else {
+                        seq = addPrintBinary(seq, Handle, basic_print_unsigned, thisarg, AstInteger(fmt));
                     }
                     break;
                 case 's':
