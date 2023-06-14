@@ -1,4 +1,7 @@
-Version 6.2.0
+Version 6.1.7
+- Added `DEBUG_DISABLE` constant to disable DEBUG() in Spin2 objects
+- Added %b flag for binary output in printf
+- Added ubin support for printf debug
 - Made `virtual` a reserved keyword in C++
 - Reduced memory usage of default printf
 

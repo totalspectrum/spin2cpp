@@ -5,8 +5,8 @@
 #define str_(x) str__(x)
 
 #define VERSION_MAJOR 6
-#define VERSION_MINOR 2
-#define VERSION_REV   0
+#define VERSION_MINOR 1
+#define VERSION_REV   7
 #define BETA "-beta"
 
 #define VERSIONSTR version_string
