@@ -84,10 +84,6 @@ con
   ' special offsets for block 0
   OFF_USED_LINK = 8
 
-  ' magic constant added to pointers so we can spot them
-  ' more easily
-  POINTER_MAGIC =      $63800000
-  POINTER_MAGIC_MASK = $fff00000
 
 dat
 _memory_mutex
@@ -181,7 +177,7 @@ pri _gc_tryalloc(size, reserveflag) : ptr | availsize, lastptr, nextptr, heap_ba
   word[heap_base + OFF_USED_LINK] := _gc_pageindex(heap_base, ptr)
   
   '' and return
-  return (ptr + headersize) | POINTER_MAGIC
+  return (ptr + headersize)
 
 pri _gc_errmsg(s) | c
   if (__DEBUG__)
@@ -240,11 +236,8 @@ pri _gc_doalloc(size, reserveflag) : ptr | zptr
 ' points to
 '
 pri _gc_isvalidptr(base, heap_end, ptr) | t
-  ' make sure the poiter came from alloc
-  if (ptr & POINTER_MAGIC_MASK) <> POINTER_MAGIC
-    return 0
   ' step back to the header
-  ptr := (ptr - headersize) & (!POINTER_MAGIC_MASK)
+  ptr := (ptr - headersize)
   ' make sure it is in the heap
   if (ptr < base) or (ptr => heap_end)
     return 0

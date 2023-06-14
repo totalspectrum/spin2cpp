@@ -232,7 +232,6 @@ LR__0023
 	call	#__system___gc_pageindex
 	wrword	result1, __system___gc_tryalloc_saveptr
 	add	__system___gc_tryalloc_ptr, #8
-	or	__system___gc_tryalloc_ptr, imm_1669332992_
 	mov	result1, __system___gc_tryalloc_ptr
 __system___gc_tryalloc_ret
 	ret
@@ -292,13 +291,7 @@ __system___gc_doalloc_ret
 	ret
 
 __system___gc_isvalidptr
-	mov	_var01, arg03
-	and	_var01, imm_4293918720_
-	cmp	_var01, imm_1669332992_ wz
- if_ne	mov	result1, #0
- if_ne	jmp	#__system___gc_isvalidptr_ret
 	sub	arg03, #8
-	andn	arg03, imm_4293918720_
 	cmps	arg03, arg01 wc
  if_b	jmp	#LR__0040
 	cmps	arg03, arg02 wc
@@ -543,23 +536,19 @@ fp
 	long	0
 imm_1016_
 	long	1016
-imm_1669332992_
-	long	1669332992
 imm_27776_
 	long	27776
 imm_27791_
 	long	27791
 imm_27792_
 	long	27792
-imm_4293918720_
-	long	-1048576
 imm_65472_
 	long	65472
 ptr_L__0023_
 	long	@@@LR__0070
 ptr_L__0034_
 	long	@@@LR__0071
-ptr_L__0060_
+ptr_L__0059_
 	long	@@@LR__0072
 ptr___system__dat__
 	long	@@@__system__dat_
