@@ -27,6 +27,23 @@ jobs:
         with:
           name: release_zips_win32
           path: "./*.zip"
+  build_linux_amd64:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Install musl-gcc
+        run: "sudo apt-get install musl-tools"
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - run: make zip CROSS=linux-musl
+      - name: Rename ZIPs
+        run: |
+           mv flexptools.zip "flexptools-linux-amd64-`git describe --tags --always`.zip"
+           mv spin2cpp.zip "spin2cpp-linux-amd64-`git describe --tags --always`.zip"
+      - uses: actions/upload-artifact@v3
+        with:
+          name: release_zips_linux_amd64
+          path: "./*.zip"
   test_offline:
     runs-on: ubuntu-20.04
     steps:

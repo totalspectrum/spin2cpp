@@ -72,6 +72,10 @@ else ifeq ($(OS),Windows_NT)
   CC=gcc
   EXT=.exe
   BUILD=./build
+else ifeq ($(CROSS),linux-musl)
+  CC=musl-gcc -static -fno-pie
+  EXT=
+  BUILD=./build
 else
   CC=gcc
   EXT=
