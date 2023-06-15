@@ -216,19 +216,6 @@ pri _rxraw(timeout = 0) : rxbyte = long | z, endtime, temp2, rxpin
     rxbyte := temp2 & $ff
   _rx_temp := temp2
   
-pri _call_method(o, f, x=0) | r
-  asm
-    wrlong objptr, ptra
-    add    ptra, #4
-    mov    objptr, o
-    mov    arg01, x
-    call   f
-    sub    ptra, #4
-    rdlong objptr, ptra
-    mov    r, result1
-  endasm
-  return r
-  
 pri _dirl(pin = long)
   asm
     dirl pin

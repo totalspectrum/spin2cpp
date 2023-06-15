@@ -178,19 +178,6 @@ pri _rxraw(timeout = 0) | val, waitcycles, i, bitcycles
 pri _setbaud(rate) : r
   _bitcycles := r := __clkfreq_var / rate
   
-pri _call_method(o, f, x=0) | r
-  asm
-    wrlong objptr, sp
-    add    sp, #4
-    mov    objptr, o
-    mov    arg01, x
-    call   f
-    sub    sp, #4
-    rdlong objptr, sp
-    mov    r, result1
-  endasm
-  return r
-
 pri _fltl(pin = long) | mask
   mask := 1<<pin
   dira &= !mask
