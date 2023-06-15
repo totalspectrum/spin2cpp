@@ -343,6 +343,16 @@ pri wordfill(ptr, val, count)
 pri bytefill(ptr, val, count)
   __builtin_memset(ptr, val, count)
 
+
+'' create a method pointer
+pri _make_methodptr(o, func) | ptr
+  ptr := _gc_alloc_managed(8)
+  if (ptr)
+    long[ptr] := o
+    long[ptr+4] := func
+  return ptr
+
+
 ''
 '' divide (n, nlo) by d, producing qlo and rlo (used in FRAC operation)
 ''
