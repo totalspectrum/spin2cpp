@@ -1,3 +1,6 @@
+Version 6.1.8
+- Fixed multiple uses of LET in BASIC programs
+
 Version 6.1.7
 - Added `DEBUG_DISABLE` constant to disable DEBUG() in Spin2 objects
 - Added %b flag for binary output in printf
