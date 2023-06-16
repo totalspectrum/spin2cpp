@@ -3091,19 +3091,31 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
     }
     sym = FindFuncSymbol(expr, &objref, 1);
     if (!sym || sym->kind != SYM_FUNCTION) {
+        // compile the elements for an indirect function call here
         Operand *base;
         Operand *tempbase = NewFunctionTempRegister();
         Operand *temp1 = NewFunctionTempRegister();
         Operand *temp2 = NewFunctionTempRegister();
         Operand *ptr1, *ptr2;
 
+        // fully evaluate the function pointer into base
         base = CompileExpression(irl, expr->left, tempbase);
-        EmitMove(irl, tempbase, base, expr);
-        ptr1 = SizedHubMemRef(LONG_SIZE, tempbase, 0);
-        ptr2 = SizedHubMemRef(LONG_SIZE, tempbase, 4);
 
-        EmitMove(irl, temp1, ptr1, expr);
-        EmitMove(irl, temp2, ptr2, expr);
+        // now get object pointer into temp1 and function pointer into temp2
+        if (gl_p2) {
+            // using indirect function pointers
+            EmitMove(irl, tempbase, base, expr);
+            ptr1 = SizedHubMemRef(LONG_SIZE, tempbase, 0);
+            ptr2 = SizedHubMemRef(LONG_SIZE, tempbase, 4);
+
+            EmitMove(irl, temp1, ptr1, expr);
+            EmitMove(irl, temp2, ptr2, expr);
+        } else {
+            // objptr in lower 16 bits, funcptr in upper 16 bits
+            EmitMove(irl, temp1, base, expr);
+            EmitMove(irl, temp2, base, expr);
+            EmitOp2(irl, OPC_SHR, temp2, NewImmediate(16));
+        }
         if (objptr) {
             *objptr = temp1;
         }

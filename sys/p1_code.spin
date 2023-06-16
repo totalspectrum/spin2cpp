@@ -345,12 +345,12 @@ pri bytefill(ptr, val, count)
 
 
 '' create a method pointer
-pri _make_methodptr(o, func) | ptr
-  ptr := _gc_alloc_managed(8)
-  if (ptr)
-    long[ptr] := o
-    long[ptr+4] := func
-  return ptr
+'' for P1, addresses fit in 16 bits,
+'' so the function pointer goes in the upper 16,
+'' object pointer in lower 16
+
+pri _make_methodptr(o, func) : ptr
+  ptr := o | (func << 16)
 
 
 ''

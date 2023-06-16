@@ -470,10 +470,15 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
                     elem = elem->left;
                 }
                 elem = NewAST(AST_SIMPLEFUNCPTR, elem, NULL);
-                elem = NewAST(AST_EXPRLIST,
-                              AstInteger(0),
-                              NewAST(AST_EXPRLIST, elem, NULL));
-                type = ast_type_ptr_long;
+                if (ComplexMethodPtrs()) {
+                    elem = NewAST(AST_EXPRLIST,
+                                  AstInteger(0),
+                                  NewAST(AST_EXPRLIST, elem, NULL));
+                    type = ast_type_ptr_long;
+                } else {
+                    *initval = *elem;
+                    type = ast_type_ptr_long;
+                }
                 AstReportDone(&saveinfo);
             } else {
                 elem = initval;

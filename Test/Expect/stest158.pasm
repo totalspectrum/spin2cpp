@@ -22,9 +22,7 @@ COG_BSS_START
 	fit	496
 	long
 _dat_
-	long	@@@_dat_ + 4
-	byte	$00, $00, $00, $00
-	long	@@@_foo
+	long	(@@@_foo)<<16
 	org	COG_BSS_START
 arg01
 	res	1

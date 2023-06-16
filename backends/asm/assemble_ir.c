@@ -510,22 +510,28 @@ again:
                     --relocs;
                     goto again;
                 }
-                if (nextreloc->kind == RELOC_KIND_I32) {
+                switch (nextreloc->kind) {
+                case RELOC_KIND_I32:
+                case RELOC_KIND_FPTR16:
+                case RELOC_KIND_FPTR12:
                     if (bytesPending < 4) {
                         ERROR(NULL, "Internal error, not enough space for reloc");
                         return;
                     }
-                } else if (nextreloc->kind == RELOC_KIND_AUGD || nextreloc->kind == RELOC_KIND_AUGS) {
+                    break;
+                case RELOC_KIND_AUGD:
+                case RELOC_KIND_AUGS:
                     if (bytesPending < 8) {
                         ERROR(NULL, "Internal error, not enough space for reloc");
                         return;
                     }
-                } else if (nextreloc->kind == RELOC_KIND_NONE) {
+                    break;
+                case RELOC_KIND_NONE:
                     // reloc was cancelled
                     nextreloc++;
                     --relocs;
                     goto again;
-                } else {
+                default:
                     ERROR(NULL, "Internal error, bad reloc kind %d", nextreloc->kind);
                     return;
                 }
@@ -545,6 +551,28 @@ again:
                         flexbuf_printf(fb, "@@@%s + %d\n", symname, offset);
                     } else {
                         flexbuf_printf(fb, "@@@%s - %d\n", symname, -offset);
+                    }
+                    data += 4;
+                    addr += 4;
+                    break;
+                case RELOC_KIND_FPTR16:
+                    if (offset == 0) {
+                        flexbuf_printf(fb, "(@@@%s)<<16\n", symname);
+                    } else if (offset > 0) {
+                        flexbuf_printf(fb, "(@@@%s + %d)<<16\n", symname, offset);
+                    } else {
+                        flexbuf_printf(fb, "(@@@%s - %d)<<16\n", symname, -offset);
+                    }
+                    data += 4;
+                    addr += 4;
+                    break;
+                case RELOC_KIND_FPTR12:
+                    if (offset == 0) {
+                        flexbuf_printf(fb, "(@@@%s)<<20\n", symname);
+                    } else if (offset > 0) {
+                        flexbuf_printf(fb, "(@@@%s + %d)<<20\n", symname, offset);
+                    } else {
+                        flexbuf_printf(fb, "(@@@%s - %d)<<20\n", symname, -offset);
                     }
                     data += 4;
                     addr += 4;

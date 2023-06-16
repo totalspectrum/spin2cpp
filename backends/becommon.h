@@ -60,6 +60,8 @@ typedef struct Reloc {
 #define RELOC_KIND_I32   2  // add a symbol to a 32 bit value
 #define RELOC_KIND_AUGS  3  // relocation for AUGS
 #define RELOC_KIND_AUGD  4  // relocation for AUGD
+#define RELOC_KIND_FPTR16 5 // relocation for function pointer (16 bits)
+#define RELOC_KIND_FPTR12 6 // relocation for function pointer (12 bits)
 
 /* find the backend name for a symbol */
 const char *BackendNameForSymbol(Symbol *sym);

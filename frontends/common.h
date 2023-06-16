@@ -270,6 +270,8 @@ extern int gl_interp_kind;
 
 #define NoVarargsOutput() (gl_output == OUTPUT_BYTECODE || gl_output <= OUTPUT_C)
 
+#define ComplexMethodPtrs() (gl_p2 || gl_output == OUTPUT_BYTECODE)
+
 /* flags for output */
 #define OUTFLAG_COG_CODE 0x01
 #define OUTFLAG_COG_DATA 0x02

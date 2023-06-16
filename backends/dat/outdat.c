@@ -312,7 +312,13 @@ IsRelocatable(AST *sub, Symbol **symptr, int32_t *offptr, bool isInitVal)
         if (symptr) {
             *symptr = sym;
         }
-        return RELOC_KIND_I32;
+        if (ComplexMethodPtrs()) {
+            return RELOC_KIND_I32;
+        } else if (gl_p2) {
+            return RELOC_KIND_FPTR12;
+        } else {
+            return RELOC_KIND_FPTR16;
+        }
     }
     if (kind == AST_ABSADDROF || (isInitVal && kind == AST_ADDROF) ) {
         if (offptr) {
@@ -348,7 +354,7 @@ IsRelocatable(AST *sub, Symbol **symptr, int32_t *offptr, bool isInitVal)
                 if (offptr) {
                     *offptr += myoff;
                 }
-                return RELOC_KIND_I32;
+                return r1;
             case '-':
                 if (r1 && r2) {
                     // difference of absolute relocations
@@ -360,7 +366,7 @@ IsRelocatable(AST *sub, Symbol **symptr, int32_t *offptr, bool isInitVal)
                     if (offptr) {
                         *offptr -= myoff;
                     }
-                    return RELOC_KIND_I32;
+                    return r1;
                 }
                 // offset - reloc
                 // not implemented
@@ -445,8 +451,12 @@ outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs, A
         return siz;
     }
     if (item) {
+        int relocKind = RELOC_KIND_I32;
         if (item->kind == AST_SIMPLEFUNCPTR) {
             exprType = NULL;
+            if (!ComplexMethodPtrs()) {
+                relocKind = (gl_p2) ? RELOC_KIND_FPTR12 : RELOC_KIND_FPTR16;
+            }
         } else {
             exprType = CheckTypes(item);
             if (IsGenericType(exprType) && item->kind == AST_CAST && item->right->kind == AST_ABSADDROF) {
@@ -463,7 +473,7 @@ outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs, A
                 item = item->right;
             }
         }
-        origval = EvalRelocPasmExpr(item, f, relocs, &relocOff, true, RELOC_KIND_I32);
+        origval = EvalRelocPasmExpr(item, f, relocs, &relocOff, true, relocKind);
         if (relocOff >= 0) {
             rptr = (Reloc *)(flexbuf_peek(relocs) + relocOff);
         } else {
