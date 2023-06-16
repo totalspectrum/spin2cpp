@@ -1,5 +1,6 @@
 Version 6.1.8
 - Fixed multiple uses of LET in BASIC programs
+- Made UTF-8 the default encoding for FatFS (configurable via FF_LFN_UNICODE)
 
 Version 6.1.7
 - Added `DEBUG_DISABLE` constant to disable DEBUG() in Spin2 objects
