@@ -3102,7 +3102,7 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
         base = CompileExpression(irl, expr->left, tempbase);
 
         // now get object pointer into temp1 and function pointer into temp2
-        if (gl_p2) {
+        if (ComplexMethodPtrs()) {
             // using indirect function pointers
             EmitMove(irl, tempbase, base, expr);
             ptr1 = SizedHubMemRef(LONG_SIZE, tempbase, 0);
@@ -3110,6 +3110,11 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
 
             EmitMove(irl, temp1, ptr1, expr);
             EmitMove(irl, temp2, ptr2, expr);
+        } else if (gl_p2) {
+            // objptr in lower 20 bits, funcptr in upper 12 bits
+            EmitMove(irl, temp1, base, expr);
+            EmitMove(irl, temp2, base, expr);
+            EmitOp2(irl, OPC_SHR, temp2, NewImmediate(20));
         } else {
             // objptr in lower 16 bits, funcptr in upper 16 bits
             EmitMove(irl, temp1, base, expr);

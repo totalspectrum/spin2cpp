@@ -454,9 +454,6 @@ outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs, A
         int relocKind = RELOC_KIND_I32;
         if (item->kind == AST_SIMPLEFUNCPTR) {
             exprType = NULL;
-            if (!ComplexMethodPtrs()) {
-                relocKind = (gl_p2) ? RELOC_KIND_FPTR12 : RELOC_KIND_FPTR16;
-            }
         } else {
             exprType = CheckTypes(item);
             if (IsGenericType(exprType) && item->kind == AST_CAST && item->right->kind == AST_ABSADDROF) {
@@ -471,6 +468,11 @@ outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs, A
             // ignore any casts added
             while (item->kind == AST_CAST) {
                 item = item->right;
+            }
+        }
+        if (item->kind == AST_SIMPLEFUNCPTR) {
+            if (!ComplexMethodPtrs()) {
+                relocKind = (gl_p2) ? RELOC_KIND_FPTR12 : RELOC_KIND_FPTR16;
             }
         }
         origval = EvalRelocPasmExpr(item, f, relocs, &relocOff, true, relocKind);
