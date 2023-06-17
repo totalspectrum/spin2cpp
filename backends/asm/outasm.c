@@ -430,7 +430,7 @@ Operand *GetResultReg(int n)
 {
     static char rvalname[32];
     if (n < 0 || n >= MAX_TUPLE) {
-        ERROR(NULL, "Internal error bad return value");
+        ERROR(NULL, "Too many return values from function");
         return NULL;
     }
     if (!resultreg[n]) {
@@ -4657,6 +4657,10 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc, AST *linenu
     unsigned num_tmp_regs = 1;
 
     if (IsEmptyOperand(origdst)) {
+        return ir;
+    }
+    if (!src) {
+        ERROR(linenum, "bad move operand");
         return ir;
     }
     if (src->kind == IMM_HUB_LABEL) {

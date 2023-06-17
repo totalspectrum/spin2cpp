@@ -1,4 +1,5 @@
 Version 6.1.8
+- Changed maximum number of entries in multiple assignments from 8 to 16
 - Fixed multiple uses of LET in BASIC programs
 - Made sure class types are resolved when they are used as function returns
 - Made UTF-8 the default encoding for FatFS (configurable via FF_LFN_UNICODE)

@@ -582,7 +582,7 @@ struct modulestate {
 };
 
 /* maximum number of items in a multiple assignment */
-#define MAX_TUPLE 8
+#define MAX_TUPLE 16
 
 /* the current parser state */
 extern Module *current;
