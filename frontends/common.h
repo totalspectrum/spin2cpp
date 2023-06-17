@@ -223,6 +223,9 @@ extern int gl_fcache_size;   /* size of fcache for LMM mode */
 extern const char *gl_cc; /* C compiler to use; NULL means default (PropGCC) */
 extern const char *gl_intstring; /* int string to use */
 
+extern int gl_indirect_function_count; /* count of indirect functions */
+extern void *gl_indirect_functions;    /* linked list of indirect funcs */
+
 extern int gl_dat_offset; /* offset for @@@ operator */
 #define DEFAULT_P1_DAT_OFFSET 24
 #define DEFAULT_P2_DAT_OFFSET 0
@@ -270,7 +273,9 @@ extern int gl_interp_kind;
 
 #define NoVarargsOutput() (gl_output == OUTPUT_BYTECODE || gl_output <= OUTPUT_C)
 
-#define ComplexMethodPtrs() (gl_p2 || gl_output == OUTPUT_BYTECODE)
+#define AbsoluteMethodPtrs() (gl_p2 == 0 && gl_output != OUTPUT_BYTECODE)
+#define IndexedMethodPtrs() (0)
+#define ComplexMethodPtrs() (!IndexedMethodPtrs() && !AbsoluteMethodPtrs())
 
 /* flags for output */
 #define OUTFLAG_COG_CODE 0x01
@@ -465,7 +470,11 @@ typedef struct funcdef {
     int local_var_counter;
     /* high water mark for local variables */
     int max_local_var_counter;
-    
+
+    /* linked list of functions whose addresses are taken */
+    /* used for building a jump table */
+    int method_index;            // index into jump table, +1
+    struct funcdef *next_method; // next in jump table
 } Function;
 
 /* structure describing a builtin function */
@@ -648,6 +657,10 @@ void DeclareFunctionTemplate(Module *P, AST *templ);
 /* instantiate a templated function */
 AST *InstantiateTemplateFunction(Module *P, AST *templ, AST *call);
 
+/* add a function to the global method pointer table */
+void AddIndirectFunctionCall(Function *F);
+
+/* declare C++ style annotations? */
 void DeclareToplevelAnnotation(AST *annotation);
 
 int  EnterVars(int kind, SymbolTable *stab, AST *symtype, AST *varlist, int startoffset, int isUnion, unsigned symFlags);

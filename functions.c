@@ -391,7 +391,7 @@ MarkSystemFuncUsed(const char *name)
     }
     if (sym->kind == SYM_FUNCTION) {
         calledf = (Function *)sym->v.ptr;
-        calledf->used_as_ptr = 1;
+        AddIndirectFunctionCall(calledf);
     }
 }
 
@@ -3441,4 +3441,20 @@ int FuncLocalSize(Function *func)
     // iterate over local variables, incrementing the size
     IterateOverSymbols(&func->localsyms, AddSize, (void *)&size);
     return size;
+}
+
+/*
+ * add a function to the indirect function jump table
+ */
+int gl_indirect_function_count;
+void *gl_indirect_functions;
+
+void AddIndirectFunctionCall(Function *F)
+{
+    F->used_as_ptr = 1;
+    if (F->method_index == 0) {
+        F->method_index = ++gl_indirect_function_count;
+        F->next_method = (Function *)gl_indirect_functions;
+        gl_indirect_functions = (void *)F;
+    }
 }

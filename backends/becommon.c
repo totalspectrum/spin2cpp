@@ -63,12 +63,16 @@ BuildMethodPointer(AST *ast)
         objast = NewAST(AST_ADDROF, objast, NULL);
     }
     funcptrtype = NewAST(AST_PTRTYPE, func->overalltype, NULL);
-    func->used_as_ptr = 1;
+    AddIndirectFunctionCall(func);
     if (func->callSites == 0) {
         MarkUsed(func, "func pointer");
     }
     // save off the current @ node
-    funcaddr = NewAST(AST_ADDROF, ast->left, ast->right);
+    if (IndexedMethodPtrs()) {
+        funcaddr = AstInteger(func->method_index-1);
+    } else {
+        funcaddr = NewAST(AST_ADDROF, ast->left, ast->right);
+    }
     // create a call
     if (!make_methodptr) {
         make_methodptr = AstIdentifier("_make_methodptr");
