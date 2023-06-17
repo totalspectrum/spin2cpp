@@ -106,9 +106,6 @@ typedef struct ir_bedata {
     */
     Operand *asmaltname;
 
-    /* trampoline code for calling to another COG */
-    Operand *asmtrampoline;
-
     /* optional label for tail-calls */
     Operand *asmentername;
     
