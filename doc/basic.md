@@ -463,6 +463,13 @@ Examples:
    function g(a as single, b as string) as string
      ...
    end function
+
+   '' this function takes any type as input and returns the same type as output
+   '' writing such functions can be tricky, one often has to use `__sametypes`
+   '' or something similar
+   any(T) function h(a as T) as T
+   ...
+   end function
 ```
 
 #### Arrays
@@ -1130,9 +1137,7 @@ Evaluates `a`, and if it is true then it evaluates `b` and returns `b`; otherwis
 ```
   dim x as any
 ```
-Declares x as a generic 32 bit variable compatible with any other type. Basically this is a way to treat a variable as a raw 32 bit value. Note that no type checking at all is performed on variables declared with type `any`, nor are any conversions applied to them. This means that the compiler will not be able to catch many common errors.
-
-`any` should be used only in exceptional circumstances.
+Declares x as a generic 32 bit variable compatible with any other type. Basically this is a way to treat a variable as a raw 32 bit value. Note that no type checking at all is performed on variables declared with type `any`, nor are any conversions applied to them. This means that the compiler will not be able to catch many common errors. `any` should be used like this only in exceptional circumstances.
 
 Example: a subroutine to print the raw bit pattern of a floating point
 number:
@@ -1147,6 +1152,16 @@ number:
     print u
   end sub
 ```
+
+`any` may also be used to introduce a function template which accepts different types, e.g.:
+```
+' function to add any two variables of the same type
+any(T) function do_add(x as T, y as T) as T
+  return x+y
+end function
+```
+
+This will create functions such as `do_add_integer`, `do_add_string` to handle the different actual uses of the templated function. See the description of templates for more details.
 
 ### APPEND
 

@@ -1,3 +1,8 @@
+Version 6.1.8
+- Fixed multiple uses of LET in BASIC programs
+- Made sure class types are resolved when they are used as function returns
+- Made UTF-8 the default encoding for FatFS (configurable via FF_LFN_UNICODE)
+
 Version 6.1.7
 - Added `DEBUG_DISABLE` constant to disable DEBUG() in Spin2 objects
 - Added %b flag for binary output in printf

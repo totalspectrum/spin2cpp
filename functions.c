@@ -1057,7 +1057,8 @@ doDeclareFunction(AST *funcblock)
                 ERROR(funcdef, "Bad function declaration for %s", fdef->name);
                 fdef->overalltype->left = ast_type_generic;
             }
-            siz = TypeSize(fdef->overalltype->left);
+            // if the type has pending variables, resolve them
+            siz = CheckedTypeSize(fdef->overalltype->left);
             if (TypeGoesOnStack(fdef->overalltype->left)) {
                 fdef->numresults = 1; // will return a pointer
             } else {

@@ -55,27 +55,31 @@ ifeq ($(CROSS),win32)
 #  CC=i586-mingw32msvc-gcc
   CC=i686-w64-mingw32-gcc -Wl,--stack -Wl,8000000 -O
   EXT=.exe
-  BUILD=./build-win32
+  BUILD=build-win32
 else ifeq ($(CROSS),rpi)
   CC=arm-linux-gnueabihf-gcc -O
   EXT=
-  BUILD=./build-rpi
+  BUILD=build-rpi
 else ifeq ($(CROSS),linux32)
   CC=gcc -m32
   EXT=
-  BUILD=./build-linux32
+  BUILD=build-linux32
 else ifeq ($(CROSS),macosx)
   CC=o64-clang -DMACOSX -O
   EXT=
-  BUILD=./build-macosx
+  BUILD=build-macosx
 else ifeq ($(OS),Windows_NT)
   CC=gcc
   EXT=.exe
-  BUILD=./build
+  BUILD=build
+else ifeq ($(CROSS),linux-musl)
+  CC=musl-gcc -static -fno-pie
+  EXT=
+  BUILD=build
 else
   CC=gcc
   EXT=
-  BUILD=./build
+  BUILD=build
 endif
 
 INC=-I. -I./backends -I./frontends -I$(BUILD)
@@ -263,35 +267,23 @@ sys/%.bas.h: sys/%.bas
 #
 -include $(SPINOBJS:.o=.d)
 
-#
-# targets to build a .zip file for a release
-#
-spin2cpp.exe: .PHONY
-	$(MAKE) CROSS=win32
-	cp build-win32/spin2cpp.exe .
-
-flexspin.exe: .PHONY
-	$(MAKE) CROSS=win32
-	cp build-win32/flexspin.exe .
-
-flexcc.exe: .PHONY
-	$(MAKE) CROSS=win32
-	cp build-win32/flexcc.exe .
-
-spin2cpp.linux: .PHONY
-	$(MAKE) CROSS=linux32
-	cp build-linux32/spin2cpp ./spin2cpp.linux
 
 COMMONDOCS=COPYING Changelog.txt doc
 ALLDOCS=README.md Flexspin.md $(COMMONDOCS)
 
-zip: flexcc.exe flexspin.exe spin2cpp.exe
-	$(SIGN) flexspin
-	mv flexspin.signed.exe flexspin.exe
-	$(SIGN) flexcc
-	mv flexcc.signed.exe flexcc.exe
-	zip -r spin2cpp.zip $(ALLDOCS) spin2cpp.exe flexspin.exe flexcc.exe
-	zip -r flexptools.zip flexcc.exe flexspin.exe Flexspin.md doc include
+zip: all
+
+ifeq ($(CROSS),win32)
+	$(SIGN) $(BUILD)/flexspin
+	mv $(BUILD)/flexspin.signed.exe $(BUILD)/flexspin.exe
+	$(SIGN) $(BUILD)/flexcc
+	mv $(BUILD)/flexcc.signed.exe $(BUILD)/flexcc.exe
+endif
+	zip -r flexptools.zip $(BUILD)/spin2cpp$(EXT) $(BUILD)/flexcc$(EXT) $(BUILD)/flexspin$(EXT) $(ALLDOCS) include
+# I could not make this work in one command idk
+	printf "@ $(BUILD)/spin2cpp$(EXT)\n@=bin/spin2cpp$(EXT)\n" | zipnote -w flexptools.zip
+	printf "@ $(BUILD)/flexcc$(EXT)\n@=bin/flexcc$(EXT)\n" | zipnote -w flexptools.zip
+	printf "@ $(BUILD)/flexspin$(EXT)\n@=bin/flexspin$(EXT)\n" | zipnote -w flexptools.zip
 
 #
 # target to build a windows spincvt GUI
