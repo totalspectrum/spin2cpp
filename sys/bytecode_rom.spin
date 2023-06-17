@@ -503,6 +503,8 @@ pri _make_methodptr(o, func) | ptr
 ' up to 8 parameters works OK; more than that and we could
 ' run into problems
 '
+' entered with OUTB containing the method pointer to call
+'
 pri __call_methodptr
   __interp_vbase := long[OUTB]
   result := word[OUTB+6]<<1  ' function offset as words
