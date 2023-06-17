@@ -477,11 +477,23 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
 }
 
 /////////////////////////////////////////////////////////////////////////
+// high level transforms common to most languages
+/////////////////////////////////////////////////////////////////////////
 void
 DoHLTransforms(Function *F)
 {
     Function *savecurrent = curfunc;
     curfunc = F;
+    // correct the function's numresults
+    AST *functype;
+    functype = F->overalltype;
+    if (functype) {
+        int n = FuncNumResults(functype);
+        if (F->numresults != n) {
+            F->numresults = n;
+        }
+    }
+    // simplify assignments within the function
     int insertCasts = !IsSpinLang(F->language);
     doSimplifyAssignments(&F->body, insertCasts, 1);
     curfunc = savecurrent;
