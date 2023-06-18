@@ -274,7 +274,7 @@ extern int gl_interp_kind;
 #define NoVarargsOutput() (gl_output == OUTPUT_BYTECODE || gl_output <= OUTPUT_C)
 
 #define AbsoluteMethodPtrs() (gl_p2 == 0 && gl_output != OUTPUT_BYTECODE)
-#define IndexedMethodPtrs() (0)
+#define IndexedMethodPtrs() (gl_p2 != 0 && gl_output != OUTPUT_BYTECODE)
 #define ComplexMethodPtrs() (!IndexedMethodPtrs() && !AbsoluteMethodPtrs())
 
 /* flags for output */

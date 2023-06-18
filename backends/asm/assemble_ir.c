@@ -498,7 +498,10 @@ again:
                 uint32_t baseWord;
                 Symbol *sym;
                 const char *symname;
-
+                bool indexedFunc;
+                int indexForFunc = -1;
+                int shiftAmount;
+                
                 // we have to output a relocation or debug entry now
                 if (nextreloc->kind == RELOC_KIND_DEBUG) {
                     LineInfo *info = (LineInfo *)nextreloc->sym;
@@ -510,8 +513,11 @@ again:
                     --relocs;
                     goto again;
                 }
+                indexedFunc = IndexedMethodPtrs();
                 switch (nextreloc->kind) {
                 case RELOC_KIND_I32:
+                    indexedFunc = false;
+                    // fall through
                 case RELOC_KIND_FPTR16:
                 case RELOC_KIND_FPTR12:
                     if (bytesPending < 4) {
@@ -540,6 +546,21 @@ again:
                 offset = nextreloc->symoff;
                 if (!sym) {
                     symname = startLabel;
+                    if (indexedFunc) {
+                        indexedFunc = false;
+                        ERROR(NULL, "Internal error, relocation requires function index");
+                    }
+                } else if (indexedFunc) {
+                    if (sym->kind == SYM_FUNCTION) {
+                        Function *F = (Function *)sym->v.ptr;
+                        indexForFunc = F->method_index - 1;
+                    } else {
+                        indexForFunc = -1;
+                    }
+                    if (indexForFunc < 0) {
+                        ERROR(NULL, "Function relocation requested, but %s is not a function whose address was taken", sym->user_name);
+                        indexForFunc = 0;
+                    }
                 } else {
                     symname = BackendNameForSymbol(sym);
                 }
@@ -556,24 +577,19 @@ again:
                     addr += 4;
                     break;
                 case RELOC_KIND_FPTR16:
-                    if (offset == 0) {
-                        flexbuf_printf(fb, "(@@@%s)<<16\n", symname);
-                    } else if (offset > 0) {
-                        flexbuf_printf(fb, "(@@@%s + %d)<<16\n", symname, offset);
-                    } else {
-                        flexbuf_printf(fb, "(@@@%s - %d)<<16\n", symname, -offset);
-                    }
-                    data += 4;
-                    addr += 4;
-                    break;
                 case RELOC_KIND_FPTR12:
-                    if (offset == 0) {
-                        flexbuf_printf(fb, "(@@@%s)<<20\n", symname);
-                    } else if (offset > 0) {
-                        flexbuf_printf(fb, "(@@@%s + %d)<<20\n", symname, offset);
+                    shiftAmount = (nextreloc->kind == RELOC_KIND_FPTR12) ? 20 : 16;
+                    if (indexedFunc) {
+                        flexbuf_printf(fb, "(%d", indexForFunc);
                     } else {
-                        flexbuf_printf(fb, "(@@@%s - %d)<<20\n", symname, -offset);
+                        flexbuf_printf(fb, "(@@@%s", symname);
                     }
+                    if (offset > 0) {
+                        flexbuf_printf(fb, " + %d", offset);
+                    } else if (offset < 0) {
+                        flexbuf_printf(fb, " - %d", -offset);
+                    }
+                    flexbuf_printf(fb, ")<<%d\n", shiftAmount);
                     data += 4;
                     addr += 4;
                     break;

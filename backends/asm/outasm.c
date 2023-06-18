@@ -89,6 +89,9 @@ static Operand *stacktop;  // indirect reference through stackptr
 static Operand *frameptr;
 static Operand *linkreg;
 
+static Operand *method_table_base;
+static Operand *method_table_label;
+
 Operand *heapptr;
 static Operand *heaplabel;
 
@@ -263,6 +266,14 @@ PutVarOnStack(Function *func, Symbol *sym, int size)
         return true;
     }
     return false;
+}
+
+static void ValidateMethodTable()
+{
+    if (!method_table_base) {
+        method_table_label = NewOperand(IMM_HUB_LABEL, "__methodtable__", 0);
+        method_table_base = NewImmediatePtr("__methods__", method_table_label);
+    }
 }
 
 void
@@ -3111,12 +3122,16 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
             EmitMove(irl, temp1, ptr1, expr);
             EmitMove(irl, temp2, ptr2, expr);
         } else if (gl_p2) {
-            // objptr in lower 20 bits, funcptr in upper 12 bits
+            // objptr in lower 20 bits, funcptr index in upper 12 bits
+            ValidateMethodTable();
             EmitMove(irl, temp1, base, expr);
             EmitMove(irl, temp2, base, expr);
             EmitOp2(irl, OPC_SHR, temp2, NewImmediate(20));
+            EmitOp2(irl, OPC_SHL, temp2, NewImmediate(2));
+            EmitOp2(irl, OPC_ADD, temp2, method_table_base);
+            EmitOp2(irl, OPC_RDLONG, temp2, temp2);
         } else {
-            // objptr in lower 16 bits, funcptr in upper 16 bits
+            // objptr in lower 16 bits, funcptr itself in upper 16 bits
             EmitMove(irl, temp1, base, expr);
             EmitMove(irl, temp2, base, expr);
             EmitOp2(irl, OPC_SHR, temp2, NewImmediate(16));
@@ -7084,6 +7099,20 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     // we need to emit all dat sections
     VisitRecursive(&hubdata, P, EmitDatSection, VISITFLAG_EMITDAT);
     VisitRecursive(&hubdata, systemModule, EmitDatSection, VISITFLAG_EMITDAT);
+
+    // add the function table (if any)
+    if (method_table_base) {
+        Function *F = (Function *)gl_indirect_functions;
+        Function *LastG = NULL;
+        Function *G;
+        EmitLabel(&hubdata, method_table_label);
+        while (F != LastG) {
+            for (G = F; G->next_method != LastG; G = G->next_method) {
+            }
+            EmitOp1(&hubdata, OPC_LONG, FuncData(G)->asmname);
+            LastG = G;
+        }
+    }
 
     // emit heap space, if we need it
     if (heaplabel) {
