@@ -17,30 +17,34 @@ entry
 _calli
 	shl	arg01, #2
 	add	arg01, objptr
-	rdlong	arg01, arg01
-	rdlong	calli_tmp002_, arg01
-	add	arg01, #4
-	rdlong	calli_tmp003_, arg01
+	rdlong	calli_tmp001_, arg01
+	mov	calli_tmp003_, calli_tmp001_
+	shr	calli_tmp003_, #20
+	shl	calli_tmp003_, #2
+	add	calli_tmp003_, __methods__
+	rdlong	calli_tmp003_, calli_tmp003_
 	mov	arg01, arg02
-	mov	calli_tmp006_, objptr
-	mov	objptr, calli_tmp002_
+	mov	calli_tmp005_, objptr
+	mov	objptr, calli_tmp001_
 	call	calli_tmp003_
-	mov	objptr, calli_tmp006_
+	mov	objptr, calli_tmp005_
 _calli_ret
 	ret
 
 _calli2
 	shl	arg01, #2
 	add	arg01, objptr
-	rdlong	arg01, arg01
 	rdlong	calli2_tmp002_, arg01
-	add	arg01, #4
-	rdlong	calli2_tmp003_, arg01
+	mov	calli2_tmp003_, calli2_tmp002_
+	shr	calli2_tmp003_, #20
+	shl	calli2_tmp003_, #2
+	add	calli2_tmp003_, __methods__
+	rdlong	calli2_tmp003_, calli2_tmp003_
 	mov	arg01, arg02
-	mov	calli2_tmp008_, objptr
+	mov	calli2_tmp007_, objptr
 	mov	objptr, calli2_tmp002_
 	call	calli2_tmp003_
-	mov	objptr, calli2_tmp008_
+	mov	objptr, calli2_tmp007_
 _calli2_ret
 	ret
 builtin_bytefill_
@@ -60,6 +64,8 @@ builtin_longfill_
  if_nz  wflong	arg02
         ret
 
+__methods__
+	long	@__methodtable__
 objptr
 	long	@objmem
 result1
@@ -67,6 +73,7 @@ result1
 COG_BSS_START
 	fit	480
 	orgh
+__methodtable__
 objmem
 	long	0[4]
 	org	COG_BSS_START
@@ -78,12 +85,12 @@ calli2_tmp002_
 	res	1
 calli2_tmp003_
 	res	1
-calli2_tmp008_
+calli2_tmp007_
 	res	1
-calli_tmp002_
+calli_tmp001_
 	res	1
 calli_tmp003_
 	res	1
-calli_tmp006_
+calli_tmp005_
 	res	1
 	fit	480

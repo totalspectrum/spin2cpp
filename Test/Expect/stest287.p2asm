@@ -19,14 +19,16 @@ _callit
 	shl	arg01, #2
 	add	arg01, callit_tmp006_
 	rdlong	callit_tmp006_, arg01
-	rdlong	callit_tmp002_, callit_tmp006_
-	add	callit_tmp006_, #4
-	rdlong	callit_tmp006_, callit_tmp006_
+	mov	callit_tmp003_, callit_tmp006_
+	shr	callit_tmp003_, #20
+	shl	callit_tmp003_, #2
+	add	callit_tmp003_, __methods__
+	rdlong	callit_tmp003_, callit_tmp003_
 	mov	arg01, arg02
-	mov	callit_tmp009_, objptr
-	mov	objptr, callit_tmp002_
-	call	callit_tmp006_
-	mov	objptr, callit_tmp009_
+	mov	callit_tmp008_, objptr
+	mov	objptr, callit_tmp006_
+	call	callit_tmp003_
+	mov	objptr, callit_tmp008_
 _callit_ret
 	ret
 builtin_bytefill_
@@ -46,6 +48,8 @@ builtin_longfill_
  if_nz  wflong	arg02
         ret
 
+__methods__
+	long	@__methodtable__
 objptr
 	long	@objmem
 result1
@@ -53,6 +57,7 @@ result1
 COG_BSS_START
 	fit	480
 	orgh
+__methodtable__
 objmem
 	long	0[4]
 	org	COG_BSS_START
@@ -60,10 +65,10 @@ arg01
 	res	1
 arg02
 	res	1
-callit_tmp002_
+callit_tmp003_
 	res	1
 callit_tmp006_
 	res	1
-callit_tmp009_
+callit_tmp008_
 	res	1
 	fit	480

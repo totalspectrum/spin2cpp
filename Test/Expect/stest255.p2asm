@@ -16,13 +16,15 @@ entry
 
 _checkit
 	mov	checkit_tmp001_, __recvreg
-	rdlong	checkit_tmp002_, checkit_tmp001_
-	add	checkit_tmp001_, #4
-	rdlong	checkit_tmp001_, checkit_tmp001_
-	mov	checkit_tmp005_, objptr
-	mov	objptr, checkit_tmp002_
-	call	checkit_tmp001_
-	mov	objptr, checkit_tmp005_
+	mov	checkit_tmp003_, checkit_tmp001_
+	shr	checkit_tmp003_, #20
+	shl	checkit_tmp003_, #2
+	add	checkit_tmp003_, __methods__
+	rdlong	checkit_tmp003_, checkit_tmp003_
+	mov	checkit_tmp004_, objptr
+	mov	objptr, checkit_tmp001_
+	call	checkit_tmp003_
+	mov	objptr, checkit_tmp004_
 	mov	outa, result1
 _checkit_ret
 	ret
@@ -43,6 +45,8 @@ builtin_longfill_
  if_nz  wflong	arg02
         ret
 
+__methods__
+	long	@__methodtable__
 __recvreg
 	long	1024
 objptr
@@ -52,13 +56,14 @@ result1
 COG_BSS_START
 	fit	480
 	orgh
+__methodtable__
 objmem
 	long	0[0]
 	org	COG_BSS_START
 checkit_tmp001_
 	res	1
-checkit_tmp002_
+checkit_tmp003_
 	res	1
-checkit_tmp005_
+checkit_tmp004_
 	res	1
 	fit	480

@@ -17,14 +17,15 @@ entry
 _test1
 	cmp	arg01, #0 wz
  if_e	jmp	#LR__0001
-	mov	test1_tmp002_, arg02
-	rdlong	test1_tmp003_, test1_tmp002_
-	add	test1_tmp002_, #4
-	rdlong	test1_tmp002_, test1_tmp002_
-	mov	test1_tmp006_, objptr
-	mov	objptr, test1_tmp003_
-	call	test1_tmp002_
-	mov	objptr, test1_tmp006_
+	mov	test1_tmp004_, arg02
+	shr	test1_tmp004_, #20
+	shl	test1_tmp004_, #2
+	add	test1_tmp004_, __methods__
+	rdlong	test1_tmp004_, test1_tmp004_
+	mov	test1_tmp005_, objptr
+	mov	objptr, arg02
+	call	test1_tmp004_
+	mov	objptr, test1_tmp005_
 	mov	test1_tmp001_, result1
 	jmp	#LR__0002
 LR__0001
@@ -63,6 +64,8 @@ builtin_longfill_
  if_nz  wflong	arg02
         ret
 
+__methods__
+	long	@__methodtable__
 objptr
 	long	@objmem
 result1
@@ -70,6 +73,7 @@ result1
 COG_BSS_START
 	fit	480
 	orgh
+__methodtable__
 objmem
 	long	0[0]
 	org	COG_BSS_START
@@ -79,11 +83,9 @@ arg02
 	res	1
 test1_tmp001_
 	res	1
-test1_tmp002_
+test1_tmp004_
 	res	1
-test1_tmp003_
-	res	1
-test1_tmp006_
+test1_tmp005_
 	res	1
 test2_tmp001_
 	res	1

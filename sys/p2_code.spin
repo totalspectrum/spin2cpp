@@ -651,11 +651,8 @@ pri longfill(ptr, val, count)
 
 
 '' create a method pointer
-pri _make_methodptr(o, func) | ptr
-  ptr := _gc_alloc_managed(8)
-  if (ptr)
-    long[ptr] := o
-    long[ptr+4] := func
+pri _make_methodptr(o, func) : ptr
+  ptr := o | (func << 20)
   return ptr
 
 
