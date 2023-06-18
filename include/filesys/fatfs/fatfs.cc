@@ -421,6 +421,9 @@ int v_open(vfs_file_t *fil, const char *name, int flags)
 }
 
 int v_flush(vfs_file_t *fil) {
+#if FF_FS_READONLY
+    return 0;
+#else
     FAT_FIL *vf = fil->vfsdata;
     FIL *f = &vf->fil;
     int result;
@@ -436,6 +439,7 @@ int v_flush(vfs_file_t *fil) {
     __builtin_printf("result=%d\n", result);
 #endif
     return _set_dos_error(result);
+#endif
 }
 
 /* initialize (do first mount) */
