@@ -1,3 +1,6 @@
+Version 6.2.0
+- Implemented new method pointer code for PASM backends that does not require memory allocation.
+
 Version 6.1.8
 - Changed maximum number of entries in multiple assignments from 8 to 16
 - Fixed multiple uses of LET in BASIC programs
