@@ -3025,7 +3025,7 @@ SetFunctionReturnType(Function *f, AST *typ, AST *line)
         }
     }
     if (typ && typ->kind == AST_TUPLE_TYPE) {
-        int len = AstListLen(typ);
+        int len = (TypeSize(typ) + LONG_SIZE - 1) / LONG_SIZE;
         if (f->numresults <= 1) {
             f->numresults = len;
         }

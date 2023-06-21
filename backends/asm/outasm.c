@@ -3351,6 +3351,7 @@ CompileMultipleAssign(IRList *irl, AST *lhs, AST *rhs)
             r = CompileExpression(irl, hiexpr, NULL);
         } else {
             ERROR(lhs, "Unable to multiply assign this target");
+            r = EmptyOperand();
         }
         EmitMove(irl, r, ptr->op, lhs);
         lhs = lhs->right;
