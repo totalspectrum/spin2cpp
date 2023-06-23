@@ -3644,15 +3644,18 @@ BuildExprlistFromObject(AST *origexpr, AST *typ)
     n = TypeSize(typ);
     i = 0;
     AstReportAs(expr, &saveinfo);
-    for(i = 0; i < n; i += LONG_SIZE) {
+    while (i < n) {
         sym = FindSymbolByOffsetAndKind(&P->objsyms, i, SYM_VARIABLE);
         if (!sym || sym->kind != SYM_VARIABLE) {
             ERROR(expr, "Unable to find symbol at offset %d", i);
             break;
         }
+        int siz = TypeSize(sym->v.ptr);
+        if (siz == 0) siz = LONG_SIZE;
         temp = NewAST(AST_METHODREF, expr, AstIdentifier(sym->our_name));
         temp = NewAST(AST_EXPRLIST, temp, NULL);
         exprlist = AddToList(exprlist, temp);
+        i += siz;
     }
     AstReportDone(&saveinfo);
     if (exprptr) {

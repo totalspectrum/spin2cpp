@@ -1,4 +1,5 @@
 Version 6.2.0
+- Fixed offset computation when structs have 8 byte subfields
 - Implemented new method pointer code for PASM backends that does not require memory allocation.
 
 Version 6.1.8
