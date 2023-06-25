@@ -57,7 +57,6 @@ static vfs_file_t __filetab[_MAX_FILES] = {
         &_rxtxioctl,
         &__dummy_flush, /* flush function */
         0, /* lseek */
-        0, 0, /* pointer cache */
     },
     /* stdout */
     {
@@ -74,7 +73,6 @@ static vfs_file_t __filetab[_MAX_FILES] = {
         &_rxtxioctl,
         &__dummy_flush, /* flush function */
         0, /* lseek */
-        0, 0, /* pointer cache */
     },
     /* stderr */
     {
@@ -91,7 +89,6 @@ static vfs_file_t __filetab[_MAX_FILES] = {
         &_rxtxioctl,
         &__dummy_flush, /* flush function */
         0, /* lseek */
-        0, 0, /* pointer cache */
     },
 };
 
