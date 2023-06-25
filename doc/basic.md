@@ -1444,7 +1444,7 @@ Using Spin objects with `class using` is straightforward, but there are some thi
 
 #### Interoperation with C
 
-C files may be used as classes, but there are some restrictions. BASIC and Spin are both case insensitive languages, which means that the BASIC symbols `AVariable`, `avariable`, and `AVARIABLE` are all the same, and all are translated internally to `avariable`. In C the case of identifiers matters. This makes accessing C symbols from BASIC somewhat tricky. Only C symbols that are all lower case may be accessed from BASIC.
+C files may be used as classes, but there are some restrictions. BASIC and Spin are both case insensitive languages, which means that the BASIC symbols `AVariable`, `avariable`, and `AVARIABLE` are all the same, and all are translated internally to `avariable`. In C the case of identifiers matters. This makes accessing C symbols from BASIC somewhat tricky: one must exactly match the case of the C identifier in order to access it.
 
 ### CHAIN
 
