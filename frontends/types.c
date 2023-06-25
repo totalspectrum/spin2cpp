@@ -2198,6 +2198,6 @@ InitGlobalFuncs(void)
 
         funcptr_cmp = getBasicPrimitive("_funcptr_cmp");
 
-        varargs_ident = AstIdentifier("__varargs");
+        varargs_ident = AstIdentifier(VARARGS_PARAM_NAME);
     }
 }

@@ -47,7 +47,7 @@ PrintParameterList(Flexbuf *f, Function *func)
             ast = AstTempIdentifier("param");
         }
         if (ast->kind == AST_VARARGS) {
-            flexbuf_printf(f, "intptr_t __vaargs");
+            flexbuf_printf(f, "intptr_t %s", VARARGS_PARAM_NAME);
         } else if (IsIdentifier(ast)) {
             sym = FindSymbol(&func->localsyms, ast->d.string);
             if (sym && sym->kind == SYM_PARAMETER && sym->v.ptr) {

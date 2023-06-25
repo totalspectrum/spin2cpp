@@ -1427,7 +1427,7 @@ const char *
 VarName(AST *ast)
 {
     if (ast->kind == AST_VARARGS || ast->kind == AST_VA_START) {
-        return "__varargs";
+        return VARARGS_PARAM_NAME;
     }
     if (ast->kind == AST_DECLARE_VAR) {
         // left is type, right is name

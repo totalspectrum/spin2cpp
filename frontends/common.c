@@ -977,7 +977,7 @@ ERROR_UNKNOWN_SYMBOL(AST *ast)
     if (IsIdentifier(ast)) {
         name = GetVarNameForError(ast);
     } else if (ast->kind == AST_VARARGS || ast->kind == AST_VA_START) {
-        name = "__vararg";
+        name = VARARGS_PARAM_NAME;
     } else {
         name = "";
     }

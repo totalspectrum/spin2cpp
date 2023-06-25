@@ -1677,7 +1677,7 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
 #if 0        
     case AST_VA_START:
         PrintLHS(f, expr->left, flags | PRINTEXPR_ASSIGNMENT);
-        flexbuf_printf(f, " = __vaargs");
+        flexbuf_printf(f, " = %s", VARARGS_PARAM_NAME);
         break;
     case AST_VA_ARG:
         flexbuf_printf(f, "(*(");

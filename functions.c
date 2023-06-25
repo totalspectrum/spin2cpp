@@ -132,7 +132,7 @@ EnterVariable(int kind, SymbolTable *stab, AST *astname, AST *type, unsigned sym
     } else if (astname->kind == AST_IDENTIFIER) {
         name = username = astname->d.string;
     } else if (astname->kind == AST_VARARGS) {
-        name = username = "__varargs";
+        name = username = VARARGS_PARAM_NAME;
     } else {
         ERROR(astname, "Internal error, bad identifier");
         return NULL;

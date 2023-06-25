@@ -2144,7 +2144,7 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
     break;
 #if 0
     case AST_VA_START: {
-        AST *va_ident = AstIdentifier("__varargs");
+        AST *va_ident = AstIdentifier(VARARGS_PARAM_NAME);
         NuIrOpcode op;
         int n;
         n = NuCompileExpression(irl, va_ident);
