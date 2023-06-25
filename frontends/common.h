@@ -17,6 +17,8 @@ typedef struct modulestate Module;
 #include "optokens.h"
 #include "util/flexbuf.h"
 
+#define VARARGS_PARAM_NAME "__varargs"
+
 /*
  * enum for expression state (used to determine context for ':')
  */
