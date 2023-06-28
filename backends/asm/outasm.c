@@ -3126,6 +3126,7 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
             ValidateMethodTable();
             EmitMove(irl, temp1, base, expr);
             EmitMove(irl, temp2, base, expr);
+            EmitOp2(irl, OPC_ZEROX, temp1, NewImmediate(19));
             EmitOp2(irl, OPC_SHR, temp2, NewImmediate(20));
             EmitOp2(irl, OPC_SHL, temp2, NewImmediate(2));
             EmitOp2(irl, OPC_ADD, temp2, method_table_base);
