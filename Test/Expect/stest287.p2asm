@@ -20,6 +20,7 @@ _callit
 	add	arg01, callit_tmp006_
 	rdlong	callit_tmp006_, arg01
 	mov	callit_tmp003_, callit_tmp006_
+	zerox	callit_tmp006_, #19
 	shr	callit_tmp003_, #20
 	shl	callit_tmp003_, #2
 	add	callit_tmp003_, __methods__

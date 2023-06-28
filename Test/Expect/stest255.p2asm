@@ -17,6 +17,7 @@ entry
 _checkit
 	mov	checkit_tmp001_, __recvreg
 	mov	checkit_tmp003_, checkit_tmp001_
+	zerox	checkit_tmp001_, #19
 	shr	checkit_tmp003_, #20
 	shl	checkit_tmp003_, #2
 	add	checkit_tmp003_, __methods__

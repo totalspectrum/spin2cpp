@@ -19,6 +19,7 @@ _calli
 	add	arg01, objptr
 	rdlong	calli_tmp001_, arg01
 	mov	calli_tmp003_, calli_tmp001_
+	zerox	calli_tmp001_, #19
 	shr	calli_tmp003_, #20
 	shl	calli_tmp003_, #2
 	add	calli_tmp003_, __methods__
@@ -36,6 +37,7 @@ _calli2
 	add	arg01, objptr
 	rdlong	calli2_tmp002_, arg01
 	mov	calli2_tmp003_, calli2_tmp002_
+	zerox	calli2_tmp002_, #19
 	shr	calli2_tmp003_, #20
 	shl	calli2_tmp003_, #2
 	add	calli2_tmp003_, __methods__

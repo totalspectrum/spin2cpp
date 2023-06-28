@@ -17,13 +17,15 @@ entry
 _test1
 	cmp	arg01, #0 wz
  if_e	jmp	#LR__0001
+	mov	test1_tmp003_, arg02
 	mov	test1_tmp004_, arg02
+	zerox	test1_tmp003_, #19
 	shr	test1_tmp004_, #20
 	shl	test1_tmp004_, #2
 	add	test1_tmp004_, __methods__
 	rdlong	test1_tmp004_, test1_tmp004_
 	mov	test1_tmp005_, objptr
-	mov	objptr, arg02
+	mov	objptr, test1_tmp003_
 	call	test1_tmp004_
 	mov	objptr, test1_tmp005_
 	mov	test1_tmp001_, result1
@@ -82,6 +84,8 @@ arg01
 arg02
 	res	1
 test1_tmp001_
+	res	1
+test1_tmp003_
 	res	1
 test1_tmp004_
 	res	1
