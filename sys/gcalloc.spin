@@ -236,6 +236,12 @@ pri _gc_doalloc(size, reserveflag) : ptr | zptr
 ' points to
 '
 pri _gc_isvalidptr(base, heap_end, ptr) | t
+  ' look at low address bits only
+  if __propeller__ == 1
+    ptr := ptr & $ffff
+  else
+    ptr := ptr & $ffffff
+
   ' step back to the header
   ptr := (ptr - headersize)
   ' make sure it is in the heap

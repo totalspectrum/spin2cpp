@@ -291,6 +291,7 @@ __system___gc_doalloc_ret
 	ret
 
 __system___gc_isvalidptr
+	and	arg03, imm_65535_
 	sub	arg03, #8
 	cmps	arg03, arg01 wc
  if_b	jmp	#LR__0040
@@ -544,6 +545,8 @@ imm_27792_
 	long	27792
 imm_65472_
 	long	65472
+imm_65535_
+	long	65535
 ptr_L__0023_
 	long	@@@LR__0070
 ptr_L__0034_
