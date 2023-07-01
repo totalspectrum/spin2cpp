@@ -1,0 +1,92 @@
+'
+' driver for RaysLogic 24 MB memory board
+' adapted from Wuerfel_21's code in Megayume
+' Copyright 2023 IrqSome Software and Total Spectrum Software
+' MIT Licensed
+'
+
+' overridable constants
+CON
+BASEPIN = 32
+
+PSRAM_CLK = BASEPIN+4
+PSRAM_SELECT = BASEPIN+5
+PSRAM_BASE = BASEPIN
+PSRAM_BANKS = 3
+
+PSRAM_WAIT = 5
+PSRAM_DELAY = 15
+PSRAM_SYNC_CLOCK = true
+PSRAM_SYNC_DATA = true
+
+VAR
+  long exmem_mailbox[24]
+  long exmem_struct
+  byte exmem_buf[8*4+8*4+32*4]
+  long exmem_cog
+
+OBJ
+  exmem: "spin/psram4drv-dualCE.spin2"
+  
+' this is not a top level object
+PUB null()
+
+PUB start() | tmp, cogs, banks
+  exmem_struct := @exmem_buf
+  tmp := exmem_struct
+  cogs := tmp+8*4
+  banks := cogs+8*4
+  if exmem_cog
+    return
+
+  long[tmp][0] := clkfreq
+  long[tmp][1] := (PSRAM_SYNC_CLOCK?0:1)<<exmem.UNREGCLK_BIT
+  long[tmp][1] |= 1<<exmem.SLOWCLK_BIT | 1<<exmem.CLKSEL_BIT
+  long[tmp][2] := 0
+  long[tmp][3] := 0 
+
+  if PSRAM_BANKS > 1
+    pinh((PSRAM_SELECT+1) addpins (PSRAM_BANKS-2))
+
+  long[tmp][4] := PSRAM_BASE
+  long[tmp][5] := banks
+  long[tmp][6] := cogs
+  long[tmp][7] := @exmem_mailbox[0]
+
+  long[cogs][0]:=-1<<16 + %1_111<<12
+  longfill(cogs+4,-1<<16,7)
+  longfill(banks,negx,32)
+
+  long[banks][0] := 128<<16 + (PSRAM_DELAY-PSRAM_TIMEOFFSET)<<13 + (PSRAM_SYNC_DATA?0:1)<<12 + 22
+  long[banks][16] := PSRAM_SELECT + PSRAM_CLK<<8 + PSRAM_SELECT<<16
+
+  exmem_mailbox[0] := -1
+  cogs := exmem.getDriverAddr()
+  exmem_cog := coginit(COGEXEC_NEW,cogs,tmp)+1
+  repeat while exmem_mailbox[0] ' wait for init so data structures can go dead
+
+PUB stop()
+  if exmem_cog
+    sync()
+  cogstop((exmem_cog\0)-1)
+
+PUB sync()
+  repeat while exmem_mailbox[0]
+
+PUB write(dst,src,length)
+  sync()
+  exmem_mailbox[2] := length
+  exmem_mailbox[1] := src
+  exmem_mailbox[0] := exmem.R_WRITEBURST + (dst & $fffffff)
+
+PUB fill(dst,val,length)
+  sync()
+  exmem_mailbox[2] := length
+  exmem_mailbox[1] := val
+  exmem_mailbox[0] := exmem.R_WRITEBYTE + (dst & $fffffff)
+
+PUB read(dst,src,length)
+  sync()
+  exmem_mailbox[2] := length
+  exmem_mailbox[1] := dst
+  exmem_mailbox[0] := exmem.R_READBURST + (src & $fffffff)
