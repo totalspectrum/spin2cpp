@@ -1074,6 +1074,28 @@ DoReorderBlock(IRList *irl,IR *after,IR *top,IR *bottom) {
     after->next = top;
 }
 
+// Return true for "normal" ALU ops
+static bool
+IsSafeALUOp(IROpcode opc) {
+    switch(opc) {
+    case OPC_MOV:
+    case OPC_ADD:
+    case OPC_SUB:
+    case OPC_AND:
+    case OPC_OR:
+    case OPC_XOR:
+    case OPC_TEST:
+    case OPC_TESTN:
+    case OPC_SHL:
+    case OPC_SHR:
+    case OPC_NEG:
+    case OPC_ABS:
+        return true;
+    default:
+        return false;
+    }
+}
+
 /*
  * return TRUE if the operand's value does not need to be preserved
  * after instruction instr
@@ -1113,18 +1135,10 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
             if (InstrSetsAnyFlags(ir)) {
                 return false;  // flag setting matters, we are not dead
             }
-            switch(ir->opc) {
             // be very cautious about whether op is dead if
             // any "unusal" opcodes (like waitpeq) are used
-            // so just accept
-            case OPC_ADD:
-            case OPC_SUB:
-            case OPC_AND:
-            case OPC_OR:
-            case OPC_XOR:
-                // not definitely alive or dead yet
-                break;
-            default:
+            // so just accept a safe subset
+            if (!IsSafeALUOp(ir->opc)) {
                 // assume live
                 return false;
             }
@@ -5230,17 +5244,22 @@ NeverInline(Function *f)
 
 //
 // check a function to see if it should be inlined
+// and return true if new inlining opportunites were unlocked
 //
 #define INLINE_THRESHOLD_P1 2
 #define INLINE_THRESHOLD_P2 4
 
 bool
-ShouldBeInlined(Function *f)
+AnalyzeInlineEligibility(Function *f)
 {
     IR *ir;
     int n = 0;
     int paramfactor;
     int threshold;
+    bool pure = true;
+
+    unsigned prev_flags = FuncData(f)->inliningFlags;
+    FuncData(f)->inliningFlags = 0;
 
     if (f->prefer_inline) {
         threshold = 100;
@@ -5278,15 +5297,25 @@ ShouldBeInlined(Function *f)
             }
         }
 
+        // Check for impurity here. This check is very conservative.
+        if (!IsLabel(ir) && !IsSafeALUOp(ir->opc)) pure = false;
+        if (ir->dst && !(IsLocalOrArg(ir->dst) || isResult(ir->dst))) pure = false;
+        if (ir->src && !(IsImmediate(ir->src) || IsLocalOrArg(ir->src) || isResult(ir->src))) pure = false;
+
         n++;
     }
+
+    if (pure) {
+        FuncData(f)->inliningFlags |= ASM_INLINE_PURE_FLAG;
+    }
+
     // a function called from only 1 place should be inlined
     // if it means that the function definition can be eliminated
     if (RemoveIfInlined(f) && (gl_optimize_flags & OPT_INLINE_SINGLEUSE)) {
         if (f->callSites == 1) {
-            return true;
-        } else if (f->callSites == 2) {
-            return (n <= 2*threshold);
+            FuncData(f)->inliningFlags |= ASM_INLINE_SINGLE_FLAG;
+        } else if (f->callSites == 2 && (n <= 2*threshold)) {
+            FuncData(f)->inliningFlags |= ASM_INLINE_SINGLE_FLAG;
         }
     }
 
@@ -5301,11 +5330,31 @@ ShouldBeInlined(Function *f)
     } else {
         paramfactor = f->numparams;
     }
-    return n <= (threshold + paramfactor);
+    if (n <= (threshold + paramfactor)) {
+            FuncData(f)->inliningFlags |= ASM_INLINE_SMALL_FLAG;
+    }
+
+    return FuncData(f)->inliningFlags & ~prev_flags;
 }
 
 static inline void updateMax(int *dst, int src) {
     if (*dst < src) *dst = src;
+}
+
+static bool
+ShouldExpandPureFunction(IR *ir) {
+    Function *f = (Function *)ir->aux;
+    if (!(FuncData(f)->inliningFlags & ASM_INLINE_PURE_FLAG)) return false;
+    if (!(gl_optimize_flags & OPT_EXPERIMENTAL)) return false;
+    if (f->numparams <= 0) return false;
+
+    // Make sure all args are constants
+    for (int i = 0; i < f->numparams; i++) {
+        IR *prev_ir = FindPrevSetterForReplace(ir,GetArgReg(i));
+        if (!prev_ir || !isConstMove(prev_ir,NULL)) return false;
+    }
+
+    return true;
 }
 
 //
@@ -5324,7 +5373,7 @@ ExpandInlines(IRList *irl)
         ir_next = ir->next;
         if (ir->opc == OPC_CALL) {
             f = (Function *)ir->aux;
-            if (f && FuncData(f)->isInline) {
+            if (f && ((FuncData(f)->inliningFlags & (ASM_INLINE_SMALL_FLAG|ASM_INLINE_SINGLE_FLAG)) || ShouldExpandPureFunction(ir))) {
                 ReplaceIRWithInline(irl, ir, f);
                 FuncData(f)->actual_callsites--;
                 updateMax(&FuncData(curfunc)->maxInlineArg,f->numparams);
