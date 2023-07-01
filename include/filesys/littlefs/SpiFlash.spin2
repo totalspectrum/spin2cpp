@@ -62,7 +62,10 @@ PUB Init(start, size, erase_size)
   g_max_addr := start + size - Page_Size
   g_erase_size := erase_size
   
-PUB Erase(flashAdr) | cmd, size
+PUB Sync() : r
+  return 0
+
+PUB Erase(flashAdr) : r | cmd, size
 ' size can be 4kB or 64kB
   flashAdr += g_offset
   if flashAdr > g_max_addr
@@ -75,12 +78,13 @@ PUB Erase(flashAdr) | cmd, size
   Spi_Cmd8 (Write_Enable)
   Spi_Cmd32 (cmd, flashAdr)
   Spi_Wait()
-
-PUB WritePage(hubAdr, flashAdr)
+  return 0
+  
+PUB WritePage(hubAdr, flashAdr) : r
 ' writes a page of 256 bytes
   flashAdr += g_offset
   if flashAdr > g_max_addr
-    return
+    return 0
   Spi_Init()
   Spi_Cmd8(Write_Enable)
   Spi_Cmd32(Write_Page, flashAdr)
@@ -88,8 +92,9 @@ PUB WritePage(hubAdr, flashAdr)
     Spi_Wr4Bytes (long[hubAdr])
     hubAdr+= 4
   Spi_Wait()
-
-PUB Read (hubAdr, flashAdr, size)
+  return 0
+  
+PUB Read (hubAdr, flashAdr, size) : r
 ' read any number of bytes
   flashAdr += g_offset
   Spi_Init ()
@@ -97,7 +102,8 @@ PUB Read (hubAdr, flashAdr, size)
   repeat size
     byte[hubAdr++]:= Spi_RdByte ()
   pinh (spi_cs)
-  
+  return 0
+
 PUB Verify(hubAdr, flashAdr, size) : ok
 ' compare HUBRAM to flash contents, true means match
   flashAdr += g_offset

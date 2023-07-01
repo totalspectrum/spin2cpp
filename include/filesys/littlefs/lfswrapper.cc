@@ -8,10 +8,6 @@
 
 #define SPI_PROG_SIZE          256
 
-static char read_cache[SPI_PROG_SIZE];
-static char prog_cache[SPI_PROG_SIZE];
-static char lookahead_cache[SPI_PROG_SIZE];
-
 typedef struct __using("filesys/littlefs/SpiFlash.spin2") _SpiFlash;
 
 typedef struct _buffered_lfs_file {
@@ -19,17 +15,38 @@ typedef struct _buffered_lfs_file {
     lfs_file_t       fd;
 } BufferedLfsFile;
 
-static _SpiFlash default_spi;
+
+static _BlockDevice *Default_SPI_Init(unsigned offset, unsigned used_size, unsigned erase_size)
+{
+    static _SpiFlash spi;
+    static _BlockDevice blk;
+    static char read_cache[SPI_PROG_SIZE];
+    static char prog_cache[SPI_PROG_SIZE];
+    static char lookahead_cache[SPI_PROG_SIZE];
+
+    spi.Init(offset, used_size, erase_size);
+    blk.blk_read = &spi.Read;
+    blk.blk_write = &spi.WritePage;
+    blk.blk_erase = &spi.Erase;
+    blk.blk_sync = &spi.Sync;
+
+    blk.read_cache = read_cache;
+    blk.write_cache = prog_cache;
+    blk.lookahead_cache = lookahead_cache;
+    
+    return &blk;
+}
+
 
 static int _flash_read(const struct lfs_config *cfg, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size) {
-    _SpiFlash *spi = cfg->context;
+    _BlockDevice *blk = (_BlockDevice *)cfg->context;
     unsigned long flashAdr = block * cfg->block_size + off;
-    spi->Read(buffer, flashAdr, size);
+    blk->blk_read(buffer, flashAdr, size);
     return 0;
 }
 
 static int _flash_prog(const struct lfs_config *cfg, lfs_block_t block, lfs_off_t off, void *buffer_orig, lfs_size_t size) {
-    _SpiFlash *spi = cfg->context;
+    _BlockDevice *blk = (_BlockDevice *)cfg->context;
     char *buffer = buffer_orig;
     unsigned long flashAdr = block * cfg->block_size + off;
     unsigned PAGE_SIZE = cfg->prog_size;
@@ -43,7 +60,7 @@ static int _flash_prog(const struct lfs_config *cfg, lfs_block_t block, lfs_off_
         return -EINVAL;
     }
     while (size > 0) {
-        spi->WritePage(buffer, flashAdr);
+        blk->blk_write(buffer, flashAdr);
         buffer += PAGE_SIZE;
         flashAdr += PAGE_SIZE;
         size -= PAGE_SIZE;
@@ -52,7 +69,7 @@ static int _flash_prog(const struct lfs_config *cfg, lfs_block_t block, lfs_off_
 }
 
 static int _flash_erase(const struct lfs_config *cfg, lfs_block_t block) {
-    _SpiFlash *spi = cfg->context;
+    _BlockDevice *blk = (_BlockDevice *)cfg->context;
     unsigned long flashAdr = block * cfg->block_size;
 
 #ifdef _DEBUG_LFS
@@ -62,18 +79,23 @@ static int _flash_erase(const struct lfs_config *cfg, lfs_block_t block) {
     if (block >= cfg->block_count)
         return -1;
 
-    spi->Erase(flashAdr);
+    blk->blk_erase(flashAdr);
     return 0;
 }
 
 static int _flash_sync(const struct lfs_config *cfg) {
-    return 0;
+    _BlockDevice *blk = (_BlockDevice *)cfg->context;
+    return blk->blk_sync();
 }
 
 static int _flash_create(struct lfs_config *cfg, struct littlefs_flash_config *flashcfg)
 {
-    _SpiFlash *spi = &default_spi;
-    cfg->context = (void *)spi;
+    _BlockDevice *blk = flashcfg->dev;
+
+    if (!blk) {
+        blk = Default_SPI_Init(flashcfg->offset, flashcfg->used_size, flashcfg->erase_size);
+    }
+    cfg->context = (void *)blk;
     
     if (flashcfg->page_size != SPI_PROG_SIZE) {
         return -EINVAL;
@@ -84,7 +106,6 @@ static int _flash_create(struct lfs_config *cfg, struct littlefs_flash_config *f
     if (flashcfg->offset % flashcfg->erase_size != 0) {
         return -EINVAL;
     }
-    spi->Init(flashcfg->offset, flashcfg->used_size, flashcfg->erase_size);
     
     // set up flash properties
     cfg->read_size = SPI_PROG_SIZE;
@@ -96,9 +117,9 @@ static int _flash_create(struct lfs_config *cfg, struct littlefs_flash_config *f
     cfg->block_cycles = 400;
 
     // buffers
-    cfg->read_buffer = &read_cache;
-    cfg->prog_buffer = &prog_cache;
-    cfg->lookahead_buffer = &lookahead_cache;
+    cfg->read_buffer = blk->read_cache;
+    cfg->prog_buffer = blk->write_cache;
+    cfg->lookahead_buffer = blk->lookahead_cache;
     
     // set up block device operations
     cfg->read = _flash_read;
