@@ -1938,6 +1938,15 @@ TransformConstDst(IR *ir, Operand *imm)
         // Z is set if bit is SET
         val1 = ~val1 & (1<<(val2&31));
         break;
+    case OPC_BITH:
+        val1 |= EvalP2BitMask(val2);
+        break;
+    case OPC_BITL:
+        val1 &= ~EvalP2BitMask(val2);
+        break;
+    case OPC_BITNOT:
+        val1 ^= EvalP2BitMask(val2);
+        break;
     default:
         return 0;
     }
