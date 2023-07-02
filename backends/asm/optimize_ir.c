@@ -2428,9 +2428,15 @@ OptimizeMoves(IRList *irl)
                 if (ir->flags == FLAG_WZ && CanTestZero(ir->opc)) {
                     // because this is a mov immediate, we know how
                     // WZ will be set
-                    ApplyConditionAfter(irl, ir, cval, cval, &change);
+                    if (ApplyConditionAfter(irl, ir, cval, cval, &change)) {
+                        ir->flags &= ~FLAG_CZSET;
+                        change |= 1;
+                    }
                 } else if (ir->flags != 0 && ir->opc == OPC_ABS) {
-                    ApplyConditionAfter(irl, ir, ir->src->val, ir->src->val, &change);
+                    if (ApplyConditionAfter(irl, ir, ir->src->val, ir->src->val, &change)) {
+                        ir->flags &= ~FLAG_CZSET;
+                        change |= 1;
+                    };
                 }
                 change |= (sawchange = PropagateConstForward(irl, ir, ir->dst, ir->src));
                 if (sawchange && !InstrSetsAnyFlags(ir) && IsDeadAfter(ir, ir->dst)) {
