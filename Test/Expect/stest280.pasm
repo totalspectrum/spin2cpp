@@ -47,7 +47,7 @@ _blah2
 	mov	arg03, #8
 	cmps	arg01, arg02 wc
  if_ae	jmp	#LR__0011
-	mov	_var01, #8 wz
+	mov	_var01, #8
 LR__0010
 	rdbyte	result1, arg02
 	wrbyte	result1, arg01
