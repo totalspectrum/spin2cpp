@@ -1590,13 +1590,15 @@ ReplaceForward(IR *instr, Operand *orig, Operand *replace, IR *stop_ir)
 
 //
 // Apply a new condition code based on cval/zval being compared to 0
+// returns true if successful (does not neccessarily indicate change occurence, use changeout)
 //
-int
-ApplyConditionAfter(IR *instr, int cval, int zval)
+bool
+ApplyConditionAfter(IRList *irl, IR *instr, int cval, int zval, int *changeout)
 {
     IR *ir;
     unsigned newcond;
-    int change = 0;
+    bool change = false;
+    bool invalid_instr = false;
     int setz = instr->flags & FLAG_WZ;
     int setc = instr->flags & FLAG_WC;
     cval = cval  < 0 ? 2 : 0;
@@ -1746,24 +1748,75 @@ ApplyConditionAfter(IR *instr, int cval, int zval)
         case OPC_RCL:
         case OPC_RCR:
             if (setc) {
-                ERROR(NULL, "Internal error: ApplyConditionAfter cannot be applied to RCL/RCR");
+                bool is_rcr = (ir->opc == OPC_RCR);
+                if (cval) {
+                    if (IsImmediate(ir->src) && !InstrSetsAnyFlags(ir) && !IsHwReg(ir->dst)) {
+                        // generate new OR instruction if shift is constant (might turn to BITH on P2)
+                        ReplaceOpcode(ir,is_rcr? OPC_SHR : OPC_SHL);
+                        IR *orinst = NewIR(OPC_OR);
+                        orinst->dst = ir->dst;
+                        uint32_t mask = (1<<(ir->src->val & 31)) - 1;
+                        if (is_rcr) mask <<= ((32 - ir->src->val) & 31);
+                        orinst->src = NewImmediate(mask);
+                        orinst->cond = ir->cond;
+                        InsertAfterIR(irl,ir,orinst);
+                        change = 1;
+                    } else {
+                        invalid_instr = 1;
+                    }
+                } else {
+                    ReplaceOpcode(ir,is_rcr? OPC_SHR : OPC_SHL);
+                    change = 1;
+                }
+            }
+            break;
+        case OPC_ADDSX:
+        case OPC_SUBSX:
+            if (setc) {
+                // ADDS/SUBS don't have OPCs????
+                invalid_instr = 1;
+            }
+            break;
+        case OPC_ADDX:
+        case OPC_SUBX:
+            if (setc) {
+                bool is_sub = (ir->opc == OPC_SUBX);
+                if (ir->flags & FLAG_WZ) {
+                    invalid_instr = 1;
+                } else if (!cval) {
+                    ReplaceOpcode(ir,is_sub ? OPC_SUB : OPC_ADD);
+                    change = 1;
+                } else if (cval && IsImmediate(ir->src)) {
+                    if (IsImmediateVal(ir->src,UINT32_MAX)) {
+                        // This instruction does nothing and can be deleted
+                        ir->cond = COND_FALSE;
+                    } else {
+                        ReplaceOpcode(ir,is_sub ? OPC_SUB : OPC_ADD);
+                        ir->src = NewImmediate(ir->src->val + 1);
+                    }
+                    change = 1;
+                } else {
+                    invalid_instr = 1;
+                }
             }
             break;
         default:
             if (InstrUsesFlags(ir,setc|setz)) {
+                invalid_instr = 1;
                 WARNING(NULL,"Internal warning. Couldn't ApplyConditionAfter");
             }
             break;
         }
 
-        if (newcond != COND_FALSE) {
+        if (ir->cond != COND_FALSE) {
             if(InstrSetsFlags(ir,FLAG_WC)) setc = 0;
             if(InstrSetsFlags(ir,FLAG_WZ)) setz = 0;
         }
 
         if (!setc && !setz) break;
     }
-    return change;
+    if (changeout && !*changeout) *changeout = change;
+    return !invalid_instr;
 }
 
 static bool
@@ -1812,7 +1865,7 @@ SameIR(IR *a, IR *b) {
 // if the src is also constant, convert it to a move immediate
 // returns 1 if there is a change
 static int
-TransformConstDst(IR *ir, Operand *imm)
+TransformConstDst(IRList *irl, IR *ir, Operand *imm)
 {
     int32_t val1, val2, cval;
     int setsResult = 1;
@@ -1942,7 +1995,10 @@ TransformConstDst(IR *ir, Operand *imm)
         return 0;
     }
     if (InstrSetsAnyFlags(ir)) {
-        ApplyConditionAfter(ir, cval, val1);
+        int condchange = 0;
+        if (!ApplyConditionAfter(irl,ir, cval, val1, &condchange)) {
+            return condchange; // Couldn't apply condition :(
+        }
         ir->flags &= !FLAG_CZSET;
     }
     if (setsResult) {
@@ -2030,7 +2086,7 @@ PropagateConstForward(IRList *irl, IR *orig_ir, Operand *orig, Operand *immval)
                 }
             } else if (ir->dst == orig) {
                 // we can perhaps replace the operation with a mov
-                change |= TransformConstDst(ir, immval);
+                change |= TransformConstDst(irl, ir, immval);
             } else if (ir->src == orig) {
                 ir->src = immval;
                 change = 1;
@@ -2372,9 +2428,9 @@ OptimizeMoves(IRList *irl)
                 if (ir->flags == FLAG_WZ && CanTestZero(ir->opc)) {
                     // because this is a mov immediate, we know how
                     // WZ will be set
-                    change |= ApplyConditionAfter(ir, cval, cval);
+                    ApplyConditionAfter(irl, ir, cval, cval, &change);
                 } else if (ir->flags != 0 && ir->opc == OPC_ABS) {
-                    change |= ApplyConditionAfter(ir, ir->src->val, ir->src->val);
+                    ApplyConditionAfter(irl, ir, ir->src->val, ir->src->val, &change);
                 }
                 change |= (sawchange = PropagateConstForward(irl, ir, ir->dst, ir->src));
                 if (sawchange && !InstrSetsAnyFlags(ir) && IsDeadAfter(ir, ir->dst)) {
@@ -2492,8 +2548,6 @@ HasSideEffectsOtherThanReg(IR *ir)
     case OPC_DRVZ:
     case OPC_PUSH:
     case OPC_POP:
-    case OPC_RCL:
-    case OPC_RCR:
         return true;
     default:
         return false;
@@ -2951,9 +3005,10 @@ OptimizeCompares(IRList *irl)
                 && ir->src == ir->dst)
         {
             // this compare always sets Z and clears C
-            ApplyConditionAfter(ir, 0, 0);
-            DeleteIR(irl, ir);
-            change |= 1;
+            if (ApplyConditionAfter(irl, ir, 0, 0, &change)) {
+                DeleteIR(irl, ir);
+                change |= 1;
+            }
         }
         else if (ir->cond == COND_TRUE
                  && ((ir->opc == OPC_CMP && IsImmediateVal(ir->src, 0)) || (ir->opc == OPC_CMPS && IsImmediateVal(ir->src, INT32_MIN)) )
@@ -2962,9 +3017,10 @@ OptimizeCompares(IRList *irl)
                 )
         {
             // this compare always clears C
-            ApplyConditionAfter(ir, 1, 1);
-            DeleteIR(irl, ir);
-            change |= 1;
+            if (ApplyConditionAfter(irl, ir, 1, 1, &change)) {
+                DeleteIR(irl, ir);
+                change |= 1;
+            }
         }
         else if ( (ir->opc == OPC_CMP||ir->opc == OPC_CMPS) && ir->cond == COND_TRUE
                   && (FLAG_WZ == (ir->flags & (FLAG_WZ|FLAG_WC)))
@@ -3291,6 +3347,10 @@ ReplaceZWithNC(IR *ir)
     case OPC_GENERIC_NR:
     case OPC_RCL:
     case OPC_RCR:
+    case OPC_ADDX:
+    case OPC_ADDSX:
+    case OPC_SUBX:
+    case OPC_SUBSX:
     // Are the below really needed here?
     case OPC_LOCKNEW:
     case OPC_LOCKSET:
@@ -4664,8 +4724,6 @@ static bool IsReorderBarrier(IR *ir) {
     case OPC_PUSH:
     case OPC_POP:
     case OPC_FCACHE:
-    case OPC_RCL:
-    case OPC_RCR:
     case OPC_MUXQ:
         return true;
     default:
