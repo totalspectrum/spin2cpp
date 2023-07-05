@@ -57,6 +57,9 @@ static int _flash_prog(const struct lfs_config *cfg, lfs_block_t block, lfs_off_
 #endif        
     // make sure size and address are page multiples
     if ( (flashAdr & PAGE_MASK) || (size & PAGE_MASK) ) {
+#ifdef _DEBUG_LFS
+    __builtin_printf(" *** flash_prog: EINVAL\n");
+#endif        
         return -EINVAL;
     }
     while (size > 0) {
@@ -73,12 +76,15 @@ static int _flash_erase(const struct lfs_config *cfg, lfs_block_t block) {
     unsigned long flashAdr = block * cfg->block_size;
 
 #ifdef _DEBUG_LFS
-    __builtin_printf(" *** flash_erase: flashAdr=%x\n", flashAdr);
+    __builtin_printf(" *** flash_erase: flashAdr=0x%x\n", flashAdr);
 #endif        
     // check if erase is valid
-    if (block >= cfg->block_count)
+    if (block >= cfg->block_count) {
+#ifdef _DEBUG_LFS
+    __builtin_printf(" *** flash_erase: bad address (block_count=0x%x)\n", cfg->block_count);
+#endif        
         return -1;
-
+    }
     blk->blk_erase(flashAdr);
     return 0;
 }
