@@ -2671,6 +2671,21 @@ AllInstructionsConditional(IRCond cond, IR *ir, Operand *lab)
 }
 
 //
+// Check if jump goes to the next instruction
+//
+static bool
+IsNoOpJump(IR *ir) {
+    for (IR *ir2 = ir->next;ir2;ir2=ir2->next) {
+        if (IsLabel(ir2)) {
+            if (ir2->dst == ir->dst) {
+                return true;
+            }
+        } else if (!IsDummy(ir2)) break;
+    }
+    return false;
+}
+
+//
 // eliminate code that is unnecessary
 //
 int EliminateDeadCode(IRList *irl)
@@ -2695,8 +2710,7 @@ int EliminateDeadCode(IRList *irl)
         change = 1;
     }
     // now look for other dead code
-    ir = irl->head;
-    while (ir) {
+    for (ir = irl->head; ir; ir = ir_next) {
         ir_next = ir->next;
 
         if (ir->opc == OPC_SETQ || ir->opc == OPC_SETQ2 || ir->opc == OPC_GENERIC_DELAY) {
@@ -2706,7 +2720,20 @@ int EliminateDeadCode(IRList *irl)
         if (InstrIsVolatile(ir)) {
             /* do nothing */
         } else if (ir->opc == OPC_JUMP && remove_jumps) {
-            if (ir->cond == COND_TRUE && !IsRegister(ir->dst->kind)) {
+
+            if (IsNoOpJump(ir)) { /* is the branch to the next instruction? */
+                DeleteIR(irl, ir);
+                change = 1;
+            } else if (ir->cond == COND_FALSE) {
+                DeleteIR(irl, ir);
+                change = 1;
+            } else if (ir->dst && !IsRegister(ir->dst->kind) && ir_next && AllInstructionsConditional(InvertCond(ir->cond), ir_next, ir->dst)) {
+                /* if the branch skips over things that already have the right
+                    condition, delete it
+                */
+                DeleteIR(irl, ir);
+                change = 1;
+            } else if (ir->cond == COND_TRUE && !IsRegister(ir->dst->kind)) {
                 // dead code from here to next label
                 IR *x = ir->next;
                 while (x && x->opc != OPC_LABEL) {
@@ -2716,22 +2743,6 @@ int EliminateDeadCode(IRList *irl)
                         change = 1;
                     }
                     x = ir_next;
-                }
-                /* is the branch to the next instruction? */
-                if (ir_next && ir_next->opc == OPC_LABEL && ir_next->dst == ir->dst && !InstrIsVolatile(ir)) {
-                    DeleteIR(irl, ir);
-                    change = 1;
-                }
-            } else if (ir->cond == COND_FALSE && !InstrIsVolatile(ir)) {
-                DeleteIR(irl, ir);
-            } else {
-                /* if the branch skips over things that already have the right
-                    condition, delete it
-                */
-                if (ir->dst && !IsRegister(ir->dst->kind) && ir_next && AllInstructionsConditional(InvertCond(ir->cond), ir_next, ir->dst) && !InstrIsVolatile(ir))
-                {
-                    DeleteIR(irl, ir);
-                    change = 1;
                 }
             }
         } else if (ir->cond == COND_FALSE) {
@@ -2744,7 +2755,6 @@ int EliminateDeadCode(IRList *irl)
             DeleteIR(irl, ir);
             change = 1;
         }
-        ir = ir_next;
     }
     return change;
 }
