@@ -532,7 +532,6 @@ struct vfs *
 get_vfs(struct littlefs_flash_config *fcfg, int do_format)
 {
     struct vfs *v;
-    static struct vfs temp;
     int r;
 #ifdef _DEBUG_LFS
     __builtin_printf("get_vfs for littlefs\n");
@@ -545,7 +544,7 @@ get_vfs(struct littlefs_flash_config *fcfg, int do_format)
         return 0;
     }
 
-    v = &temp;
+    v = calloc(1, sizeof(struct vfs));
     if (!v) {
         _seterror(ENOMEM);
         return 0;
