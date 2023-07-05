@@ -2216,19 +2216,22 @@ GetArrayBase(AST *arraytype)
 /* find minimum alignment for a type */
 int TypeAlign(AST *typ)
 {
+    int r;
     typ = RemoveTypeModifiers(typ);
     while (typ && typ->kind == AST_ARRAYTYPE) {
         typ = RemoveTypeModifiers(typ->left);
     }
     if (!typ) {
-        return 4;
+        return LONG_SIZE;
     }
     switch (typ->kind) {
     case AST_INTTYPE:
     case AST_UNSIGNEDTYPE:
     case AST_GENERICTYPE:
     case AST_FLOATTYPE:
-        return EvalConstExpr(typ->left);
+        r = EvalConstExpr(typ->left);
+        if (r <= LONG_SIZE) return r;
+        return LONG_SIZE;
     case AST_PTRTYPE:
     case AST_REFTYPE:
     case AST_COPYREFTYPE:
@@ -2241,7 +2244,7 @@ int TypeAlign(AST *typ)
         if (P->varsize < 3 && P->varsize > 0) {
             return P->varsize;
         }
-        return 4;
+        return LONG_SIZE;
     }
     }
 }

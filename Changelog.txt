@@ -1,5 +1,6 @@
 Version 6.2.0
 - Fixed offset computation when structs have 8 byte subfields
+- Fixed a bug in alignment of 64 bit integers
 - Implemented new method pointer code for PASM backends that does not require memory allocation.
 - Optimized some 64 bit operations on constants (thanks to Ada)
 
