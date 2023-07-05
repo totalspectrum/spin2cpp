@@ -411,21 +411,6 @@ PUB start(bus, flags, freq, cog) : driverCog | timeout, i, j, latency, burst, de
         elseif cogList[bus * NUMCOGS + i] <> 0    'exit if something was setup prior to starting
             quit 
  
-    _txstr(@"startupParams: ")
-    repeat j from 0 to 7
-      _txhex(startupParams[j])
-    _txstr(string(13, 10))
-
-    _txstr(@"bus: ")
-    repeat j from 0 to 31
-      _txhex(devices[j])
-    _txstr(string(13, 10))
-    
-    _txstr(@"cogList: ")
-    repeat j from 0 to 7
-      _txhex(cogList[j])
-    _txstr(string(13, 10))
-
     ' auto assign the COG if desired
     if cog +> NUMCOGS -1 
         cog := 16

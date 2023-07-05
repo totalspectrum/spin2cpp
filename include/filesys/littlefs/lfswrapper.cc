@@ -507,7 +507,7 @@ static int v_readdir(DIR *dir, struct dirent *ent)
     return 0;
 }
 
-static unsigned long long f_pinmask;
+unsigned long long f_pinmask;
 
 /* initialize (do first mount) */
 /* for now this is a dummy function, but eventually some of the work
@@ -538,6 +538,9 @@ get_vfs(struct littlefs_flash_config *fcfg, int do_format)
     __builtin_printf("get_vfs for littlefs\n");
 #endif
     if (lfs_in_use) {
+#ifdef _DEBUG_LFS
+        __builtin_printf("littlefs is in use\n");
+#endif
         _seterror(EBUSY);
         return 0;
     }
@@ -547,13 +550,19 @@ get_vfs(struct littlefs_flash_config *fcfg, int do_format)
         _seterror(ENOMEM);
         return 0;
     }
-    f_pinmask = (1ULL << 61) | (1ULL << 60) | (1ULL << 59) | (1ULL << 58);
+    f_pinmask = fcfg->pinmask;
     if (!_usepins(f_pinmask)) {
+#ifdef _DEBUG_LFS
+        __builtin_printf("littlefs: flash pins are in use\n");
+#endif        
         _seterror(EBUSY);
         return 0;
     }
     r = _flash_create(&lfs_cfg, fcfg);
     if (r) {
+#ifdef _DEBUG_LFS
+        __builtin_printf("littlefs: _flash_create returned error\n");
+#endif        
         _seterror(-r);
         return 0;
     }

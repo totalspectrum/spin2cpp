@@ -72,7 +72,8 @@ struct littlefs_flash_config {
     unsigned offset;         // base address within flash, must be a multiple of erase_size
     unsigned used_size;      // size to be used within flash, must be a multiple of erase_size
     _BlockDevice *dev;       // device to use for I/O (NULL for default SPI flash)
-    unsigned reserved[3];    // reserved for future use (pins and whatnot)
+    unsigned long long pinmask;        // pins used by device (0 for default)
+    unsigned reserved;    // reserved for future use (pins and whatnot)
 };
 struct vfs *_vfs_open_littlefs_flash(int do_format = 1, struct littlefs_flash_config *cfg = 0) _IMPL("filesys/littlefs/lfs_spi_vfs.c");
 int _mkfs_littlefs_flash(struct littlefs_flash_config *cfg = 0) _IMPL("filesys/littlefs/lfs_spi_vfs.c");

@@ -1,7 +1,6 @@
 '
-' driver for Parallax HyperRAM/HyperFlash memory board
-' adapted from Wuerfel_21's code in Megayume
-' Copyright 2023 IrqSome Software and Total Spectrum Software
+' driver for Parallax HyperRAM memory board
+' Copyright 2023 Total Spectrum Software
 ' MIT Licensed
 '
 
@@ -9,86 +8,25 @@
 CON
 BASEPIN = 32
 
-HYPER_ACCESSORY = BASEPIN
-HYPER_CLK    =  8+HYPER_ACCESSORY
-HYPER_RWDS   = 10+HYPER_ACCESSORY
-HYPER_SELECT = 12+HYPER_ACCESSORY
-HYPER_BASE   =  0+HYPER_ACCESSORY
-HYPER_RESET  = 15+HYPER_ACCESSORY
-
-HYPER_LATENCY  = 6
-HYPER_WAIT  = HYPER_LATENCY*4 - 2
-HYPER_DELAY = 13
-HYPER_SYNC_CLOCK = false
-HYPER_SYNC_DATA = false
-
-VAR
-  long exmem_mailbox[24]
-  long exmem_struct
-  byte exmem_buf[8*4+8*4+32*4]
-  long exmem_cog
-
 OBJ
-  exmem: "spin/hyperdrv.spin2"
+  h : "spin/hypermemory.spin2"
   
 ' this is not a top level object
 PUB null()
 
-PUB start() | tmp, cogs, banks
-  exmem_struct := @exmem_buf
-  tmp := exmem_struct
-  cogs := tmp+8*4
-  banks := cogs+8*4
-  if exmem_cog
-    return
-
-  long[tmp][0] := clkfreq
-  long[tmp][1] := (HYPER_SYNC_CLOCK?0:1)<<exmem.UNREGCLK_BIT
-  long[tmp][2] := (HYPER_RESET < 32 && HYPER_RESET > 0) ? 1<<HYPER_RESET : 0
-  long[tmp][3] := HYPER_RESET >= 32 ? 1<<HYPER_RESET : 0
-  long[tmp][4] := HYPER_BASE
-  long[tmp][5] := banks
-  long[tmp][6] := cogs
-  long[tmp][7] := @exmem_mailbox[0]
-
-  long[cogs][0]:=-1<<16 + %1_111<<12
-  longfill(cogs+4,-1<<16,7)
-  longfill(banks,negx,32)
-
-  long[banks][0] := 128<<16 + (HYPER_DELAY-7)<<13 + (HYPER_SYNC_DATA?0:1)<<12 + 22
-  long[banks][16] := HYPER_SELECT + HYPER_CLK<<8 + HYPER_RWDS<<16 + HYPER_LATENCY<<25 ' Latency????
-
-  exmem_mailbox[0] := -1
-  cogs := exmem.getDriverAddr()
-  exmem_cog := coginit(COGEXEC_NEW,cogs,tmp)+1
-  repeat while exmem_mailbox[0] ' wait for init so data structures can go dead
-
+PUB start()
+  h.initHyperDriver(BASEPIN, 0, -1, 0, clkfreq, 16)
+  
 PUB stop()
-  if exmem_cog
-    sync()
-  cogstop((exmem_cog\0)-1)
+  h.shutdown(0, 1)
+
+PUB write(dstExAddr,srcHubAddr,length) : r
+  return h.write(srcHubAddr, dstExAddr, length)
+
+PUB fill(dst,val,length) : r
+  return h.fillBytes(dst, val, length, 0)
+  
+PUB read(dstExAddr,srcHubAddr,length) : r
+  return h.read(srcHubAddr, dstExAddr, length)
 
 PUB sync()
-  repeat while exmem_mailbox[0]
-
-PUB write(dst,src,length)
-  sync()
-  exmem_mailbox[2] := length
-  exmem_mailbox[1] := src
-  exmem_mailbox[0] := exmem.R_WRITEBURST + (dst & $fffffff)
-  sync()
-
-PUB fill(dst,val,length)
-  sync()
-  exmem_mailbox[2] := length
-  exmem_mailbox[1] := val
-  exmem_mailbox[0] := exmem.R_WRITEBYTE + (dst & $fffffff)
-  sync()
-  
-PUB read(dst,src,length)
-  sync()
-  exmem_mailbox[2] := length
-  exmem_mailbox[1] := dst
-  exmem_mailbox[0] := exmem.R_READBURST + (src & $fffffff)
-  sync()
-  
