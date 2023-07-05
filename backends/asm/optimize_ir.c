@@ -5362,9 +5362,11 @@ AnalyzeInlineEligibility(Function *f)
         }
 
         // Check for impurity here. This check is very conservative.
-        if (!IsLabel(ir) && !IsSafeALUOp(ir->opc)) pure = false;
-        if (ir->dst && !(IsLocalOrArg(ir->dst) || isResult(ir->dst))) pure = false;
-        if (ir->src && !(IsImmediate(ir->src) || IsLocalOrArg(ir->src) || isResult(ir->src))) pure = false;
+        if (pure) {
+            if (!IsLabel(ir) && !IsSafeALUOp(ir->opc)) pure = false;
+            if (ir->dst && !(IsLocalOrArg(ir->dst) || isResult(ir->dst))) pure = false;
+            if (ir->src && !(IsImmediate(ir->src) || IsLocalOrArg(ir->src) || isResult(ir->src))) pure = false;
+        }
 
         n++;
     }
@@ -5376,7 +5378,7 @@ AnalyzeInlineEligibility(Function *f)
     // a function called from only 1 place should be inlined
     // if it means that the function definition can be eliminated
     if (RemoveIfInlined(f) && (gl_optimize_flags & OPT_INLINE_SINGLEUSE)) {
-        if (f->callSites == 1) {
+        if (f->callSites <= 1) {
             FuncData(f)->inliningFlags |= ASM_INLINE_SINGLE_FLAG;
         } else if (f->callSites == 2 && (n <= 2*threshold)) {
             FuncData(f)->inliningFlags |= ASM_INLINE_SINGLE_FLAG;
@@ -5440,6 +5442,7 @@ ExpandInlines(IRList *irl)
             if (f && ((FuncData(f)->inliningFlags & (ASM_INLINE_SMALL_FLAG|ASM_INLINE_SINGLE_FLAG)) || ShouldExpandPureFunction(ir))) {
                 ReplaceIRWithInline(irl, ir, f);
                 FuncData(f)->actual_callsites--;
+                FuncData(f)->got_inlined = true;
                 updateMax(&FuncData(curfunc)->maxInlineArg,f->numparams);
                 updateMax(&FuncData(curfunc)->maxInlineArg,FuncData(f)->maxInlineArg);
                 if (!f->is_leaf && !FuncData(f)->effectivelyLeaf) non_inline_calls++; // Non-leaf inline may contain call
