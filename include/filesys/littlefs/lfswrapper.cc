@@ -140,9 +140,9 @@ static int _flash_create(struct lfs_config *cfg, struct littlefs_flash_config *f
 // FlexC VFS code
 ///////////////////////////////////////////////////////////////////////
 
-static char lfs_in_use;
-static lfs_t lfs;
-static struct lfs_config lfs_cfg;
+char lfs_in_use;
+lfs_t lfs;
+struct lfs_config lfs_cfg;
 
 static int _set_lfs_error(int lerr)
 {
@@ -551,9 +551,14 @@ get_vfs(struct littlefs_flash_config *fcfg, int do_format)
         return 0;
     }
     f_pinmask = fcfg->pinmask;
+#ifdef _DEBUG_LFS
+        unsigned hi = f_pinmask >> 32;
+        unsigned lo = f_pinmask;
+        __builtin_printf("littlefs: flash pins %x: %x\n", hi, lo);
+#endif        
     if (!_usepins(f_pinmask)) {
 #ifdef _DEBUG_LFS
-        __builtin_printf("littlefs: flash pins are in use\n");
+        __builtin_printf("littlefs: flash pins %x: %x are in use\n", hi, lo);
 #endif        
         _seterror(EBUSY);
         return 0;
