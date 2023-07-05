@@ -561,6 +561,7 @@ again:
                         ERROR(NULL, "Function relocation requested, but %s is not a function whose address was taken", sym->user_name);
                         indexForFunc = 0;
                     }
+                    symname = BackendNameForSymbol(sym);
                 } else {
                     symname = BackendNameForSymbol(sym);
                 }
@@ -580,7 +581,7 @@ again:
                 case RELOC_KIND_FPTR12:
                     shiftAmount = (nextreloc->kind == RELOC_KIND_FPTR12) ? 20 : 16;
                     if (indexedFunc) {
-                        flexbuf_printf(fb, "(%d", indexForFunc);
+                        flexbuf_printf(fb, "(%d {%s}", indexForFunc,symname);
                     } else {
                         flexbuf_printf(fb, "(@@@%s", symname);
                     }
