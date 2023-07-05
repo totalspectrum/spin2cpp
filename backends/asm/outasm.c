@@ -5605,7 +5605,7 @@ RemoveIfInlined(Function *f)
 static bool
 ActuallyInlined(Function *f)
 {
-    if (!FuncData(f)->isInline) {
+    if (FuncData(f)->inliningFlags == 0) {
         return false;
     }
     if (FuncData(f)->actual_callsites > 0) {
@@ -5754,7 +5754,7 @@ CompileFunc_internal(void *vptr, Module *P)
             continue;
         curfunc = f;
         CompileFunctionBody(f);
-        FuncData(f)->isInline = ShouldBeInlined(f);
+        AnalyzeInlineEligibility(f);
     }
     curfunc = savecurf;
     return 0;
@@ -5766,7 +5766,6 @@ ExpandInline_internal(void *vptr, Module *P)
     Function *f;
     int change;
     int newInlines;
-    int inlineStatus;
     int anyChange = 0;
 
     do {
@@ -5783,12 +5782,8 @@ ExpandInline_internal(void *vptr, Module *P)
                 OptimizeIRLocal(firl, f);
                 // revisit the question of whether it should be inlined, given that
                 // we've perhaps changed its size
-                if (!FuncData(f)->isInline) {
-                    inlineStatus = ShouldBeInlined(f);
-                    if (inlineStatus) {
-                        newInlines++;
-                        FuncData(f)->isInline = true;
-                    }
+                if (AnalyzeInlineEligibility(f)) {
+                    newInlines++;
                 }
             }
         }
