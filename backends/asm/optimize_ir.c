@@ -2528,9 +2528,7 @@ HasSideEffectsOtherThanReg(IR *ir)
         return true;
     }
     if (IsBranch(ir)) {
-        if (ir->opc == OPC_CALL &&
-                (ir->dst == mulfunc || ir->dst == divfunc || ir->dst == unsdivfunc))
-        {
+        if (ir->opc == OPC_CALL && isMulDivFunc(ir->dst)) {
             return false;
         }
         return true;
