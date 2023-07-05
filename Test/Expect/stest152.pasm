@@ -14,9 +14,7 @@ _foo
 LR__0001
 LR__0002
 	mov	_var01, #2
-	jmp	#LR__0004
 LR__0003
-LR__0004
 	mov	result1, _var01
 _foo_ret
 	ret
