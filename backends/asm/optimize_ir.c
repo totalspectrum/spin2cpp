@@ -5444,6 +5444,7 @@ ExpandInlines(IRList *irl)
             if (f && ((FuncData(f)->inliningFlags & (ASM_INLINE_SMALL_FLAG|ASM_INLINE_SINGLE_FLAG)) || ShouldExpandPureFunction(ir))) {
                 ReplaceIRWithInline(irl, ir, f);
                 FuncData(f)->actual_callsites--;
+                FuncData(f)->got_inlined = true;
                 updateMax(&FuncData(curfunc)->maxInlineArg,f->numparams);
                 updateMax(&FuncData(curfunc)->maxInlineArg,FuncData(f)->maxInlineArg);
                 if (!f->is_leaf && !FuncData(f)->effectivelyLeaf) non_inline_calls++; // Non-leaf inline may contain call
