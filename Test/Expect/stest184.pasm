@@ -23,7 +23,7 @@ _fetchv
 	mov	arg02, arg01
 	cmps	arg01, fetchv_tmp002_ wc
  if_ae	jmp	#LR__0002
-	mov	_inline__inline___system____builtin_memmove__idx__0000, #20 wz
+	mov	_inline__inline___system____builtin_memmove__idx__0000, #20
 LR__0001
 	rdbyte	result1, fetchv_tmp002_
 	wrbyte	result1, arg01
