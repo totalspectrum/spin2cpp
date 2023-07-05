@@ -532,12 +532,16 @@ pri __builtin_bit_permute_step(x = +long,m = +long,shift = +long) : r = +long
 '' reserve some pins; returns TRUE or FALSE
 ''
 pri _usepins(plo, phi) : r
-  '_txstr(@"usepins: need ")
-  '_txhex(plo)
-  '_txhex(phi)
-
-  if (plo AND __pinsused_lo) %orelse (phi AND __pinsused_hi)
-    '_txstr(string("usepins: some pins in use", 13, 01))
+{
+  _txstr(@"usepins: need ")
+  _txhex(plo)
+  _txhex(phi)
+  _txstr(@" got ")
+  _txhex(__pinsused_lo)
+  _txhex(__pinsused_hi)
+}
+  if (plo & __pinsused_lo) %orelse (phi & __pinsused_hi)
+    '_txstr(string("usepins: some pins in use", 13, 10))
     return 0
   __pinsused_lo |= plo
   __pinsused_hi |= phi
