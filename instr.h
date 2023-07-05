@@ -147,7 +147,6 @@ typedef enum IROpcode {
     OPC_WRNZ,
     OPC_WRZ,
     OPC_ZEROX,
-    OPC_XORO32,
     OPC_REPEAT,
     OPC_REPEAT_END,  // dummy instruction to mark end of repeat loop
     
