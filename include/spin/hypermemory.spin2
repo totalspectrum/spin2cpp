@@ -1,0 +1,2809 @@
+'--------------------------------------------------------------------------------------------------
+{
+ Propeller 2 Memory Driver
+ =========================
+ 
+ This software contains a SPIN2 based interface to access HyperRAM/HyperFlash external memory 
+ devices from Propeller 2 systems, as found on the Parallax P2-EVAL HyperRAM expansion board.  
+ It works in conjuction with a lower level PASM2 based COG that provides access to the memory.
+
+ The driver manages multiple memory buses with multiple devices on each bus, shared by multiple
+ COGs.  Different COGs can be accessing different buses simultaneously without blocking, and a 
+ each COG can also launch multiple requests to memories on different buses in a non-blocking manner.
+
+ It supports singular reads & writes of bytes/words/longs as well as larger bursts plus fills and
+ copies.  It includes methods for bitmap image transfers to/from and within external memories. 
+ The HyperFlash devices can also be erased and re-programmed with the SPIN2 API provided.
+
+ Potentially, in the future, other external memory devices could be mapped into the same address 
+ space to extend the capabilities further.
+
+ Some of the HyperRAM transfer code was inspired by some earlier original work by ozpropdev.
+
+  Revision history:
+ ----------------
+   0.7b   22 SEP 2020  rogloh      -initial BETA pre-release for Ahle2-
+   0.8b   27 SEP 2020  rogloh      -initial BETA release-
+}
+
+'--------------------------------------------------------------------------------------------------
+' MEMORY DRIVER - SPIN2 & Fastspin API
+'--------------------------------------------------------------------------------------------------
+
+CON
+    MAX_INSTANCES = 1  ' set this to the maximum number of HyperRAM buses used in your system 
+    LAST_INSTANCE = MAX_INSTANCES - 1
+
+    'mailbox request types passed through to SPIN2 clients needing direct mailbox access
+    R_READBYTE  = driver.R_READBYTE
+    R_READWORD  = driver.R_READWORD
+    R_READLONG  = driver.R_READLONG
+    R_READBURST = driver.R_READBURST
+    R_WRITEBYTE = driver.R_WRITEBYTE
+    R_WRITEWORD = driver.R_WRITEWORD
+    R_WRITELONG = driver.R_WRITELONG
+    R_WRITEBURST= driver.R_WRITEBURST
+    R_SETLATENCY= driver.R_SETLATENCY
+    R_GETLATENCY= driver.R_GETLATENCY
+    R_SETPARAMS = driver.R_SETPARAMS
+    R_GETPARAMS = driver.R_GETPARAMS
+    R_SETREG    = driver.R_SETREG
+    R_GETREG    = driver.R_GETREG
+    R_CONFIG    = driver.R_CONFIG
+    R_DUMPSTATE = driver.R_DUMPSTATE
+
+    'memory device types
+    #0, T_HYPERFLASH, T_HYPERRAM_1, T_INVALID ' keep T_INVALID last, as more types get added 
+
+    'memory device sizes (for 8MB or smaller devices, you can use 16MB with foldover)
+    #23, S_16MB, S_32MB, S_64MB, S_128MB, S_256MB
+
+    'flag bit masks and their values for COG
+    F_ATN            = 1 ' flag mask included when COGATN notification is desired
+    F_LOCKED         = 2 ' flag mask included when locked transfers are desired
+    F_PRIORITY       = 4 ' flag mask included when priority servicing is desired
+    F_STALL          = 8 ' flag mask included when RR COGs are to stall if accessing locked flash
+
+    'flag bit masks and their values for driver startup
+    F_FASTREAD       = 1 << driver.FASTREAD_BIT  ' flag mask used to enable SYSCLK/1 read speeds
+    F_FASTWRITE      = 1 << driver.FASTWRITE_BIT ' (future SYSCLK/1 writes if/when supported?)
+    F_UNREGCLK       = 1 << driver.UNREGCLK_BIT  ' flag mask used to disable registering the clock pins
+    F_EXPANSION      = 1 << driver.EXPANSION_BIT ' flag mask used to enable graphics expansion
+
+    'flag bit masks per bank
+    F_PROTFLAG       = 1 << driver.PROT_BIT
+    F_FLASHFLAG      = 1 << driver.FLASH_BIT
+
+    'error codes (including those passed back from the underlying driver)
+    ERR_INVALID_BANK = driver.ERR_INVALID_BANK ' bank requested is not mapped to a device
+    ERR_UNSUPPORTED  = driver.ERR_UNSUPPORTED  ' request is unsupported by the driver
+    ERR_INVALID_LIST = driver.ERR_INVALID_LIST ' invalid request format in list
+    ERR_ALIGNMENT    = driver.ERR_ALIGNMENT    ' word address and word aligned writes only in HyperFlash
+    ERR_BUSY         = driver.ERR_BUSY         ' flash bank is currently busy (COG access protected)
+    ERR_INVALID      =  -6 ' invalid arguments
+    ERR_NO_FREE_BUS  =  -7 ' ran out of driver resources (increase MAX_INSTANCES)
+    ERR_BAD_ADDR_MAP =  -8 ' address alignment mapping error
+    ERR_NOT_CREATED  =  -9 ' bus not created
+    ERR_NO_COGS      = -10 ' ran out of COGs
+    ERR_NO_DEVICES   = -11 ' no devices mapped to the bus
+    ERR_ACTIVE       = -12 ' driver already running for this bus, can't map new devices
+    ERR_STARTUP      = -13 ' driver COG failed to respond after starting (driver crashed?)
+    ERR_TOO_SLOW     = -14 ' can't send sufficient data at this P2 clock speed
+    ERR_INACTIVE     = -15 ' driver is not running
+    ERR_ABORTED      = -16 ' driver was shutdown
+    ERR_UNMAPPED     = -17 ' address is unmapped or driver is not running
+    ERR_FLASH_ERASE  = -18 ' flash erase failure
+    ERR_FLASH_PROGRAM= -19 ' flash programming failure
+    ERR_FLASH_TIMEOUT= -20 ' flash ready response timed out
+    ERR_FLASH_LOCKED = -21 ' flash access sector protected/locked 
+    ERR_NOT_FLASH    = -22 ' not a flash device address
+    ERR_NOT_RAM      = -23 ' not a RAM device address
+    ERR_WOULD_BLOCK  = -24 ' cancelled to avoid blocking during non-blocking request
+    ERR_NOT_SAME_BUS = -25 ' copy request not within same bus
+    ERR_NO_LOCK      = -26 ' no LOCK available for driver
+    ERR_ADDR_IN_USE  = -27 ' address already mapped and in use
+    ERR_MAILBOX_BUSY = -28 ' mailbox still has operation pending
+    ERR_UNLOCKED     = -29 ' flash not currently exclusively protected
+    ERR_CANCELLED    = -30 ' flash programming was cancelled
+    
+    'driver operating frequency range in Hz
+    MINFREQ = 50_000_000
+    MAXFREQ = 400_000_000  ' good luck!
+
+    'startup latency of devices after reset
+    DEFAULT_HYPERRAM1_LATENCY  = 6   ' default initial latency of HyperRAM (v1) after reset
+    DEFAULT_HYPERRAM2_LATENCY  = 7   ' default initial latency of HyperRAM (v2) after reset
+    DEFAULT_HYPERFLASH_LATENCY = 16  ' default initial latency of HyperFLASH after reset
+
+    'misc
+    NUMCOGS     = 8     ' keep this fixed
+    NUMBANKS    = 16    ' number of banks per bus 
+    ALLCOGS     = $ff   ' mask used when this setting applies to all COGs
+    ITEMSIZE    = 8     ' size of list item in longs
+    MAILBOXSIZE = 24    ' mailboxes per instance counted in longs
+ 
+    'field identifiers
+    #0, FIELD_BURST, FIELD_DELAY, FIELD_PROTECTION, FIELD_FLAGS
+
+    'flash erase sizes / flags
+    ERASE_SECTOR_256K    = $00040000  ' single sector erase, size=256kB
+    ERASE_ENTIRE_FLASH   = $10000000  ' entire device erase
+    ERASE_NO_WAIT        = $20000000  ' non-blocking erase, status MUST be polled by client
+    ERASE_SHOW_PROGRESS  = $40000000  ' calls send(".") each second in polling loop during erase
+
+    'flash status register bits
+    FLASH_STATUS_DRB     = 7  ' device ready bit
+    FLASH_STATUS_ESB     = 5  ' erase status bit
+    FLASH_STATUS_PSB     = 4  ' program status bit
+    FLASH_STATUS_SLSB    = 1  ' sector locked bit
+    FLASH_STATUS_ESTAT   = 0  ' sector erase status bit
+
+    FLASH_PROG_TIMEOUT   = 2  ' in milliseconds
+
+'.................................................................................................
+
+OBJ
+    driver : "hyperdrv"     ' HyperRAM/Flash driver
+
+{{
+.................................................................................................
+initHyperDriver(basePin, ramAddr, flashAddr, flags, freq, cog) 
+
+The simplest way to initialize a driver for the P2-EVAL HyperRAM/HyperFlash breakout board.  Once 
+invoked, all COGs can share both Hyper memories using basic round-robin request scheduling and the
+largest burst size.  Service parameters can be adjusted after this if other settings are desired,
+unnecessary COGs can be removed from polling, default delays/latencies modified, etc.
+
+Generic initialization for other implementations can instead be achieved by calling these methods:
+mapHyperRam(...) and/or mapHyperFlash(...)    ' must call either at least once before start
+start(...)                                    ' call only after mapping some device
+
+setupQoS(...)                                 ' can call anytime after mapping or after start
+removeCogs(...)                               ' can call after mapping and start
+etc
+
+Arguments:
+   basePin - base pin number where HyperRAM/Flash module is fitted (0,16,32,48)
+   ramAddr - HyperRAM start address (or -1 if not desired), this gets aligned on a 16MB boundary
+   flashAddr - HyperFlash start address (or -1 if not desired), gets aligned on a 32MB boundary
+   flags - 0 (default), or can optionally include these driver COG configuration flags:
+          F_FASTREAD mask bit to enable sysclk/1 transfer rate reads instead of sysclk/2 on all banks
+          F_UNREGCLK mask bit to not register the clock output pin (experimental only at this stage)       
+   freq - P2 clock frequency at which this driver will ultimately run, or 0 for current P2 frequency.
+          This value is used for determining the burst sizes applicable at this bus speed.
+   cog -  either a COG ID for the driver to use, or -1 to allocate a new COG
+
+Returns: driver's bus ID on success, or a negative error code
+.................................................................................................
+}}
+
+PUB initHyperDriver(basePin, ramAddr, flashAddr, flags, freq, cog) : bus | profile
+    bus := ERR_NO_DEVICES
+
+    ' map the HyperRAM and HyperFlash devices, and align 32MB HyperFlash to a 32MB block
+    if ramAddr <> -1
+        profile := getDefaultProfile(T_HYPERRAM_1, flags) 
+        if (bus := mapHyperRam(ramAddr, S_16MB, basePin, basePin+12, basePin+8, { 
+}                          basePin+10, basePin+15, 0, profile)) < 0
+            return bus
+
+    if flashAddr <> -1
+        profile := getDefaultProfile(T_HYPERFLASH, flags) 
+        if (bus := mapHyperFlash(flashAddr & $FE000000, S_32MB, basePin, basePin+13, basePin+9,   {
+}                            basePin+11, basePin+15, 0, profile)) < 0
+            return bus
+
+    ' test for neither device mapped
+    if bus < 0
+        return bus
+
+    ' start the driver, check for error
+    cog := start(bus, flags, freq, cog)
+    if cog +> NUMCOGS-1
+        return cog
+
+{{
+.................................................................................................
+mapHyperRam(addr, size, datapin, cspin, clkpin, rwdspin, resetpin, burst, delayProfile)
+ or
+mapHyperFlash(addr, size, datapin, cspin, clkpin, rwdspin, resetpin, burst, delayProfile)
+
+Maps a Hyper memory device to a sequence of 16MB blocks starting at the provided 32 bit address.
+Mapping can only be done before the driver is started.  Up to 16 memory blocks can be mapped to
+different devices on the same bus spanning a block range from $x0000000-$xF000000 where x is some
+hexadecimal digit from $0-$F.  All devices on the same bus must have unique values in address 
+bits 24-27 and the start address should be aligned to the size of the device (eg. a 32MB device 
+only starts on a 32MB boundary in the 4GB address space, etc).
+
+Arguments:
+   addr - 32 bit start address of a range of external memory to map to a Hyper device.  
+   size - size of device being mapped (S_16MB, S_32MB, ..., S_256MB)
+   datapin - P2 pin number of lowest data pin of Hyper bus (0, 8, 16, ..., 56)
+   cspin - P2 pin number of device's chip select signal
+   clkpin - P2 pin number of device's clock signal
+   rwdspin - P2 pin number of device's RWDS signal
+   resetpin - P2 pin number of device's reset signal (-1 if not used)
+   burst - maximum number of bytes that can be transferred to/from the device in one CS transaction
+   delayProfile - points to delay timing profile used by bank at the operating frequency
+
+   Note: The burst value is specified assuming a sysclk/1 transfer rate. With sysclk/2 transfers 
+         (e.g all writes) the actual device burst will be half of this value.  Transfers longer 
+         than this burst size will be fragmented into multiple smaller bursts up to this size.
+
+         You should typically set this to 0 to to automatically let the driver assign it a default 
+         burst size based on the device capablities, otherwise the default device burst size can 
+         be overridden for tweaking performance if required.
+           
+ Returns: Hyper bus ID on success, negative error values on failure
+
+
+  In the future with some more development and drivers, other buses could also be mapped such as
+  mapSpiRAM(addr, size, type, miso, mosi, cs, clk) 
+  mapSpiFlash(addr, size, type, miso, mosi, cs, clk)
+  mapPSRAM(addr, size, type, ...)
+  ..etc
+ This may allow software flexibility using different memories and types within the same infrastructure.
+.................................................................................................
+}}
+PUB mapHyperRam(addr, size, datapin, cspin, clkpin, rwdspin, resetpin, burst, delayProfile) : bus
+    bus := mapHyperDevice(addr, T_HYPERRAM_1, size, datapin, cspin, clkpin, rwdspin, resetpin, burst, delayProfile)
+
+PUB mapHyperFlash(addr, size, datapin, cspin, clkpin, rwdspin, resetpin, burst, delayProfile) : bus
+    bus := mapHyperDevice(addr, T_HYPERFLASH, size, datapin, cspin, clkpin, rwdspin, resetpin, burst, delayProfile) 
+
+' internally used mapping method
+PRI mapHyperDevice(addr, memType, size, datapin, cspin, clkpin, rwdspin, resetpin, burst, delayProfile) : bus | device, pinInfo, i, latency, bank
+    ' check for invalid arguments
+    if size < S_16MB or size > S_256MB or memType +> T_INVALID - 1
+        return ERR_INVALID
+
+    ' check for unaligned address size mapping
+    bank := (addr >> 24) & $f
+    if size == S_32MB and (bank & 1)
+        return ERR_BAD_ADDR_MAP
+    elseif size == S_64MB and (bank & 3)
+        return ERR_BAD_ADDR_MAP
+    elseif size == S_128MB and (bank & 7)
+        return ERR_BAD_ADDR_MAP
+    elseif size == S_256MB and (bank & 15)
+        return ERR_BAD_ADDR_MAP
+
+    ' create or return the existing bus ID for these pins
+    bus := create(datapin)
+    if bus < 0
+        return bus
+
+    ' check if driver is already running, if so it's too late to map now 
+    if driverCogs[bus] <> -1  
+        return ERR_ACTIVE
+    
+    ' constrain the burst to remain within the 16 bit streamer limit and align to a flash page boundary
+    if burst +> $FFF0
+        burst := $FFF0
+
+    ' always allow at least 4 byte transfers so all individual long read/write accesses work atomically
+    ' we then double this to 8 to account for the slower sysclk/2 write which halves the burst
+    if burst and burst < 8 
+        burst := 8 
+    burst &= !7 ' also keep lower 3 bits free for flash protection use
+
+    ' determine device information
+    device := (burst << 16) | size ' input delay is determine later at startup
+
+    ' assign a default latency
+    if memType == T_HYPERFLASH
+        device |= F_FLASHFLAG
+        latency := DEFAULT_HYPERFLASH_LATENCY
+    else 
+        ' assume HyperRAM v1 device for now, until V2 devices supported
+        latency := DEFAULT_HYPERRAM1_LATENCY
+
+    ' prepare control pins and latency for this device
+    pinInfo := (latency << 25) | (rwdspin & $3f) << 16 | (clkpin & $3f) << 8 | (cspin & $3f) 
+
+    ' check if any other devices on this bus conflict with the address chosen
+    repeat i from bank to bank + ((1<<(size - S_16MB)) - 1)
+        if devices[bus * 2 * NUMBANKS + i] 
+            return ERR_ADDR_IN_USE
+
+    ' replicate device information into all driver banks that span this device's size
+    repeat i from bank to bank + ((1<<(size - S_16MB)) - 1)
+        devices[bus * 2 * NUMBANKS + i] := device
+        devices[bus * 2 * NUMBANKS + NUMBANKS + i] := pinInfo
+        ' retain delay timing profile pointer for later use during startup
+        profiles[bus*NUMBANKS + i] := delayProfile 
+
+    ' set bit7 of addrMap entry to keep this new mapping invalid until driver is enabled
+    ' which prevents premature memory access by other COGs and a potential hang otherwise
+    addrMap[addr >> 28] := 128 + bus 
+
+    ' maintain all new device reset pins on this bus
+    if resetpin > -1 AND resetpin < 32
+        maskA[bus] |= 1 << resetpin
+    if resetpin > 31 AND resetpin < 64
+        maskB[bus] |= 1 << (resetpin - 32)
+
+    return bus+1
+{{
+................................................................................................
+start(bus, flags, freq, cog) 
+
+Starts the driver COG for a Hyper memory bus.  At least one device needs to be mapped to the bus
+before this driver will be started.
+
+NOTE: Some setup parameters are global so only one COG should spawn each driver at any time.
+      If multiple drivers are being spawned by different COGs this needs to be managed with some
+      type of co-ordination or locks during critical provisioning steps that share common data.
+
+Arguments:
+   bus - Hyper bus ID for the bus to be started (1-based)
+   flags - optional flags can be enabled:
+          F_FASTREAD mask bit to enable sysclk/1 transfer rate reads instead of sysclk/2
+          F_FASTWRITE mask bit to enable sysclk/1 transfer rate writes instead of sysclk/2
+          F_UNREGCLK mask bit to unregister the clock output pin 
+   freq - operating frequency if it will be different to current P2 frequency, 0 otherwise
+   cog - COG ID to use for the driver or -1 to allocate a new COG
+   
+Returns new driver COG number or negative error values 
+................................................................................................
+}}
+PUB start(bus, flags, freq, cog) : driverCog | timeout, i, j, latency, burst, device, delay, timing, startAddr, id
+    ' externally exposed bus IDs are 1 based
+    bus-- 
+    ' check for invalid parameters
+    if bus +> LAST_INSTANCE
+        return ERR_INVALID
+
+    ' check the bus was created, if not created we don't have any devices mapped and can't start yet
+    if freeDrivers & (1 << bus)
+        return ERR_NO_DEVICES
+
+    ' check for the driver already running on this bus, if so don't start again just return its COG id
+    if driverCogs[bus] <> -1 
+        return driverCogs[bus]
+
+    ' determine system frequency we will operate at and check it falls within an allowed range
+    if freq == 0
+        freq := clkfreq
+    if freq +< MINFREQ or freq +> MAXFREQ
+        return ERR_INVALID
+
+    ' find and configure all devices on bus 
+    repeat i from 0 to NUMBANKS - 1 
+        ' skip unprovisioned banks
+        if (device := devices[bus * 2 * NUMBANKS + i]) == 0
+            next
+
+        ' compute the default burst size if it was unspecified
+        burst := device >> 16
+        latency:= devices[bus * 2 * NUMBANKS + i + NUMBANKS] >> 25
+        if burst == 0 ' automatic max burst size selected
+            if device & F_FLASHFLAG
+                burst := $FFF0 ' HyperFlash burst read size is only limited by streamer and page boundary
+            else  ' but for HyperRAM we need to compute a max size for the 4us interval
+                burst := getMaxBurst(freq, 4, latency)
+                ' check if there is at least enough time to send a 32 bit long at the lower transfer rate
+                if burst < 8 
+                    return ERR_TOO_SLOW
+
+        ' determine the read input delay for the operating frequency of this device using its profile
+        delay := lookupInputDelay(freq, profiles[bus * NUMBANKS + i])
+
+        ' update the device information in each bank
+        devices[bus * 2 * NUMBANKS + i] := (burst << 16) | ((delay & $f) << 12) | (device & $fff)
+
+    ' setup the startup parameters to pass to driver COG
+    i := (bus * NUMCOGS + cogid()) * ITEMSIZE
+    startupParams[i+0]:= clkfreq                     'operating P2 frequency
+    startupParams[i+1]:= flags                       'optional startup flags
+    startupParams[i+2]:= maskA[bus]                  'port A (lower 32 pins) reset mask
+    startupParams[i+3]:= maskB[bus]                  'port B (upper 32 pins) reset mask
+    startupParams[i+4]:= busBasePin[bus]             'data bus pin number
+    startupParams[i+5]:= @devices[bus * 2 * NUMBANKS]'ptr to all per bank params and pin settings
+    startupParams[i+6]:= @cogList[bus * NUMCOGS]     'ptr to all per COG settings
+    startupParams[i+7]:= mailboxAddr[bus]            'mailbox base address for this driver
+
+    ' if no COGs are setup yet then just use a default with all COGs enabled and accessing the 
+    ' memory via round robin polling, using the maximum default burst size for the devices
+    repeat i from 0 to NUMCOGS
+        if i == NUMCOGS 
+            setupQoS(ALLCOGS, bus+1, -1, 0, 0)
+        elseif cogList[bus * NUMCOGS + i] <> 0    'exit if something was setup prior to starting
+            quit 
+ 
+    _txstr(@"startupParams: ")
+    repeat j from 0 to 7
+      _txhex(startupParams[j])
+    _txstr(string(13, 10))
+
+    _txstr(@"bus: ")
+    repeat j from 0 to 31
+      _txhex(devices[j])
+    _txstr(string(13, 10))
+    
+    _txstr(@"cogList: ")
+    repeat j from 0 to 7
+      _txhex(cogList[j])
+    _txstr(string(13, 10))
+
+    ' auto assign the COG if desired
+    if cog +> NUMCOGS -1 
+        cog := 16
+
+    ' launch the PASM2 driver COG and return an error if no COGs were free
+    startAddr := driver.getDriverAddr()
+    driverCog := coginit(cog, startAddr, @startupParams + (bus * NUMCOGS + cogid()) * ITEMSIZE * 4)
+    if driverCog +> NUMCOGS - 1
+        return ERR_NO_COGS
+
+    ' wait until COG has completely started, or timeout if driver unresponsive after 50ms
+    timeout := getct()
+    repeat  
+        if getct() - timeout +> freq / 20
+            cogstop(driverCog)
+            return ERR_STARTUP ' should not occur, someone/something killed it?
+    until startupParams[(bus * NUMCOGS + cogid()) * ITEMSIZE] == 0
+
+    ' cache the latest setup mailbox addresses per COG to optimize for single driver instance 
+    repeat i from 0 to NUMCOGS - 1
+        mailboxAddrCog[i] := @mailboxes[0] + i * 12
+
+    ' enable the address mapping for this bus now the driver is running
+    repeat i from 0 to 15
+        if addrMap[i] == bus + 128
+            addrMap[i] -= 128 ' clear top bit to enable mapping
+
+    ' save the COG ID of driver for this bus
+    driverCogs[bus] := driverCog
+
+    'Loop through bus devices and setup a default device latency in case it had been changed 
+    'prior to this driver restarting, and if its reset pin was not enabled.  An obscure case.
+
+    repeat i from 0 to NUMBANKS-1
+        device := devices[bus * 2 * NUMBANKS + i]
+        if device
+            if device & F_FLASHFLAG
+                repeat j from 0 to 15
+                    if addrMap[j] == bus ' find any address mapped to this bus
+                        setFlashLatency((j<<28)+(i<<24), DEFAULT_HYPERFLASH_LATENCY)
+                        quit
+            else 
+                repeat j from 0 to 15 
+                    if addrMap[j] == bus ' find any address mapped to this bus
+                        ' assume Version 1 HyperRAM for now
+                        latency := DEFAULT_HYPERRAM1_LATENCY
+                        ' check for Version 2 HyperRAM 
+                        if (readRamIR((j<<28)+(i<<24), 1, 0) & $ff) == 1 ' read IR1 version byte
+                            ' if V2 HyperRAM, check operating frequency
+                            if ((flags & (F_FASTREAD|F_FASTWRITE)) && freq > 200000000)
+                                latency := DEFAULT_HYPERRAM2_LATENCY
+                        setRamLatency((j<<28)+(i<<24), latency)
+                        quit
+
+{{
+................................................................................................
+setupQoS(cogmask, bus, cogburst, flags, priority) 
+
+Configures one or more COGs to access the device(s) on a bus, with the given operating settings.
+This API is used to control the quality of service (QoS) for all the COGs setup to be serviced.
+This operation can occur before or after the driver is started, but after the first device mapping.
+If called before starting the driver, it will override the default and only allow the configured COGs
+to access the memory when the driver starts.  If only called after the driver starts up then all COGs 
+will default to being enabled once the driver starts, and the previous COG settings will remain intact 
+for any COGs not listed in the cogmask.
+
+Arguments:
+   cogMask - 8 bit mask of all COGIDs to modify (eg. %11111111 for all COGs, or %00000001 = COG0 only)
+   bus - Hyper bus ID of driver being configured (1-based)
+   cogBurst - maximum burst size in bytes allowed by COG (applied in addition to any device burst limit)
+           NOTE: if this COG's burst size is set to less than 4 the COG will be removed from polling!
+           Pass in -1 if the COG transfer is only to be limited by the accessed device's own burst limit
+   flags - These flags indicates how to service the COG and whether it is priority or round-robin polled.
+            - set F_ATN flag for an additional notification with COGATN on completion of request
+            - set F_PRIORITY flag to enable priority polling, otherwise round-robin polling is used
+            - set F_LOCKED flag to complete full transactions before any other COGs are serviced
+            - set F_STALL flag to stall round robin COGs accessing flash that is locked by another COG
+   priority - priority of COG
+           The lowest 3 bits of this value indicate a polling priority level from 0-7 which are used
+           when F_PRIORITY is optionally set.  Priority 0 is the lowest, 7 is the highest.
+           If multiple COGs share the same priority, the COG with the lowest ID is serviced first.
+
+           For example a video COG would typically want to make itself the highest priority polled
+           COG and enable the F_LOCKED flag for example to maximize its performance while keeping 
+           all other COGs at lower priority with their F_LOCKED flags cleared and limiting the bursts
+           for other COGs to keep the service latency under control.
+   
+Returns: 0 on success, or negative error values on failure
+................................................................................................
+}}
+
+PUB setupQoS(cogMask, bus, cogBurst, flags, priority) : r | cog, setflags, m
+    ' externally exposed bus IDs are 1 based
+    bus-- 
+    ' check for invalid arguments
+    if bus +> LAST_INSTANCE or cogMask == 0
+        return ERR_INVALID
+
+    ' check for bus not created
+    if freeDrivers & (1 << bus)
+        return ERR_NOT_CREATED
+
+    ' construct flags
+    setflags := 1 ' set any bit in the low byte to indicate that something has now been provisioned 
+    if flags & F_ATN
+        setflags |= 1 << driver.NOTIFY_BIT
+    if flags & F_LOCKED
+        setflags |= 1 << driver.LOCKED_BIT
+    if flags & F_PRIORITY
+        setflags |= 1 << driver.PRIORITY_BIT ' setup this COG as a priority polled COG in driver
+    else ' round robin polled COG
+        if flags & F_STALL ' test whether to stall or return an error if flash gets locked out
+           priority := 0      ' zero priority for a round-robin polled COG that stalls
+        else
+           priority := 1      ' non-zero priority for a round-robin polled COG that returns busy
+
+    ' limit burst sizes to fit 16 bit streamer limit and also align to flash page boundary 
+    if cogBurst +> $FFF0
+        cogBurst := $FFF0
+    elseif cogBurst +< 4  ' we need to send at least 4 bytes for supporting long accesses
+        cogBurst := 0 ' removes COG from polling
+
+    ' update the COGs affected
+    repeat cog from 0 to NUMCOGS - 1 
+        if cogMask & (1 << cog) 
+            cogList[bus * NUMCOGS + cog] := (cogBurst << 16) + ((priority & $7) << 12) + setflags
+
+    ' if driver is already running, also trigger it to update with these new COG settings
+    if driverCogs[bus] <> -1     
+        m := mailboxAddr[bus] + driverCogs[bus]*12
+        repeat until LOCKTRY(driverlock)
+        long[m] := R_CONFIG + cogid()
+        repeat while long[m] < 0
+        LOCKREL(driverlock)
+
+    return 0
+
+{{
+................................................................................................
+removeCogs(cogMask, bus)
+
+Removes one or more COGs from accessing a Hyper memory bus if they are known to not require 
+access to Hyper memory.  This will reduce polling overhead and provide better request access
+fairness to other RR COGs if their load is equal.
+
+Arguments:
+   cogMask - 8 bit mask of all COGs IDs which will be prevented from being polled/serviced.
+   bus - ID of Hyper bus being configured (1-based)
+   
+Returns: 0 on success, or negative error values on failure
+................................................................................................
+}}
+PUB removeCogs(cogMask, bus) : r
+    r := setupQoS(cogMask, bus, 0, 0, 0) 
+
+
+' internally used bus creation method returns new bus ID for new data pin(s) or existing bus ID
+PRI create(baseDataPin) : id
+    if driverlock < 0
+        driverlock := LOCKNEW()
+        if driverlock < 0
+            return ERR_NO_LOCK
+    
+    ' check for invalid arguments
+    if baseDataPin & !$3f
+        return ERR_INVALID
+
+    ' check if another bus already exists on the same data pins, if so return that one
+    if busMap[baseDataPin >> 3] +< MAX_INSTANCES
+        return busMap[baseDataPin >> 3]
+
+    ' start of critical section, if a single COG is doing the entire setup, this is not an issue 
+    repeat until LOCKTRY(driverlock)         
+
+    ' find a free driver instance 
+    repeat id from 0 to MAX_INSTANCES
+        if id == MAX_INSTANCES ' no free driver instances
+            LOCKREL(driverlock)   
+            return ERR_NO_FREE_BUS
+        if freeDrivers & (1 << id) 
+            quit
+
+    ' assign new driver instance
+    freeDrivers &= !(1 << id) 
+
+    ' end of critical section
+    LOCKREL(driverlock)
+
+    ' init data structures for new instance
+    busMap[baseDataPin >> 3] := id
+    mailboxAddr[id] := @mailboxes[id * MAILBOXSIZE]
+    driverCogs[id] := -1
+    busBasePin[id] := baseDataPin
+    maskA[id] := 0
+    maskB[id] := 0
+    longfill(@devices[id * 2 * NUMBANKS], 0, NUMBANKS)          'clear out device params for all banks
+    longfill(@devices[id * 2 * NUMBANKS+NUMBANKS], -1, NUMBANKS)'invalidate pin infomation for all banks
+    longfill(@cogList[id * NUMCOGS], 0, NUMCOGS)                'clear out COG service parameters
+    longfill(@mailboxes[id * MAILBOXSIZE], 0, MAILBOXSIZE)      'clear out mailboxes for this bus
+    
+{{
+................................................................................................
+shutdown(bus, waitUntilIdle)
+
+Free up an already created/started Hyper bus, killing any driver COG and removes all address to
+device mappings for this bus.
+
+Arguments:
+   bus - Hyper bus ID to be shut down and released (1-based)
+   waitUntilIdle - set true to first wait for all existing requests on this bus to complete first
+                   set false to shutdown immediately regardless of pending requests
+
+Returns: 0 on success, or a negative error code
+................................................................................................
+}}
+PUB shutdown(bus, waitUntilIdle) : i | m
+    ' externally exposed bus IDs are 1 based
+    bus-- 
+    ' check for invalid arguments
+    if bus +> LAST_INSTANCE
+        return ERR_INVALID
+
+    ' check for bus not created
+    if freeDrivers & (1<<bus)
+        return 0 ' nothing to do 
+
+    ' search through the addrMap and remove all references to this bus to stop any new accesses
+    repeat i from 0 to 15
+        if addrMap[i] == bus
+            addrMap[i] := 255
+
+    ' clear out single instance addresses to unmap
+    if MAX_INSTANCES == 1
+        longfill(@mailboxAddrCog[0], 0, NUMCOGS)
+
+    ' unbind data bus group from the driver
+    repeat i from 0 to 7
+        if busMap[i] == bus
+            busMap[i] := 255
+
+    waitms(2) ' small delay to settle down any last request being prepared
+
+    ' check if driver COG is already spawned and if so then kill it
+    if driverCogs[bus] <> -1
+        if waitUntilIdle 'wait until all mailbox results are fully idle before shutdown
+            repeat i from 0 to NUMCOGS - 1 
+                m := getMailboxAddr(bus+1, i)
+                repeat while long[m][0] < 0
+        ' kill the driver COG
+        cogstop(driverCogs[bus])
+        driverCogs[bus] := -1
+
+        ' clear out any pending mailbox entries by aborting 
+        repeat i from 0 to NUMCOGS - 1 
+            m := getMailboxAddr(bus+1, i)
+            if long[m][0] < 0
+                long[m][0] := -ERR_ABORTED
+
+        ' free up this driver instance, TODO also return driverlock if no drivers left?
+        freeDrivers |= (1 << bus)
+        return 0
+
+{{
+................................................................................................
+getMailboxAddr(bus, cog)
+
+Obtains the address of the first mailbox slot for the given COG to access devices on the given bus.
+
+Arguments:
+   bus - ID of Hyper bus to access (1-based)
+   cog - ID of cog whose mailbox slot address is returned
+
+Returns:  mailbox address in HUB RAM or negative error code
+................................................................................................
+}}
+PUB getMailboxAddr(bus, cog) : addr 
+    bus--
+    if bus +> LAST_INSTANCE OR cog +> NUMCOGS - 1
+        return ERR_INVALID
+    addr := mailboxAddr[bus] + cog*12
+
+{{
+................................................................................................
+getDriverCogID(bus)
+
+Obtains the COG ID of the driver managing a given Hyper bus.
+
+Arguments:
+   bus - Hyper bus ID of driver whose cog ID is desired (1-based)
+   
+Returns:
+   ID of cog or negative error code
+................................................................................................
+}}
+PUB getDriverCogID(bus) : cog
+    cog := (--bus +> LAST_INSTANCE) ? ERR_INVALID : driverCogs[bus]
+
+{{
+................................................................................................
+getDriverLockID()
+
+Obtains the HUB lock being used by the memory driver, other PASM2 COGs could share this same lock.
+
+Arguments:
+   bus - not used at the moment, as driver shares a single lock for all Hyper buses but this
+         argument is included for future potential use with other bus types
+   
+Returns:
+   ID of driver's HUB lock or negative error code
+................................................................................................
+}}
+
+PUB getDriverLockID(bus) : lock
+    lock := (driverlock < 0) ? ERR_INACTIVE : driverlock
+
+{{
+................................................................................................
+getMaxBurst(frequency, cs_interval, latency)
+
+Computes a maximum number of bytes that can be transferred using HyperRAM at sysclk/1 operation
+within the maximum Chip Select low time interval at the given frequency and device latency.
+
+Note: When sysclk/2 transfers are done, the burst size will be halved automatically by the driver
+      operating at the reduced rate.  The size returned here should be used for all provisioning.
+
+Arguments:
+   frequency - P2 operating frequency in Hz
+   cs_interval - maximum allowed CS low interval time (in microseconds)
+   latency - maximum number of latency clocks in use by the device
+
+Returns: maximum burst size or 0 if not enough clocks to send any data in the interval provided.
+................................................................................................
+}}
+PUB getMaxBurst(frequency, cs_interval, latency) : clocks
+    ' compute total clock cycles available in CS low interval allowing for overhead and latency
+    clocks := (frequency / 1000000) * cs_interval - driver.OVERHEAD_CYCLES - (((latency<<1) + 2) << 2)
+    ' assume sysclk/1 operation and round down to nearest 2*long (for sysclk/2)
+    return (clocks < 0) ? 0 : (clocks & !7)
+
+{{
+................................................................................................
+setDelayFrequency(addr, freq, tempK)
+
+Sets the frequency of operation and updates the input delay parameter for a given device's bank(s)
+Uses the input timing/temperature profile for the device that operates at the address.
+
+Arguments:
+   addr - (any) address of device to setup input delay
+   freq - current operating frequency in Hz
+   tempK - (future use) temperature in Kelvin.  Pass 0 for now to ignore.
+
+Returns: delay to use or negative error code
+................................................................................................
+}}
+PUB setDelayFrequency(addr, freq, tempK) : r | bus, bank, delay
+    bus := addrMap[addr >> 28]
+    bank := (addr >> 24) & $f
+    if bus +> LAST_INSTANCE
+        return ERR_INVALID
+    delay := lookupInputDelay(freq, profiles[bus * NUMBANKS + bank])
+    return setDelay(addr, delay)
+
+{{
+................................................................................................
+setDelayProfile(addr, profile)
+
+Sets up the frequency-delay timing profile for a given device on a bus.
+
+Arguments:
+   addr - (any) address of device to setup input delay timing profile
+   profile - pointer to address of profile stored in HUB RAM
+
+Returns: 0 for success or negative error code
+
+Note : this is just to associate a custom delay profile for a device, with no change to the 
+input delay actually used in the driver until setDelayFrequency is called.
+................................................................................................
+}}
+
+PUB setDelayProfile(addr, profile) : r | bus, bank, size, i
+    bus := addrMap[addr >> 28]
+    if bus +> LAST_INSTANCE
+        return ERR_INVALID
+    bank := getStartBank(bus, addr)
+    if bank < 0
+        return ERR_INVALID
+    size := devices[bus * 2 * NUMBANKS + bank] & $ff
+
+    ' configure parameter over all spanned banks and update local storage
+    repeat i from bank to bank + size - S_16MB
+        profiles[bus * NUMBANKS + i] := profile
+
+    return 0
+
+' internal method to find input delay from frequency using given profile
+PRI lookupInputDelay(freq, profile) : delay 
+    delay := long[profile][0]
+    repeat while long[profile][1] 
+        if freq +< long[profile][1] 
+            quit
+        profile += 4
+        delay++
+
+{{
+................................................................................................
+getResult(bus, nonBlocking)
+
+Gets the status/result of the last (or current) operation for the calling COG's mailbox.
+
+Arguments: 
+      bus - which bus mailbox is being checked (1-based)
+      nonBlocking - flag to set true if we don't want to wait for a result if it is still pending
+
+Returns: status of last mailbox operation by this COG on the given bus or a negative error code.
+         It will return ERR_WOULD_BLOCK if mailbox is still running when non-blocking flag is true
+
+................................................................................................
+}}
+PUB getResult(bus, nonBlocking) : m
+    if --bus +> LAST_INSTANCE
+        return ERR_INVALID
+    m := getMailboxAddr(bus+1, cogid())
+    ' wait for result in case a list is running
+    repeat while long[m] < 0
+        if nonBlocking              ' exit if we don't want to block
+            return ERR_WOULD_BLOCK
+    return -long[m]                 ' return whether it was an error case or not
+{{
+................................................................................................
+readByte(addr)
+readWord(addr)
+readLong(addr)
+
+Read access methods (coded separately for speed for each data access size)
+
+Arguments:
+  addr - the external address to read from
+
+Returns: data value at that external address or a negative error code
+
+Reads using readLong cannot differentiate error cases vs real data without also checking for 
+the last error code explicity using getResult (if desired), while readByte/readWord can still be 
+tested for errors if they are negative (bit 31 is 1).
+
+This API was designed for faster speed assuming read address errors are avoided, and this approach
+conveniently allows the returned result to remain assignable in expressions like this:
+
+    x := mem.readLong(addr) + 120
+
+If you do wish to check for errors on the long sized reads you can always use read() instead.
+................................................................................................
+}}
+PUB readByte(addr) : r | m
+    if MAX_INSTANCES == 1           ' optimization for single instance, everything mapped to one bus
+       m := mailboxAddrCog[cogid()] ' get mailbox base address for this COG
+       if m == 0                    ' prevent hang if driver is not running
+           return ERR_UNMAPPED 
+    else                            ' multiple buses, need to lookup address to find mailbox for bus
+       m := addrMap[addr>>28]
+       if m +> LAST_INSTANCE        ' if address not mapped, exit
+          return ERR_UNMAPPED
+       m := mailboxAddr[m] + cogid()*12
+    if long[m] < 0
+        return ERR_MAILBOX_BUSY
+    long[m][2] := 0                 ' just read only - no RMW mask
+    long[m] := R_READBYTE + (addr & $fffffff) ' trigger a read request in the mailbox
+    repeat 
+        if not r := long[m]         ' test mailbox for zero 
+            return long[m][1]       ' and return data result
+    while r < 0                     ' or loop until error
+    return -r                       ' return negated value as error code
+
+PUB readWord(addr) : r | m
+    if MAX_INSTANCES == 1
+       m := mailboxAddrCog[cogid()]
+       if m == 0
+           return ERR_UNMAPPED
+    else
+       m := addrMap[addr>>28]
+       if m +> LAST_INSTANCE
+          return ERR_UNMAPPED
+       m := mailboxAddr[m] + cogid()*12
+    if long[m] < 0
+        return ERR_MAILBOX_BUSY
+    long[m][2] := 0
+    long[m] := R_READWORD + (addr & $fffffff)
+    repeat
+        if not r := long[m]
+            return long[m][1]
+    while r < 0
+    return -r
+
+PUB readLong(addr) : r | m
+    if MAX_INSTANCES == 1
+       m := mailboxAddrCog[cogid()]
+       if m == 0
+           return ERR_UNMAPPED
+    else
+       m := addrMap[addr>>28]
+       if m +> LAST_INSTANCE
+          return ERR_UNMAPPED
+       m := mailboxAddr[m] + cogid()*12
+    if long[m] < 0
+        return ERR_MAILBOX_BUSY
+    long[m][2] := 0
+    long[m] := R_READLONG + (addr & $fffffff)
+    repeat 
+        if not r := long[m]
+            return long[m][1]
+    while r < 0
+    return -r
+
+{{
+................................................................................................
+read(dstHubAddr, srcAddr, count)
+readList(dstHubAddr, srcAddr, count, listPtr)
+ 
+Read burst method to read a range of external memory bytes into HUB RAM.
+
+Arguments:
+  dstHubAddr - HUB address where data is to be read
+  srcAddr - source address in external memory to read from
+  count - number of bytes to read
+  listPtr - (readList only) pointer to listItem to populate in HUB RAM
+
+Returns: 0 for success or a negative error code
+         for readList only - returns address of next link pointer field in list item
+
+Note: transfer length is not validated, you can fill the entire HUB RAM multiple times with this
+      Address wrapping will occur in the accessed device if the count plus the srcAddr exceeds
+      the last address in the device.
+................................................................................................
+}}
+PUB read(dstHubAddr, srcAddr, count) : r | m
+    if count == 0                   ' don't even bother reading if count == 0
+        return 0
+    if MAX_INSTANCES == 1           ' optimization for single instance, everything mapped to single bus
+       m := mailboxAddrCog[cogid()]
+       if m == 0
+           return ERR_UNMAPPED
+    else                            ' multiple buses, need to lookup address to find mailbox for bus
+       m := addrMap[dstHubAddr>>28]
+       if m +> LAST_INSTANCE        ' if address not mapped, exit
+          return ERR_UNMAPPED
+       m := mailboxAddr[m] + cogid()*12 ' compute COG's mailbox for this bus
+    if long[m] < 0
+        return ERR_MAILBOX_BUSY
+    long[m][2] := count
+    long[m][1] := dstHubAddr
+    long[m] := R_READBURST + (srcAddr & $fffffff) ' trigger burst read operation
+    repeat
+        r := long[m]    
+    while r < 0   
+    return -r                       'return success or error
+
+
+' A request list capable form of read for preparing read bursts in list items
+PUB readList(dstHubAddr, srcAddr, count, listPtr) : r | m
+    if listPtr == 0                 ' call immediately without a list
+        return read(dstHubAddr, srcAddr, count)
+    'otherwise build the list
+    long[listPtr][0] := R_READBURST + (srcAddr & $fffffff)
+    long[listPtr][1] := dstHubAddr
+    long[listPtr][2] := count
+    long[listPtr][3] := 0
+    return listPtr + 12
+
+{{
+................................................................................................
+readReg(addr, regAddr)
+ 
+Read a register from the external memory device
+
+Arguments:
+  addr - (any) memory address of the device to access
+  regAddr - word address of the device register to read
+
+Returns: 16 bit register data or a negative error code
+
+Note: regAddr is a 16 bit address in the device, not a byte address
+................................................................................................
+}}
+PUB readReg(addr, regAddr) : r
+    return readRaw(addr, $E000 + (regAddr >> 19), (regAddr & 7) + ((regAddr>>3)<<16))
+
+
+' internally used register read method
+PRI readRaw(addr, addrhi16, addrlo32) : r | m
+    m := addrMap[addr>>28]
+    if m +> LAST_INSTANCE
+       return ERR_UNMAPPED
+    m := mailboxAddr[m] + driverCogs[m]*12
+    if long[m] < 0
+        return ERR_MAILBOX_BUSY
+    repeat until LOCKTRY(driverlock)
+    long[m][2] := addrlo32
+    long[m][1] := addrhi16
+    long[m] := R_GETREG + (addr & $0f000000) + cogid()
+    repeat 
+        r := long[m]
+    while r < 0 
+    LOCKREL(driverlock)
+    return (r > 0) ? -r : long[m][1]    'return result or negative error
+{{
+.................................................................................................
+readModifyByte(addr, data, mask)
+readModifyWord(addr, data, mask)
+readModifyLong(addr, data, mask)
+
+Read-Modify-Write access methods
+
+Arguments:
+  addr - the external memory address to read from and write to
+  data - the new data value to apply to the address
+  mask - the mask to apply to the data before writing back to external memory
+
+Returns: original data value from the external address or a negative error code
+
+The data is masked before writing back.  A zero mask would keep all the original bits intact.
+A non-zero mask will write new data bits for any corresponding 1 bit in the mask using the type
+of data transfer size selected.  Bytes/words use least significant byte/words in data and mask.
+
+This bit level masking is handy for graphics updates in colour modes where pixel sizes are less 
+than a byte (e.g for 1,2,4 bpp modes), or for atomic updates of mutex/semaphores etc.
+................................................................................................
+}}
+PUB readModifyByte(addr, data, mask) : r | m
+    if MAX_INSTANCES == 1           ' optimization for single instance, everything mapped to single bus
+       m := mailboxAddrCog[cogid()] ' get mailbox base address for this COG
+       if m == 0                    ' prevent hang if driver is not running
+           return ERR_UNMAPPED
+    else                            ' multiple buses, need to lookup address to find mailbox for bus
+       m := addrMap[addr>>28]
+       if m +> LAST_INSTANCE        ' if address not mapped, exit
+          return ERR_UNMAPPED
+       m := mailboxAddr[m] + cogid()*12
+    if long[m] < 0
+        return ERR_MAILBOX_BUSY
+    long[m][2] := mask
+    long[m][1] := data
+    long[m] := R_READBYTE + (addr & $fffffff)
+    repeat 
+        if not r := long[m]
+            return long[m][1]       'return result
+    while r < 0
+    return -r                       'return negated error code
+
+PUB readModifyWord(addr, data, mask) : r | m
+    if MAX_INSTANCES == 1
+       m := mailboxAddrCog[cogid()]
+       if m == 0
+           return ERR_UNMAPPED
+    else
+       m := addrMap[addr>>28]
+       if m +> LAST_INSTANCE
+          return ERR_UNMAPPED
+       m := mailboxAddr[m] + cogid()*12
+    if long[m] < 0
+        return ERR_MAILBOX_BUSY
+    long[m][2] := mask
+    long[m][1] := data
+    long[m] := R_READWORD + (addr & $fffffff)
+    repeat 
+        if not r := long[m]
+            return long[m][1]
+    while r < 0
+    return -r
+
+PUB readModifyLong(addr, data, mask) : r | m
+    if MAX_INSTANCES == 1
+       m := mailboxAddrCog[cogid()]
+       if m == 0
+           return ERR_UNMAPPED
+    else
+       m := addrMap[addr>>28]
+       if m +> LAST_INSTANCE
+          return ERR_UNMAPPED
+       m := mailboxAddr[m] + cogid()*12
+    if long[m] < 0
+        return ERR_MAILBOX_BUSY
+    long[m][2] := mask
+    long[m][1] := data
+    long[m] := R_READLONG + (addr & $fffffff)
+    repeat 
+        if not r := long[m]
+            return long[m][1]
+    while r < 0
+    return -r
+{{
+.................................................................................................
+writeByte(addr, data)
+writeWord(addr, data)
+writeLong(addr, data)
+
+Write access methods (coded separately for speed for each data access size)
+
+Arguments:
+  addr - the external address to write to 
+  data - the data to write
+
+Returns: 0 for success or a negative error code
+................................................................................................
+}}
+PUB writeByte(addr, data) : r | m
+    if MAX_INSTANCES == 1         ' optimization for single instance, everything mapped to single bus
+       m := mailboxAddrCog[cogid()] ' get mailbox base address for this COG
+       if m == 0                  ' prevent hang if driver is not running
+           return ERR_UNMAPPED
+    else                          ' multiple buses, need to lookup address to find mailbox for bus
+       m := addrMap[addr>>28]
+       if m +> LAST_INSTANCE      ' if address not mapped, exit
+          return ERR_UNMAPPED
+       m := mailboxAddr[m] + cogid()*12  ' compute COG's mailbox for this bus 
+    if long[m] < 0
+        return ERR_MAILBOX_BUSY
+    long[m][2] := 1
+    long[m][1] := data
+    long[m] := R_WRITEBYTE + (addr & $fffffff)
+    repeat
+        r := long[m]
+    while r < 0
+    return -r
+
+PUB writeWord(addr, data) : r | m
+    if MAX_INSTANCES == 1
+       m := mailboxAddrCog[cogid()]
+       if m == 0
+           return ERR_UNMAPPED
+    else
+       m := addrMap[addr>>28]
+       if m +> LAST_INSTANCE
+          return ERR_UNMAPPED
+       m := mailboxAddr[m] + cogid()*12
+    if long[m] < 0
+        return ERR_MAILBOX_BUSY
+    long[m][2] := 1
+    long[m][1] := data
+    long[m] := R_WRITEWORD + (addr & $fffffff)
+    repeat
+        r := long[m]
+    while r < 0
+    return -r
+
+PUB writeLong(addr, data) : r | m
+    if MAX_INSTANCES == 1
+       m := mailboxAddrCog[cogid()]
+       if m == 0
+           return ERR_UNMAPPED
+    else
+       m := addrMap[addr>>28]
+       if m +> LAST_INSTANCE
+          return ERR_UNMAPPED
+       m := mailboxAddr[m] + cogid()*12
+    if long[m] < 0
+        return ERR_MAILBOX_BUSY
+    long[m][2] := 1
+    long[m][1] := data
+    long[m] := R_WRITELONG + (addr & $fffffff)
+    repeat
+        r := long[m]
+    while r < 0
+    return -r
+
+{{
+................................................................................................
+write(srcHubAddr, dstAddr, count)
+writeList(srcHubAddr, dstAddr, count, listPtr)
+
+Write burst method to write to a range of external memory using data from HUB RAM.
+
+Arguments:
+  srcHubAddr - HUB address where data is to be read from
+  dstAddr - destination external memory address to transfer data into
+  count - number of bytes to write
+  listPtr - (for writeList only) pointer to list item to populate
+
+Returns: 0 for success or a negative error code,
+         or address of link pointer in list item
+
+Note: Address wrapping will occur in the accessed device if the count plus the dstAddr exceeds
+      the last address in the device.
+................................................................................................
+}}
+PUB write(srcHubAddr, dstAddr, count) : r | m
+    if count == 0                 ' nothing to write, so dont bother
+        return 0
+    if MAX_INSTANCES == 1         ' optimization for single instance, everything mapped to single bus
+       m := mailboxAddrCog[cogid()] ' get mailbox base address for this COG
+       if m == 0                  ' prevent hang if driver is not running
+           return ERR_UNMAPPED
+    else                          ' multiple buses, need to lookup address to find mailbox for bus
+       m := addrMap[dstAddr>>28]
+       if m +> LAST_INSTANCE      ' if address not mapped, exit
+          return ERR_UNMAPPED
+       m := mailboxAddr[m] + cogid()*12  ' compute COG's mailbox for this bus
+    if long[m] < 0
+        return ERR_MAILBOX_BUSY
+    long[m][2] := count
+    long[m][1] := srcHubAddr 
+    long[m] := R_WRITEBURST + (dstAddr & $fffffff)
+    repeat
+        r := long[m]
+    while r < 0
+    return -r
+
+' A request list capable form of write for preparing write bursts
+PUB writeList(srcHubAddr, dstAddr, count, listPtr) : r | m
+    if listPtr == 0 ' call immediately without a request list
+        return write(srcHubAddr, dstAddr, count)
+    'otherwise build the list
+    long[listPtr][0] := R_WRITEBURST + (dstAddr & $fffffff)
+    long[listPtr][1] := srcHubAddr
+    long[listPtr][2] := count
+    long[listPtr][3] := 0
+    return listPtr + 12
+
+{{
+................................................................................................
+writeReg(addr, regAddr, value16)
+ 
+Read a register from the external memory device
+
+Arguments:
+  addr - (any) memory address of the device to access
+  regAddr - word address of the device register to write
+  value16 - data value to write into device register
+
+Returns: 0 for success or a negative error code
+
+Note: regAddr is a 16 bit address in the device not a byte address
+................................................................................................
+}}
+PUB writeReg(addr, regaddr, value16) : r
+    return writeRaw(addr, $6000 + (regaddr >> 19), (regaddr & 7) + ((regaddr>>3)<<16), value16)
+
+
+' internally used write register method
+PRI writeRaw(addr, addrhi16, addrlo32, value16) : r | bus, m, bank
+    bus := addrMap[addr>>28]
+    if bus +> LAST_INSTANCE       ' if address not mapped, exit
+        return ERR_UNMAPPED
+    m := mailboxAddr[bus] + driverCogs[bus]*12  ' compute COG mailbox address for this bus
+    bank := (addr >> 24) & $f
+    if long[m] < 0
+        return ERR_MAILBOX_BUSY
+    repeat until LOCKTRY(driverlock)
+    long[m][2] := addrlo32
+    long[m][1] := (addrhi16 & $ffff) + (value16 << 16)
+    long[m] := R_SETREG + ((bank & $f)<<24) + cogid()
+    repeat
+        r := long[m]
+    while r < 0
+    LOCKREL(driverlock)
+    return -r
+    
+{{
+.................................................................................................
+fillBytes(addr, pattern, count, listPtr)
+fillWords(addr, pattern, count, listPtr)
+fillLongs(addr, pattern, count, listPtr)
+fill(addr, pattern, count, listPtr, datasize)
+
+Methods used to fill external memory with a data pattern.
+
+Arguments:
+  addr - the external address to fill with a data pattern
+  pattern - the data pattern to fill with
+  count - the number of items (i.e. bytes/words/longs) to fill   
+  listPtr - optional list pointer
+  datasize - (for fill only) the data size to use (1,2,4) during the fill
+
+Returns: 0 for success or a negative error code (fills),
+         or a pointer to link field of request item (if listPtr is non-zero)
+
+If the listPtr is non-zero it will be used as a list pointer and instead of triggering a fill
+operation, it will build a listItem structure in HUB RAM at this address to do the fill later. 
+................................................................................................
+}}
+PUB fillBytes(addr, pattern, count, listPtr) : r
+    return fill(addr, pattern, count, listPtr, 1)
+
+PUB fillWords(addr, pattern, count, listPtr) : r
+    return fill(addr, pattern, count, listPtr, 2)
+
+PUB fillLongs(addr, pattern, count, listPtr) : r 
+    return fill(addr, pattern, count, listPtr, 4)
+
+' generalized fill
+PUB fill(addr, pattern, count, listPtr, datasize) : r | m, req
+    if datasize == 1
+        req := R_WRITEBYTE
+    elseif datasize == 2
+        req := R_WRITEWORD
+    elseif datasize == 4
+        req := R_WRITELONG
+    else
+        return ERR_INVALID
+    ' if a non-zero listPtr is passed, just setup in a list and return the link pointer address
+    if listPtr
+        long[listPtr][0] := req + (addr & $fffffff)
+        long[listPtr][1] := pattern
+        long[listPtr][2] := count
+        long[listPtr][3] := 0
+        return listPtr + 12
+    if count == 0
+        return 0
+    if MAX_INSTANCES == 1           ' optimization for single instance, everything mapped to single bus
+       m := mailboxAddrCog[cogid()] ' get mailbox base address for this COG
+       if m == 0                    ' prevent hang if driver is not running
+           return ERR_UNMAPPED
+    else                            ' multiple buses, need to lookup address to find mailbox for bus
+       m := addrMap[addr>>28]
+       if m +> LAST_INSTANCE        ' if address not mapped, exit
+          return ERR_UNMAPPED
+       m := mailboxAddr[m] + cogid()*12
+    if long[m] < 0
+        return ERR_MAILBOX_BUSY
+    long[m][2] := count
+    long[m][1] := pattern
+    long[m] := req + (addr & $fffffff)
+    repeat
+        r := long[m]
+    while r < 0
+    return -r                       ' return 0 for success or negated error code
+ 
+{{
+.................................................................................................
+gfxCopyImage(dstAddr, dstPitch, srcAddr, srcPitch, byteWidth, height, hubBuffer, listPtr)
+
+Copies an image of given height and width between two addresses on a Hyper memory bus
+
+Arguments:
+  dstAddr - the external memory start address to receive the image during the copy
+  dstPitch - the spacing between scan line data for the destination memory
+  srcAddr - the external memory start address to source the image during the copy
+  srcPitch - the spacing between scan line data for the source memory
+  byteWidth - the number of bytes to copy per scan line row
+  height - the number of scan line rows to copy
+  hubBuffer - the intermediate transfer buffer in HUB RAM (must be sized to accept byteWidth bytes)
+  listPtr - optional pointer to a list item to populate
+
+Returns: 0 for success or a negative error code,
+         or a pointer to the link field of the filled request item (if listPtr is non-zero)
+
+After each scan line of pixels is copied the two pitch values will be added to the current 
+source and destination start addresses, ready for the next scan line to be copied.
+
+If the listPtr is non-zero it will be used as a list pointer and instead of triggering a copy
+operation, it will build a listItem structure in HUB RAM at this address to do the copy later.
+................................................................................................
+}}
+PUB gfxCopyImage(dstAddr, dstPitch, srcAddr, srcPitch, byteWidth, height, hubBuffer, listPtr) : r | m, list
+    ' when no valid listPtr, fill request into scratch space and execute a single request list 
+    if listPtr == 0
+        m := addrMap[srcAddr >> 28]
+        if m +> LAST_INSTANCE
+            return ERR_UNMAPPED
+        ' validate both addresses are on the same bus
+        if m <> addrMap[dstAddr >> 28]
+            return ERR_NOT_SAME_BUS
+        if long[getMailboxAddr(m+1, cogid())] < 0
+            return ERR_MAILBOX_BUSY ' don't clobber existing list item
+        list := @listdata[(m*NUMCOGS + cogid())*ITEMSIZE]
+    else ' construct list item only, don't execute
+        list := listPtr
+    long[list][0]:= R_READBURST + (srcAddr & $fffffff)
+    long[list][1]:= hubBuffer
+    long[list][2]:= byteWidth
+    long[list][3]:= R_WRITEBURST + (dstAddr & $fffffff)
+    long[list][4]:= height
+    long[list][5]:= dstPitch 
+    long[list][6]:= srcPitch
+    long[list][7]:= 0 ' no link pointer to next item (yet)
+    if listPtr 
+        return listPtr + 28 ' return the address of link pointer to allow chaining etc
+    r := execList(m+1, list, 0)
+
+{{
+.................................................................................................
+gfxReadImage(dstHubAddr, dstPitch, srcAddr, srcPitch, byteWidth, height, listPtr)
+
+Reads an image of given height and width from external HyperRAM/HyperFlash memory into HUB RAM
+
+Arguments:
+  dstHubAddr - the HUB memory start address to receive the image data during the read
+  dstPitch - the spacing between scan line data for the HUB memory
+  srcAddr - the external memory start address to source the image data during the read
+  srcPitch - the spacing between scan line data for the source memory
+  byteWidth - the number of bytes to read per scan line row
+  height - the number of scan line rows to read
+  listPtr - optional pointer to a list item to populate
+
+Returns: 0 for success or a negative error code
+         or pointer to the link field of the filled request item (if listPtr is non-zero)
+
+After each scan line of pixels is copied to HUB the two pitch values will be added to the
+current source and destination start addresses, ready for the next scan line to be transferred.
+You can pack the graphics image into linear memory in HUB by setting the pitch to be the same as
+the byteWidth.
+
+If the listPtr is non-zero it will be used as a list pointer and instead of triggering a read
+operation, it will build a listItem structure in HUB RAM at this address to do the read later.
+'.................................................................................................
+}}
+PUB gfxReadImage(dstHubAddr, dstPitch, srcAddr, srcPitch, byteWidth, height, listPtr) : r | m, list
+    if listPtr == 0
+        m := addrMap[srcAddr >> 28]
+        if m +> LAST_INSTANCE
+            return ERR_UNMAPPED
+        if long[getMailboxAddr(m+1, cogid())] < 0
+            return ERR_MAILBOX_BUSY ' don't clobber existing list item
+        list := @listdata[(m*NUMCOGS + cogid())*ITEMSIZE]
+    else
+        list := listPtr
+    long[list][0]:= R_READBURST + (srcAddr & $fffffff)
+    long[list][1]:= dstHubAddr
+    long[list][2]:= byteWidth
+    long[list][3]:= $80000000
+    long[list][4]:= height
+    long[list][5]:= dstPitch 
+    long[list][6]:= srcPitch
+    long[list][7]:= 0
+    if listPtr 
+        return listPtr + 28
+    r := execList(m+1, list, 0)
+{{
+.................................................................................................
+gfxWriteImage(srcHubAddr, srcPitch, dstAddr, dstPitch, byteWidth, height, listPtr)
+
+Writes an image of given height and width in HUB RAM into external HyperRAM memory 
+
+Arguments:
+  srcHubAddr - the HUB memory start address to source the image data during the write
+  srcPitch - the spacing between scan line data for the source memory
+  dstAddr - the external HyperRAM start address to received the image during the write
+  dstPitch - the spacing between scan line data for the HyperRAM graphics memory
+  byteWidth - the number of bytes to write per scan line row
+  height - the number of scan line rows to write to external memory
+  listPtr - optional pointer to a list item to populate
+
+Returns: 0 for success or a negative error code,
+         or a pointer to the link field of the filled request item (if listPtr is non-zero)
+
+After each scan line of pixels is copied to HyperRAM the two pitch values will be added to the 
+current source and destination start addresses, ready for the next scan line to be transferred.
+You can source the graphics image from linear memory in HUB by setting the pitch to be the same as
+the byteWidth.
+
+If the listPtr is non-zero it will be used as a list pointer and instead of triggering a write
+operation, it will build a listItem structure in HUB RAM at this address to do the write later.
+................................................................................................
+}}
+PUB gfxWriteImage(srcHubAddr, srcPitch, dstAddr, dstPitch, byteWidth, height, listPtr) : r | m, list
+    if listPtr == 0
+        m := addrMap[dstAddr >> 28]
+        if m +> LAST_INSTANCE
+            return ERR_UNMAPPED
+        if long[getMailboxAddr(m+1, cogid())] < 0
+            return ERR_MAILBOX_BUSY ' don't clobber existing list item
+        list := @listdata[(m*NUMCOGS + cogid())*ITEMSIZE]
+    else
+        list := listPtr
+    long[list][0]:= R_WRITEBURST + (dstAddr & $fffffff)
+    long[list][1]:= srcHubAddr
+    long[list][2]:= byteWidth
+    long[list][3]:= $80000000
+    long[list][4]:= height
+    long[list][5]:= dstPitch 
+    long[list][6]:= srcPitch
+    long[list][7]:= 0
+    if listPtr 
+        return listPtr + 28
+    r := execList(m+1, list, 0)
+{{
+.................................................................................................
+gfxFillBytes(dstAddr, dstPitch, width, height, pattern, listPtr)
+gfxFillWords(dstAddr, dstPitch, width, height, pattern, listPtr)
+gfxFillLongs(dstAddr, dstPitch, width, height, pattern, listPtr)
+gfxFill(dstAddr, dstPitch, width, height, pattern, listPtr, datasize)
+
+Methods used to fill external memory with a data pattern.
+
+Arguments:
+  dstAddr - the external address to fill with a data pattern
+  dstPitch - the number of bytes between scan lines in external memory
+  width - the number of memory items (bytes/words/longs) to fill with the pattern
+  height - the number of pixel scan lines to fill
+  pattern - the data pattern to fill with
+  listPtr - optional list pointer
+  datasize - (gfxFill only) the data size to use (1,2,4) for a gfxFill operation
+
+Returns: 0 for success or a negative error code (fills),
+         or a pointer to link field of request item (if listPtr is non-zero)
+
+If the listPtr is non-zero it will be used as a list pointer and instead of triggering a gfxFill
+operation, it will build a listItem structure in HUB RAM at this address to do the gfxFill later. 
+................................................................................................
+}}
+PUB gfxFillBytes(dstAddr, dstPitch, width, height, pattern, listPtr) : r | m, list
+    return gfxFill(dstAddr, dstPitch, width, height, pattern, listPtr, 1)
+
+PUB gfxFillWords(dstAddr, dstPitch, width, height, pattern, listPtr) : r | m, list
+    return gfxFill(dstAddr, dstPitch, width, height, pattern, listPtr, 2)
+
+PUB gfxFillLongs(dstAddr, dstPitch, width, height, pattern, listPtr) : r 
+    return gfxFill(dstAddr, dstPitch, width, height, pattern, listPtr, 4)
+
+' general gfxFill (provides a common graphics fill method if bpp is already known by client)
+PUB gfxFill(dstAddr, dstPitch, width, height, pattern, listPtr, datasize) : r | req, m, list
+    if datasize == 1
+        req := R_WRITEBYTE
+    elseif datasize == 2
+        req := R_WRITEWORD
+    elseif datasize == 4
+        req := R_WRITELONG
+    else
+        return ERR_INVALID
+    ' when no ptr, fill in scratch space and execute a single request list 
+    if listPtr == 0
+        m := addrMap[dstAddr>>28]
+        if m +> LAST_INSTANCE
+            return ERR_UNMAPPED
+        if long[getMailboxAddr(m+1, cogid())] < 0
+            return ERR_MAILBOX_BUSY ' don't clobber existing list item
+        list := @listdata[(m*NUMCOGS + cogid())*ITEMSIZE]
+    else ' construct list item only, don't execute
+        list := listPtr
+    long[list][0]:= req + (dstAddr & $fffffff)
+    long[list][1]:= pattern
+    long[list][2]:= width
+    long[list][3]:= $80000000
+    long[list][4]:= height
+    long[list][5]:= dstPitch 
+    long[list][6]:= 0       
+    long[list][7]:= 0 ' no link pointer to next item
+    if listPtr 
+        return listPtr + 28 ' return the address of link pointer to allow chaining etc
+    r := execList(m+1, list, 0)
+    
+{{
+.................................................................................................
+copyBus(dstAddr, srcAddr, totalBytes, hubBuffer, bufSize, listPtr)
+
+Copies data from source HyperRAM/HyperFlash to destination HyperRAM on the same bus
+
+Arguments:
+  dstAddr - the external memory start address to receive the image during the copy
+  srcAddr - the external memory start address to source the image during the copy
+  totalBytes - the number of bytes to copy
+  hubBuffer - the intermediate transfer buffer address in HUB RAM (sized to accept bufSize bytes)
+  bufSize - this is the size of the intermediate transfer buffer in HUB RAM
+  listPtr - optional pointer to a list item to populate
+
+Returns: 0 for success or a negative error code,
+         or a pointer to the link field of the filled request item (if listPtr is non-zero)
+
+If the listPtr is non-zero it will be used as a list pointer and instead of triggering a copy
+operation, it will build a listItem structure in HUB RAM at this address to do the copy later.
+
+Bytes are copied via the intermediate HUB RAM buffer pointed to by the hubBuffer argument.  
+The larger this buffer is in HUB RAM, the more efficent the transfer will be.
+
+NOTE: the streamer transfer can only use incrementing addresses, so cannot copy backwards.
+      This means that you may corrupt the transfer if the destination overlaps the source.
+................................................................................................
+}}
+PUB copyBus(dstAddr, srcAddr, totalBytes, hubBuffer, bufSize, listPtr) : r | m, list
+    if bufSize == 0
+        return ERR_INVALID
+    if totalBytes == 0 
+        return 0 ' don't bother
+    if listPtr == 0 ' when no ptr, fill in scratch space and execute a single request list 
+        m := addrMap[srcAddr>>28]
+        if m +> LAST_INSTANCE
+            return ERR_UNMAPPED
+        if m <> addrMap[dstAddr>>28] ' copy must be on the same bus
+            return ERR_NOT_SAME_BUS
+        if long[getMailboxAddr(m+1, cogid())] < 0
+            return ERR_MAILBOX_BUSY ' don't clobber existing list item
+        list := @listdata[(m*NUMCOGS + cogid())*ITEMSIZE]
+    else ' construct list item only, don't execute
+        list := listPtr
+    long[list][0]:= R_READBURST + (srcAddr & $fffffff)
+    long[list][1]:= hubBuffer
+    long[list][2]:= bufSize
+    long[list][3]:= R_WRITEBURST + (dstAddr & $fffffff)
+    long[list][4]:= totalBytes
+    long[list][5]:= 0
+    long[list][6]:= 0
+    long[list][7]:= 0 ' no link
+    if listPtr 
+        return listPtr + 28 ' return the address of link pointer to allow chaining etc
+    r := execList(m+1, list, 0)
+{{
+.................................................................................................
+copy(dstAddr, srcAddr, totalBytes, hubBuffer, bufSize)
+
+Copies data from source HyperRAM/HyperFlash to destination HyperRAM on any bus.  It will also
+make use of copyBus where possible for higher performance when both source and destination
+memories are on the same bus.
+
+Arguments:
+  dstAddr - the external memory start address to receive the image during the copy
+  srcAddr - the external memory start address to source the image during the copy
+  totalBytes - the number of bytes to copy
+  hubBuffer - the intermediate transfer buffer address in HUB RAM (sized to accept bufSize bytes)
+  bufSize - this is the size of the intermediate transfer buffer in HUB RAM
+
+Returns: 0 for success or a negative error code,
+
+Bytes are copied via the intermediate HUB RAM buffer pointed to by the hubBuffer argument.  
+The larger this buffer is in HUB RAM, the more efficent the transfer can be.  Aim for at least 64
+bytes or larger.
+
+If the source or destination address moves beyond the size of the memory device being accessed
+during the copy, rather than fail at that point, it will wrap within the memory bank being accessed.
+This is consistent with the same approach used within the HyperRAM PASM2 driver itself.
+................................................................................................
+}}
+PUB copy(dstAddr, srcAddr, totalBytes, hubBuffer, bufSize) : r | bank, bus1, bus2, mask1, mask2
+    if totalBytes == 0
+        return 0 ' don't bother
+    bus1 := addrMap[srcAddr>>28]
+    if bus1 +> LAST_INSTANCE
+        return ERR_UNMAPPED
+    bus2 := addrMap[dstAddr>>28]
+    if bus2 +> LAST_INSTANCE
+        return ERR_UNMAPPED
+    ' if copy is on same bus, leverage copyBus
+    if bus1 == bus2 
+        return copyBus(dstAddr, srcAddr, totalBytes, hubBuffer, bufSize, 0) 
+
+    if bufSize == 0
+        return ERR_INVALID
+    
+    ' get address wrap masks
+    bank := (srcAddr >> 24) & $f
+    mask1 := (2 << (devices[bus1 * NUMBANKS * 2 + bank] & $ff)) - 1
+    bank := (dstAddr >> 24) & $f
+    mask2 := (2 << (devices[bus2 * NUMBANKS * 2 + bank] & $ff)) - 1 
+
+    ' copy data
+    repeat while totalBytes
+        if totalBytes +< bufSize ' adjust for final transfer
+            bufSize := totalBytes
+        if (r := read(hubBuffer, srcAddr, bufSize)) or (r := write(hubBuffer, dstAddr, bufSize))
+            return
+        srcAddr := (srcAddr + bufSize) & mask1
+        dstAddr := (dstAddr + bufSize) & mask2
+        totalBytes -= bufSize
+
+
+{{
+.................................................................................................
+execList(bus, listptr, nonBlocking)
+
+Initiates execution of a request list.  
+
+Arguments:
+  bus - which memory bus driver will be issued with the request list
+  listptr - address of the request list in HUB RAM
+  nonBlocking - set true to launch in non-blocking manner, false to wait for results
+
+Returns: 0 for success or a negative error code,
+
+Lists can be launched in either a blocking or non-blocking manner.  If the list execution is 
+to blocking and some other request is already active, it will first wait until that prior
+request completes (the prior return status will be lost) before starting the new list.
+If it is executed as non-blocking and there is still a pending request in the mailbox,
+it will return with a failure code notifying the caller of this outcome.
+
+Otherwise in either case, if the mailbox is free the new request list is launched for this COG.
+................................................................................................
+}}
+PUB execList(bus, listptr, nonBlocking) : r | m
+    m := getMailboxAddr(bus, cogid())
+    if m < 0 
+        return m
+    ' check if non blocking is desired and we already have a pending request active
+    if nonBlocking and (long[m] & $80000000) 
+        return ERR_WOULD_BLOCK
+
+    ' special case - user has run a non-blocking list before this but it is still running 
+    ' so don't start the new list until the last one has ended
+    repeat until long[m] >= 0       
+
+    ' setup the new list request address in HUB and trigger it to be executed
+    long[m][1] := (listptr & $fffff) 
+    long[m] := -1 ' trigger
+    ' if non-blocking don't wait for the result, return immediately
+    if nonBlocking
+        return 0 
+    ' otherwise wait for the result
+    repeat
+        r := long[m]
+    while r < 0
+    return -r
+{{
+................................................................................................
+eraseFlash(addr, flags)
+
+Erases a single HyperFlash sector or the entire device.
+
+Arguments:
+  addr - (any) address of HyperFlash sector or HyperFlash device memory to be erased
+  flags - indicates how and what to erase based on a selection of these flags:
+           ERASE_ENTIRE_FLASH - the whole device will be erased (warning very slow)
+           ERASE_SECTOR_256K - a single 256kB sector will be erased
+           ERASE_NO_WAIT - non-blocking erase is selected
+           ERASE_SHOW_PROGRESS - calls send(".") each second, you can override send to intercept
+           
+Returns: 0 on success or negative error code
+
+If the non-blocking erase mode is selected, the device must continue to be polled periodially to 
+check for erase success/failure, by calling pollEraseStatus(addr). 
+................................................................................................
+}}
+PUB eraseFlash(addr, flags) : r | timeout, offset
+    'lookup execution timing information for typical erase timeout
+    offset := (flags & ERASE_ENTIRE_FLASH) ? 1 : 0
+    if (r := readFlashInfo(addr, $21+offset)) < 0
+        return
+
+    ' ensure erase operation is supported by device
+    if r == 0 
+        return ERR_UNSUPPORTED
+
+    ' lookup max timeout multiplier
+    if (timeout := readFlashInfo(addr, $25+offset)) < 0
+        return timeout
+
+    ' compute timeout interval in milliseconds
+    timeout := (1 << r) * (1 << timeout) 
+
+    ' check if we are addressing some HyperFlash and protect it
+    if (r := lockFlashAccess(addr)) < 0
+        return
+
+    ' erase the flash
+    r := erase(addr, flags, timeout)
+
+    ' only remove protection if we did not wait for completion or there was an error
+    if flags & ERASE_NO_WAIT == 0 or r <> 0
+        unlockFlashAccess(addr)
+
+{{
+................................................................................................
+pollEraseStatus(addr)
+
+Checks the current HyperFlash erase status during a non-blocking erase operation
+
+Arguments:
+  addr - (any) address of HyperFlash device being erased
+           
+Returns: 0 on success, or negative error code including
+          ERR_BUSY - if flash is still being erased
+          ERR_FLASH_LOCKED if the erase operation failed because the flash sector was locked
+          ERR_FLASH_ERASE if the erase attempt has completed but failed
+
+This API MUST be polled exclusively after any erase operation if and only if the ERASE_NO_WAIT flag
+is passed when the erase operation was first triggered.  No other FLASH based access APIs should be 
+called in the meantime.  Once ERR_FLASH_LOCKED, or ERR_FLASE_ERASE, or 0 is returned you can stop
+calling this function and the flash will be released for other use.
+................................................................................................
+}}
+PUB pollEraseStatus(addr) : r
+    if getFlashSize(addr)  < 0
+        return ERR_NOT_FLASH
+    if (r := writeReg(addr, $555, $70)) == 0
+        r := readReg(addr, 0)
+    if r < 0
+        return
+    ' check if erase operating still continuing
+    if r & (1 << FLASH_STATUS_DRB) == 0
+        return ERR_BUSY
+
+    ' clear the status register
+    writeReg(addr, $555, $71)
+
+    ' enable flash access to all mailbox clients again
+    unlockFlashAccess(addr) 
+
+    ' return status
+    if r & (1 << FLASH_STATUS_ESB)
+        if r & (1 << FLASH_STATUS_SLSB)
+            return ERR_FLASH_LOCKED
+        return ERR_FLASH_ERASE
+    return 0
+
+{{
+................................................................................................
+isSectorBlank(addr)
+
+Checks if the HyperFlash sector containing the address is blank
+
+Arguments:
+  addr - address identifying a HyperFlash sector to test
+
+Returns: 0 if HyperFlash sector is not blank, 1 if it is blank, or a negative error code
+................................................................................................
+}}
+PUB isSectorBlank(addr) : r | sa, size
+    size := getFlashSize(addr) 
+    if size < 0
+        return ERR_NOT_FLASH
+    sa := (addr & (size-1)) >> 1
+    ' lock flash access
+    if (r := lockFlashAccess(addr)) < 0
+        return
+    if (r := writeReg(addr, (sa & !$1ffff)+$555, $33)) ' blank check the sector
+        unlockFlashAccess(addr)
+        return r
+    waitms(25) ' give it enough time to execute, takes 15-17ms according to data sheet
+    ' check for completion or time out on failure
+    if (r := writeReg(addr, $555, $70)) == 0
+        r := readReg(addr, 0)
+        if r >= 0
+            if (r & (1<<FLASH_STATUS_DRB)) == 0  ' not good, we may need a HW reset to recover
+                r := ERR_FLASH_TIMEOUT
+            else 
+                r := (r & (1<<FLASH_STATUS_ESB) == 0) ? 1 : 0 ' check if sector is blank or not
+                if r == 0
+                    'we need to clear the status register if it fails blank test!
+                    writeReg(addr, $555, $71)
+    unlockFlashAccess(addr)
+
+    return
+
+
+' internal method to erase single sector identified by addr or the entire chip
+PRI erase(addr, flags, maxWaitMs) : r | sa, starttime, elapsed, cmd, delta, size, lastval
+    size := getFlashSize(addr) 
+    if size < 0
+        return ERR_NOT_FLASH
+    if flags & ERASE_SECTOR_256K
+        sa := (addr & (size-1)) >> 1
+        cmd := $30
+    elseif flags & ERASE_ENTIRE_FLASH
+        sa := $555
+        cmd := $10
+    else
+        return ERR_INVALID
+
+
+    'fast blank check avoids need to erase sector again if found to already be erased
+    if flags & ERASE_SECTOR_256K
+        if (r := writeReg(addr, (sa & !$1ffff)+$555, $33)) ' blank check the sector
+            return r
+        waitms(25) ' give it enough time to execute, takes 15-17ms according to data sheet
+        ' check for completion or time out on failure
+        if (r := writeReg(addr, $555, $70)) == 0
+            r := readReg(addr, 0)
+        if r < 0
+            return
+        if (r & (1<<FLASH_STATUS_DRB)) == 0  ' not good, we may need a HW reset
+            return ERR_FLASH_TIMEOUT
+        if (r & (1<<FLASH_STATUS_ESB)) == 0 ' check if we are already erased
+            return 0 ' sector is already erased, so nothing more to do
+        else
+            'need to clear the status register
+            writeReg(addr, $555, $71)
+    
+
+    if (r := writeReg(addr, $555, $AA)) OR (r := writeReg(addr, $2AA, $55)) OR {
+}      (r := writeReg(addr, $555, $80)) OR (r := writeReg(addr, $555, $AA)) OR {
+}      (r := writeReg(addr, $2AA, $55)) OR (r := writeReg(addr, sa, cmd))
+        return r
+
+    ' return now if the caller wants to handle the flash erase status polling
+    if flags & ERASE_NO_WAIT
+        return
+
+    ' poll for completion or time out on failure
+    starttime := getct() ' get initial starting time
+    elapsed := 0
+    lastval := 0
+    repeat
+        ' read flash status 
+        if (r := writeReg(addr, $555, $70)) == 0
+            r := readReg(addr, 0)
+        if r < 0
+            return
+        delta := getct() - starttime  ' compute elapsed ticks, need to deal with wraparound 
+        if delta +> (clkfreq/1000)  ' TODO: this timing code seems messy/overly complex
+            elapsed += delta / (clkfreq/1000)
+            starttime += (delta - (delta+//(clkfreq/1000)))
+        waitms(10) ' be nice and don't just hammer the control mailbox
+        if flags & ERASE_SHOW_PROGRESS
+            if elapsed/1000 <> lastval  ' show something each second to indicate we are alive
+                send(".")
+                lastval := elapsed/1000
+    until (r & (1 << FLASH_STATUS_DRB)) or (elapsed +> maxWaitMs)
+
+    ' Timeout if not completed within the expected time. Something went badly wrong with the flash 
+    ' access and it may now need a RESET to fix?
+    if (r & (1 << FLASH_STATUS_DRB)) == 0
+        return ERR_FLASH_TIMEOUT
+
+    'clear the status register
+    writeReg(addr, $555, $71)
+    ' check for successful erasure
+    if r & (1 << FLASH_STATUS_ESB)
+        if r & (1 << FLASH_STATUS_SLSB)
+            return ERR_FLASH_LOCKED
+        return ERR_FLASH_ERASE
+
+    return 0
+
+' internal method to return size of flash device
+PRI getFlashSize(addr) : size | bus, bank
+    ' check if we are addressing some HyperFlash
+    bus := addrMap[addr >> 28]
+    bank := (addr >> 24) & $f
+    if bus +> LAST_INSTANCE
+        return ERR_NOT_FLASH
+    if devices[bus * NUMBANKS * 2 + bank] & F_FLASHFLAG == 0
+        return ERR_NOT_FLASH
+    size := 2 << (devices[bus * NUMBANKS * 2 + bank] & $ff)
+
+
+{{    
+................................................................................................
+readFlashICR(addr)
+readFlashISR(addr)
+readFlashNVCR(addr)
+readFlashVCR(addr)
+
+Read special HyperFlash registers.
+
+Arguments:
+  addr - (any) address of HyperFlash memory to be accessed
+
+Returns: 16 bit register value, or negative error code
+'.................................................................................................
+}}
+PUB readFlashICR(addr) : r 
+    return readFlashSR(addr, $C4)
+
+PUB readFlashISR(addr) : r 
+    return readFlashSR(addr, $C5)
+
+PUB readFlashNVCR(addr) : r 
+    return readFlashSR(addr, $C6)
+
+PUB readFlashVCR(addr) : r 
+    return readFlashSR(addr, $C7)
+
+' internal general method to read special HyperFlash registers
+PRI readFlashSR(addr, cmd) : r
+    ' check if we are addressing some HyperFlash and protect it
+    if (r := lockFlashAccess(addr)) < 0
+        return
+    ' send ICR read sequence
+    if (r := writeReg(addr, $555, $AA)) == 0
+        if (r := writeReg(addr, $2AA, $55)) == 0
+            if (r := writeReg(addr, $555, cmd)) == 0
+                r := readReg(addr, 0)
+    unlockFlashAccess(addr)
+{{
+................................................................................................
+writeFlashICR(addr, data)
+writeFlashISR(addr, data
+writeFlashVCR(addr, data)
+
+Writes to special HyperFlash registers.
+
+Arguments:
+  addr - (any) address of Hyperflash memory to be accessed
+  data - 16 bit data to write to the HyperFlash register
+
+For example the interrupt control register (ICR) could be written to output INT# low on internal
+BUSY to READY transition at the end of a chip/sector erase operation and this could be monitored
+by the P2 to trigger the next action, avoiding continuous erase status polling etc.
+
+Returns: 0 for success, or negative error code
+................................................................................................
+}}
+PUB writeFlashICR(addr, data) : r
+    return writeFlashSR(addr, $36, data)
+
+PUB writeFlashISR(addr, data) : r
+    return writeFlashSR(addr, $37, data)
+
+PUB writeFlashVCR(addr, data) : r 
+    return writeFlashSR(addr, $38, data)
+
+' internal general method to write HyperFlash registers
+PRI writeFlashSR(addr, cmd, data) : r
+    ' check if we are addressing some HyperFlash and protect it
+    if (r := lockFlashAccess(addr)) < 0
+        return
+    ' send VCR read sequence
+    if (r := writeReg(addr, $555, $AA)) == 0
+        if (r := writeReg(addr, $2AA, $55)) == 0
+            if (r := writeReg(addr, $555, cmd)) == 0
+                r := writeReg(addr, 0, data)
+    unlockFlashAccess(addr)
+{{
+................................................................................................
+programFlashByte(addr, data)
+programFlashWord(addr, data)
+programFlashLong(addr, data)
+
+Programs HyperFlash memory with single data elements.
+
+Arguments:
+  addr - address of HyperFlash memory to be programmed
+  data - data to program into to HyperFlash
+
+Returns: 0 for success, or negative error code
+
+ Flash will be programmed assuming data is already erased, but if there are binary zeroes in
+ the address accessed, the new data will be ANDed with the existing value at that address.
+................................................................................................
+}}
+PUB programFlashByte(addr, data) : r 
+    ' check if we are addressing some HyperFlash
+    if (r := getFlashSize(addr)) < 0 
+        return 
+    if addr & 1 ' odd address
+        data := (data << 8) | $ff
+        addr := addr - 1
+    else
+        data := data | $ff00
+    return programFlashLine(addr, @data, 2)
+
+PUB programFlashWord(addr, data) : r 
+    ' check if we are addressing some HyperFlash
+    if (r := getFlashSize(addr)) < 0 
+        return 
+    if addr & 1 ' writing word to an odd address
+        data := $ff000000 | ((data & $ffff) << 8) | $ff
+        addr := addr - 1
+        ' splitting this will account for any 512 byte line wrap possibility
+        if (r := programFlashLine(addr, @data, 2)) OR (r := programFlashLine(addr+2, @data+2, 2))
+            return
+    else
+        r := programFlashLine(addr, @data, 2)
+
+PUB programFlashLong(addr, data) : r 
+    ' split into two word writes in case data crosses a boundary
+    if (r := programFlashWord(addr, data & $ffff)) OR (r := programFlashWord(addr+2, data >> 16))
+        return 
+{{
+................................................................................................
+programFlash(addr, srcHubAddr, byteCount, callBack, flags)
+
+Programs HyperFlash memory using a block of data in HUB RAM.  Assumes the sectors are already
+erased by default however this behaviour can be overriden by flags (see below).
+
+Arguments:
+  addr - start address of HyperFlash memory to be programmed
+  srcHubAddr - start address of HUB RAM block to be programmed into flash
+  byteCount - number of bytes to program into HyperFlash
+  callBack - address of some method to call every after every ~512 bytes are written 
+             If this address is set to zero it means no callback method will be called.
+
+             The callback can be used to monitor flash programming and update some progress of
+             status on a display for feedback etc if the overall write will take some time.
+             It can also allow cancellation of flash writes if required.
+
+             e.g. 
+                 PUB callback(written, total, stopptr)
+
+             The callback method is passed three arguments which are:
+                 1) the number of bytes written to flash so far
+                 2) the total number of bytes which will get written to flash
+                 3) a pointer to a long which can be set non-zero to stop writing into flash
+             The values can be combined to show a progress indicator as a percentage etc.
+    flags   - optional flags can be set to 0 for no erase or to one of the following values
+              to automatically erase the device:
+              ERASE_ENTIRE_FLASH - entire chip will be erased first prior to programming
+              ERASE_SECTOR_256K - any spanned sectors will first be erased as required
+              ERASE_SHOW_PROGRESS - shows progress of erase using send(".")
+        
+Returns: 0 for success, or negative error code
+
+Flash will be programmed assuming data is already erased, but if there are binary zeroes in
+the address accessed, the new data will be ANDed with the existing value at that address.
+................................................................................................
+}}
+PUB programFlash(addr, srcHubAddr, byteCount, callBack, flags) : r | size, burst, origCount, written, eraseAddr, stop
+    ' check arguments
+    if byteCount == 0 
+        return 0
+
+    ' check for flash address and retrieve its size 
+    if (size := getFlashSize(addr)) < 0 
+        return size
+
+    ' get current flash maximum burst size
+    if (burst := getFlashBurstSize(addr)) < 0 
+        return burst
+
+    ' writes are done at sysclk/2 so halve the maximum burst allowed
+    burst := (burst / 2) & !1
+
+    ' prevent address overflow by limiting to end of flash if the size wraps
+    if byteCount + (addr & (size-1)) +> size 
+        byteCount := size - (addr & (size-1))
+
+    stop := 0
+    ' erase as needed
+    flags &= (ERASE_SECTOR_256K | ERASE_ENTIRE_FLASH | ERASE_SHOW_PROGRESS)
+    if flags & ERASE_SECTOR_256K
+        eraseAddr := addr 
+        repeat 
+            if (r := eraseFlash(eraseAddr, flags))
+                return r
+            eraseAddr += ERASE_SECTOR_256K
+            if callback <> 0
+                callback(0, origCount, @stop)
+                if stop
+                    return ERR_CANCELLED ' we can still cancel erase if done by sectors
+        while eraseAddr < addr + byteCount
+    elseif flags & ERASE_ENTIRE_FLASH
+        if (r := eraseFlash(eraseAddr, flags))
+            return r
+
+    ' track counts
+    origCount := byteCount
+    written := addr & 1
+    ' handle odd start address case
+    if written
+        if (r := programFlashByte(addr, byte[srcHubAddr])) < 0
+            return
+        if --byteCount == 0 
+            return 
+        addr += 1
+        srcHubAddr++
+
+    ' send flash data lines
+    repeat
+        size := 512 - (addr & $1ff) ' compute bytes left in line
+        if size +> burst
+            size := burst ' fragment the write burst for QoS
+        if size +> byteCount 
+            size := byteCount & !1 ' don't send more data than required
+        if (r := programFlashLine(addr, srcHubAddr, size)) < 0
+            return
+        addr += size
+        srcHubAddr += size
+        byteCount -= size
+        written += size
+        if callback <> 0
+            callback(written, origCount, @stop)
+            if stop
+                return ERR_CANCELLED
+    until byteCount +< 2 
+
+    ' handle last byte if count was odd
+    if byteCount
+        r := programFlashByte(addr, byte[srcHubAddr])
+        written++
+
+    if callback <> 0
+        callback(written, origCount, @stop)
+        
+    return
+
+' internal method to return size of burst allowed to flash
+PRI getFlashBurstSize(addr) : burstsize | bus, bank
+    ' check if we are addressing some HyperFlash
+    bus := addrMap[addr >> 28]
+    if bus +> LAST_INSTANCE
+        return ERR_NOT_FLASH
+    bank := (addr >> 24) & $f
+    if devices[bus * NUMBANKS * 2 + bank] & F_FLASHFLAG == 0
+        return ERR_NOT_FLASH
+    burstsize := devices[bus * NUMBANKS * 2 + bank] >> 16
+
+
+' internal general HyperFlash programming method
+PRI programFlashLine(addr, srcHubAddr, count) : r | bus, bank, starttime, elapsed
+    ' check arguments
+    if count == 0 
+        return 0
+    if addr & 1 OR count & 1
+        return ERR_ALIGNMENT    ' word addresses and whole word sizes only
+    if (count + (addr & $1ff)) +> 512 
+        return ERR_ALIGNMENT    ' single line writes only
+
+    if (r := lockFlashAccess(addr)) < 0
+        return
+    ' start programming sequence
+    if (r := writeReg(addr, $555, $AA)) OR (r := writeReg(addr, $2AA, $55)) OR (r := writeReg(addr, $555, $A0))
+        unlockFlashAccess(addr)
+        return 
+
+    ' send the data as a burst
+    if (r := write(srcHubAddr, addr, count)) < 0
+        unlockFlashAccess(addr)
+        return ' failing here means we're sort of hosed now, and flash would need to be reset to recover
+    
+    ' poll for completion or time out on failure
+    starttime := getct() ' get initial starting time
+    elapsed := 0
+    repeat
+        ' read flash status 
+        if (r := writeReg(addr, $555, $70)) == 0
+            r := readReg(addr, 0)
+        if r < 0
+            unlockFlashAccess(addr)
+            return
+        elapsed := getct() - starttime  ' compute elapsed ticks, no need to worry about timer wrap here
+        elapsed := elapsed+/(clkfreq/1000) ' convert to milliseconds
+        waitus(100) ' be nice to the shared mailbox
+    until (r & (1 << FLASH_STATUS_DRB)) or elapsed +> FLASH_PROG_TIMEOUT
+
+    ' Timeout if not complete within the expected time. Something went badly wrong with the flash access
+    ' and it may now need a RESET to fix?
+    if (r & (1 << FLASH_STATUS_DRB)) == 0
+        unlockFlashAccess(addr)
+        return ERR_FLASH_TIMEOUT
+
+    'clear the status register
+    writeReg(addr, $555, $71)
+
+    'free up flash
+    unlockFlashAccess(addr)
+
+    ' check for successful programming
+    if r & (1 << FLASH_STATUS_PSB)
+        if r & (1<< FLASH_STATUS_SLSB)
+            return ERR_FLASH_LOCKED
+        return ERR_FLASH_PROGRAM
+
+    return 0
+
+
+' exclusively locks out the flash for the calling COGs use
+PUB lockFlashAccess(addr) : r
+    return setFlashAccess(addr, -1)
+
+
+' unlocks the flash for any COG to use
+PUB unlockFlashAccess(addr) : r
+    return setFlashAccess(addr, 0)
+
+
+' internal method to set the flash bank access protection flag and active COG using it
+PRI setFlashAccess(addr, protected) : r
+    if (r := getFlashSize(addr)) < 0  ' ensure we are modifying a flash bank
+        return
+
+    repeat until LOCKTRY(driverlock)
+    if protected ' COG wants to lock exclusive access to the flash
+        if flashCog < 0  ' resource is free
+            flashCog := cogid() ' assign it to this COG ID
+        elseif flashCog <> cogid() ' already taken by some other COG
+            LOCKREL(driverlock)
+            return ERR_BUSY ' another COG is using the flash
+    else ' COG wants to free the flash
+        if flashCog < 0 ' already free, NOP
+            LOCKREL(driverlock)
+            return 0
+        if flashCog == cogid()
+            flashCog := -1 ' only we can free it
+        else 
+            LOCKREL(driverlock)
+            return ERR_INVALID ' we don't have the lock
+    r := modifyBankParams(addr, $FFF8F7FF, (protected) ? (cogid() << 16) + F_PROTFLAG : 0)
+    'driver lock was released by modifyBankParams unless an error occurred perhaps
+    if r < 0
+        LOCKREL(driverlock)
+
+'..................................................................................................
+' Advanced driver provisioning methods follow
+'..................................................................................................
+
+' These are not typically required, but provided for further tweaking.  
+' TODO: improve all the abbreviated documentation below.
+
+' method to read HyperFlash status register or ERR_BUSY if some other COG is also accessing it
+' addr - external address identifies HyperFlash device
+' returns 16 bit status register or negative error code
+PUB readFlashStatus(addr) : r 
+    if (r := lockFlashAccess(addr)) < 0
+        return
+    if (r := writeReg(addr, $555, $70)) == 0
+        r := readReg(addr, 0)
+    unlockFlashAccess(addr)
+
+' method to clear HyperFlash status register, returns ERR_BUSY if some other COG is also accessing it
+' addr - external address identifies HyperFlash device
+' returns 0 for success or negative error code
+PUB clearFlashStatus(addr) : r
+    if (r := lockFlashAccess(addr)) < 0
+        return
+    r := writeReg(addr, $555, $71)
+    unlockFlashAccess(addr)
+
+
+' method to read HyperFlash device information word, returns ERR_BUSY if some other COG is also accessing it
+' addr - identifies HyperFlash device
+' wordoffset - offset or information word to read from ID-CFI overlay
+' returns 16 bit data or negative error code
+PUB readFlashInfo(addr, wordoffset) : r | i
+    ' check if we are addressing some HyperFlash and protect it
+    if (r := lockFlashAccess(addr)) < 0
+        return
+    ' enable ID-CFI overlay starting at word 0
+    if (r := writeReg(addr, $555, $98)) == 0
+        r := readReg(addr, wordoffset)
+    'exit ASO Map
+    writeReg(addr, 0, $f0)
+    unlockFlashAccess(addr)
+
+
+' method to read HyperRAM Identification registers IR0 or IR1
+' addr - identifies memory region containing HyperRAM device to access
+' ir - pass in 0 or 1 for IR0, IR1 register selection
+' die - pass in 0 or 1 for selecting which die to read in an MCP device (use 0 for non MCP devices)
+' returns IRx register value or negative error code
+PUB readRamIR(addr, ir, die) : r 
+    r := validHyperRam(addr)
+    if r == 0
+        r := readRaw(addr, $E000 + ((die & 1) << 3), ir & 1)
+
+
+' method to read HyperRAM control registers CR0 or CR1
+' addr - identifies memory region containing HyperRAM device to access
+' cr - pass in 0 or 1 for CR0, CR1 register selection
+' die - pass in 0 or 1 for selecting which die to read in an MCP device (use 0 for non MCP devices)
+' returns CRx register value or negative error code
+PUB readRamCR(addr, cr, die) : r 
+    r := validHyperRam(addr)
+    if r == 0
+        r := readRaw(addr, $E000 + ((die & 1) << 3), $0100_0000 + (cr & 1))
+
+
+' method to write HyperRAM control registers CR0 or CR1
+' addr - identifies memory region containing HyperRAM device to access
+' cr - pass in 0 or 1 for CR0, CR1 register selection
+' die - pass in 0 or 1 for selecting which die to read in an MCP device (use 0 for non MCP devices)
+' returns 0 for success or negative error code
+PUB writeRamCR(addr, cr, die, value) : r 
+    r := validHyperRam(addr) 
+    if r == 0
+        r := writeRaw(addr, $6000 + ((die & 1) << 3), $0100_0000 + (cr & 1), value)
+
+    
+' method to set up HyperFlash device latency in the driver and in the memory device
+' addr - identifies memory region containing the HyperFlash device to configure
+' latency - latency clock value from 5-16
+' returns 0 for success or negative error code
+PUB setFlashLatency(addr, latency) : r | vcr
+    if latency < 5 or latency > 16
+        return ERR_INVALID
+    if (vcr := readFlashVCR(addr)) < 0
+        return vcr
+    r := writeFlashVCR(addr, (vcr & $FF0F) + ((latency-5)<<4))
+    if r == 0
+        if (r := setDriverLatency(addr, latency)) < 0
+            ' try to restore the latency if it fails
+            r := writeFlashVCR(addr, vcr)
+
+
+' method to set up HyperRAM device latency in the driver and in the memory device
+' addr - identifies memory region containing the HyperRAM device to configure
+' latency - latency clock value from 3-7
+' returns 0 for success or negative error code
+PUB setRamLatency(addr, latency) : r | newvalue, origvalue
+    ' check for invalid parameters
+    if latency < 3 or latency > 7
+        return ERR_INVALID
+    ' read the current CR0 value (just use die0)
+    r := readRamCR(addr, 0, 0) 
+    if r < 0
+        return r
+    ' preserve and ensure reserved bits are set to 1
+    origvalue := r | $8F00 
+
+    ' update both dies with the new CR0 value
+    newvalue := (origvalue & $FF0F) + (((latency - 5) & $f) << 4)
+    r := writeRamCR(addr, 0, 0, newvalue)  ' update die0
+    if r == 0 ' reg write to first die was successful, so continue
+        r := writeRamCR(addr, 0, 1, newvalue)  ' update die1
+        if r == 0 ' reg write to second die was successful, update driver latency
+            r := setDriverLatency(addr, latency)
+            if r == 0 
+                return 0 ' success
+            else ' failure, not sure why it should ever happen, but try to recover
+                writeRamCR(addr, 0, 0, origvalue) ' restore the original value
+                writeRamCR(addr, 0, 1, origvalue)
+        else
+            writeRamCR(addr, 0, 0, origvalue) ' just restore first die if we can
+
+
+' internal method to validate that some HyperRAM is mapped to the address
+PRI validHyperRam(addr) : r | bus, bank
+    ' determine bus for address
+    bus := addrMap[addr >> 28]
+    if bus +> LAST_INSTANCE
+        return ERR_INVALID
+    bank := (addr >> 24) & $f
+    if devices[bus * NUMBANKS * 2 + bank] & F_FLASHFLAG
+        return ERR_NOT_RAM
+    
+    return 0
+
+
+' internal method gets the starting bank for the device on a given bus
+PRI getStartBank(bus, addr) : bank | size
+    if bus +> LAST_INSTANCE
+        return ERR_INVALID
+    bank := (addr >> 24) & $f
+    size := devices[bus * 2 * NUMBANKS + bank] & $ff
+    if size == S_32MB
+        bank := bank & %1110
+    elseif size == S_64MB
+        bank := bank & %1100
+    elseif size == S_128MB
+        bank := bank & %1000
+    elseif size == S_256MB
+        bank := 0
+    elseif size <> S_16MB
+        return ERR_INVALID
+    
+
+' internal method to set up internal driver latency for the device mapped to the provided address.
+PRI setDriverLatency(addr, latency) : r | bus, m, i, bank, size
+    ' check arguments and whether address is mapped
+    if latency == 0 OR latency > 127
+        return ERR_INVALID
+    bus := addrMap[addr >> 28]
+    if bus +> LAST_INSTANCE
+        return ERR_INVALID
+
+    ' get starting bank and size used by this address
+    if (bank := getStartBank(bus, addr)) < 0
+        return ERR_INVALID
+
+    size := devices[bus * 2 * NUMBANKS + bank] & $ff
+    
+    ' determine mailbox to use and issue the request to set each bank spanned by the device
+    m := mailboxAddr[bus] + driverCogs[bus]*12
+    repeat until LOCKTRY(driverlock)
+    repeat i from bank to bank + ((1<<(size - S_16MB)) - 1)
+        long[m][1] := latency << 1  ' convert latency clks to transitions
+        long[m] := R_SETLATENCY + (i<<24) + cogid()
+        devices[bus * 2 * NUMBANKS + NUMBANKS + i] &= $00FFFFFF
+        devices[bus * 2 * NUMBANKS + NUMBANKS + i] |= (latency << 24)
+        repeat 
+            r := long[m]
+        until r >= 0
+        if r > 0 ' error case - without cleanup!
+            r := -r
+            quit
+    LOCKREL(driverlock)
+
+
+' method to read the driver latency for the device mapped to the provided address
+' addr - address of the Hyper device to configure
+' returns current latency or negative error code
+PUB getDriverLatency(addr) : r | m
+    m := addrMap[addr >> 28]
+    if m +> LAST_INSTANCE
+        return ERR_INVALID
+    m := mailboxAddr[m] + driverCogs[m]*12
+    repeat until LOCKTRY(driverlock)
+    long[m] := R_GETLATENCY + (addr & $0f000000) + cogid()
+    repeat  
+        r := long[m]
+    until r >= 0
+    if r > 0 ' error case
+        r := -r
+    else
+        r := long[m][1] >> 1 ' convert from transitions to clocks
+    LOCKREL(driverlock)
+
+
+' method to set the burst size allowed in single CS transfer for the memory device mapped to the address
+' addr - address of the Hyper device to configure
+' burst - new burst size in bytes (assuming sysclk/1 transfers)
+' returns 0 for success or negative error code
+PUB setBurst(addr, burst) : r
+    if burst +< 8 
+        return ERR_INVALID
+
+    ' limit burst allowed to fit below 64kB streamer limit and be aligned to a flash boundary
+    if burst +> $FFF0
+        burst := $FFF0
+
+    burst := burst & !7  ' leave bottom 3 bits for COGID
+    r := modifyBankParams(addr, $0000FFF8, burst << 16)
+
+' method to set the delay value used in the driver for the memory device mapped to the address
+' addr - address of the Hyper device to configure
+' delay - nibble value passed is (delayClocks * 2) + (registeredDataBusFlag)
+' returns 0 for success or negative error code
+PUB setDelay(addr, delay) : r 
+    if delay +> 15
+        return ERR_INVALID
+    r := modifyBankParams(addr, $FFFF0FFF, delay << 12)
+
+
+' internal method modifies the bank specific parameters for the given addr and applies to the driver
+PRI modifyBankParams(addr, andmask, ormask) : r | bus, bank, value, size, i, m
+    bus := addrMap[addr >> 28]
+    if bus +> LAST_INSTANCE
+        return ERR_INVALID
+
+    ' driver must be running
+    if driverCogs[bus] == -1
+        return ERR_INACTIVE
+
+    ' get starting bank and size used by this address
+    bank := getStartBank(bus, addr)
+    if bank < 0
+        return ERR_INVALID
+    size := devices[bus * 2 * NUMBANKS + bank] & $ff
+
+    m := mailboxAddr[bus] + driverCogs[bus]*12
+    repeat until LOCKTRY(driverlock)
+    ' configure parameter(s) over all spanned banks and update local storage also
+    repeat i from bank to bank + ((1<<(size - S_16MB)) - 1)
+        value := (devices[bus * 2 * NUMBANKS + i] & andmask) | ormask
+        long[m][1] := value 
+        long[m] := R_SETPARAMS + (i<<24) + cogid()
+        repeat  
+            r := long[m]
+        until r >= 0
+        if r == 0
+            devices[bus * 2 * NUMBANKS + i] := value
+        else ' error case
+            r := -r
+            quit ' TODO: cleanup?, potentially leaves multi-banks in an inconsistent state
+
+    LOCKREL(driverlock)
+
+
+' method gets the current burst size of a device mapped to a given address
+' addr - address of mapped device 
+' returns 16 bit burst size or negative error code
+PUB getBurst(addr) : burst
+    burst := getBankParams(addr, FIELD_BURST) ' get burst field
+
+' method gets the current delay value of a device mapped to a given address
+' addr - address of mapped device 
+' returns 4 bit delay value or negative error code
+PUB getDelay(addr) : delay
+    delay := getBankParams(addr, FIELD_DELAY) ' get delay field
+
+' method gets the current flags nibble of a device mapped to a given address
+' addr - address of mapped device 
+' returns 4 bit flags value or negative error code
+PUB getFlags(addr) : delay
+    delay := getBankParams(addr, FIELD_FLAGS) ' get flags field
+
+' method returns the current QoS settings for the given COG on the given bus
+' bus - which bus to lookup (1-based)
+' cog - cog to read QoS settings
+' returns 0 for invalid parameter error, or QoS settings for COG on the given bus
+' NOTE: reads only from local storage in HUB, not from the driver directly
+PUB getQoS(bus, cog) : r
+    bus--
+    if bus +> LAST_INSTANCE or cog +> NUMCOGS - 1
+        return 0
+    return cogList[bus * NUMCOGS + cog] 
+    
+' method returns the Bank Parameter settings for the given bus and bank
+' bus - which bus to lookup (1-based)
+' bank - which bank to lookup
+' returns 0 for invalid parameter error, or QoS settings for COG on the given bus
+' NOTE: reads only from local storage in HUB, not from the driver directly
+PUB getBankParameters(bus, bank) : r
+    bus--
+    if bus +> LAST_INSTANCE or bank +> 15
+        return 0
+    return devices[bus * NUMBANKS * 2 + bank]
+
+' method returns the current Pin Parameter settings for the given bus and bank
+' bus - which bus to lookup (1-based)
+' bank - which bank
+' returns 0 for invalid parameter error, or QoS settings for COG on the given bus
+' NOTE: reads only from local storage in HUB, not from the driver directly
+PUB getPinParameters(bus, bank) : r
+    bus--
+    if bus +> LAST_INSTANCE or bank +> 15
+        return 0
+    return devices[bus * NUMBANKS * 2 + bank + 16]
+
+' method returns the bus used for the given address
+' addr - address to use to find bus
+' returns bus ID or negative error code
+PUB getBus(addr) : bus
+    bus := addrMap[addr>>28]
+    if bus +> LAST_INSTANCE
+        return ERR_UNMAPPED
+    bus++
+    
+' method returns the size of a mapped device 
+' addr - address identifying a memory device
+' returns 0 for invalid bank, or size of device in bytes
+PUB getSize(addr) : size | bus, bank
+    bus := addrMap[addr >> 28]
+    bank := (addr >> 24) & $f
+    if bus +> LAST_INSTANCE
+        return 0
+    size := 2 << (devices[bus * NUMBANKS * 2 + bank] & $ff)
+
+' method returns the total number of active memory buses supported
+PUB getBusCount() : r | i
+    return MAX_INSTANCES
+
+' method returns a default profile for type of memory in use and driver's startup flags
+' memtype - type of memory
+' driver configuration flags
+' returns address of default profile or negative error code
+PUB getDefaultProfile(memType, flags) : r
+    if memType == T_HYPERFLASH
+        if flags & F_FASTREAD  ' sysclk/1
+            return (flags & F_UNREGCLK) ? @HyperFlashDelaysUnreg1 : @HyperFlashDelays1
+        else ' sysclk/2
+        return (flags & F_UNREGCLK) ? @HyperFlashDelaysUnreg2 : @HyperFlashDelays2
+    elseif memType == T_HYPERRAM_1
+        if flags & F_FASTREAD  ' sysclk/1
+            return (flags & F_UNREGCLK) ? @HyperRamDelaysUnreg1 : @HyperRamDelays1
+        else  ' sysclk/2
+            return (flags & F_UNREGCLK) ? @HyperRamDelaysUnreg2 : @HyperRamDelays2
+   
+    return ERR_INVALID
+
+' method gets the current lock/unlock state of a flash device mapped to a given address and enabled COG
+' addr - address of mapped device 
+' returns: COGID in 3 LSBs, or negative error code
+PUB getFlashLockedCog(addr) : r 
+    ' check for flash
+    if (r := getFlashSize(addr)) < 0
+        return r
+    r := getBankParams(addr, FIELD_PROTECTION) ' get protection field
+    if r > 0 
+        if r & F_PROTFLAG
+            r &= !F_PROTFLAG
+        else
+            r := ERR_UNLOCKED
+
+
+' internal method obtains the current bank parameter field for a device mapped to the given address
+PRI getBankParams(addr, fieldType) : r | m, p
+    m := addrMap[addr >> 28]
+    if m +> LAST_INSTANCE
+        return ERR_INVALID
+    m := mailboxAddr[m] + driverCogs[m]*12
+    repeat until LOCKTRY(driverlock)
+    long[m] := R_GETPARAMS + (addr & $0f000000) + cogid()
+    repeat 
+        r := long[m]
+    until r >= 0
+        
+    if r > 0 ' driver error case
+        r := -r
+        LOCKREL(driverlock)
+        return
+
+    if fieldType == FIELD_BURST ' read burst field
+        r := long[m][1] >> 16
+    elseif fieldType == FIELD_DELAY ' read delay field
+        r := (long[m][1] >> 12) & $f
+    elseif fieldType == FIELD_FLAGS ' read flag field
+        r := (long[m][1] >> 8) & $f
+    elseif fieldType == FIELD_PROTECTION ' read COG id & protection state (bit11)
+        if long[m][1] & F_PROTFLAG
+            r := ((long[m][1] >> 16) & 7) + F_PROTFLAG
+        else 
+            r := 0
+    else 
+        r := ERR_INVALID
+    LOCKREL(driverlock)
+
+
+' method to copy driver's COG+LUT RAM state into HUB RAM - mostly for driver debug use
+' bus - bus id of driver COG to display (1-based)
+' hub - hub address to receive copy of COG memories
+' returns 0 on success, or negative error code 
+PUB dump(bus, hub) : r | m
+    bus--
+    if bus +> LAST_INSTANCE
+        return ERR_INVALID
+    if driverCogs[bus] +> NUMCOGS-1
+        return ERR_INACTIVE
+    m := mailboxAddr[bus] + driverCogs[bus]*12
+    repeat until LOCKTRY(driverlock)
+    long[m][1] := hub 
+    long[m] := R_DUMPSTATE + cogid()
+    repeat until long[m] >= 0
+    LOCKREL(driverlock)
+    return 0
+ 
+
+'--------------------------------------------------------------------------------------------------
+
+DAT
+                orgh
+
+startupParams                                       'driver startup parameters is shared with lists
+listdata        long    0[NUMCOGS*ITEMSIZE*MAX_INSTANCES]  ' list item scratch storage per COG & bus
+freeDrivers     long    (1<<MAX_INSTANCES) - 1      'free bit flags to track free bus driver instances
+driverCogs      long    -1[MAX_INSTANCES]           'COG IDs of bus driver instances
+mailboxAddr     long    -1[MAX_INSTANCES]           'mailbox base address per bus instance
+mailboxAddrCog  long    0[NUMCOGS]                  'mailbox base address per COG (for single instance)
+maskA           long    0[MAX_INSTANCES]            'reset pins for port A of each bus instance
+maskB           long    0[MAX_INSTANCES]            'reset pins for port B of each bus instance
+devices         long    0[2*NUMBANKS*MAX_INSTANCES] 'device data for each bank and instance
+cogList         long    0[NUMCOGS*MAX_INSTANCES]    'QoS COG list for each bus instance
+mailboxes       long    0[MAILBOXSIZE*MAX_INSTANCES]'COG mailbox storage for each bus instance
+profiles        long    0[NUMBANKS*MAX_INSTANCES]   'timing profile pointer storage per bus and bank
+driverlock      long    -1                          'lock for driver
+flashCog        long    -1                          'which COG has locked the flash
+busMap          byte    255[8]                      'bus mapped to a given data bus position
+addrMap         byte    255[16]                     'bus mapped to each address
+busBasePin      byte    0[MAX_INSTANCES]            'data bus base pin for each instance
+
+{
+Below are the P2 frequency bands with the input timing delay & registered data pins correction 
+factors to get the memory reads working on the P2.  This timing is potentially also affected by 
+temperature/process/voltage etc, and may need further tweaking in a given setup or whenever non 
+room temp operating conditions are experienced - YMMV.
+
+Thanks go to @ozpropdev and @evanh for experimentally determining operating ranges that helped
+figure some of this out below!
+
+Default delay profiles used for HyperFlash and HyperRAM on P2-EVAL HyperRAM breakout board 
+operating at room temp. This can be tweaked or others added for different temperatures.
+These delay profiles can be assigned to each configured device at address mapping time.
+The actual operating input delay can also be adjusted on the fly per bank if the variation 
+of delay with temperature is already determined and the temperature is known/measurable.
+}
+'sysclk/1
+HyperRamDelays1         long 6,92_000000,135_000000,188_000000,234_000000,280_000000,0
+HyperRamDelaysUnreg1    long 6,88_000000,120_000000,180_000000,225_000000,270_000000,0
+'sysclk/2
+HyperRamDelays2         long 7,92_000000,135_000000,188_000000,232_000000,280_000000,307_000000,0
+HyperRamDelaysUnreg2    long 7,89_000000,135_000000,180_000000,222_000000,266_000000,303_000000,0
+
+HyperFlashDelays1       long 5,70_000000,110_000000,160_000000,225_000000,277_000000,320_000000,0
+HyperFlashDelaysUnreg1  long 5,70_000000,105_000000,150_000000,210_000000,260_000000,315_000000,0
+
+HyperFlashDelays2       long 6,70_000000,110_000000,160_000000,225_000000,277_000000,320_000000,0
+HyperFlashDelaysUnreg2  long 6,70_000000,105_000000,150_000000,210_000000,260_000000,315_000000,0
+
+{
+The profile format begins with the initial delay value, followed by frequencies at which the
+delay is sequentially increased until either it falls below the next frequency, or the list 
+terminates with a zero.  Frequencies must be stored in increasing order.
+
+e.g. using HyperRam data above for sysclk/1 unregistered clock:
+   if            0 <= freq <  88000000 Hz, the delay compensation value is 6,
+   if    880000000 <= freq < 120000000 Hz, the delay compensation value is 7,
+   if    120000000 <= freq < 180000000 Hz, the delay compensation value is 8,
+                   ...etc...
+   if    270000000 <= freq               , the delay compensation value is 11 
+}
+
+'--------------------------------------------------------------------------------------------------
+
+{{
+-------------
+LICENSE TERMS
+-------------
+Copyright 2020 Roger Loh
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell 
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in 
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN 
+THE SOFTWARE.
+}}
