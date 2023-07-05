@@ -26,8 +26,9 @@ _seq3_ret
 	ret
 
 _setit
-	mov	arg01, #1
-	call	#_seq3
+	mov	result2, #2
+	mov	result3, #3
+	mov	result1, #1
 	wrlong	result1, objptr
 	add	objptr, #4
 	wrlong	result2, objptr

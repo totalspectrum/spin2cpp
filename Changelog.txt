@@ -1,6 +1,7 @@
 Version 6.2.0
 - Fixed offset computation when structs have 8 byte subfields
 - Implemented new method pointer code for PASM backends that does not require memory allocation.
+- Optimized some 64 bit operations on constants (thanks to Ada)
 
 Version 6.1.8
 - Changed maximum number of entries in multiple assignments from 8 to 16

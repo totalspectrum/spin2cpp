@@ -5,13 +5,8 @@ dat
 entry
 
 _demo
-	mov	arg03, #0
-	mov	arg04, #4
-	mov	arg01, imm_4660_
-	mov	arg02, imm_22136_
-	call	#_shl64
-	mov	outa, result1
-	mov	outb, result2
+	mov	outa, imm_74560_
+	mov	outb, imm_354176_
 _demo_ret
 	ret
 
@@ -40,10 +35,10 @@ _info
 _info_ret
 	ret
 
-imm_22136_
-	long	22136
-imm_4660_
-	long	4660
+imm_354176_
+	long	354176
+imm_74560_
+	long	74560
 result1
 	long	0
 result2
