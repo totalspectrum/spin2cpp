@@ -2578,6 +2578,7 @@ HasSideEffectsOtherThanReg(IR *ir)
     case OPC_DRVZ:
     case OPC_PUSH:
     case OPC_POP:
+    case OPC_RDPIN:
         return true;
     default:
         return false;
