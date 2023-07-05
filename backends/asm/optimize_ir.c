@@ -154,6 +154,7 @@ InstrReadsDst(IR *ir)
     case OPC_BMASK:
     case OPC_NOT:
     case OPC_ONES:
+    case OPC_RDPIN:
         return false;
     case OPC_MUXC:
     case OPC_MUXNC:

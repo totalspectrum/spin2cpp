@@ -133,6 +133,7 @@ typedef enum IROpcode {
     OPC_QSQRT,
     OPC_QVECTOR,
     OPC_MUXQ,
+    OPC_RDPIN,
     OPC_SETBYTE,
     OPC_SETWORD,
     OPC_SETQ,
