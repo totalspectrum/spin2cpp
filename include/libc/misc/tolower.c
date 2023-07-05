@@ -30,5 +30,7 @@ avoid the problem of digressive versions of dLibs.
 int
 tolower(int c)
 {
-  return isupper(c) ? (c ^ 0x20) : c;
+  //return isupper(c) ? (c ^ 0x20) : c;
+  return (unsigned)c - 'A' < 26u ? (c ^ 0x20) : c;
+  
 }

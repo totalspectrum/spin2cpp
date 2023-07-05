@@ -26,5 +26,6 @@ avoid the problem of digressive versions of dLibs.
 int
 toupper(int c)
 {
-  return islower(c) ? (c ^ 0x20) : c;
+  // return islower(c) ? (c ^ 0x20) : c;
+  return (unsigned)c - 'a' < 26u ? (c ^ 0x20) : c;
 }
