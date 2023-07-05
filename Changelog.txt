@@ -1,8 +1,10 @@
 Version 6.2.0
+- Extended littlefs code to allow multiple instances
 - Fixed offset computation when structs have 8 byte subfields
 - Fixed a bug in alignment of 64 bit integers
 - Implemented new method pointer code for PASM backends that does not require memory allocation.
 - Optimized some 64 bit operations on constants (thanks to Ada)
+- Various other assembly optimizations, again due to Ada
 
 Version 6.1.8
 - Changed maximum number of entries in multiple assignments from 8 to 16
