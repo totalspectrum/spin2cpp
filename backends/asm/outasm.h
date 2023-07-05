@@ -127,6 +127,9 @@ typedef struct ir_bedata {
    #define ASM_INLINE_SINGLE_FLAG 0x02
    #define ASM_INLINE_PURE_FLAG   0x04
 
+   /* if this function was actually inlined somewhere (do we really need this?) */
+    bool got_inlined;
+
     /* set after inlining if the function has no external calls left */
     bool effectivelyLeaf;
     /* Highest arg count of all inlined functions */

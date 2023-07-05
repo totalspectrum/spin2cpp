@@ -5605,7 +5605,7 @@ RemoveIfInlined(Function *f)
 static bool
 ActuallyInlined(Function *f)
 {
-    if (FuncData(f)->inliningFlags == 0) {
+    if (!FuncData(f)->got_inlined) {
         return false;
     }
     if (FuncData(f)->actual_callsites > 0) {
