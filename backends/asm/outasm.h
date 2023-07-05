@@ -61,7 +61,7 @@ IR *EmitLabel(IRList *list, Operand *op);
 void OptimizeIRLocal(IRList *irl, Function *f);
 void OptimizeIRGlobal(IRList *irl);
 void OptimizeFcache(IRList *irl);
-bool ShouldBeInlined(Function *f);
+bool AnalyzeInlineEligibility(Function *f);
 bool RemoveIfInlined(Function *f);
 int  ExpandInlines(IRList *irl);
 
@@ -121,8 +121,11 @@ typedef struct ir_bedata {
     /* number of local registers that need to be pushed */
     int numsavedregs;
     
-    /* flag for whether we should inline the function */
-    bool isInline;
+    /* flags for whether we should inline the function */
+    unsigned inliningFlags;
+   #define ASM_INLINE_SMALL_FLAG  0x01
+   #define ASM_INLINE_SINGLE_FLAG 0x02
+   #define ASM_INLINE_PURE_FLAG   0x04
 
     /* set after inlining if the function has no external calls left */
     bool effectivelyLeaf;
