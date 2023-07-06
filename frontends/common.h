@@ -558,6 +558,7 @@ struct modulestate {
     char datHasCode; // if 1, DAT section has PASM code in it
     char gasPasm;    // if 1, output is in GAS format
     char isUnion;    // if 1, module actually represents a union
+    char isInterface; // if 1, module represents an interface
     char defaultPrivate; // if 1, member variables default to private
     char longOnly;   // if 1, all module variables are longs
     char fromUsing;  // if 1, C code is included via struct __using or similar

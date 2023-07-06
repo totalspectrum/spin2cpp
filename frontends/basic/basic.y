@@ -5,6 +5,7 @@
  */
 
 %pure-parser
+%expect 49
 
 %{
 #include <stdio.h>
@@ -2187,6 +2188,26 @@ classheader:
       current = P;
       $$ = NULL;
     }  
+  | BAS_INTERFACE BAS_IDENTIFIER eoln
+    {
+      AST *ident = $2;
+      const char *classname = ident->d.string;
+      Module *P = NewModule(classname, current->curLanguage);
+      AST *newobj = NewAbstractObject( $2, NULL, 0 );
+      newobj->d.ptr = P;
+      AddSymbol(currentTypes, $2->d.string, SYM_TYPEDEF, newobj, NULL);
+      if (P != current) {
+          P->Lptr = current->Lptr;
+          P->subclasses = current->subclasses;
+          current->subclasses = P;
+          P->superclass = current;
+          P->fullname = current->fullname; // for finding "class using"
+      }
+      P->isInterface = 1;
+      PushCurrentModule();
+      current = P;
+      $$ = NULL;
+    }  
   ;
 
 classdecllist:
@@ -2197,7 +2218,7 @@ classdecllist:
 classend:
   BAS_END BAS_CLASS
     {
-      if (!current->superclass || current->isUnion) {
+      if (!current->superclass || current->isUnion || current->isInterface) {
         SYNTAX_ERROR("END CLASS not inside class");
       } else {
           PopCurrentModule();
@@ -2205,8 +2226,16 @@ classend:
     }
   | BAS_END BAS_UNION
     {
-      if (!current->superclass || !current->isUnion) {
+      if (!current->superclass || !current->isUnion || current->isInterface) {
         SYNTAX_ERROR("END UNION not inside union");
+      } else {
+          PopCurrentModule();
+      }
+    }  
+  | BAS_END BAS_INTERFACE
+    {
+      if (!current->isInterface) {
+        SYNTAX_ERROR("END INTERFACE not inside interface");
       } else {
           PopCurrentModule();
       }
