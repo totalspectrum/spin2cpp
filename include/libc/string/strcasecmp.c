@@ -12,7 +12,7 @@
 int				/* <0 for <, 0 for ==, >0 for > */
 strcasecmp(const char *scan1, const char *scan2)
 {
-	register char c1, c2;
+	register int c1, c2;
 
 	if (!scan1)
 		return scan2 ? -1 : 0;
@@ -28,6 +28,8 @@ strcasecmp(const char *scan1, const char *scan2)
 	 * which look negative collate low against normal characters but
 	 * high against the end-of-string NUL.
 	 */
+	// W21: only if char is signed (in flexspin it isn't)
+#if 0
 	if (c1 == c2)
 		return(0);
 	else if (c1 == '\0')
@@ -35,5 +37,6 @@ strcasecmp(const char *scan1, const char *scan2)
 	else if (c2 == '\0')
 		return(1);
 	else
+#endif
 		return(c1 - c2);
 }
