@@ -1971,6 +1971,17 @@ subdecl:
     AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
     DeclareFunction(current, ast_type_void, 1, funcdef, body, attrib, $1);
   }
+  | BAS_IMPLEMENTS BAS_SUB attributes BAS_IDENTIFIER '(' paramdecl ')'
+  {
+    AST *attrib = $3;
+    AST *ident = $4;
+    AST *parms = $6;
+    AST *body = NULL;
+    AST *funcdecl = NewAST(AST_FUNCDECL, ident, NULL);
+    AST *funcvars = NewAST(AST_FUNCVARS, parms, NULL);
+    AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
+    DeclareFunction(current, ast_type_void, 1, funcdef, body, attrib, $2);
+  }
   | BAS_SUB attributes BAS_IDENTIFIER paramdecl eoln subbody
   {
     AST *attrib = $2;
@@ -2021,6 +2032,18 @@ funcdecl:
     AST *funcvars = NewAST(AST_FUNCVARS, parms, NULL);
     AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
     DeclareFunction(current, rettype, 1, funcdef, body, attrib, $1);
+  }
+  | BAS_IMPLEMENTS BAS_FUNCTION attributes BAS_IDENTIFIER '(' paramdecl ')' BAS_AS typelist
+  {
+    AST *attrib = $3;
+    AST *name = $4;
+    AST *parms = $6;
+    AST *rettype = $9;
+    AST *body = NULL;
+    AST *funcdecl = NewAST(AST_FUNCDECL, name, NULL);
+    AST *funcvars = NewAST(AST_FUNCVARS, parms, NULL);
+    AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
+    DeclareFunction(current, rettype, 1, funcdef, body, attrib, $2);
   }
   | BAS_DECLARE BAS_FUNCTION BAS_IDENTIFIER BAS_LIB BAS_STRING '(' paramdecl ')' BAS_AS typelist
      {

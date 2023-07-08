@@ -905,7 +905,7 @@ String functions and operators like `left$`, `right$`, and `+` (string concatena
 
 #### Function pointers
 
-Pointers to functions require 8 bytes of memory to be allocated at run time (to hold information about the object to be called). So for example in:
+In some output formats, pointers to functions require 8 bytes of memory to be allocated at run time (to hold information about the object to be called). So for example in:
 ```
   '' create a Spin FullDuplexSerial object
   dim ser as class using "FullDuplexSerial.spin"
@@ -913,6 +913,8 @@ Pointers to functions require 8 bytes of memory to be allocated at run time (to 
   var tx = @ser.tx
 ```
 the variable `tx` holds a pointer both to the `ser` object and to the particular method `tx` within it. Since this is dynamically allocated, it is possible for the `@` operator to fail and return `nil`.
+
+The P1 and P2 assembly backends now use a special format for method pointers which does not require this dynamic allocation.
 
 #### __builtin_alloca
 
@@ -2404,7 +2406,7 @@ end if
 
 ### IMPLEMENTS
 
-Keyword reserved for future use.
+Used in a function or subroutine declaration inside an `interface`, indicates that no default definition of the function or subroutine is provided, i.e. that any class attempting to match this interface must implement the function or subroutine.
 
 ### IMPORT
 
@@ -2502,7 +2504,7 @@ A 32 bit signed integer type. The unsigned 32 bit integer type is `uinteger`.
 
 ### INTERFACE
 
-Keyword reserved for future use.
+An interface is a special kind of class which may only contain method (function and subroutine) declarations. It is typically used only in function parameters, where any other class which implements the same functions may be passed in place of an interface.
 
 ### KILL
 
