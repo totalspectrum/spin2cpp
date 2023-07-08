@@ -56,6 +56,7 @@ static void NuCompileStmtlist(NuIrList *irl, AST *ast); // forward declaration
 static int NuCompileExpression(NuIrList *irl, AST *ast); // returns number of items left on stack
 static int NuCompileExprList(NuIrList *irl, AST *ast); // returns number of items left on stack
 static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs); // returns op used for storing
+static NuIrOpcode NuCompileSymbolAddress(NuIrList *irl, Symbol *sym, int isLoad, AST *line); // returns op used for loading
 static int NuCompileMul(NuIrList *irl, AST *lhs, AST *rhs, int gethi);
 
 static AST *nu_stack_ptr = 0;
@@ -193,7 +194,7 @@ static int NuCompileFunCall(NuIrList *irl, AST *node) {
                 // plain CALL is OK
                 NuEmitCall(irl, NU_OP_CALLA, FunData(func)->entryLabel, auto_printf(128, "call %s", func->name));
             } else if (func->module == systemModule) {
-                // system modules don't actually have non-static functions, we're just
+                // system modules don't actually have non-static functions
                 //WARNING(node, "non-static system module function called");
                 // plain CALL is OK
                 NuEmitCall(irl, NU_OP_CALLA, FunData(func)->entryLabel, auto_printf(128, "call %s", func->name));
@@ -207,6 +208,20 @@ static int NuCompileFunCall(NuIrList *irl, AST *node) {
                 ERROR(node, "Unable to compile this method calls");
             }
         }
+    } else if (sym && sym->kind == SYM_VARIABLE) {
+        // method pointer or virtual function
+        NuEmitConst(irl, sym->offset);
+        if (objref) {
+            NuCompileLhsAddress(irl, objref);
+            NuEmitCommentedOp(irl, NU_OP_ADD, "offset into class");
+        } else {
+            NuEmitCommentedOp(irl, NU_OP_ADD_VBASE, "push self");
+        }
+        NuEmitCommentedOp(irl, NU_OP_LDL, "load methodptr");
+        NuEmitCommentedOp(irl, NU_OP_LDD, "fetch pc and objptr");
+        NuEmitCommentedOp(irl, NU_OP_CALLM, "indirect call");
+        functype = ExprType(node->left);
+        pushed = FuncLongResults(functype);
     } else if (node->left && IsIdentifier(node->left) && !LookupAstSymbol(node->left, NULL)) {
         ERROR(node, "Unknown symbol %s", GetUserIdentifierName(node->left));
     } else {
@@ -283,18 +298,18 @@ static NuIrOpcode LoadStoreOp(AST *typ, int isLoad)
     return op;
 }
 
-/* push effective address of an identifier onto the stack */
-/* returns an opcode for how to load this identifier, if we know */
+/* push effective address of a symbol onto the stack */
+/* returns an opcode for how to load this symbol, if we know */
 static NuIrOpcode
-NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
+NuCompileSymbolAddress(NuIrList *irl, Symbol *sym, int isLoad, AST *node)
 {
-    Symbol *sym = LookupAstSymbol(node,NULL);
     NuIrOpcode offsetOp = NU_OP_ADD_DBASE;
     NuIrOpcode loadOp = NU_OP_ILLEGAL;
     NuIr *ir;
     const char *name = NULL;
     int offset = 0;
     bool offsetValid = true;
+
     if (sym && sym->kind == SYM_WEAK_ALIAS) {
         sym = LookupSymbol((const char *)sym->v.ptr);
     }
@@ -422,6 +437,16 @@ NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
     }
     return loadOp;
 }
+
+/* push effective address of an identifier onto the stack */
+/* returns an opcode for how to load this identifier, if we know */
+static NuIrOpcode
+NuCompileIdentifierAddress(NuIrList *irl, AST *node, int isLoad)
+{
+    Symbol *sym = LookupAstSymbol(node,NULL);
+
+    return NuCompileSymbolAddress(irl, sym, isLoad, node);
+} 
 
 // figure out address of an array
 static NuIrOpcode
