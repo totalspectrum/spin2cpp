@@ -408,7 +408,9 @@ ProcessModule(Module *P)
     ProcessConstantOverrides(P);
     DeclareMemberVariables(P);
     DeclareFunctions(P);
-
+    if (P->isInterface) {
+        DeclareInterfaceFunctionPointers(P);
+    }
     /* recursively process closures */
     if (P->subclasses) {
         ProcessModule(P->subclasses);

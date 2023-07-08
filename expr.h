@@ -107,6 +107,7 @@ AST *ClassToPointerType(AST *type);
 #define IsIntOrGenericType(t) (!t || IsGenericType(t) || IsIntType(t))
 int IsBoolCompatibleType(AST *typ);
 int IsClassType(AST *typ);
+int IsInterfaceType(AST *typ);
 
 int IsConstType(AST *typ);
 int IsConstArrayType(AST *typ);

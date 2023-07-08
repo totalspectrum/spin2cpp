@@ -1994,6 +1994,10 @@ DeclareMemberVariablesOfSizeFlag(Module *P, int sizeRequest, int offset)
                     return offset;
                 }
             }
+            if (P->isInterface) {
+                ERROR(ast, "Interfaces may not have member variables");
+                return offset;
+            }
             break;
         case AST_ALIGN:
         {
@@ -2156,6 +2160,32 @@ MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ, int is_private, unsi
         }
     }
     return ret;
+}
+
+void
+DeclareInterfaceFunctionPointers(Module *P)
+{
+    Function *pf;
+    int offset = P->varsize;
+    char *name;
+    AST *idlist, *curtype;
+    int sym_flags = 0;
+    for (pf = P->functions; pf; pf = pf->next) {
+        if (pf->is_public) {
+            // create a function pointer for it
+            curtype = pf->overalltype;
+            curtype = NewAST(AST_PTRTYPE, curtype, NULL);
+            name = malloc(strlen(pf->name) + 32);
+            strcpy(name, pf->name);
+            strcat(name, "__funcptr");
+            idlist = AstIdentifier(name);
+            idlist = NewAST(AST_LISTHOLDER, idlist, NULL);
+            offset = EnterVars(SYM_VARIABLE, &P->objsyms, curtype, idlist, offset, 0, sym_flags);
+            Symbol *sym = LookupSymbolInTable(&P->objsyms, name);
+            pf->sym_funcptr = sym;
+        }
+    }
+    P->varsize = offset;
 }
 
 void

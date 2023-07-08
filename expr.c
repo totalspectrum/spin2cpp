@@ -2396,7 +2396,7 @@ FindFuncSymbol(AST *ast, AST **objrefPtr, int errflag)
     AST *objref = NULL;
     Symbol *sym = NULL;
     AST *expr = ast;
-
+    
     if (IsIdentifier(expr)) {
         sym = LookupAstSymbol(expr, errflag ? "function call" : NULL);
         return sym;
@@ -2453,6 +2453,12 @@ FindFuncSymbol(AST *ast, AST **objrefPtr, int errflag)
         }
     }
     if (objrefPtr) *objrefPtr = objref;
+    if (sym && sym->kind == SYM_FUNCTION) {
+        Function *pf = (Function *)sym->v.ptr;
+        if (pf && pf->sym_funcptr) {
+            sym = (Symbol *)pf->sym_funcptr;
+        }
+    }
     return sym;
 }
 
@@ -2495,6 +2501,22 @@ IsClassType(AST *type)
     type = RemoveTypeModifiers(type);
     if (!type) return 0;
     if (type->kind == AST_OBJECT) {
+        return 1;
+    }
+    return 0;
+}
+
+int
+IsInterfaceType(AST *type)
+{
+    Module *P;
+    type = RemoveTypeModifiers(type);
+    if (!type) return 0;
+    if (type->kind != AST_OBJECT) {
+        return 0;
+    }
+    P = GetClassPtr(type);
+    if (P && P->isInterface) {
         return 1;
     }
     return 0;

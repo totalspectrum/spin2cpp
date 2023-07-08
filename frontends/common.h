@@ -371,7 +371,6 @@ typedef struct hwreg {
 /* structure describing an object function (method) */
 typedef struct funcdef {
     struct funcdef *next;
-    int is_public;
     const char *name; /* internal name */
     const char *user_name; /* name the user used; differs from "name" for static functions */
     AST *decl;        /* always filled in with the line numbers of the declaration */
@@ -417,6 +416,7 @@ typedef struct funcdef {
     /* various flags */
     int optimize_flags;   // optimizations to be applied
     int warn_flags;       // warnings enabled for this function
+    unsigned is_public:1;
     unsigned code_placement:2;
 #define CODE_PLACE_DEFAULT 0
 #define CODE_PLACE_HUB 1
@@ -473,6 +473,9 @@ typedef struct funcdef {
     /* high water mark for local variables */
     int max_local_var_counter;
 
+    /* pointer to indirect symbol for interfaces */
+    void *sym_funcptr;
+    
     /* linked list of functions whose addresses are taken */
     /* used for building a jump table */
     int method_index;            // index into jump table, +1
@@ -986,6 +989,9 @@ void AddSubClass(Module *P, Module *subP);
 /* declare all member variables in a module */
 void DeclareMemberVariables(Module *);
 
+/* declare function pointers for an interface module */
+void DeclareInterfaceFunctionPointers(Module *P);
+
 /* declare some global variables; if inDat is true, put them in
  * DAT, otherwise make them member variables
  */
@@ -1043,6 +1049,9 @@ void AddSourceFile(const char *shortName, const char *fullName);
 
 // find a constant or other declaration in a list
 AST *FindDeclaration(AST *datlist, const char *name);
+
+// generate code to convert a class type into an interface type
+AST *ConvertInterface(AST *ifaceType, AST *classType, AST *expr);
 
 // external vars
 extern AST *basic_get_float;

@@ -3982,6 +3982,7 @@ doGetAddress(IRList *irl, AST *expr, bool isField)
     case AST_RESULT:
     case AST_IDENTIFIER:
     case AST_LOCAL_IDENTIFIER:
+    case AST_SYMBOL:
         res = CompileExpression(irl, expr, NULL);
         tmp = GetLea(irl, res);
         if (isField) {
@@ -4494,6 +4495,12 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
             return EmptyOperand();
         }
         sym = LookupMemberSymbol(expr, objtype, name, &P, NULL);
+        if (sym && sym->kind == SYM_FUNCTION) {
+            Function *pf = (Function *)sym->v.ptr;
+            if (pf->sym_funcptr) {
+                sym = (Symbol *)pf->sym_funcptr;
+            }
+        }
         if (sym) {
             switch (sym->kind) {
             case SYM_VARIABLE:

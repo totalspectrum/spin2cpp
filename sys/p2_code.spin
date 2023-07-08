@@ -655,6 +655,21 @@ pri _make_methodptr(o, func) : ptr
   ptr := o | (func << 20)
   return ptr
 
+'
+' create a class interface from a definite object o and
+' a skeleton list of functions skel containing n entries
+'
+pub _make_interfaceptrs(o, skel, n) : r | siz, i, p
+  siz := n * 4
+  p := _gc_alloc_managed(siz)
+  if p == 0
+    return p
+  r := p
+  repeat while n-- > 0
+    long[p] := o | long[skel]
+    p += 4
+    skel += 4
+
 
 ''
 '' 64 bit operations

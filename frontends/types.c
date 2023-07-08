@@ -116,6 +116,7 @@ static AST *gc_alloc_managed;
 static AST *gc_free;
 
 static AST *funcptr_cmp;
+static AST *make_interfaceptrs;
 
 static AST * getBasicPrimitive(const char *name);
 
@@ -1313,6 +1314,28 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
             AstReportDone(&saveinfo);
             return desttype;
         }
+        // check for interface conversion
+        if (IsInterfaceType(BaseType(desttype))) {
+            if (!IsPointerType(desttype)) {
+                ERROR(expr, "interfaces are accessible only as pointers or references");
+                AstReportDone(&saveinfo);
+                return desttype;
+            }
+            AST *cvt = ConvertInterface(BaseType(desttype), BaseType(srctype), expr);
+            if (!cvt) {
+                desttype_name = TypeName(BaseType(desttype));
+                srctype_name = TypeName(BaseType(srctype));
+                ERROR(expr, "Unable to convert %s to interface %s", srctype_name, desttype_name);
+                AstReportDone(&saveinfo);
+                return desttype;
+            }
+            // fix up pointer stuff here
+            *astptr = cvt;
+            //
+            return desttype;
+        }
+            
+        //
         desttype_name = TypeName(desttype);
         srctype_name = TypeName(srctype);
         if (IsPointerType(desttype) && IsPointerType(srctype)) {
@@ -2198,6 +2221,95 @@ InitGlobalFuncs(void)
 
         funcptr_cmp = getBasicPrimitive("_funcptr_cmp");
 
+        make_interfaceptrs = getBasicPrimitive("_make_interfaceptrs");
         varargs_ident = AstIdentifier(VARARGS_PARAM_NAME);
     }
+}
+
+//
+// create an interface skeleton for converting module P to interface I
+//
+Symbol *
+GetInterfaceSkeleton(Module *P, Module *I, int *n_ptr, AST *line)
+{
+    // figure out how many functions we need in the interface
+    int n = I->varsize / LONG_SIZE;
+    Symbol *sym;
+    *n_ptr = n;
+
+    char *skelName = strdupcat("_skel_", I->classname);
+    sym = LookupSymbolInTable(&P->objsyms, skelName);
+    if (sym) {
+        return sym;
+    }
+
+    // build a table of functions for the interface
+    Function *pf;
+    AST *initlist = NULL;
+    AST *elem;
+    AST *skelIdent = AstIdentifier(skelName);
+    
+    for (pf = I->functions; pf; pf = pf->next) {
+        if (!pf->is_public) {
+            continue;
+        }
+        // check for corresponding function in P
+        Symbol *funcSym = LookupSymbolInTable(&P->objsyms, pf->name);
+        if (!funcSym || funcSym->kind != SYM_FUNCTION) {
+            ERROR(line, "Module %s does not implement interface function %s", P->classname, pf->name);
+            return NULL;
+        }
+        elem = AstIdentifier(pf->name);
+        elem = NewAST(AST_SIMPLEFUNCPTR, elem, NULL);
+        elem = NewAST(AST_EXPRLIST, elem, NULL);
+        initlist = AddToList(initlist, elem);
+    }
+    elem = AstAssign(skelIdent, initlist);
+    AST *typ = NewAST(AST_ARRAYTYPE, ast_type_generic_funcptr, AstInteger(n));
+
+    DeclareOneGlobalVar(P, elem, typ, 1);
+    DeclareModuleLabels(P);
+    
+    return LookupSymbolInTable(&P->objsyms, skelName);
+}
+
+//
+// code for converting a class type to an interface type
+//
+AST *ConvertInterface(AST *ifaceType, AST *classType, AST *expr)
+{
+    Module *P;  // original class
+    Module *I;  // interface type
+    Symbol *skelSym;
+    AST *newExpr;
+    int n;
+    
+    if (!IsClassType(classType)) {
+        return NULL;
+    }
+    P = GetClassPtr(classType);
+    I = GetClassPtr(ifaceType);
+    if (!I->isInterface) {
+        ERROR(expr, "Internal error, expected interface type");
+        return NULL;
+    }
+    // see if we've already built an interface skeleton
+    // if not, build it
+    skelSym = GetInterfaceSkeleton(P, I, &n, expr);
+    if (!skelSym) {
+        return NULL;
+    }
+
+    AST *skelMethod;
+
+    skelMethod = NewAST(AST_SYMBOL, NULL, NULL);
+    skelMethod->d.ptr = (void *)skelSym;
+
+    if (!IsPointerType(ExprType(expr))) {
+        expr = NewAST(AST_ABSADDROF, expr, NULL);
+    }
+    // now build an interface from the skeleton and the
+    // instance
+    newExpr = MakeOperatorCall(make_interfaceptrs, expr, NewAST(AST_ABSADDROF, skelMethod, NULL), AstInteger(n));
+    return newExpr;
 }
