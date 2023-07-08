@@ -2067,6 +2067,7 @@ struct reservedword {
     { "con", SP_CON },
 
     { "dat", SP_DAT },
+    { "%debug", SP_DEBUG },
 
     { "%else", SP_ASM_ELSE },
     { "else", SP_ELSE },
