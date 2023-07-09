@@ -3096,7 +3096,9 @@ BCPrepareObject(Module *P) {
 
     // insert system module
     if (systemModule && systemModule != P && systemModule->functions && P->functions) {
-        BCInsertModule(P, systemModule, "_system_");
+        if (!P->isInterface) {
+            BCInsertModule(P, systemModule, "_system_");
+        }
     }
 
     // Count and gather private/public methods

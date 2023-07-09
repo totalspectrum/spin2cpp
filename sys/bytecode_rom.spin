@@ -500,6 +500,21 @@ pri _make_methodptr(o, func) | ptr
   return ptr
 
 '
+' create a class interface from a definite object o and
+' a skeleton list of functions skel containing n entries
+'
+pri _make_interfaceptrs(o, skel, n) : r | siz, i, p
+  siz := n * 4
+  p := _gc_alloc_managed(siz)
+  if p == 0
+    return p
+  r := p
+  repeat while n-- > 0
+    long[p] := _make_methodptr(o, long[skel])
+    p += 4
+    skel += 4
+
+'
 ' up to 8 parameters works OK; more than that and we could
 ' run into problems
 '

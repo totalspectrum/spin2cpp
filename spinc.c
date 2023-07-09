@@ -387,6 +387,11 @@ ProcessModule(Module *P)
     current = P;
     P->botcomment = GetComments();
 
+    // interfaces are not supported in P1 bytecode
+    if (P->isInterface && TraditionalBytecodeOutput()) {
+        WARNING(NULL, "Interfaces are not supported in P1 bytecode output");
+    }
+    // process the main program, if there is one
     if (P->body) {
         AST *funcdecl = NewAST(AST_FUNCDECL, AstIdentifier("program"), NULL);
         AST *funcvars = NewAST(AST_FUNCVARS, NULL, NULL);
