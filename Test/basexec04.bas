@@ -78,14 +78,49 @@ for i = 0 to 10
   print i, j, slowtimes(i, j)
 next i
 
-sub testit(x as single)
-  print x mod 2.1
+'
+' test for interfaces and classes
+'
+
+interface floatable
+  implements function asFloat() as single
+end interface
+
+class wrapFloat
+  dim f as single
+  function asFloat() as single
+    return f
+  end function
+  sub set(a as single)
+    f = a
+  end sub
+end class
+class wrapInt
+  dim f as integer
+  sub set(a as integer)
+    f = a
+  end sub
+  function asFloat() as single
+    return f
+  end function
+end class
+
+sub testit(x as floatable)
+  print x.asFloat() mod 2.1
 end sub
 
-testit(3.0)
-testit(3.1)
-testit(0.5)
-testit(-2.1)
+dim as wrapInt x3
+dim as wrapFloat y0, y1, y2
+
+x3.set(3)
+y0.set(3.1)
+y1.set(0.5)
+y2.set(-2.1)
+
+testit(x3)
+testit(y0)
+testit(y1)
+testit(y2)
 
 ''
 '' send the magic propload status code
