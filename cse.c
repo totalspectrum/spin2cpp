@@ -40,6 +40,7 @@ static unsigned
 ASTHash(AST *ast)
 {
     unsigned hash = 0;
+    Symbol *sym;
     if (!ast) {
         return hash;
     }
@@ -47,6 +48,10 @@ ASTHash(AST *ast)
     case AST_IDENTIFIER:
     case AST_STRING:
         hash = SymbolHash(ast->d.string);
+        break;
+    case AST_SYMBOL:
+        sym = (Symbol *)ast->d.ptr;
+        if (sym) hash = SymbolHash(sym->our_name);
         break;
     case AST_INTEGER:
     case AST_FLOAT:
@@ -140,6 +145,27 @@ UsesMemory(AST *ast) {
             // function configuration
             // for now punt and assume not
             return false;
+        case SYM_TEMPVAR:
+        case SYM_CONSTANT:
+        case SYM_FUNCTION:
+        case SYM_FLOAT_CONSTANT:
+            return false;
+        default:
+            return true;
+        }
+    }
+    case AST_SYMBOL:
+    {
+        Symbol *sym = (Symbol *)ast->d.ptr;
+        if (!sym) return true; // assume it uses memory
+        switch (sym->kind) {
+        case SYM_PARAMETER:
+        case SYM_RESULT:
+        case SYM_LOCALVAR:
+            // whether these use memory depends on the
+            // function configuration
+            // for now punt and assume they do for AST_SYMBOL
+            return true;
         case SYM_TEMPVAR:
         case SYM_CONSTANT:
         case SYM_FUNCTION:
@@ -696,6 +722,7 @@ doPerformCSE(AST *stmtptr, AST **astptr, CSESet *cse, unsigned flags, AST *name)
         newflags |= doPerformCSE(stmtptr, &ast->right, cse, flags | CSE_NO_ADD, NULL);
         return newflags;
     case AST_LABEL:
+    case AST_SYMBOL:
         // abandon all hope... we have no idea what CSE entries are valid
         ClearCSESet(cse);
         return CSE_NO_REPLACE;
