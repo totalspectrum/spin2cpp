@@ -370,6 +370,15 @@ AstFloat(float f)
     return ast;
 }
 
+/* create an AST_SYMBOL */
+AST *
+AstSymbol(void *sym)
+{
+    AST *ast = NewAST(AST_SYMBOL, NULL, NULL);
+    ast->d.ptr = sym;
+    return ast;
+}
+
 /* create an identifier */
 AST *
 AstIdentifier(const char *name)

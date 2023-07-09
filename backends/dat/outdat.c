@@ -304,13 +304,20 @@ IsRelocatable(AST *sub, Symbol **symptr, int32_t *offptr, bool isInitVal)
     }
     kind = sub->kind;
     if (kind == AST_SIMPLEFUNCPTR) {
+        int offset = 0;
         Symbol *sym = LookupAstSymbol(sub->left, "pointer address");
         if (!sym || sym->kind != SYM_FUNCTION) {
             ERROR(sub, "Bad function pointer");
             return RELOC_KIND_NONE;
         }
+        if (sub->right) {
+            offset = EvalConstExpr(sub->right);
+        }
         if (symptr) {
             *symptr = sym;
+        }
+        if (offptr) {
+            *offptr = offset;
         }
         if (ComplexMethodPtrs()) {
             return RELOC_KIND_I32;

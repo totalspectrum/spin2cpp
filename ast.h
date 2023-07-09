@@ -280,6 +280,7 @@ AST *AstBitValue(int64_t intval);
 AST *AstPlainString(const char *string);
 AST *AstStringPtr(const char *string);
 AST *AstIdentifier(const char *name);
+AST *AstSymbol(void *sym);
 AST *AstTempIdentifier(const char *name);
 AST *AstInstrModifier(int32_t intval);
 AST *AstOperator(int32_t intval, AST *left, AST *right);

@@ -407,14 +407,18 @@ pri _make_methodptr(o, func) | ptr
 ' create a class interface from a definite object o and
 ' a skeleton list of functions skel containing n entries
 '
-pri _make_interfaceptrs(o, skel, n) : r | siz, i, p
+pri _make_interfaceptrs(o, skel, n) : r | siz, i, p, f
   siz := n * 4
   p := _gc_alloc_managed(siz)
   if p == 0
     return p
   r := p
   repeat while n-- > 0
-    long[p] := _make_methodptr(o, long[skel])
+    f := long[skel]
+    if f < 0
+      long[p] := _make_methodptr(r, f & $FFFFF)
+    else
+      long[p] := _make_methodptr(o, f)
     p += 4
     skel += 4
 

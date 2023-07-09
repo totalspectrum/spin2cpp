@@ -2248,25 +2248,45 @@ GetInterfaceSkeleton(Module *P, Module *I, int *n_ptr, AST *line)
     AST *initlist = NULL;
     AST *elem;
     AST *skelIdent = AstIdentifier(skelName);
+    bool useDefaultImpl;
     
     for (pf = I->functions; pf; pf = pf->next) {
         if (!pf->is_public) {
             continue;
         }
+        useDefaultImpl = false;
         // check for corresponding function in P
         Symbol *funcSym = LookupSymbolInTable(&P->objsyms, pf->name);
-        if (!funcSym || funcSym->kind != SYM_FUNCTION) {
+        if (funcSym) {
+            if (funcSym->kind != SYM_FUNCTION) {
+                ERROR(line, "Symbol %s in class %s is not a function but is needed by interface %s", pf->name, P->classname, I->classname);
+                return NULL;
+            }
+            AST *ifaceType = pf->overalltype;
+            Function *moduleFunc = (Function *)funcSym->v.ptr;
+            AST *modType = moduleFunc->overalltype;
+            if (!CompatibleTypes(ifaceType, modType)) {
+                ERROR(line, "Incompatible types for function %s: interface expects %s but class %s has type %s", pf->name, TypeName(ifaceType), P->classname, TypeName(modType));
+            }
+        } else if (!pf->body) {
             ERROR(line, "Module %s does not implement interface function %s", P->classname, pf->name);
             return NULL;
+        } else {
+            // use the default implementation
+            useDefaultImpl = true;
+            funcSym = LookupSymbolInTable(&I->objsyms, pf->name);            
         }        
-        AST *ifaceType = pf->overalltype;
-        Function *moduleFunc = (Function *)funcSym->v.ptr;
-        AST *modType = moduleFunc->overalltype;
-        if (!CompatibleTypes(ifaceType, modType)) {
-            ERROR(line, "Incompatible types for function %s: interface expects %s but module %s has type %s", pf->name, TypeName(ifaceType), P->classname, TypeName(modType));
-        }
-        elem = AstIdentifier(pf->name);
+        elem = AstSymbol((void *)funcSym);
         elem = NewAST(AST_SIMPLEFUNCPTR, elem, NULL);
+        if (useDefaultImpl) {
+            AST *flag;
+            if (ComplexMethodPtrs()) {
+                flag = AstInteger(0x80000000);
+            } else {
+                flag = AstInteger(1);
+            }
+            elem->right = flag;
+        }
         elem = NewAST(AST_EXPRLIST, elem, NULL);
         initlist = AddToList(initlist, elem);
     }
@@ -2308,8 +2328,7 @@ AST *ConvertInterface(AST *ifaceType, AST *classType, AST *expr)
 
     AST *skelMethod;
 
-    skelMethod = NewAST(AST_SYMBOL, NULL, NULL);
-    skelMethod->d.ptr = (void *)skelSym;
+    skelMethod = AstSymbol((void *)skelSym);
 
     if (!IsPointerType(ExprType(expr))) {
         expr = NewAST(AST_ABSADDROF, expr, NULL);

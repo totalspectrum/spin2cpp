@@ -585,12 +585,11 @@ again:
                     } else {
                         flexbuf_printf(fb, "(@@@%s", symname);
                     }
-                    if (offset > 0) {
-                        flexbuf_printf(fb, " + %d", offset);
-                    } else if (offset < 0) {
-                        flexbuf_printf(fb, " - %d", -offset);
+                    flexbuf_printf(fb, ")<<%d", shiftAmount);
+                    if (offset) {
+                        flexbuf_printf(fb, " | $%x", offset);
                     }
-                    flexbuf_printf(fb, ")<<%d\n", shiftAmount);
+                    flexbuf_printf(fb, "\n");
                     data += 4;
                     addr += 4;
                     break;

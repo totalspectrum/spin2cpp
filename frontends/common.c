@@ -2183,10 +2183,12 @@ DeclareInterfaceFunctionPointers(Module *P)
             offset = EnterVars(SYM_VARIABLE, &P->objsyms, curtype, idlist, offset, 0, sym_flags);
             Symbol *sym = LookupSymbolInTable(&P->objsyms, name);
             pf->sym_funcptr = sym;
+#if 0            
             if (pf->body) {
                 ERROR(pf->body, "Default interface functions are not supported yet");
                 pf->body = NULL;
             }
+#endif            
         }
     }
     P->varsize = offset;
