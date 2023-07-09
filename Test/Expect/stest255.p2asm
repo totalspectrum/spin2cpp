@@ -15,15 +15,15 @@ dat
 entry
 
 _checkit
-	mov	checkit_tmp001_, __recvreg
-	mov	checkit_tmp003_, checkit_tmp001_
-	zerox	checkit_tmp001_, #19
+	mov	checkit_tmp002_, __recvreg
+	mov	checkit_tmp003_, __recvreg
+	zerox	checkit_tmp002_, #19
 	shr	checkit_tmp003_, #20
 	shl	checkit_tmp003_, #2
 	add	checkit_tmp003_, __methods__
 	rdlong	checkit_tmp003_, checkit_tmp003_
 	mov	checkit_tmp004_, objptr
-	mov	objptr, checkit_tmp001_
+	mov	objptr, checkit_tmp002_
 	call	checkit_tmp003_
 	mov	objptr, checkit_tmp004_
 	mov	outa, result1
@@ -61,7 +61,7 @@ __methodtable__
 objmem
 	long	0[0]
 	org	COG_BSS_START
-checkit_tmp001_
+checkit_tmp002_
 	res	1
 checkit_tmp003_
 	res	1
