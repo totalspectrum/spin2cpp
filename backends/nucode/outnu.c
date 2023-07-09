@@ -239,7 +239,7 @@ static int NuCompileFunCall(NuIrList *irl, AST *node) {
         if (pushed != 1) {
             ERROR(node, "Unable to compile indirect function call: %d items on stack", pushed);
         }
-        // at this point the method pointer words are on the stack; need to load both words
+        // at this point the method pointer address is on the stack; need to load both words
         NuEmitCommentedOp(irl, NU_OP_LDD, "fetch pc and objptr");
         NuEmitCommentedOp(irl, NU_OP_CALLM, "indirect call");
         pushed = FuncLongResults(functype);
