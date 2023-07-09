@@ -2258,6 +2258,12 @@ GetInterfaceSkeleton(Module *P, Module *I, int *n_ptr, AST *line)
         if (!funcSym || funcSym->kind != SYM_FUNCTION) {
             ERROR(line, "Module %s does not implement interface function %s", P->classname, pf->name);
             return NULL;
+        }        
+        AST *ifaceType = pf->overalltype;
+        Function *moduleFunc = (Function *)funcSym->v.ptr;
+        AST *modType = moduleFunc->overalltype;
+        if (!CompatibleTypes(ifaceType, modType)) {
+            ERROR(line, "Incompatible types for function %s: interface expects %s but module %s has type %s", pf->name, TypeName(ifaceType), P->classname, TypeName(modType));
         }
         elem = AstIdentifier(pf->name);
         elem = NewAST(AST_SIMPLEFUNCPTR, elem, NULL);
