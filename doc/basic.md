@@ -813,6 +813,23 @@ print x.get()
 ```
 Note that `end class` must be spelled out in full (unlike many "`end x`" pairs which may be abbreviated as just `end`). 
 
+#### Interfaces
+
+Interfaces are a special restricted kind of class which only contains method declarations (functions and subroutines). The interface need not actually provide definitions for its methods; instead, it should normally declare just the signature, preceded by the keyword `implements`.
+
+Any class which implements all of the methods in the interface is compatible with that interface. This makes an interface useful for library functions. For example, in:
+```
+interface convertable
+  implements asString() as string
+  implements asInteger() as integer
+end interface
+
+sub show(x as convertable)
+  print "x="; x.asString()
+end sub
+```
+Then any class which implements the `asString` and `asInteger` methods may be passed to the subroutine "show".
+
 ### Type Aliases
 
 An alias for an existing type may be declared with the `type` keyword. For example:
