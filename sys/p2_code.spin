@@ -329,10 +329,9 @@ pri _pollatn() : flag
   endasm
 
 pri _waitatn()
-  asm
-    waitatn
-  endasm
-  
+  repeat
+  while _pollatn() == 0
+
 pri _rdpin(pin = long) : r
   asm
     rdpin r, pin
