@@ -820,8 +820,8 @@ Interfaces are a special restricted kind of class which only contains method dec
 Any class which implements all of the methods in the interface is compatible with that interface. This makes an interface useful for library functions. For example, in:
 ```
 interface convertable
-  implements asString() as string
-  implements asInteger() as integer
+  implements function asInteger() as integer
+  implements function asString() as string
 end interface
 
 sub show(x as convertable)
@@ -829,6 +829,22 @@ sub show(x as convertable)
 end sub
 ```
 Then any class which implements the `asString` and `asInteger` methods may be passed to the subroutine "show".
+
+It is possible to define a default implementation for some methods. For example, the above interface could have been written as
+```
+interface convertable
+  ' asInteger() must always be provided
+  implements function asInteger() as integer
+  
+  ' asString() may be provided; if the class has one
+  ' its asString() is used, otherwise this default
+  ' one is
+  function asString() as string
+    return strInt$(asInteger())
+  end function
+end interface
+```
+in which case the `asString` method is optional in classes being passed to `convertable`; if it is missing, the default `asString` method is used.
 
 ### Type Aliases
 
