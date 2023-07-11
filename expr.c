@@ -1542,6 +1542,7 @@ EvalOperator(int op, ExprVal left, ExprVal right, int *valid)
 
 #define PASM_FLAG 0x01
 #define CHECK_DEFINED_FLAG 0x02
+#define NO_DATBASE_NEEDED_FLAG 0x04
 
 static ExprVal EvalExpr(AST *expr, unsigned flags, int *valid, int depth);
 
@@ -1833,7 +1834,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
            even if both sides are relative addresses
         */
         if (expr->d.ival == '-' && expr->left->kind == AST_ADDROF && expr->right->kind == AST_ADDROF) {
-            flags |= PASM_FLAG;
+            flags |= (PASM_FLAG|NO_DATBASE_NEEDED_FLAG);
         }
         lval = EvalExpr(expr->left, flags, valid, depth+1);
         if (expr->d.ival == K_BOOL_OR && lval.val)
@@ -1939,7 +1940,13 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             }
 
             if (gl_output == OUTPUT_BYTECODE && gl_interp_kind != INTERP_KIND_NUCODE) {
-                int datoffset = BCgetDAToffset(current,kind == AST_ABSADDROF,expr,reportError);
+                int datoffset;
+
+                if (flags & NO_DATBASE_NEEDED_FLAG) {
+                    datoffset = 0;
+                } else {
+                    datoffset = BCgetDAToffset(current,kind == AST_ABSADDROF,expr,reportError);
+                }
                 if (datoffset < 0) {
                     if (valid) *valid = 0;   // Error (BCgetDAToffset will have already printed it if needed)
                 }

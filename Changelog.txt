@@ -1,5 +1,6 @@
 Version 6.2.1
 - Fixed a bug in calculating fcache size
+- Fixed @x-@y expressions in P1 bytecode DAT section
 - Fixed some array offset calculations in P1 bytecode (thanks Ada)
 - Fixed object arrays in P1 bytecode (thanks again to Ada)
 - Fixed returning classes from functions, at least for some common cases
