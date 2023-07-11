@@ -887,7 +887,7 @@ static int NuPopMultiple(NuIrList *irl, AST *lhs, int numRhs) {
         } else {
             op = NuCompileLhsAddress(irl, lhs->left);
             if (op == NU_OP_ILLEGAL) {
-                ERROR(lhs->left, "Do not know how to store into this yet");
+                ERROR(lhs, "Do not know how to store into this yet");
             } else {
                 NuEmitOp(irl, op);
             }
@@ -902,7 +902,7 @@ static int NuPopMultiple(NuIrList *irl, AST *lhs, int numRhs) {
     }
     op = NuCompileLhsAddress(irl, lhs);
     if (op == NU_OP_ILLEGAL) {
-        ERROR(lhs->left, "Do not know how to store into this yet");
+        ERROR(lhs, "Do not know how to store into this yet");
     } else {
         NuEmitOp(irl, op);
     }
@@ -1584,7 +1584,10 @@ NuCompileExpression(NuIrList *irl, AST *node) {
             }
             NuEmitOp(irl, NU_OP_DUP);  // stack looks like A A
         }
-        if (storeOp == NU_OP_ILLEGAL) {
+        if (siz > 8) {
+            // we need to do a memcpy onto the stack
+            ERROR(node, "Item is too big to be passed or returned");
+        } else if (storeOp == NU_OP_ILLEGAL) {
             ERROR(node, "Unable to evaluate expression");
         } else {
             loadOp = NuLoadOpFor(storeOp);
