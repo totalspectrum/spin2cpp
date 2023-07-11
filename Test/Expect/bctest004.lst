@@ -1,0 +1,69 @@
+00 B4 C4 04                   ' CLKFREQ
+6F                            ' CLKMODE
+00                            ' Placeholder for checksum
+10 00                         ' PBASE
+70 00                         ' VBASE
+64 02                         ' DBASE
+28 00                         ' PCURR
+74 02                         ' DCURR
+'--- Object Header for bctest004
+60 00                         ' Object size
+06                            ' Method count + 1
+00                            ' OBJ count
+18 00 08 00                   ' Function direct @0028 (local size 8)
+24 00 08 00                   ' Function override @0034 (local size 8)
+32 00 08 00                   ' Function addrof1 @0042 (local size 8)
+40 00 08 00                   ' Function addrof2 @0050 (local size 8)
+4B 00 04 00                   ' Function addroff_const @005B (local size 4)
+'--- Function direct
+40                            ' MEM_READ LONG VBASE+$0000 (short)
+3F B4                         ' REG_WRITE 1F4(OUTA)
+44                            ' MEM_READ LONG VBASE+$0004 (short)
+3F B4                         ' REG_WRITE 1F4(OUTA)
+64                            ' MEM_READ LONG DBASE+$0004 (short)
+D8 00                         ' MEM_READ LONG VBASE+$0000+(POP index) 
+3F B4                         ' REG_WRITE 1F4(OUTA)
+32                            ' RETURN_PLAIN
+'--- Function override
+88 00                         ' MEM_READ BYTE VBASE+$0000 
+3F B4                         ' REG_WRITE 1F4(OUTA)
+88 01                         ' MEM_READ BYTE VBASE+$0001 
+3F B4                         ' REG_WRITE 1F4(OUTA)
+64                            ' MEM_READ LONG DBASE+$0004 (short)
+98 00                         ' MEM_READ BYTE VBASE+$0000+(POP index) 
+3F B4                         ' REG_WRITE 1F4(OUTA)
+32                            ' RETURN_PLAIN
+'--- Function addrof1
+64                            ' MEM_READ LONG DBASE+$0004 (short)
+DB 00                         ' MEM_ADDRESS LONG VBASE+$0000+(POP index) 
+36                            ' CONSTANT 1
+90                            ' MEM_READ BYTE (POP base)+(POP index) 
+3F B4                         ' REG_WRITE 1F4(OUTA)
+64                            ' MEM_READ LONG DBASE+$0004 (short)
+DB 00                         ' MEM_ADDRESS LONG VBASE+$0000+(POP index) 
+80                            ' MEM_READ BYTE (POP base) 
+3F B4                         ' REG_WRITE 1F4(OUTA)
+32                            ' RETURN_PLAIN
+'--- Function addrof2
+64                            ' MEM_READ LONG DBASE+$0004 (short)
+98 00                         ' MEM_READ BYTE VBASE+$0000+(POP index) 
+3F B4                         ' REG_WRITE 1F4(OUTA)
+47                            ' MEM_ADDRESS LONG VBASE+$0004 (short)
+64                            ' MEM_READ LONG DBASE+$0004 (short)
+90                            ' MEM_READ BYTE (POP base)+(POP index) 
+3F B4                         ' REG_WRITE 1F4(OUTA)
+32                            ' RETURN_PLAIN
+'--- Function addroff_const
+88 00                         ' MEM_READ BYTE VBASE+$0000 
+3F B4                         ' REG_WRITE 1F4(OUTA)
+88 01                         ' MEM_READ BYTE VBASE+$0001 
+3F B4                         ' REG_WRITE 1F4(OUTA)
+47                            ' MEM_ADDRESS LONG VBASE+$0004 (short)
+80                            ' MEM_READ BYTE (POP base) 
+3F B4                         ' REG_WRITE 1F4(OUTA)
+47                            ' MEM_ADDRESS LONG VBASE+$0004 (short)
+36                            ' CONSTANT 1
+90                            ' MEM_READ BYTE (POP base)+(POP index) 
+3F B4                         ' REG_WRITE 1F4(OUTA)
+32                            ' RETURN_PLAIN
+00 00 00                      ' (padding)

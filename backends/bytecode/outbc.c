@@ -583,11 +583,10 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         }
     } else if (ident->kind == AST_MEMREF) {
         if (!typeoverride && ident->right->kind == AST_ADDROF && 
-        ident->right->left && ident->right->left->kind == AST_ARRAYREF && (!indexExpr || IsConstZero(indexExpr) || IsConstZero(ident->right->left->right))) {
+        ident->right->left && ident->right->left->kind == AST_ARRAYREF && IsConstZero(ident->right->left->right)) {
             // Handle weird AST representation of "var.byte[x]""
             DEBUG(node,"handling size override kind 1...");
             typeoverride = ident->left;
-            if (!IsConstZero(ident->right->left->right)) indexExpr = ident->right->left->right;
             ident = ident->right->left->left;
             goto try_ident_again;
         } else if (!typeoverride && ident->right->kind == AST_ADDROF && IsIdentifier(ident->right->left)) {
