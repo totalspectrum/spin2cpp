@@ -1221,10 +1221,12 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
             }
         }
     }
-    if (IsRefType(desttype) && kind == AST_FUNCCALL) {
-        // passing to reference parameter
+    AstReportAs(expr, &saveinfo);
+    if (IsRefType(desttype) && (kind == AST_FUNCCALL || kind == AST_RETURN)) {
+        // passing or returning reference parameter
         if (!astptr) {
-            ERROR(line, "Unable to pass multiple function result to reference parameter");
+            ERROR(line, "Unable to pass or return multiple function result to reference parameter");
+            AstReportDone(&saveinfo);
             return NULL;
         }
         if (desttype->kind == AST_COPYREFTYPE) {
@@ -1241,12 +1243,15 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
             }
         }
         srctype = NewAST(AST_REFTYPE, srctype, NULL);
-    }
+    }    
     if (!desttype || !srctype) {
+        AstReportDone(&saveinfo);
         return desttype;
     }
-    
-    AstReportAs(expr, &saveinfo);
+
+    if (IsRefType(srctype) && !IsRefType(desttype) && CompatibleTypes(desttype, srctype->left)) {
+        return desttype;
+    }
     if (IsFloatType(desttype)) {
         if (IsIntType(srctype)) {
             if (!astptr) {

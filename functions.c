@@ -1058,9 +1058,14 @@ doDeclareFunction(AST *funcblock)
                 fdef->overalltype->left = ast_type_generic;
             }
             // if the type has pending variables, resolve them
-            siz = CheckedTypeSize(fdef->overalltype->left);
-            if (TypeGoesOnStack(fdef->overalltype->left)) {
+            AST *resType = fdef->overalltype->left;
+            siz = CheckedTypeSize(resType);
+            if (TypeGoesOnStack(resType)) {
                 fdef->numresults = 1; // will return a pointer
+                if (!IsRefType(resType)) {
+                    fdef->overalltype->left = NewAST(AST_COPYREFTYPE, resType, NULL);
+                    fdef->no_inline = 1; // do not inline copyref functions
+                }
             } else {
                 siz = (siz + 3) & ~3;
                 fdef->numresults = siz / 4;
