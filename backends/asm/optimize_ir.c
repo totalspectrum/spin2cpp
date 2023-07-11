@@ -83,6 +83,17 @@ bool IsDummy(IR *op)
 }
 
 //
+// check if immediate operand needs an AUGD or AUGS to fit
+//
+bool NeedsImmAug(Operand *op) {
+    if (op && op->kind == IMM_INT) {
+        uint32_t val = (uint32_t)op->val;
+        if (val > 511) return true;
+    }
+    return false;
+}
+
+//
 // fetch the real next opcode
 //
 IR *NextIR(IR *ir) {
@@ -895,8 +906,9 @@ static inline bool CondIsSubset(IRCond super, IRCond sub) {
 static int InstrMinCycles(IR *ir) {
     if (IsDummy(ir)||IsLabel(ir)) return 0;
     int aug = 0;
-    if (ir->src && ir->src->kind == IMM_INT && ir->src->val > 511) aug += 2;
-    if (ir->dst && ir->dst->kind == IMM_INT && ir->dst->val > 511) aug += 2;
+    
+    if (NeedsImmAug(ir->src)) aug += 2;
+    if (NeedsImmAug(ir->dst)) aug += 2;
 
     switch (ir->opc) {
     case OPC_WRBYTE:
@@ -5529,6 +5541,7 @@ LoopCanBeFcached(IRList *irl, IR *root, int size_left)
         return 0;
     }
 
+    size_left -= 5; // leave room for return and for errors in calculation
     ir = ir->next;
     while (ir != endjmp) {
         if (ir->fcache || InstrIsVolatile(ir)) {
@@ -5561,6 +5574,11 @@ call_ok:
                 return 0;
         }
         if (!IsDummy(ir) && ir->opc != OPC_LABEL) {
+            // check for needing AUGD or AUGS
+            if (NeedsImmAug(ir->dst))
+                --size_left;
+            if (NeedsImmAug(ir->src))
+                --size_left;
             if (--size_left <= 0) {
                 return 0;
             }
@@ -5596,6 +5614,8 @@ call_ok:
                 break;
             } else if (!IsDummy(ir)) {
                 --n;
+                if (NeedsImmAug(ir->dst)) --size_left;
+                if (NeedsImmAug(ir->src)) --size_left;
                 --size_left;
             }
             ir = ir->next;
@@ -5609,6 +5629,7 @@ call_ok:
     newlabel = NewIR(OPC_LABEL);
     newlabel->dst = dst;
     InsertAfterIR(irl, endjmp, newlabel);
+
     return newlabel;
 }
 
