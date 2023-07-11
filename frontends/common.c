@@ -952,7 +952,7 @@ void
 DEBUG(AST *instr, const char *msg, ...)
 {
     va_list args;
-    if (gl_verbosity <= 1) return;
+    if (gl_verbosity <= 0) return;
     LineInfo *info = GetLineInfo(instr);
 
     SETCOLOR(PRINT_DEBUG);
