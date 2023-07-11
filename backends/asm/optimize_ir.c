@@ -86,6 +86,7 @@ bool IsDummy(IR *op)
 // check if immediate operand needs an AUGD or AUGS to fit
 //
 bool NeedsImmAug(Operand *op) {
+    if (!gl_p2) return false; // P1 immediates are never augmented
     if (op && op->kind == IMM_INT) {
         uint32_t val = (uint32_t)op->val;
         if (val > 511) return true;
