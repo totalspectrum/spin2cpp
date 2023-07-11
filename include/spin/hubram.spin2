@@ -1,0 +1,37 @@
+'
+' 64KB ramdisk for HUB
+'
+
+DAT
+xmem byte 0[64*1024]
+
+PUB null()
+  return
+  
+PUB start()
+  return
+
+PUB stop()
+  return
+
+PUB sync()
+  return
+
+PUB write(exdst, insrc, length) | p
+  p := exdst + @xmem
+  repeat while length > 0
+    byte[p++] := byte[insrc++]
+    --length
+
+PUB read(exsrc, indst, length) | p
+  p := exsrc + @xmem
+  repeat while length > 0
+    byte[indst++] := byte[p++]
+    --length
+
+PUB fill(exdst, val, length) | p
+  p := exdst + @xmem
+  repeat while length > 0
+    byte[p++] := val
+    --length
+
