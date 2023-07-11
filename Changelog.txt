@@ -1,5 +1,6 @@
 Version 6.2.1
 - Fixed a bug in calculating fcache size
+- Fixed object arrays in P1 bytecode (thanks again to Ada)
 
 Version 6.2.0
 - Changed waitatn() to use a pollatn() loop like the Spin2 interpreter does
