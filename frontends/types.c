@@ -1986,6 +1986,16 @@ static AST *doCheckTypes(AST *ast)
     case AST_METHODREF:
     {
         const char *thename = GetIdentifierName(ast->right);
+        if (IsRefType(ltype)) {
+            AST *deref;
+            AST *basetype = DerefType(BaseType(ltype));
+            deref = DupAST(ast->left);
+            deref = NewAST(AST_MEMREF, basetype, deref);
+            deref = NewAST(AST_ARRAYREF, deref, AstInteger(0));
+            deref = NewAST(AST_METHODREF, deref, ast->right);
+            *ast = *deref;
+            ltype = basetype;
+        }
         if (ltype && !IsClassType(ltype)) {
             ERROR(ast, "Method reference on non-class %s", GetIdentifierName(ast->left));
             return ltype;
