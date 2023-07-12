@@ -1,4 +1,5 @@
 Version 6.2.1
+- Added a check for i <= 0 in mid$(a, i, j)
 - Fixed a bug in calculating fcache size
 - Fixed @x-@y expressions in P1 bytecode DAT section
 - Fixed some array offset calculations in P1 bytecode (thanks Ada)

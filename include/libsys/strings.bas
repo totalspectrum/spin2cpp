@@ -1050,8 +1050,10 @@ FUNCTION Mid$(x as string, i=1, j=9999999) as string
 	if (j <= 0) then
 		return ""
 	end if
-	
 	i = i-1 								' convert from 1 based to 0 based
+	if (i < 0) then
+		i = 0
+	end if
 	m = __builtin_strlen(x)
 	if (m < i) then
 		return ""
