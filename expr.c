@@ -947,6 +947,9 @@ TransformRangeAssign(AST *dst, AST *src, int optoken, int toplevel)
         AST *maskassign;
 
         maskvar = AstTempLocalVariable("_mask", ast_type_unsigned_long);
+        if (IsConstExpr(loexpr)) {
+            loexpr = FoldIfConst(AstOperator('&', loexpr, AstInteger(0x1f)));
+        }
         shift = AstOperator(K_SHL, AstInteger(1), loexpr);
         maskassign = AstAssign(maskvar, shift);
         maskassign = NewAST(AST_STMTLIST, maskassign, NULL);
@@ -985,13 +988,15 @@ TransformRangeAssign(AST *dst, AST *src, int optoken, int toplevel)
     {
         AST *andexpr;
         AST *orexpr;
-        if (!IsConstExpr(loexpr) && loexpr->kind != AST_IDENTIFIER && loexpr->kind != AST_LOCAL_IDENTIFIER) {
+        if (IsConstExpr(loexpr)) {
+            loexpr = FoldIfConst(AstOperator('&', loexpr, AstInteger(0x1f)));
+        } else if (loexpr->kind != AST_IDENTIFIER && loexpr->kind != AST_LOCAL_IDENTIFIER) {
             loexpr = ReplaceExprWithVariable("lo_", loexpr, &inits);
         }
         if (!IsConstExpr(maskexpr)) {
             maskexpr = ReplaceExprWithVariable("mask_", maskexpr, &inits);
         }
-
+            
         andexpr = AstOperator(K_SHL, maskexpr, loexpr);
         andexpr = AstOperator(K_BIT_NOT, NULL, andexpr);
         andexpr = AstOperator('&', andexpr, AstInteger(0xffffffff));
