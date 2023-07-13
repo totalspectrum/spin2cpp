@@ -2723,6 +2723,33 @@ Available file systems are:
 
 Note that the LittleFS file system may not be used in the same program as the FAT file system on the default pins, because the pins conflict.
 
+#### LittleFS config structure
+
+This is an array of longs containing the following information:
+```
+config(0) = flash page size in bytes (typically 256)
+config(1) = erase page size in bytes (typically 4K or 64K; use the config(0) value for RAM disks)
+config(2) = starting offset within flash, must be a multiple of config(1)
+config(3) = size of area to use, must be a multiple of config(1)
+config(4) = pointer to block device info, or 0 for default device; see below
+config(5) = pin mask low; mask indicating which pins the driver will use
+config(6) = pin mask high; mask indicating which pins the driver will use
+config(7) = reserved, set to 0
+```
+The block device structure has 7 words and looks like:
+```
+class block_device
+  dim blk_read as function(dst as any ptr, flashAddr as uinteger, size as uinteger) as integer
+  dim blk_write as function(src as any ptr, flashAdr as uinteger) as integer  ' write 1 block
+  dim blk_erase as function(flashAdr as uinteger) as integer                  ' erase 1 block
+  dim blk_sync as function() as integer
+  dim read_cache as ubyte ptr  ' points to a config(0) sized scratch area
+  dim write_cache as ubyte ptr ' points to another config(0) sized scratch area
+  dim look_cache as ubyte ptr  ' points to a third config(0) sized scratch area
+end class
+```
+The function pointers return a status (0 for success).
+
 ### NEW
 
 Allocates memory from the heap for a new object, and returns a pointer to it. May also be used to allocate arrays of objects. The name of the type of the new object appears after the `new`, optionally followed by an array limit. Note that as in `dim` statements, the value given is the last valid index, so for arrays starting at 0 (the default) it is one greater than the number of elements.
