@@ -1,5 +1,6 @@
 Version 6.2.2
 - Fixed some 64 bit constant issues with DIR/OUT/IN manipulation
+- Make sure garbage collector does not reclaim BASIC I/O wrapper
 
 Version 6.2.1
 - Added a check for i <= 0 in mid$(a, i, j)

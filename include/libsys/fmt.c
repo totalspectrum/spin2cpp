@@ -966,6 +966,7 @@ int _basic_open(unsigned h, TxFunc sendf, RxFunc recvf, CloseFunc closef)
         }
         wrapper->ftx = 0;
         wrapper->frx = 0;
+        v->vfsdata = wrapper; /* keep the garbage collector from collecting the wrapper */
     }
     if (sendf) {
         wrapper->ftx = sendf;
