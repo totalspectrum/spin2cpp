@@ -750,6 +750,28 @@ Type DOUBLE is not implemented yet, instead being a synonym for the SINGLE type 
 
 Pointers to any other type may be declared. `T pointer` is a pointer to type `T`. Thus `ushort pointer` is a pointer to an unsigned 16 bit number, and `ubyte pointer pointer` is a pointer to a pointer to an unsigned 8 bit number.
 
+#### Pointer to function
+
+Pointers to functions and subroutines are legal, and in fact any plain function type is converted internally to a pointer to the function. For example, to declare a pointer to a function taking one integer parameter and returning a string you could do something like:
+```
+type int1strfunc as function(x as integer) as string
+dim z as int1strfunc
+
+function firstchar(x as integer) as string
+  return left$(strint$(x), 1)
+end function
+
+z = @firstchar
+```
+
+Arrays of such types are also legal:
+```
+dim za(10) as int1strfunc
+
+' call a function based on index i
+b$ = (za(i))(x)
+```
+
 ### String type
 
 The `string` type is a special pointer. Functionally it is almost the same as a `const ubyte pointer`, but there is one big difference; comparisons involving a string compare the pointed to data, rather than the pointer itself. For example:
