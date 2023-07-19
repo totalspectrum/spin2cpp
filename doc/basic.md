@@ -769,7 +769,10 @@ Arrays of such types are also legal:
 dim za(10) as int1strfunc
 
 ' call a function based on index i
-b$ = (za(i))(x)
+' the BASIC parser is easily confused by nested parens and function
+' calls, so we split it out
+var pf = za(i)
+b$ = pf(n)
 ```
 
 ### String type
