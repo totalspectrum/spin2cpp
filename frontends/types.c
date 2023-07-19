@@ -1018,10 +1018,10 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
             }
             return ast_type_unsigned_long;
         }
-        if (IsPointerType(lefttype) && IsIntType(righttype)) {
+        if (IsPointerType(lefttype) && IsIntOrGenericType(righttype)) {
             ast->right = ScalePointer(lefttype, forcepromote(righttype, ast->right));
             return lefttype;
-        } else if (IsPointerType(righttype) && IsIntType(lefttype)) {
+        } else if (IsPointerType(righttype) && IsIntOrGenericType(lefttype)) {
             ast->left = ScalePointer(righttype, forcepromote(lefttype, ast->left));
             return righttype;
         } else {
