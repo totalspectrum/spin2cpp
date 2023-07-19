@@ -1,3 +1,6 @@
+Version 6.2.3
+- Fixed a potential crash in Spin2 parsing of @func()
+
 Version 6.2.2
 - Fixed some 64 bit constant issues with DIR/OUT/IN manipulation
 - Make sure garbage collector does not reclaim BASIC I/O wrapper

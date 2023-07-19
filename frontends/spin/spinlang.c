@@ -23,6 +23,7 @@ IsLocalVariable(AST *ast) {
         }
         ast = ast->left;
     }
+    if (!ast) return false;
     if (ast->kind == AST_LOCAL_IDENTIFIER) {
         ast = ast->left;
     }
