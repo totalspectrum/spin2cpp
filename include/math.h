@@ -71,6 +71,9 @@
 #define ldexp(x, n) __builtin_ldexpf((x), (n))
 #define modf(x, p) __builtin_modff((x), (p))
 
+#define HUGE_VALF __builtin_inf()
+#define HUGE_VAL  __builtin_inf()
+
 #endif
 
 #if FLT_EVAL_METHOD == 0
