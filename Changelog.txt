@@ -1,5 +1,7 @@
 Version 6.2.3
+- Added strpbrk(), strcoll(), strspn() functions for the C library
 - Fixed a potential crash in Spin2 parsing of @func()
+- Fixed taking the difference of a pointer and generic value
 
 Version 6.2.2
 - Fixed some 64 bit constant issues with DIR/OUT/IN manipulation
