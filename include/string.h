@@ -22,7 +22,7 @@ extern "C" {
     
     int    memcmp(const void *s1, const void *s2, size_t n) _IMPL("libc/string/memcmp.c");
     int    strcmp(const char *s1, const char *s2) _IMPL("libc/string/strcmp.c");
-    int    strcoll(const char *s1, const char *s2);
+    int    strcoll(const char *s1, const char *s2) _IMPL("libc/string/strcoll.c");
     int    strncmp(const char *s1, const char *s2, size_t n) _IMPL("libc/string/strncmp.c");
     size_t strxfrm(char *dest, const char *src, size_t n);
     
@@ -31,9 +31,9 @@ extern "C" {
     void * memchr(const void *s, int c, size_t n) _IMPL("libc/string/memchr.c");
     char * strchr(const char *, int) _IMPL("libc/string/strchr.c");
     size_t strcspn(const char *s1, const char *s2);
-    char * strpbrk(const char *str, const char *accept);
+    char * strpbrk(const char *str, const char *accept) _IMPL("libc/string/strpbrk.c");
     char * strrchr(const char *, int) _IMPL("libc/string/strrchr.c");
-    size_t strspn(const char *, const char *);
+    size_t strspn(const char *, const char *) _IMPL("libc/string/strspn.c");
     char * strstr(const char *src, const char *pattern) _IMPL("libc/string/strstr.c");
     char * strtok(char * __restrict str, const char * __restrict delim) _IMPL("libc/string/strtok.c");
 
