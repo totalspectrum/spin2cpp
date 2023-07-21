@@ -52,8 +52,8 @@ extern "C" {
   unsigned int sleep(unsigned int seconds) _IMPL("libc/time/sleep.c");
   int usleep(useconds_t usec) _IMPL("libc/time/usleep.c");
 
-  char *_mktemp(char *templ);
-  char *mktemp(char *);
+  char *_mktemp(char *templ) _IMPL("libc/misc/mktemp.c");
+  char *mktemp(char *) _IMPL("libc/misc/mktemp.c");
 
   const char **_get_environ_ptr() _IMPL("libc/stdlib/getenv.c");
   void _put_environ_ptr(const char **ptr) _IMPL("libc/stdlib/getenv.c");

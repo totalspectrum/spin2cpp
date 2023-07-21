@@ -91,4 +91,9 @@ typedef long double double_t;
 #error FLT_EVAL_METHOD not handled
 #endif
 
+float expm1f(float x) _IMPL("libc/math/s_expm1f.c");
+float coshf(float x) _IMPL("libc/math/e_coshf.c");
+float sinhf(float x) _IMPL("libc/math/e_sinhf.c");
+float fmodf(float x, float y) _IMPL("libc/math/e_fmodf.c");
+
 #endif

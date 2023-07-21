@@ -1,5 +1,6 @@
 Version 6.2.4
-- Added freopen() function
+- Added freopen(), tmpfile(), mktemp(), and some other stdio functions
+- Added some missing math functions
 - Fixed some problems with sizeof() used to declare local variables
 - Several improvements to C locale() related functions
 

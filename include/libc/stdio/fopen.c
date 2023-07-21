@@ -97,7 +97,7 @@ FILE *fopen(const char *pathname, const char *mode)
 {
     vfs_file_t *ftab;
     int fd = _find_free_file();
-    if (fd < 0) return fd;
+    if (fd < 0) return 0;
 
     ftab = __getftab(fd);
     return _fopenraw(pathname, mode, ftab);

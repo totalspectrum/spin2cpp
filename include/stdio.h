@@ -100,4 +100,7 @@ int remove(const char *pathname) _IMPL("libsys/remove.c");
 
 int rename(const char *oldpath, const char *newpath) _IMPL("libc/unix/rename.c");
 
+char *tmpnam(char *s) _IMPL("libc/stdio/tmpnam.c");
+FILE *tmpfile(void) _IMPL("libc/stdio/tmpfile.c");
+
 #endif
