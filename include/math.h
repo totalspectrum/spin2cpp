@@ -67,7 +67,9 @@
 #define acos(x) __builtin_acosf(x)
 #define acosf(x) __builtin_acosf(x)
 #define fabs(x)  __builtin_fabsf(x)
+#define frexpf(x, p) __builtin_frexpf((x), (p))
 #define frexp(x, p) __builtin_frexpf((x), (p))
+#define ldexpf(x, n) __builtin_ldexpf((x), (n))
 #define ldexp(x, n) __builtin_ldexpf((x), (n))
 #define modf(x, p) __builtin_modff((x), (p))
 
