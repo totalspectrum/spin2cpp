@@ -1,3 +1,6 @@
+Version 6.2.4
+- Fixed some problems with sizeof() used to declare local variables
+
 Version 6.2.3
 - Added strpbrk(), strcoll(), strspn() functions for the C library
 - Fixed a potential crash in Spin2 parsing of @func()

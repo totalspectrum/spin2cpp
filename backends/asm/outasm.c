@@ -5742,13 +5742,16 @@ static int
 AssignFuncNames(void *vptr, Module *P)
 {
     Function *f;
-
+    Function *savecur = curfunc;
+    
     for(f = P->functions; f; f = f->next) {
         if (ShouldSkipFunction(f))
             continue;
+        curfunc = f;
         AssignOneFuncName(f);
         IterateOverSymbols(&f->localsyms, FixupTypes, (void *)0);
     }
+    curfunc = savecur;
     IterateOverSymbols(&P->objsyms, FixupTypes, (void *)0);
     return 0;
 }
