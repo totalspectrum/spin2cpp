@@ -15,12 +15,9 @@
  * -1 if an error happens (invalid sequence)
  * -2 if more data remains
  */
-#ifdef __FLEXC__
-static _Mbstate_t default_mbr;
-#endif
 
 size_t
-mbrtowc(wchar_t *wcptr, const char *cptr, size_t n, _Mbstate_t *ps)
+_mbrtowc_utf8(wchar_t *wcptr, const char *cptr, size_t n, _Mbstate_t *ps)
 {
   unsigned left = ps->left;
   unsigned total = ps->total;
@@ -30,11 +27,7 @@ mbrtowc(wchar_t *wcptr, const char *cptr, size_t n, _Mbstate_t *ps)
   size_t count = 0;
 
   if (!ps) {
-#ifdef __FLEXC__
-    ps = &default_mbr;
-#else      
     ps = &_TLS->mbr_intern;
-#endif    
   }
   left = ps->left;
   total = ps->total;

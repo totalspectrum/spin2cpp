@@ -2,6 +2,7 @@
 #define _WCHAR_H
 
 #define _NEED_WINT_T
+#include <compiler.h>
 #include <sys/wchar_t.h>
 #include <sys/size_t.h>
 #include <sys/null.h>
@@ -18,7 +19,7 @@ extern "C" {
     int    mbsinit(const mbstate_t *ps) _IMPL("libc/wchar/mbsinit.c");
     size_t mbrlen(const char *__restrict s, size_t n, mbstate_t *__restrict ps) _IMPL("libc/wchar/mbrlen.c");
     size_t mbrtowc( wchar_t *pwc, const char *s, size_t n, mbstate_t *ps) _IMPL("libc/wchar/mbrtowc_utf.c");
-    size_t wcrtomb( char *s, wchar_t wc, mbstate_t *ps ) _IMPL("libc/wchar/wcrtomb_utf.c");
+    size_t wcrtomb( char *s, wchar_t wc, mbstate_t *ps ) _IMPL("libc/wchar/wcrtomb_ascii.c");
     size_t mbsrtowcs( wchar_t *dst, const char **src, size_t n, mbstate_t *ps) _IMPL("libc/wchar/mbsrtowcs.c");
 
     wint_t btowc(int c);
@@ -51,16 +52,17 @@ extern "C" {
     wchar_t *wcsrchr(const wchar_t *s, wchar_t c) _IMPL("libc/wchar/wcsrchr.c");
     size_t   wcslen(const wchar_t *s) _IMPL("libc/wchar/wcslen.c");
 
-#ifndef _FLEXC
+    size_t _mbrtowc_utf8( wchar_t *pwc, const char *s, size_t n, mbstate_t *ps) _IMPL("libc/wchar/mbrtowc_utf.c");
+    size_t _mbrtowc_ascii( wchar_t *pwc, const char *s, size_t n, mbstate_t *ps) _IMPL("libc/wchar/mbrtowc_ascii.c");
+
+    size_t _wcrtomb_utf8( char *s, wchar_t wc, mbstate_t *ps ) _IMPL("libc/wchar/wcrtomb_utf.c");
+    size_t _wcrtomb_ascii( char *s, wchar_t wc, mbstate_t *ps ) _IMPL("libc/wchar/wcrtomb_ascii.c");
+
+#ifndef __FLEXC__
     /* internal pointers used for conversion */
     extern size_t (*_mbrtowc_ptr)( wchar_t *pwc, const char *s, size_t n, mbstate_t *ps);
     extern size_t (*_wcrtomb_ptr)( char *s, wchar_t wc, mbstate_t *ps );
 
-    extern size_t _mbrtowc_utf8( wchar_t *pwc, const char *s, size_t n, mbstate_t *ps);
-    extern size_t _mbrtowc_ascii( wchar_t *pwc, const char *s, size_t n, mbstate_t *ps);
-
-    extern size_t _wcrtomb_utf8( char *s, wchar_t wc, mbstate_t *ps );
-    extern size_t _wcrtomb_ascii( char *s, wchar_t wc, mbstate_t *ps );
 #endif
     
 #if defined(__cplusplus)

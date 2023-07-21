@@ -3,7 +3,7 @@
 #include <errno.h>
 
 size_t
-wcrtomb(char *s, wchar_t wcorig, mbstate_t *ps)
+_wcrtomb_utf8(char *s, wchar_t wcorig, mbstate_t *ps)
 {
   uint32_t wc = wcorig;
   uint32_t count;

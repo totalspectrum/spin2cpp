@@ -200,12 +200,12 @@ struct lconv {
  * If locale is NULL, setlocale will return the category of the current locale.
  * @returns A pointer to a string associated with the category for the locale, or 0 on error.
  */
-char *setlocale(int category, const char *locale);
+    char *setlocale(int category, const char *locale) _IMPL("libc/misc/locale.c");
 
 /**
  * @returns An object of type struct lconv according to the current locale.
  */
-struct lconv *localeconv(void);
+    struct lconv *localeconv(void) _IMPL("libc/misc/locale.c");
 
 #ifdef __cplusplus
 }
