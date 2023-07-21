@@ -96,8 +96,7 @@ extern "C" {
   int mbtowc(wchar_t * __restrict pwc, const char * __restrict s, size_t n);
   size_t mbstowcs(wchar_t *dest, const char *src, size_t n);
 
-  /* not implemented */
-  int system(const char *command);
+  int system(const char *command) _IMPL("libc/stdlib/system.c");
 
 #if defined(_POSIX_SOURCE) || defined(_GNU_SOURCE)
   /* some non-ANSI functions */
