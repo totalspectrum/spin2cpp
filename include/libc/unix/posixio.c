@@ -229,11 +229,10 @@ int _freefile()
     return -1;
 }
 
-int open(const char *orig_name, int flags, mode_t mode=0644)
+int _find_free_file()
 {
     vfs_file_t *tab = &__filetab[0];
     int fd;
-    int r;
     
     for (fd = 0; fd < _MAX_FILES; fd++) {
         if (tab[fd].state == 0) break;
@@ -241,6 +240,17 @@ int open(const char *orig_name, int flags, mode_t mode=0644)
     if (fd == _MAX_FILES) {
         return _seterror(EMFILE);
     }
+    return fd;
+}
+
+int open(const char *orig_name, int flags, mode_t mode=0644)
+{
+    vfs_file_t *tab = &__filetab[0];
+    int fd;
+    int r;
+
+    fd = _find_free_file();
+    if (fd < 0) return fd;
     r = _openraw(&tab[fd], orig_name, flags, mode);
     if (r == 0) {
         r = fd;

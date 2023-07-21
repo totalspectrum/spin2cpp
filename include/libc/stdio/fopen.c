@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <errno.h>
 
-FILE *fopen(const char *pathname, const char *mode) _COMPLEXIO
+FILE *_fopenraw(const char *pathname, const char *mode, vfs_file_t *ftab) _COMPLEXIO
 {
     int want_read = 0;
     int want_write = 0;
@@ -20,9 +20,7 @@ FILE *fopen(const char *pathname, const char *mode) _COMPLEXIO
     int want_create = 0;
     int want_trunc = 0;
     unsigned int open_mode;
-    int c;
-    int fd;
-    vfs_file_t *ftab;
+    int c, r;
     
     while ((c = *mode++) != 0) {
         switch (c) {
@@ -74,24 +72,44 @@ FILE *fopen(const char *pathname, const char *mode) _COMPLEXIO
     if (want_create) open_mode |= O_CREAT;
     if (want_trunc) open_mode |= O_TRUNC;
 
-    fd = open(pathname, open_mode, 0666);
-    if (fd < 0) {
+    r = _openraw(ftab, pathname, open_mode, 0666);
+    if (r != 0) {
 #ifdef DEBUG
         __builtin_printf("fopen returning NULL\n");
 #endif        
         return 0;
     }
-    ftab = __getftab(fd);
+    if (_isatty(ftab)) {
+        ftab->state |= _VFS_STATE_ISATTY;
+    }
 #ifdef DEBUG
     __builtin_printf("fopen returning %x state=%x\n", ftab, ftab->state);
 #endif        
-    if (isatty(fd)) {
-        ftab->state |= _VFS_STATE_ISATTY;
-    }
     return ftab;
 }
 
 int fclose(FILE *f) _COMPLEXIO
 {
     return _closeraw(f);
+}
+
+FILE *fopen(const char *pathname, const char *mode)
+{
+    vfs_file_t *ftab;
+    int fd = _find_free_file();
+    if (fd < 0) return fd;
+
+    ftab = __getftab(fd);
+    return _fopenraw(pathname, mode, ftab);
+    
+}
+
+FILE *freopen(const char *pathname, const char *mode, FILE *stream)
+{
+    if (!pathname) {
+        // C99 says it may be possible to change the mode of an existing stream
+        // but we don't support this
+        return NULL;
+    }
+    return _fopenraw(pathname, mode, stream);
 }

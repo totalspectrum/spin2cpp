@@ -72,6 +72,7 @@ char *gets(char *data) _IMPL("libc/stdio/gets.c");
 char *fgets(char *buf, int size, FILE *f) _COMPLEXIO _IMPL("libc/stdio/fgets.c");
 
 FILE *fopen(const char *name, const char *mode) _COMPLEXIO _IMPL("libc/stdio/fopen.c");
+FILE *freopen(const char *name, const char *mode, FILE *stream) _COMPLEXIO _IMPL("libc/stdio/fopen.c");
 FILE *__string_file(_STRING_FILE *fp, const char *str, const char *mode, size_t len) _STRINGIO _IMPL("libc/stdio/stringio.c");
 
 int fclose(FILE *f) _COMPLEXIO _IMPL("libc/stdio/fopen.c");

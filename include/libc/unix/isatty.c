@@ -14,3 +14,18 @@ int isatty(int fd)
     return 0;
 }
 #endif
+
+
+#if defined(__FLEXC__) && !defined(__FEATURE_COMPLEXIO__)
+int _isatty(vfs_file_t *f) { return 1; }
+#else
+int _isatty(vfs_file_t *f)
+{    
+    unsigned int flags;
+    
+    if (_ioctl(f, TTYIOCTLGETFLAGS, &flags) == 0) {
+        return 1;
+    }
+    return 0;
+}
+#endif

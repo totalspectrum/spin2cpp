@@ -28,6 +28,8 @@ extern "C" {
   off_t lseek(int fd, off_t offset, int whence) _IMPL("libc/unix/posixio.c");
   int ioctl(int fd, unsigned long req, void *argp) _IMPL("libc/unix/ioctl.c");
   int access(const char *path, int mode) _IMPL("libc/unix/access.c");
+
+  int _ioctl(vfs_file_t *f, unsigned long req, void *argp) _IMPL("libc/unix/ioctl.c");
     
   /* access mode bits */
 #define F_OK (0)
@@ -36,6 +38,7 @@ extern "C" {
 #define X_OK (1)
 
   int isatty(int fd) _IMPL("libc/unix/isatty.c");
+  int _isatty(vfs_file_t *f) _IMPL("libc/unix/isatty.c");
 
   char *getcwd(char *buf, int size) _COMPLEXIO _IMPL("libc/unix/mount.c");
   int chdir(const char *path) _COMPLEXIO _IMPL("libc/unix/mount.c");

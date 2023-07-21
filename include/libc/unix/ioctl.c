@@ -2,9 +2,8 @@
 #include <sys/ioctl.h>
 #include <errno.h>
 
-int ioctl(int fd, unsigned long req, void *argp)
+int _ioctl(vfs_file_t *fil, unsigned long req, void *argp)
 {
-    vfs_file_t *fil = __getftab(fd);
     int r;
     if (!fil) {
         return _seterror(EBADF);
@@ -14,4 +13,10 @@ int ioctl(int fd, unsigned long req, void *argp)
         return _seterror(r);
     }
     return 0;
+}
+
+int ioctl(int fd, unsigned long req, void *argp)
+{
+    vfs_file_t *fil = __getftab(fd);
+    return _ioctl(fil, req, argp);
 }
