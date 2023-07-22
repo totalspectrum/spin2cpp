@@ -5,10 +5,10 @@ int setvbuf(FILE *f, char *buf, int mode, size_t size)
 {
     // get the buffer info
     struct _default_buffer *b = (struct _default_buffer *)f->vfsdata;
-    if (f->mode & _IOBUF) {
+    if (f->bufmode & _IOBUF) {
         if (!buf) {
             if (size == 0 || mode == _IONBF) {
-                buf = &b->bufdata;
+                buf = &b->bufdata[0];
                 size = 1;
             } else {
                 buf = malloc(size);
@@ -17,7 +17,7 @@ int setvbuf(FILE *f, char *buf, int mode, size_t size)
         }
         b->bufsiz = size;
         b->bufptr = buf;
-        f->mode = _IOBUF | mode;
+        f->bufmode = _IOBUF | mode;
         return 0;
     }
     return -1; // some kind of problem
