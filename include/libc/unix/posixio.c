@@ -46,6 +46,7 @@ static vfs_file_t __filetab[_MAX_FILES] = {
     {
         0, /* vfsdata */
         O_RDONLY, /* flags */
+        0, /* bufmode */
         _VFS_STATE_INUSE|_VFS_STATE_RDOK, /* state */
         0, /* lock */
         0, /* ungot */
@@ -62,6 +63,7 @@ static vfs_file_t __filetab[_MAX_FILES] = {
     {
         0, /* vfsdata */
         O_WRONLY, /* flags */
+        0, /* bufmode */
         _VFS_STATE_INUSE|_VFS_STATE_WROK,
         0, /* lock */
         0, /* ungot */
@@ -78,6 +80,7 @@ static vfs_file_t __filetab[_MAX_FILES] = {
     {
         0, /* vfsdata */
         O_WRONLY, /* flags */
+        0, /* bufmode */
         _VFS_STATE_INUSE|_VFS_STATE_WROK,
         0, /* lock */
         0, /* ungot */
@@ -108,7 +111,7 @@ _openraw(void *fil_ptr, const char *orig_name, int flags, mode_t mode)
     struct vfs *v;
     unsigned state = _VFS_STATE_INUSE;
     vfs_file_t *fil = fil_ptr;
-    
+    int defaultBuffering = 0;
     char *name = __getfilebuffer();
     v = (struct vfs *)__getvfsforfile(name, orig_name, NULL);
     if (!v || !v->open) {
@@ -157,14 +160,8 @@ _openraw(void *fil_ptr, const char *orig_name, int flags, mode_t mode)
         if (!fil->lseek) fil->lseek = v->lseek;
         if (!fil->putcf) {
             // check for TTY
-            int ttychk;
-            unsigned int ttyval;
-            ttychk = (*fil->ioctl)(fil, TTYIOCTLGETFLAGS, &ttyval);
-            if (ttychk == 0 && (ttyval & TTY_FLAG_CRNL)) {
-                fil->putcf = &__default_putc_terminal;
-            } else {
-                fil->putcf = &__default_putc;
-            }
+            defaultBuffering = 1;
+            fil->putcf = &__default_putc;
 #ifdef _DEBUG
             {
                 unsigned *ptr = (unsigned *)fil->putcf;
@@ -173,6 +170,7 @@ _openraw(void *fil_ptr, const char *orig_name, int flags, mode_t mode)
 #endif                
         }
         if (!fil->getcf) {
+            defaultBuffering = 1;
             fil->getcf = &__default_getc;
 #ifdef _DEBUG
             {
@@ -190,10 +188,14 @@ _openraw(void *fil_ptr, const char *orig_name, int flags, mode_t mode)
             } else {
 #ifdef _DEBUG
                 __builtin_printf("openraw: using default flush\n");
-#endif                
+#endif
+                defaultBuffering = 1;
                 fil->flush = &__default_flush;
             }
         }
+    }
+    if (defaultBuffering) {
+        __default_buffer_init(fil);
     }
 #ifdef _DEBUG
     __builtin_printf("openraw: fil=%x vfsdata=%x\n", (unsigned)fil, (unsigned)fil->vfsdata);

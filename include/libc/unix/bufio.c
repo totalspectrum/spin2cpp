@@ -21,7 +21,7 @@ int __default_flush(vfs_file_t *f)
                     f->state &= ~_VFS_STATE_NEEDSEEK;
                 }
             }
-            r = (*f->write)(f, b->buf, cnt);
+            r = (*f->write)(f, b->bufptr, cnt);
         } else {
             r = 0;
         }
@@ -48,12 +48,16 @@ int __default_filbuf(vfs_file_t *f)
     struct _default_buffer *b = (struct _default_buffer *)f->vfsdata;
     int r;
 
-    r = (*f->read)(f, b->buf, _DEFAULT_BUFSIZ);
+    if (!b->bufsiz) {
+        b->bufptr = &b->bufdata[0];
+        b->bufsiz = _DEFAULT_BUFSIZ;
+    }
+    r = (*f->read)(f, b->bufptr, b->bufsiz);
     if (r < 0) {
         return -1;
     }
     b->cnt = r;
-    b->ptr = &b->buf[0];
+    b->ptr = &b->bufptr[0];
     b->flags |= _BUF_FLAGS_READING;
     return r;
 }
@@ -69,32 +73,11 @@ int __default_putc(int c,  vfs_file_t *f)
 #ifdef _DEBUG_EXTRA
     __builtin_printf("putc: %d f=%x b=%x cnt=%d\n", c, (unsigned)f, (unsigned)b, i);
 #endif
-    b->buf[i++] = c;
+    b->bufptr[i++] = c;
     c &= 0xff;
     b->cnt = i;
-    if ( i == _DEFAULT_BUFSIZ) {
-        if (__default_flush(f)) {
-            c = -1;
-        }
-    }
-    return c;
-}
-
-int __default_putc_terminal(int c,  vfs_file_t *f)
-{
-    struct _default_buffer *b = (struct _default_buffer *)f->vfsdata;
-    if (b->flags & _BUF_FLAGS_READING) {
-        __default_flush(f);
-    }
-    b->flags |= _BUF_FLAGS_WRITING;
-    int i = b->cnt;
-#ifdef _DEBUG_EXTRA
-    __builtin_printf("putc: %d f=%x b=%x cnt=%d\n", c, (unsigned)f, (unsigned)b, i);
-#endif    
-    b->buf[i++] = c;
-    c &= 0xff;
-    b->cnt = i;
-    if ( c == '\n' || i == _DEFAULT_BUFSIZ) {
+    unsigned mode = f->bufmode;
+    if ( mode == _IONBF || i == b->bufsiz || (c == '\n' && mode == _IOLBF)) {
         if (__default_flush(f)) {
             c = -1;
         }
@@ -128,4 +111,18 @@ int __default_getc(vfs_file_t *f) {
     i = *ptr++;
     b->ptr = ptr;
     return i;
+}
+
+int __default_buffer_init(vfs_file_t *f)
+{
+    struct _default_buffer *b = (struct _default_buffer *)f->vfsdata;
+
+    if (_isatty(f)) {
+        f->bufmode = _IOLBF | _IOBUF;
+    } else {
+        f->bufmode = _IOFBF | _IOBUF;
+    }
+    b->bufptr = &b->bufdata[0];
+    b->bufsiz = _DEFAULT_BUFSIZ;
+    return 0;
 }

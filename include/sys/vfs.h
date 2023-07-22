@@ -93,14 +93,16 @@ struct _default_buffer {
     unsigned char *ptr;
     unsigned flags;
 #define _BUF_FLAGS_READING (0x01)
-#define _BUF_FLAGS_WRITING (0x02)    
-    unsigned char buf[_DEFAULT_BUFSIZ];
+#define _BUF_FLAGS_WRITING (0x02)
+    unsigned bufsiz;
+    unsigned char *bufptr;
+    unsigned char bufdata[_DEFAULT_BUFSIZ];
 };
 
 int __default_getc(vfs_file_t *f) _IMPL("libc/unix/bufio.c");
 int __default_putc(int c, vfs_file_t *f) _IMPL("libc/unix/bufio.c");
-int __default_putc_terminal(int c, vfs_file_t *f) _IMPL("libc/unix/bufio.c");
 int __default_flush(vfs_file_t *f) _IMPL("libc/unix/bufio.c");
+int __default_buffer_init(vfs_file_t *f) _IMPL("libc/unix/bufio.c");
 
 int mount(const char *user_name, void *v) _IMPL("libc/unix/mount.c");
 int umount(const char *user_name) _IMPL("libc/unix/mount.c");

@@ -45,9 +45,10 @@ typedef struct s_vfs_file_t vfs_file_t;
 
 struct s_vfs_file_t {
     void *vfsdata;
-    unsigned flags; /* O_XXX for rdwr mode and such */
-    unsigned state; /* flags for EOF and the like */
-    int      lock;  /* lock for multiple I/O */
+    unsigned short flags;   /* O_XXX for rdwr mode and such */
+    unsigned short bufmode; /* _IONBF, _IOLBF, or _IOFBF */
+    unsigned state;         /* flags for EOF and the like */
+    int      lock;          /* lock for multiple I/O */
     int      ungot;
 
     ssize_t (*read)(vfs_file_t *fil, void *buf, size_t count);
@@ -63,6 +64,11 @@ struct s_vfs_file_t {
     int putchar(int c) __fromfile("libsys/vfs.c");
     int getchar(void)  __fromfile("libsys/vfs.c");
 };
+
+#define _IONBF (0x0)
+#define _IOLBF (0x1)
+#define _IOFBF (0x2)
+#define _IOBUF (0x4) /* if the default buffering code is used at all */
 
 typedef int (*putcfunc_t)(int c, vfs_file_t *fil);
 typedef int (*getcfunc_t)(vfs_file_t *fil);
