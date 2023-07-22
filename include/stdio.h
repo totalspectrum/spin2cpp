@@ -80,6 +80,8 @@ int fflush(FILE *f) _COMPLEXIO _IMPL("libc/stdio/fflush.c");
 size_t fwrite(const void *ptr, size_t size, size_t n, FILE *f) _COMPLEXIO _IMPL("libc/stdio/fwrite.c");
 size_t fread(void *ptr, size_t size, size_t n, FILE *f) _COMPLEXIO _IMPL("libc/stdio/fwrite.c");
 
+int setvbuf(FILE *f, char *buf, int mode, size_t size) _IMPL("libc/stdio/setvbuf.c");
+
 void clearerr(FILE *f) _IMPL("libc/stdio/clearerr.c");
 void perror(const char *s) _IMPL("libc/stdio/perror.c");
 
