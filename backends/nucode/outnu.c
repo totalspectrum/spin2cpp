@@ -1541,6 +1541,11 @@ NuCompileExpression(NuIrList *irl, AST *node) {
     }
     if (IsConstExpr(node)) {
         int64_t val = EvalConstExpr(node);
+        AST *typ = ExprType(node);
+        if (IsVoidType(typ)) {
+            // do not push anything at all
+            return 0;
+        }
         int siz = TypeSize(ExprType(node));
         if (siz <= 4) {
             NuEmitConst(irl, (int32_t)val);
@@ -1654,7 +1659,15 @@ NuCompileExpression(NuIrList *irl, AST *node) {
     }
     break;
     case AST_CAST:
-        return NuCompileExpression(irl, node->right);
+    {
+        int n = NuCompileExpression(irl, node->right);
+        if (IsVoidType(node->left) && n) {
+            // ignoring the results, so pop them
+            NuCompileDrop(irl, n);
+            n = 0;
+        }
+        return n;
+    }
     case AST_DECLARE_VAR:
         return NuCompileExpression(irl, node->right);
     case AST_SEQUENCE: {
@@ -2109,6 +2122,7 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
     case AST_SETJMP:
     case AST_CATCH:
     case AST_MEMREF:
+    case AST_CONDRESULT:
         n = NuCompileExpression(irl, ast);
         NuCompileDrop(irl, n);
         break;
