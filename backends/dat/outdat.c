@@ -516,7 +516,6 @@ outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs, A
 int
 outputInitList(Flexbuf *f, int elemsize, AST *initval, int numelems, Flexbuf *relocs, AST *type)
 {
-    int n = 0;
     int siz = 0;
     
     if (!initval) {
@@ -533,7 +532,6 @@ outputInitList(Flexbuf *f, int elemsize, AST *initval, int numelems, Flexbuf *re
             r = outputInitList(f, elemsize, item, 1, relocs, type);
             siz += r;
             if (elemsize) r = r / elemsize;  // convert to number of items
-            n += r;
             elemsleft -= r;
         }
     } else {
