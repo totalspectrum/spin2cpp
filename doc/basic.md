@@ -95,6 +95,38 @@ Makes the preprocessor, like the rest of the compiler, case insensitive. This wi
 ```
 Forces the preprocessor to be case sensitive.
 
+```
+#define NAME whatever
+#pragma exportdef NAME
+```
+exports the definition of the macro `NAME` to other files. Normally a preprocessor macro only takes effect in the single source file in which it was defined. `#pragma exportdef` applied to the macro causes it to be exported to the global namespace, so that it will be in effect in all subsequent files, including objects.
+
+Note that macros exported to other files by `#pragma exportdef` have lower priority than macros defined on the command line, that is, `#pragma exportdef NAME` has lower priority than `-DNAME=x`.
+
+Example of `exportdef` use:
+
+Top level file main.bas:
+```
+#define MEMDRIVER "driver2.spin2"
+#pragma exportdef MEMDRIVER
+
+' instantiate flash.spin2 with the
+' default memory driver overridden by
+' MEMDRIVER
+
+dim s as class using "flash.spin2"
+```
+
+Subobject obj.spin2:
+```
+#ifndef MEMDRIVER
+#define MEMDRIVER "default_driver"
+#endif
+
+OBJ d : MEMDRIVER
+```
+
+Note that if there are multiple uses of `#pragma exportdef` on the same symbol, only the first one will actually be used -- that is, a macro may be exported from a file only once.
 
 #### WARN
 

@@ -230,6 +230,12 @@ struct __using("someclass.spin2", pin=3, delay=150) pin3;
 ```
 will include the Spin2 object "someclass.spin2" twice, with overrides for the constants `pin` and `delay`.
 
+#### Macro definition via `exportdef`
+
+The C preprocessor generally works on only one source file at a time, so macros defined with `#define` in one file are not visible in others. However, FlexC implements a `#pragma exportdef NAME` directive which causes the macro `NAME` to be exported to other files in the compilation (e.g. Spin objects) just as though it were defined on the command line with `-DNAME=xxx`, where `xxx` is the definition for `NAME` at the time of the `#pragma exportdef`.
+
+Note that if there are multiple uses of `#pragma exportdef` on the same symbol, only the last one will actually take effect.
+
 #### Name resolution in Spin and BASIC classes
 
 Because Spin and BASIC are case insensitive languages, their identifiers may be accessed in a case insensitive way (e.g. `x.Vga`, `x.VGA`, and `x.vga` are all equivalent if `x` is a Spin or BASIC class. It is strongly recommended to be consistent though, because this will avoid confusion for readers who are used to C being a case sensitive language.

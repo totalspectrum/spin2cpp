@@ -1,4 +1,4 @@
-Version 6.2.4
+Version 6.3.0
 - Added #pragma exportdef to make defines apply in other files
 - Added freopen(), tmpfile(), mktemp(), and some other stdio functions
 - Added some missing math functions
