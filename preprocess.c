@@ -259,10 +259,12 @@ pp_nextline(struct preprocess *pp)
     if (pp->incomment == 0) {
         /* look for special sequences */
         full_line = flexbuf_peek(&pp->line);
-        if (!strncmp(full_line, "{$flexspin", 10)) {
+        if (   !strncmp(full_line, "{$flexspin", 10)
+            || !strncmp(full_line, "{$preproc", 9) )
+        {
             char *new_line;
             if (pp->special_flexspin_comment) {
-                doerror(pp, "cannot nest {$flexspin comments");
+                doerror(pp, "cannot nest {$flexspin or {$preproc comments");
             }
             pp->special_flexspin_comment++;
             full_line = flexbuf_get(&pp->line);
@@ -914,6 +916,42 @@ handle_define(struct preprocess *pp, ParseState *P, int isDef)
 }
 
 //
+// handle export_def pragma:
+//  exportdef(NAME) exports the macro NAME to the global namespace
+//
+static void
+handle_export_def(struct preprocess *pp, ParseState *P)
+{
+    int nest = 0;
+    bool more = true;
+    char *word;
+    
+    while (more) {
+        word = parse_getwordafterspaces(P);
+        //printf("word=[%s]\n", word);
+        if (!strcmp(word, "(")) {
+            nest++;
+        } else if (!strcmp(word, ")")) {
+            --nest;
+            if (nest <= 0) more = false;
+        } else if (!strcmp(word, ",")) {
+            // do nothing
+        } else if (isalpha(word[0]) || word[0] == '_') {
+            const char *def = pp_getdef(pp, word);
+            if (def) {
+                pp_define_weak_global(pp, strdup(word), strdup(def));
+            } else {
+                doerror(pp, "exportdef: request to export undefined macro `%s'", word);
+            }
+        } else if (!word[0]) {
+            more = false;
+        } else {
+            doerror(pp, "Unexpected token in exportdef: `%s'", word);
+        }
+    }
+}
+
+//
 // process a pragma
 // returns true if pragma handled, false if not
 //
@@ -933,6 +971,9 @@ handle_pragma(struct preprocess *pp, ParseState *P)
         return true;
     } else if (!strcmp(word, "keep_case")) {
         pp->ignore_case = 0;
+        return true;
+    } else if (!strcmp(word, "exportdef")) {
+        handle_export_def(pp, P);
         return true;
     }
     return false;
@@ -1278,6 +1319,34 @@ pp_restore_define_state(struct preprocess *pp, void *vp)
         free(old);
     }
     pp->defs = x;
+}
+
+void
+pp_define_weak_global(struct preprocess *pp, const char *name, const char *def)
+{
+    struct predef *x, *the;
+    the = (struct predef *)calloc(sizeof(*the), 1);
+    the->name = name;
+    the->def = def;
+    the->flags = 0;
+    the->next = NULL;
+    if (!pp->defs) {
+        pp->defs = the;
+        return;
+    }
+    x = pp->defs;
+    // postpend the definition
+    while (x->next) {
+        x = x->next;
+    }
+    x->next = the;
+}
+
+
+/* hook for mcpp */
+void mcpp_export_define(const char *ident, const char *def)
+{
+    pp_define_weak_global(&gl_pp, strdup(ident), strdup(def));
 }
 
 #ifdef TESTPP

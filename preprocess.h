@@ -113,6 +113,9 @@ void pp_setlinedirective(struct preprocess *pp, const char *s);
 /* define symbol "name" to have "val", or undefine it if val is NULL */
 void pp_define(struct preprocess *pp, const char *name, const char *val);
 
+/* like pp_define, but puts the definition at the end of the defines (so it should remain visible) */
+void pp_define_weak_global(struct preprocess *pp, const char *name, const char *val);
+
 /* get the current state of the define stack */
 void *pp_get_define_state(struct preprocess *pp);
 

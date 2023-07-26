@@ -2186,6 +2186,27 @@ void    do_pragma( void)
             do_once( file->full_fname);
             goto  skip_nl;
         }
+    } else if (str_eq( identifier, "exportdef" )) { /* #pragma exportdef(NAM) */
+        c = skip_ws();
+        if (c == '(') c = skip_ws();
+        if (scan_token( c, (tp = work_buf, &tp), work_end) != NAM) {
+            if (warn_level & 1)
+                cwarn( not_ident, work_buf, 0L, NULL);
+        }
+        if (! is_junk()) {
+            DEFBUF *def = look_id(identifier);
+            if (!def) {
+                cwarn( "exportdef macro \"%s\" not defined"
+                       , identifier, 0L, NULL );
+            } if (def->nargs != DEF_NOARGS) {
+                cwarn( "exportdef macro \"%s\" has parameters or is builtin"
+                       , identifier, 0L, NULL );
+            } else {
+                extern void mcpp_export_define(const char *, const char *);
+                mcpp_export_define(identifier, def->repl);
+            }
+        }
+        goto skip_nl;
     } else if (str_eq( identifier, "MCPP")) {
         if (scan_token( skip_ws(), (tp = work_buf, &tp), work_end) != NAM) {
             if (warn_level & 1)
