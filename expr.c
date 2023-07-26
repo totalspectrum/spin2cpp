@@ -3935,7 +3935,7 @@ FixupInitList(AST *type, AST *initval)
             if (is_union) {
                 curelem = 0;
             }
-            if (is_union) {
+            if (is_union && !(val->left && val->left->kind == AST_CAST)) {
                 AST *subtype = ExprType(varlist->left);
                 val->left = NewAST(AST_CAST, subtype, val->left);
             }
