@@ -1312,15 +1312,8 @@ BoolValue(int v)
 }
 
 static ExprInt
-EvalIntOperator(int op, ExprInt lval, ExprInt rval, int *valid)
+EvalIntOperator(int op, ExprInt lval, ExprInt rval, int *valid, bool truncMath)
 {
-    bool truncMath = false; // if true, only use lower 32 bits for math
-
-    if (curfunc) {
-        truncMath = IsSpinLang(curfunc->language);
-    } else if (current) {
-        truncMath = IsSpinLang(current->curLanguage);
-    }
 
     switch (op) {
     case '+':
@@ -1521,6 +1514,13 @@ EvalOperator(int op, ExprVal left, ExprVal right, int *valid)
     ExprVal le = left;
     ExprVal re = right;
     int isFloat = 0;
+    bool truncMath = false; // if true, use only 32 bits for math
+
+    if (curfunc) {
+        truncMath = IsSpinLang(curfunc->language);
+    } else if (current) {
+        truncMath = IsSpinLang(current->curLanguage);
+    }
 
     if (IsStringType(le.type)) {
         *valid = 0;
@@ -1542,7 +1542,25 @@ EvalOperator(int op, ExprVal left, ExprVal right, int *valid)
             return floatExpr(EvalFloatOperator(op, intAsFloat(le.val), intAsFloat(re.val), valid));
         }
     }
-    return intExpr(EvalIntOperator(op, le.val, re.val, valid));
+    if (IsUnsignedType(le.type) || IsUnsignedType(re.type)) {
+        switch (op) {
+        case '/': op = K_UNS_DIV; break;
+        case K_MODULUS: op = K_UNS_MOD; break;
+        case '<':  op = K_LTU; break;
+        case K_LE: op = K_LEU; break;
+        case '>':  op = K_GTU; break;
+        case K_GE: op = K_GEU; break;
+        default:
+            break;
+        }
+        if (!truncMath) {
+            // may need to truncate the operation to preserve semantics
+            if (TypeSize(le.type) <= 4 && TypeSize(re.type) <= 4) {
+                truncMath = true;
+            }
+        }
+    }
+    return intExpr(EvalIntOperator(op, le.val, re.val, valid, truncMath));
 }
 
 #define PASM_FLAG 0x01
@@ -2001,6 +2019,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             return rval;
         }
         if (!IsFloatType(expr->left) && !IsFloatType(rval.type)) {
+            rval.type = expr->left; // preserve unsigned casts
             return rval;
         }
         if (IsFloatType(expr->left)) {

@@ -1,10 +1,12 @@
 Version 6.3.0
-- Added #pragma exportdef to make defines apply in other files
+- Added #pragma exportdef to make defines apply in other files. This
+  provides another way for top level objects to control sub-objects' behavior.
 - Added freopen(), tmpfile(), mktemp(), and some other stdio functions
 - Added some missing math functions
 - Correctly handled casts to void in nucode output
 - Fixed some problems with sizeof() used to declare local variables
 - Fixed incorrect multiple casting of union initialization
+- Fixed incorrect evaluation of unsigned constant expressions
 - Several improvements to C locale() related functions
 
 Version 6.2.3

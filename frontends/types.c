@@ -569,10 +569,11 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
         } else if (IsIntType(lefttype) && IsIntType(righttype)) {
             int lsiz  = TypeSize(lefttype);
             int rsiz = TypeSize(righttype);
+            bool isUnsigned = IsUnsignedType(lefttype) || IsUnsignedType(righttype);
             if (lsiz > LONG_SIZE || rsiz > LONG_SIZE) {
-                finaltype = ast_type_long64;
+                finaltype = isUnsigned ? ast_type_unsigned_long64 : ast_type_long64;
             } else {
-                finaltype = ast_type_long;
+                finaltype = isUnsigned ? ast_type_unsigned_long : ast_type_long;
             }
         }
         if (finaltype) {
