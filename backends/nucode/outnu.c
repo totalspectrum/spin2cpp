@@ -1769,9 +1769,13 @@ NuCompileExpression(NuIrList *irl, AST *node) {
     break;
     case AST_SETJMP: {
         int needpop = 0;
+        int n;
         if (node->left) {
             needpop = 1;
-            ERROR(node, "cannot handle this setjmp in expressions yet");
+            n = NuCompileExpression(irl, node->left);
+            if (n != 1) {
+                ERROR(node, "setjmp expects a single address");
+            }
         } else {
             NuCompileLhsAddress(irl, nu_abortchain_ptr);
             NuEmitCommentedOp(irl, NU_OP_LDREG, "use existing abort chain");
