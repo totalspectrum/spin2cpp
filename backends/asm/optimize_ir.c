@@ -5120,11 +5120,15 @@ ReuseLocalRegisters(IRList *irl) {
         if (ir->dst && ir->dst != ir->src && IsLocal(ir->dst) && ir->dst->kind != REG_SUBREG && InstrModifies(ir,ir->dst) && !InstrUses(ir,ir->dst) && !InstrIsVolatile(ir) && !CheckDependency(&known_regs,ir->dst)) {
             for (struct dependency *tmp=known_regs; tmp; tmp=tmp->link) {
                 if (tmp->reg!=ir->dst && IsDeadAfter(ir,tmp->reg) && (stop_ir = SafeToReplaceForward(ir->next,ir->dst,tmp->reg,ir->cond))) {
-                    //DEBUG(NULL,"Using %s instead of %s",tmp->reg->name,ir->dst->name);
-                    ReplaceForward(ir->next,ir->dst,tmp->reg,stop_ir);
-                    ir->dst = tmp->reg;
-                    change = true;
-                    break;
+                    // watch out for cases where the register is still live after the stop_ir;
+                    // we can't rename if that is the case
+                    if (IsDeadAfter(stop_ir, ir->dst)) {
+                        //DEBUG(NULL,"Using %s instead of %s",tmp->reg->name,ir->dst->name);
+                        ReplaceForward(ir->next,ir->dst,tmp->reg,stop_ir);
+                        ir->dst = tmp->reg;
+                        change = true;
+                        break;
+                    }
                 }
             }
         }

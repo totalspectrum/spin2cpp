@@ -7,6 +7,7 @@ Version 6.3.0
 - Fixed some problems with sizeof() used to declare local variables
 - Fixed incorrect multiple casting of union initialization
 - Fixed incorrect evaluation of unsigned constant expressions
+- Fixed an over-eager register rename in the optimizer
 - Several improvements to C locale() related functions
 
 Version 6.2.3
