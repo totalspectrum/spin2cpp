@@ -1572,7 +1572,7 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace, IRCond sette
             if (!InstrUses(ir, orig) && assignments_are_safe) {
                 // we are completely re-setting "orig" here, so we can just
                 // leave now
-                return last_ir;
+                return (last_ir && IsDeadAfter(last_ir, orig)) ? last_ir : NULL;
             }
             // we do not want to end accidentally modifying "replace" if it is still live
             // note that IsDeadAfter(first_ir, replace) gives a more accurate
@@ -1586,7 +1586,10 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace, IRCond sette
         }
         last_ir = ir;
     }
-    return IsLocalOrArg(orig) ? last_ir : NULL;
+    if (last_ir && IsLocalOrArg(orig) && IsDeadAfter(last_ir, orig)) {
+        return last_ir;
+    }
+    return NULL;
 }
 
 
@@ -5120,15 +5123,11 @@ ReuseLocalRegisters(IRList *irl) {
         if (ir->dst && ir->dst != ir->src && IsLocal(ir->dst) && ir->dst->kind != REG_SUBREG && InstrModifies(ir,ir->dst) && !InstrUses(ir,ir->dst) && !InstrIsVolatile(ir) && !CheckDependency(&known_regs,ir->dst)) {
             for (struct dependency *tmp=known_regs; tmp; tmp=tmp->link) {
                 if (tmp->reg!=ir->dst && IsDeadAfter(ir,tmp->reg) && (stop_ir = SafeToReplaceForward(ir->next,ir->dst,tmp->reg,ir->cond))) {
-                    // watch out for cases where the register is still live after the stop_ir;
-                    // we can't rename if that is the case
-                    if (IsDeadAfter(stop_ir, ir->dst)) {
-                        //DEBUG(NULL,"Using %s instead of %s",tmp->reg->name,ir->dst->name);
-                        ReplaceForward(ir->next,ir->dst,tmp->reg,stop_ir);
-                        ir->dst = tmp->reg;
-                        change = true;
-                        break;
-                    }
+                    //DEBUG(NULL,"Using %s instead of %s",tmp->reg->name,ir->dst->name);
+                    ReplaceForward(ir->next,ir->dst,tmp->reg,stop_ir);
+                    ir->dst = tmp->reg;
+                    change = true;
+                    break;
                 }
             }
         }
