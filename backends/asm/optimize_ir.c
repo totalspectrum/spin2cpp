@@ -1563,9 +1563,12 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace, IRCond sette
                 // sub registers are complicated, punt
                 return NULL;
             }
-            if (ir->cond != setterCond || !condition_safe) {
+            if (!condition_safe) {
+                // Can't prove that ir->cond is equal / a subset anymore, thus skip below branch.
+                return NULL;
+            } else if (ir->cond != setterCond) {
                 assignments_are_safe = false;
-                if (!condition_safe || !CondIsSubset(setterCond,ir->cond)) {
+                if (!CondIsSubset(setterCond,ir->cond)) {
                     // Not a subset of the setter condition, can't replace
                     return NULL;
                 }
@@ -1586,7 +1589,9 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace, IRCond sette
             orig_modified = true;
         }
         if (isCond && InstrSetsFlags(ir,FlagsUsedByCond(setterCond))) {
-            // Setters condition is no longer valid
+            // Setters condition is no longer valid.
+            // Technically, condition is still safe if it's logically AND-ed, i.e "if_z test x,y wz",
+            // but we're not going there now.
             condition_safe = false;
         }
         last_ir = ir;
