@@ -1,9 +1,7 @@
  
 dim ct as integer
 
-sub uninlinable(lmao as ulong,str as string)
-outa = lmao
-outa = varptr(str)
+sub for "noinline" uninlinable(lmao as ulong,str as string)
 end sub
 
 sub tryit2(linetype as ulong)
