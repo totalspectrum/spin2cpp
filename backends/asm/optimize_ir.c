@@ -1409,6 +1409,7 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace, IRCond sette
     bool assignments_are_safe = true;
     bool orig_modified = false;
     bool isCond = (setterCond != COND_TRUE);
+    bool condition_safe = true;
 
     if (SrcOnlyHwReg(replace) || !IsRegister(replace->kind)) {
         return NULL;
@@ -1519,7 +1520,7 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace, IRCond sette
                 return NULL;
             }
         }
-        if (!CondIsSubset(setterCond,ir->cond) && InstrUses(ir,orig)) {
+        if ((!condition_safe || !CondIsSubset(setterCond,ir->cond)) && InstrUses(ir,orig)) {
             return NULL;
         }
         if (InstrModifies(ir,replace)) {
@@ -1531,7 +1532,7 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace, IRCond sette
             //      value is being put into it
             //  if "assignments_are_safe" is false then we don't know if another
             //  branch might still use "replace", so punt and give up
-            if (!CondIsSubset(ir->cond,setterCond)) {
+            if (ir->cond != COND_TRUE && (!condition_safe || !CondIsSubset(ir->cond,setterCond))) {
                 return NULL;
             }
             if (ir->dst->kind == REG_SUBREG || replace->kind == REG_SUBREG) {
@@ -1562,9 +1563,9 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace, IRCond sette
                 // sub registers are complicated, punt
                 return NULL;
             }
-            if (ir->cond != setterCond) {
+            if (ir->cond != setterCond || !condition_safe) {
                 assignments_are_safe = false;
-                if (!CondIsSubset(setterCond,ir->cond)) {
+                if (!condition_safe || !CondIsSubset(setterCond,ir->cond)) {
                     // Not a subset of the setter condition, can't replace
                     return NULL;
                 }
@@ -1572,7 +1573,7 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace, IRCond sette
             if (!InstrUses(ir, orig) && assignments_are_safe) {
                 // we are completely re-setting "orig" here, so we can just
                 // leave now
-                return (last_ir && IsDeadAfter(last_ir, orig)) ? last_ir : NULL;
+                return last_ir;
             }
             // we do not want to end accidentally modifying "replace" if it is still live
             // note that IsDeadAfter(first_ir, replace) gives a more accurate
@@ -1584,12 +1585,13 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace, IRCond sette
             }
             orig_modified = true;
         }
+        if (isCond && InstrSetsFlags(ir,FlagsUsedByCond(setterCond))) {
+            // Setters condition is no longer valid
+            condition_safe = false;
+        }
         last_ir = ir;
     }
-    if (last_ir && IsLocalOrArg(orig) && IsDeadAfter(last_ir, orig)) {
-        return last_ir;
-    }
-    return NULL;
+    return IsLocalOrArg(orig) ? last_ir : NULL;
 }
 
 
