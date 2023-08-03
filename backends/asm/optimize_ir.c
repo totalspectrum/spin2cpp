@@ -4576,14 +4576,22 @@ restart_check:
             bool write = IsWrite(ir);
             // don't mess with it if src==dst
             if (!write && ir->src == ir->dst) goto get_next;
-            nextread = FindNextRead(ir, dst1, base, curfunc->optimize_flags & OPT_EXPERIMENTAL);
+            nextread = FindNextRead(ir, dst1, base, (curfunc->optimize_flags & OPT_EXPERIMENTAL) && IsMemoryOrderSafe(ir->src));
             int nextsize = MemoryOpSize(nextread);
             if (nextread && CondIsSubset(ir->cond,nextread->cond)) {
                 // wrlong a, b ... rdlong c, b  -> mov c, a
                 // rdlong a, b ... rdlong c, b  -> mov c, a
-                if(size == nextsize && (!write || size==4) && (gl_p2 || !InstrSetsFlags(nextread,FLAG_WC)) ) {
+                if(size == nextsize && (!write || size==4 || gl_p2) && (gl_p2 || !InstrSetsFlags(nextread,FLAG_WC)) ) {
                     nextread->src = dst1;
-                    ReplaceOpcode(nextread, OPC_MOV);
+                    if (!write || size == 4) {
+                        ReplaceOpcode(nextread, OPC_MOV);
+                    } else if (size == 2) {
+                        ReplaceOpcode(nextread,OPC_GETWORD);
+                        nextread->src2 = NewImmediate(0);
+                    } else if (size == 1) {
+                        ReplaceOpcode(nextread,OPC_GETBYTE);
+                        nextread->src2 = NewImmediate(0);
+                    }
                     change = 1;
                     goto get_next;
                 }
