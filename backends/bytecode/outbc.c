@@ -504,6 +504,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         case SYM_VARIABLE:
             memberOffset += sym->offset;
             type = (AST *)sym->v.ptr;
+            if (!type) type = ast_type_long;
             break;
         case SYM_FUNCTION:
             if (kind == MEMOP_ADDRESS) {
