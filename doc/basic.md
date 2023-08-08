@@ -1881,7 +1881,7 @@ If you want to be compatible with FreeBASIC, put the `as` first:
 dim as single a(10), b%, c$, d
 ```
 
-Variables declared inside a function or subroutine are "local" to that function or subroutine, and are not available outside or to other functions or subroutines. Variables dimensioned at the top level may be used by all functions and subroutines in the file.
+Variables declared with `dim` inside a function or subroutine are "local" to that function or subroutine, and are not available outside or to other functions or subroutines. Variables dimensioned at the top level may be used by all functions and subroutines in the file.
 
 See also VAR.
 
@@ -3218,7 +3218,7 @@ Several important caveats apply:
 
 ### REGISTER
 
-`register` is reserved as a keyword. `DIM REGISTER` will eventually declare register based variables, in much the same way that `DIM SHARED` declares shared variables.
+`register` is reserved as a keyword. `DIM REGISTER` will eventually declare global register based variables, in much the same way that `DIM SHARED` declares shared variables.
 
 ### REM
 
@@ -3657,7 +3657,7 @@ VAR msg$ = "hello"
 ```
 `var` creates and initializes a new local variable (only available inside the function in which it is declared). The type of the new variable is inferred from the type of the expression used to initialize it; if for some reason that cannot be determined, the type is set according to the variable suffix (if any is present).
 
-`var` is somewhat similar to `dim`, except that the type isn't given explicitly (it is determined by the initializer expression) and the variables created are always local, even if the `var` is in the main program (in the main program `dim` creates member variables that may be used by functions or subroutines in this file).
+`var` is quite similar to `dim`, except that the type isn't given explicitly (it is determined by the initializer expression) and the variables created are always local, even if the `var` is in the main program (in the main program `dim` creates member variables that may be used by functions or subroutines in this file).
 
 ### VARPTR
 
