@@ -1,0 +1,488 @@
+{
+ Propeller 2 basic PSRAM driver wrapper
+ ======================================
+ 
+ This software contains a minimal interface layer to start the PSRAM driver 
+ from SPIN2 for a board with 32MB of PSRAM using a 16 bit data bus 
+ configuration such as the P2-EC32MB EDGE board or a similar setup.
+
+ This wrapper by itself only provides a simple burst read, write and fill API
+ but the mailbox can be still used by the client(s) for other more advanced 
+ memory requests using the request formats described in the documentation.  
+
+ It only supports a single PSRAM memory bus.  The larger memory driver 
+ can be used instead for more complex hardware setups and configurations
+ with different memory types also present.
+
+ The PSRAM memory can also used with my P2 video driver, referencing this
+ external memory framebuffer as "bus 1", and passing in the base mailbox
+ address of COG 0 when spawning the video driver.
+
+ The 32MB device is mapped at the address space from 0-$1ffffff and folds
+ over in SPIN2 calls (only 25 LSBs are actively used).  This 32MB is
+ spanning banks 0 and 1.
+
+ This mapping could be altered by modifying the bank array assignments 
+ at setup time.  Sometimes is is handy to situate memory at addresses beyond
+ the hub address range so you can easily differentiate between internal 
+ and external addresses and share a "common" address space.
+
+}
+'----------------------------------------------------------------------- 
+
+CON
+    
+    ' P2 EDGE with PSRAM pin mappings (P2-EC32MB)
+    DATABUS  = 40
+    CLK_PIN  = 56
+    CE_PIN   = 57
+
+    ' number of address bits used in 32MB of PSRAM
+    ADDRSIZE = 25   
+
+    ' 8 microsecond CS low time
+    MAX_CS_LOW_USEC = 8
+
+    ' optional FLAGS for driver
+    FLAGS = 0
+    
+    ' These error codes are compatible with the larger, complete driver
+    ERR_INVALID      =  -6 ' invalid arguments
+    ERR_TOO_SLOW     = -14 ' can't send sufficient data at this P2 clock speed
+    ERR_INACTIVE     = -15 ' driver is not running
+    ERR_ABORTED      = -16 ' driver was shutdown
+    ERR_NO_LOCK      = -26 ' no LOCK available for driver
+    ERR_MAILBOX_BUSY = -28 ' mailbox still has operation pending
+
+OBJ
+    driver : "psram16drv"
+
+'..............................................................................
+
+{{
+start()
+
+This is a simple API to start the PSRAM driver using automatically computed defaults.
+All COGs will be able to share the PSRAM using a basic round robin polling sequence 
+but the service policy and burst sizes etc can still be adjusted later with the setQos
+and setBurst APIs.  Input delay is automatically computed for the current P2 frequency.
+}}
+PUB start() : result
+    return startx(0, 0, 0, -1)
+
+'..............................................................................
+
+{{
+startx(freq, burst, delay, desiredcog)
+
+This is an extended API to start the PSRAM driver using custom parameters.
+    freq       - frequency to use for computing delay/burst sizes, or 0 to use current P2 frequency
+    burst      - maximum memory burst size in bytes (must keep it below 8us with overheads included), 0 = automatically computed
+    delay      - input delay value to use for the memory (0-15), 0=automatically compute based on frequency
+    desiredcog - a cog ID from 0-7 can be nominated for the driver cog, or will be auto allocated if it is -1
+}}
+PUB startx(freq, burst, delay, desiredcog) : result | driverAddr
+    stop() ' restart driver if required
+
+    ' use current frequency if none specified
+
+    if freq == 0 
+        freq := clkfreq 
+
+    ' compute the device burst size including overheads to keep CS low time below 8us
+
+    burst := (((MAX_CS_LOW_USEC*(freq/1000000)) - 132) >> 4) << 4  ' some sane rounded value
+    if burst < 0
+        return ERR_TOO_SLOW ' P2 frequency is too low for any 8us transfers
+
+    ' compute the input delay
+
+    if delay <= 0
+        delay := lookupDelay(freq)
+    else
+        delay <#= $f ' limit to 15
+
+    ' create our lock
+
+    driverlock := LOCKNEW()  
+    if driverlock == -1
+        return ERR_NO_LOCK
+
+    ' patch in the proper data and HUB addresses to the startup structure
+
+    long[@startupData][0]:=clkfreq
+    long[@startupData][5]:=@deviceData
+    long[@startupData][6]:=@qosData
+    long[@startupData][7]:=@mailboxes
+
+    ' setup some default bank and QoS parameter values
+
+    longfill(@deviceData, (burst << 16) | (delay << 12) | (ADDRSIZE-1), 2)
+    longfill(@qosData, $FFFF0000, 8)
+
+    ' get the address of the PSRAM memory driver so we can start it
+
+    driverAddr:= driver.getDriverAddr()
+
+    ' start the PSRAM memory driver and wait for it to complete initialization
+
+    if desiredcog < 0
+        desiredcog := NEWCOG
+    drivercog := coginit(desiredcog, driverAddr, @startupData)
+    repeat until long[@startupData] == 0 
+
+    return drivercog
+
+'..............................................................................
+
+{{
+stop()
+
+This API stops the driver if is running.
+}}
+PUB stop() : i
+    if drivercog <> -1
+        cogstop(drivercog) ' a rather brutal stop
+        repeat i from 0 to 7
+            if long[@mailboxes][i*3] < 0
+                long[@mailboxes][i*3] := -ERR_ABORTED ' abort request
+        drivercog := -1
+    if driverlock <> -1
+        LOCKRET(driverlock)
+        driverlock := -1
+
+'..............................................................................
+
+{{
+read(dstHubAddr, srcAddr, count)
+
+This API will burst read a block into HUB RAM from external PSRAM
+    dstHubAddr - HUB address where the data will be written into
+    srcAddr    - 25 bit source address in PSRAM to be read
+    count      - number of bytes to read into HUB RAM
+}}
+PUB read(dstHubAddr, srcAddr, count) : result | mailbox
+'TODO: potential candidate for inline PASM to improve performance in SPIN2
+    if drivercog == -1 ' driver must be running
+        return ERR_INACTIVE
+    if count == 0 ' don't even bother reading
+        return 0
+    mailbox := @mailboxes + cogid()*12     ' compute COG's mailbox address
+    if long[mailbox] < 0
+        return ERR_MAILBOX_BUSY
+    long[mailbox][2] := count
+    long[mailbox][1] := dstHubAddr
+    long[mailbox] := driver.R_READBURST + (srcAddr & $1ffffff) ' trigger burst read operation
+    repeat
+        result := long[mailbox]    
+    while result < 0   
+    return -result                       'return success or error
+
+'..............................................................................
+
+{{
+write(srcHubAddr, dstAddr, count)
+
+This API will burst write a block from HUB RAM to external PSRAM 
+    srcHubAddr - HUB address where the data will be read from
+    dstAddr    - 25 bit source address in PSRAM to be written
+    count      - number of bytes to write to PSRAM
+}}
+PUB write(srcHubAddr, dstAddr, count) : result | mailbox
+'TODO: potential candidate for inline PASM to improve performance in SPIN2
+    if drivercog == -1 ' driver must be running
+        return ERR_INACTIVE
+    if count == 0 ' don't even bother writing
+        return 0
+    mailbox := @mailboxes + cogid()*12     ' compute COG's mailbox address
+    if long[mailbox] < 0
+        return ERR_MAILBOX_BUSY
+    long[mailbox][2] := count
+    long[mailbox][1] := srcHubAddr
+    long[mailbox] := driver.R_WRITEBURST + (dstAddr & $1ffffff) ' trigger burst write operation
+    repeat
+        result := long[mailbox]    
+    while result < 0   
+    return -result                       'return success or error
+
+'..............................................................................
+
+{{
+fillBytes(addr, pattern, count, listPtr)
+fillWords(addr, pattern, count, listPtr)
+fillLongs(addr, pattern, count, listPtr)
+or
+fill(addr, pattern, count, listPtr, datasize)
+
+These methods can be used to fill external memory with a data pattern.
+
+Arguments:
+  addr - the external address to fill with a data pattern
+  pattern - the data pattern to fill with
+  count - the number of items (i.e. bytes/words/longs) to fill   
+  listPtr - optional list pointer (unused by this driver - pass 0)
+  datasize - (for fill only) the data size to use (1,2,4) during the fill
+
+Returns: 0 for success or a negative error code
+
+If the listPtr is non-zero it will be used as a list pointer and instead of triggering a fill
+operation, it will build a listItem structure in HUB RAM at this address to do the fill later. 
+}}
+
+PUB fillBytes(addr, pattern, count, listPtr) : r
+    return fill(addr, pattern, count, listPtr, 1)
+
+PUB fillWords(addr, pattern, count, listPtr) : r
+    return fill(addr, pattern, count, listPtr, 2)
+
+PUB fillLongs(addr, pattern, count, listPtr) : r 
+    return fill(addr, pattern, count, listPtr, 4)
+
+' generalized fill
+PUB fill(addr, pattern, count, listPtr = 0, datasize = 1) : r | mailbox, req
+    case datasize 
+        1: req := driver.R_WRITEBYTE
+        2: req := driver.R_WRITEWORD
+        4: req := driver.R_WRITELONG
+        other : return ERR_INVALID
+    if count == 0   ' nothing to do
+        return 0
+    if drivercog == -1
+        return ERR_INACTIVE
+    mailbox := @mailboxes + 12*cogid() ' get mailbox base address for this COG
+    if long[mailbox] < 0
+        return ERR_MAILBOX_BUSY
+    long[mailbox][2] := count
+    long[mailbox][1] := pattern
+    long[mailbox] := req + (addr & $fffffff)
+    repeat
+        r := long[mailbox]
+    while r < 0
+    return -r                  ' return 0 for success or negated error code
+ 
+
+{{
+setFrequency(freq)
+
+This API lets you adjust the input delay timing automatically based on a frequency if it ever changes.
+}}
+PUB setFrequency(freq) : result | delay
+    if freq == 0
+        freq := clkfreq ' use current frequency if unspecified
+    return setDelay(lookupDelay(freq))
+
+'..............................................................................
+
+{{
+setDelay(delay)
+
+This API lets you manually adjust the input delay timing directly (delay from 0-15).
+}}
+PUB setDelay(delay) : result
+    return modifyBankParams($ffff0fff, (delay & $f) << 12)
+
+'..............................................................................
+
+{{
+getDelay()
+
+This API returns the device's current input delay.
+}}
+PUB getDelay() : result 
+    return (long[@deviceData][0] >> 12) & $f
+
+'..............................................................................
+
+{{
+setBurst(burst)
+
+This API sets up the device's maximum burst limit (also limited by per cog burst).
+}}
+PUB setBurst(burst) : result 
+    return modifyBankParams($0000ffff, burst << 16)
+
+'..............................................................................
+
+{{
+getBurst()
+
+This API Returns the device's current maximum burst size.
+}}
+PUB getBurst() : result 
+    return long[@deviceData][0] >> 16
+
+'..............................................................................
+
+{{
+setQos(cog, qos)
+
+This API lets you adjust the request servicing policy per COG in the driver.
+It sets up a COG's maximum burst size (also still limited by device's max burst setting), 
+and the optional priority & flags.
+    cog - cog ID to change from 0-7
+    qos - qos parameters for the cog (set to 0 to remove COG from polling)
+Use this 32 bit format for qos data
+  Bit
+  31-16: maximum burst size allowed for this COG in bytes before fragmenting (bursts also limited by device burst size)
+  15   : 1 = COG has a polling priority assigned, 0 = round robin polled after prioritized COGs get serviced first
+  14-12: 3 bit priority COGs polling order when bit15 = 1, %111 = highest, %000 = lowest
+  11   : 1 = additional ATN notification to COG after request is serviced, 0 = mailbox nofication only
+  10   : 1 = Locked transfer completes even after burst size fragmentation, 0 = COGs are repolled
+  9-0  : reserved (0)
+}}
+PUB setQos(cog, qos) : result | mailbox
+    if drivercog == -1 ' driver must be running
+        return ERR_INACTIVE
+    if cog < 0 or cog > 7 ' enforce cog id range
+        return ERR_INVALID
+    long[@qosData][cog] := qos & !$1ff
+    mailbox := @mailboxes + drivercog*12
+    repeat until LOCKTRY(driverlock)
+    long[mailbox] := driver.R_CONFIG + cogid()
+    repeat while long[mailbox] < 0
+    LOCKREL(driverlock)
+
+'..............................................................................
+  
+{{
+getQoS(cog)
+
+This API return the current QoS setting for a cog.
+}}
+PUB getQos(cog) : result
+    return long[@qosData][cog & 7]
+
+'..............................................................................
+
+{{
+getMailbox(cog)
+
+This API return the mailbox start address in HUB RAM for a given cog.
+It can also be useful for the P2 video driver.
+}}
+PUB getMailbox(cog) : result
+    return @mailboxes + cog*12
+
+'..............................................................................
+
+{{
+getDriverLock()
+
+This API return the driver lock ID which can be taken/released to protect control
+mailbox requests.
+
+}}
+PUB getDriverLock() : result
+    return driverlock
+
+'..............................................................................
+{{
+modifyBankParams(andmask, ormask)
+
+This internal method modifies the bank specific parameters for the given addr and applies to the driver.
+}}
+PRI modifyBankParams(andmask, ormask) : result | value, i , mailbox
+    ' driver must be running
+    if drivercog == -1
+        return ERR_INACTIVE
+
+    mailbox := @mailboxes + drivercog*12
+    repeat until LOCKTRY(driverlock)
+    ' configure parameter(s) over all spanned banks and update local storage also
+    repeat i from 0 to 1
+        value := (long[@deviceData][i] & andmask) | ormask
+        long[mailbox][1] := value 
+        long[mailbox] := driver.R_SETPARAMS + (i<<24) + cogid()
+        repeat  
+            result := long[mailbox]
+        until result >= 0
+        if result == 0
+            long[@deviceData][i] := value
+        else ' error case
+            result := -result
+            quit ' TODO: cleanup?, failure potentially leaves first bank in an inconsistent state
+
+    LOCKREL(driverlock)
+
+'..............................................................................
+
+{{
+lookupDelay(freq)
+
+This internal method looks up delay for given frequency from timing profile table.
+}}
+PRI lookupDelay(freq) : delay | profile
+    profile := @delayTable
+    delay := long[profile][0]
+    repeat while long[profile][1] 
+        if freq +< long[profile][1] 
+            quit
+        profile += 4
+        delay++
+
+PUB sync()
+' does nothing
+
+'-----------------------------------------------------------------------------
+DAT
+            orgh
+
+' driver state
+drivercog   long    -1  ' COG id of driver
+driverlock  long    -1  ' LOCK id of driver
+
+' delay profile
+delayTable  long    7,92_000000,150_000000,206_000000,258_000000,310_000000,333_000000,0
+
+' data to be passed to driver when starting it
+startupData
+    long    0           ' current frequency
+    long    FLAGS       ' optional flags for driver
+    long    0           ' reset pin mask on port A for PSRAM (none)
+    long    0           ' reset pin mask on port B for PSRAM (none)
+    long    DATABUS     ' PSRAM data bus start pin
+    long    deviceData  ' address of devices data structure in HUBRAM
+    long    qosData     ' address of QoS data structure in HUBRAM
+    long    mailboxes   ' address of mailbox structure in HUBRAM
+
+' data for memory
+deviceData
+    ' 16 bank parameters follow (16MB per bank)
+    long    0[16]                               ' banks 0-15
+    ' 16 banks of pin parameters follow
+    long    (CLK_PIN << 8) | CE_PIN             ' bank 0 
+    long    (CLK_PIN << 8) | CE_PIN             ' bank 1 
+    long    -1[14]                              ' banks 2-15
+
+' data for COG polling
+qosData 
+    long    $FFFF0000[8]    ' cog 0-7 default QoS parameters
+    
+' mailbox storage
+mailboxes
+    long    0[8*3]          ' 3 longs per mailbox per COG
+
+{{
+-------------
+LICENSE TERMS
+-------------
+Copyright 2020, 2021 Roger Loh
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell 
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in 
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN 
+THE SOFTWARE.
+}}
