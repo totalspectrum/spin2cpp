@@ -8,6 +8,7 @@ Version 6.3.0
 - Fixed incorrect multiple casting of union initialization
 - Fixed incorrect evaluation of unsigned constant expressions
 - Fixed an over-eager register rename in the optimizer
+- Fixed a bug which caused incorrect type inference for method variables in P1 ROM bytecode
 - Several improvements to C locale() related functions
 
 Version 6.2.3
