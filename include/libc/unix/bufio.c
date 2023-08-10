@@ -29,7 +29,7 @@ int __default_flush(vfs_file_t *f)
         // have to seek backwards to skip over the read but not
         // consumed bytes
 #ifdef _DEBUG
-        __builtin_printf("default_flush: reading: cnt=%d buf=%x ptr=%x\n", cnt, (unsigned)&b->buf[0], (unsigned)&b->ptr[0]);
+        __builtin_printf("default_flush: reading: cnt=%d ptr=%x\n", cnt, (unsigned)&b->ptr[0]);
 #endif    
         r = (*f->lseek)(f, -cnt, SEEK_CUR);
 #ifdef _DEBUG
