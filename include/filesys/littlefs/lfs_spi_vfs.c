@@ -25,6 +25,9 @@ _vfs_open_littlefs_flash(int do_format = 1, struct littlefs_flash_config *fcfg =
     LFS_Wrapper *LFS;
     unsigned long long pinmask;
 
+#ifdef _DEBUG_LFS
+    __builtin_printf("_vfs_open_littlfs_flash( do_format=%d fcfg=%x )\n", do_format, (unsigned)fcfg);
+#endif    
     if (!fcfg) {
         fcfg = &default_cfg;
     }
