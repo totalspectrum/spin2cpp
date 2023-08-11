@@ -30,9 +30,18 @@
 }
 '----------------------------------------------------------------------- 
 
+' driver to use
+' #define and #pragma exportdef this in your main program to
+' use a different driver
+
+#ifndef PSRAM_DRIVER
+#define PSRAM_DRIVER "psram16drv"
+#endif
+
 CON
-    
-    ' P2 EDGE with PSRAM pin mappings (P2-EC32MB)
+
+    ' defaults are for P2 EDGE with PSRAM pin mappings (P2-EC32MB)
+    ' override these for other boards
     DATABUS  = 40
     CLK_PIN  = 56
     CE_PIN   = 57
@@ -55,7 +64,7 @@ CON
     ERR_MAILBOX_BUSY = -28 ' mailbox still has operation pending
 
 OBJ
-    driver : "psram16drv"
+    driver : PSRAM_DRIVER
 
 '..............................................................................
 
