@@ -3,6 +3,7 @@ Version 6.3.0
   provides another way for top level objects to control sub-objects' behavior.
 - Added freopen(), tmpfile(), mktemp(), and some other stdio functions
 - Added some missing math functions
+- Cleaned up PSRAM access methods and made them more consistent
 - Correctly handled casts to void in nucode output
 - Fixed some problems with sizeof() used to declare local variables
 - Fixed incorrect multiple casting of union initialization
