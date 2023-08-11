@@ -20,13 +20,13 @@ PUB start()
 PUB stop()
   h.shutdown(0, 1)
 
-PUB write(dstExAddr,srcHubAddr,length) : r
+PUB write(srcHubAddr,dstExAddr,length) : r
   return h.write(srcHubAddr, dstExAddr, length)
 
 PUB fill(dst,val,length) : r
   return h.fillBytes(dst, val, length, 0)
   
-PUB read(dstExAddr,srcHubAddr,length) : r
+PUB read(srcHubAddr, dstExAddr, length) : r
   return h.read(srcHubAddr, dstExAddr, length)
 
 PUB sync()
