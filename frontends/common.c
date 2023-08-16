@@ -200,6 +200,8 @@ Aliases spin2alias[] = {
     { "rotxy", "_rotxy" },
     { "xypol", "_xypol" },
 
+    { "getcrc", "_getcrc" },
+    
     { "cogatn", "_cogatn" },
     { "pollatn", "_pollatn" },
     { "waitatn", "_waitatn" },

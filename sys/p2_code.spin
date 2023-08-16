@@ -363,6 +363,23 @@ pri _getrnd : r = +long
     getrnd r
   endasm
   
+pri _getcrc(ptr, poly, cnt) : x | y, w
+  if cnt =< 0
+    return 0
+  org
+    encod x, poly
+    bmask x
+.loop
+    rdbyte w, ptr
+    add	   ptr, #1
+    shl	   w, #24
+    setq   w
+    crcnib x, poly
+    crcnib x, poly
+    djnz   cnt, #.loop
+  end
+  return x
+  
 pri _rotxy(x, y, angle)
   asm
     setq y
