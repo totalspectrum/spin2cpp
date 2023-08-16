@@ -71,6 +71,7 @@ static int BCGetOBJOffset(Module *P,AST *ast) {
         // FIXME this seems kindof wrong?
         AST *ident = ast->right->left;
         if (ident->kind == AST_ARRAYDECL) ident = ident->left;
+        if (ident->kind == AST_ARRAYREF) ident = ident->left;
         if (ident->kind != AST_IDENTIFIER) {
             ERROR(ident,"Not an identifier");
             return 0;
@@ -1355,6 +1356,7 @@ static int getObjID(Module *M,const char *name, AST** gettype) {
         ASSERT_AST_KIND(obj->right,AST_LISTHOLDER,return 0;);
         AST *ident = obj->right->left;
         if (ident && ident->kind == AST_ARRAYDECL) ident = ident->left;
+        if (ident && ident->kind == AST_ARRAYREF) ident = ident->left;
         if (!IsIdentifier(ident)) {
             ERROR(ident, "Expected identifier");
             return 0;
@@ -1430,6 +1432,7 @@ const char *BCgetNameForOBJID(Module *M,int id) {
         ASSERT_AST_KIND(obj->right,AST_LISTHOLDER,return NULL;);
         AST *ident = obj->right->left;
         if (ident && ident->kind == AST_ARRAYDECL) ident = ident->left;
+        if (ident && ident->kind == AST_ARRAYREF) ident = ident->left;
         ASSERT_AST_KIND(ident,AST_IDENTIFIER,return NULL;);
         return GetIdentifierName(ident);
     } else if (obj->kind == AST_OBJECT) {

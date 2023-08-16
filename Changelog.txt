@@ -1,3 +1,6 @@
+Version 6.3.1
+- Fixed compilation error for object arrays in bytecode
+
 Version 6.3.0
 - Added #pragma exportdef to make defines apply in other files. This
   provides another way for top level objects to control sub-objects' behavior.
