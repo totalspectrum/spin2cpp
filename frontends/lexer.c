@@ -1620,9 +1620,13 @@ again:
         c = lexgetc(L);
     }
     if (numspaces || numtabs) {
-//        if (1 && !strcmp(L->fileName, "foo.spin")) {
-//            printf("    line %d col %d numspaces==%d numtabs==%d sawspaces=%d sawtabs=%d\n", L->lineCounter, L->colCounter, numspaces, numtabs, L->indent_saw_spaces, L->indent_saw_tabs);
-//        }
+#if 0        
+        if (1 && !strcmp(L->fileName, "foo.spin")) {
+            printf("    line %d col %d numspaces==%d numtabs==%d sawspaces=%d sawtabs=%d\n", L->lineCounter, L->colCounter, numspaces, numtabs, L->indent_saw_spaces, L->indent_saw_tabs);
+        }
+#endif
+        if (L->colCounter > L->firstNonBlank && L->pending_indent) {
+        } else {
         if (numspaces && numtabs) {
             L->mixed_tab_warning = MIXED_TAB_SAME_LINE;
         } else if (numspaces) {
@@ -1638,10 +1642,14 @@ again:
             }
             L->indent_saw_tabs = 1;
         }
+        }
     }
     /* ignore completely empty lines or ones with just comments */
     c = checkCommentedLine(&cb, L, c, language);
     if (c == ' ') {
+        L->mixed_tab_warning = 0;
+        L->indent_saw_spaces = L->indent_saw_tabs = 0;
+        numspaces = numtabs = 0;
         goto again;
     }
     if (commentBlockStart(language, c, L)) {
@@ -1755,6 +1763,8 @@ again:
     if (L->eoln && IsSpinLang(language) && (L->block_type == BLOCK_PUB || L->block_type == BLOCK_PRI)) {
         if (c == '\n' || c == VT) {
             c = lexgetc(L);
+            numspaces = numtabs = 0;
+            L->mixed_tab_warning = 0;
             goto again;
         }
         /* if there is a pending indent, send it back */

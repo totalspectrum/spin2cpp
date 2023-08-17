@@ -1,6 +1,7 @@
 Version 6.3.1
 - Added getcrc() builtin for Spin2
 - Fixed compilation error for object arrays in bytecode
+- Fixed some quirks in the space/tab warning code
 
 Version 6.3.0
 - Added #pragma exportdef to make defines apply in other files. This
