@@ -2106,6 +2106,12 @@ int lfs_dir_read(lfs_t *lfs, lfs_dir_t *dir, struct lfs_info *info) {
             (void*)lfs, (void*)dir, (void*)info);
     memset(info, 0, sizeof(*info));
 
+#ifdef __FLEXC__
+    // leave out . and .. entries
+    if (dir->pos == 0 || dir->pos == 1) {
+        dir->pos = 2;
+    }
+#else    
     // special offset for '.' and '..'
     if (dir->pos == 0) {
         info->type = LFS_TYPE_DIR;
@@ -2120,7 +2126,7 @@ int lfs_dir_read(lfs_t *lfs, lfs_dir_t *dir, struct lfs_info *info) {
         LFS_TRACE("lfs_dir_read -> %d", true);
         return true;
     }
-
+#endif
     while (true) {
         if (dir->id == dir->m.count) {
             if (!dir->m.split) {

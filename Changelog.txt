@@ -1,5 +1,6 @@
 Version 6.3.1
 - Added getcrc() builtin for Spin2
+- Changed littlefs to not return . and .. entries in path search (so it matches host fs and FATFS)
 - Fixed compilation error for object arrays in bytecode
 - Fixed some quirks in the space/tab warning code
 
