@@ -3,6 +3,7 @@ Version 6.3.1
 - Changed littlefs to not return . and .. entries in path search (so it matches host fs and FATFS)
 - Fixed compilation error for object arrays in bytecode
 - Fixed some quirks in the space/tab warning code
+- Fixed incorrect expansion of field[ptr][n]~~
 
 Version 6.3.0
 - Added #pragma exportdef to make defines apply in other files. This

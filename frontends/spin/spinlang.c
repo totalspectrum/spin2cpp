@@ -715,7 +715,7 @@ doSpinTransform(AST **astptr, int level, AST *parent)
         AST *tmp;
         AST *seq1, *seq2;
         AstReportAs(ast, &saveinfo);
-        target = ast->right;
+        ast->right = target = DupAST(ast->right);
         if (IsConstExpr(ast->left)) {
             ERROR(ast, "left side of \\ may not be constant");
         }
@@ -723,7 +723,7 @@ doSpinTransform(AST **astptr, int level, AST *parent)
             // at toplevel we can ignore the old result
             // Do this even if we could do it natively, 
             // since normal assignment is generally faster
-            *astptr = AstAssign(ast->left, target);
+            *astptr = ast = AstAssign(ast->left, target);
         } else if (TraditionalBytecodeOutput()) {
             // Do nothing except transform the children
             AstReportDone(&saveinfo);
@@ -734,13 +734,13 @@ doSpinTransform(AST **astptr, int level, AST *parent)
             tmp = AstTempLocalVariable("_tmp_", NULL);
 
             seq1 = NewAST(AST_SEQUENCE,
-                          AstAssign(tmp, ast->left),
+                          AstAssign(tmp, DupAST(ast->left)),
                           AstAssign(ast->left, target));
             seq2 = NewAST(AST_SEQUENCE, seq1, tmp);
-            *astptr = seq2;
+            *astptr = ast = seq2;
         }
         AstReportDone(&saveinfo);
-        // if we did a trandform,
+        // if we did a transform,
         // we may have a range reference in here, so do the
         // transform on the result
         doSpinTransform(astptr, level, ast);
