@@ -231,7 +231,7 @@ int v_stat(const char *name, struct stat *buf)
         return _set_dos_error(r);
     }
     mode = S_IRUSR | S_IRGRP | S_IROTH;
-    if (finfo.fattrib & AM_RDO) {
+    if (!(finfo.fattrib & AM_RDO)) {
         mode |= S_IWUSR | S_IWGRP | S_IWOTH;
     }
     if (finfo.fattrib & AM_DIR) {
