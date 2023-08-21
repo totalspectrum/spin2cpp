@@ -126,6 +126,7 @@ pri _txraw(c) | z
   _txwait()
   if _bitcycles == 0
     _setbaud(__default_baud__)  ' set up in common.c
+  _drvl(_txpin)                 ' re-enable tx if debug disabled it
   _wypin(_txpin, c)
   return 1
 
