@@ -291,9 +291,18 @@ then a call `incr(x)` where the second parameter is not given will be compiled a
 
 The keywords `__this` and `__class` are allowed in both C and C++ code, and mean the same as `this` and `class` in C++. These keywords are intended for use in C code which wishes to use FlexC's class features.
 
-### __catch and __throw
+### __try, __catch and __throw
 
-The limited form of exception handling supported by FlexC in C++ mode is also available in C mode, using the `__catch` and `__throw` keywords.
+The limited form of exception handling supported by FlexC in C++ mode is also available in C mode, using the `__try`, `__catch` and `__throw` keywords. This is mainly intended for catching Spin2 `abort` errors. For example:
+```
+__try {
+  r = someFunc(x);
+} __catch (int e) {
+  r = -e;
+}
+```
+
+For now only integer types are supported in `catch` clauses, and each `try` block should have only one `catch`. This restriction may be lifted at some time in the future to support typed `catch/throw`.
 
 ### Range cases
 
