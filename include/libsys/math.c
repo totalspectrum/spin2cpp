@@ -100,8 +100,12 @@ float __builtin_sinf(float x)
 {
     float s;
 
-    // do some argument reduction
-        
+    // remove multiples of 2*PI
+    int k = (int)(x / (2.0f * PI));
+    if (k) {
+        x = x - k * 2.0f * PI;
+    }
+    
     // for small angles use the taylor series: sin(x) = x - x^3/6 (error bounded by x^5/120)
     if (x < 0.1f && x > -0.1f) {
         s = x - (x*x*x/6.0f);

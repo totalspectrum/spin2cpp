@@ -4,6 +4,7 @@ Version 6.3.1
 - Fixed compilation error for object arrays in bytecode
 - Fixed some quirks in the space/tab warning code
 - Fixed incorrect expansion of field[ptr][n]~~
+- Improved range of sin and cos functions
 
 Version 6.3.0
 - Added #pragma exportdef to make defines apply in other files. This
