@@ -51,6 +51,9 @@ struct vfs *_vfs_open_host(void) _IMPL("filesys/fs9p/fs9p_vfs.c");
 struct vfs *_vfs_open_sdcard(void) _IMPL("filesys/fatfs/fatfs_vfs.c");
 struct vfs *_vfs_open_sdcardx(int pclk = 61, int pss = 60, int pdi = 59, int pdo = 58) _IMPL("filesys/fatfs/fatfs_vfs.c");
 
+struct vfs *_vfs_open_parallaxfs(void) _IMPL("filesys/parallax/parallaxfs_vfs.c");
+int _mkfs_parallaxfs(void) _IMPL("filesys/parallax/parallaxfs_vfs.c");
+
 /* block read/write device */
 typedef struct block_device {
     /* functions for doing I/O */

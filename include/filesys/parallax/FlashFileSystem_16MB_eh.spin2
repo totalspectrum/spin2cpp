@@ -1,0 +1,683 @@
+'************************************************************************************************
+'*												*
+'*	P2 Flash File System									*
+'*												*
+'*	- on-board W25Q128 flash chip becomes 16MB SSD (minus 512KB for boot area)		*
+'*	- automatic wear leveling is achieved via full-range random block picking and moving	*
+'*	- if power fails during file rewriting or renaming, the old file or name is preserved	*
+'*												*
+'************************************************************************************************
+'*  v1.0  2023-08-14  Initial release.								*
+'************************************************************************************************
+
+CON	'default flash pin parameters
+	SPI_CS		= 61		'flash chip select	[output]
+	SPI_CK		= 60		'flash clock		[output]
+	SPI_DI		= 59		'flash data in		[output]
+	SPI_DO		= 58		'flash data out		[input]
+
+	'default file system parameters
+	FIRST_BLOCK	= $080		'block $080 is after the initial 512KB boot space
+	LAST_BLOCK	= $FFF		'block $FFF is the end of the 16MB flash
+	MAX_FILES_OPEN	= 2		'MAX_FILES_OPEN * 4KB allocated in VARs, two files allows for copying
+
+	'internal constants
+	BLOCK_SIZE	= $1000		'blocks are 4KB, since flash erasure granularity is 4KB
+	BLOCK_SIZE_EXP	= encod BLOCK_SIZE
+
+	BLOCKS		= LAST_BLOCK - FIRST_BLOCK + 1
+
+	FILENAME_SIZE	= $040 - $004	'filenames are up to 59 characters, plus a zero terminator
+
+	IdToBlocks_SIZE	= (BLOCKS * 12 + 15) / 16
+	Flags_SIZE	= (BLOCKS * 1 + 7) / 8
+	States_SIZE	= (BLOCKS * 2 + 7) / 8
+
+	'Block states
+	sFREE		= %00		'sFREE indicates block is unused
+	sTEMP		= %01		'sTEMP used during mount and to later signal immovable work-in-progress blocks
+	sHEAD		= %10		'sHEAD is the first block of a file, contains the filename
+	sBODY		= %11		'sBODY is a post-first block of a file
+
+	'Handle states
+	sREAD		= %001		'file is being read
+	sWRITE		= %010		'file is being written
+	sREWRITE	= %100		'file is being rewritten
+
+	sREADWRITE	= sREAD | sWRITE | sREWRITE
+	sWRITEONLY	= sWRITE | sREWRITE
+
+	'ABORT codes for errors
+	#1, eInvalidHandle, eNoHandle, eFileNotFound, eDriveFull, eFileWriting, eFileOpen, eFileExists
+
+
+VAR	word IDToBlocks	[IdToBlocks_SIZE]	'ID-to-block translation table
+	long IDToBlock				'(field pointer)
+
+	byte IDValids	[Flags_SIZE]		'ID-valid flags
+	long IDValid				'(field pointer)
+
+	byte BlockStates[States_SIZE]		'block states
+	long BlockState				'(field pointer)
+
+	byte BlockBuff	[BLOCK_SIZE]		'buffer used for copying blocks
+
+	byte hStatus	[MAX_FILES_OPEN]	'handle-related variables and buffers
+	word hHeadID	[MAX_FILES_OPEN]
+	word hHeadBlock	[MAX_FILES_OPEN]
+	byte hHeadCycle	[MAX_FILES_OPEN]
+	word hBlockPtr	[MAX_FILES_OPEN]
+	byte hBlockBuff	[MAX_FILES_OPEN * BLOCK_SIZE]
+	byte hFilename	[MAX_FILES_OPEN * FILENAME_SIZE]
+
+	long CommandBuf
+	
+'******************
+'* Public Methods *
+'******************
+
+PUB Format() | i, first
+
+'' Format file system and (re)mount it
+
+  repeat i from 0 to BLOCKS - 1				'cancel all uncancelled blocks
+    ReadBlock(i, @first, $000, $000)
+    if first.[7]
+      CancelBlock(i)
+
+  Mount()						'(re)mount flash
+
+
+PUB Mount() | i, first
+
+'' Mount file system so it is ready for use
+
+  bytefill(@hStatus, 0, MAX_FILES_OPEN)			'clear handles
+  bytefill(@IDValids, 0, Flags_SIZE)			'clear ID flags
+  bytefill(@BlockStates, 0, States_SIZE)		'clear block states to sFREE
+
+  IDToBlock  := ^@IDToBlocks.[11..0]			'set field pointers
+  IDValid    := ^@IDValids.[0]
+  BlockState := ^@BlockStates.[1..0]
+
+  repeat i from 0 to BLOCKS - 1				'check each block and fix any duplicate IDs
+    CheckBlockAndFixAnyDuplicateID(i)			'(recovers from incomplete block switchover due to power loss)
+
+  repeat i from 0 to BLOCKS - 1				'trace head blocks and cancel any broken files
+    if field[BlockState][i] == sTEMP			'is this a valid block?
+      ReadBlock(i, @first, $000, $000)			'yes, read first byte of block
+      ifnot first.[1]					'is this also a head block?
+        ifnot TraceFileAndSetFlags(i, true)		'yes, trace file, set block states to sHEAD/sBODY
+          TraceFileAndSetFlags(i, false)		'if error, retrace file, set block states to sTEMP
+
+  repeat i from 0 to BLOCKS - 1				'cancel sTEMP blocks that didn't become sHEAD/sBODY blocks
+    if field[BlockState][i] == sTEMP			'is this an sTEMP block?
+      ReadBlock(i, @first, $000, $003)			'if so, read first long of block to get ID
+      field[IDValid][first.[19..8]]~			'..cancel ID flag
+      field[BlockState][i]~	   			'..return block state to sFREE
+      CancelBlock(i)					'..cancel block to inhibit future CRC checks
+
+
+PUB OpenRead(pFilename) : handle | i, first
+
+'' Open a file for reading, returns handle
+
+  ifnot first := FileCheck(pFilename)			'if file doesn't exist, abort
+    abort eFileNotFound
+
+  CheckOpenFiles(pFilename, sWRITEONLY, eFileWriting)	'if file is being written, abort
+  
+  handle := NewHandle()					'get new handle, aborts if no handle available
+
+  hStatus[handle] := sREAD				'set handle status to READ
+
+  ReadBlock(field[IDToBlock][first.[19..8]], BuffPtr(handle), $000, $FFF)	'read head block into buffer
+
+  hBlockPtr[handle] := $040				'point to first data byte in head block
+
+  SetHandleFilename(handle, pFilename)			'set handle filename
+  
+
+PUB ByteRead(handle) : b | ptr , first
+
+'' Read next byte from file opened for reading
+
+  ptr := BuffPtr(handle)				'get buffer pointer
+  first := long[ptr]					'get first long
+
+  ifnot first.[0]					'if last block and no more data, return -1
+    if hBlockPtr[handle] == long[ptr].[31..20]
+      return -1
+  else
+    if hBlockPtr[handle] == $FFC			'else, if no more data then read next body block
+      ReadBlock(field[IDToBlock][first.[31..20]], ptr, $000, $FFF)
+      hBlockPtr[handle] := $004				'point to start of data in body block
+
+  return byte[ptr][hBlockPtr[handle]++]			'return data byte and increment pointer
+
+
+PUB OpenWrite(pFilename) : handle | i, first, ptr
+
+'' Open a file for (re)writing, returns handle
+
+  CheckOpenFiles(pFilename, sREADWRITE, eFileOpen)	'if file already open, abort
+
+  handle := NewHandle()                                 'get new handle, aborts if no handle available
+
+  if first := FileCheck(pFilename)			'does file already exist?
+    hStatus[handle] := sREWRITE				'yes, REWRITING
+    hHeadID[handle] := first.[19..8]			'yes, get ID from head block
+    hHeadCycle[handle] := NextCycle(first.[7..5])	'yes, get next lifecycle from head block
+  else
+    hStatus[handle] := sWRITE				'no, WRITING
+    hHeadID[handle] := NewID()				'no, get new ID
+    hHeadCycle[handle] := %011				'no, set new lifecycle
+
+  ptr := BuffPtr(handle)				'get buffer pointer
+
+  bytefill(ptr, $FF, BLOCK_SIZE)			'erase block buffer
+  long[ptr].[1..0] := %00				'set head/last
+  long[ptr].[19..8] := hHeadID[handle]			'set ID
+  strcopy(ptr + $004, pFilename, FILENAME_SIZE - 1)	'set filename
+
+  hBlockPtr[handle] := $040				'point to start of data in head block
+
+  SetHandleFilename(handle, pFilename)			'set handle filename
+
+
+PUB ByteWrite(handle, b) | ptr, NextID
+
+'' Write next byte to file opened for (re)writing
+
+  ptr := BuffPtr(handle)				'get buffer pointer
+
+  if hBlockPtr[handle] == $FFC				'current block full?
+
+    NextID := NewID()					'get next ID to link to
+
+    long[ptr].[0]~~					'set more bit
+    long[ptr].[31..20] := NextID			'set next ID
+
+    WriteBlock(handle)					'write current block
+
+    bytefill(ptr, $FF, BLOCK_SIZE)			'erase block buffer
+    long[ptr].[1..0] := %10				'set body/last
+    long[ptr].[19..8] := NextID				'set ID
+
+    hBlockPtr[handle] := $004				'point to start of data in new block
+
+  byte[ptr][hBlockPtr[handle]++] := b			'write byte into block buffer, post-increment pointer
+
+
+PUB Close(handle)
+
+'' Close an open file, completes file (re)write, frees handle
+
+  case hStatus[handle]
+    sWRITE, sREWRITE:
+
+      long[BuffPtr(handle)].[31..20] := hBlockPtr[handle]	'cap last block and write it
+      WriteBlock(handle)
+
+      ActivateBlock(hHeadBlock[handle], hHeadCycle[handle])	'activate head block, replaces file if rewrite
+
+      if hStatus[handle] == sREWRITE				'if file rewrite, delete old file to clean up
+        DeleteFileByID(hHeadID[handle])
+        field[IDValid][hHeadID[handle]]~~			'set IDValid again, since it was cleared during file deletion
+
+      field[IDToBlock][hHeadID[handle]] := hHeadBlock[handle]	'set IDToBlock
+      field[BlockState][hHeadBlock[handle]] := sHEAD		'change head block status from sTEMP to sHEAD
+
+  hStatus[handle]~						'clear handle
+
+
+PUB Delete(pFilename) | first
+
+'' Delete a file
+
+  ifnot first := FileCheck(pFilename)				'if file doesn't exist, abort
+    abort eFileNotFound
+
+  CheckOpenFiles(pFilename, sREADWRITE, eFileOpen)		'if file open, abort
+
+  DeleteFileByID(first.[19..8])
+
+
+PUB Rename(pOldFilename, pNewFilename) | first, BlockNew, BlockOld, CycleNew
+
+'' Rename a file
+
+  ifnot first := FileCheck(pOldFilename)			'if old file doesn't exist, abort
+    abort eFileNotFound
+
+  CheckOpenFiles(pOldFilename, sREADWRITE, eFileOpen)		'if old file open, abort
+
+  if FileCheck(pNewFilename)					'if new file exists, abort
+    abort eFileExists
+
+  CheckOpenFiles(pNewFilename, sREADWRITE, eFileExists)		'if new file open, abort
+
+  BlockNew := NewBlock()					'get a new block to use for renaming (may move head block)
+  BlockOld := field[IDToBlock][first.[19..8]]			'get head block of file to rename (NewBlock may have changed lookup)
+
+  ReadBlock(BlockOld, @BlockBuff, $000, $FFF)			'read head block of file to rename
+  bytefill(@BlockBuff + $004, 0, FILENAME_SIZE)			'clear filename space to prevent old trailing chrs
+  strcopy(@BlockBuff + $004, pNewFilename, FILENAME_SIZE - 1)	'copy new filename into filename space
+  CycleNew := NextCycle(BlockBuff.[7..5])	       		'get next lifecycle
+  ProgramBlock(BlockNew, @BlockBuff, CycleNew)			'program first block of renamed file
+  ActivateBlock(BlockNew, CycleNew)				'activate new block
+  CancelBlock(BlockOld)						'cancel old block
+
+  field[IDToBlock][first.[19..8]] := BlockNew			'update IDToBlock
+  field[BlockState][BlockNew] := sHEAD				'make new block HEAD
+  field[BlockState][BlockOld] := sFREE				'make old block FREE
+
+
+PUB Exists(pFilename) : result
+
+'' Check if a file exists
+
+  return FileCheck(pFilename) <> 0				'return true/false 
+
+
+PUB SizeOf(pFilename) : ByteCount | first
+
+'' Get size of file in bytes
+
+  if first := FileCheck(pFilename)				'does file exist?
+    return CountFileBytes(field[IDToBlock][first.[19..8]])	'yes, get file size
+
+
+PUB Directory(pID, pFilename, pSize) | ID, block, first
+
+'' Get next file's filename and size in bytes via current ID
+'' - Initialize ID to 0, will be auto-advanced by each call to this method
+'' - When filename returns empty, no more files
+
+  'debug("Directory")
+  byte[pFilename]~					'reset filename
+
+  repeat while long[pID] < BLOCKS			'scan any remaining ID's for file heads
+
+    ID := long[pID]++					'get current ID and post-increment it
+    'debug(uhex(pID), uhex(ID))
+    if field[IDValid][ID]				'ID valid?
+      block := field[IDToBlock][ID]			'yes, get block from ID
+      if field[BlockState][block] == sHEAD		'is this a HEAD block?
+        ReadBlock(block, pFilename, $004, $03F)		'yes, read filename
+        long[pSize] := CountFileBytes(block)		'get file size
+        return
+
+
+PUB Stats() : UsedBlocks, FreeBlocks, FileCount | i
+
+'' Get stats on used/free blocks and file count
+
+  repeat i from 0 to BLOCKS - 1
+    case field[BlockState][i]
+      sFREE: FreeBlocks++
+      sTEMP: UsedBlocks++
+      sHEAD: UsedBlocks++
+             FileCount++
+      sBODY: UsedBlocks++
+
+
+'*******************
+'* Private Methods *
+'*******************
+
+PRI CheckBlockAndFixAnyDuplicateID(ThisBlock) | OtherBlock, j, k, ID
+
+  ReadBlock(ThisBlock, @j, $000, $000)					'read first byte of block
+
+  ifnot lookdown(j.[7..5]: %011, %101, %110)				'is block canceled or inactive?
+    return								'..if so, block status remains sFREE, done
+
+  ReadBlock(ThisBlock, @BlockBuff, $000, $FFF)				'read entire block
+
+  if long[@BlockBuff + $FFC] <> BlockCRC(@BlockBuff)			'is CRC bad?
+    CancelBlock(ThisBlock)						'..if so, cancel block to inhibit future CRC checks
+    return								'..block status remains sFREE, done
+
+  ID := BlockBuff.long.[19..8]						'this block is good, get its ID
+
+  ifnot field[IDValid][ID]~~						'set ID flag and if it wasn't already set..
+    field[IDToBlock][ID] := ThisBlock					'..set IDToBlock to this block
+    field[BlockState][ThisBlock] := sTEMP				'..set sTEMP status for this block
+    return								'..done
+
+  OtherBlock := field[IDToBlock][ID]					'ID flag was already set, get other block with same ID
+
+  ReadBlock(OtherBlock, @k, $000, $000)					'read first byte of other block
+
+  if lookdown(j.[7..5] << 3 | k.[7..5]: %011_110, %101_011, %110_101)	'if this block is newer..
+    field[IDToBlock][ID] := ThisBlock					'..set IDToBlock to this block
+    field[BlockState][ThisBlock] := sTEMP				'..set sTEMP status for this block
+    field[BlockState][OtherBlock]~					'..set sFREE status for other block
+    CancelBlock(OtherBlock)						'..cancel other block
+  else
+    CancelBlock(ThisBlock)						'else, cancel this block, block status remains sFREE
+
+
+PRI TraceFileAndSetFlags(Block, Set) : valid | j
+
+  ReadBlock(Block, @j, $000, $003)			'read first long of initial block
+  field[BlockState][Block] := Set ? sHEAD : sTEMP	'set first block state to sHEAD or sTEMP
+
+  repeat BLOCKS						'limit repeat to BLOCKS in order to return false on endless loop
+    ifnot j.[0]						'if last block, file is complete, return true
+      return true
+    Block := j.[31..20]					'get next ID
+    ifnot field[IDValid][Block]				'if ID invalid, error, return false
+      return
+    Block := field[IDToBlock][Block]			'translate ID to next block
+    ReadBlock(Block, @j, $000, $003)			'read first long of next block
+    ifnot j.[1]						'if head block, error, return false
+      return
+    field[BlockState][Block] := Set ? sBODY : sTEMP	'set block state to sBODY or sTEMP
+
+
+PRI NewHandle() : handle
+
+  repeat handle from 0 to MAX_FILES_OPEN - 1		'find first free handle
+    ifnot hStatus[handle]
+      return
+
+  abort eNoHandle					'no handle is available, abort
+
+
+PRI CheckOpenFiles(pFilename, Sensitivities, AbortCode) | i
+
+  repeat i from 0 to MAX_FILES_OPEN - 1			'if file is already open, abort
+    if hStatus[i] & Sensitivities
+      if strcomp(@hFilename + i * FILENAME_SIZE, pFilename)
+        abort AbortCode
+
+
+PRI WriteBlock(handle) | ptr, ID, Block
+
+  ptr := BuffPtr(handle)				'get buffer pointer
+  ID := long[ptr].[19..8]				'get the block ID
+  Block := NewBlock()					'get the new block to write, sets block state to sTEMP
+
+  if ID == hHeadID[handle]				'if this is the head block
+    ProgramBlock(Block, ptr, hHeadCycle[handle])	'..program block with head cycle
+    hHeadBlock[handle] := Block				'..remember the block so that it can be activated on close
+  else							'else, this is a body block
+    ProgramBlock(Block, ptr, %011)			'..program block with new cycle
+    ActivateBlock(Block, %011)				'..activate block
+    field[IDToBlock][ID] := Block			'..set IDToBlock
+    field[BlockState][Block] := sBODY			'..change block state from sTEMP to sBODY
+
+
+PRI NewBlock() : BlockNew | BlockFreeCount, BlockFree, FreeIndex, CycleNew
+
+  ifnot BlockFreeCount := BlocksFree()			'if no free block exists, abort
+    abort eDriveFull
+
+  repeat						'randomly pick an sFREE/sHEAD/sBODY (not an sTEMP) block
+    BlockNew := abs getrnd() // BLOCKS			'(random block selection results in +-5% wear leveling)
+  until field[BlockState][BlockNew] <> sTEMP
+
+  ifnot field[BlockState][BlockNew]			'if the block is sFREE, change its state to sTEMP and exit
+    field[BlockState][BlockNew] := sTEMP
+    return
+
+  FreeIndex := abs getrnd() // BlockFreeCount		'randomly pick an sFREE block to move the sHEAD/sBODY block to
+  repeat BlockFree from 0 to BLOCKS - 1
+    ifnot field[BlockState][BlockFree]
+      ifnot FreeIndex--
+        quit
+
+  ReadBlock(BlockNew, @BlockBuff, $000, $FFF)		'read the sHEAD/sBODY block
+  CycleNew := NextCycle(BlockBuff.[7..5])   		'advance its lifecycle
+  ProgramBlock(BlockFree, @BlockBuff, CycleNew)		'program the sFREE block with the sHEAD/sBODY data
+  ActivateBlock(BlockFree, CycleNew)			'activate the sFREE block, now superior to the original block
+  CancelBlock(BlockNew)					'cancel the original block to complete the move
+
+  field[IDToBlock][BlockBuff.long.[19..8]] := BlockFree			'update IDToBlock
+  field[BlockState][BlockFree] := field[BlockState][BlockNew]\sTEMP	'update blocks' states, new block is sTEMP
+
+
+PRI FileCheck(pFilename) : Found_Firstlong | i, byte header[$40]
+
+  repeat i from 0 to BLOCKS - 1			'scan head blocks for filename
+    if field[BlockState][i] == sHEAD		'is this a head block?
+      ReadBlock(i, @header, $000, $03F)	        'yes, read first 64 bytes of block
+      if strcomp(pFilename, @header[$004])	'does the filename match?
+        return long[@header]	        	'yes, return first long of header (always non-zero or logically TRUE)
+
+
+PRI CountFileBytes(block) : ByteCount | first
+
+  repeat						'trace blocks to count file bytes
+    ReadBlock(block, @first, $000, $003)		'read the first long of the head/body block
+    case first.[1..0]
+      %00:						'head/last
+        ByteCount := first.[31..20] - $040
+        return
+      %01:						'head/more
+        ByteCount := $FFC - $040
+      %10:						'body/last
+        ByteCount += first.[31..20] - $004
+        return
+      %11:						'body/more
+        ByteCount += $FFC - $004
+    block := field[IDToBlock][first.[31..20]]		'get next block
+
+
+PRI DeleteFileByID(i) | j
+
+  repeat					'trace file and cancel IDs, block states, and blocks
+    field[IDValid][i]~  			'clear ID flag
+    i := field[IDToBlock][i]			'translate ID to block
+    field[BlockState][i]~            		'set block state to sFREE
+    CancelBlock(i)				'cancel block
+    ReadBlock(i, @j, $000, $003)		'read first long of block
+    i := j.[31..20]				'get ID of next block
+  while j.[0]					'if not last block, loop
+
+
+PRI NewID() : ID
+
+  repeat ID from 0 to BLOCKS - 1		'pick the first free ID
+    ifnot field[IDValid][ID]~~			'set IDValid, was IDValid previously clear?
+      return					'if IDValid was clear, return new ID
+  
+  abort eDriveFull				'no ID is free, abort
+
+
+PRI BlocksFree() : count | i
+
+  repeat i from 0 to BLOCKS - 1			'count free blocks
+    ifnot field[BlockState][i]
+      count++
+
+
+PRI NextCycle(CycleIn) : CycleOut
+
+    CycleOut := (CycleIn * %001_001) >> 1 & %111	'get next lifecycle pattern
+
+
+PRI BuffPtr(handle) : ptr
+
+  return @hBlockBuff + handle << BLOCK_SIZE_EXP
+
+
+PRI SetHandleFilename(handle, pFilename)
+
+  strcopy(@hFilename + handle * FILENAME_SIZE, pFilename, FILENAME_SIZE - 1)
+
+
+PRI BlockCRC(ptr) : CRC
+
+  return getcrc(ptr, $AD0424F3 rev 31, BLOCK_SIZE - 4)	'compute CRC of a buffered block
+
+
+'********************
+'* Flash Operations *
+'********************
+
+PRI ReadBlock(Block, BuffAddress, FirstByte, LastByte)
+
+  FlashCommand($03 | (FIRST_BLOCK + Block) << 20 | FirstByte << 8, 4)
+  FlashReceive(BuffAddress, LastByte - FirstByte + 1)
+
+
+PRI ProgramBlock(Block, BuffAddress, Cycle) | i
+
+  FlashCommand($06, 1)					'enable write
+  FlashCommand($20 | (FIRST_BLOCK + Block) << 20, 4)	'erase 4KB block
+
+  byte[BuffAddress].[7..5] := Cycle			'install lifecycle for CRC computation
+  long[BuffAddress + $FFC] := BlockCRC(BuffAddress)	'compute and install CRC
+  byte[BuffAddress].[7..5]~~				'block will be inactive until activated
+
+  FlashWait()						'wait for erasure to complete (~45ms)
+
+  repeat i from 0 to 15							'program 16 pages within 4KB block
+    FlashCommand($06, 1)						'enable write
+    FlashCommand($02 | (FIRST_BLOCK + Block) << 20 | i << 16, 4)	'program
+    FlashSend(BuffAddress + i << 8, 256)				'send 256 bytes
+    FlashWait()								'wait for programming to complete (~400us)
+
+
+PRI ActivateBlock(Block, Cycle)
+
+  ProgramBit(Block, Cycle << 5 | %00011111)		'clear one cycle bit to activate block
+
+
+PRI CancelBlock(Block)
+
+  ProgramBit(Block, %00011111)				'clear all cycle bits to cancel block
+
+
+PRI ProgramBit(Block, BitPattern)
+
+  FlashCommand($06, 1)					'enable write
+  FlashCommand($02 | (FIRST_BLOCK + Block) << 20, 4)	'program
+  FlashSend(@BitPattern, 1)				'send byte with bit pattern
+  FlashWait()						'wait for program done
+
+
+PRI FlashWait() | busy
+
+  repeat
+    FlashCommand($05, 1)
+    FlashReceive(@busy, 1)
+  while busy.[0]
+
+
+PRI FlashCommand(Command, ByteCount)
+
+  org
+
+	fltl	#SPI_DO			'2!	DO input
+	drvl	#SPI_DI			'2!	DI low
+	drvh	#SPI_CK			'2!	CK high
+
+	drvh	#SPI_CS			'2!	CS high
+	waitx	#14			'2+14	CS deselect is 50ns at 360 MHz (50ns / 2.777ns = 18 ticks)
+	drvl	#SPI_CS			'2!	CS low
+
+	movbyts	Command,#%%1230		'reverse post-command bytes for sending
+
+  end
+
+  CommandBuf := Command
+  FlashSend(@CommandBuf, ByteCount)	'send command
+
+
+PRI FlashSend(BuffAddress, ByteCount) | Bits, Data
+
+  org
+
+	rdfast	#0,BuffAddress
+
+.byte	rfbyte	Data
+	shl	Data,#32 - 8
+	mov	Bits,#8
+
+.bit	drvl	#SPI_CK			'2!	CK low
+	shl	Data,#1		wc	'2	get bit to output
+	drvc	#SPI_DI			'2!	output bit to DO
+	nop				'2
+	drvh	#SPI_CK			'2!	CK high
+	djnz	Bits,#.bit		'4:2	loop if more bits to output
+
+	djnz	ByteCount,#.byte	'loop in another byte to send
+
+  end
+
+
+PRI FlashReceive(BuffAddress, ByteCount) | Bits, Data
+
+  org
+
+	wrfast	#0,BuffAddress		'start fast write
+
+.byte	mov	Bits,#8			'ready for a byte
+
+.bit	drvl	#SPI_CK			'2!	CK low
+	waitx	#6			'2+6	delay
+	drvh	#SPI_CK			'2!	CK high
+	testp	#SPI_DO		wc	'2	sample DO input
+	rcl	Data,#1			'2	save received bit
+	djnz	Bits,#.bit		'4	loop if more bits to receive
+
+	wfbyte	Data			'write byte
+	djnz	ByteCount,#.byte	'loop if another byte to receive
+
+	drvl	#SPI_DI			'2!	DI low
+	drvh	#SPI_CS			'2!	CS high		terminate command
+
+  end
+
+
+{
+
+head/last block
+------------------------------------------------------------------------------------------------
+000..003	long {EndPtr[11:0], ThisID[11:0], %vvv11100}	'vvv = lifecycle, 00 = head/last
+004..03F	byte filename[60]				'filename
+040..FFB	byte data[4028]					'data
+FFC..FFF	long crc32					'crc32 of 000..FFB
+
+
+head/more block
+------------------------------------------------------------------------------------------------
+000..003	long {NextID[11:0], ThisID[11:0], %vvv11101}	'vvv = lifecycle, 01 = head/more
+004..03F	byte filename[60]				'filename
+040..FFB	byte data[4028]					'data
+FFC..FFF	long crc32					'crc32 of 000..FFB
+
+
+body/last block
+------------------------------------------------------------------------------------------------
+000..003	long {EndPtr[11:0], ThisID[11:0], %vvv11110}	'vvv = lifecycle, 10 = body/last
+004..FFB	byte data[4088]					'data
+FFC..FFF	long crc32					'crc32 of 000..FFB
+
+
+body/more block
+------------------------------------------------------------------------------------------------
+000..003	long {NextID[11:0], ThisID[11:0], %vvv11111}	'vvv = lifecycle, 11 = body/more
+004..FFB	byte data[4088]					'data
+FFC..FFF	long crc32					'crc32 of 000..FFB
+
+
+
+vvv lifecycle rules
+- single-zero ring counter state sequence is 011..101..110..repeat
+- the block with the greater state is the valid block between two blocks with identical IDs
+- this allows for make-before-break block replacement that can be recovered after unexpected power loss
+-------------------------------------------------------------------------------------------------------
+111			inactive        no zeroes
+011/101/110		active          one zero
+001/010/100/000		cancelled       two or three zeroes
+
+011 > 110		new > old
+101 > 011		new > old
+110 > 101		new > old
+
+}
