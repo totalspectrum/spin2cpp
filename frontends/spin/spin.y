@@ -535,6 +535,16 @@ basicstmt:
     { $$ = NewCommentedAST(AST_QUITLOOP, NULL, NULL, $1); }
   | SP_NEXT SP_EOLN
     { $$ = NewCommentedAST(AST_CONTINUE, NULL, NULL, $1); }
+  | SP_DEBUG SP_EOLN
+    {
+        AST *ast = NULL;
+        if (gl_brkdebug) ast = NewAST(AST_BRKDEBUG, NULL, NULL);
+        AST *comment = $1;
+        if (comment) {
+            ast = NewAST(AST_COMMENTEDNODE, ast, comment);
+        }
+        $$ = ast;
+    }
   | SP_DEBUG '(' ')' SP_EOLN
     {
         AST *ast = NULL;
@@ -998,6 +1008,15 @@ basedatline:
     { $$ = NewCommentedAST(AST_FIT, AstInteger(0x1f0), NULL, $1); }
   | SP_FILE string SP_EOLN
     { $$ = NewCommentedAST(AST_FILE, GetFullFileName($2), NULL, $1); }
+  | SP_DEBUG SP_EOLN
+    {
+      // Interactive debugger
+      if (gl_brkdebug) {
+        $$ = NewAST(AST_BRKDEBUG,NULL,NULL);
+      } else {
+        $$ = NULL;
+      }
+    }
   | SP_DEBUG '(' ')' SP_EOLN
     {
         if (!gl_brkdebug) {

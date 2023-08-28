@@ -157,15 +157,25 @@ int Pasm_DebugEval(AST *arg, int argNum, int *addr, void *ignored) {
 }
 
 int AsmDebug_CodeGen(AST *ast, BackendDebugEval evalFunc, void *evalArg) {
-    unsigned brkCode = brkAssigned++;
-    AST *exprbase;
-    int regNum = 0;
-    bool do_cogn = false;
 
     /* check for DEBUG_DISABLE */
     if (const_or_default(current, "DEBUG_DISABLE", 0) != 0) {
         return -1;
     }
+
+
+    ASSERT_AST_KIND(ast,AST_BRKDEBUG,return -1;);
+    if (!ast->left) {
+        // if no exprlist, this is a paren-less DEBUG and should trigger the interactive debugger
+        return 0;
+    }
+    ASSERT_AST_KIND(ast->left,AST_EXPRLIST,return -1;);
+
+    unsigned brkCode = brkAssigned++;
+    AST *exprbase;
+    int regNum = 0;
+    bool do_cogn = false;
+
     /* sanity check on codes */
     if (brkCode >= MAX_BRK) {
         ERROR(ast,"MAX_BRK exceeded!");
@@ -175,8 +185,6 @@ int AsmDebug_CodeGen(AST *ast, BackendDebugEval evalFunc, void *evalArg) {
     Flexbuf *f = &brkExpr[brkCode];
     flexbuf_init(f,64);
 
-    ASSERT_AST_KIND(ast,AST_BRKDEBUG,return -1;);
-    ASSERT_AST_KIND(ast->left,AST_EXPRLIST,return -1;);
     if (ast->left->left->kind == AST_LABEL) {
         // the parser inserts a LABEL token if a COGn label is
         // required
