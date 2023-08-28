@@ -7,6 +7,8 @@ Version 6.4.0
 - Fixed incorrect expansion of field[ptr][n]~~
 - Fixed an incompatibility between _tx and debug()
 - Improved range of sin and cos functions
+- Improved performance of flash access in littlefs (thanks, Evan!)
+- Updated -gbrk code to most recent from Chip, and add support for brk #0 interactive debug (thanks, Ada!)
 
 Version 6.3.0
 - Added #pragma exportdef to make defines apply in other files. This
