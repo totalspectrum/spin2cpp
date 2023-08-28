@@ -3357,9 +3357,11 @@ CompileMultipleAssign(IRList *irl, AST *lhs, AST *rhs)
             ERROR(lhs, "Unable to multiply assign this target");
             r = EmptyOperand();
         }
-        EmitMove(irl, r, ptr->op, lhs);
-        lhs = lhs->right;
-        ptr = ptr->next;
+        if (ptr) {
+            EmitMove(irl, r, ptr->op, lhs);
+            ptr = ptr->next;
+            lhs = lhs->right;
+        }
     }
     if (ptr) {
         ERROR(rhs, "Too many elements on right hand side of assignment");
