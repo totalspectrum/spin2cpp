@@ -355,9 +355,9 @@ Flexbuf CompileBrkDebugger(size_t appsize) {
     uint32_t clkmode = const_or_default(T,"__clkmode_con",0);
     DEBUG(NULL,"Debugger gets CLKMODE %08X and CLKFREQ %d",clkmode,clkfreq);
     uint32_t millisecond = (clkfreq/1000)-6; // This is how PNut calculates it...
-    //uint32_t txmode = ((clkfreq/(const_or_default(T,"DEBUG_BAUD",2000000)>>6))<<(16-6))|(8-1); // Also from PNut
+    ////uint32_t txmode = ((clkfreq/(const_or_default(T,"DEBUG_BAUD",2000000)>>6))<<(16-6))|(8-1); // Also from PNut
     if (!gl_default_baud) gl_default_baud = 2000000;
-    uint32_t txmode = ((clkfreq/(const_or_default(T,"DEBUG_BAUD",gl_default_baud)>>6))<<(16-6))|(8-1); // Also from PNut
+    //uint32_t txmode = ((clkfreq/(const_or_default(T,"DEBUG_BAUD",gl_default_baud)>>6))<<(16-6))|(8-1); // Also from PNut
 
     // Compile debugger blob
     int old_errors = gl_errors;
@@ -374,16 +374,20 @@ Flexbuf CompileBrkDebugger(size_t appsize) {
     PrintDataBlock(&f,D->datblock,NULL,NULL);
     gl_errors = old_errors;
     // Patch parameters (ugly hardcoded offsets!)
+    int txpin = const_or_default(T,"DEBUG_PIN_TX",const_or_default(T,"DEBUG_PIN",62));
+    int rxpin = const_or_default(T,"DEBUG_PIN_RX",63);
     {
         char *buf = flexbuf_peek(&f);
-        patch_long(buf+0x0A0,clkmode&~3); // Clock mode with RCFAST
-        patch_long(buf+0x0A4,clkmode); // Clock mode
-        patch_long(buf+0x0A8,const_or_default(T,"DEBUG_DELAY",0)*millisecond); // Debug delay
-        patch_long(buf+0x0AC,appsize); // Application size
-        patch_long(buf+0x0B0,(const_or_default(T,"DEBUG_COGS",0xFF)&255)|0x20030000); // Enabled cogs (and something idk)
-        patch_long(buf+0x118,const_or_default(T,"DEBUG_PIN",62)|(FindSymbol(&T->objsyms,"DEBUG_TIMESTAMP") ? 1u<<31 : 0)); // Pin and timestamp flag
-        patch_long(buf+0x11C,txmode);
-        patch_long(buf+0x120,millisecond);
+        patch_long(buf+0x0D4,clkfreq);
+        patch_long(buf+0x0D8,clkmode&~3); // Clock mode with RCFAST
+        patch_long(buf+0x0DC,clkmode); // Clock mode
+        patch_long(buf+0x0E0,const_or_default(T,"DEBUG_DELAY",0)*millisecond); // Debug delay
+        patch_long(buf+0x0E4,appsize); // Application size
+        patch_long(buf+0x0E8,(const_or_default(T,"DEBUG_COGS",0xFF)&255)|0x20030000); // Enabled cogs (and something idk)
+        patch_long(buf+0x140,txpin); // TX Pin
+        patch_long(buf+0x144,rxpin|(FindSymbol(&T->objsyms,"DEBUG_TIMESTAMP") ? 1u<<31 : 0)); // RX Pin and timestamp flag
+        patch_long(buf+0x148,const_or_default(T,"DEBUG_BAUD",gl_default_baud));
+
     }
 
     // Build the actual data table
