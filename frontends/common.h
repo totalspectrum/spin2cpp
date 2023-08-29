@@ -27,6 +27,7 @@ typedef enum SpinExprState {
     ExprState_LookUpPending,
     ExprState_LookUpDown,
     ExprState_Conditional,
+    ExprState_Repeat,
 } SpinExprState;
 
 /*
