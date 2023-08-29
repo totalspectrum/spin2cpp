@@ -162,7 +162,7 @@ pri _rxraw(timeout = 0) | val, waitcycles, i, bitcycles
     repeat
       if ina[_rxpin] == 0
         quit
-      if waitcycles - cnt < 0
+      if cnt - waitcycles < 0
         return -1
   else
     repeat until ina[_rxpin] == 0

@@ -212,7 +212,7 @@ pri _rxraw(timeout = 0) : rxbyte = long | z, endtime, temp2, rxpin
   if_z    shr    temp2, #32 - 28
 .breakone
     endasm
-  until z or (timeout and (_getcnt() - endtime < 0))
+  until z or (timeout and (endtime - _getcnt() < 0))
   if z
     rxbyte := temp2 & $ff
   _rx_temp := temp2

@@ -147,7 +147,7 @@ pri _rxraw(timeout = 0) : rxbyte = long | z, endtime, temp2, rxpin
       rxbyte := _rdpin(rxpin)>>24
       quit
     if timeout
-      if _getcnt() - endtime < 0
+      if endtime - _getcnt() < 0
         quit
 
 ''
