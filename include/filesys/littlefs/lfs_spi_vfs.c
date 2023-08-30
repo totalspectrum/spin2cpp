@@ -3,6 +3,7 @@
 #include <sys/vfs.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <stdlib.h>
 
 #define DEFAULT_LFS_PINMASK ((1ULL<<61) | (1ULL<<60) | (1ULL<<59) | (1ULL<<58))
 
