@@ -233,7 +233,15 @@ pri __builtin_atoi(s = "0", base=0) : r = long | c, negate, digit
     if (c == "-")
       negate := 1 - negate
     c := byte[s]
-  
+
+  if base == 0
+    if c == "$"
+      base := 16
+      s++
+    elseif c == "%"
+      base := 2
+      s++
+
   repeat
     repeat
       c := byte[s++]

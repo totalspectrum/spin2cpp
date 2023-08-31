@@ -1,6 +1,7 @@
 Version 6.4.0
 - Added getcrc() builtin for Spin2
 - Added VFS layer for Parallax flash file system
+- Added recognition for "$" and "%" to __builtin_atoi
 - Changed littlefs to not return . and .. entries in path search (so it matches host fs and FATFS)
 - Fixed compilation error for object arrays in bytecode
 - Fixed some quirks in the space/tab warning code
