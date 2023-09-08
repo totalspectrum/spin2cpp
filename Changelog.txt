@@ -1,5 +1,7 @@
 Version 6.4.1
 - Added MKDIR function for BASIC
+- Added support for NeoYume style ARGv parameters in C
+- Fixed `-x` option in flexcc
 - Made _geterror() clear the error number
 
 Version 6.4.0
