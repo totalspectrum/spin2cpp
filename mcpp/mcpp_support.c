@@ -297,7 +297,7 @@ int    mcpp_lib_fprintf(
         if (use_mem_buffers) {
             static char     mem_buffer[ NWORK];
 
-            rc = vsprintf( mem_buffer, format, ap);
+            rc = vsnprintf( mem_buffer, sizeof(mem_buffer), format, ap);
 
             if (rc != 0) {
                 rc = mem_puts( mem_buffer, od);
