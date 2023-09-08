@@ -1572,10 +1572,8 @@ chain #4
 
 ### CHDIR
 
-Changes the current (default) directory for the program. Note that using this function requires that the "dir.bi" header be included. For example:
+Changes the current (default) directory for the program. For example:
 ```
-#include "dir.bi"
-...
 r = chdir("/host/dir")
 ```
 Returns 0 on success, nonzero on failure.
@@ -2750,6 +2748,14 @@ a$="abcde"
 print mid$(a$, 3, 2)
 ```
 prints "cd".
+
+### MKDIR
+
+Attempts to create a new directory.
+```
+r = mkdir("/host/dir")
+```
+Returns 0 on success, nonzero on failure.
 
 ### MOD
 

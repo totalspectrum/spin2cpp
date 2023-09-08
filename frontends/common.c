@@ -257,6 +257,7 @@ Aliases basicalias[] = {
     { "kill", "_remove" },
     { "lpeek", "__lpeek" },
     { "lpoke", "__lpoke" },
+    { "mkdir", "_mkdir" },
     { "mount", "_mount" },
     { "pausems", "_waitms" },
     { "pausesec", "_waitsec" },

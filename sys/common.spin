@@ -378,7 +378,7 @@ pri file "libsys/strings.bas" instrrev(off, x, y): r=long
 pri file "libsys/dir.bas" curdir`$(): r = string
 pri file "libsys/dir.bas" dir`$(pat = "", attrib = 0): r=string
 pri file "libsys/remove.c" _remove(f=string): r=long
-
+pri file "libsys/mkdir.c" _mkdir(f=string): r=long
 pri file "libc/stdlib/errno.c" _seterror(r)
 pri file "libc/stdlib/errno.c" _geterror(): r=long
 pri file "libc/stdlib/errno.c" _geterrnoptr(): r=@long

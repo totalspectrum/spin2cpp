@@ -1,3 +1,6 @@
+Version 6.4.1
+- Added MKDIR function for BASIC
+
 Version 6.4.0
 - Added getcrc() builtin for Spin2
 - Added VFS layer for Parallax flash file system
