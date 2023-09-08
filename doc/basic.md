@@ -1576,8 +1576,9 @@ Changes the current (default) directory for the program. Note that using this fu
 ```
 #include "dir.bi"
 ...
-chdir("/host/dir")
+r = chdir("/host/dir")
 ```
+Returns 0 on success, nonzero on failure.
 
 ### _CLKFREQ
 
@@ -2599,9 +2600,9 @@ An interface is a special kind of class which may only contain method (function 
 ### KILL
 
 ```
-kill(filename$)
+r = kill(filename$)
 ```
-Deletes a file or directory.
+Deletes a file or directory. Returns 0 on success, non-zero on failure.
 
 ### LCASE$
 
