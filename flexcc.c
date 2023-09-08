@@ -185,6 +185,9 @@ main(int argc, const char **argv)
         if (!strcmp(argv[0], "-y")) {
             spinyydebug = 1;
             argv++; --argc;
+        } else if (!strcmp(argv[0], "-x")) {
+            gl_exit_status = 1;
+            argv++; --argc;
         } else if (!strncmp(argv[0], "--data=", 7)) {
             if (!strcmp(argv[0]+7, "cog")) {
                 gl_outputflags |= OUTFLAG_COG_DATA;
