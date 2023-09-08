@@ -1,5 +1,6 @@
 Version 6.4.1
 - Added MKDIR function for BASIC
+- Made _geterror() clear the error number
 
 Version 6.4.0
 - Added getcrc() builtin for Spin2

@@ -2333,6 +2333,15 @@ Propeller specific builtin function.
 ```
 Returns the error number `e` corresponding to the last system error. (This is the same as `errno` in C.) This number may be converted to a user-displayable string via `strerror$(e)`.
 
+Note that the error number is not cleared by most library functions, and so is not always a reliable indicator of whether the last call succeeded. For that, one should use the return value of the call itself.
+
+`geterr` resets the error indicator to `EOK`; thus in:
+```
+let r1 = geterr()
+let r2 = geterr()
+```
+`r2` will always be 0 (`EOK`) since there are no intervening system calls between `geterr` calls.
+
 ### GETMS
 
 ```
