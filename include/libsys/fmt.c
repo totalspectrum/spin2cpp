@@ -1008,7 +1008,7 @@ int _basic_open_string(unsigned h, char *fname, unsigned iomode)
     }
     r = _openraw(v, fname, iomode, 0666);
     if (r < 0) {
-        THROW_RETURN(_geterror());
+        THROW_RETURN(errno);
     }
     return r;
 #endif    

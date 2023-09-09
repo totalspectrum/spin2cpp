@@ -4,7 +4,7 @@
 
 void perror(const char *s)
 {
-  int err = _geterror();
+  int err = errno;
 
   fputs(s, stderr);
   fputs(": ", stderr);
