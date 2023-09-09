@@ -18,6 +18,12 @@
 #include <sys/stat.h>
 #include <sys/limits.h>
 
+typedef struct pfsfile {
+    struct _default_buffer b;
+    uint32_t handle;
+    uint32_t offset;
+} pfs_file;
+    
 static struct __using("filesys/parallax/FlashFileSystem_16MB_eh.spin2") FlashFS;
 
 // convert errors from Parallax codes to our codes
@@ -95,10 +101,18 @@ int fs_init()
 static int v_creat(vfs_file_t *fil, const char *pathname, mode_t mode)
 {
     int r;
+    pfs_file *f = calloc(1, sizeof(*f));
+    if (!f) {
+        return _seterror(ENOMEM);
+    }
     r = Try1(&FlashFS.OpenWrite, (void *)pathname);
     if (r < 0) {
+        free(f);
         return _seterror(-r);
     }
+#ifdef _DEBUG_PFS
+    __builtin_printf("v_creat: handle %d\n", r);
+#endif
     fil->vfsdata = (void *)r;  // flashfs handle
     return 0;
 }
@@ -106,7 +120,13 @@ static int v_creat(vfs_file_t *fil, const char *pathname, mode_t mode)
 static int v_close(vfs_file_t *fil)
 {
     int r = 0;
-    r = Try1(&FlashFS.Close, fil->vfsdata);
+    pfs_file *f = fil->vfsdata;
+    int handle = f->handle;
+
+#ifdef _DEBUG_PFS
+    __builtin_printf("v_close: handle %d\n", handle);
+#endif    
+    r = Try1(&FlashFS.Close, handle);
     if (r < 0) {
         return _seterror(-r);
     }
@@ -117,7 +137,7 @@ static int v_opendir(DIR *dir, const char *name)
 {
 #ifdef _DEBUG_PFS
     __builtin_printf("v_opendir\n");
-    FlashFS.DumpData();
+//    FlashFS.DumpData();
 #endif    
     dir->vfsdata = 0;
     return 0;
@@ -183,11 +203,15 @@ static int v_stat(const char *name, struct stat *buf)
 
 static ssize_t v_read(vfs_file_t *fil, void *buf_p, size_t siz)
 {
-    int handle = (int)fil->vfsdata;
+    pfs_file *f = fil->vfsdata;
+    int handle = f->handle;
     char *buf = (char *)buf_p;
     int r;
     int c;
-    
+
+#ifdef _DEBUG_PFS
+    __builtin_printf("v_read from handle %d...", handle);
+#endif    
     r = 0;
     while (siz > 0) {
         c = FlashFS.ByteRead(handle);
@@ -199,15 +223,22 @@ static ssize_t v_read(vfs_file_t *fil, void *buf_p, size_t siz)
     if (r == 0) {
         fil->state |= _VFS_STATE_EOF;
     }
+#ifdef _DEBUG_PFS
+    __builtin_printf("returning %d\n", r);
+#endif    
     return r;
 }
 static ssize_t v_write(vfs_file_t *fil, void *buf_p, size_t siz)
 {
-    int handle = (int)fil->vfsdata;
+    pfs_file *f = fil->vfsdata;
+    int handle = f->handle;
     char *buf = (char *)buf_p;
     int r;
     int c;
     
+#ifdef _DEBUG_PFS
+    __builtin_printf("v_write to handle %d...", handle);
+#endif    
     r = 0;
     while (siz > 0) {
         c = *buf++;
@@ -222,6 +253,9 @@ static ssize_t v_write(vfs_file_t *fil, void *buf_p, size_t siz)
     if (r == 0) {
         fil->state |= _VFS_STATE_EOF;
     }
+#ifdef _DEBUG_PFS
+    __builtin_printf("returning %d\n", r);
+#endif    
     return r;
 }
 
@@ -268,13 +302,17 @@ static int v_rename(const char *oldname, const char *newname)
 
 static int v_open(vfs_file_t *fil, const char *name, int flags)
 {
+    pfs_file *f;
   int handle = -1;
   int mode;
   
 #ifdef _DEBUG_PFS
-  __builtin_printf("pfs v_open\n");
+  __builtin_printf("pfs v_open(%s)\n", name);
 #endif
-
+  f = calloc(1, sizeof(*f));
+  if (!f) {
+      return _seterror(ENOMEM);
+  }
   // check for read or write
   mode = flags & O_ACCMODE;
   switch (mode) {
@@ -287,17 +325,23 @@ static int v_open(vfs_file_t *fil, const char *name, int flags)
   default:
 #ifdef _DEBUG_PFS
       __builtin_printf("pfs: invalid mode for open\n");
-#endif      
+#endif
+      free(f);
       return _seterror(EINVAL);
   }
 
+#ifdef _DEBUG_PFS
+  __builtin_printf("...pfs returned handle %d\n", handle);
+#endif  
   if (handle < 0) {
 #ifdef _DEBUG_PFS
       __builtin_printf("pfs: bad handle: %d\n", handle);
-#endif      
+#endif
+      free(f);
       return _seterror(-handle);
   }
-  fil->vfsdata = (void *)handle;
+  f->handle = handle;
+  fil->vfsdata = (void *)f;
   return 0;
 }
 
