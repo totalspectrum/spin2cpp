@@ -17,10 +17,12 @@ void _c_startup()
     int r;
     int argc = 0;
 
+#ifdef __FLEXC_NO_CRNL__
     _setrxtxflags(TTY_FLAG_ECHO); // make sure TTY_FLAG_CRNL is off
+#endif
+    
     _waitms(20);  // brief pause
-
-    _argv[argc++] = "program";
+    _argv[argc++] = __FLEXSPIN_PROGRAM__;
     if ( ARGV_MAGIC == (*(long *)0xFC000) ) {
         char *arg = START_ARGS;
         while (arg < END_ARGS && *arg != 0 && argc < MAX_ARGC-1) {

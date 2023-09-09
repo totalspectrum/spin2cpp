@@ -1617,7 +1617,7 @@ GetMainFunction(Module *P)
     if (IsBasicLang(P->mainLanguage)) {
         mainName = "program";
     } else if (IsCLang(P->mainLanguage)) {
-        if (gl_exit_status) {
+        if (gl_cenv_flags) {
             mainName = "_c_startup";
             P = systemModule;
         } else {

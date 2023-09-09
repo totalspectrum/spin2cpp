@@ -179,8 +179,11 @@ int ProcessCommandLine(CmdLineOptions *cmd)
         strftime(quote_data, sizeof(quote_data), "\"%H:%M:%S\"",  tm);
         pp_define(&gl_pp, "__TIME__", strdup(quote_data));
     }
-    if (gl_exit_status) {
+    if (gl_cenv_flags & CENV_PROVIDE_EXIT) {
         pp_define(&gl_pp, "__EXIT_STATUS__", "1");
+    }
+    if (gl_cenv_flags & CENV_NO_CRNL) {
+        pp_define(&gl_pp, "__FLEXC_NO_CRNL__", "1");
     }
     if (gl_debug) {
         pp_define(&gl_pp, "__DEBUG__", "1");

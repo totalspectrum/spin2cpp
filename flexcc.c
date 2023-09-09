@@ -186,7 +186,7 @@ main(int argc, const char **argv)
             spinyydebug = 1;
             argv++; --argc;
         } else if (!strcmp(argv[0], "-x")) {
-            gl_exit_status = 1;
+            gl_cenv_flags = 0xff;  // explicitly asked for testing & exit status
             argv++; --argc;
         } else if (!strncmp(argv[0], "--data=", 7)) {
             if (!strcmp(argv[0]+7, "cog")) {

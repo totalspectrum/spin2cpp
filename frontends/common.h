@@ -238,11 +238,16 @@ extern int gl_fixedreal;  /* if instead of float we should use 16.16 fixed point
 extern int gl_caseSensitive; /* whether Spin/PASM is case sensitive */
 extern int gl_no_coginit;    /* skip coginit code */
 
-extern int gl_exit_status;   /* after exit return exit code via special sequence */
 extern int gl_relocatable;   /* 1 for position independent output */
 
 extern int gl_useFullPaths;  /* 1 if file name errors should use absolute paths */
 extern int gl_nostdlib;      /* 1 if standard include path should not be checked */
+
+// various flags for environment interaction
+extern int gl_cenv_flags;
+#define CENV_PROVIDE_EXIT 0x01  /* provide exit status at end */
+#define CENV_NO_CRNL      0x02  /* do not translate NL -> CR+NL */
+#define CENV_CHECK_ARGV   0x04  /* check for ARGv */
 
 /* LMM kind selected */
 extern int gl_lmm_kind;

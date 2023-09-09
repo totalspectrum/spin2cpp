@@ -70,7 +70,7 @@ int gl_expand_constants;
 int gl_optimize_flags;
 int gl_dat_offset;
 int gl_warn_flags = DEFAULT_WARN_FLAGS;
-int gl_exit_status = 0;
+int gl_cenv_flags = 0;
 int gl_printprogress = 0;
 int gl_infer_ctypes = 0;
 int gl_listing = 0;

@@ -5335,7 +5335,7 @@ NeverInline(Function *f)
     if (f->uses_alloca) return true;
     if (f->stack_local) return true;
     if (f->closure) return true;
-    if (gl_exit_status && !strcmp(f->name, "main")) return true;
+    if (gl_cenv_flags && !strcmp(f->name, "main")) return true;
     return false;
 }
 

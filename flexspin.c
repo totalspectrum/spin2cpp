@@ -522,7 +522,7 @@ main(int argc, const char **argv)
             argv++; --argc;
         } else if (!strcmp(argv[0], "-x")) {
             argv++; --argc;
-            gl_exit_status = 1;
+            gl_cenv_flags = 0xff;  // explicitly asked for testing
         } else {
             fprintf(stderr, "Unrecognized option: %s\n", argv[0]);
             Usage(stderr, cmd->bstcMode);
