@@ -6,7 +6,7 @@
 #include <string.h>
 #include <sys/ioctl.h>
 
-/* create a directory */
+/* create a directory with default mode */
 int _mkdir(const char *orig_name)
 {
     int r;
@@ -19,7 +19,7 @@ int _mkdir(const char *orig_name)
 #endif        
         return _seterror(ENOSYS);
     }
-    r = (*v->mkdir)(name);
+    r = (*v->mkdir)(name, 0777);
     if (r != 0) {
         return _seterror(-r);
     }
