@@ -4,6 +4,7 @@ Version 6.4.1
 - Fixed `-x` option in flexcc
 - Fixed interaction between Parallax FS and stdio FILEs when multiple FILEs are open
 - Made _geterror() clear the error number
+- Re-factored some code to reduce bloat a bit
 
 Version 6.4.0
 - Added getcrc() builtin for Spin2
