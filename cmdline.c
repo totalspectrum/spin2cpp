@@ -209,6 +209,18 @@ int ProcessCommandLine(CmdLineOptions *cmd)
             pp_define(&gl_pp, "__OUTPUT_BYTECODE_NUCODE__", "1");
         }
     }
+    {
+        char *our_progname = "\"a.binary\"";
+        if (gl_outname) {
+            size_t len = strlen(gl_outname) + 2;
+            our_progname = malloc(len + 1);
+            our_progname[0] = '\"';
+            strcpy(our_progname+1, gl_outname);
+            our_progname[len-1] = '\"';
+            our_progname[len] = 0;
+        }
+        pp_define(&gl_pp, "__FLEXSPIN_PROGRAM__", our_progname);
+    }
     pp_define(&gl_pp, "__ILP32__", "1");
     if (gl_p2) {
         pp_define(&gl_pp, "__P2__", "1");
