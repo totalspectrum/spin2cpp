@@ -315,28 +315,29 @@ pri {++complexio} file "libc/unix/exec.c" _execve(name=string, argv=0, envp=0)
 pri {++complexio} file "libc/unix/exec.c" _fexecve(h, argv=0, envp=0)
 
 '' I/O functions
-pri {++complexio} file "libsys/fmt.c" _basic_open(h, sendf, recf, closef) : r=long
-pri {++complexio} file "libsys/fmt.c" _basic_open_string(h, str, iomode) : r=long
-pri {++complexio} file "libsys/fmt.c" _basic_close(h)
-pri {++complexio} file "libc/unix/posixio.c" _freefile() : r=long
-pri file "libsys/fmt.c" _basic_print_nl(h)
-pri file "libsys/fmt.c" _basic_print_char(h, c, fmt = 0)
-pri file "libsys/fmt.c" _basic_print_string(h, ptr, fmt = 0)
-pri file "libsys/fmt.c" _basic_print_integer(h, x, fmt = 0, base=10)
-pri file "libsys/fmt.c" _basic_print_integer_2(h, x1, x2, fmt = 0, base=10)
-pri file "libsys/fmt.c" _basic_print_integer_3(h, x1, x2, x3, fmt = 0, base=10)
-pri file "libsys/fmt.c" _basic_print_integer_4(h, x1, x2, x3, x4, fmt = 0, base=10)
-pri file "libsys/fmt.c" _basic_print_unsigned(h, x, fmt = 0, base=10)
-pri file "libsys/fmt.c" _basic_print_unsigned_2(h, x1, x2, fmt = 0, base=10)
-pri file "libsys/fmt.c" _basic_print_unsigned_3(h, x1, x2, x3, fmt = 0, base=10)
-pri file "libsys/fmt.c" _basic_print_unsigned_4(h, x1, x2, x3, x4, fmt = 0, base=10)
-pri file "libsys/fmt.c" _basic_print_longinteger(h, x= >long, fmt = 0, base=10)
-pri file "libsys/fmt.c" _basic_print_longunsigned(h, x= >+long, fmt = 0, base=10)
-pri file "libsys/fmt.c" _basic_get_char(h)
-pri file "libsys/fmt.c" _basic_put(h=long, pos=+long, ptr, elemnts=+long, size=+long)
-pri file "libsys/fmt.c" _basic_get(h=long, pos=+long, ptr, elements=+long, size=+long)
 pri file "libsys/fmt.c" __lockio(h=long) : r
 pri file "libsys/fmt.c" __unlockio(h=long) : r
+
+pri {++complexio} file "libsys/basicfmt.c" _basic_open(h, sendf, recf, closef) : r=long
+pri {++complexio} file "libsys/basicfmt.c" _basic_open_string(h, str, iomode) : r=long
+pri {++complexio} file "libsys/basicfmt.c" _basic_close(h)
+pri {++complexio} file "libc/unix/posixio.c" _freefile() : r=long
+pri file "libsys/basicfmt.c" _basic_print_nl(h)
+pri file "libsys/basicfmt.c" _basic_print_char(h, c, fmt = 0)
+pri file "libsys/basicfmt.c" _basic_print_string(h, ptr, fmt = 0)
+pri file "libsys/basicfmt.c" _basic_print_integer(h, x, fmt = 0, base=10)
+pri file "libsys/basicfmt.c" _basic_print_integer_2(h, x1, x2, fmt = 0, base=10)
+pri file "libsys/basicfmt.c" _basic_print_integer_3(h, x1, x2, x3, fmt = 0, base=10)
+pri file "libsys/basicfmt.c" _basic_print_integer_4(h, x1, x2, x3, x4, fmt = 0, base=10)
+pri file "libsys/basicfmt.c" _basic_print_unsigned(h, x, fmt = 0, base=10)
+pri file "libsys/basicfmt.c" _basic_print_unsigned_2(h, x1, x2, fmt = 0, base=10)
+pri file "libsys/basicfmt.c" _basic_print_unsigned_3(h, x1, x2, x3, fmt = 0, base=10)
+pri file "libsys/basicfmt.c" _basic_print_unsigned_4(h, x1, x2, x3, x4, fmt = 0, base=10)
+pri file "libsys/basicfmt.c" _basic_print_longinteger(h, x= >long, fmt = 0, base=10)
+pri file "libsys/basicfmt.c" _basic_print_longunsigned(h, x= >+long, fmt = 0, base=10)
+pri file "libsys/basicfmt.c" _basic_get_char(h)
+pri file "libsys/basicfmt.c" _basic_put(h=long, pos=+long, ptr, elemnts=+long, size=+long)
+pri file "libsys/basicfmt.c" _basic_get(h=long, pos=+long, ptr, elements=+long, size=+long)
 
 '' format functions
 pri file "libsys/fmt.c" _fmtchar(fn, fmt, c)
