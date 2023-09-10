@@ -429,6 +429,7 @@ int ProcessCommandLine(CmdLineOptions *cmd)
                 gl_caseSensitive = !compile_original;
                 gl_warn_flags &= ~WARN_ASM_FIRST_PASS; // already issued warnings
                 gl_optimize_flags = 0; // no need to re-optimize
+                gl_cenv_flags = 0;     // already handled C startup code
                 CompileAsmToBinary(binname, asmname);
                 DoPropellerPostprocess(binname, cmd->useEeprom ? cmd->eepromSize : 0);
                 if (!cmd->quiet) {

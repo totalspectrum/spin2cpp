@@ -19,11 +19,16 @@ void myexit(int n)
 #endif    
 }
 
-void main()
+//
+// declaring main like this should pull in the c_start routine,
+// which should be harmless for tests
+//
+int main(int argc, char **argv)
 {
     long long x = 0x1122334455667788;
     long long y;
     y = x + x;
     printf("x = %llx y = %x : %x z = %llx\n", x, y, 0x9abcdef01234LL, 1);
     myexit(0);
+    return 0;
 }

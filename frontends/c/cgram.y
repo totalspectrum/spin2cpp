@@ -905,6 +905,18 @@ DeclareCTypedFunction(Module *P, AST *ftype, AST *nameAst, int is_public, AST *b
             ReplaceAst(body, origName, nameAst);
         }
     }
+    const char *name = GetIdentifierName(nameAst);
+
+    // handle some special cases
+
+    // if "main" is declared as "main(argc, argv) we need ARGV processing
+    if (!strcmp(name, "main")) {
+        // check for parameters
+        AST *params = ftype ? ftype->right : NULL;
+        if (AstListLen(params) > 1) {
+            gl_cenv_flags |= CENV_CHECK_ARGV;
+        }
+    }
     return DeclareTypedFunction(P, ftype, nameAst, is_public, body, attribute, NULL);
 }
 

@@ -1245,11 +1245,6 @@ doDeclareFunction(AST *funcblock)
         AddClosureSymbol(fdef, fdef->closure, superclass);
     }
 
-    // check for some special cases
-    if (IsCLang(language) && !strcmp(funcname_user, "main") && fdef->params) {
-        gl_cenv_flags |= CENV_CHECK_ARGV;
-    }
-
     // restore function symbol environment (if applicable)
     curfunc = oldcur;
     return fdef;

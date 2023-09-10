@@ -1601,6 +1601,13 @@ ParseTopFiles(const char *argv[], int argc, int outputBin)
         }
         --argc;
     }
+    // see if we need c_startup.c
+    if (gl_cenv_flags) {
+        const char *startupName = find_file_on_path(&gl_pp, "libsys/c_startup.c", NULL, NULL);
+        if (startupName) {
+            P = doParseFile(startupName, P, &is_dup, NULL);
+        }
+    }
     ProcessModule(P);
     if (P && gl_errors < gl_max_errors) {
         FixupCode(P, outputBin);
@@ -1613,13 +1620,12 @@ GetMainFunction(Module *P)
 {
     const char *mainName = NULL;
     Function *pf;
-
+    
     if (IsBasicLang(P->mainLanguage)) {
         mainName = "program";
     } else if (IsCLang(P->mainLanguage)) {
         if (gl_cenv_flags) {
             mainName = "_c_startup";
-            P = systemModule;
         } else {
             mainName = "main";
         }
