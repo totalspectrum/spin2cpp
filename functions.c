@@ -1021,6 +1021,7 @@ doDeclareFunction(AST *funcblock)
     fdef->decl = funcdef;
     fdef->language = language;
     fdef->code_placement = is_cog;
+
     if (is_cog != CODE_PLACE_DEFAULT) {
         // if the code placement is explicit and differs from where we
         // would normally put code, make sure we do not inline the
@@ -1243,6 +1244,12 @@ doDeclareFunction(AST *funcblock)
                             superclass);
         AddClosureSymbol(fdef, fdef->closure, superclass);
     }
+
+    // check for some special cases
+    if (IsCLang(language) && !strcmp(funcname_user, "main") && fdef->params) {
+        gl_cenv_flags |= CENV_CHECK_ARGV;
+    }
+
     // restore function symbol environment (if applicable)
     curfunc = oldcur;
     return fdef;
