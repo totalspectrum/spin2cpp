@@ -867,6 +867,48 @@ done:
 }
 #endif /* INCLUDE_FLOATS */
 
+/*
+ * I/O locks
+ */
+#ifdef _SIMPLE_IO
+
+# if defined(__FEATURE_MULTICOG__) && !defined(_NO_LOCKIO)
+static int __iolock;
+int __lockio(int h)   { _lockmem(&__iolock); return 0; }
+int __unlockio(int h) { _unlockmem(&__iolock); return 0; }
+# else
+int __lockio(int h)   { return 0; }
+int __unlockio(int h) { return 0; }
+# endif
+
+#else
+
+static int *_getiolock(unsigned h) {
+    vfs_file_t *v;
+    static int dummy;
+    v = __getftab(h);
+    if (!v || !v->state) return &dummy;
+    return &v->lock;
+}
+int __lockio(unsigned h) {
+#ifndef _NO_LOCKIO    
+    _lockmem(_getiolock(h));
+#endif    
+    return 0;
+}
+int __unlockio(unsigned h) {
+#ifndef _NO_LOCKIO
+    _unlockmem(_getiolock(h));
+#endif
+    return 0;
+}
+
+#endif
+
+/*
+ * BASIC language I/O
+ */
+
 #ifndef __FLEXC__
 // BASIC support routines
 extern int _tx(int c);
@@ -881,14 +923,6 @@ typedef int (*VFS_CloseFunc)(vfs_file_t *);
 #ifdef _SIMPLE_IO
 #define _gettxfunc(h) ((void *)1)
 #define _getrxfunc(h) ((void *)1)
-# if defined(__FEATURE_MULTICOG__) && !defined(_NO_LOCKIO)
-static int __iolock;
-int __lockio(int h)   { _lockmem(&__iolock); return 0; }
-int __unlockio(int h) { _unlockmem(&__iolock); return 0; }
-# else
-int __lockio(int h)   { return 0; }
-int __unlockio(int h) { return 0; }
-# endif
 
 #else
 // we want the BASIC open function to work correctly with old Spin
@@ -917,26 +951,6 @@ RxFunc _getrxfunc(unsigned h) {
     if (!v || !v->state) return 0;
     return (RxFunc)&v->getchar;
 }
-static int *_getiolock(unsigned h) {
-    vfs_file_t *v;
-    static int dummy;
-    v = __getftab(h);
-    if (!v || !v->state) return &dummy;
-    return &v->lock;
-}
-int __lockio(unsigned h) {
-#ifndef _NO_LOCKIO    
-    _lockmem(_getiolock(h));
-#endif    
-    return 0;
-}
-int __unlockio(unsigned h) {
-#ifndef _NO_LOCKIO
-    _unlockmem(_getiolock(h));
-#endif
-    return 0;
-}
-
 #endif
 
 //
