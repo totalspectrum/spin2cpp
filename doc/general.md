@@ -542,6 +542,7 @@ Available file systems are:
   * `_vfs_open_sdcard()` for a FAT file system on the P2 SD card (using default pins 58-61)
   * `_vfs_open_sdcardx()` for a FAT file system on SD card using custom pins
   * `_vfs_open_littlefs_flash()` for LittleFS file system on (part of) the built in flash.
+  * `_vfs_open_parallaxfs()` for the Parallax flash file system
   
 It is OK to make multiple mount calls, but they should have different names.
 
@@ -555,14 +556,28 @@ The pins to use for the SD card may be changed by using `_vfs_open_sdcardx` inst
 
 Use of the SD Card on the default pins is mutually exclusive with use of the flash for littlefs.
 
-### Options for flash
+### Options for littlefs_flash
 
 The LittleFS file system by default uses 6MB of memory, starting at offset 2MB (thus leaving plenty of space for boot code and overlays). This may be changed by passing a structure describing the flash layout to the `_vfs_open_littlefs_flash`. The call is `_vfs_open_littlefs_flash(doFormat, config)` where:
 
   * `doFormat` is 1 to automatically format the flash if it is not already formatted
   * `config` is a pointer to a `struct littlefs_flash_config` structure giving the flash memory layout
 
+By suitably changing the `config` structure, one can use the LittleFS file system on other devices than flash. The fields in `config` include:
+```
+page_size:  size for programming block, typically 256
+erase_size: size of erase blocks, typically 4K; must be a multiple of page_size
+offset:     starting offset in bytes of the file system within flash
+used_size:  total space available to use for the file system
+dev: a _BlockDevice structure specifying how to read/write the flash or RAM
+pinmask:    pins needed to operate device; may be set to 0, but this is useful to avoid conflicts
+```
 
+See the FlexProp samples/shell code for an example of how to set up littlefs for RAM disks.
+
+### Options for parallaxfs
+
+The Parallax file system is quite limited and does not support all file operations. It doesn't have very many customization options. If a global define `PFS_MAX_FILES_OPEN` is given, this will override the default value for number of open files supported in parallaxfs (the default is 2, which is quite small).
 
 ## Command Line Options
 

@@ -18,13 +18,17 @@
 #include <sys/stat.h>
 #include <sys/limits.h>
 
+#ifndef PFS_MAX_FILES_OPEN
+#define PFS_MAX_FILES_OPEN 2
+#endif
+
 typedef struct pfsfile {
     struct _default_buffer b;
     uint32_t handle;
     uint32_t offset;
 } pfs_file;
     
-static struct __using("filesys/parallax/FlashFileSystem_16MB_eh.spin2") FlashFS;
+static struct __using("filesys/parallax/FlashFileSystem_16MB_eh.spin2", MAX_FILES_OPEN=PFS_MAX_FILES_OPEN) FlashFS;
 
 // convert errors from Parallax codes to our codes
 int ConvertError(int e) {
