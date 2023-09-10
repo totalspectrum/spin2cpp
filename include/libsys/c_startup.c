@@ -7,8 +7,9 @@
 #define MAX_ARGC 32
 #define ARGV_MAGIC ('A' | ('R' << 8) | ('G'<<16) | ('v'<<24))
 
-#define START_ARGS ((char *)0xFC004)
-#define END_ARGS   ((char *)0xFCFFF)
+#define ARGV_ADDR  0xFC000
+#define START_ARGS ((char *)(ARGV_ADDR+4))
+#define END_ARGS   ((char *)(ARGV_ADDR+0xFFF))
 
 static const char *_argv[MAX_ARGC];
 
@@ -23,7 +24,8 @@ void _c_startup()
     
     _waitms(20);  // brief pause
     _argv[argc++] = __FLEXSPIN_PROGRAM__;
-    if ( ARGV_MAGIC == (*(long *)0xFC000) ) {
+#ifdef __P2__    
+    if ( ARGV_MAGIC == (*(long *)ARGV_ADDR) ) {
         char *arg = START_ARGS;
         while (arg < END_ARGS && *arg != 0 && argc < MAX_ARGC-1) {
             _argv[argc++] = arg;
@@ -31,6 +33,7 @@ void _c_startup()
             arg++;
         }
     }
+#endif    
     _argv[argc] = NULL;
     r = main(argc, _argv);
     _waitms(20);  // brief pause
