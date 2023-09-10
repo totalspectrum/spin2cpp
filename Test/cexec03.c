@@ -29,7 +29,7 @@ void myexit(int n)
 #endif    
 }
 
-void main(int argc, char *argv[] ) {
+void main() {
 
   int64_t xmin=-2<<28;
   int64_t xmax= 2<<28;
