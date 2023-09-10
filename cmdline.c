@@ -210,15 +210,21 @@ int ProcessCommandLine(CmdLineOptions *cmd)
         }
     }
     {
-        char *our_progname = "\"a.binary\"";
+        const char *basename;
+        char *our_progname;
         if (gl_outname) {
-            size_t len = strlen(gl_outname) + 2;
-            our_progname = malloc(len + 1);
-            our_progname[0] = '\"';
-            strcpy(our_progname+1, gl_outname);
-            our_progname[len-1] = '\"';
-            our_progname[len] = 0;
+            basename = gl_outname;
+        } else if (cmd->file_argv[0]) {
+            basename = ReplaceExtension(cmd->file_argv[0], ".binary");
+        } else {
+            basename = "a.binary";
         }
+        size_t len = strlen(basename) + 2;
+        our_progname = malloc(len + 1);
+        our_progname[0] = '\"';
+        strcpy(our_progname+1, basename);
+        our_progname[len-1] = '\"';
+        our_progname[len] = 0;
         pp_define(&gl_pp, "__FLEXSPIN_PROGRAM__", our_progname);
     }
     pp_define(&gl_pp, "__ILP32__", "1");
