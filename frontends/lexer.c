@@ -878,12 +878,17 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                 break;
             case SP_IFNOT:
             case SP_ELSEIFNOT:
-            case SP_REPEAT:
             case SP_CASE:
             case SP_CASE_FAST:
                 if (!InDatBlock(L)) {
                     EstablishIndent(L, startColumn);
                 }
+                break;
+            case SP_REPEAT:
+                if (!InDatBlock(L)) {
+                    EstablishIndent(L, startColumn);
+                }
+                PushExprState(L, ExprState_Repeat);
                 break;
             case SP_LONG:
             case SP_BYTE:
@@ -1973,6 +1978,9 @@ getSpinToken(LexStream *L, AST **ast_ptr)
                 PopExprState(L);
             } else if (curState == ExprState_Conditional) {
                 c = SP_CONDITIONAL_SEP;
+                PopExprState(L);
+            } else if (curState == ExprState_Repeat) {
+                c = SP_REPEAT_SEP;
                 PopExprState(L);
             }
         }
