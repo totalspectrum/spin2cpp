@@ -387,6 +387,7 @@ pri file "libc/stdlib/errno.c" _geterrnoptr(): r=@long
 pri file "libc/string/strerror.c" _strerror(e=long): r=string
 
 pri file "libsys/c_startup.c" _c_startup()
+pri file "libsys/argv.c" _command_str(i=long): r=string
 
 pri _int64_signx(x = long) : rlo, rhi
   rlo := x

@@ -238,9 +238,24 @@ Aliases basicalias[] = {
     { "clkfreq", "__clkfreq_var" },
     { "clkmode", "__clkmode_var" },
     /* the rest of these are OK, I think */
+
+    /* new propeller2.h standard */
+    { "_cnt",  "_getcnt" },
+    { "_cnth",  "_getcnth" },
+    { "_cnthl",  "_getcnthl" },
+    { "_clockfreq", "__builtin_clkfreq" },
+    { "_clockmode", "__builtin_clkmode" },
+    { "_isqrt", "_sqrt" },
+    { "_lockrel", "_lockclr" },
+    { "_pinl", "_drvl" },
+    { "_pinh", "_drvh" },
+    { "_pinnot", "_drvnot" },
+    { "_pinw", "_drvw" },
+
     { "bitrev", "__builtin_bitreverse32" },
     { "chain",  "_execve" },
     { "clkset", "_clkset" },
+    { "command$", "_command_str" },
     { "cpuchk",  "_cogchk" },
     { "cpuid",   "_cogid" },
     { "cpuwait", "_cogwait" },
@@ -2880,4 +2895,10 @@ void FixupOffsets(Module *P) {
         P->varsize_used_valid = true;
     }
     current = savecurrent;
+}
+
+int GetCurrentLang() {
+    if (curfunc) return curfunc->language;
+    if (current) return current->curLanguage;
+    return allparse ? allparse->mainLanguage : 0;
 }

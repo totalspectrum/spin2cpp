@@ -909,6 +909,8 @@ void initSpinLexer(int flags);
 #define LangCaseInSensitive(lang) (!LangCaseSensitive(lang))
 #define LangStructAutoTypedef(lang) (0 && (lang) == LANG_CFAMILY_CPP)
 
+int GetCurrentLang();
+
 void InitGlobalModule(void);
 Module *NewModule(const char *modulename, int language);
 Module *ParseFile(const char *filename, AST *params);
