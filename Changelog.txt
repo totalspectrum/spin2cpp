@@ -3,6 +3,7 @@ Version 6.4.1
 - Added support for NeoYume style ARGv parameters in C
 - Fixed `-x` option in flexcc
 - Fixed interaction between Parallax FS and stdio FILEs when multiple FILEs are open
+- Fixed missing mbrtowc implementation
 - Made _geterror() clear the error number
 - Re-factored some code to reduce bloat a bit
 

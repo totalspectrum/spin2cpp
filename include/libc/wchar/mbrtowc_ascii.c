@@ -38,3 +38,8 @@ _mbrtowc_ascii(wchar_t *wcptr, const char *cptr, size_t n, _Mbstate_t *ps)
 }
 
 size_t (*_mbrtowc_ptr)(wchar_t *, const char *, size_t, mbstate_t *) = _mbrtowc_ascii;
+
+int mbrtowc(wchar_t *pwc, const char *s, size_t n, mbstate_t *ps)
+{
+    return (*_mbrtowc_ptr)(pwc, s, n, ps);
+}

@@ -27,7 +27,7 @@ _mbrtowc_utf8(wchar_t *wcptr, const char *cptr, size_t n, _Mbstate_t *ps)
   size_t count = 0;
 
   if (!ps) {
-    ps = &_TLS->mbr_intern;
+      ps = (_Mbstate_t*)&_TLS->mbr_intern;
   }
   left = ps->left;
   total = ps->total;
