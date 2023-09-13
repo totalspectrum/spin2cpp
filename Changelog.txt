@@ -8,6 +8,7 @@ Version 6.4.1
 - Fixed interaction between Parallax FS and stdio FILEs when multiple FILEs are open
 - Fixed missing mbrtowc implementation
 - Implemented new Spin2 REPEAT n : i syntax (thanks, Ada!)
+- Implemented revised Spin2 REPEAT n WITH i
 - Made _geterror() clear the error number
 - Allow & operator for string concatenation in BASIC
 - Re-factored some code to reduce bloat a bit

@@ -197,6 +197,7 @@ FixupList(AST *list)
 %token SP_TO         "TO"
 %token SP_STEP       "STEP"
 %token SP_WHILE      "WHILE"
+%token SP_WITH       "WITH"
 %token SP_UNTIL      "UNTIL"
 %token SP_IF         "IF"
 %token SP_IFNOT      "IFNOT"
@@ -803,6 +804,14 @@ repeatstmt:
       $$ = NewCommentedAST(AST_COUNTREPEAT, $2, from, $1);
     }
   | SP_REPEAT expr SP_REPEAT_SEP identifier SP_EOLN stmtblock
+    {
+      AST *body = CheckYield($6);
+      AST *step = NewAST(AST_STEP,AstInteger(1),body);
+      AST *to = NewAST(AST_TO, AstOperator('-',$2,AstInteger(1)), step);
+      AST *from = NewAST(AST_FROM, AstInteger(0), to);
+      $$ = NewCommentedAST(AST_COUNTREPEAT, $4, from, $1);
+    }
+  | SP_REPEAT expr SP_WITH identifier SP_EOLN stmtblock
     {
       AST *body = CheckYield($6);
       AST *step = NewAST(AST_STEP,AstInteger(1),body);

@@ -2275,6 +2275,7 @@ struct reservedword init_spin2_words[] = {
     { "scas", SP_SCAS },
     { "signx", SP_SIGNX },
     { "sqrt", SP_SQRT },
+    { "with", SP_WITH },
     { "wordfit", SP_WORDFIT },
     { "zerox", SP_ZEROX },
 
