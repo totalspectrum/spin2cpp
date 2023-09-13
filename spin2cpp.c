@@ -563,6 +563,8 @@ main(int argc, const char **argv)
     } else {
         pp_define(&gl_pp, "__P1__", "1");
     }
+    pp_define(&gl_pp, "__FLEXSPIN_PROGRAM__", "\"a.binary\"");
+
     /* set up the binary offset */
     gl_dat_offset = -1; // by default offset is unknown
     if ( (gl_output == OUTPUT_DAT||gl_output == OUTPUT_ASM) && outputBin) {
