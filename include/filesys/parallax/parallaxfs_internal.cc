@@ -77,7 +77,7 @@ static int v_creat(vfs_file_t *fil, const char *pathname, mode_t mode)
     r = FlashFS.Open(pathname, 'w');
     if (r < 0) {
         free(f);
-        return _seterror(-r);
+        return _seterror(ConvertError(r));
     }
 #ifdef _DEBUG_PFS
     __builtin_printf("v_creat: handle %d\n", r);
@@ -97,7 +97,7 @@ static int v_close(vfs_file_t *fil)
 #endif    
     r = FlashFS.Close(handle);
     if (r < 0) {
-        return _seterror(-r);
+        return _seterror(ConvertError(r));
     }
     return 0;
 }
@@ -278,7 +278,11 @@ static int v_open(vfs_file_t *fil, const char *name, int flags)
         handle = FlashFS.Open(name, 'r');
         break;
     case O_WRONLY:
-        handle = FlashFS.Open(name, 'w');
+        if (flags & O_APPEND) {
+            handle = FlashFS.Open(name, 'a');
+        } else {
+            handle = FlashFS.Open(name, 'w');
+        }
         break;
     default:
 #ifdef _DEBUG_PFS
@@ -296,11 +300,24 @@ static int v_open(vfs_file_t *fil, const char *name, int flags)
         __builtin_printf("pfs: bad handle: %d\n", handle);
 #endif
         free(f);
-        return _seterror(-handle);
+        return _seterror(ConvertError(handle));
     }
     f->handle = handle;
     fil->vfsdata = (void *)f;
     return 0;
+}
+
+static int v_flush(vfs_file_t *fil)
+{
+    pfs_file *f = fil->vfsdata;
+    int handle = f->handle;
+    int r;
+
+    r = FlashFS.flush(handle);
+    if (r < 0) {
+        return _seterror(ConvertError(r));
+    }
+    return r;
 }
 
 static struct vfs parallax_vfs =
@@ -310,7 +327,7 @@ static struct vfs parallax_vfs =
     &v_write,
     &v_lseek,
     &v_ioctl,
-    0, /* no flush function */
+    &v_flush, /* no flush function */
     0, /* reserved1 */
     0, /* reserved2 */
     
