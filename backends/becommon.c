@@ -604,7 +604,9 @@ bool CanUseEitherSignedOrUnsigned(AST *node) {
 int DecomposeBits(unsigned val, int *shifts)
 {
     int shift = 0;
-
+    int temp[3];
+    int r;
+    
     while (val != 0) {
         if (val & 1) {
             break;
@@ -621,11 +623,14 @@ int DecomposeBits(unsigned val, int *shifts)
     // OK, can the new val itself be decomposed?
     if (isPowerOf2(val-1)) {
         shifts[1] = +1;
-        return DecomposeBits(val-1, &shifts[2]);
+        r = DecomposeBits(val-1, temp);
+        shifts[2] = temp[0];
     } else if (isPowerOf2(val+1)) {
         shifts[1] = -1;
-        return DecomposeBits(val+1, &shifts[2]);
+        r = DecomposeBits(val+1, temp);
+        shifts[2] = temp[0];
     } else {
         return 0;
     }
+    return r;
 }
