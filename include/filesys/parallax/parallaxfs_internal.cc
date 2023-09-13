@@ -320,6 +320,24 @@ static int v_flush(vfs_file_t *fil)
     return r;
 }
 
+/* WARNING: copy in parallaxfs_vfs.c */
+enum {
+    PFS_pclk = 61,
+    PFS_pss = 60,
+    PFS_pdi = 59,
+    PFS_pdo = 58
+};
+
+/* deinitialize (unmount) */
+static int v_deinit(const char *mountname)
+{
+    unsigned long long pmask = (1ULL << PFS_pclk) | (1ULL << PFS_pss) | (1ULL << PFS_pdi) | (1ULL << PFS_pdo);
+
+    FlashFS.unmount();
+    _freepins(pmask);
+    return 0;
+}
+
 static struct vfs parallax_vfs =
 {
     &v_close,
@@ -327,7 +345,7 @@ static struct vfs parallax_vfs =
     &v_write,
     &v_lseek,
     &v_ioctl,
-    &v_flush, /* no flush function */
+    &v_flush,
     0, /* reserved1 */
     0, /* reserved2 */
     
@@ -344,7 +362,7 @@ static struct vfs parallax_vfs =
     &v_rename,
 
     0, /* init */
-    0, /* deinit */
+    &v_deinit, /* deinit */
 };
 
 struct vfs *
