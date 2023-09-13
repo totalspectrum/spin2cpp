@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/vfs.h>
+#include <sys/argv.h>
 #include <propeller.h>
 #include <errno.h>
 
@@ -114,7 +115,7 @@ int _vfsexecve(vfs_file_t *f, char **argv, char **envp)
         ptr += r;
         sizeleft -= r;
     }
-    if (sizeleft == 0) {
+    if (sizeleft <= 0) {
         // not enough RAM
         return _seterror(ENOMEM);
     }
@@ -123,6 +124,25 @@ int _vfsexecve(vfs_file_t *f, char **argv, char **envp)
         // empty file
         return _seterror(EACCES);
     }
+#ifdef __P2__    
+    // set up ARGv
+    if (argv && argv[0]) {
+        int n = 0;
+        int ch;
+        char *ptr = START_ARGS;
+        *(long *)ARGV_ADDR = ARGV_MAGIC;
+        while (n < MAX_ARGC && argv[n]) {
+            char *src = argv[n];
+            for (j = 0; 0 != (ch = *src++) && ptr < END_ARGS-2; ptr++) {
+                *ptr = ch;
+            }
+            *ptr++ = 0;
+            n++;
+            if (ptr >= END_ARGS-1) break;
+        }
+        *ptr++ = 0;
+    }
+#endif
     // OK, now copy the memory and jump to the new program
     // never returns
     __run((long *)buf, sizeleft, (void *)0);
