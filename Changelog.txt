@@ -1,4 +1,4 @@
-Version 6.4.1
+Version 6.5.0
 - Added MKDIR function for BASIC
 - Added support for NeoYume style ARGv parameters in C
 - Added execl() function in C
@@ -12,6 +12,7 @@ Version 6.4.1
 - Made _geterror() clear the error number
 - Allow & operator for string concatenation in BASIC
 - Re-factored some code to reduce bloat a bit
+- Updated Parallax file system to new version from Chip and Stephen
 
 Version 6.4.0
 - Added getcrc() builtin for Spin2
