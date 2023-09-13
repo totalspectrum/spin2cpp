@@ -243,6 +243,7 @@ FixupList(AST *list)
 %token SP_FILE       "FILE"
 
 %token SP_ANNOTATION
+%token SP_VARARGS    "%VARARGS"
 
 /* operators */
 %token SP_ASSIGN     ":="
@@ -1249,12 +1250,15 @@ paramidentdecl:
 
 paramidentlist:
   paramidentdecl
-  { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
+    { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
   | annotation paramidentdecl
-  { $$ = AddToList(NewAST(AST_LISTHOLDER, $1, NULL),
+    { $$ = AddToList(NewAST(AST_LISTHOLDER, $1, NULL),
                    NewAST(AST_LISTHOLDER, $2, NULL)); }
   | paramidentlist ',' paramidentdecl
-  { $$ = AddToList($1, NewAST(AST_LISTHOLDER, $3, NULL)); }
+    { $$ = AddToList($1, NewAST(AST_LISTHOLDER, $3, NULL)); }
+  | paramidentlist ',' SP_VARARGS
+    { $$ = AddToList($1, NewAST(AST_LISTHOLDER, NewAST(AST_VARARGS, NULL, NULL),
+                              NULL)); }
   ;
 
 expr:

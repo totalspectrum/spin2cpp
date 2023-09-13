@@ -2144,7 +2144,8 @@ struct reservedword {
     { "until", SP_UNTIL },
 
     { "var", SP_VAR },
-
+    { "%varargs", SP_VARARGS },
+    
     { "while", SP_WHILE },
     { "word", SP_WORD },
 
