@@ -63,7 +63,7 @@ _mkfs_parallaxfs(void)
         return _seterror(EBUSY);
     }
 
-    r = FS.mkfs();
+    int r = FS.mkfs();
     _freepins(pmask);
     return _seterror(-r);
 }

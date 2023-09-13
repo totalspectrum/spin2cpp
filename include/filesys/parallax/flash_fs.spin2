@@ -162,6 +162,9 @@ fsMounted       LONG    false                                                   
 fsFreeHndlCt    LONG    MAX_FILES_OPEN
 fsCogCts        LONG    $7fff_ffff[8]                                             'cog counts: one for each cog that is attempting to start the filesystem
 
+var
+	LONG g_command  ' global command buffer used for commands
+	
 pub null()
 
 '' This is not an application
@@ -2373,8 +2376,8 @@ pri flash_command(command, count)
               movbyts command,#%%1230                   'reverse order of post-command address bytes for sending
 
               end
-
-  flash_send(@command, count)             'send command
+  g_command := command	      
+  flash_send(@g_command, count)             'send command
 
 
 pri flash_send(p_buffer, count) | tx_byte
