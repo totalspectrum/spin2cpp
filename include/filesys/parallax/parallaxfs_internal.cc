@@ -28,71 +28,36 @@ typedef struct pfsfile {
     uint32_t offset;
 } pfs_file;
     
-static struct __using("filesys/parallax/FlashFileSystem_16MB_eh.spin2", MAX_FILES_OPEN=PFS_MAX_FILES_OPEN) FlashFS;
+static struct __using("filesys/parallax/flash_fs.spin2", MAX_FILES_OPEN=PFS_MAX_FILES_OPEN) FlashFS;
 
 // convert errors from Parallax codes to our codes
 int ConvertError(int e) {
     switch (e) {
-    case FlashFS.eInvalidHandle:
+    case FlashFS.E_BAD_HANDLE:
         return EBADF;
-    case FlashFS.eNoHandle:
+    case FlashFS.E_NO_HANDLE:
         return EMFILE;
-    case FlashFS.eFileNotFound:
+    case FlashFS.E_FILE_NOT_FOUND:
         return ENOENT;
-    case FlashFS.eDriveFull:
+    case FlashFS.E_DRIVE_FULL:
         return ENOSPC;
-    case FlashFS.eFileWriting:
+    case FlashFS.E_FILE_WRITING:
+    case FlashFS.E_FILE_READING:
+    case FlashFS.E_FILE_MODE:
         return EACCES;
-    case FlashFS.eFileOpen:
+    case FlashFS.E_FILE_OPEN:
         return EBUSY;
-    case FlashFS.eFileExists:
+    case FlashFS.E_FILE_EXISTS:
         return EEXIST;
     default:
         return EIO;
     }
 }
 
-//
-// try to call a Spin function, handling aborts gracefully
-//
-typedef int (*func0)(void);
-typedef int (*func1)(void *arg1);
-typedef int (*func2)(void *arg1, void *arg2);
-
-int Try0(func0 f) {
-    int r = 0;
-    __try {
-        r = f();
-    } __catch (int e) {
-        r = -ConvertError(e);
-    }
-    return r;
-}
-
-int Try1(func1 f, void *arg) {
-    int r = 0;
-    __try {
-        r = f(arg);
-    } __catch (int e) {
-        r = -ConvertError(e);
-    }
-    return r;
-}
-
-int Try2(func2 f, void *arg1, void *arg2) {
-    int r = 0;
-    __try {
-        r = f(arg1, arg2);
-    } __catch (int e) {
-        r = -ConvertError(e);
-    }
-    return r;
-}
-
 int fs_init()
 {
     int r;
-    r = Try0(&FlashFS.Mount);
+    r = FlashFS.Mount();
     return _seterror(r);
 }
 
@@ -109,10 +74,10 @@ static int v_creat(vfs_file_t *fil, const char *pathname, mode_t mode)
     if (!f) {
         return _seterror(ENOMEM);
     }
-    r = Try1(&FlashFS.OpenWrite, (void *)pathname);
+    r = FlashFS.Open(pathname, 'w');
     if (r < 0) {
         free(f);
-        return _seterror(-r);
+        return _seterror(ConvertError(r));
     }
 #ifdef _DEBUG_PFS
     __builtin_printf("v_creat: handle %d\n", r);
@@ -130,9 +95,9 @@ static int v_close(vfs_file_t *fil)
 #ifdef _DEBUG_PFS
     __builtin_printf("v_close: handle %d\n", handle);
 #endif    
-    r = Try1(&FlashFS.Close, handle);
+    r = FlashFS.Close(handle);
     if (r < 0) {
-        return _seterror(-r);
+        return _seterror(ConvertError(r));
     }
     return 0;
 }
@@ -171,7 +136,7 @@ static int v_readdir(DIR *dir, struct dirent *ent)
 
     strcpy(ent->d_name, buf);
     ent->d_type = DT_REG; // all files are regular
-    ent->d_size = Try1(&FlashFS.SizeOf, buf);
+    ent->d_size = FlashFS.file_size(buf);
     ent->d_mtime = 0; // time is not available
     return 0;
 }
@@ -192,7 +157,7 @@ static int v_stat(const char *name, struct stat *buf)
         if (!FlashFS.Exists(name)) {
             return _seterror(ENOENT);
         }
-        fsize = Try1(&FlashFS.SizeOf, (void *)name);
+        fsize = FlashFS.file_size(name);
     }
     mode |= (S_IRUSR | S_IRGRP | S_IROTH);
     mode |= (S_IWUSR | S_IWGRP | S_IWOTH);
@@ -216,14 +181,8 @@ static ssize_t v_read(vfs_file_t *fil, void *buf_p, size_t siz)
 #ifdef _DEBUG_PFS
     __builtin_printf("v_read from handle %d...", handle);
 #endif    
-    r = 0;
-    while (siz > 0) {
-        c = FlashFS.ByteRead(handle);
-        if (c < 0) break;
-        *buf++ = c;
-        ++r;
-        --siz;
-    }
+    r = FlashFS.read(handle, buf_p, siz);
+    if (r == FlashFS.E_END_OF_FILE) r = 0;
     if (r == 0) {
         fil->state |= _VFS_STATE_EOF;
     }
@@ -243,16 +202,9 @@ static ssize_t v_write(vfs_file_t *fil, void *buf_p, size_t siz)
 #ifdef _DEBUG_PFS
     __builtin_printf("v_write to handle %d...", handle);
 #endif    
-    r = 0;
-    while (siz > 0) {
-        c = *buf++;
-        __try {
-            FlashFS.ByteWrite(handle, c);
-            r++;
-            --siz;
-        } __catch(int e) {
-            siz = 0;
-        }
+    r = FlashFS.write(handle, buf_p, siz);
+    if (r == FlashFS.E_END_OF_FILE) {
+        r = 0;
     }
     if (r == 0) {
         fil->state |= _VFS_STATE_EOF;
@@ -266,7 +218,9 @@ static ssize_t v_write(vfs_file_t *fil, void *buf_p, size_t siz)
 static off_t v_lseek(vfs_file_t *fil, off_t offset, int whence)
 {
     // not supported yet
-    return _seterror(ENOSEEK);
+    // FIXME: the new flash_fs supports absolute seek, so if we
+    // keep track of the offset ourselves we can do lseek
+    return _seterror(ENOSYS);
 }
 
 static int v_ioctl(vfs_file_t *fil, unsigned long req, void *argp)
@@ -282,7 +236,7 @@ static int v_mkdir(const char *name, mode_t mode)
 static int v_remove(const char *name)
 {
     int r;
-    r = Try1(&FlashFS.Delete, (void *)name);
+    r = FlashFS.Delete(name);
     if (r < 0) {
         return _seterror(ENOENT);
     }
@@ -297,7 +251,7 @@ static int v_rmdir(const char *name)
 static int v_rename(const char *oldname, const char *newname)
 {
     int r;
-    r = Try2(&FlashFS.Rename, (void *)oldname, (void *)newname);
+    r = FlashFS.Rename(oldname, newname);
     if (r < 0) {
         return _seterror(ENOENT);
     }
@@ -307,46 +261,81 @@ static int v_rename(const char *oldname, const char *newname)
 static int v_open(vfs_file_t *fil, const char *name, int flags)
 {
     pfs_file *f;
-  int handle = -1;
-  int mode;
+    int handle = -1;
+    int mode;
   
 #ifdef _DEBUG_PFS
-  __builtin_printf("pfs v_open(%s)\n", name);
+    __builtin_printf("pfs v_open(%s)\n", name);
 #endif
-  f = calloc(1, sizeof(*f));
-  if (!f) {
-      return _seterror(ENOMEM);
-  }
-  // check for read or write
-  mode = flags & O_ACCMODE;
-  switch (mode) {
-  case O_RDONLY:
-      handle = Try1(&FlashFS.OpenRead, (void *)name);
-      break;
-  case O_WRONLY:
-      handle = Try1(&FlashFS.OpenWrite, (void *)name);
-      break;
-  default:
+    f = calloc(1, sizeof(*f));
+    if (!f) {
+        return _seterror(ENOMEM);
+    }
+    // check for read or write
+    mode = flags & O_ACCMODE;
+    switch (mode) {
+    case O_RDONLY:
+        handle = FlashFS.Open(name, 'r');
+        break;
+    case O_WRONLY:
+        if (flags & O_APPEND) {
+            handle = FlashFS.Open(name, 'a');
+        } else {
+            handle = FlashFS.Open(name, 'w');
+        }
+        break;
+    default:
 #ifdef _DEBUG_PFS
-      __builtin_printf("pfs: invalid mode for open\n");
+        __builtin_printf("pfs: invalid mode for open\n");
 #endif
-      free(f);
-      return _seterror(EINVAL);
-  }
+        free(f);
+        return _seterror(EINVAL);
+    }
 
 #ifdef _DEBUG_PFS
-  __builtin_printf("...pfs returned handle %d\n", handle);
+    __builtin_printf("...pfs returned handle %d\n", handle);
 #endif  
-  if (handle < 0) {
+    if (handle < 0) {
 #ifdef _DEBUG_PFS
-      __builtin_printf("pfs: bad handle: %d\n", handle);
+        __builtin_printf("pfs: bad handle: %d\n", handle);
 #endif
-      free(f);
-      return _seterror(-handle);
-  }
-  f->handle = handle;
-  fil->vfsdata = (void *)f;
-  return 0;
+        free(f);
+        return _seterror(ConvertError(handle));
+    }
+    f->handle = handle;
+    fil->vfsdata = (void *)f;
+    return 0;
+}
+
+static int v_flush(vfs_file_t *fil)
+{
+    pfs_file *f = fil->vfsdata;
+    int handle = f->handle;
+    int r;
+
+    r = FlashFS.flush(handle);
+    if (r < 0) {
+        return _seterror(ConvertError(r));
+    }
+    return r;
+}
+
+/* WARNING: copy in parallaxfs_vfs.c */
+enum {
+    PFS_pclk = 61,
+    PFS_pss = 60,
+    PFS_pdi = 59,
+    PFS_pdo = 58
+};
+
+/* deinitialize (unmount) */
+static int v_deinit(const char *mountname)
+{
+    unsigned long long pmask = (1ULL << PFS_pclk) | (1ULL << PFS_pss) | (1ULL << PFS_pdi) | (1ULL << PFS_pdo);
+
+    FlashFS.unmount();
+    _freepins(pmask);
+    return 0;
 }
 
 static struct vfs parallax_vfs =
@@ -356,7 +345,7 @@ static struct vfs parallax_vfs =
     &v_write,
     &v_lseek,
     &v_ioctl,
-    0, /* no flush function */
+    &v_flush,
     0, /* reserved1 */
     0, /* reserved2 */
     
@@ -373,7 +362,7 @@ static struct vfs parallax_vfs =
     &v_rename,
 
     0, /* init */
-    0, /* deinit */
+    &v_deinit, /* deinit */
 };
 
 struct vfs *
