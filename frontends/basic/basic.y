@@ -5,7 +5,7 @@
  */
 
 %pure-parser
-%expect 49
+%expect 52
 
 %{
 #include <stdio.h>
@@ -544,7 +544,7 @@ AdjustParamForByVal(AST *param)
 %left BAS_EOLN
 %left BAS_FUNCTION
 %left BAS_OR BAS_XOR
-%left BAS_AND
+%left BAS_AND '&'
 %left '<' '>' BAS_LE BAS_GE BAS_NE '='
 %left '-' '+'
 %left '*' '/' BAS_MOD
@@ -1856,6 +1856,8 @@ bit_expr:
   compare_expr
     { $$ = $1; }
   | bit_expr BAS_AND compare_expr
+    { $$ = AstOperator('&', $1, $3); }
+  | bit_expr '&' compare_expr
     { $$ = AstOperator('&', $1, $3); }
   | bit_expr BAS_OR compare_expr
     { $$ = AstOperator('|', $1, $3); }

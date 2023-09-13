@@ -388,3 +388,5 @@ void PrintExpr(Flexbuf *f, AST *expr, int flags) {
 // dummy for tracking source files
 void AddSourceFile(const char *shortName, const char *longName) {
 }
+
+int GetCurrentLang() { return LANG_DEFAULT; }

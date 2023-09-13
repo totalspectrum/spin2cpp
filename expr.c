@@ -3148,6 +3148,23 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
                 return ast_type_unsigned_long64;
             }
             return ast_type_unsigned_long;
+        case '&':
+            ltype = ExprTypeRelative(table, expr->left, P);
+            rtype = ExprTypeRelative(table, expr->right, P);
+            if (IsBasicLang(GetCurrentLang())) {
+                if (IsStringType(ltype)) {
+                    return ltype;
+                } else if (IsStringType(rtype)) {
+                    return ltype;
+                }
+            }
+            if ( TypeSize(ltype) > LONG_SIZE ) {
+                return ast_type_long64;
+            }
+            if ( TypeSize(rtype) > LONG_SIZE ) {
+                return ast_type_long64;
+            }
+            return ast_type_long;            
         default:
             ltype = ExprTypeRelative(table, expr->left, P);
             rtype = ExprTypeRelative(table, expr->right, P);

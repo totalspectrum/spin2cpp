@@ -953,11 +953,34 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
     }
     op = ast->d.ival;
     switch(op) {
-    case K_SAR:
-    case K_SHL:
     case '&':
+        if (IsBasicLang(GetCurrentLang()) && (IsStringType(lefttype) || IsStringType(righttype))) {
+            AST *lhs = ast->left;
+            AST *rhs = ast->right;
+            if (IsStringType(lefttype)) {
+                /* convert rhs to a string */
+                if (IsStringType(righttype)) {
+                    /* nothing to do */
+                } else if (IsIntType(righttype)) {
+                    /* convert to string */
+                    rhs = MakeOperatorCall(string_frominteger, rhs, NULL, NULL);
+                } else {
+                    ERROR(rhs, "Unable to convert right side of + to a string");
+                    rhs = lhs;
+                }                
+                *ast = *MakeOperatorCall(string_concat, lhs, rhs, NULL);
+            } else if (IsIntType(lefttype)) {
+                // x + "0" case
+                rhs = MakeOperatorCall(string_tointeger, rhs, NULL, NULL);
+                ast->right = rhs;
+            }
+            return lefttype;
+        }
+        /* fall through */
     case '|':
     case '^':
+    case K_SAR:
+    case K_SHL:
         if (lefttype && IsFloatType(lefttype)) {
             ast->left = dofloatToInt(ast->left, lefttype);
             lefttype = ExprType(ast->left);
@@ -971,7 +994,7 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
         }
         return HandleTwoNumerics(ast->d.ival, ast, lefttype, righttype);
     case '+':
-        if (IsStringType(lefttype) || IsStringType(righttype)) {
+        if (IsBasicLang(GetCurrentLang()) && (IsStringType(lefttype) || IsStringType(righttype))) {
             AST *lhs = ast->left;
             AST *rhs = ast->right;
             if (IsStringType(lefttype)) {
