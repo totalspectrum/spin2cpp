@@ -1,5 +1,6 @@
 #ifndef _SYS_UNISTD_H
 #define _SYS_UNISTD_H
+#pragma once
 
 #include <sys/types.h>
 #include <compiler.h>
@@ -62,8 +63,9 @@ extern "C" {
 #define getgid() (0)
 #define getpid() (1)
     
-    int _execve(const char *path, char **args, char **env) _COMPLEXIO _IMPL("libc/unix/exec.c");
-
+  int _execve(const char *path, char **args, char **env) _COMPLEXIO _IMPL("libc/unix/exec.c");
+  int _execl(const char *path, const char *arg0, ...) _COMPLEXIO _IMPL("libc/unix/execl.c");
+    
 #if defined(__cplusplus)
 }
 #endif

@@ -69,6 +69,7 @@ Symbol                   | When Defined
 `__OUTPUT_C__`           | if C code is being generated
 `__OUTPUT_CPP__`         | if C++ code is being generated
 `__DEBUG__`              | if debugging is enabled (-g or -gbrk given)
+`__FLEXSPIN_PROGRAM__`   | a string representing the name of the binary output file, if known, or `"a.binary"` otherwise
 
 ## Runtime Environment
 

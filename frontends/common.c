@@ -253,7 +253,6 @@ Aliases basicalias[] = {
     { "_pinw", "_drvw" },
 
     { "bitrev", "__builtin_bitreverse32" },
-    { "chain",  "_execve" },
     { "clkset", "_clkset" },
     { "command$", "_command_str" },
     { "cpuchk",  "_cogchk" },

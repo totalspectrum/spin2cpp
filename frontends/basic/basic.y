@@ -973,29 +973,24 @@ iostmt:
                     AstIdentifier("_basic_close"),
                              NewAST(AST_EXPRLIST, $3, NULL), $1);
     }
-  | BAS_CHAIN '#' BAS_INTEGER
+  | BAS_CHAIN '#' BAS_INTEGER chain_args
     {
-        AST *twonulls = NewAST(AST_EXPRLIST,
-                              AstInteger(0),
-                              NewAST(AST_EXPRLIST,
-                                     AstInteger(0),
-                                     NULL));
+        AST *args = $4;
         AST *handle = $3;
+        args = NewAST(AST_EXPRLIST, AstStringPtr("arg0"), args);
         $$ = NewCommentedAST(AST_FUNCCALL,
-                    AstIdentifier("_fexecve"),
-                             NewAST(AST_EXPRLIST, handle, twonulls), $1);
+                    AstIdentifier("_fexecl"),
+                             NewAST(AST_EXPRLIST, handle, args), $1);
     }
-  | BAS_CHAIN BAS_STRING
+  | BAS_CHAIN BAS_STRING chain_args
     {
-        AST *twonulls = NewAST(AST_EXPRLIST,
-                              AstInteger(0),
-                              NewAST(AST_EXPRLIST,
-                                     AstInteger(0),
-                                     NULL));
+        AST *args = $3;
         AST *name = NewAST(AST_STRINGPTR, NewAST(AST_EXPRLIST, $2, NULL), NULL);
+        // add a dummy program name
+        args = NewAST(AST_EXPRLIST, AstStringPtr("arg0"), args);
         $$ = NewCommentedAST(AST_FUNCCALL,
-                    AstIdentifier("_execve"),
-                             NewAST(AST_EXPRLIST, name, twonulls), $1);
+                    AstIdentifier("_execl"),
+                             NewAST(AST_EXPRLIST, name, args), $1);
     }
   | BAS_GET '#' putgetargs
     {
@@ -1036,6 +1031,17 @@ iostmt:
             call = NewAST(AST_COMMENTEDNODE, call, comment);
         }
         $$ = call;
+    }
+;
+
+chain_args:
+  /* nothing */
+    { $$ = NewAST(AST_EXPRLIST, AstInteger(0), NULL); }
+  | ',' expr chain_args
+    {
+      AST *item = $2;
+      AST *endl = $3;
+      $$ = NewAST(AST_EXPRLIST, item, endl);
     }
 ;
 

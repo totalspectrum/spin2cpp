@@ -313,6 +313,7 @@ pri {++complexio} file "libc/unix/_mount.c" __getfilebuffer() : r=@byte
 pri {++complexio} file "libc/unix/_mount.c" __getvfsforfile(name, orig_name, full_path)
 pri {++complexio} file "libc/unix/exec.c" _execve(name=string, argv=0, envp=0)
 pri {++complexio} file "libc/unix/exec.c" _fexecve(h, argv=0, envp=0)
+pri {++complexio} file "libc/unix/execl.c" _execl(name=string, %varargs)
 
 '' I/O functions
 pri file "libsys/fmt.c" __lockio(h=long) : r

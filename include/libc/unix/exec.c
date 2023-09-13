@@ -128,8 +128,9 @@ int _vfsexecve(vfs_file_t *f, char **argv, char **envp)
     // set up ARGv
     ptr = START_ARGS;
     *(long *)ARGV_ADDR = ARGV_MAGIC;
-    if (argv && argv[0]) {
-        int n = 0;
+    // we skip argv[0] (the program name)
+    if (argv && argv[0] && argv[1]) {
+        int n = 1;
         int ch;
         while (n < MAX_ARGC && argv[n]) {
             char *src = argv[n];
@@ -144,7 +145,7 @@ int _vfsexecve(vfs_file_t *f, char **argv, char **envp)
     }
     *ptr = 0;
     unsigned long *p2 = (unsigned long *)ARGV_ADDR;
-    __builtin_printf("execv: %06x: %08x %08x %08x\n", p2[0], p2[1], p2[2]); 
+    //__builtin_printf("execv: %06x: %08x %08x\n", p2[0], p2[1], p2[2]); 
 #endif
     // OK, now copy the memory and jump to the new program
     // never returns

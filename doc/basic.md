@@ -365,6 +365,7 @@ chdir
 _clkfreq
 clkfreq
 clkset
+command$
 cos
 countstr
 cpuchk
@@ -1569,6 +1570,14 @@ chain #4
 
 (3) On P2, the clock frequency is reset to its default boot value (RCFAST) before the chained program starts.
 
+#### Providing arguments to the chained program
+
+On the P2, arguments may be passed to the chained program by placing them after the program name (or file specifier), e.g.
+```
+chain "/sd/prog.bin", "arg1", "arg2", "arg3"
+chain #4, "one", "two"
+```
+At present up to 31 arguments with a total of up to 1020 characters (including trailing 0's) may be passed to the chained program. These limits may change in the future.
 
 ### CHDIR
 
@@ -1615,6 +1624,19 @@ Closes a file previously opened by `open`. This causes the `closef` function spe
   close #2  ' close handle #2
 ```
 Note that handles 0 and 1 are reserved by the system; closing them may produce undefined results.
+
+### COMMAND$
+
+Fetches a command line argument (string). `command$(0)` is, by convention, the name of the program; the actual arguments passed to the program are in `command$(1)` and following. The last argument is an empty string. So for example, to print all arguments passed by `CHAIN` (or on the `loadp2` command line) do something like:
+```
+print "Program name is: "; command$(0)
+print "Parameters are: "
+var i=1
+while len(command$(i)) > 0
+  print command$(i)
+  i = i+1
+end while
+```
 
 ### CONST
 
