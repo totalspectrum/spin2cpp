@@ -373,6 +373,7 @@ cpuid
 cpustop
 cpuwait
 curdir$
+date$
 decuns$
 delete$
 dir$
@@ -446,6 +447,7 @@ round
 rtrim$
 sendrecvdevice
 _setbaud
+settime
 sin
 space$
 str$
@@ -453,6 +455,7 @@ strerror$
 string$
 strint$
 tan
+time$
 trim$
 true
 ucase$
@@ -1777,6 +1780,10 @@ data 2.2
 will print `1` (`x` is an integer, so the fractional part is ignored), `hello`, and `2.2000`.
 
 The order of `data` statements matters, but they may be intermixed with other statements. `data` statements should only appear at the top level, not within functions or subroutines.
+
+### DATE$
+
+Retrieves the current date as a string in ISO format (e.g "2023-09-20"). The date may be changed by SETTIME.
 
 ### DECLARE
 
@@ -3394,6 +3401,14 @@ Set up the serial port baud rate, based on the current clock frequency.
 ```
 The default serial rate on P1 is 115_200 baud, and assuming a clock frequency of 80_000_000 (on P2 both defaults are doubled). If these are changed, it is necessary to call `_setbaud` again in order for serial I/O to work.
 
+### SETTIME
+
+Sets the current date and time. Input must be a string with the date first in ISO format (as returned by DATE$), a space, and then the time in 24 hour format (as returned by TIME$). For example:
+```
+settime "2023-12-25 01:30:15"
+```
+would set the time to 01:30:15 AM on December 25, 2023.
+
 ### SHARED
 
 The `shared` keyword may be applied to variables and to assembly code.
@@ -3563,6 +3578,10 @@ Example:
 ### THROWIFCAUGHT
 
 Like `throw`, throws an exception which may be caught by `try` / `catch`. Unlike regular `throw`, if there is no `try` / `catch` handler, `throwifcaught` continues execution instead of terminating the program.
+
+### TIME$
+
+Retrieves the current time in 24 hour format as a string (e.g "13:30:45"). The date and time may be changed by SETTIME.
 
 ### TO
 

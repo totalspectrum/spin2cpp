@@ -300,6 +300,11 @@ pri file "libsys/random.c" _randfloat : r=float
 '' basic RND function
 pri file "libsys/random.c" _basic_rnd(x=long) : r=float
 
+'' basic date/time functions
+pri file "libsys/datetime.c" _basic_date() : r=string
+pri file "libsys/datetime.c" _basic_time() : r=string
+pri file "libsys/datetime.c" _basic_settime(n=string)
+
 '' low level file system functions
 '' marked as "complexio" because if used we need the full standard library;
 '' otherwise we can use a simple serial based library

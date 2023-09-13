@@ -16,8 +16,60 @@
 
 #define BIG_LEN 80
 
-static int weeknumber (const struct tm *timeptr, int firstweekday);
-static int isoweeknumber(const struct tm *timeptr, int *year_ptr);
+/* 
+ * What follows grabbed, with a small change, from PD source of strftime
+ * by Arnold Robins - arnold@audiofax.com
+ */
+/* With thanks and tip of the hatlo to ado@elsie.nci.nih.gov */
+
+static int
+weeknumber(const struct tm *timeptr, int firstweekday)
+/*
+ * firstweekday is 0 if starting in Sunday, non-zero if in Monday
+ */
+{
+    return (timeptr->tm_yday - timeptr->tm_wday +
+	    (firstweekday ? (timeptr->tm_wday ? 8 : 1) : 7)) / 7;
+}
+
+static int
+days_in_thisyear(int year)
+{
+  return 365 + (((year%4) == 0) && ((year%100 != 0) || (year%400 == 0)));
+}
+
+static int
+isoweeknumber(const struct tm *timeptr, int *year_ptr)
+{
+  int weeknum;
+  int weekday = timeptr->tm_wday;
+  int nearest_thursday;
+  int year = timeptr->tm_year + 1900;
+  int yday = timeptr->tm_yday;
+
+  if (weekday == 0) weekday = 7;
+  if (weekday <= 4) {
+    nearest_thursday = yday + (4 - weekday);
+    if (nearest_thursday >= days_in_thisyear(year)) {
+      nearest_thursday -= days_in_thisyear(year);
+      year++;
+    }
+  } else  {
+    nearest_thursday = yday - (weekday - 4);
+    if (nearest_thursday < 0) {
+      year--;
+      nearest_thursday += days_in_thisyear(year);
+    }
+  }
+
+  weeknum = 1 + (nearest_thursday / 7);
+  *year_ptr = year;
+  return weeknum;
+}
+
+/*************************************************
+ end of grabbed code
+*************************************************/
 
 #if 1
 /* probably should be in a separate locale file, but put them here for now */
@@ -231,53 +283,3 @@ strftime(char *str, size_t maxsize, const char *fmt, const struct tm *ts)
         return (size_t) num;
 }
 
-/* 
- * What follows grabbed, with a small change, from PD source of strftime
- * by Arnold Robins - arnold@audiofax.com
- */
-/* With thanks and tip of the hatlo to ado@elsie.nci.nih.gov */
-
-static int
-weeknumber(const struct tm *timeptr, int firstweekday)
-/*
- * firstweekday is 0 if starting in Sunday, non-zero if in Monday
- */
-{
-    return (timeptr->tm_yday - timeptr->tm_wday +
-	    (firstweekday ? (timeptr->tm_wday ? 8 : 1) : 7)) / 7;
-}
-
-static int
-days_in_thisyear(int year)
-{
-  return 365 + (((year%4) == 0) && ((year%100 != 0) || (year%400 == 0)));
-}
-
-static int
-isoweeknumber(const struct tm *timeptr, int *year_ptr)
-{
-  int weeknum;
-  int weekday = timeptr->tm_wday;
-  int nearest_thursday;
-  int year = timeptr->tm_year + 1900;
-  int yday = timeptr->tm_yday;
-
-  if (weekday == 0) weekday = 7;
-  if (weekday <= 4) {
-    nearest_thursday = yday + (4 - weekday);
-    if (nearest_thursday >= days_in_thisyear(year)) {
-      nearest_thursday -= days_in_thisyear(year);
-      year++;
-    }
-  } else  {
-    nearest_thursday = yday - (weekday - 4);
-    if (nearest_thursday < 0) {
-      year--;
-      nearest_thursday += days_in_thisyear(year);
-    }
-  }
-
-  weeknum = 1 + (nearest_thursday / 7);
-  *year_ptr = year;
-  return weeknum;
-}
