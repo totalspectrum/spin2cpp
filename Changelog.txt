@@ -7,8 +7,8 @@ Version 6.5.0
 - Fixed `-x` option in flexcc
 - Fixed interaction between Parallax FS and stdio FILEs when multiple FILEs are open
 - Fixed missing mbrtowc implementation
-- Implemented new Spin2 REPEAT n : i syntax (thanks, Ada!)
-- Implemented revised Spin2 REPEAT n WITH i
+- Fixed overly agressive type checking on BASIC CPU() for asm code
+- Implemented new Spin2 REPEAT n : i syntax (thanks, Ada!), and later added REPEAT n WITH i variant
 - Made _geterror() clear the error number
 - Allow & operator for string concatenation in BASIC
 - Re-factored some code to reduce bloat a bit

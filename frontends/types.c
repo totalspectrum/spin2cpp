@@ -1682,7 +1682,8 @@ static AST *doCheckTypes(AST *ast)
                 }
             }
             paramtype = ExprType(stack);
-            if (paramtype && !IsPointerType(paramtype)) {
+            if (paramtype && !IsPointerType(paramtype) && isCog) {
+                // this is only an issue if the first parameter is a pointer to a high level function
                 ERROR(ast, "Expected pointer to stack as last parameter to coginit/cogid");
             }
         }
