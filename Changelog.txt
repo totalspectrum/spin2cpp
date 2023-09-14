@@ -10,6 +10,7 @@ Version 6.5.0
 - Fixed overly agressive type checking on BASIC CPU() for asm code
 - Fixed Spin2 issue with variables named `result` in void functions
 - Implemented new Spin2 REPEAT n : i syntax (thanks, Ada!), and later added REPEAT n WITH i variant
+- Keep a small FCACHE even in -O0, to allow ORG to function as expected
 - Made _geterror() clear the error number
 - Allow & operator for string concatenation in BASIC
 - Re-factored some code to reduce bloat a bit

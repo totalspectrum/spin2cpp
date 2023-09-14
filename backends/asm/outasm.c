@@ -6888,7 +6888,7 @@ GuessFcacheSize(IRList *irl)
         if (gl_optimize_flags & OPT_AUTO_FCACHE) {
             return 128;
         }
-        return 0; // disable fcache if no optimization
+        return 128; // keep a small fcache for inline ASM
     } else {
         return 96; // default size for P1
     }
