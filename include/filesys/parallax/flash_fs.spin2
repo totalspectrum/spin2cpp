@@ -1,3 +1,11 @@
+'' NOTE: this is a modified version of the original from
+'' https://github.com/ironsheep/P2-FLASH-FS
+''
+'' I ported it to flexspin, and changed the return values for read() and write()
+'' if I've broken something, it's my fault!
+''   - Eric Smith
+'' original documentation below
+''
 '' =================================================================================================
 ''
 ''   File....... flash_fs.spin2
@@ -185,7 +193,7 @@ pub version() : result
 
 {$flexspin
 var
-   long m_sn_hi, m_sn_lo
+   long m_sn_hi, m_sn_lo		' temporary storage for serial number read
 }
 
 pub serial_number() : sn_hi, sn_lo
@@ -208,6 +216,9 @@ pub serial_number() : sn_hi, sn_lo
     flash_send($00, 4)
 {$flexspin
 #ifdef __FLEXSPIN__
+    ' flexspin does not like using HUB variables (@) in inline assembly
+    ' so do the read into a class member in HUB, then copy to the local
+    ' variables in registers
     flash_receive(@m_sn_hi, 8)
     sn_hi := m_sn_hi
     sn_lo := m_sn_lo
@@ -869,10 +880,12 @@ pub write(handle, p_buffer, count) : status | checkValue, byteIndex, wr_value, w
      status := (errorCode := checkValue)                                        ' no, return error code
   else
     'debug("write() [",zstr_(p_buffer),"](",udec_(count),")")
+    status := 0
     repeat byteIndex from 0 to count - 1                                        ' for the max length of the buffer
         wr_value := BYTE[p_buffer][byteIndex]
         if (wr_status := wr_byte_no_locks(handle, wr_value)) < 0                ' write a byte to the file (or to seek location in file)
-            status := (errorCode := wr_status)                                  ' an error occured, return the error code
+	    errorCode := wr_status                                              ' save the error code
+            status := (status > 0) ? status : errorCode                         ' return bytes written, or 0 on error
             quit
 
   lockrel(fsLock)                                                               ' release the lock, we're done with it
@@ -1056,7 +1069,7 @@ pub read(handle, p_buffer, count) : bytes_read | byteIndex, readValue, checkValu
       else
         BYTE[p_buffer][byteIndex] := readValue                                  ' no error, place byte in the users buffer
     if errorCode == SUCCESS                                                     ' if no error, return bytes read
-        bytes_read := byteIndex + 1                                             ' return bytes read so far
+        bytes_read := byteIndex                                                ' return bytes read so far
 
   'debug("read(", udec_(count),") = (", sdec_(bytes_read),")")
 
@@ -1132,6 +1145,7 @@ pri rd_byte_no_locks(handle) : value | ptr, signature, isSeeking, endPtr
     hEndPtr[handle] := endPtr                                                   ' point to start of data in body block
     'debug("+ rd_byte() ", uhex_word(hEndPtr[handle], handle))
   'debug("rd_byte() [",uhex_byte_(value),"]")
+
 
 pub rd_word(handle) : value | readLength
 
