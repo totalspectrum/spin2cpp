@@ -802,11 +802,11 @@ handle_else(struct preprocess *pp, ParseState *P)
 
     (void)(P); /* unused parameter */
     if (!I) {
-        doerror(pp, "#else without matching #if");
+        doerror(pp, "#else without matching #ifdef");
         return;
     }
     if (I->sawelse) {
-        doerror(pp, "multiple #else statements in #if");
+        doerror(pp, "multiple #else statements in #ifdef");
         return;
     }
     I->sawelse = 1;
@@ -827,7 +827,7 @@ handle_elseifdef(struct preprocess *pp, ParseState *P, int invert)
     const char *def;
 
     if (!I) {
-        doerror(pp, "#else without matching #if");
+        doerror(pp, "#else without matching #ifdef");
         return;
     }
 
@@ -852,7 +852,7 @@ handle_endif(struct preprocess *pp, ParseState *P)
     struct ifstate *I = pp->ifs;
 
     if (!I) {
-        doerror(pp, "#endif without matching #if");
+        doerror(pp, "#endif without matching #ifdef");
         return;
     }
     pp->ifs = I->next;
