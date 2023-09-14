@@ -2349,7 +2349,10 @@ ProcessOneFunc(Function *pf)
                 LANGUAGE_WARNING(LANG_SPIN_SPIN2, pf->decl, "function %s returns a value but was declared without a return variable", pf->name);
             }
         }
-        if (!sawreturn) {
+        // originally tried to optimize this away, but gotos can confuse us
+        // so always add a return statement and let later optimizations
+        // deal with any superfluous returns
+        if (!sawreturn || !IsConstExpr(pf->resultexpr)) {
             AST *retstmt;
             ASTReportInfo saveinfo;
             AstReportAs(pf->body, &saveinfo); // use old debug info
