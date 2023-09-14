@@ -183,6 +183,11 @@ pub version() : result
 
   return LIB_VERSION
 
+{$flexspin
+var
+   long m_sn_hi, m_sn_lo
+}
+
 pub serial_number() : sn_hi, sn_lo
 
 '' Returns 64-bit unique id of flash chip
@@ -201,7 +206,15 @@ pub serial_number() : sn_hi, sn_lo
 
     flash_command($4B, 1)
     flash_send($00, 4)
+{$flexspin
+#ifdef __FLEXSPIN__
+    flash_receive(@m_sn_hi, 8)
+    sn_hi := m_sn_hi
+    sn_lo := m_sn_lo
+#else
+}
     flash_receive(@sn_hi, 8)
+{$flexspin #endif}
 
     ' UID values are stored Big Endian
     ' -- swap ends to correct LE reads from flash
@@ -1119,7 +1132,6 @@ pri rd_byte_no_locks(handle) : value | ptr, signature, isSeeking, endPtr
     hEndPtr[handle] := endPtr                                                   ' point to start of data in body block
     'debug("+ rd_byte() ", uhex_word(hEndPtr[handle], handle))
   'debug("rd_byte() [",uhex_byte_(value),"]")
-
 
 pub rd_word(handle) : value | readLength
 
