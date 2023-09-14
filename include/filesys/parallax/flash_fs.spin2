@@ -887,7 +887,8 @@ pub write(handle, p_buffer, count) : status | checkValue, byteIndex, wr_value, w
 	    errorCode := wr_status                                              ' save the error code
             status := (status > 0) ? status : errorCode                         ' return bytes written, or 0 on error
             quit
-
+        status++
+	
   lockrel(fsLock)                                                               ' release the lock, we're done with it
 
 
