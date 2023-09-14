@@ -9,16 +9,17 @@
 ''               -- see below for terms of use
 ''   E-mail.....stephen@ironsheep.biz
 ''   Started.... AUG 2023
-''   Updated.... 12 SEP 2023
+''   Updated.... 13 SEP 2023
 ''
 '' =================================================================================================
 '' v1.2.0 - initial release of flash_fs with full API
+'' v1.2.1 - revised seek() method parameters - can now seek relative to current position in file
 '' -------------------------------------------------------------------------------------------------
 
 
 con { version }
 
-  LIB_VERSION = 120                                             ' 1.2.0
+  LIB_VERSION = 121                                             ' 1.2.1
 
   #true,  ON, OFF
   #false, NO, YES
@@ -45,6 +46,11 @@ con { PUBLIC driver constants }
   OKAY             = 0                                          ' No error / Success
   SUCCESS          = OKAY                                       ' No error / Success
 
+' SK_* ENUM values (parameter to seek() method)
+' SK_FILE_START: seek using position from start of file
+' SK_CURRENT_POSN: seek where position is relative to current seek location in file
+  #0, SK_Unknown, SK_FILE_START, SK_CURRENT_POSN
+
   E_BAD_HANDLE     = -1                                         ' Error: Handle in invalid
   E_NO_HANDLE      = -2                                         ' Error: Out of available handles
   E_FILE_NOT_FOUND = -3                                         ' Error: File not present
@@ -55,7 +61,7 @@ con { PUBLIC driver constants }
   E_FILE_EXISTS    = -8                                         ' Error: the File exists
   E_END_OF_FILE    = -9                                         ' Error: no more data available, at end of file
   E_FILE_MODE      = -10                                        ' Error: file not opened in desired mode
-  E_FILE_SEEK      = -11                                        ' Error: Attempted seek past end of file
+  E_FILE_SEEK      = -11                                        ' Error: Attempted seek past either end of file
   E_BAD_BLOCKS_REMOVED = -12                                    ' Error: Block bit failure detetected, bad blocks removed
   E_NO_LOCK_AVAIL  = -13                                        ' Error: Unable to obtain a LOCK for driver use
   E_TRUNCATED_STRING = -14                                      ' Error: Buffer full, before reaching string terminator
@@ -63,6 +69,7 @@ con { PUBLIC driver constants }
   E_SHORT_TRANSER = -16                                         ' Error: Too few bytes read or written
   E_NOT_MOUNTED = -17                                           ' Error: Filesystem NOT mounted (not yet accessible)
   E_BAD_FILE_LENGTH = -18                                       ' Error: File length given is negative or zero
+  E_BAD_SEEK_ARG = -19                                          ' Error: Invalid seek argument
 
   BYTES_IN_HEAD_BLOCK = 3956
   WORDS_IN_HEAD_BLOCK = BYTES_IN_HEAD_BLOCK/2
@@ -149,7 +156,8 @@ hChainBlockAddr WORD    0[MAX_FILES_OPEN]                                       
 hChainLifeCycle BYTE    0[MAX_FILES_OPEN]                                         'handle: first block lifecycle (cycle value for replacement first block of chain)
 hEndPtr         WORD    0[MAX_FILES_OPEN]                                         'handle: pointer to next byte in block
 hWriteCount     LONG    0[MAX_FILES_OPEN]                                         'handle: count of bytes written to file (or appended)
-hSeekPtr        LONG    NOT_ENABLED[MAX_FILES_OPEN]                               'handle: seek address within entire file
+hSeekPtr        LONG    NOT_ENABLED[MAX_FILES_OPEN]                               'handle: seek endptr within file
+hSeekFileOffset LONG    0[MAX_FILES_OPEN]                                         'handle: seek offset within entire file
 hCircularLength LONG    0[MAX_FILES_OPEN]                                         'handle: circular buffer length in byt
 hFilename       BYTE    0[MAX_FILES_OPEN * FILENAME_SIZE]                         'handle: 59+1 byte buffer for filename
 hBlockBuff      BYTE    0[MAX_FILES_OPEN * BLOCK_SIZE]                            'handle: 4KB buffer for file data
@@ -162,9 +170,6 @@ fsMounted       LONG    false                                                   
 fsFreeHndlCt    LONG    MAX_FILES_OPEN
 fsCogCts        LONG    $7fff_ffff[8]                                             'cog counts: one for each cog that is attempting to start the filesystem
 
-var
-	LONG g_command  ' global command buffer used for commands
-	
 pub null()
 
 '' This is not an application
@@ -177,7 +182,6 @@ pub version() : result
 '' -- e.g., version 120 is 1.2.0 (major, minor, bugfix)
 
   return LIB_VERSION
-
 
 pub serial_number() : sn_hi, sn_lo
 
@@ -275,6 +279,16 @@ pub mount() : status | block_address, blockTypeBits, signature
 
     lockrel(fsLock)              ' release the lock, we're done with it
     'debug("- lock released")
+
+
+pub mounted() : bool
+
+'' Returns the mounted status of the filesystem
+''  (saves us from having to find creative ways to get an error code telling us this)
+''
+'' @returns bool - True/False where True means the filesystem has already been successfully mounted
+
+  return fsMounted
 
 
 pub unmount() : status | handle, tmpFsLock
@@ -526,7 +540,6 @@ pub flush(handle) : status
 
   status := finish_pending_writes(handle)                                       'commit our file changes
 
-  hSeekPtr[handle] := NOT_ENABLED                                               ' Ensure seek mode is disabled for this handle
   hChainBlockID[handle] := 0                                                    ' Clear commit-chain info
   hChainBlockAddr[handle] := 0
   hChainLifeCycle[handle] := 0
@@ -556,6 +569,7 @@ pub close(handle) : status
   status := finish_pending_writes(handle)                                       'commit our file changes
 
   hSeekPtr[handle] := NOT_ENABLED                                               ' Ensure seek mode is disabled for this handle
+  hSeekFileOffset[handle] := 0                                                  ' reset user requested postion within file
   hChainBlockID[handle] := 0                                                    ' Clear commit-chain info
   hChainBlockAddr[handle] := 0
   hChainLifeCycle[handle] := 0
@@ -744,25 +758,35 @@ pub file_size_unused(p_filename) : size_in_bytes_unused | signature
   lockrel(fsLock)                                                               ' release the lock, we're done with it
 
 
-pub seek(handle, position) : status | file_length, block_address, signature
+pub seek(handle, position, whence) : status | file_length, file_position
+
 '' Postion seek file pointer to position within the file or at the end of the file
 '' -- use 0 for position to seek to the start of the file
 '' -- use "size of file" to seek to the end of the file for append
 ''
 '' @param handle - a handle to an open file
 '' @param position - position (in bytes) within the file (0 to length-1)
+''  use  seek(handle, POSX, SK_SET)  to seek to end of the file
+'' @param whence - meaning of position: [SK_FILE_START, SK_CURRENT_POSN]
 '' @returns status - 0 (SUCCESS) if successful,
 '' .. E_NOT_MOUNTED if filesystem has not been mounted,
 '' .. E_BAD_HANDLE if the handle is not valid
+'' .. E_BAD_SEEK_ARG if invalid whence value,
 '' .. E_FILE_MODE if the file is not open in a mode supporting seeks
+'' .. E_FILE_SEEK if attempted seek past either end of file
 
 ' Local Variables:
 ' @local file_length - temporary for calculated file length
+' @local file_position - temporary for calculated seek position
 
   if fsMounted == false
     return (errorCode := E_NOT_MOUNTED)
   elseif handle < 0 or handle > MAX_FILES_OPEN - 1
     return (errorCode := E_BAD_HANDLE)
+  elseif whence <> SK_FILE_START and whence <> SK_CURRENT_POSN
+    return (errorCode := E_BAD_SEEK_ARG)
+  elseif whence == SK_FILE_START and position < 0
+    return (errorCode := E_FILE_SEEK)
 
   case hStatus[handle]                                                          'get handle
     H_READ:                                                                     'READ?
@@ -776,17 +800,24 @@ pub seek(handle, position) : status | file_length, block_address, signature
 
   errorCode := SUCCESS                                                          ' new operation clear any prior error code
 
+  if whence == SK_FILE_START                                                    ' if seeking from current position
+    file_position := position
+  else
+    ' for SK_CURRENT_POSN, we need to calculate the adjusted position
+    file_position := hSeekPtr[handle] <> NOT_ENABLED ? hSeekFileOffset[handle] : 0 ' if seek mode enabled, use seek pointer, else use 0
+    file_position += position                                               ' calculate the adjusted position
+
   file_length, _, _ := count_file_bytes(field[IDToBlock][hHeadBlockID[handle]]) ' get the file length
   'debug("seek(", udec_(position), "), FSize=(", udec_(file_length), ")")
   if file_length < 0
     status := (errorCode := file_length)                                        ' error, return the error code instead of a SUCCESS status
 
-  elseif hCircularLength[handle] > 0 and (position < 0 or position > hCircularLength[handle]) ' if circular file and position is out of range
+  elseif hCircularLength[handle] > 0 and (file_position < 0 or file_position > hCircularLength[handle]) ' if circular file and position is out of range
     status := (errorCode := E_FILE_SEEK)                                        ' abort with error
 
-  elseif position >= 0 and position <= file_length            ' is position within file? ( allow length + 1 for append )
-    'debug("seek(", udec_(position), "), FSize=(", udec_(file_length), ") going to location")
-    seek_to_block(handle, position)                                             ' yes, load buffer, setting file pointer to value within the buffer
+  elseif file_position >= 0 and file_position <= file_length            ' is position within file? ( allow length + 1 for append )
+    'debug("seek(", udec_(file_position), "), FSize=(", udec_(file_length), ") going to location, offset=(", sdec_(position), ")")
+    seek_to_block(handle, file_position)                                    ' yes, load buffer, setting file pointer to value within the buffer
     status := SUCCESS                                                           ' no, return SUCCESS
   else
     status := (errorCode := E_FILE_SEEK)                                        ' no, abort with error
@@ -913,6 +944,7 @@ pri wr_byte_no_locks(handle, byteValue) : status | ptr, nextBlockID, isSeeking, 
     BYTE[ptr][endPtr++] := byteValue                                            'write byte into block buffer, post-increment pointer
     if isSeeking
         hSeekPtr[handle] := endPtr                                              ' point to start of data in body block
+        hSeekFileOffset[handle] += 1                                            ' we moved keep track
         ' if writing in tail record never let seekPtr go past endPtr
         'if LONG[ptr].[0] == 0 and endPtr > hEndPtr[handle]
         '    hEndPtr[handle] := endPtr
@@ -1082,6 +1114,7 @@ pri rd_byte_no_locks(handle) : value | ptr, signature, isSeeking, endPtr
   value := BYTE[ptr][endPtr++]                                                  ' get data byte to return and increment pointer
   if isSeeking
     hSeekPtr[handle] := endPtr                                                  ' point to start of data in body block
+    hSeekFileOffset[handle] += 1                                                ' we moved keep track
   else
     hEndPtr[handle] := endPtr                                                   ' point to start of data in body block
     'debug("+ rd_byte() ", uhex_word(hEndPtr[handle], handle))
@@ -1272,7 +1305,7 @@ pub string_for_error(error_code) : p_interpretation
         E_FILE_EXISTS:          p_interpretation := @"E_FILE_EXISTS: the File exists"
         E_END_OF_FILE:          p_interpretation := @"E_END_OF_FILE: no more data available, at end of file"
         E_FILE_MODE:            p_interpretation := @"E_FILE_MODE: file not opened in desired mode"
-        E_FILE_SEEK:            p_interpretation := @"E_FILE_SEEK: Attempted seek past end of file"
+        E_FILE_SEEK:            p_interpretation := @"E_FILE_SEEK: Attempted seek past either end of file"
         E_BAD_BLOCKS_REMOVED:   p_interpretation := @"E_BAD_BLOCKS_REMOVED: Block bit failure detetected, bad blocks removed"
         E_NO_LOCK_AVAIL:        p_interpretation := @"E_NO_LOCK_AVAIL: Unable to obtain a LOCK for driver use"
         E_TRUNCATED_STRING:     p_interpretation := @"E_TRUNCATED_STRING: Buffer full, before reaching string terminator"
@@ -1280,6 +1313,7 @@ pub string_for_error(error_code) : p_interpretation
         E_SHORT_TRANSER:        p_interpretation := @"E_SHORT_TRANSER: Too few bytes read or written"
         E_NOT_MOUNTED:          p_interpretation := @"E_NOT_MOUNTED: Filesystem NOT yet accessible"
         E_BAD_FILE_LENGTH:      p_interpretation := @"E_BAD_FILE_LENGTH: File length is negative or zero"
+        E_BAD_SEEK_ARG:         p_interpretation := @"E_BAD_SEEK_ARG: Invalid seek argument"
         other:                  p_interpretation := @"???: Unknown error code ???"
 
 
@@ -1931,7 +1965,7 @@ pri ensure_handle_mode(handle, mode_bits) : status
     status :=  E_FILE_MODE
 
 
-pri seek_to_block(handle, file_position) | end_block_address, endPtr, lenInBytes, offsetInBytes
+pri seek_to_block(handle, file_position) | end_block_address, endPtr, lenInBytes
 
 ' position to location within file by locating the buffer containing the byte at file_position, loading it then setting
 ' the file pointer (within buffer) to the location correspondng to the byte at file_position
@@ -1939,15 +1973,15 @@ pri seek_to_block(handle, file_position) | end_block_address, endPtr, lenInBytes
 ' @param handle - handle to a file that is open for read or read/write
 ' @param file_position - file-relative postion to which to position the file pointer
 
-  offsetInBytes := file_position
+  hSeekFileOffset[handle] := file_position
   if hCircularLength[handle] > 0
     ' if circular file postion 0 is at read offset from end of file
     lenInBytes, _ , _ := count_file_bytes(field[IDToBlock][hHeadBlockID[handle]])                        'get file length in bytes
     'debug(" seek_to_block() ", udec(hCircularLength[handle], lenInBytes, field[IDToBlock][hHeadBlockID[handle]]))
     if lenInBytes > hCircularLength[handle]                                                             'is file longer than requested length?
-        offsetInBytes := file_position + lenInBytes - hCircularLength[handle]                           'adjust offset relative to start of data in file
+        hSeekFileOffset[handle] := file_position + lenInBytes - hCircularLength[handle]                           'adjust offset relative to start of data in file
 
-  end_block_address, endPtr := locate_file_byte(field[IDToBlock][hHeadBlockID[handle]], offsetInBytes)
+  end_block_address, endPtr := locate_file_byte(field[IDToBlock][hHeadBlockID[handle]], hSeekFileOffset[handle])
   'debug("seek_to_block() ", uhex_long(end_block_address, endPtr, field[IDToBlock][hHeadBlockID[handle]]))
   hSeekPtr[handle] := endPtr                                                                            'set file pointer to position within block
   flash_read_block(end_block_address, buffer_pointer(handle), $000, $FFF)                               'read the block into the buffer
@@ -2354,12 +2388,19 @@ pri flash_wait()| statusBits
     flash_receive(@statusBits, 1)
   while statusBits.[0]                                                          'loop until BUSY bit clear
 
+{$flexspin
+' flexspin stores local variables in registers, rather than HUB, so for flash commands we need HUB space for temporary storage
+var
+   LONG m_command					' HUB storage for flash_command use
+}
 
 pri flash_command(command, count)
 ' Send flash command to FLASH Chip via SPI
 '
 ' @param command - the command for the chip to execute
-' @param count - number of bytes to send
+' @param count - number of bytes to send: must be between 1 and 4
+'
+' uses the member variable m_command as temporary storage
 
               org
 
@@ -2376,9 +2417,16 @@ pri flash_command(command, count)
               movbyts command,#%%1230                   'reverse order of post-command address bytes for sending
 
               end
-  g_command := command	      
-  flash_send(@g_command, count)             'send command
-
+{$flexspin
+#ifdef __FLEXSPIN__
+  ' in flexspin we have to copy the register to HUB explicitly (otherwise @command will force command
+  ' into HUB, which will conflict with using `command` in the inline assembly code)
+  m_command := command                      'copy command from register to HUB memory
+  flash_send(@m_command, count)             'send command
+#else
+}
+  flash_send(@command, count)
+{$flexspin #endif}
 
 pri flash_send(p_buffer, count) | tx_byte
 
