@@ -1074,12 +1074,12 @@ doDeclareFunction(AST *funcblock)
         }
     }
     if (!src->right || src->right->kind == AST_RESULT) {
-        if (IsSpinLang(language)) {
+        if (IsSpin1Lang(language)) {
             fdef->resultexpr = AstIdentifier("result");
             AddSymbolPlaced(&fdef->localsyms, "result", SYM_RESULT, NULL, NULL, src);
         } else {
-            fdef->resultexpr = AstIdentifier("__result");
-            AddSymbol(&fdef->localsyms, "__result", SYM_RESULT, NULL, NULL);
+            fdef->resultexpr = AstIdentifier("___result");
+            AddSymbol(&fdef->localsyms, "___result", SYM_RESULT, NULL, NULL);
         }
     } else {
         AST *resultexpr = src->right;
