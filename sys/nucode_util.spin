@@ -524,3 +524,20 @@ pri _int64_cmpu(alo, ahi, blo, bhi) : r
 
 pri _int64_cmps(alo, ahi, blo, bhi) : r
   %bytecode("CMP64S")
+
+pri _getcrc(ptr, poly, cnt) : x | y, w
+  if cnt =< 0
+    return 0
+  org
+    encod x, poly
+    bmask x
+.loop
+    rdbyte w, ptr
+    add	   ptr, #1
+    shl	   w, #24
+    setq   w
+    crcnib x, poly
+    crcnib x, poly
+    djnz   cnt, #.loop
+  end
+  return x
