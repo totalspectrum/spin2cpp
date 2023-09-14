@@ -31,7 +31,7 @@ typedef struct pfsfile {
 static struct __using("filesys/parallax/flash_fs.spin2", MAX_FILES_OPEN=PFS_MAX_FILES_OPEN) FlashFS;
 
 // convert errors from Parallax codes to our codes
-int ConvertError(int e) {
+static int ConvertError(int e) {
     switch (e) {
     case FlashFS.E_BAD_HANDLE:
         return EBADF;
@@ -313,6 +313,8 @@ static int v_flush(vfs_file_t *fil)
     int handle = f->handle;
     int r;
 
+    __default_flush(fil); // write out buffered data
+    
     r = FlashFS.flush(handle);
     if (r < 0) {
         return _seterror(ConvertError(r));
