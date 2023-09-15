@@ -1702,6 +1702,8 @@ pri locate_file_byte(head_block_address, file_offset) : block_address, end_ptr |
 ' @local offsetToData - offset to first data byte in block
 ' @local lastDataOffset - offset just past last data byte in block
 ' @local overallOffset - calculated file offset from start of block chain
+
+  overallOffset := 0
   block_address := head_block_address
   if head_block_address <> 0
     repeat                                                                                                'trace blocks to count file bytes
