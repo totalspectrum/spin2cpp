@@ -259,6 +259,15 @@ int fs_open_relative(fs9_file *dir, fs9_file *f, const char *path, int fs_mode)
     ptr = doPut1(ptr, mode);
     r = (*sendRecv)(txbuf, ptr, maxlen);
     if (txbuf[4] != r_open) {
+        // check for the kind of error
+        // plan 9 returns errors as strings
+#ifdef _DEBUG_9P
+        __builtin_printf("r_open returned [%s]\n", txbuf+9);
+#endif
+        if (!strncmp(txbuf+9, "fid unkn", 8)) {
+            return -ENOENT;
+        }
+        // generic access denied error
         return -EACCES;
     }
     f->offlo = f->offhi = 0;
