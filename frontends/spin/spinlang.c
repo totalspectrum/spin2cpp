@@ -915,7 +915,9 @@ doSpinTransform(AST **astptr, int level, AST *parent)
     case AST_PRINTDEBUG:
     {
         AST *debugprint = CreatePrintfDebug(ast->left);
-        *astptr = debugprint;
+        *astptr = ast = debugprint;
+        doSpinTransform(&debugprint->left, 0, ast);
+        doSpinTransform(&debugprint->right, 0, ast);
         break;
     }
     case AST_OPERATOR:
