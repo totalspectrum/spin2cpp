@@ -1,0 +1,13 @@
+var
+  LONG errorCode, fsLock
+  LONG hStatus
+  
+pub seek(pos, whence) : status | tmp
+  case hStatus
+    0:
+    1:
+      { OKay }
+    other:
+      return -1
+  status := errorCode := -3
+
