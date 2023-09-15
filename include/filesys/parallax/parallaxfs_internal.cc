@@ -29,11 +29,13 @@ typedef struct pfsfile {
     int32_t file_size;
 } pfs_file;
     
-static struct __using("filesys/parallax/flash_fs.spin2", MAX_FILES_OPEN=PFS_MAX_FILES_OPEN) FlashFS;
+static struct __using("flash_fs.spin2", MAX_FILES_OPEN=PFS_MAX_FILES_OPEN) FlashFS;
 
 // convert errors from Parallax codes to our codes
 static int ConvertError(int e) {
     switch (e) {
+    case 0:
+        return 0;
     case FlashFS.E_BAD_HANDLE:
         return EBADF;
     case FlashFS.E_NO_HANDLE:
@@ -59,7 +61,13 @@ int fs_init()
 {
     int r;
     r = FlashFS.Mount();
-    return _seterror(r);
+#ifdef _DEBUG_PFS
+    __builtin_printf("..flash.mount returned %d\n", r);
+#endif
+    if (r) {
+        return _seterror(ConvertError(r));
+    }
+    return 0;
 }
 
 //
@@ -76,6 +84,9 @@ static int v_creat(vfs_file_t *fil, const char *pathname, mode_t mode)
         return _seterror(ENOMEM);
     }
     r = FlashFS.Open(pathname, 'w');
+#ifdef _DEBUG_PFS
+    __builtin_printf("..flash.open(%s, 'w') returned %d\n", pathname, r);
+#endif
     if (r < 0) {
         free(f);
         return _seterror(ConvertError(r));
@@ -100,6 +111,9 @@ static int v_close(vfs_file_t *fil)
     __builtin_printf("v_close: handle %d\n", handle);
 #endif    
     r = FlashFS.Close(handle);
+#ifdef _DEBUG_PFS
+    __builtin_printf("..flash.close returned %d\n", r);
+#endif    
     if (r < 0) {
         return _seterror(ConvertError(r));
     }
@@ -126,12 +140,16 @@ static int v_readdir(DIR *dir, struct dirent *ent)
     char buf[128];
     int size;
     int handle = (int)dir->vfsdata;
+    int r;
     
     memset(buf, 0, sizeof(buf));
 #ifdef _DEBUG_PFS
     __builtin_printf("v_readdir: handle=%d\n", handle);
 #endif    
     FlashFS.Directory(&dir->vfsdata, buf, &size);
+#ifdef _DEBUG_PFS
+    r = __builtin_printf("..flash.close returned %d\n", r);
+#endif    
 #ifdef _DEBUG_PFS
     _waitms(100);
     __builtin_printf(" ...buf=[%s] size=%d\n", buf, size);
@@ -158,10 +176,17 @@ static int v_stat(const char *name, struct stat *buf)
         fsize = 0;
         mode = S_IFDIR;
     } else {
-        if (!FlashFS.Exists(name)) {
+        r = FlashFS.Exists(name);
+#ifdef _DEBUG_PFS
+        __builtin_printf("..flash.exists returned %d\n", r);
+#endif            
+        if (!r) {
             return _seterror(ENOENT);
         }
         fsize = FlashFS.file_size(name);
+#ifdef _DEBUG_PFS
+        __builtin_printf("..flash.file_size returned %d\n", fsize);
+#endif            
     }
     mode |= (S_IRUSR | S_IRGRP | S_IROTH);
     mode |= (S_IWUSR | S_IWGRP | S_IWOTH);
@@ -183,9 +208,12 @@ static ssize_t v_read(vfs_file_t *fil, void *buf_p, size_t siz)
     int c;
 
 #ifdef _DEBUG_PFS
-    __builtin_printf("v_read from handle %d...", handle);
+    __builtin_printf("v_read(handle=%d siz=%d)...", handle, siz);
 #endif    
-    r = FlashFS.read(handle, buf_p, siz);
+    r = FlashFS.read(handle, buf, siz);
+#ifdef _DEBUG_PFS
+    __builtin_printf("..flash.read(%d, $%x, %d) returned %d\n", handle, (unsigned)buf, siz, r);
+#endif            
     if (r == FlashFS.E_END_OF_FILE) r = 0;
     if (r == 0) {
         fil->state |= _VFS_STATE_EOF;
@@ -211,9 +239,12 @@ static ssize_t v_write(vfs_file_t *fil, void *buf_p, size_t siz)
     int c;
     
 #ifdef _DEBUG_PFS
-    __builtin_printf("v_write to handle %d...", handle);
+    __builtin_printf("v_write(handle=%d siz=%d)...", handle, siz);
 #endif    
     r = FlashFS.write(handle, buf_p, siz);
+#ifdef _DEBUG_PFS
+        __builtin_printf("..flash.write returned %d\n", r);
+#endif            
     if (r == FlashFS.E_END_OF_FILE) {
         r = 0;
     }
@@ -240,7 +271,7 @@ static off_t v_lseek(vfs_file_t *fil, off_t offset, int whence)
     int r;
 
 #ifdef _DEBUG_PFS
-    __builtin_printf("v_lseek(handle=%d, off=%ld, whence=%d\n", handle, (long)offset, whence);
+    __builtin_printf("v_lseek(%d, %ld, %d) current offset: %d file_size: %d\n", handle, (long)offset, whence, f->offset, f->file_size);
 #endif    
     switch (whence) {
     case SEEK_SET:
@@ -259,7 +290,7 @@ static off_t v_lseek(vfs_file_t *fil, off_t offset, int whence)
     }
     r = FlashFS.seek(handle, where, FlashFS.SK_FILE_START);
 #ifdef _DEBUG_PFS
-    __builtin_printf("handle %d seek to %d returned %d\n", handle, where, r);
+    __builtin_printf("..flash.seek( %d, %d, %d ) returned %d\n", handle, where, FlashFS.SK_FILE_START, r);
 #endif    
     if (r < 0) {
         // error
@@ -283,6 +314,9 @@ static int v_remove(const char *name)
 {
     int r;
     r = FlashFS.Delete(name);
+#ifdef _DEBUG_PFS
+    __builtin_printf("..flash.delete(%s) returned %d\n", name, r);
+#endif            
     if (r < 0) {
         return _seterror(ENOENT);
     }
@@ -298,6 +332,9 @@ static int v_rename(const char *oldname, const char *newname)
 {
     int r;
     r = FlashFS.Rename(oldname, newname);
+#ifdef _DEBUG_PFS
+    __builtin_printf("..flash.rename returned %d\n", r);
+#endif            
     if (r < 0) {
         return _seterror(ENOENT);
     }
@@ -324,16 +361,31 @@ static int v_open(vfs_file_t *fil, const char *name, int flags)
     switch (mode) {
     case O_RDONLY:
         fsize = FlashFS.file_size(name);
+#ifdef _DEBUG_PFS
+        __builtin_printf("..flash.file_size returned %d\n", fsize);
+#endif            
         handle = FlashFS.Open(name, 'r');
+#ifdef _DEBUG_PFS
+        __builtin_printf("..flash.open(%s, 'r') returned %d\n", name, handle);
+#endif            
         break;
     case O_WRONLY:
         if (flags & O_APPEND) {
             fsize = FlashFS.file_size(name);
+#ifdef _DEBUG_PFS
+            __builtin_printf("..flash.file_size returned %d\n", fsize);
+#endif            
             offset = fsize;
             handle = FlashFS.Open(name, 'a');
+#ifdef _DEBUG_PFS
+            __builtin_printf("..flash.open(%s, 'a') returned %d\n", name, handle);
+#endif            
         } else {
             fsize = 0;
             handle = FlashFS.Open(name, 'w');
+#ifdef _DEBUG_PFS
+            __builtin_printf("..flash.open(%s, 'w') returned %d\n", name, handle);
+#endif            
         }
         break;
     default:
@@ -365,11 +417,13 @@ static int v_flush(vfs_file_t *fil)
 {
     pfs_file *f = fil->vfsdata;
     int handle = f->handle;
-    int r;
+    int r = 0;
 
     __default_flush(fil); // write out buffered data
-    
     r = FlashFS.flush(handle);
+#ifdef _DEBUG_PFS
+    __builtin_printf("..flash.flush returned %d\n", r);
+#endif            
     if (r < 0) {
         return _seterror(ConvertError(r));
     }
@@ -387,9 +441,13 @@ enum {
 /* deinitialize (unmount) */
 static int v_deinit(const char *mountname)
 {
+    int r;
     unsigned long long pmask = (1ULL << PFS_pclk) | (1ULL << PFS_pss) | (1ULL << PFS_pdi) | (1ULL << PFS_pdo);
 
-    FlashFS.unmount();
+    r = FlashFS.unmount();
+#ifdef _DEBUG_PFS
+    __builtin_printf("flash.unmount() returned %d\n", r);
+#endif    
     _freepins(pmask);
     return 0;
 }
