@@ -238,7 +238,10 @@ static off_t v_lseek(vfs_file_t *fil, off_t offset, int whence)
     int handle = f->handle;
     int32_t where;
     int r;
-    
+
+#ifdef _DEBUG_PFS
+    __builtin_printf("v_lseek(handle=%d, off=%ld, whence=%d\n", handle, (long)offset, whence);
+#endif    
     switch (whence) {
     case SEEK_SET:
         where = offset; break;
@@ -255,6 +258,9 @@ static off_t v_lseek(vfs_file_t *fil, off_t offset, int whence)
         return _seterror(EINVAL);
     }
     r = FlashFS.seek(handle, where, FlashFS.SK_FILE_START);
+#ifdef _DEBUG_PFS
+    __builtin_printf("handle %d seek to %d returned %d\n", handle, where, r);
+#endif    
     if (r < 0) {
         // error
         return _seterror(ConvertError(r));
