@@ -2274,6 +2274,20 @@ skipcheck:
 }
 
 /*
+ * check for default result
+ */
+bool
+IsDefaultResult(Function *pf)
+{
+    AST *resultexpr = pf->resultexpr;
+    if (resultexpr->kind != AST_IDENTIFIER) return false;
+    if (IsSpin1Lang(pf->language)) {
+        return strcmp(resultexpr->d.string, "result") == 0;
+    }
+    return strcmp(resultexpr->d.string, "___result") == 0;
+}
+
+/*
  * do basic processing of functions
  */
 void
@@ -2352,7 +2366,11 @@ ProcessOneFunc(Function *pf)
         // originally tried to optimize this away, but gotos can confuse us
         // so always add a return statement and let later optimizations
         // deal with any superfluous returns
-        if (!sawreturn || !IsConstExpr(pf->resultexpr)) {
+        if (!sawreturn ||
+            (pf->numresults == 1 && pf->resultexpr && !IsConstExpr(pf->resultexpr) && !IsDefaultResult(pf))
+            )
+        {
+            
             AST *retstmt;
             ASTReportInfo saveinfo;
             AstReportAs(pf->body, &saveinfo); // use old debug info
