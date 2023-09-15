@@ -24,8 +24,9 @@
 
 typedef struct pfsfile {
     struct _default_buffer b;
-    uint32_t handle;
-    uint32_t offset;
+    int32_t handle;
+    int32_t offset;
+    int32_t file_size;
 } pfs_file;
     
 static struct __using("filesys/parallax/flash_fs.spin2", MAX_FILES_OPEN=PFS_MAX_FILES_OPEN) FlashFS;
@@ -82,7 +83,10 @@ static int v_creat(vfs_file_t *fil, const char *pathname, mode_t mode)
 #ifdef _DEBUG_PFS
     __builtin_printf("v_creat: handle %d\n", r);
 #endif
-    fil->vfsdata = (void *)r;  // flashfs handle
+    f->handle = r;
+    f->file_size = 0;
+    f->offset = 0;
+    fil->vfsdata = (void *)f;
     return 0;
 }
 
@@ -186,6 +190,13 @@ static ssize_t v_read(vfs_file_t *fil, void *buf_p, size_t siz)
     if (r == 0) {
         fil->state |= _VFS_STATE_EOF;
     }
+    if (r > 0) {
+        f->offset += r;
+        if (f->offset > f->file_size) {
+            // unlikely, but maybe some other handle was used to extend the file??
+            f->file_size = f->offset;
+        }
+    }
 #ifdef _DEBUG_PFS
     __builtin_printf("returning %d\n", r);
 #endif    
@@ -209,6 +220,12 @@ static ssize_t v_write(vfs_file_t *fil, void *buf_p, size_t siz)
     if (r == 0) {
         fil->state |= _VFS_STATE_EOF;
     }
+    if (r > 0) {
+        f->offset += r;
+        if (f->offset > f->file_size) {
+            f->file_size = f->offset;
+        }
+    }
 #ifdef _DEBUG_PFS
     __builtin_printf("returning %d\n", r);
 #endif    
@@ -217,10 +234,33 @@ static ssize_t v_write(vfs_file_t *fil, void *buf_p, size_t siz)
 
 static off_t v_lseek(vfs_file_t *fil, off_t offset, int whence)
 {
-    // not supported yet
-    // FIXME: the new flash_fs supports absolute seek, so if we
-    // keep track of the offset ourselves we can do lseek
-    return _seterror(ENOSYS);
+    pfs_file *f = fil->vfsdata;
+    int handle = f->handle;
+    int32_t where;
+    int r;
+    
+    switch (whence) {
+    case SEEK_SET:
+        where = offset; break;
+    case SEEK_CUR:
+        where = f->offset + offset; break;
+    case SEEK_END:
+        where = f->file_size + offset; break;
+    default:
+        return _seterror(EINVAL);
+    }
+    if (where < 0 || where > f->file_size) {
+        // technically seeking past end of file should extend the file,
+        // but that's tricky and parallax FS doesn't support it
+        return _seterror(EINVAL);
+    }
+    r = FlashFS.seek(handle, where, FlashFS.SK_FILE_START);
+    if (r < 0) {
+        // error
+        return _seterror(ConvertError(r));
+    }
+    f->offset = where;
+    return where;
 }
 
 static int v_ioctl(vfs_file_t *fil, unsigned long req, void *argp)
@@ -262,6 +302,8 @@ static int v_open(vfs_file_t *fil, const char *name, int flags)
 {
     pfs_file *f;
     int handle = -1;
+    int fsize = -1;
+    int offset = 0;
     int mode;
   
 #ifdef _DEBUG_PFS
@@ -275,12 +317,16 @@ static int v_open(vfs_file_t *fil, const char *name, int flags)
     mode = flags & O_ACCMODE;
     switch (mode) {
     case O_RDONLY:
+        fsize = FlashFS.file_size(name);
         handle = FlashFS.Open(name, 'r');
         break;
     case O_WRONLY:
         if (flags & O_APPEND) {
+            fsize = FlashFS.file_size(name);
+            offset = fsize;
             handle = FlashFS.Open(name, 'a');
         } else {
+            fsize = 0;
             handle = FlashFS.Open(name, 'w');
         }
         break;
@@ -303,6 +349,8 @@ static int v_open(vfs_file_t *fil, const char *name, int flags)
         return _seterror(ConvertError(handle));
     }
     f->handle = handle;
+    f->offset = offset;
+    f->file_size = fsize;
     fil->vfsdata = (void *)f;
     return 0;
 }
