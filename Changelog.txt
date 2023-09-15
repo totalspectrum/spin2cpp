@@ -3,6 +3,7 @@ Version 6.5.0
 - Added support for NeoYume style ARGv parameters in C
 - Added execl() function in C
 - Added DATE$, TIME$, and SETTIME functions to BASIC
+- Added rewind() function in C
 - Allow arguments to be passed in the BASIC CHAIN function
 - Fixed `-x` option in flexcc
 - Fixed interaction between Parallax FS and stdio FILEs when multiple FILEs are open
