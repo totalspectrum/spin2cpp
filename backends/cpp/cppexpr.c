@@ -1704,6 +1704,13 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
         PrintExpr(f, expr->right, flags);
         flexbuf_printf(f, "; __tmp; } )");
         break;
+    case AST_FIELDREF:
+        flexbuf_printf(f, "Field[");
+        PrintExpr(f, expr->left, flags);
+        flexbuf_printf(f, "][");
+        PrintExpr(f, expr->right, flags);
+        flexbuf_printf(f, "]");
+        break;
     default:
         ERROR(expr, "Internal error, bad expression");
         break;
