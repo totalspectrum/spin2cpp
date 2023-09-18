@@ -1,11 +1,4 @@
-'' NOTE: this is a modified version of the original from
-'' https://github.com/ironsheep/P2-FLASH-FS
-''
-'' I ported it to flexspin, and changed the return values for read() and write()
-'' if I've broken something, it's my fault!
-''   - Eric Smith
-'' original documentation below
-''
+'' Slightly modified by Eric Smith for FlexProp usage (18 SEP 2023)
 '' =================================================================================================
 ''
 ''   File....... flash_fs.spin2
@@ -17,17 +10,19 @@
 ''               -- see below for terms of use
 ''   E-mail.....stephen@ironsheep.biz
 ''   Started.... AUG 2023
-''   Updated.... 13 SEP 2023
+''   Updated.... 14 SEP 2023
 ''
 '' =================================================================================================
 '' v1.2.0 - initial release of flash_fs with full API
 '' v1.2.1 - revised seek() method parameters - can now seek relative to current position in file
+'' v1.3.0 - update for flexspin compatibility, seek() returns file position, write() returns bytes written
+'' v1.3.1 - more update for flexspin compatibility, adjusted seek(), read() and write() add file_size_for_handle()
 '' -------------------------------------------------------------------------------------------------
 
 
 con { version }
 
-  LIB_VERSION = 121                                             ' 1.2.1
+  LIB_VERSION = 131                                             ' 1.3.1
 
   #true,  ON, OFF
   #false, NO, YES
@@ -352,7 +347,7 @@ pub format() : status | block_address, cycleBits
 ''
 '' @returns status - 0 (SUCCESS) if successful,
 '' .. E_BAD_BLOCKS_REMOVED if BAD blocks were found and fixed,
-'' .. E_NO_LOCK_AVAIL if all 16 LOCKs are in use, otherwise 0 for success
+'' .. E_NO_LOCK_AVAIL if all 16 LOCKs are in use,
 '' .. E_NOT_MOUNTED if filesystem has not been mounted
 
 ' Local Variables:
@@ -414,7 +409,7 @@ pub open(p_filename, mode) : handle
 '' .. E_FILE_MODE if mode letter(s) is/are invalid,
 '' .. E_DRIVE_FULL if flash filesystem is full (write/append mode),
 '' .. E_FILE_OPEN if file is already open,
-'' .. E_FILE_NOT_FOUND if file does not exist (read mode),
+'' .. E_FILE_NOT_FOUND if file does not exist (read mode)
 
 ' PENDING -- mode "r+", "R+" to read from or / write to anywhere within an existing file
 
@@ -492,11 +487,11 @@ pub open_circular(p_filename, mode, max_file_length) : handle
 '' @returns handle - handle to open file if successful,
 '' .. E_NOT_MOUNTED if filesystem has not been mounted,
 '' .. E_NO_HANDLE if no handle is available,
-'' .. E_BAD_FILE_LENGTH if file length is negative or zero
+'' .. E_BAD_FILE_LENGTH if file length is negative or zero,
 '' .. E_FILE_MODE if mode letter(s) is/are invalid,
 '' .. E_FILE_NOT_FOUND if file does not exist (read mode),
 '' .. E_DRIVE_FULL if flash filesystem is full (write/append mode),
-'' .. E_FILE_OPEN if file is already open,
+'' .. E_FILE_OPEN if file is already open
 
   if fsMounted == false
     return (errorCode := E_NOT_MOUNTED)
@@ -550,7 +545,7 @@ pub flush(handle) : status
 ''
 '' @param handle - a handle to an open file
 '' @returns status - 0 (SUCCESS) if successful,
-'' .. E_FILE_MODE if close doens't recognize this file mode (internal error)
+'' .. E_FILE_MODE if close doesn't recognize this file mode (internal error),
 '' .. E_BAD_HANDLE if the handle is not valid
 
   if fsMounted == false
@@ -578,7 +573,7 @@ pub close(handle) : status
 ''
 '' @param handle - a handle to an open file
 '' @returns status - 0 (SUCCESS) if successful,
-'' .. E_FILE_MODE if close doens't recognize this file mode (internal error)
+'' .. E_FILE_MODE if close doesn't recognize this file mode (internal error),
 '' .. E_BAD_HANDLE if the handle is not valid
 
   if fsMounted == false
@@ -753,6 +748,33 @@ pub file_size(p_filename) : size_in_bytes | signature
   lockrel(fsLock)                                                               ' release the lock, we're done with it
 
 
+pub file_size_for_handle(handle) : size_in_bytes
+
+'' Return size of file in bytes
+''
+'' @param handle - a handle to an open file
+'' @returns size_in_bytes - either the count of bytes contained in the file or
+'' .. E_NOT_MOUNTED if filesystem has not been mounted,
+'' .. E_FILE_NOT_FOUND if the file doesn't exist
+
+' Local Variables:
+' @local signature - block state bits of block being checked
+
+  if fsMounted == false
+    return (errorCode := E_NOT_MOUNTED)
+
+  repeat while locktry(fsLock) == 0                                             ' lock for exlusive use
+
+  errorCode := SUCCESS                                                          ' new operation clear any prior error code
+
+  if hHeadBlockID[handle] <> NOT_VALID                                          'should we not know the current file lenght..
+    size_in_bytes, _, _ := count_file_bytes(field[IDToBlock][hHeadBlockID[handle]])
+  else
+    size_in_bytes := (errorCode := E_FILE_NOT_FOUND)
+
+  lockrel(fsLock)                                                               ' release the lock, we're done with it
+
+
 pub file_size_unused(p_filename) : size_in_bytes_unused | signature
 
 '' Return the number of bytes not yet written in the last allocated block
@@ -782,22 +804,22 @@ pub file_size_unused(p_filename) : size_in_bytes_unused | signature
   lockrel(fsLock)                                                               ' release the lock, we're done with it
 
 
-pub seek(handle, position, whence) : status | file_length, file_position
+pub seek(handle, position, whence) : end_position | file_length, file_position
 
 '' Postion seek file pointer to position within the file or at the end of the file
-'' -- use 0 for position to seek to the start of the file
-'' -- use "size of file" to seek to the end of the file for append
+'' -- use 0, SK_FILE_START for position to seek to the start of the file
+'' -- use POSX, SK_FILE_START (largest positive LONG value) for position to seek to the current end of the file
 ''
 '' @param handle - a handle to an open file
 '' @param position - position (in bytes) within the file (0 to length-1)
-''  use  seek(handle, POSX, SK_SET)  to seek to end of the file
+''  use  seek(handle, POSX, SK_FILE_START) to seek to end of the file
 '' @param whence - meaning of position: [SK_FILE_START, SK_CURRENT_POSN]
-'' @returns status - 0 (SUCCESS) if successful,
+'' @returns end_position - within the file to which the file pointer was set, or
 '' .. E_NOT_MOUNTED if filesystem has not been mounted,
-'' .. E_BAD_HANDLE if the handle is not valid
+'' .. E_BAD_HANDLE if the handle is not valid,
 '' .. E_BAD_SEEK_ARG if invalid whence value,
-'' .. E_FILE_MODE if the file is not open in a mode supporting seeks
-'' .. E_FILE_SEEK if attempted seek past either end of file
+'' .. E_FILE_MODE if the file is not open in a mode supporting seeks,
+'' .. E_FILE_SEEK if attempted seek past either end of file (and didn't use POSX for tail)
 
 ' Local Variables:
 ' @local file_length - temporary for calculated file length
@@ -829,34 +851,38 @@ pub seek(handle, position, whence) : status | file_length, file_position
   else
     ' for SK_CURRENT_POSN, we need to calculate the adjusted position
     file_position := hSeekPtr[handle] <> NOT_ENABLED ? hSeekFileOffset[handle] : 0 ' if seek mode enabled, use seek pointer, else use 0
-    file_position += position                                               ' calculate the adjusted position
+    file_position += position                                                   ' calculate the adjusted position
 
   file_length, _, _ := count_file_bytes(field[IDToBlock][hHeadBlockID[handle]]) ' get the file length
   'debug("seek(", udec_(position), "), FSize=(", udec_(file_length), ")")
+
+  if file_length > 0 and position == POSX                                       ' if have file length and attempting to seek beyond, limit to end of file
+    file_position := file_length
+
   if file_length < 0
-    status := (errorCode := file_length)                                        ' error, return the error code instead of a SUCCESS status
+    end_position := (errorCode := file_length)                                  ' error, return the error code instead of a SUCCESS status
 
   elseif hCircularLength[handle] > 0 and (file_position < 0 or file_position > hCircularLength[handle]) ' if circular file and position is out of range
-    status := (errorCode := E_FILE_SEEK)                                        ' abort with error
+    end_position := (errorCode := E_FILE_SEEK)                                  ' abort with error
 
-  elseif file_position >= 0 and file_position <= file_length            ' is position within file? ( allow length + 1 for append )
+  elseif file_position >= 0 and file_position <= file_length                    ' is position within file? ( allow length + 1 for append )
     'debug("seek(", udec_(file_position), "), FSize=(", udec_(file_length), ") going to location, offset=(", sdec_(position), ")")
-    seek_to_block(handle, file_position)                                    ' yes, load buffer, setting file pointer to value within the buffer
-    status := SUCCESS                                                           ' no, return SUCCESS
+    seek_to_block(handle, file_position)                                        ' yes, load buffer, setting file pointer to value within the buffer
+    end_position := file_position                                               ' no, return SUCCESS
   else
-    status := (errorCode := E_FILE_SEEK)                                        ' no, abort with error
+    end_position := (errorCode := E_FILE_SEEK)                                  ' no, abort with error
 
-  lockrel(fsLock)                                                              ' release the lock, we're done with it
+  lockrel(fsLock)                                                               ' release the lock, we're done with it
 
 
-pub write(handle, p_buffer, count) : status | checkValue, byteIndex, wr_value, wr_status
+pub write(handle, p_buffer, count) : bytes_written | checkValue, byteIndex, wr_value, wr_status
 
 '' Write count bytes from p_buffer to the file associated with handle
 ''
 '' @param handle - the handle to the file to which to write byte(s)
 '' @param p_buffer - the address of the buffer containing the users' data to write
 '' @param count - the number of bytes to write to the file
-'' @returns status - 0 (SUCCESS) if successful,
+'' @returns bytes_written - the count of bytes written to the file or,
 '' .. E_NOT_MOUNTED if filesystem has not been mounted,
 '' .. E_BAD_HANDLE if the handle is not valid,
 '' .. E_FILE_MODE if the file is not open for writing,
@@ -877,17 +903,19 @@ pub write(handle, p_buffer, count) : status | checkValue, byteIndex, wr_value, w
   'debug("write(", udec(handle), uhex_long(p_buffer), udec(count) ,")")
 
   if (checkValue := ensure_handle_mode(handle, H_WRITE | H_REPLACE)) < 0        ' is handle valid and open for writing?
-     status := (errorCode := checkValue)                                        ' no, return error code
+     bytes_written := (errorCode := checkValue)                                 ' no, return error code
   else
     'debug("write() [",zstr_(p_buffer),"](",udec_(count),")")
-    status := 0
+    bytes_written := 0
     repeat byteIndex from 0 to count - 1                                        ' for the max length of the buffer
         wr_value := BYTE[p_buffer][byteIndex]
         if (wr_status := wr_byte_no_locks(handle, wr_value)) < 0                ' write a byte to the file (or to seek location in file)
-	    errorCode := wr_status                                              ' save the error code
-            status := (status > 0) ? status : errorCode                         ' return bytes written, or 0 on error
+            errorCode := wr_status                                              ' an error occured, set the error code
+            if bytes_written == 0                                               ' if no bytes written, return error
+                bytes_written := errorCode
             quit
-        status++
+        else
+            bytes_written++                                                     ' keep track of bytes written
 
   lockrel(fsLock)                                                               ' release the lock, we're done with it
 
@@ -901,7 +929,7 @@ pub wr_byte(handle, byteValue) : status | checkValue
 '' @returns status - 0 (SUCCESS) if successful,
 '' .. E_NOT_MOUNTED if filesystem has not been mounted,
 '' .. E_BAD_HANDLE if the handle is not valid,
-'' .. E_FILE_MODE if the file is not open for writing,
+'' .. E_FILE_MODE if the file is not open for writing
 
 ' Local Variables:
 ' @local checkValue - a temporary variable to hold the status returned from checking the handle
@@ -928,7 +956,7 @@ pri wr_byte_no_locks(handle, byteValue) : status | ptr, nextBlockID, isSeeking, 
 '' @param handle - handle to a file that is open for write or rewrite
 '' @param byteValue - value to write to the file
 '' @returns status - 0 (SUCCESS) if successful,
-'' .. E_BAD_HANDLE if the handle is not valid,
+'' .. E_BAD_HANDLE if the handle is not valid
 
 ' Local Variables:
 ' @local ptr - the address of the 4KB buffer for the file associated with this handle
@@ -982,7 +1010,7 @@ pri wr_byte_no_locks(handle, byteValue) : status | ptr, nextBlockID, isSeeking, 
         '    debug("+ wr_byte() ", uhex_word(hEndPtr[handle], handle))
 
 
-pub wr_word(handle, word_value) : status
+pub wr_word(handle, word_value) : status | writeLength
 
 '' Write WORD (16-bits) to file associated with handle
 '' -- order is Little Endian
@@ -992,12 +1020,13 @@ pub wr_word(handle, word_value) : status
 '' @returns status - 0 (SUCCESS) if successful,
 '' .. E_NOT_MOUNTED if filesystem has not been mounted,
 '' .. E_BAD_HANDLE if the handle is not valid,
-'' .. E_FILE_MODE if the file is not open for writing,
+'' .. E_FILE_MODE if the file is not open for writing
 
-  return write(handle, @word_value, 2)
+  writeLength := write(handle, @word_value, 2)
+  status := (writeLength < 0) ? writeLength : SUCCESS
 
 
-pub wr_long(handle, long_value) : status
+pub wr_long(handle, long_value) : status | writeLength
 
 '' Write LONG (32-bits) to file associated with handle
 '' -- order is Little Endian
@@ -1007,12 +1036,13 @@ pub wr_long(handle, long_value) : status
 '' @returns status - 0 (SUCCESS) if successful,
 '' .. E_NOT_MOUNTED if filesystem has not been mounted,
 '' .. E_BAD_HANDLE if the handle is not valid,
-'' .. E_FILE_MODE if the file is not open for writing,
+'' .. E_FILE_MODE if the file is not open for writing
 
-  return write(handle, @long_value, 4)
+  writeLength := write(handle, @long_value, 4)
+  status := (writeLength < 0) ? writeLength : SUCCESS
 
 
-pub wr_str(handle, p_str) : status
+pub wr_str(handle, p_str) : status | writeLength
 
 '' Write string (including the terminator) from p_str to file associate with handle
 ''
@@ -1021,10 +1051,11 @@ pub wr_str(handle, p_str) : status
 '' @returns status - 0 (SUCCESS) if successful,
 '' .. E_NOT_MOUNTED if filesystem has not been mounted,
 '' .. E_BAD_HANDLE if the handle is not valid,
-'' .. E_FILE_MODE if the file is not open for writing,
+'' .. E_FILE_MODE if the file is not open for writing
 
   'debug("write_str() [",zstr_(p_str),"](",udec_(strsize(p_str)+1),")")
-  return write(handle, p_str, strsize(p_str)+1)                 ' include string terminator
+  writeLength := write(handle, p_str, strsize(p_str)+1)                 ' include string terminator
+  status := (writeLength < 0) ? writeLength : SUCCESS
 
 
 pub read(handle, p_buffer, count) : bytes_read | byteIndex, readValue, checkValue
@@ -1059,18 +1090,16 @@ pub read(handle, p_buffer, count) : bytes_read | byteIndex, readValue, checkValu
   errorCode := SUCCESS                                                          ' new operation clear any prior error code
 
   if (checkValue := ensure_handle_mode(handle, H_READ)) < 0                     ' is handle valid and open for reading?
-     errorCode := checkValue                                                    ' no, set system error
-     bytes_read := 0                                                            ' no, 0 bytes read
+     bytes_read := (errorCode := checkValue)                                    ' no, set system error
   else
+    bytes_read := 0
     repeat byteIndex from 0 to count - 1                                        ' for the max length of the buffer
       if (readValue := rd_byte_no_locks(handle)) < 0                            ' read a byte from the file (or seek location)
           errorCode := readValue                                                ' another error occured, set system error
-          bytes_read := byteIndex                                               ' return bytes read so far
           quit
       else
         BYTE[p_buffer][byteIndex] := readValue                                  ' no error, place byte in the users buffer
-    if errorCode == SUCCESS                                                     ' if no error, return bytes read
-        bytes_read := byteIndex                                                ' return bytes read so far
+        bytes_read++		                                                ' update count of bytes read
 
   'debug("read(", udec_(count),") = (", sdec_(bytes_read),")")
 
@@ -1087,7 +1116,7 @@ pub rd_byte(handle) : value | ptr, signature, checkValue
 '' .. E_NOT_MOUNTED if filesystem has not been mounted,
 '' .. E_BAD_HANDLE if the handle is not valid,
 '' .. E_FILE_MODE if the file is not open for reading,
-'' .. E_END_OF_FILE if no more data,
+'' .. E_END_OF_FILE if no more data
 
 ' Local Variables:
 ' @local ptr - the address of the 4KB buffer for the file associated with this handle
@@ -1254,7 +1283,7 @@ pub directory(p_block_id, p_filename, p_file_size) : status | blockID, block_add
 '' @param p_filename - the filename of the file found (or a zero length string if no more files, must be address of 128 byte buffer!)
 '' @param p_file_size - the number of bytes in the file found (or 0 when no more files)
 '' @returns status - 0 (SUCCESS) if successful,
-'' .. E_NOT_MOUNTED if filesystem has not been mounted,
+'' .. E_NOT_MOUNTED if filesystem has not been mounted
 
 ' Local Variables:
 ' @local blockID - the id of the block being checked
@@ -1291,6 +1320,7 @@ pub stats() : used_blocks, free_blocks, file_count | block_address
 
 ' Local Variables:
 ' @local block_address - the block offset within the file system
+
   if fsMounted == false
     return (errorCode := E_NOT_MOUNTED), 0, 0
 
@@ -1765,7 +1795,7 @@ pri buffer_pointer(handle) : p_buffer
 
 ' Return a pointer to the block buffer for this handle
 '
-' @param handle - the handle to the file
+' @param handle - a handle to an open file
 ' @returns p_buffer -  the address of the 4KB buffer associated with this handle
 
   return @hBlockBuff + handle << BLOCK_SIZE_EXP
@@ -1825,7 +1855,7 @@ pri finish_pending_writes(handle): status | ptr, signature, head_block_address
 '
 ' @param handle - a handle to an open file
 ' @returns status - 0 (SUCCESS) if successful,
-' .. E_FILE_MODE if close doens't recognize this file mode (internal error)
+' .. E_FILE_MODE if close doesn't recognize this file mode (internal error)
 ' .. E_BAD_HANDLE if the handle is not valid
 
 ' commit chain notes
@@ -2774,6 +2804,8 @@ con { license }
   =================================================================================================
 
   Terms of Use: MIT License
+
+  Copyright (c) 2023 Iron Sheep Productions, LLC
 
   Permission is hereby granted, free of charge, to any person obtaining a copy of this
   software and associated documentation files (the "Software"), to deal in the Software
