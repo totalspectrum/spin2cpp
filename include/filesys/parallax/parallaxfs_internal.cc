@@ -148,14 +148,14 @@ static int v_readdir(DIR *dir, struct dirent *ent)
 #endif    
     FlashFS.Directory(&dir->vfsdata, buf, &size);
 #ifdef _DEBUG_PFS
-    r = __builtin_printf("..flash.close returned %d\n", r);
+    r = __builtin_printf("..flash.readdir returned %d\n", r);
 #endif    
+    if (buf[0] == 0) return -1; // EOF
+
 #ifdef _DEBUG_PFS
     _waitms(100);
     __builtin_printf(" ...buf=[%s] size=%d\n", buf, size);
 #endif    
-    if (buf[0] == 0) return -1; // EOF
-
     strcpy(ent->d_name, buf);
     ent->d_type = DT_REG; // all files are regular
     ent->d_size = FlashFS.file_size(buf);
@@ -180,7 +180,7 @@ static int v_stat(const char *name, struct stat *buf)
 #ifdef _DEBUG_PFS
         __builtin_printf("..flash.exists returned %d\n", r);
 #endif            
-        if (!r) {
+        if (r == 0) {
             return _seterror(ENOENT);
         }
         fsize = FlashFS.file_size(name);
@@ -196,7 +196,7 @@ static int v_stat(const char *name, struct stat *buf)
     buf->st_blksize = 4096;
     buf->st_blocks = (fsize + 4095) / 4096;
     buf->st_atime = buf->st_mtime = buf->st_ctime = 0;
-    return r;
+    return 0;
 }
 
 static ssize_t v_read(vfs_file_t *fil, void *buf_p, size_t siz)
@@ -213,10 +213,15 @@ static ssize_t v_read(vfs_file_t *fil, void *buf_p, size_t siz)
     r = FlashFS.read(handle, buf, siz);
 #ifdef _DEBUG_PFS
     __builtin_printf("..flash.read(%d, $%x, %d) returned %d\n", handle, (unsigned)buf, siz, r);
-#endif            
-    if (r == FlashFS.E_END_OF_FILE) r = 0;
+#endif
     if (r == 0) {
-        fil->state |= _VFS_STATE_EOF;
+        r = FlashFS.error();
+        if (r == FlashFS.E_END_OF_FILE) {
+            r = 0;
+            fil->state |= _VFS_STATE_EOF;
+        } else {
+            fil->state |= _VFS_STATE_ERR;
+        }
     }
     if (r > 0) {
         f->offset += r;
@@ -245,11 +250,14 @@ static ssize_t v_write(vfs_file_t *fil, void *buf_p, size_t siz)
 #ifdef _DEBUG_PFS
         __builtin_printf("..flash.write returned %d\n", r);
 #endif            
-    if (r == FlashFS.E_END_OF_FILE) {
-        r = 0;
-    }
     if (r == 0) {
-        fil->state |= _VFS_STATE_EOF;
+        r = FlashFS.error();
+        if (r == FlashFS.E_END_OF_FILE) {
+            r = 0;
+            fil->state |= _VFS_STATE_EOF;
+        } else {
+            fil->state |= _VFS_STATE_ERR;
+        }
     }
     if (r > 0) {
         f->offset += r;
