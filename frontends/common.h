@@ -725,7 +725,7 @@ extern int gl_colorize_output;
 enum printColorKind {PRINT_NORMAL,PRINT_NOTE,PRINT_WARNING,PRINT_ERROR,PRINT_DEBUG,PRINT_ERROR_LOCATION};
 extern enum printColorKind current_print_color;
 void SETCOLOR(enum printColorKind color);
-static inline void RESETCOLOR() {SETCOLOR(PRINT_NORMAL);};
+static inline void RESETCOLOR() {SETCOLOR(PRINT_NORMAL);}
 void ERROR(AST *, const char *msg, ...) __attribute__((format(printf,2,3)));
 void WARNING(AST *, const char *msg, ...) __attribute__((format(printf,2,3)));
 void ERROR_UNKNOWN_SYMBOL(AST *);
