@@ -376,7 +376,7 @@ static int  print_macro_inf(
  * Enabled by '#pragma MCPP debug macro_call' or -K option in STD mode.
  */
 {
-    MACRO_INF *     m_inf;
+    MACRO_INF *     m_inf = (MACRO_INF *)0;
     int     num;
     int     num_args;   /* Number of actual args (maybe less than expected) */
     int     i;

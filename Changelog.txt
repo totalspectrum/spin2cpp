@@ -1,3 +1,6 @@
+Version 6.5.1
+- Various internal compiler compatibility improvements
+
 Version 6.5.0
 - Added MKDIR function for BASIC
 - Added support for NeoYume style ARGv parameters in C

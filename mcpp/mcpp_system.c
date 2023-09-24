@@ -968,7 +968,7 @@ static char *   norm_path(
 #if SYS_FAMILY == SYS_UNIX
     char    slbuf2[ PATHMAX+1]; /* Working buffer for dereferencing */
 #endif
-#if SYSTEM == SYS_CYGWIN || SYSTEM == SYS_MINGW
+#if (SYSTEM == SYS_CYGWIN || SYSTEM == SYS_MINGW) && !defined(FLEXSPIN_BUILD)
     static char *   root_dir;
                 /* System's root directory in Windows file system   */
     static size_t   root_dir_len;

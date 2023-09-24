@@ -133,9 +133,9 @@ static const char * const   non_eval
         = " (in non-evaluated sub-expression)";             /* _W8_ */
 
 #if HAVE_LONG_LONG
-    static int  w_level = 1;    /* warn_level at overflow of long   */
+    static const int  w_level = 1;    /* warn_level at overflow of long   */
 #else
-    static int  w_level = 2;
+//    static int  w_level = 2;
 #endif
 
 /*
@@ -1180,9 +1180,11 @@ static expr_t   eval_unsigned(
     VAL_SIGN *      valp = *valpp;
     uexpr_t     v1 = 0;
     int     chk;        /* Flag of overflow in unsigned long long   */
+#if HAVE_LONG_LONG    
     int     minus;      /* Big integer converted from signed long   */
 
     minus = (v1u > ULONGMAX || v2u > ULONGMAX);
+#endif
 
     switch (op) {
     case OP_EOE:
