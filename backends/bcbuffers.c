@@ -61,19 +61,19 @@ OutputSpan *BOB_PushLong(ByteOutputBuffer *buf,uint32_t data,const char *comment
 }
 
 void BOB_ReplaceByte(OutputSpan *span,uint8_t data,const char *comment) {
-    return BOB_Replace(span,&data,1,comment);
+    BOB_Replace(span,&data,1,comment);
 }
 void BOB_ReplaceWord(OutputSpan *span,uint16_t data,const char *comment) {
     #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
         data = bswap16(data);
     #endif
-    return BOB_Replace(span,(uint8_t*)&data,2,comment);
+    BOB_Replace(span,(uint8_t*)&data,2,comment);
 }
 void BOB_ReplaceLong(OutputSpan *span,uint32_t data,const char *comment) {
     #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
         data = bswap32(data);
     #endif
-    return BOB_Replace(span,(uint8_t*)&data,4,comment);
+    BOB_Replace(span,(uint8_t*)&data,4,comment);
 }
 
 
