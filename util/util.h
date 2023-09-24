@@ -3,6 +3,11 @@
 
 #include <stdarg.h>
 #include <wchar.h>
+#ifdef WIN32
+#include <malloc.h>
+#else
+#include <alloca.h>
+#endif
 
 #if 0
 #define va_ptr          va_list
@@ -40,6 +45,11 @@ int dofmt( FmtPutchar func, void *funcarg, const char *fmt, va_ptr args );
 
 // convert an integer to a string using a specified base and precision
 int lltoa_prec( unsigned long long x, char *buf, unsigned base, int prec );
+
+// these are library functions on most systems
+extern char *strdup(const char *);
+extern int strcasecmp(const char *s1, const char *s2);
+extern int strncasecmp(const char *s1, const char *s2, size_t n);
 
 // make a string upper case (in place)
 char* strupr(char *origstr);
