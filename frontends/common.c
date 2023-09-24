@@ -2195,7 +2195,7 @@ DeclareInterfaceFunctionPointers(Module *P)
             // create a function pointer for it
             curtype = pf->overalltype;
             curtype = NewAST(AST_PTRTYPE, curtype, NULL);
-            name = malloc(strlen(pf->name) + 32);
+            name = (char *)malloc(strlen(pf->name) + 32);
             strcpy(name, pf->name);
             strcat(name, "__funcptr");
             idlist = AstIdentifier(name);

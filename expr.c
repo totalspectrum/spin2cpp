@@ -3723,7 +3723,7 @@ BuildExprlistFromObject(AST *origexpr, AST *typ)
             ERROR(expr, "Unable to find symbol at offset %d", i);
             break;
         }
-        int siz = TypeSize(sym->v.ptr);
+        int siz = TypeSize((AST *)sym->v.ptr);
         if (siz == 0) siz = LONG_SIZE;
         temp = NewAST(AST_METHODREF, expr, AstIdentifier(sym->our_name));
         temp = NewAST(AST_EXPRLIST, temp, NULL);

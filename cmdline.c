@@ -220,7 +220,7 @@ int ProcessCommandLine(CmdLineOptions *cmd)
             basename = "a.binary";
         }
         size_t len = strlen(basename) + 2;
-        our_progname = malloc(len + 1);
+        our_progname = (char *)malloc(len + 1);
         our_progname[0] = '\"';
         strcpy(our_progname+1, basename);
         our_progname[len-1] = '\"';
