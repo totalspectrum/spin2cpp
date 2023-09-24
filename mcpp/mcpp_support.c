@@ -67,6 +67,7 @@
  *              buffer.
  */
 
+#include    <stdio.h>   /* isn't this already in system.H??? */
 #include    "system.H"
 #include    "internal.H"
 
