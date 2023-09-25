@@ -1220,8 +1220,11 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
     if (instr->flags == FLAG_P2_CZTEST && !sawFlagUsed) {
         ERROR(line, "instruction %s requires flags to be tested", instr->name);
     }
-    else if ((instr->flags & FLAG_WARN_NOTUSED) && !sawFlagUsed) {
+    else if ((instr->flags & FLAG_WARN_WCZ_NOTUSED) && !sawFlagUsed) {
         WARNING(line, "instruction %s used without flags being set", instr->name);
+    }
+    else if ((instr->flags & FLAG_ERR_WCZ_NOTUSED) && !sawFlagUsed) {
+        ERROR(line, "instruction %s used without flags being set", instr->name);
     }
     if (instr->opc == OPC_BREAK && (*val & mask) != mask && !sawRet) {
         // _ret_ BRK actually does work

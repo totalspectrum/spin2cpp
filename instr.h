@@ -272,7 +272,7 @@ enum flags {
     FLAG_XORZ = 0x400,
 
     // warn if there are no wc, wz markers on the instruction
-    FLAG_WARN_NOTUSED = 0x800,
+    FLAG_WARN_WCZ_NOTUSED = 0x800,
     
     // not exactly an assembler feature, but should not
     // be touched by the optimizer
@@ -286,6 +286,9 @@ enum flags {
 
     // instruction came from user inline assembly
     FLAG_USER_INSTR   = 0x8000,
+
+    // error if there are no wc, wz markers on instruction
+    FLAG_ERR_WCZ_NOTUSED = 0x10000,
     
     // rest of the bits are used by the optimizer
     FLAG_LABEL_USED = 0x100000,

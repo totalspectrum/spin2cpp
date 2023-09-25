@@ -1,4 +1,5 @@
 Version 6.5.1
+- Changed some warnings about unused wcz flags into errors (when the corresponding instruction requires the flags)
 - Various internal compiler compatibility improvements
 
 Version 6.5.0
