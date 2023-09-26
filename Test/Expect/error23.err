@@ -1,0 +1,12 @@
+error22.spin:8: warning: () for empty parameter lists is a flexspin extension
+error22.spin:10: warning: used tabs for indentation (previous lines used spaces)
+error22.spin:11: warning: Using () for functions with no parameters is a flexspin extension
+error22.spin:11: warning: used spaces for indentation (previous lines used tabs)
+error22.spin:16: warning: mixing tabs and spaces for indentation on same line
+error22.spin:18: warning: used spaces for indentation (previous lines used tabs)
+error22.spin:25: warning: mixing tabs and spaces for indentation on same line
+error22.spin:27: warning: used tabs for indentation (previous lines used spaces)
+error22.spin:28: warning: used spaces for indentation (previous lines used tabs)
+error22.spin:30: warning: () for empty parameter lists is a flexspin extension
+error22.spin:31: warning: mixing tabs and spaces for indentation on same line
+error23.spin:15: warning: used tabs for indentation (previous lines used spaces)
