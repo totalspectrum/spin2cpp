@@ -683,9 +683,12 @@ static char *parse_getincludestring(ParseState *P)
     ptr = skip_quoted_string(ptr, endchar);
     if (!*ptr)
         return NULL;
+    P->c = 0; //*ptr;
+    *ptr++ = 0;
+    ptr++;
+    while (*ptr && *ptr != '\n') ptr++;
+    if (*ptr) ptr++;
     P->save = ptr;
-    P->c = *ptr;
-    *ptr = 0;
     return start;
 }
 
@@ -1160,6 +1163,7 @@ do_line(struct preprocess *pp)
             handle_define(pp, &P, 0);
         } else if (!strcasecmp(func, "include")) {
             handle_include(pp, &P);
+            return -1;  // suppress newline handling
         } else if (!strcasecmp(func, "pragma")) {
             if (!handle_pragma(pp, &P)) {
                 // pragma was not recognized, pass it through
@@ -1208,7 +1212,7 @@ pp_run(struct preprocess *pp)
             if (linelen == 0) {
                 /* add a newline so line number errors will be correct */
                 flexbuf_addchar(&pp->whole, '\n');
-            } else {
+            } else if (linelen > 0) {
                 char *line = flexbuf_get(&pp->line);
                 flexbuf_addstr(&pp->whole, line);
             }
