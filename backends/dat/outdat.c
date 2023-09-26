@@ -1828,7 +1828,14 @@ decode_instr:
             outputInstrLong(f, augval);
             immmask &= ~BIG_IMM_DST;
         } else if (dstRelocOff >= 0 && gl_p2) {
-            ERROR(line, "Use of immediate hub address in dest requires ##");
+            if (immmask & P2_IMM_DST) {
+                ERROR(line, "Destination immediate of %s requires ##", instr->name);
+            } else {
+                ERROR(line, "Destination of %s is not a register", instr->name);
+            }
+            /* eliminate the bogus relocation */
+            rptr = (Reloc *)(flexbuf_peek(relocs) + dstRelocOff);
+            rptr->kind = RELOC_KIND_NONE;
         }
         if (immmask & BIG_IMM_SRC) {
             uint32_t augval = val & 0xf0000000; // preserve condition
@@ -1845,15 +1852,30 @@ decode_instr:
             outputInstrLong(f, augval);
             immmask &= ~BIG_IMM_SRC;
         } else if (srcRelocOff >= 0 && gl_p2) {
-            ERROR(line, "Use of immediate hub address in src requires ##");
+            if (immmask & P2_IMM_SRC) {
+                ERROR(line, "Use of immediate hub address in source of %s requires ##", instr->name);
+            } else {
+                ERROR(line, "Source operand of %s is not a register", instr->name);
+            }
+            /* eliminate the bogus relocation */
+            rptr = (Reloc *)(flexbuf_peek(relocs) + srcRelocOff);
+            rptr->kind = RELOC_KIND_NONE;
         }
         if (src > 511) {
-            ERROR(line, "Source operand too big for %s", instr->name);
+            if (immmask & (P2_IMM_SRC|IMMEDIATE_INSTR)) {
+                ERROR(line, "Source operand too big for %s", instr->name);
+            } else {
+                ERROR(line, "Source operand of %s does not appear to be a register", instr->name);
+            }
             return;
         }
     }
     if (dst > 511) {
-        ERROR(line, "Destination operand too big for %s", instr->name);
+        if (immmask & P2_IMM_DST) {
+            ERROR(line, "Destination operand too big for %s", instr->name);
+        } else {
+            ERROR(line, "Destination operand of %s does not appear to be a register", instr->name);
+        }
         return;
     }
 instr_ok:
