@@ -5619,7 +5619,7 @@ call_ok:
                 } else {
                     break;
                 }
-            } else if (ir->opc == OPC_CALL && MaybeHubDest(ir->dst) ) {
+            } else if (IsBranch(ir) && MaybeHubDest(JumpDest(ir)) ) {
                 break;
             } else if (ir->opc == OPC_FCACHE) {
                 break;
