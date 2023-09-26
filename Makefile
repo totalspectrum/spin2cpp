@@ -287,8 +287,8 @@ endif
 	printf "@ $(BUILD)/flexspin$(EXT)\n@=bin/flexspin$(EXT)\n" | zipnote -w flexptools.zip
 
 # target to build preprocessor
-preprocess:
-	$(CC) -o preprocess -g -DTESTPP preprocess.c util/flexbuf.c util/dofmt.c util/strupr.c util/strrev.c util/lltoa_prec.c -lm
+preprocess: preprocess.c util/flexbuf.c util/dofmt.c util/strupr.c util/strrev.c util/lltoa_prec.c
+	$(CC) -o $@ -g -DTESTPP $^ -lm
 
 #
 # target to build a windows spincvt GUI
