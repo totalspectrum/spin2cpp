@@ -54,6 +54,8 @@
 #include "preprocess.h"
 #include "util/util.h"
 
+#define LINENO(A) ( ((A)->lineno) )
+
 // hook for keeping track of source files
 extern void AddSourceFile(const char *shortName, const char *fullName);
 
@@ -404,7 +406,7 @@ pp_push_file_struct(struct preprocess *pp, FILE *f, const char *filename)
     if (A->name) {
         size_t tempsiz = 128 + strlen(A->name);
         char *temp = (char *)alloca(tempsiz);
-        snprintf(temp, tempsiz, pp->linechange, A->lineno, A->name);
+        snprintf(temp, tempsiz, pp->linechange, LINENO(A), A->name);
         temp[tempsiz-1] = 0; /* make sure it is 0 terminated */
         flexbuf_addstr(&pp->whole, temp);
     }
@@ -453,7 +455,7 @@ void pp_pop_file(struct preprocess *pp)
         if (A && A->name) {
             char temp[128];
             temp[0] = '\n'; // force a newline
-            snprintf(temp+1, sizeof(temp)-1, pp->linechange, A->lineno, A->name);
+            snprintf(temp+1, sizeof(temp)-1, pp->linechange, LINENO(A), A->name);
             temp[127] = 0; /* make sure it is 0 terminated */
             flexbuf_addstr(&pp->whole, temp);
         }
@@ -1350,10 +1352,18 @@ void mcpp_export_define(const char *ident, const char *def)
 }
 
 #ifdef TESTPP
+int gl_errors;
+
+struct preprocess gl_pp;
+
+/* dummy stub */
+void AddSourceFile(const char *, const char *) {
+}
+
+/* test code */
 char *
 preprocess(const char *filename)
 {
-    struct preprocess pp;
     FILE *f;
     char *result;
 
@@ -1362,10 +1372,11 @@ preprocess(const char *filename)
         perror(filename);
         return NULL;
     }
-    pp_init(&pp);
-    pp_push_file_struct(&pp, f, filename);
-    pp_run(&pp);
-    result = pp_finish(&pp);
+    pp_init(&gl_pp);
+    pp_setcomments(&gl_pp, "'", "{", "}");  // set up for Spin comments
+    pp_push_file_struct(&gl_pp, f, filename);
+    pp_run(&gl_pp);
+    result = pp_finish(&gl_pp);
     fclose(f);
     return result;
 }

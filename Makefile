@@ -286,6 +286,10 @@ endif
 	printf "@ $(BUILD)/flexcc$(EXT)\n@=bin/flexcc$(EXT)\n" | zipnote -w flexptools.zip
 	printf "@ $(BUILD)/flexspin$(EXT)\n@=bin/flexspin$(EXT)\n" | zipnote -w flexptools.zip
 
+# target to build preprocessor
+preprocess:
+	$(CC) -o preprocess -g -DTESTPP preprocess.c util/flexbuf.c util/dofmt.c util/strupr.c util/strrev.c util/lltoa_prec.c -lm
+
 #
 # target to build a windows spincvt GUI
 # this has almost certainly bit-rotted
