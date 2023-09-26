@@ -1906,6 +1906,14 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             {
                 return intExpr(str[rval.val]);
             }
+        } else if (expr->left && IsIdentifier(expr->left) && IsConstExpr(expr->right)) {
+            ExprVal lval;
+            lval = EvalExpr(expr->left, flags, valid, depth+1);
+            if (IsIntType(lval.type)) {
+                ExprInt base = lval.val;
+                ExprInt offset = EvalConstExpr(expr->right);
+                return intExpr(base + offset);
+            }
         }
         break;
     case AST_ADDROF:

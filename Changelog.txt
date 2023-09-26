@@ -2,6 +2,7 @@ Version 6.5.1
 - Changed some warnings about unused wcz flags into errors (when the corresponding instruction requires the flags)
 - Fixed some problems with line numbers in errors & warnings after #include
 - Fixed a potential bug with fcaching of loops with a branch between them (thanks to Ada)
+- Fixed array access in ORG code in nu output
 - Improved some error messages
 - Various portability improvements for the source code itself
 
