@@ -242,6 +242,8 @@ enum astkind {
     AST_ASM_ENDIF  = 173,
     AST_EXPECT = 174,
     AST_PRINTDEBUG = 175,
+    AST_ERRHOLDER = 176,
+    
 };
 
 /* forward reference */

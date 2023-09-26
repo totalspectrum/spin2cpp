@@ -861,6 +861,7 @@ static const char *astnames[] = {
     "asm_endif",
     "expect",
     "print_debug",
+    "error_holder",
 };
 
 //
@@ -1077,8 +1078,8 @@ DumpAST(AST *ast)
 
 AST *DummyLineAst(int lineNum)
 {
-    AST *dummy = NewAST(AST_ANNOTATION, NULL, NULL);
-    dummy->lineidx = lineNum+1;
+    AST *dummy = NewAST(AST_ERRHOLDER, NULL, NULL);
+    dummy->d.ival = lineNum;  // the exact line number we wish to report
     return dummy;
 }
 
@@ -1095,7 +1096,8 @@ LineInfo *GetLineInfo(AST *ast)
     if (I) {
         i = ast->lineidx;
         size = (flexbuf_curlen(&L->lineInfo) / sizeof(*I));
-        if (i >= size) {
+        if (i >= size || ast->kind == AST_ERRHOLDER) {
+            // AST_ERRHOLDER always refers to the current file
             i = size - 1;
         }
         return I + i;

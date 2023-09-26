@@ -838,18 +838,36 @@ ERRORHEADER(const char *fileName, int lineno, const char *msg)
 
 }
 
+static void
+ERRORHEADER_AST(AST *ast, const char *msg)
+{
+    LineInfo *info = NULL;
+    const char *fname = NULL;
+    int lineno = 0;
+
+    if (ast) {
+        info = GetLineInfo(ast);
+        if (info) {
+            fname = info->fileName;
+            lineno = info->lineno;
+        }
+        if (ast->kind == AST_ERRHOLDER) {
+            // we asked for an error on a specific line
+            // GetLineInfo already gave us the current file name
+            lineno = ast->d.ival;
+        }
+    }
+    ERRORHEADER(fname, lineno, msg);
+}
+
 void
 ERROR(AST *instr, const char *msg, ...)
 {
     va_list args;
-    LineInfo *info = GetLineInfo(instr);
 
     SETCOLOR(PRINT_ERROR);
 
-    if (info)
-        ERRORHEADER(info->fileName, info->lineno, "error");
-    else
-        ERRORHEADER(NULL, 0, "error");
+    ERRORHEADER_AST(instr, "error");
 
     va_start(args, msg);
     vfprintf(stderr, msg, args);
@@ -903,12 +921,7 @@ LANGUAGE_WARNING(int language, AST *ast, const char *msg, ...)
         SETCOLOR(PRINT_WARNING);
     }
     if (ast) {
-        LineInfo *info = GetLineInfo(ast);
-        if (info) {
-            ERRORHEADER(info->fileName, info->lineno, banner);
-        } else {
-            ERRORHEADER(NULL, 0, banner);
-        }
+        ERRORHEADER_AST(ast, banner);
     } else if (current) {
         ERRORHEADER(current->Lptr->fileName, current->Lptr->lineCounter, banner);
     } else {
@@ -925,7 +938,6 @@ void
 WARNING(AST *instr, const char *msg, ...)
 {
     va_list args;
-    LineInfo *info = GetLineInfo(instr);
     const char *banner;
 
     if (gl_warnings_are_errors) {
@@ -936,10 +948,7 @@ WARNING(AST *instr, const char *msg, ...)
         banner = "warning";
         SETCOLOR(PRINT_WARNING);
     }
-    if (info)
-        ERRORHEADER(info->fileName, info->lineno, banner);
-    else
-        ERRORHEADER(NULL, 0, banner);
+    ERRORHEADER_AST(instr, banner);
 
     va_start(args, msg);
     vfprintf(stderr, msg, args);
@@ -952,14 +961,10 @@ void
 NOTE(AST *instr, const char *msg, ...)
 {
     va_list args;
-    LineInfo *info = GetLineInfo(instr);
 
     SETCOLOR(PRINT_NOTE);
 
-    if (info)
-        ERRORHEADER(info->fileName, info->lineno, "note");
-    else
-        ERRORHEADER(NULL, 0, "note: ");
+    ERRORHEADER_AST(instr, "note");
 
     va_start(args, msg);
     vfprintf(stderr, msg, args);
@@ -973,13 +978,9 @@ DEBUG(AST *instr, const char *msg, ...)
 {
     va_list args;
     if (gl_verbosity <= 0) return;
-    LineInfo *info = GetLineInfo(instr);
 
     SETCOLOR(PRINT_DEBUG);
-    if (info)
-        ERRORHEADER(info->fileName, info->lineno, "info");
-    else
-        ERRORHEADER(NULL, 0, "info");
+    ERRORHEADER_AST(instr, "info");
 
     va_start(args, msg);
     vfprintf(stderr, msg, args);
