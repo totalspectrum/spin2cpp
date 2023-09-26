@@ -1,0 +1,5 @@
+error24.spin2:16: warning: function main returns a value but was declared without a return variable
+error24.spin2:4: error: Destination of shl is not a register
+error24.spin2:5: error: Destination immediate of wrlong requires ##
+error24.spin2:6: error: Use of immediate hub address in source of mov requires ##
+error24.spin2:7: error: Immediate values are not allowed for first operand of wmlong

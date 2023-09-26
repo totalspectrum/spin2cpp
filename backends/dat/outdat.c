@@ -867,7 +867,10 @@ ImmMask(Instruction *instr, int opnum, bool bigImm, AST *ast)
                 /* check that immediate source is legal */
                 /* the L bit occupies the same place as Z, so if the
                    instruction can do a wz or wcz no immediate is legal */
-                if (instr->flags & (FLAG_WZ|FLAG_WCZ|FLAG_ANDZ)) {
+                if (instr->flags & (FLAG_WZ|FLAG_WCZ|FLAG_ANDZ)
+                    || !strcmp(instr->name, "wmlong")
+                    )
+                {
                     ERROR(ast, "Immediate values are not allowed for first operand of %s", instr->name);
                 }
                 mask = P2_IMM_DST;
@@ -1556,7 +1559,8 @@ decode_instr:
         src = 0;
         break;
     case P2_RDWR_OPERANDS:
-        dst = EvalOperandExpr(instr, operand[0]);
+        //dst = EvalOperandExpr(instr, operand[0]);
+        dst = EvalRelocPasmExpr(operand[0], f, relocs, &dstRelocOff, true, RELOC_KIND_AUGD);
         if (gl_p2 == P2_REV_A && strstr(instr->name, "lut")) {
             // in the original P2 silicon the LUT instructions are just
             // regular two operand instructions

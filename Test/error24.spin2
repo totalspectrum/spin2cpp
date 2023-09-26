@@ -1,0 +1,17 @@
+DAT
+	orgh
+mystart
+	shl cmdaddr, #2
+	wrlong #cmdaddr, y
+	mov x, #cmdaddr
+	wmlong #y, #x
+cmdaddr
+	long $aaaaaaaa
+	org 0
+x	res 1
+y	res 1
+
+	long 0
+	
+PUB main(x)
+  return @mystart
