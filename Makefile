@@ -119,7 +119,7 @@ DEPS ?= -MMD -MP
 #CFLAGS = $(OPT) -Wall -fwrapv $(INC) $(DEFS)
 #CFLAGS = -Og -g -Wall -fwrapv -Werror -std=c99 -D_XOPEN_SOURCE=600 $(INC) $(DEFS)
 #CFLAGS = -no-pie -pg -Wall -fwrapv $(INC) $(DEFS)
-CFLAGS = $(OPT) -Wall -fwrapv -Wc++-compat -Werror $(INC) $(DEFS)
+CFLAGS = $(OPT) -Wall -fwrapv -Wc++-compat $(INC) $(DEFS)
 LIBS = -lm
 RM = rm -rf
 
