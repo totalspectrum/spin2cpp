@@ -1906,7 +1906,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             {
                 return intExpr(str[rval.val]);
             }
-        } else if (expr->left && IsIdentifier(expr->left) && IsConstExpr(expr->right)) {
+        } else if (expr->left && IsIdentifier(expr->left) && IsConstExpr(expr->right) && (flags & PASM_FLAG)) {
             ExprVal lval;
             lval = EvalExpr(expr->left, flags, valid, depth+1);
             if (IsIntType(lval.type)) {
