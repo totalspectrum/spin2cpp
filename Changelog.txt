@@ -1,3 +1,6 @@
+Version 6.5.2
+- Fixed *scanf() for floating point values
+
 Version 6.5.1
 - Changed some warnings about unused wcz flags into errors (when the corresponding instruction requires the flags)
 - Fixed some problems with line numbers in errors & warnings after #include
