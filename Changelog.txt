@@ -1,5 +1,6 @@
 Version 6.5.2
 - Fixed *scanf() for floating point values
+- Fixed a problem parsing attributes attached to static functions.
 
 Version 6.5.1
 - Changed some warnings about unused wcz flags into errors (when the corresponding instruction requires the flags)
