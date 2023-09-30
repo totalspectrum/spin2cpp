@@ -382,6 +382,36 @@ static AST *IsGlobalRegisterDecl(AST *type)
     return NULL;
 }
 
+bool IsStaticType(AST *type) {
+    while (type && type->kind == AST_ANNOTATION)
+        type = type->left;
+    return type && type->kind == AST_STATIC;
+}
+
+AST *ExtractStaticType(AST *type) {
+    AST *annotations = NULL;
+    while (type && type->kind == AST_ANNOTATION) {
+        AST *item = DupAST(type);
+        item->left = annotations;
+        item->right = NULL;
+        annotations = item;
+        type = type->left;
+    }
+    if (type && type->kind == AST_STATIC) {
+        type = type->left;
+    }
+    // preserve the annotations
+    if (annotations) {
+        AST *base = type;
+        type = annotations;
+        while (annotations->left) {
+            annotations = annotations->left;
+        }
+        annotations->left = base;
+    }
+    return type;
+}
+
 static AST *
 MultipleDeclareVar(AST *first, AST *second)
 {
@@ -402,8 +432,8 @@ MultipleDeclareVar(AST *first, AST *second)
         if (module) {
             ERROR(first, ":: not supported yet");
         }
-        if (type && type->kind == AST_STATIC) {
-            stmtlist = AddToList(stmtlist, DeclareStatics(current, type->left, ident));
+        if (IsStaticType(type)) {
+            stmtlist = AddToList(stmtlist, DeclareStatics(current, ExtractStaticType(type), ident));
         } else if ( NULL != (regtype = IsGlobalRegisterDecl(type)) ) {
             /* declare a register global variable */
             ident = NewAST(AST_DECLARE_VAR, regtype, ident);
@@ -869,10 +899,6 @@ MergeOldStyleDeclarationList(AST *orig_funcdecl, AST *decl_list)
     return orig_funcdecl;
 }
 
-static int IsStatic(AST *ftype) {
-    return ftype && ftype->kind == AST_STATIC;
-}
-
 /* declare a typed function, optionally using a local identifier (if the function is STATIC) */
 static AST *
 DeclareCTypedFunction(Module *P, AST *ftype, AST *nameAst, int is_public, AST *body, AST *attribute)
@@ -890,7 +916,7 @@ DeclareCTypedFunction(Module *P, AST *ftype, AST *nameAst, int is_public, AST *b
     if (ftype && ftype->kind == AST_EXTERN) {
         ftype = ftype->left;
     }
-    if (IsStatic(ftype) && nameAst->kind == AST_IDENTIFIER) {
+    if (IsStaticType(ftype) && nameAst->kind == AST_IDENTIFIER) {
         /* declare a local alias for the name */
         const char *nameString = GetIdentifierName(nameAst);
         AST *globalName = AstTempIdentifier(nameString);

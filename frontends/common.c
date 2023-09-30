@@ -1819,6 +1819,13 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
         type = type->left;
         is_typedef = 1;
     }
+    while (type && type->kind == AST_ANNOTATION) {
+        type = type->left;
+    }
+    if (!type) {
+        ERROR(ident, "Internal error, only annotations found");
+        return;
+    }
     if (type->kind == AST_STATIC) {
         // FIXME: this case probably shouldn't happen any more??
         WARNING(ident, "Internal error, did not expect static in code");
