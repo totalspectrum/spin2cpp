@@ -1,4 +1,5 @@
 Version 6.5.2
+- Really added BASIC date/time functions (inadvertently not checked in)
 - Fixed *scanf() for floating point values
 - Fixed a problem parsing attributes attached to static functions.
 
