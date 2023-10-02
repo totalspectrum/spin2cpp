@@ -1,3 +1,6 @@
+Version 6.5.3
+- Improved error message for objects that are not found
+
 Version 6.5.2
 - Really added BASIC date/time functions (inadvertently not checked in)
 - Fixed *scanf() for floating point values

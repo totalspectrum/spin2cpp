@@ -26,6 +26,7 @@
  * +--------------------------------------------------------------------
  */
 #include <stdlib.h>
+#include <errno.h>
 #include <string.h>
 #include <stdarg.h>
 #include <ctype.h>
@@ -643,9 +644,10 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
 
     f = fopen(fname, "r");
     if (!f) {
-        fprintf(stderr, "Unable to open file `%s': ", fname);
-        perror("");
-        free(fname);
+        int lineNum = current->Lptr->lineCounter;
+        AST *errAst = DummyLineAst(lineNum);
+        
+        ERROR(errAst, "Unable to open file `%s': %s", fname, strerror(errno));
         exit(1);
     }
     AddSourceFile(shortName, fullName);
