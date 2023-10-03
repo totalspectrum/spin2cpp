@@ -644,8 +644,8 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
 
     f = fopen(fname, "r");
     if (!f) {
-        int lineNum = current->Lptr->lineCounter;
-        AST *errAst = DummyLineAst(lineNum);
+        int lineNum = current ? current->Lptr->lineCounter : 0;
+        AST *errAst = current ? DummyLineAst(lineNum) : NULL;
         
         ERROR(errAst, "Unable to open file `%s': %s", fname, strerror(errno));
         exit(1);
