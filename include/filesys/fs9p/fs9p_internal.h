@@ -42,6 +42,8 @@ enum {
     r_remove,
     t_stat = 124,
     r_stat,
+    t_wstat = 126,
+    r_wstat,
 };
 
 // maximum length we're willing to send/receive from host
