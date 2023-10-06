@@ -335,7 +335,7 @@ pri __builtin_ilogb(a=float) : r=long | s, x, m
 ' determine whether a float is NaN or not
 pri __builtin_isnanf(a=float) : r | s, x, m
   (s,x,m) := _float_Unpack(a)
-  if x < 128 || m == _float_one
+  if x < 128 %orelse m == _float_one
     return false
   return true
 
