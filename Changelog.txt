@@ -1,4 +1,5 @@
 Version 6.5.3
+- Implemented NAN() method for Spin2
 - Improved error message for objects that are not found
 - Reduced likelihood of duplicate function definitions in sub-objects
 

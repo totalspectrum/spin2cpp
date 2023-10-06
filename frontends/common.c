@@ -218,6 +218,8 @@ Aliases spin2alias[] = {
 
     { "strcopy", "__builtin_strncpy" },
 
+    { "nan", "__builtin_isnanf" },
+    
     /* obsolete aliases */
     { "outl_", "_outl" },
     { "outh_", "_outh" },

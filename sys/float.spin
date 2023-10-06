@@ -321,6 +321,7 @@ pri __builtin_copysign(x=float, y=float) : r=float
   r := (y>>31) << 31
   r |= x
 
+' calculate the log base 2 of a float
 pri __builtin_ilogb(a=float) : r=long | s, x, m
   (s,x,m) := _float_Unpack(a)
   if m == 0
@@ -331,10 +332,19 @@ pri __builtin_ilogb(a=float) : r=long | s, x, m
     return $8000_0000  ' NaN
   return x
 
+' determine whether a float is NaN or not
+pri __builtin_isnanf(a=float) : r | s, x, m
+  (s,x,m) := _float_Unpack(a)
+  if x < 128 || m == _float_one
+    return false
+  return true
+
+' calculate log2 of a fixed point number
 pri __builtin_ilogb_fixed(a) : r=long | n
   n := >|a
   r := n - 17
 
+' copy the sign of a fixed point number
 pri __builtin_copysign_fixed(x, s) : r=long
   if s < 0
     if x < 0
