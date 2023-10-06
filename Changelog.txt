@@ -1,5 +1,6 @@
 Version 6.5.3
 - Improved error message for objects that are not found
+- Reduced likelihood of duplicate function definitions in sub-objects
 
 Version 6.5.2
 - Really added BASIC date/time functions (inadvertently not checked in)

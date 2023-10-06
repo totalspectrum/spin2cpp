@@ -231,6 +231,8 @@ IdentifierLocalName(Function *func, const char *name)
     Module *P = func->module;
     if (IsTopLevel(P)) {
         snprintf(temp, sizeof(temp)-1, "_%s_", cleanname(func->name));
+    } else if (P->superclass && !IsTopLevel(P->superclass)) {
+        snprintf(temp, sizeof(temp)-1, "_%s_%s_%s_", P->superclass->classname, P->classname, cleanname(func->name));
     } else {
         snprintf(temp, sizeof(temp)-1, "_%s_%s_", P->classname, cleanname(func->name));
     }
@@ -245,6 +247,8 @@ IdentifierModuleName(Module *P, const char *name)
     if (IsTopLevel(P)) {
         // avoid conflict with built-in assembler names by prepending "_"
         snprintf(temp, sizeof(temp)-1, "_%s", cleanname(name));
+    } else if (P->superclass && !IsTopLevel(P->superclass)) {
+        snprintf(temp, sizeof(temp)-1, "_%s_%s_%s_", P->superclass->classname, P->classname, cleanname(name));
     } else {
         snprintf(temp, sizeof(temp)-1, "_%s_%s", P->classname, cleanname(name));
     }
