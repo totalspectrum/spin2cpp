@@ -560,6 +560,57 @@ int fs_stat(fs9_file *dir, const char *path, struct stat *buf)
     return r;
 }
 
+int fs_rename(fs9_file *dir, const char *origname, const char *newname)
+{
+    fs9_file f;
+    uint8_t *ptr, *szptr;
+    unsigned sz;
+    int r = fs_open_relative(dir, &f, origname, 0);
+    if (r != 0) {
+#ifdef _DEBUG_9P
+        __builtin_printf("rename: open_relative failed with %d\n", r);
+#endif        
+        return r;
+    }
+    // set up rename command
+    ptr = doPut4(txbuf, 0);      // space for total message size
+    ptr = doPut1(ptr, t_wstat);  // command
+    ptr = doPut2(ptr, NOTAG);    // only one command, so no tag needed
+    ptr = doPut4(ptr, (unsigned)&f);
+    szptr = ptr;                 // save pointer to size of wstat struct
+    ptr += 4;                    // skip two 2 byte sizes
+
+    // fill in type[2] dev[4] qid[13] mode[4] atime[4] mtime[4] length[8]
+    //  so 2 + 4 + 13 + 20 = 39 bytes total
+    memset(ptr, 0xff, 39);
+    ptr += 39;
+
+    // now copy in the new file name
+    ptr = doPutStr(ptr, newname);
+
+    // and some empty strings for uid, gid, muid
+    ptr = doPutStr(ptr, "");
+    ptr = doPutStr(ptr, "");
+    ptr = doPutStr(ptr, "");
+
+    sz = (ptr-szptr) - 2;
+
+    // fill in the earlier size fields
+    szptr = doPut2(szptr, sz);
+    szptr = doPut2(szptr, sz-2);
+
+    // now send the request
+    r = (*sendRecv)(txbuf, ptr, maxlen);
+    if (r < 5 || txbuf[4] != r_wstat) {
+#ifdef _DEBUG_9P
+        __builtin_printf("rename: sendRecv failed with r=%d\n", r);
+#endif        
+        return -EINVAL;
+    }
+    return 0;
+}
+
+
 //
 // VFS versions of the above
 //
@@ -825,8 +876,7 @@ static int v_rmdir(const char *name)
 
 static int v_rename(const char *oldname, const char *newname)
 {
-    // FIXME: should use wstat to implement the rename
-    return -ENOSYS;
+    return fs_rename(&rootdir, oldname, newname);
 }
 
 static int v_open(vfs_file_t *fil, const char *name, int flags)
