@@ -42,15 +42,17 @@ In order to avoid ambiguity it is suggested that the file name extension always 
     c: "otherthing.c"
 ```
 
+Note that when a BASIC or C file is included as an object in Spin, that single file becomes an independent object: the functions defined in the file are methods of the object, and variables are the members. If a file like "otherthing.c" is included multiple times, it will create multiple object instances (just like a Spin file does). Static variables in C and shared variables in BASIC are shared amongst instances (as though declared in a Spin DAT section); ordinary variables, by contrast, are per-instance member variables (as though declared in a Spin VAR section).
+
 ### Objects in other languages
 
-In BASIC `class using` and C `struct __using` the full filename of the source object, including extension, must always be used.
+Files (Spin, BASIC, or C) may be included as objects in BASIC via `class using`, or in C via `struct __using`. Both of these require the filename to include the extension.
 
 BASIC and C also allow inline declarations of classes, using `class`. See the respective language documents for more details.
 
 ### Calling cross language
 
-Every language may call functions written in the other languages. Spin and BASIC are case-insensitive, but C is case sensitive. This means that even in a Spin or BASIC program, you must use the proper case in order to access C functions or variables.
+Every language may call functions written in the other languages. Spin and BASIC are case-insensitive, but C is case sensitive. This means that even in a Spin or BASIC program, you must use the proper case in order to access C functions or variables. It also means that symbols declared in Spin or BASIC may unexpectedly conflict with symbols in C: for example, a Spin constant named `DEVPIN` may conflict with a C symbol named `DevPin`, because the Spin constant is case-insensitive. It is relatively rare for such conflicts to arise, but it is good to be aware of the possibility.
 
 ## Inline assembly
 
@@ -90,7 +92,7 @@ Do not try to declare registers; the inline assembly probably will not be runnin
 
 #### General Guidelines
 
-Try to keep inline assembly as simple as possible. Use the high level language for loops and conditional control structures; the high level language is there for a reason!
+Try to keep inline assembly as simple as possible. Use the high level language for loops and conditional control structures; the high level language is there for a reason! Generally the flexspin optimizer is fairly good at optimizing simple loops.
 
 ### Inline assembly in bytecode
 
@@ -141,7 +143,7 @@ Similarly use `__attribute__((lut))` to place the function into LUT memory.
 
 ### Small functions
 
-Small functions are expanded inline (without a function call) if the `-Oinline-small` optimization is specified. This option is enabled at `-O1` and `-O2`. In this case "small" means just a few assembly language instructions are generated for it (2 instructions for P1, 4 instructions for P2 where memory is not quite so constrained).
+Small functions are expanded inline (without a function call) if the `-Oinline-small` optimization is specified. This option is enabled at levels `-O1` and `-O2`. In this case "small" means just a few assembly language instructions are generated for it (2 instructions for P1, 4 instructions for P2 where memory is not quite so constrained).
 
 ### Forcing a function to be inline
 
