@@ -143,7 +143,11 @@ Similarly use `__attribute__((lut))` to place the function into LUT memory.
 
 ### Small functions
 
-Small functions are expanded inline (without a function call) if the `-Oinline-small` optimization is specified. This option is enabled at levels `-O1` and `-O2`. In this case "small" means just a few assembly language instructions are generated for it (2 instructions for P1, 4 instructions for P2 where memory is not quite so constrained).
+Small functions are expanded inline (without a function call) if the `-Oinline-small` optimization is specified. This option is enabled at levels `-O1` and `-O2`. In this case "small" means just a few assembly language instructions are generated for it (~2 instructions for P1, ~4 instructions for P2 where memory is not quite so constrained and branches are more expensive). The limit is increased for functions that have many arguments.
+
+### Pure functions
+
+Pure functions (roughly considered as functions that only contain a certain subset of constant-propagateable instructions) are expanded inline and successively constant-propagated. This optimization is only performed when constant-propagation is enabled (see below) AND experimental optimizations are also enabled (see below, too).
 
 ### Forcing a function to be inline
 
@@ -387,6 +391,7 @@ Optimizes some specialized function calls for common cases. For example, in the 
 
 pinread:  Optimized if just one pin is read
 pinwrite: Optimized if just one pin or one bit are being written
+memset:   Optimized if fill length is constant and a multiple of 4 bytes (P2 only)
 
 
 ### Reorder instructions for Cordic (-O1, -Ocordic-reorder)
@@ -401,7 +406,7 @@ Enables some more aggressive optimizations which attempt to track values and red
 
 Enables some miscellaneous optimizations that are new and hence slightly less well tested. Generally these should be pretty safe, but they're not quite ready for promotion to the default -O1.
 
-### Single Use Method inlining (-O2, -Oinline-single)
+### Single Use Method inlining (-O2, -Os, -Oinline-single)
 
 If a method is called only once in a whole program, it is expanded inline at the call site, even if it is a fairly large method.
 
@@ -435,6 +440,12 @@ is converted to the equivalent of
       aptr += 4
       bptr += 4
 ```
+
+### Cold code (-Ocold-code)
+
+Moves unlikely code paths (indicated using `__builtin_expect`) to the end of the function. This means the likely path can execute without taking any branches, in exchange for the unlikely path taking two branches. Also, due to outstanding refactoring of function epilogues, using this feature adds one taken branch when the function returns at its end.
+
+This optimization is not currently enabled by any flags. Use it cautiously.
 
 #### Multiply to addition
 

@@ -5445,6 +5445,7 @@ ShouldExpandPureFunction(IR *ir) {
     Function *f = (Function *)ir->aux;
     if (!(FuncData(f)->inliningFlags & ASM_INLINE_PURE_FLAG)) return false;
     if (!(gl_optimize_flags & OPT_EXPERIMENTAL)) return false;
+    if (!(gl_optimize_flags & OPT_CONST_PROPAGATE)) return false;
     if (f->numparams <= 0) return false;
 
     // Make sure all args are constants
