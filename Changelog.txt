@@ -1,4 +1,5 @@
 Version 6.5.3
+- Fixed an incorrect relocation check that caused spurious internal errors
 - Implemented NAN() method for Spin2
 - Implemented rename for host (9P) file system
 - Improved error message for objects that are not found
