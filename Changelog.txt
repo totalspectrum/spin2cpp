@@ -1,3 +1,6 @@
+Version 6.5.4
+- Minor optimization improvement (and major documentation improvements) courtesy of Ada
+
 Version 6.5.3
 - Fixed an incorrect relocation check that caused spurious internal errors
 - Implemented NAN() method for Spin2
