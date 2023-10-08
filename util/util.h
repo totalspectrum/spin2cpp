@@ -47,9 +47,18 @@ int dofmt( FmtPutchar func, void *funcarg, const char *fmt, va_ptr args );
 int lltoa_prec( unsigned long long x, char *buf, unsigned base, int prec );
 
 // these are library functions on most systems
+// a few make defines for them in <string.h>, so check for defines
+// in order to reduce conflicts
+
+#ifndef strdup
 extern char *strdup(const char *);
+#endif
+#ifndef strcasecmp
 extern int strcasecmp(const char *s1, const char *s2);
+#endif
+#ifndef strncasecmp
 extern int strncasecmp(const char *s1, const char *s2, size_t n);
+#endif
 
 // make a string upper case (in place)
 char* strupr(char *origstr);
