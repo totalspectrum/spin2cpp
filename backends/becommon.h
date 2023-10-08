@@ -55,13 +55,15 @@ typedef struct Reloc {
     int32_t  symoff;  // offset relative to sym
 } Reloc;
 
-#define RELOC_KIND_NONE  0  // no relocation, should not produce an entry
-#define RELOC_KIND_DEBUG 1  // not a real relocation, a debug entry
-#define RELOC_KIND_I32   2  // add a symbol to a 32 bit value
-#define RELOC_KIND_AUGS  3  // relocation for AUGS
-#define RELOC_KIND_AUGD  4  // relocation for AUGD
-#define RELOC_KIND_FPTR16 5 // relocation for function pointer (16 bits)
-#define RELOC_KIND_FPTR12 6 // relocation for function pointer (12 bits)
+enum Reloc_Kind {
+    RELOC_KIND_NONE = 0,  // no relocation, should not produce an entry
+    RELOC_KIND_DEBUG = 1,  // not a real relocation, a debug entry
+    RELOC_KIND_I32   = 2,  // add a symbol to a 32 bit value
+    RELOC_KIND_AUGS  = 3,  // relocation for AUGS
+    RELOC_KIND_AUGD  = 4,  // relocation for AUGD
+    RELOC_KIND_FPTR16 = 5, // relocation for function pointer (16 bits)
+    RELOC_KIND_FPTR12 = 6, // relocation for function pointer (12 bits)
+};
 
 /* find the backend name for a symbol */
 const char *BackendNameForSymbol(Symbol *sym);
