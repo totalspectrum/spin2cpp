@@ -2103,6 +2103,7 @@ struct reservedword {
     { "%if", SP_ASM_IF },
     { "if", SP_IF },
     { "ifnot", SP_IFNOT },
+    { "%interface", SP_INTERFACE },
 
     { "long", SP_LONG },
     { "lookdown", SP_LOOKDOWN },
