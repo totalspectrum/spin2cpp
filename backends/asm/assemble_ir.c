@@ -527,6 +527,7 @@ again:
                     break;
                 case RELOC_KIND_AUGD:
                 case RELOC_KIND_AUGS:
+                    indexedFunc = false;
                     if (bytesPending < 8) {
                         ERROR(NULL, "Internal error, not enough space for reloc");
                         return;
