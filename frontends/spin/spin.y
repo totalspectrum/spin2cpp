@@ -163,6 +163,7 @@ FixupList(AST *list)
 %token SP_PUB        "PUB"
 %token SP_PRI        "PRI"
 %token SP_OBJ        "OBJ"
+%token SP_INTERFACE  "%INTERFACE"
 %token SP_ASM        "ASM"
 %token SP_ASM_CONST  "ASM_CONST"
 %token SP_ENDASM     "ENDASM"
