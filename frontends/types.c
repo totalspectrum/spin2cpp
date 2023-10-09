@@ -135,6 +135,39 @@ bool VerifyIntegerType(AST *astForError, AST *typ, const char *opname)
     return false;
 }
 
+/*
+ * check the current boolean type
+ */
+AST *
+CurBoolType()
+{
+    int language = GetCurrentLang();
+    if (IsCLang(language)) {
+        return ast_type_c_boolean;
+    }
+    return ast_type_basic_boolean;
+}
+
+/*
+ * provide a result for unordered comparisons
+ * like NaN = NaN
+ */
+static int
+UnorderedResult(int op)
+{
+    switch (op) {
+    case '>':
+    case K_GE:
+        return -1;
+    case '<':
+    case K_LE:
+    case K_EQ:
+    case K_NE:
+    default:
+        return 1;
+    }
+}
+
 // create a call to function func with parameters ast->left, ast->right
 // there is an optional 3rd argument too
 static AST *
@@ -407,30 +440,34 @@ domakefloat(AST *typ, AST *ast)
 }
 
 static AST *
-dofloatToInt(AST *ast, AST *typ)
+dofloatToInt(AST *ast, AST *srctyp, AST *dsttyp)
 {
     AST *ret;
 
-    if (gl_fixedreal) {
+    if (IsBoolType(dsttyp)) {
+        ret = AstOperator(K_NE, NULL, NULL);
+        if (gl_fixedreal) {
+            ret->left = ast;
+        } else {
+            ret->left = MakeOperatorCall(float_cmp, ast, AstInteger(0), AstInteger(UnorderedResult(K_NE)));
+        }
+        ret->right = AstInteger(0);
+    } else if (gl_fixedreal) {
         // FIXME: should we round here??
         ret = AstOperator(K_SAR, ast, AstInteger(G_FIXPOINT));
-        return ret;
-    }
-    if (IsFloat64Type(typ)) {
-        ast = MakeOperatorCall(double_toint, ast, NULL, NULL);
-        return ast;
-    }
-    if (IsConstExpr(ast)) {
+    } else if (IsFloat64Type(srctyp)) {
+        ret = MakeOperatorCall(double_toint, ast, NULL, NULL);
+    } else if (IsConstExpr(ast)) {
         union f_or_i {
             float floatbits;
             int intbits;
         } g;
         g.intbits = EvalConstExpr(ast);
-        ast = AstInteger((int)g.floatbits);
+        ret = AstInteger((int)g.floatbits);
     } else {
-        ast = MakeOperatorCall(float_toint, ast, NULL, NULL);
+        ret = MakeOperatorCall(float_toint, ast, NULL, NULL);
     }
-    return ast;
+    return ret;
 }
 
 static AST *
@@ -453,11 +490,11 @@ dofloatToDouble(AST *ast, AST *typ)
 bool MakeBothIntegers(AST *ast, AST *ltyp, AST *rtyp, const char *opname)
 {
     if (IsFloatType(ltyp)) {
-        ast->left = dofloatToInt(ast->left, ltyp);
+        ast->left = dofloatToInt(ast->left, ltyp, ast_type_long);
         ltyp = ast_type_long;
     }
     if (IsFloatType(rtyp)) {
-        ast->right = dofloatToInt(ast->right, rtyp);
+        ast->right = dofloatToInt(ast->right, rtyp, ast_type_long);
         rtyp = ast_type_long;
     }
     return VerifyIntegerType(ast, ltyp, opname) && VerifyIntegerType(ast, rtyp, opname);
@@ -478,11 +515,11 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
     if (op == K_MODULUS) {
         // MOD operator converts float operands to integer
         if (IsFloatType(lefttype)) {
-            ast->left = dofloatToInt(ast->left, lefttype);
+            ast->left = dofloatToInt(ast->left, lefttype, ast_type_long);
             lefttype = ast_type_long;
         }
         if (IsFloatType(righttype)) {
-            ast->right = dofloatToInt(ast->right, righttype);
+            ast->right = dofloatToInt(ast->right, righttype, ast_type_long);
             righttype = ast_type_long;
         }
     }
@@ -733,26 +770,6 @@ IsBasicString(AST *typ)
     return 0;
 }
 
-/*
- * provide a result for unordered comparisons
- * like NaN = NaN
- */
-static int
-UnorderedResult(int op)
-{
-    switch (op) {
-    case '>':
-    case K_GE:
-        return -1;
-    case '<':
-    case K_LE:
-    case K_EQ:
-    case K_NE:
-    default:
-        return 1;
-    }
-}
-
 void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
 {
     int isfloat = 0;
@@ -853,7 +870,9 @@ void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
             int lsize = TypeSize(lefttype);
             int rsize = TypeSize(righttype);
             if (lsize == 4 && rsize == 4 && op != K_EQ && op != K_NE) {
-                WARNING(ast, "signed/unsigned comparison may not work properly");
+                if (!IsBoolType(lefttype) && !IsBoolType(righttype)) {
+                    WARNING(ast, "signed/unsigned comparison may not work properly");
+                }
             }
         }
     }
@@ -982,11 +1001,11 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
     case K_SAR:
     case K_SHL:
         if (lefttype && IsFloatType(lefttype)) {
-            ast->left = dofloatToInt(ast->left, lefttype);
+            ast->left = dofloatToInt(ast->left, lefttype, ast_type_long);
             lefttype = ExprType(ast->left);
         }
         if (righttype && IsFloatType(righttype)) {
-            ast->right = dofloatToInt(ast->right, righttype);
+            ast->right = dofloatToInt(ast->right, righttype, ast_type_long);
             righttype = ExprType(ast->right);
         }
         if (ast->d.ival == K_SAR && lefttype && IsUnsignedType(lefttype)) {
@@ -1068,8 +1087,12 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
     case K_NE:
     case K_GE:
     case '>':
+    case K_LTU:
+    case K_LEU:
+    case K_GTU:
+    case K_GEU:
         CompileComparison(ast->d.ival, ast, lefttype, righttype);
-        return ast_type_long;
+        return CurBoolType();
     case K_NEGATE:
     case K_ABS:
     case K_SQRT:
@@ -1179,19 +1202,19 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
         if (IsFloatType(lefttype)) {
             isfloat64 = IsFloat64Type(lefttype);
             ast->left = MakeOperatorCall(isfloat64 ? double_cmp : float_cmp, ast->left, AstInteger(0), AstInteger(1));
-            lefttype = ast_type_long;
+            lefttype = CurBoolType();
         }
         if (IsFloatType(righttype)) {
             isfloat64 = IsFloat64Type(righttype);
             ast->right = MakeOperatorCall(isfloat64 ? double_cmp : float_cmp, ast->right, AstInteger(0), AstInteger(1));
-            righttype = ast_type_long;
+            righttype = CurBoolType();
         }
         if (lefttype && !IsBoolCompatibleType(lefttype)) {
             ERROR(ast, "Expression not compatible with boolean operation");
         } else if (righttype && !IsBoolCompatibleType(righttype)) {
             ERROR(ast, "Expression not compatible with boolean operation");
         }
-        return ast_type_long;
+        return CurBoolType();
     case K_INCREMENT:
     case K_DECREMENT:
         if ( (lefttype && IsConstType(lefttype) )
@@ -1292,7 +1315,7 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
         if (!astptr) {
             ERROR(line, "Unable to convert float function result to integer");
         } else {
-            expr = dofloatToInt(expr, srctype);
+            expr = dofloatToInt(expr, srctype, desttype);
             *astptr = expr;
         }
         AstReportDone(&saveinfo);
@@ -1475,7 +1498,7 @@ doCast(AST *desttype, AST *srctype, AST *src)
     }
     if (IsPointerType(desttype) || IsGenericType(desttype)) {
         if (IsFloatType(srctype)) {
-            src = dofloatToInt(src, srctype);
+            src = dofloatToInt(src, srctype, ast_type_long);
             srctype = ast_type_long;
         }
         if (IsArrayType(srctype)) {
@@ -1534,7 +1557,7 @@ doCast(AST *desttype, AST *srctype, AST *src)
     }
     if (IsIntType(desttype)) {
         if (IsFloatType(srctype)) {
-            src = dofloatToInt(src, srctype);
+            src = dofloatToInt(src, srctype, ast_type_long);
             srctype = ast_type_long;
         }
         if (IsPointerType(srctype)) {

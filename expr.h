@@ -95,6 +95,7 @@ int IsUnsignedType(AST *typ);
 int IsGenericType(AST *typ);
 int IsPointerType(AST *typ);
 int IsRefType(AST *typ);
+int IsBoolType(AST *typ);
 
 int IsInt64Type(AST *typ);
 int IsFloat64Type(AST *typ);

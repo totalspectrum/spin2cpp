@@ -2231,6 +2231,8 @@ IsArrayType(AST *ast)
     case AST_OBJECT:
     case AST_TUPLE_TYPE:
     case AST_BITFIELD:
+    case AST_SIGNED_BOOLTYPE:
+    case AST_UNS_BOOLTYPE:
         return 0;
     case AST_TYPEOF:
         return IsArrayType(ExprType(ast->left));
@@ -2316,6 +2318,8 @@ int TypeSize(AST *typ)
     case AST_UNSIGNEDTYPE:
     case AST_GENERICTYPE:
     case AST_FLOATTYPE:
+    case AST_UNS_BOOLTYPE:
+    case AST_SIGNED_BOOLTYPE:
         return EvalConstExpr(typ->left);
     case AST_PTRTYPE:
     case AST_REFTYPE:
@@ -2610,9 +2614,15 @@ IsIntType(AST *type)
 {
     type = RemoveTypeModifiers(type);
     if (!type) return 0;
-    if (type->kind == AST_INTTYPE || type->kind == AST_UNSIGNEDTYPE)
+    switch (type->kind) {
+    case AST_INTTYPE:
+    case AST_UNSIGNEDTYPE:
+    case AST_UNS_BOOLTYPE:
+    case AST_SIGNED_BOOLTYPE:
         return 1;
-    return 0;
+    default:
+        return 0;
+    }
 }
 
 int
@@ -2620,7 +2630,17 @@ IsUnsignedType(AST *type)
 {
     type = RemoveTypeModifiers(type);
     if (!type) return 0;
-    if (type->kind == AST_UNSIGNEDTYPE)
+    if (type->kind == AST_UNSIGNEDTYPE || type->kind == AST_UNS_BOOLTYPE)
+        return 1;
+    return 0;
+}
+
+int
+IsBoolType(AST *type)
+{
+    type = RemoveTypeModifiers(type);
+    if (!type) return 0;
+    if (type->kind == AST_UNS_BOOLTYPE || type->kind == AST_SIGNED_BOOLTYPE)
         return 1;
     return 0;
 }
@@ -2656,6 +2676,8 @@ IsBoolCompatibleType(AST *type)
     case AST_UNSIGNEDTYPE:
     case AST_PTRTYPE:
     case AST_GENERICTYPE:
+    case AST_UNS_BOOLTYPE:
+    case AST_SIGNED_BOOLTYPE:
         return 1;
     default:
         return 0;
@@ -3360,8 +3382,8 @@ CompatibleTypes(AST *A, AST *B)
         return CompatibleTypes(B->left, A);
     }
 
-    if (A->kind == AST_INTTYPE || A->kind == AST_UNSIGNEDTYPE || A->kind == AST_GENERICTYPE) {
-        if (B->kind == AST_INTTYPE || B->kind == AST_UNSIGNEDTYPE || B->kind == AST_GENERICTYPE) {
+    if (A->kind == AST_INTTYPE || A->kind == AST_UNSIGNEDTYPE || A->kind == AST_GENERICTYPE || A->kind == AST_UNS_BOOLTYPE || A->kind == AST_SIGNED_BOOLTYPE) {
+        if (B->kind == AST_INTTYPE || B->kind == AST_UNSIGNEDTYPE || B->kind == AST_GENERICTYPE || B->kind == AST_UNS_BOOLTYPE || B->kind == AST_SIGNED_BOOLTYPE) {
             return true;
         }
     }

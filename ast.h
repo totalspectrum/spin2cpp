@@ -243,7 +243,9 @@ enum astkind {
     AST_EXPECT = 174,
     AST_PRINTDEBUG = 175,
     AST_ERRHOLDER = 176,
-    
+
+    AST_SIGNED_BOOLTYPE = 177,
+    AST_UNS_BOOLTYPE = 178,
 };
 
 /* forward reference */

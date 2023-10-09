@@ -322,6 +322,8 @@ extern int gl_tab_stops;
 extern AST *ast_type_long;
 extern AST *ast_type_word;
 extern AST *ast_type_byte;
+extern AST *ast_type_c_boolean;
+extern AST *ast_type_basic_boolean;
 extern AST *ast_type_unsigned_long;
 extern AST *ast_type_signed_word;
 extern AST *ast_type_signed_byte;

@@ -93,6 +93,7 @@ AST *ast_type_word, *ast_type_long, *ast_type_byte;
 AST *ast_type_signed_word, *ast_type_signed_byte;
 AST *ast_type_unsigned_long;
 AST *ast_type_float, *ast_type_string;
+AST *ast_type_c_boolean, *ast_type_basic_boolean;
 AST *ast_type_ptr_long;
 AST *ast_type_ptr_word;
 AST *ast_type_ptr_byte;
@@ -1047,6 +1048,9 @@ Init()
     ast_type_unsigned_long = NewAST(AST_UNSIGNEDTYPE, AstInteger(4), NULL);
     ast_type_signed_word = NewAST(AST_INTTYPE, AstInteger(2), NULL);
     ast_type_signed_byte = NewAST(AST_INTTYPE, AstInteger(1), NULL);
+
+    ast_type_c_boolean = NewAST(AST_UNS_BOOLTYPE, AstInteger(4), NULL);
+    ast_type_basic_boolean = NewAST(AST_SIGNED_BOOLTYPE, AstInteger(4), NULL);
 
     ast_type_float = NewAST(AST_FLOATTYPE, AstInteger(4), NULL);
     ast_type_float64 = NewAST(AST_FLOATTYPE, AstInteger(8), NULL);

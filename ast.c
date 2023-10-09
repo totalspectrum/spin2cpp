@@ -862,6 +862,9 @@ static const char *astnames[] = {
     "expect",
     "print_debug",
     "error_holder",
+
+    "signed_booltype",
+    "unsigned_booltype",
 };
 
 //
