@@ -824,7 +824,9 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         default: ERROR(node,"Can't handle unsigned type with size %d",size); break;
         }
     } break;
-    case AST_INTTYPE: {
+    case AST_INTTYPE:
+    case AST_SIGNED_BOOLTYPE:
+    case AST_UNS_BOOLTYPE: {
         int size = type->left->d.ival;
         switch (size) {
         // sign-extend is generated for these
