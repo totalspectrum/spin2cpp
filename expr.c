@@ -2856,7 +2856,8 @@ AST *
 ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
 {
     AST *sub;
-
+    int lang = GetCurrentLang();
+    
     if (!expr) return NULL;
     if (!P) {
         P = current;
@@ -2865,7 +2866,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
     case AST_TYPEOF:
         return ExprTypeRelative(table, expr->left, P);
     case AST_INTEGER:
-        if ( IsCLang(P->curLanguage) && expr->d.ival == 0) {
+        if ( IsCLang(lang) && expr->d.ival == 0) {
             return ast_type_generic;
         }
         if (expr->left) {  /* explicit cast */
@@ -2904,12 +2905,12 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         // in Spin, a string is always dereferenced
         // so "abc" is the same as "a" is the same as 0x65
         // (actually no -- "abc" is the same as "a", "b", "c")
-        if (curfunc && IsSpinLang(curfunc->language)) {
+        if (IsSpinLang(lang)) {
             return ast_type_long;
         }
     /* otherwise fall through */
     case AST_STRINGPTR:
-        if ( curfunc && curfunc->language == LANG_CFAMILY_C && !(curfunc->warn_flags & WARN_C_CONST_STRING) ) {
+        if ( lang == LANG_CFAMILY_C && curfunc && !(curfunc->warn_flags & WARN_C_CONST_STRING) ) {
             return ast_type_ptr_byte;
         }
         return ast_type_string;
@@ -2952,7 +2953,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         case SYM_LABEL:
             lab = (Label *)sym->v.ptr;
             typ = lab->type;
-            if (curfunc && IsSpinLang(curfunc->language) && typ && typ->kind != AST_ARRAYTYPE) {
+            if (IsSpinLang(lang) && typ && typ->kind != AST_ARRAYTYPE) {
                 if (typ == ast_type_void) {
                     return typ;
                 }
@@ -3028,11 +3029,11 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
                 if (typexpr && typexpr->kind == AST_FUNCTYPE) {
                     return typexpr->left;
                 }
-                if ( (IsArrayType(old_typexpr) || IsPointerType(old_typexpr)) && curfunc && IsBasicLang(curfunc->language)) {
+                if ( (IsArrayType(old_typexpr) || IsPointerType(old_typexpr)) && IsBasicLang(lang)) {
                     // in BASIC we may not have converted x(i) into an array reference yet
                     return BaseType(old_typexpr);
                 }
-                if (curfunc && IsSpinLang(curfunc->language)) {
+                if (IsSpinLang(lang)) {
                     if (old_typexpr == NULL) {
                         return NULL;
                     }
@@ -3144,7 +3145,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
                     return ltype;
                 }
             }
-            if (curfunc && IsSpinLang(curfunc->language)) {
+            if (IsSpinLang(lang)) {
                 if (ltype) {
                     //if (IsIntOrGenericType(ltype)) return ltype;
                     if (IsPointerType(ltype)) {
@@ -3193,7 +3194,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         case '&':
             ltype = ExprTypeRelative(table, expr->left, P);
             rtype = ExprTypeRelative(table, expr->right, P);
-            if (IsBasicLang(GetCurrentLang())) {
+            if (IsBasicLang(lang)) {
                 if (IsStringType(ltype)) {
                     return ltype;
                 } else if (IsStringType(rtype)) {
@@ -3206,7 +3207,25 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
             if ( TypeSize(rtype) > LONG_SIZE ) {
                 return ast_type_long64;
             }
-            return ast_type_long;            
+            return ast_type_long;
+        case '<':
+        case '>':
+        case K_EQ:
+        case K_NE:
+        case K_GE:
+        case K_LE:
+        case K_GEU:
+        case K_LEU:
+        case K_GTU:
+        case K_LTU:
+        case K_BOOL_AND:
+        case K_BOOL_OR:
+        case K_BOOL_NOT:
+        {
+            if (IsBasicLang(lang)) {
+                return ast_type_basic_boolean;
+            }
+        }
         default:
             ltype = ExprTypeRelative(table, expr->left, P);
             rtype = ExprTypeRelative(table, expr->right, P);

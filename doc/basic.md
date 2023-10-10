@@ -1356,7 +1356,7 @@ Returns the bits of the 32 bit unsigned integer `y` in reverse order. For exampl
 
 ### BOOLEAN
 
-Represents a true or false result. Represented as a 32 bit integer, with TRUE set to all 1's and FALSE set to all 0's. In practice any non-zero value will be accepted as being "true".
+Represents a true or false result. Represented as a 32 bit integer, with TRUE set to all 1's and FALSE set to all 0's. The compiler tries to normalize boolean values to be either TRUE or FALSE, but this may not succeed in all cases. In such cases any non-zero value will be accepted as being "true".
 
 ### __BUILTIN_ALLOCA
 

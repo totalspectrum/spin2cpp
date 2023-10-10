@@ -32,6 +32,7 @@ AST *ast_type_ptr_byte;
 AST *ast_type_unsigned_long;
 AST *ast_type_void;
 AST *ast_type_long64, *ast_type_unsigned_long64, *ast_type_float64;
+AST *ast_type_c_boolean, *ast_type_basic_boolean;
 
 int gl_p2 = 0;
 int gl_errors = 0;

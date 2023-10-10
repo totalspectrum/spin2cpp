@@ -45,6 +45,25 @@ for i# = 0.3 to 1.0001 step 0.1
   print i#
 next i#
 
+const two = 2
+sub trybool(x as single)
+  var a = two <> 2
+  dim b as boolean
+
+  b = x
+  print "0 : a, b = ", a, b
+  a -= 2
+  b += 1
+  print "1 : a, b = ", a, b
+  a = two
+  b += 1
+  print "2 : a, b = ", a, b
+  
+end sub
+
+trybool(1.0)
+
+
 ''
 '' send the magic propload status code
 ''
