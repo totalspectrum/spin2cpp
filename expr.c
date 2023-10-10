@@ -2769,11 +2769,23 @@ WidestType(AST *left, AST *right)
     right = RemoveTypeModifiers(right);
     lsize = TypeSize(left);
     rsize = TypeSize(right);
+    if (IsBoolType(left)) {
+        lsize = 0;  // bool gets demoted
+    }
+    if (IsBoolType(right)) {
+        rsize = 0;  // bool gets demoted
+    }
     if (!left && rsize >= LONG_SIZE) return right;
     if (!right && lsize >= LONG_SIZE) return left;
     if (left && right && left->kind != right->kind) {
         if (lsize > LONG_SIZE || rsize > LONG_SIZE) {
+            if (IsUnsignedType(left) && IsUnsignedType(right)) {
+                return ast_type_unsigned_long64;
+            }
             return ast_type_long64;
+        }
+        if (IsUnsignedType(left) && IsUnsignedType(right)) {
+            return ast_type_unsigned_long;
         }
         return ast_type_long;
     }

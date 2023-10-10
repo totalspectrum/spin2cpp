@@ -966,6 +966,10 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
         ast->right = FunctionAddress(ast->right);
         righttype = FunctionPointerType(righttype);
     }
+    if (IsBoolType(rettype)) {
+        // initially assume we will not be returning a long
+        rettype = lefttype = ast_type_long;
+    }
     //assert(ast->kind == AST_OPERATOR)
     if (!ast->left) {
         rettype = righttype;
@@ -1087,10 +1091,6 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
     case K_NE:
     case K_GE:
     case '>':
-    case K_LTU:
-    case K_LEU:
-    case K_GTU:
-    case K_GEU:
         CompileComparison(ast->d.ival, ast, lefttype, righttype);
         return CurBoolType();
     case K_NEGATE:
@@ -1290,13 +1290,27 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
             }
         }
         srctype = NewAST(AST_REFTYPE, srctype, NULL);
-    }    
+    }
+    if (desttype && IsBoolType(desttype) && expr) {
+        if (srctype && IsBoolType(srctype)) {
+            AstReportDone(&saveinfo);
+            return desttype;
+        }
+        if (expr->kind != AST_OPERATOR || expr->d.ival != K_NE) {
+            AST *left = DupAST(expr);
+            AST *check = AstOperator(K_NE, left, AstInteger(0));
+            *astptr = check;
+            AstReportDone(&saveinfo);
+            return desttype;
+        }
+    }
     if (!desttype || !srctype) {
         AstReportDone(&saveinfo);
         return desttype;
     }
 
     if (IsRefType(srctype) && !IsRefType(desttype) && CompatibleTypes(desttype, srctype->left)) {
+        AstReportDone(&saveinfo);
         return desttype;
     }
     if (IsFloatType(desttype)) {
