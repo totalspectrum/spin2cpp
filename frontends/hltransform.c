@@ -439,6 +439,7 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
             break;
         case K_INCREMENT:
         case K_DECREMENT:
+            int newop = (op == K_DECREMENT) ? '-' : '+';
             /* for ++ and --, handle floats and 64 bit integers by turning into i = i+1 */
             /* specifically: i++ -> (tmp = i, i = i+1, tmp)
                ++i -> (i = i+1, i) */
@@ -446,11 +447,11 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
                 /* i++ case */
                 AST *typ = ExprType(ast->left);
                 if (typ) {
-                    if (IsFloatType(typ) || IsInt64Type(typ)) {
+                    if (IsFloatType(typ) || IsInt64Type(typ) || IsBoolType(typ)) {
                         AstReportAs(ast, &saveinfo);
                         AST *temp = AstTempLocalVariable("_temp_", typ);
                         AST *save = AstAssign(temp, ast->left);
-                        AST *update = AstAssign(ast->left, AstOperator('+', ast->left, AstInteger(1)));
+                        AST *update = AstAssign(ast->left, AstOperator(newop, ast->left, AstInteger(1)));
 
                         ast = *astptr = NewAST(AST_SEQUENCE,
                                                NewAST(AST_SEQUENCE, save, update),
@@ -462,11 +463,11 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
                 AST *ident = ast->right;
                 AST *typ = ExprType(ident);
                 if (typ) {
-                    if (IsFloatType(typ) || IsInt64Type(typ)) {
+                    if (IsFloatType(typ) || IsInt64Type(typ) || IsBoolType(typ)) {
                         ast->kind = AST_ASSIGN;
                         ast->d.ival = K_ASSIGN;
                         ast->left = ident;
-                        ast->right = AstOperator('+', ident, AstInteger(1));
+                        ast->right = AstOperator(newop, ident, AstInteger(1));
                     }
                 }
             }
