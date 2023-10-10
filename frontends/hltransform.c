@@ -439,6 +439,7 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
             break;
         case K_INCREMENT:
         case K_DECREMENT:
+        {
             int newop = (op == K_DECREMENT) ? '-' : '+';
             /* for ++ and --, handle floats and 64 bit integers by turning into i = i+1 */
             /* specifically: i++ -> (tmp = i, i = i+1, tmp)
@@ -471,6 +472,7 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
                     }
                 }
             }
+        }
         default:
             break;
         }
