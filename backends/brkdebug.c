@@ -22,6 +22,8 @@ enum DebugBytecode {
     DBC_CHAR = 5,
     DBC_STRING = 6,
     DBC_DELAY = 7,
+    DBC_PC_KEY = 8,
+    DBC_PC_MOUSE = 9,
 
     // Flags
     DBC_FLAG_NOCOMMA = 0x01,
@@ -51,7 +53,9 @@ static struct DebugFunc debug_func_table[] = {
     {"if"               ,DBC_IF},
     {"ifnot"            ,DBC_IFNOT},
     {"dly"              ,DBC_DELAY},
-
+    {"pc_key"           ,DBC_PC_KEY},
+    {"pc_mouse"         ,DBC_PC_MOUSE},
+    
     {"zstr"             ,DBC_TYPE_STR},
     {"lstr"             ,DBC_TYPE_STR|DBC_FLAG_ARRAY},
 
