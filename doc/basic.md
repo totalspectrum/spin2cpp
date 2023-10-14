@@ -1602,7 +1602,7 @@ Declares a default value for the clock frequency. If this constant is not define
 ```
   current_freq = clkfreq
 ```
-Propeller built in variable which gives the current clock frequency.
+Propeller built in variable which gives the current clock frequency as set by `clkset`. Note that assigning a value to this variable does *not* change the clock frequency and will probably mess up your program unless you also use `clkset` to adjust the frequency accordingly.
 
 ### CLKSET
 
