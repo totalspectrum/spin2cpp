@@ -150,6 +150,12 @@ int _basic_print_string(unsigned h, const char *ptr, unsigned fmt)
     return _fmtstr(tf, fmt, ptr);
 }
 
+int _basic_print_boolean(unsigned h, int x, unsigned fmt)
+{
+    const char *ptr = x ? "true" : "false";
+    return _basic_print_string(h, ptr, fmt);
+}
+
 int _basic_print_unsigned(unsigned h, int x, unsigned fmt, int base)
 {
     TxFunc tf = _gettxfunc(h);

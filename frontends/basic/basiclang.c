@@ -838,6 +838,8 @@ ParsePrintStatement(AST *ast)
         } else if (IsGenericType(type) || IsPointerType(type)) {
             // create a hex call
             seq = addPrintHex(seq, handle, basic_print_unsigned, expr, fmtAst);
+        } else if (IsBoolType(type)) {
+            seq = addPrintCall(seq, handle, basic_print_boolean, expr, fmtAst);
         } else if (IsUnsignedType(type)) {
             if (IsInt64Type(type)) {
                 seq = addPrintDec(seq, handle, basic_print_longunsigned, expr, fmtAst);

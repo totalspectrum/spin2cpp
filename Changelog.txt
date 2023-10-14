@@ -3,6 +3,7 @@ Version 6.6.0
 - Implemented proper boolean type for C
 - Fixed -- operator for floats
 - Made the BASIC boolean type a distinct type
+- Made BASIC booleans print as "true" and "false"
 
 Version 6.5.4
 - Minor optimization improvement (and major documentation improvements) courtesy of Ada

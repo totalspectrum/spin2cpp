@@ -20,9 +20,9 @@ x, scaled	100000	10000.	10000.	1.0000E-04
 1.0000E-08
 asc: 1, 0
 string tests:
-abc	abc	< = >: 0	-1	0
-abc	a	< = >: 0	0	-1
-def	zzz	< = >: -1	0	0
+abc	abc	< = >: false	true	false
+abc	a	< = >: false	false	true
+def	zzz	< = >: true	false	false
 str,n: hello,7
   left: hello right: hello
 str,n: goodbye,3

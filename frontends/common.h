@@ -1082,6 +1082,7 @@ extern AST *basic_print_unsigned_3;
 extern AST *basic_print_unsigned_4;
 extern AST *basic_print_char;
 extern AST *basic_print_nl;
+extern AST *basic_print_boolean;
 extern AST *basic_put;
 extern AST *basic_print_longinteger;
 extern AST *basic_print_longunsigned;

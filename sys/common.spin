@@ -330,6 +330,7 @@ pri {++complexio} file "libsys/basicfmt.c" _basic_close(h)
 pri {++complexio} file "libc/unix/posixio.c" _freefile() : r=long
 pri file "libsys/basicfmt.c" _basic_print_nl(h)
 pri file "libsys/basicfmt.c" _basic_print_char(h, c, fmt = 0)
+pri file "libsys/basicfmt.c" _basic_print_boolean(h, c, fmt = 0)
 pri file "libsys/basicfmt.c" _basic_print_string(h, ptr, fmt = 0)
 pri file "libsys/basicfmt.c" _basic_print_integer(h, x, fmt = 0, base=10)
 pri file "libsys/basicfmt.c" _basic_print_integer_2(h, x1, x2, fmt = 0, base=10)
