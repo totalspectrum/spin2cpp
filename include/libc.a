@@ -15,6 +15,10 @@ struct vfs *_vfs_open_sdcardx(int pclk, int pss, int pdi, int pdo) __fromfile("f
 /* filesys/fs9p/fs9p_vfs.c */
 struct vfs *_vfs_open_host(void) __fromfile("filesys/fs9p/fs9p_vfs.c");
 
+/* filesys/parallax/parallaxfs_vfs.c */
+struct vfs *_vfs_open_parallaxfs(void) __fromfile("filesys/parallax/parallaxfs_vfs.c");
+int _mkfs_parallaxfs(void) __fromfile("filesys/parallax/parallaxfs_vfs.c");
+
 /* libc/misc/ctype.c */
 int isupper(int c) __fromfile("libc/misc/ctype.c");
 int islower(int c) __fromfile("libc/misc/ctype.c");
@@ -71,6 +75,7 @@ int fclose(_FILE *f) __fromfile("libc/stdio/fopen.c");
 /* libc/stdio/fseek.c */
 int  fseek(_FILE *f, long offset, int whence) __fromfile("libc/stdio/fseek.c");
 long ftell(_FILE *f)                          __fromfile("libc/stdio/fseek.c");
+void rewind(_FILE *f)                         __fromfile("libc/stdio/fseek.c");
 
 /* libc/stdio/fwrite.c */
 size_t fwrite(const void *ptr, size_t size, size_t n, _FILE *f) __fromfile("libc/stdio/fwrite.c");
@@ -198,6 +203,10 @@ time_t time(time_t *tp) __fromfile("libc/time/time.c");
 
 /* libc/time/usleep.c */
 int usleep(unsigned int n) __fromfile("libc/time/usleep.c");
+
+/* libc/unix/exec.c */
+int _execve(const char *path, char **args, char **env) __fromfile("libc/unix/exec.c");
+int _execl(const char *path, const char *arg0, ...) __fromfile("libc/unix/execl.c");
 
 /* libc/unix/_mount.c */
 int chdir(const char *path) __fromfile("libc/unix/mount.c");
