@@ -1618,6 +1618,16 @@ expr:
     { $$ = NewAST(AST_POSTSET, $1, AstInteger(0)); }
   | lhs SP_DOUBLETILDE
     { $$ = NewAST(AST_POSTSET, $1, AstInteger(-1)); }
+  | lhs SP_NOT
+    {
+        AST *lhs = $1;
+        $$ = NewAST(AST_POSTSET, lhs, AstOperator(K_BOOL_NOT, NULL, DupAST(lhs)));
+    }
+  | lhs '!'
+    {
+        AST *lhs = $1;
+        $$ = NewAST(AST_POSTSET, lhs, AstOperator(K_BIT_NOT, NULL, DupAST(lhs)));
+    }
   | '~' lhs
     { AST *shf;
       AST *val = $2;

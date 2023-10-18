@@ -1,5 +1,6 @@
 Version 6.6.0
 - Added pc_key and pc_mouse to -gbrk
+- Added missing !! and ! postfix operators for Spin2
 - Implemented proper boolean type for C
 - Fixed -- operator for floats
 - Made the BASIC boolean type a distinct type
