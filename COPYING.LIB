@@ -10,10 +10,11 @@ SpiFlash object is used for low level flash accesses, and is also MIT
 licensed, as are Roger Loh's PSRAM and HyperRam/HyperFlash drivers.
 
 Copyright (c) 2011-2023 Total Spectrum Software Inc.
-Copyright (c) 2006-2019 Parallax, Inc.
+Copyright (c) 2006-2023 Parallax, Inc.
 Copyright (c) 2020 Jeff Roark
 Copyright (c) 2020 Nicolas Benezan
 Copyright (c) 2021-2022 Roger Loh
+Copyright (c) 2023 Iron Sheep Productions, LLC
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
