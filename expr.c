@@ -3595,6 +3595,14 @@ FuncNumResults(AST *functype)
         functype = functype->left;
     }
     if (!IsFunctionType(functype)) {
+        // if this is Spin2, assume it is a void type (there would be
+        // an explicit :1 after it otherwise)
+        if (GetCurrentLang() == LANG_SPIN_SPIN2) {
+            return 0;
+        }
+        // otherwise punt and assume just 1 return type; this works for
+        // many Spin1 functions, and C and BASIC should have proper function
+        // types anyway
         return 1; // unknown return type
     }
     functype = functype->left;
