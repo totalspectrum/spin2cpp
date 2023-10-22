@@ -1,3 +1,7 @@
+Version 6.6.1
+- Fixed function type usage in -2nu for some Spin method pointers
+- Updated copyright notices in COPYING.LIB
+
 Version 6.6.0
 - Added pc_key and pc_mouse to -gbrk
 - Added missing !! and ! postfix operators for Spin2

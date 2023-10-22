@@ -3594,7 +3594,7 @@ FuncNumResults(AST *functype)
     while (functype && functype->kind == AST_PTRTYPE) {
         functype = functype->left;
     }
-    if (!functype) {
+    if (!IsFunctionType(functype)) {
         return 1; // unknown return type
     }
     functype = functype->left;
