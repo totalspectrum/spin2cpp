@@ -2,6 +2,6 @@
 #include <propeller.h>
 #include "test153.h"
 
-char test153::dat[] = {
+unsigned char test153::dat[] = {
   0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x80, 0x3f, 
 };

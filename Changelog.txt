@@ -1,4 +1,5 @@
 Version 6.6.1
+- Changed type of `dat` array in C++ output to `unsigned char`
 - Fixed function type usage in -2nu for some Spin method pointers
 - Updated copyright notices in COPYING.LIB
 

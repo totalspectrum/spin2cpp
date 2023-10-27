@@ -2,7 +2,7 @@
 #include <propeller.h>
 #include "test106.h"
 
-char volatile test106::dat[] = {
+unsigned char volatile test106::dat[] = {
   0x00, 0x00, 0x00, 0x00, 
 };
 int32_t test106::Foo(void)

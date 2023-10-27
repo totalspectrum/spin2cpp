@@ -9,7 +9,7 @@ public:
   static const int B = 4;
   static const int C = 8;
   static const int D = 12;
-  static char dat[];
+  static unsigned char dat[];
 private:
 };
 

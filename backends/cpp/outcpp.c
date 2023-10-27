@@ -24,7 +24,7 @@ PrintDatArrayName(Flexbuf *f, Module *parse, const char *tail, bool classname)
 {
     char *datname = parse->datname;
 
-    flexbuf_printf(f, "char ");
+    flexbuf_printf(f, "unsigned char ");
     if (parse->datannotations) {
         PrintAnnotationList(f, parse->datannotations, ' ');
     }

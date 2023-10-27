@@ -10,7 +10,7 @@ public:
   static const int Test_light = 1;
   static const int Test_led = 2;
   static const int Test_row_button = (Test_row_results + Test_led);
-  static char dat[];
+  static unsigned char dat[];
 private:
 };
 

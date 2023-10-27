@@ -5,7 +5,7 @@
 
 class test074 {
 public:
-  static char dat[];
+  static unsigned char dat[];
   static int32_t	Func(void);
 private:
 };

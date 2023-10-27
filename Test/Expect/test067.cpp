@@ -2,7 +2,7 @@
 #include <propeller.h>
 #include "test067.h"
 
-char test067::dat[] = {
+unsigned char test067::dat[] = {
   0x3b, 0xaa, 0xb8, 0x3f, 
 };
 int32_t test067::Getx(void)

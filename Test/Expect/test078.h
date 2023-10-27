@@ -5,7 +5,7 @@
 
 class test078 {
 public:
-  static char dat[];
+  static unsigned char dat[];
   static int32_t	Geterr(int32_t N);
 private:
 };

@@ -6,7 +6,7 @@
 
 class test159 {
 public:
-  static char dat[];
+  static unsigned char dat[];
   static void 	Demo(void);
 private:
   module_inc 	Mod;

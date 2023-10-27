@@ -9,7 +9,7 @@ public:
   static const int B = 64;
   static const int C = 65;
   static const int D = 32;
-  static char dat[];
+  static unsigned char dat[];
   static void 	Demo(void);
 private:
 };

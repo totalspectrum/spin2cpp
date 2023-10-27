@@ -1,6 +1,5 @@
 #!/bin/sh
-for i in ../stest*.c
+for i in test*.c* test*.h
 do	 
-    b=`basename $i .c`
-    echo mv $b.pasm $b_c.pasm
+    sed -i 's/static char dat/static unsigned char dat/g' $i
 done

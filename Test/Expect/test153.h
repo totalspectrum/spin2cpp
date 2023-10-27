@@ -7,7 +7,7 @@ class test153 {
 public:
   static const int A1 = 0x40000000;
   static const int A2 = 0x3f800000;
-  static char dat[];
+  static unsigned char dat[];
 private:
 };
 

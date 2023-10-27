@@ -9,7 +9,7 @@ public:
   static const int B = 0x458ccccd;
   static const int C = 4506;
   static const int D = 4505;
-  static char dat[];
+  static unsigned char dat[];
   static int32_t 	Demo(void);
 private:
 };

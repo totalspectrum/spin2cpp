@@ -3,7 +3,7 @@
 #include <propeller.h>
 #include "test164.h"
 
-char test164::dat[] = {
+unsigned char test164::dat[] = {
   0x01, 0x00, 0x00, 0x00, 0x2a, 0x00, 0x00, 0x00, 
 };
 void test164::Main(void)

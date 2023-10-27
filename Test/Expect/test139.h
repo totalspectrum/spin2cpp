@@ -5,7 +5,7 @@
 
 class test139 {
 public:
-  static char dat[];
+  static unsigned char dat[];
   static void	Setval(int32_t X);
 private:
 };

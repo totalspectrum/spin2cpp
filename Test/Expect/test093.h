@@ -5,7 +5,7 @@
 
 class test093 {
 public:
-  static char dat[];
+  static unsigned char dat[];
 private:
 };
 

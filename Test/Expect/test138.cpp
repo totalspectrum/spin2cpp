@@ -2,7 +2,7 @@
 #include <propeller.h>
 #include "test138.h"
 
-char test138::dat[] = {
+unsigned char test138::dat[] = {
   0x44, 0x00, 0x00, 0x00, 0x55, 0x55, 
 };
 char *test138::Getobst(void)

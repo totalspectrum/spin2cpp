@@ -6,7 +6,7 @@
 class test138 {
 public:
   static const int Zero = 0;
-  static char dat[];
+  static unsigned char dat[];
   static char *	Getobst(void);
   static char *	Getfiller(void);
   static uint16_t *	Getcmd(void);

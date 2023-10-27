@@ -9,7 +9,7 @@ public:
   static const int Onef = 0x3f800000;
   static const int Threef = 0x40400000;
   static const int Rootf = 0x3fb504f3;
-  static char dat[];
+  static unsigned char dat[];
   static int32_t *	Dummy(void);
 private:
 };
