@@ -26,7 +26,7 @@ The namespaces for types and variable names are not seperated as they should be,
 
 #### Doubles
 
-The `double` type is implemented as a 32 bit IEEE single precision float (the same as `float`). This doesn't meet the requirements in the C99 and later standards for the range available for double.
+The `double` type is implemented as a 32 bit IEEE single precision float (the same as `float`). This doesn't meet the requirements in the C99 and later standards for the range available for double. At some point this will change.
 
 #### Designated initializers
 
@@ -88,6 +88,12 @@ If an enumeration constant named `_clkfreq` is defined in the top level file (ne
 enum { _clkfreq = 297000000 };
 ```
 may be used to specify 297 MHz.
+
+On the P2, the crystal frequency may also be specified with an `_xtlfreq` enum. So for example to specify 297 MHz with a 25 MHz clock, do:
+```
+enum { _clkfreq = 297000000, _xtlfreq = 25000000 };
+```
+in the top level file.
 
 #### _clkset
 
