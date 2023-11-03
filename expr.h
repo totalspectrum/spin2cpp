@@ -81,6 +81,10 @@ int IsArrayOrPointerSymbol(Symbol *);
 int PointerTypeIncrement(AST *typ);
 // get base of an array type
 AST *GetArrayBase(AST *type);
+
+// get size of array type
+AST *GetArraySize(AST *type);
+
 // create an array based on a type and expression or expression list
 // the elements of the list can either be simple expressions (giving the array size)
 // or AST_RANGE (giving the start and end indices)

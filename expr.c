@@ -2254,6 +2254,20 @@ GetArrayBase(AST *arraytype)
     return NULL;
 }
 
+AST *
+GetArraySize(AST *arraytype)
+{
+    AST *lim;
+    arraytype = RemoveTypeModifiers(arraytype);
+    if (arraytype->kind == AST_ARRAYTYPE) {
+        lim = arraytype->right;
+        if (lim) {
+            return lim;
+        }
+    }
+    return NULL;
+}
+
 /* find minimum alignment for a type */
 int TypeAlign(AST *typ)
 {

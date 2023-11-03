@@ -1968,6 +1968,23 @@ static AST *doCheckTypes(AST *ast)
         } else if (IsArrayType(lefttype)) {
             // convert the array index to subtract base
             AST *base = GetArrayBase(lefttype);
+            if (IsConstExpr(ast->right)) {
+                int idx = EvalConstExpr(ast->right);
+                int low = 0;
+                if (!base || IsConstExpr(base)) {
+                    low = base ? EvalConstExpr(base) : 0;
+                    if (idx < low) {
+                        WARNING(ast, "Array index %d is less than array start (%d)", idx, low);
+                    }
+                }
+                AST *aSize = GetArraySize(lefttype);
+                if (IsConstExpr(aSize)) {
+                    int high = EvalConstExpr(aSize) + low - 1;
+                    if (idx > high) {
+                        WARNING(ast, "Array index %d is above end of array (%d)", idx, high);
+                    }
+                }
+            }
             if (base) {
                 ast->right = AstOperator('-', ast->right, base);
             }

@@ -1,3 +1,6 @@
+Version 6.6.2
+- Added warnings for constant array indices out of bounds
+
 Version 6.6.1
 - Changed type of `dat` array in C++ output to `unsigned char`
 - Fixed function type usage in -2nu for some Spin method pointers
