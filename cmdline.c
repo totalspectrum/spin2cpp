@@ -560,6 +560,9 @@ int ParseOptimizeString(AST *line, const char *str, int *flag_ptr)
         if (*buf == '!' || *buf == '~') {
             buf++;
             notflag = 1;
+        } else if (buf[0] == 'n' && buf[1] == 'o' && buf[2] == '-') {
+            buf += 3;
+            notflag = 1;
         } else {
             notflag = 0;
         }
@@ -638,6 +641,9 @@ int ParseWarnString(AST *line, const char *str, int *flag_ptr)
         str = GetOptionString(buf, sizeof(buf_base), str);
         if (*buf == '!' || *buf == '~') {
             buf++;
+            notflag = 1;
+        } else if (buf[0] == 'n' && buf[1] == 'o' && buf[2] == '-') {
+            buf += 3;
             notflag = 1;
         } else {
             notflag = 0;

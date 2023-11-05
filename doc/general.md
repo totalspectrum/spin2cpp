@@ -251,9 +251,9 @@ In BASIC we use the `for` keyword followed by a string giving the warning option
 function for "warn(!init-vars)" myfunc()
 ```
 
-Multiple warnings may be given, separated by commas. To turn a warning off, prefix it with `!` or with `~`. To enable all warnings, use the word `all`.
+Multiple warnings may be given, separated by commas. To turn a warning off, prefix it with `!`, `~`, or `no-`. To enable all warnings, use the word `all`.
 
-Thus, a Spin function with `{++opt(!all,hide-members)}` will always be compiled with no warnings except for uninitialized variables.
+Thus, a Spin function with `{++opt(!all,hide-members)}` will always be compiled with no warnings except for ones about local variables shadowing object members.
 
 ### Warning control on the command line
 
@@ -304,7 +304,7 @@ In BASIC we use the `for` keyword followed by a string giving the optimization o
 function for "opt(!loop-reduce)" myfunc()
 ```
 
-Multiple options may be given, separated by commas. To turn an option off, prefix it with `!` or with `~`. To enable all options for a particular optimization level, start the string with `0`, `1`, `2`, etc., or with the word `all` to enable all optimizations (regardless of the compiler optimization level chosen).
+Multiple options may be given, separated by commas. To turn an option off, prefix it with `!` or `~` or `no-`. To enable all options for a particular optimization level, start the string with `0`, `1`, `2`, etc., or with the word `all` to enable all optimizations (regardless of the compiler optimization level chosen).
 
 Thus, a Spin function with `{++opt(0,peephole)}` will always be compiled with no optimization except peepholes, even when the `-O2` option is given to the compiler.
 
