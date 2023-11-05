@@ -1971,16 +1971,18 @@ static AST *doCheckTypes(AST *ast)
             if (IsConstExpr(ast->right)) {
                 int idx = EvalConstExpr(ast->right);
                 int low = 0;
+                unsigned warn_flags = curfunc ? curfunc->warn_flags : gl_warn_flags;
                 if (!base || IsConstExpr(base)) {
                     low = base ? EvalConstExpr(base) : 0;
-                    if (idx < low) {
+                    if (idx < low && 0 != (warn_flags & WARN_ARRAY_INDEX)) {
                         WARNING(ast, "Array index %d is less than array start (%d)", idx, low);
                     }
                 }
                 AST *aSize = GetArraySize(lefttype);
                 if (IsConstExpr(aSize)) {
-                    int high = EvalConstExpr(aSize) + low - 1;
-                    if (idx > high) {
+                    int len = EvalConstExpr(aSize);
+                    int high = len + low - 1;
+                    if (idx > high && len > 0 && 0 != (warn_flags & WARN_ARRAY_INDEX)) {
                         WARNING(ast, "Array index %d is above end of array (%d)", idx, high);
                     }
                 }

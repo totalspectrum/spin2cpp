@@ -253,12 +253,16 @@ function for "warn(!init-vars)" myfunc()
 
 Multiple warnings may be given, separated by commas. To turn a warning off, prefix it with `!` or with `~`. To enable all warnings, use the word `all`.
 
-Thus, a Spin function with `{++opt(!all,hide-members)}` will always be compiled with no warnings except for uninitialzed variables.
+Thus, a Spin function with `{++opt(!all,hide-members)}` will always be compiled with no warnings except for uninitialized variables.
 
 ### Warning control on the command line
 
 Multiple `-W` options may be given, or combined separated by commas. So for example to compile with all warnings except uninitialized variables, one would give `-Wall,!init-vars`.
 
+
+### Array index warnings (-Warray-index) (enabled by default)
+
+Warns when a constant array index is out of range. Note that this only applies to explicit constants; the warning will not be issued for computed indices, even when the computation is "obvious".
 
 ### Assembler usage warnings (-Wasm-usage) (enabled by default)
 
