@@ -1030,9 +1030,25 @@ CheckSimpleIncrementLoop(AST *stmt)
     } else {
         return;
     }
-    if (!AstMatchName(updateVar, condtest->left))
-        return;
-
+    if (!AstMatchName(updateVar, condtest->left)) {
+        // special case sign extension
+        bool isOK = false;
+        if (condtest->left && condtest->left->kind == AST_OPERATOR && (condtest->left->d.ival == K_SIGNEXTEND || condtest->left->d.ival == K_ZEROEXTEND) ) {
+            if (IsConstExpr(condtest->left->right) && AstMatchName(updateVar, condtest->left->left) && IsConstExpr(finalValue)) {
+                int32_t finalVal = EvalConstExpr(finalValue);
+                int32_t extendVal = EvalConstExpr(condtest->left->right);
+                extendVal = 1<<(extendVal & 0x1f);
+                if (condtest->left->d.ival == K_SIGNEXTEND) {
+                    extendVal = extendVal >> 1;
+                }
+                isOK = (finalVal >= 0) &&  (finalVal < extendVal);
+            }
+        }
+        if (!isOK) {
+            return;
+        }
+    }
+    
     /* check that the update is i++, and the variable is not used anywhere else */
     while (update->kind == AST_SEQUENCE) {
         if (AstUsesName(update->right, updateVar)) {
