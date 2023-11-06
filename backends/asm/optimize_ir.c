@@ -6885,6 +6885,65 @@ static int FixupQMux(int arg, IRList *irl, IR *ir)
     return 1;
 }
 
+/*
+ * sign extend followed by AND is sometimes redundant
+ */
+static PeepholePattern pat_shl_shr_and[] = {
+    { COND_ANY, OPC_SHL,   PEEP_OP_SET|0, PEEP_OP_SET_IMM|1, PEEP_FLAGS_NONE },
+    { COND_ANY, OPC_SAR,   PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { COND_ANY, OPC_AND,   PEEP_OP_MATCH|0, PEEP_OP_SET_IMM|2, PEEP_FLAGS_NONE },
+
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_signx_and[] = {
+    { COND_ANY, OPC_SIGNX, PEEP_OP_SET|0, PEEP_OP_SET_IMM|1, PEEP_FLAGS_P2 },
+    { COND_ANY, OPC_AND,   PEEP_OP_MATCH|0, PEEP_OP_SET_IMM|2, PEEP_FLAGS_P2 },
+
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
+static int FixupShlShrAndImm(int arg, IRList *irl, IR *ir0)
+{
+    IR *ir1, *ir2;
+    int signx_width;
+    unsigned and_pat, signx_pat;
+    
+    ir1 = NextIR(ir0);  // this is the SHR
+    ir2 = NextIR(ir1);  // and this is the AND
+    signx_width = ir0->src->val & 0x1f;
+    and_pat = (unsigned)ir2->src->val;
+    signx_pat = (1U<<(signx_width)) - 1;
+    if ( (and_pat & signx_pat) == and_pat ) {
+        // we can delete the shl and shr
+        DeleteIR(irl, ir1);
+        DeleteIR(irl, ir0);
+        return 1;
+    }
+    return 0;
+}
+
+static int FixupSignxAndImm(int arg, IRList *irl, IR *ir0)
+{
+    IR *ir1;
+    int signx_width;
+    unsigned and_pat, signx_pat;
+    
+    ir1 = NextIR(ir0);  // this is the AND
+    signx_width = ir0->src->val & 0x1f;
+    and_pat = (unsigned)ir1->src->val;
+    signx_pat = (1U<<(signx_width+1)) - 1;
+    if ( (and_pat & signx_pat) == and_pat ) {
+        // we can delete the signx
+        DeleteIR(irl, ir0);
+        return 1;
+    }
+    return 0;
+}
+
+/*
+ * the actual list of peepholes
+ */
+
 struct Peepholes {
     PeepholePattern *check;
     int arg;
@@ -6900,6 +6959,9 @@ struct Peepholes {
     { pat_zeroex, OPC_ZEROX, ReplaceExtend },
     { pat_signex, OPC_SIGNX, ReplaceExtend },
 
+    { pat_signx_and, 0, FixupSignxAndImm },
+    { pat_shl_shr_and, 0, FixupShlShrAndImm },
+    
     { pat_drvc1, OPC_DRVC, ReplaceDrvc },
     { pat_drvc2, OPC_DRVC, ReplaceDrvc },
     { pat_drvnc1, OPC_DRVNC, ReplaceDrvc },
