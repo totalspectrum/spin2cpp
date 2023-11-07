@@ -6332,32 +6332,42 @@ EmitBuiltins(IRList *irl)
 {
     if (HUB_CODE) {
         const char *builtin_lmm = NULL;
+        size_t builtin_lmm_len = 0;
+        
         if (gl_p2) {
             if (gl_fcache_size > 0) {
                 builtin_lmm = builtin_fcache_p2;
+                builtin_lmm_len = strlen(builtin_fcache_p2);
             }
         } else {
             switch(gl_lmm_kind) {
             case LMM_KIND_SLOW:
                 builtin_lmm = (const char *)sys_lmm_slow_spin;
+                builtin_lmm_len = sys_lmm_slow_spin_len;
                 break;
             case LMM_KIND_TRACE:
                 builtin_lmm = (const char *)sys_lmm_trace_spin;
+                builtin_lmm_len = sys_lmm_trace_spin_len;
                 break;
             case LMM_KIND_CACHE:
                 builtin_lmm = (const char *)sys_lmm_cache_spin;
+                builtin_lmm_len = sys_lmm_cache_spin_len;
                 break;
             case LMM_KIND_COMPRESS:
                 builtin_lmm = (const char *)sys_lmm_compress_spin;
+                builtin_lmm_len = sys_lmm_compress_spin_len;
                 break;
             default:
                 builtin_lmm = (const char *)sys_lmm_orig_spin;
+                builtin_lmm_len = sys_lmm_orig_spin_len;
                 break;
             }
         }
         if (builtin_lmm) {
+            /* the header files are not zero terminated, so do that here */
             Operand *loop;
-            loop = NewOperand(IMM_STRING, builtin_lmm, 0);
+            char *lmm_zero_str = strndup(builtin_lmm, builtin_lmm_len);
+            loop = NewOperand(IMM_STRING, lmm_zero_str, 0);
             EmitOp1(irl, OPC_LITERAL, loop);
         }
     }

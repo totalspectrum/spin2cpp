@@ -98,7 +98,7 @@ static void CreateBuiltinOp(NuIrOpcode op, const char *impl) {
 }
 
 void NuIrInit(NuContext *ctxt) {
-    const char *ptr = (char *)sys_nuinterp_spin;
+    const char *ptr = strndup((char *)sys_nuinterp_spin, sys_nuinterp_spin_len);
     const char *linestart;
     int c;
     int i;

@@ -10,3 +10,10 @@ char *strdupcat(const char *a, const char *b)
     strcat(c, b);
     return c;
 }
+
+char *strndup(const char *src, size_t n)
+{
+    char *r = (char *)calloc(1, n+1);
+    strncpy(r, src, n);
+    return r;
+}

@@ -37,6 +37,7 @@ typedef enum SpinExprState {
 struct lexstream {
     void *ptr;  /* current pointer */
     void *arg;  /* original value of pointer */
+    size_t maxbytes;
     int (*getcf)(LexStream *);
 #define UNGET_MAX 16 /* we can ungetc this many times */
     int ungot[UNGET_MAX];

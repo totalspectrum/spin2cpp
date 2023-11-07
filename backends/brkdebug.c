@@ -371,7 +371,7 @@ Flexbuf CompileBrkDebugger(size_t appsize) {
     current = D;
     D->Lptr = (LexStream *)calloc(sizeof(*systemModule->Lptr), 1);
     D->Lptr->flags |= LEXSTREAM_FLAG_NOSRC;
-    strToLex(D->Lptr, (const char *)sys_p2_brkdebug_spin, "__brkdebug__", LANG_SPIN_SPIN2);
+    strToLex(D->Lptr, (const char *)sys_p2_brkdebug_spin, sys_p2_brkdebug_spin_len, "__brkdebug__", LANG_SPIN_SPIN2);
     spinyyparse();
     ProcessModule(D);
     // We good now?

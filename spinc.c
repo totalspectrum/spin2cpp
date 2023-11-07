@@ -107,6 +107,7 @@ InitGlobalModule(void)
     int oldtmpnum;
     int saveyydebug;
     const char *syscode = "";
+    size_t syscode_len = 0;
     int debugVal = gl_debug;
     int bcVal = (gl_output == OUTPUT_BYTECODE);
     
@@ -194,9 +195,11 @@ InitGlobalModule(void)
             switch (gl_interp_kind) {
             case INTERP_KIND_P1ROM:
                 syscode = (const char *)sys_bytecode_rom_spin;
+                syscode_len = sys_bytecode_rom_spin_len;
                 break;
             case INTERP_KIND_NUCODE:
                 syscode = (const char *)sys_nucode_util_spin;
+                syscode_len = sys_nucode_util_spin_len;
                 break;
             default:
                 ERROR(NULL, "No internal code for bytecode type\n");
@@ -205,32 +208,34 @@ InitGlobalModule(void)
         } else {
             if (gl_p2) {
                 syscode = (const char *)sys_p2_code_spin;
+                syscode_len = sys_p2_code_spin_len;
             } else {
                 syscode = (const char *)sys_p1_code_spin;
+                syscode_len = sys_p1_code_spin_len;
             }
         }
         gl_normalizeIdents = 0;
         systemModule->Lptr = (LexStream *)calloc(sizeof(*systemModule->Lptr), 1);
         systemModule->Lptr->flags |= LEXSTREAM_FLAG_NOSRC;
-        strToLex(systemModule->Lptr, syscode, "_system_", LANG_SPIN_SPIN1);
+        strToLex(systemModule->Lptr, syscode, syscode_len, "_system_", LANG_SPIN_SPIN1);
         spinyyparse();
 
         // add common PASM code
         if (gl_output != OUTPUT_BYTECODE) {
-            strToLex(systemModule->Lptr, (const char *)sys_common_pasm_spin, "_common_pasm_", LANG_SPIN_SPIN1);
+            strToLex(systemModule->Lptr, (const char *)sys_common_pasm_spin, sys_common_pasm_spin_len, "_common_pasm_", LANG_SPIN_SPIN1);
             spinyyparse();
         }
-        strToLex(systemModule->Lptr, (const char *)sys_common_spin, "_common_", LANG_SPIN_SPIN1);
+        strToLex(systemModule->Lptr, (const char *)sys_common_spin, sys_common_spin_len, "_common_", LANG_SPIN_SPIN1);
         spinyyparse();
-        strToLex(systemModule->Lptr, (const char *)sys_float_spin, "_float_", LANG_SPIN_SPIN1);
+        strToLex(systemModule->Lptr, (const char *)sys_float_spin, sys_float_spin_len, "_float_", LANG_SPIN_SPIN1);
         spinyyparse();
-        strToLex(systemModule->Lptr, (const char *)sys_gcalloc_spin, "_gc_", LANG_SPIN_SPIN1);
+        strToLex(systemModule->Lptr, (const char *)sys_gcalloc_spin, sys_gcalloc_spin_len, "_gc_", LANG_SPIN_SPIN1);
         spinyyparse();
         if (gl_output == OUTPUT_BYTECODE) {
-            strToLex(systemModule->Lptr, (const char *)sys_gc_bytecode_spin, "_platform_", LANG_SPIN_SPIN1);
+            strToLex(systemModule->Lptr, (const char *)sys_gc_bytecode_spin, sys_gc_bytecode_spin_len, "_platform_", LANG_SPIN_SPIN1);
             spinyyparse();
         } else {
-            strToLex(systemModule->Lptr, (const char *)sys_gc_pasm_spin, "_platform_", LANG_SPIN_SPIN1);
+            strToLex(systemModule->Lptr, (const char *)sys_gc_pasm_spin, sys_gc_pasm_spin_len, "_platform_", LANG_SPIN_SPIN1);
             spinyyparse();
         }
         ProcessModule(systemModule);
@@ -761,7 +766,7 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
             parseString = pp_finish(&gl_pp);
             pp_restore_define_state(&gl_pp, defineState);
         }
-        strToLex(NULL, parseString, fname, language);
+        strToLex(NULL, parseString, strlen(parseString), fname, language);
         doparse(language);
         free(parseString);
     } else {

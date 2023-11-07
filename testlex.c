@@ -88,7 +88,7 @@ testNumber(const char *str, uint32_t val)
     Token t;
     int c;
     printf("testing number[%s]...", str);
-    strToLex(&L, str, NULL, LANG_DEFAULT);
+    strToLex(&L, str, strlen(str), NULL, LANG_DEFAULT);
     t = getSpinToken(&L, &ast);
     EXPECTEQ(t, SP_NUM);
     c = lexgetc(&L);
@@ -115,7 +115,7 @@ testFloat(const char *str, float fval)
     val = v.i;
 
     printf("testing number[%s]...", str);
-    strToLex(&L, str, NULL, LANG_DEFAULT);
+    strToLex(&L, str, strlen(str), NULL, LANG_DEFAULT);
     t = getSpinToken(&L, &ast);
     EXPECTEQ(t, SP_FLOATNUM);
     c = lexgetc(&L);
@@ -133,7 +133,7 @@ testIdentifier(const char *str, const char *expect)
     AST *ast;
     Token t;
 
-    strToLex(&L, str, NULL, LANG_DEFAULT);
+    strToLex(&L, str, strlen(str), NULL, LANG_DEFAULT);
     t = getSpinToken(&L, &ast);
     EXPECTEQ(t, SP_IDENTIFIER);
     assert(ast != NULL);
@@ -151,7 +151,7 @@ testTokenStream(const char *str, int *tokens, int numtokens)
     Token t;
 
     printf("testing tokens [%s]...", str); fflush(stdout);
-    strToLex(&L, str, NULL, LANG_DEFAULT);
+    strToLex(&L, str, strlen(str), NULL, LANG_DEFAULT);
     for (i = 0; i < numtokens; i++) {
         t = getSpinToken(&L, &ast);
         EXPECTEQ(t, tokens[i]);
@@ -168,7 +168,7 @@ testTokenStream2(const char *str, int *tokens, int numtokens)
     Token t;
 
     printf("testing tokens [%s]...", str); fflush(stdout);
-    strToLex(&L, str, NULL, LANG_SPIN_SPIN2);
+    strToLex(&L, str, strlen(str), NULL, LANG_SPIN_SPIN2);
     for (i = 0; i < numtokens; i++) {
         t = getSpinToken(&L, &ast);
         EXPECTEQ(t, tokens[i]);

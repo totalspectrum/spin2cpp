@@ -69,6 +69,14 @@ char *strrev(char *origstr);
 // create a new string with the concatenation of two old ones
 char *strdupcat(const char *a, const char *b);
 
+#ifdef strndup
+#undef strndup
+#endif
+// duplicate a part of a string
+// this is standard in POSIX, but not elsewhere, so we provide our own
+// definition
+extern char *strndup(const char *, size_t);
+
 // convert wide character wcorig to utf-8 in s, returns count
 size_t to_utf8(char *s, wchar_t wcorig);
 

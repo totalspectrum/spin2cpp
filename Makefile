@@ -255,9 +255,9 @@ $(BUILD)/%.o: %.c
 # which is what the sed script will do
 #
 sys/%.spin.h: sys/%.spin
-	xxd -i $< | sed 's/\([0-9a-f]\)$$/\0, 0x00/' > $@
+	xxd -i $< $@
 sys/%.bas.h: sys/%.bas
-	xxd -i $< | sed 's/\([0-9a-f]\)$$/\0, 0x00/' > $@
+	xxd -i $< $@
 
 #
 # automatic dependencies

@@ -125,8 +125,12 @@ strgetc(LexStream *L)
 {
     char *s;
     int c;
-
+    size_t delta;
     s = (char *)L->ptr;
+    delta = s - (char *)L->arg;
+    if (delta >= L->maxbytes) {
+        return EOF;
+    }
     c = (*s++) & 0x00ff;
     if (c == '\r') {
         c = (*s++) & 0x00ff;
@@ -141,13 +145,14 @@ strgetc(LexStream *L)
 }
 
 /* open a stream from a string s */
-void strToLex(LexStream *L, const char *s, const char *name, int language)
+void strToLex(LexStream *L, const char *s, size_t maxBytes, const char *name, int language)
 {
     if (!L) {
         current->Lptr = L = (LexStream *)malloc(sizeof(*L));
     }
     memset(L, 0, sizeof(*L));
     L->arg = L->ptr = (void *)s;
+    L->maxbytes = maxBytes;
     L->getcf = strgetc;
     L->pendingLine = 1;
     L->fileName = name ? name : "<string>";
