@@ -180,7 +180,8 @@ main(int argc, const char **argv)
     const char *outname = NULL;
     const char *listFile = NULL;
     int wantcse = -1;
-
+    bool optimize_set = false;
+    
     gl_max_errors = 1;
     gl_src_charset = CHARSET_UTF8;
     gl_run_charset = CHARSET_UTF8;
@@ -280,7 +281,9 @@ main(int argc, const char **argv)
             outputAsm = 1;
             gl_output = OUTPUT_ASM;
             argv++; --argc;
-            gl_optimize_flags = (DEFAULT_ASM_OPTS & ~OPT_REMOVE_UNUSED_FUNCS);
+            if (!optimize_set) {
+                gl_optimize_flags = (DEFAULT_ASM_OPTS & ~OPT_REMOVE_UNUSED_FUNCS);
+            }
         } else if (!strcmp(argv[0], "--list")) {
             gl_listing = 1;
             argv++; --argc;
@@ -314,13 +317,20 @@ main(int argc, const char **argv)
             gl_intstring = "intptr_t"; // for 64 bit targets
             argv++; --argc;
         } else if (!strncmp(argv[0], "--optimize", 5)) {
-            /* for debug purpose only: override optimize flags with hex */
-            argv++; --argc;
-            if (argv[0] == NULL) {
-                fprintf(stderr, "Error: expected another argument after --optimize\n");
-                exit(2);
+            /* for debug purpose only: override optimize flags */
+            const char *optstring;
+            if (!strncmp(argv[0], "--optimize=", 11)) {
+                optstring = argv[0]+11;
+            } else {
+                argv++; --argc;
+                if (argv[0] == NULL) {
+                    fprintf(stderr, "Error: expected another argument after --optimize\n");
+                    exit(2);
+                }
+                optstring = argv[0];
             }
-            ParseOptimizeString(NULL, argv[0], &gl_optimize_flags);
+            ParseOptimizeString(NULL, optstring, &gl_optimize_flags);
+            optimize_set = true;
             argv++; --argc;
         } else if (!strncmp(argv[0], "--files", 7)) {
             outputFiles = 1;
