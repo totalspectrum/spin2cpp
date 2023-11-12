@@ -2,6 +2,7 @@ Version 6.6.2
 - Added warning (-Warray-index) for constant array indices out of bounds
 - Allow warnings and optimizations to be turned off with a `no-` prefix (so `warn(no-init-vars)` is like `warn(!init-vars)`).
 - Added some peephole optimizations to remove unnecessary sign extension
+- Added peephole optimizations for sequences of shifts/adds/subs
 - Parse --optimize= flag (spin2cpp) in a slightly more flexible way
 - Some internal changes to make recovering from missing xxd easier
 

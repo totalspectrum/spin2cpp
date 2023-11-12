@@ -466,6 +466,12 @@ IsLocalOrArg(Operand *op)
 }
 
 static bool
+IsDirectImmediate(Operand *op)
+{
+    return op && op->kind == IMM_INT;
+}
+
+static bool
 IsImmediate(Operand *op)
 {
     return op->kind == IMM_INT || op->kind == IMM_COG_LABEL;
@@ -3832,6 +3838,50 @@ OptimizePeepholes(IRList *irl)
             }
         }
 
+        // check for consecutive math opcodes
+        if (ir_next && ir_next->opc == opc
+            && ir->dst == ir_next->dst
+            && !InstrSetsAnyFlags(ir)
+            && ir->cond == ir_next->cond
+            && IsDirectImmediate(ir->src)
+            && IsDirectImmediate(ir_next->src)
+            && !IsHwReg(ir->dst)
+            )
+        {
+            int newval;
+            bool merge = true;
+            // check for mergeable immediate math operands
+            switch (opc) {
+            case OPC_ADD:
+            case OPC_SUB:
+                newval = ir_next->src->val + ir->src->val;
+                break;
+            case OPC_SHL:
+            case OPC_SAR:
+            case OPC_SHR:
+                newval = ir_next->src->val + ir->src->val;
+                if (newval > 0x1f) {
+                    merge = false;
+                }
+                break;
+            case OPC_OR:
+                newval = ir_next->src->val | ir->src->val;
+                break;
+            case OPC_AND:
+                newval = ir_next->src->val & ir->src->val;
+                break;
+            default:
+                merge = false;
+                break;
+            }
+            if (merge) {
+                ir_next->src = NewImmediate(newval);
+                DeleteIR(irl, ir);
+                changed = 1;
+                goto done;
+            }
+        }
+        
         // check for add a,b ;; mov b,a ;; isdead a
         // becomes add b, a
 
@@ -5705,6 +5755,7 @@ typedef struct PeepholePattern {
 #define OPERAND_ANY -1
 #define COND_ANY    -1
 #define OPC_ANY     -1
+
 #define MAX_OPERANDS_IN_PATTERN 16
 
 #define PEEP_OPNUM_MASK 0x00ffffff
@@ -6886,7 +6937,7 @@ static int FixupQMux(int arg, IRList *irl, IR *ir)
 }
 
 /*
- * sign extend followed by AND is sometimes redundant
+ * sign extend followed by AND, GETBYTE, or GETWORD is sometimes redundant
  */
 static PeepholePattern pat_shl_shr_and[] = {
     { COND_ANY, OPC_SHL,   PEEP_OP_SET|0, PEEP_OP_SET_IMM|1, PEEP_FLAGS_NONE },
