@@ -48,6 +48,8 @@
     X(ROL)       /* tos := nos ROL tos */ \
     X(ROR)       /* tos := nos ROR tos */ \
     X(MOVBYTS)   /* execute MOVBYTS tos, nos */ \
+    X(MULU16)    /* 16x16 -> 32 unsigned multiply */ \
+    X(MULS16)    /* 16x16 -> 32 signed multiply */ \
     X(MUL)       /* 32 bit multiply: tos := tos * nos */ \
     \
     /* BINARY math operations end here (ones below leave 2 items on stack */ \

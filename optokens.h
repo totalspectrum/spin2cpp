@@ -75,6 +75,10 @@ enum OpToken {
     K_FNEGATE,
     K_FABS,
     K_FSQRT,
+
+/* special 16 bit multiplies */
+    K_MULU16,
+    K_MULS16,
 };
 
 #endif

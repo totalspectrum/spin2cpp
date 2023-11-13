@@ -942,6 +942,23 @@ AST *FunctionPointerType(AST *typ)
     return NewAST(AST_PTRTYPE, typ, NULL);
 }
 
+static bool IsZerox16(AST *ast) {
+    if (!ast || ast->kind != AST_OPERATOR || ast->d.ival != K_ZEROEXTEND)
+        return false;
+    if (!IsConstExpr(ast->right))
+        return false;
+    int shiftval = EvalConstExpr(ast->right);
+    return shiftval == 16;
+}
+static bool IsSignx16(AST *ast) {
+    if (!ast || ast->kind != AST_OPERATOR || ast->d.ival != K_SIGNEXTEND)
+        return false;
+    if (!IsConstExpr(ast->right))
+        return false;
+    int shiftval = EvalConstExpr(ast->right);
+    return shiftval == 16;
+}
+
 AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
 {
     AST *rettype = lefttype;
@@ -1076,6 +1093,25 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
             return HandleTwoNumerics(ast->d.ival, ast, lefttype, righttype);
         }
     case '*':
+    {
+        AST *restype = HandleTwoNumerics(op, ast, lefttype, righttype);
+        if (gl_p2) {
+            if (ast->kind == AST_OPERATOR && ast->d.ival == '*' && IsIntType(restype) && TypeSize(restype) == LONG_SIZE ) {
+                if (IsSignx16(ast->left) && IsSignx16(ast->right)) {
+                    /* convert to signed 16 bit multiply */
+                    ast->left = ast->left->left;
+                    ast->right = ast->right->left;
+                    ast->d.ival = K_MULS16;
+                } else if (IsZerox16(ast->left) && IsZerox16(ast->right)) {
+                    /* convert to signed 16 bit multiply */
+                    ast->left = ast->left->left;
+                    ast->right = ast->right->left;
+                    ast->d.ival = K_MULU16;
+                }
+            }
+        }
+        return restype;
+    }
     case '/':
     case K_MODULUS:
     case K_POWER:

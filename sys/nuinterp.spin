@@ -719,6 +719,14 @@ impl_SQRT64
 	call	#\impl_DROP
   _ret_	getqx	tos
 
+impl_MULU16
+	mulu	tos, nos
+	jmp	#\impl_DOWN
+
+impl_MULS16
+	muls	tos, nos
+	jmp	#\impl_DOWN
+
 impl_MUL
 	qmul	nos, tos
 	call	#\impl_DROP

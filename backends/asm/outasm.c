@@ -2608,6 +2608,10 @@ OpcFromOp(int op)
         return OPC_MINU;
     case K_LIMITMAX_UNS:
         return OPC_MAXU;
+    case K_MULU16:
+        return OPC_MULU;
+    case K_MULS16:
+        return OPC_MULS;
     default:
         ERROR(NULL, "Unsupported operator 0x%x", op);
         return OPC_UNKNOWN;
@@ -2713,6 +2717,8 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
     case '^':
     case '&':
     case '|':
+    case K_MULU16:
+    case K_MULS16:
         // there might be something different we could do about
         // commutative operations, but for now handle them the same
         left = CompileExpression(irl, lhs, temp);

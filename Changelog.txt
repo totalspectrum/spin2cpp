@@ -1,3 +1,6 @@
+Version 6.7.0
+- Optimize 16 bit multiplications more often
+
 Version 6.6.2
 - Added warning (-Warray-index) for constant array indices out of bounds
 - Allow warnings and optimizations to be turned off with a `no-` prefix (so `warn(no-init-vars)` is like `warn(!init-vars)`).

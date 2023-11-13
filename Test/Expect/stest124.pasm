@@ -16,13 +16,13 @@ __call_method_ret
 	ret
 
 __basic_print_char
-	mov	__basic_print_char__cse__0000, arg01
+	mov	__basic_print_char__csetype__0000, arg01
 	mov	__basic_print_char_c, arg02
-	shl	__basic_print_char__cse__0000, #2
-	add	__basic_print_char__cse__0000, ptr__dat__
-	rdlong	__basic_print_char_t, __basic_print_char__cse__0000 wz
+	shl	__basic_print_char__csetype__0000, #2
+	add	__basic_print_char__csetype__0000, ptr__dat__
+	rdlong	__basic_print_char_t, __basic_print_char__csetype__0000 wz
  if_e	jmp	#__basic_print_char_ret
-	rdlong	__basic_print_char__cse__0000, __basic_print_char_t
+	rdlong	__basic_print_char__csetype__0000, __basic_print_char_t
 	add	__basic_print_char_t, #4
 	rdlong	__basic_print_char_t, __basic_print_char_t wz
  if_ne	jmp	#LR__0001
@@ -30,7 +30,7 @@ __basic_print_char
 	call	#__mytx
 	jmp	#LR__0002
 LR__0001
-	mov	arg01, __basic_print_char__cse__0000
+	mov	arg01, __basic_print_char__csetype__0000
 	mov	arg02, __basic_print_char_t
 	mov	arg03, __basic_print_char_c
 	call	#__call_method
@@ -68,7 +68,7 @@ objmem
 stackspace
 	long	0[1]
 	org	COG_BSS_START
-__basic_print_char__cse__0000
+__basic_print_char__csetype__0000
 	res	1
 __basic_print_char_c
 	res	1

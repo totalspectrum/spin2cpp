@@ -1253,6 +1253,11 @@ NuCompileOperator(NuIrList *irl, AST *node) {
         case K_LIMITMAX_UNS:
             NuEmitOp(irl, NU_OP_MAXU);
             break;
+        case K_MULS16:
+            NuEmitOp(irl, NU_OP_MULS16);
+            break;
+        case K_MULU16:
+            NuEmitOp(irl, NU_OP_MULU16);
         default:
             ERROR(node, "Unable to handle operator 0x%x", optoken);
             break;

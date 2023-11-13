@@ -361,11 +361,13 @@ AddToCSESet(AST *name, CSESet *cse, AST *expr, unsigned exprHash, AST **replacep
     if (!entry->replace) {
         AST *assign;
         AST *origexpr = entry->expr;
-        entry->replace = AstTempLocalVariable("_cse_", NULL);
         if (origexpr->kind == AST_ARRAYREF) {
             AST *reftype = ExprType(origexpr);
             if (!reftype) {
                 reftype = ast_type_generic;
+                entry->replace = AstTempLocalVariable("_cse_", NULL);
+            } else {
+                entry->replace = AstTempLocalVariable("_csetype_", reftype);
             }
             origexpr = NewAST(AST_ADDROF, origexpr, NULL);
             assign = AstAssign(entry->replace, origexpr);
@@ -373,6 +375,7 @@ AddToCSESet(AST *name, CSESet *cse, AST *expr, unsigned exprHash, AST **replacep
                                     NewAST(AST_MEMREF, reftype, entry->replace),
                                     AstInteger(0));
         } else {
+            entry->replace = AstTempLocalVariable("_cse_", NULL);
             assign = AstAssign(entry->replace, origexpr);
         }
         // we do not want to create a CSE for "i+1" in "i = i + 1"
