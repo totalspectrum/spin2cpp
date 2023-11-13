@@ -247,6 +247,13 @@ FixupList(AST *list)
 %token SP_ANNOTATION
 %token SP_VARARGS    "%VARARGS"
 
+/* Spin2 additions */
+%token SP_FIELD      "FIELD"
+%token SP_BYTES      "BYTES"
+%token SP_WORDS      "WORDS"
+%token SP_LONGS      "LONGS"
+%token SP_LSTRING    "LSTRING"
+
 /* operators */
 %token SP_ASSIGN     ":="
 %token SP_XOR        "XOR (^^)"
@@ -287,7 +294,6 @@ FixupList(AST *list)
 %token SP_ABS        "ABS (||)"
 %token SP_FSQRT      "FSQRT"
 %token SP_FABS       "FABS"
-%token SP_FIELD      "FIELD"
 %token SP_DECODE     "DECOD (|<)"
 %token SP_ENCODE     ">|"
 %token SP_ENCODE2    "ENCOD"
