@@ -234,7 +234,6 @@ Aliases spin2alias[] = {
 
     // Spin2 added keywords
     { "bytes", "%bytes" },
-    { "field", "%field" },
     { "longs", "%longs" },
     { "lstring", "%lstring" },
     { "words", "%words" },

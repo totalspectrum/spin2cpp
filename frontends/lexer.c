@@ -2255,6 +2255,7 @@ struct reservedword init_spin2_words[] = {
     { "decod", SP_DECODE },
     { "encod", SP_ENCODE2 },
     { "fabs", SP_FABS },
+    { "field", SP_FIELD },
     { "frac", SP_FRAC },
     { "fsqrt", SP_FSQRT },
     { "fvar", SP_FVAR },
@@ -2287,7 +2288,6 @@ struct reservedword init_spin2_words[] = {
     // added to Spin2 in later PNut versions
     // make soft aliases for these
     { "%bytes", SP_BYTES },
-    { "%field", SP_FIELD },
     { "%longs", SP_LONGS },
     { "%lstring", SP_LSTRING },
     { "%words", SP_WORDS },
