@@ -81,6 +81,7 @@ safe_isxdigit(unsigned int x) {
 SymbolTable spinCommonReservedWords;
 SymbolTable spin1ReservedWords;
 SymbolTable spin2ReservedWords;
+SymbolTable spin2SoftReservedWords;
 SymbolTable basicReservedWords;
 SymbolTable basicAsmReservedWords;
 SymbolTable cReservedWords;
@@ -787,7 +788,21 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
         }
     }
     if (L->language == LANG_SPIN_SPIN2) {
-        sym = FindSymbol(&spin2ReservedWords, idstr);
+        sym = NULL;
+        if (gl_in_spin2_funcbody) {
+            sym = FindSymbol(&spin2SoftReservedWords, idstr);
+            if (sym) {
+                // see if the user has a conflicting definition
+                Symbol *sym2 = FindSymbol(currentTypes, idstr);
+                if (sym2) {
+                    // conflict: use the user's definition
+                    sym = NULL;
+                }
+            }
+        }
+        if (!sym) {
+            sym = FindSymbol(&spin2ReservedWords, idstr);
+        }
     } else {
         sym = FindSymbol(&spin1ReservedWords, idstr);
     }
@@ -2255,7 +2270,6 @@ struct reservedword init_spin2_words[] = {
     { "decod", SP_DECODE },
     { "encod", SP_ENCODE2 },
     { "fabs", SP_FABS },
-    { "field", SP_FIELD },
     { "frac", SP_FRAC },
     { "fsqrt", SP_FSQRT },
     { "fvar", SP_FVAR },
@@ -2285,15 +2299,19 @@ struct reservedword init_spin2_words[] = {
     { "wordfit", SP_WORDFIT },
     { "zerox", SP_ZEROX },
 
-    // added to Spin2 in later PNut versions
-    // make soft aliases for these
-    { "%bytes", SP_BYTES },
-    { "%longs", SP_LONGS },
-    { "%lstring", SP_LSTRING },
-    { "%words", SP_WORDS },
-    
     // special % keywords
     { "%anonymous", SP_EMPTY },
+};
+
+// Spin2 keywords added in later versions of the compiler;
+// will be overridden by user definitions
+struct reservedword init_spin2_soft_words[] = {
+    { "bytes", SP_BYTES },
+    { "field", SP_FIELD },
+    { "longs", SP_LONGS },
+    { "lstring", SP_LSTRING },
+    { "words", SP_WORDS },
+    
 };
 
 struct reservedword basic_keywords[] = {
@@ -3224,6 +3242,7 @@ initSpinLexer(int flags)
     spinCommonReservedWords.flags |= SYMTAB_FLAG_NOCASE;
     spin1ReservedWords.flags |= SYMTAB_FLAG_NOCASE;
     spin2ReservedWords.flags |= SYMTAB_FLAG_NOCASE;
+    spin2SoftReservedWords.flags |= SYMTAB_FLAG_NOCASE;
     basicReservedWords.flags |= SYMTAB_FLAG_NOCASE;
     basicAsmReservedWords.flags |= SYMTAB_FLAG_NOCASE;
 
@@ -3233,6 +3252,9 @@ initSpinLexer(int flags)
     }
     for (i = 0; i < N_ELEMENTS(init_spin2_words); i++) {
         AddSymbol(&spin2ReservedWords, init_spin2_words[i].name, SYM_RESERVED, (void *)init_spin2_words[i].val, NULL);
+    }
+    for (i = 0; i < N_ELEMENTS(init_spin2_soft_words); i++) {
+        AddSymbol(&spin2SoftReservedWords, init_spin2_soft_words[i].name, SYM_RESERVED, (void *)init_spin2_soft_words[i].val, NULL);
     }
     for (i = 0; i < N_ELEMENTS(init_spin1_words); i++) {
         AddSymbol(&spin1ReservedWords, init_spin1_words[i].name, SYM_RESERVED, (void *)init_spin1_words[i].val, NULL);

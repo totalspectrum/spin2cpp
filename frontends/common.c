@@ -86,6 +86,8 @@ int gl_default_baud = 0;
 int gl_default_xtlfreq = 0;
 int gl_default_xinfreq = 0;
 
+int gl_in_spin2_funcbody = 0;
+
 // bytes and words are unsigned by default, but longs are signed by default
 // this is confusing, and someday we should make all of these explicit
 // but it's a legacy from Spin
@@ -1409,7 +1411,9 @@ void PushCurrentTypes(void)
     SymbolTable *tab = (SymbolTable *)calloc(1, sizeof(SymbolTable));
 
     tab->next = currentTypes;
-    tab->flags = currentTypes->flags;
+    if (currentTypes) {
+        tab->flags = currentTypes->flags;
+    }
     currentTypes = tab;
 }
 

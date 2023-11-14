@@ -43,6 +43,54 @@ SpinRetType(AST *funcdef)
     return NULL;
 }
 
+// add symbol definitions to currentTypes
+static void
+SpinAddLocalSymbol(AST *ident, int kind)
+{
+    const char *name;
+    if (!currentTypes) return;
+    if (ident && ident->kind == AST_DECLARE_VAR) {
+        ident = ident->left;
+    }
+    if (!ident) return;
+    name = GetIdentifierName(ident);
+    AddSymbol(currentTypes, name, kind, NULL, NULL);
+}
+
+void
+SpinDeclareFuncSymbols(AST *paramlist, AST *resultname, AST *varlist)
+{
+    AST *list;
+    AST *item;
+    SpinAddLocalSymbol(resultname, SYM_LOCALVAR);
+    for (list = paramlist; list; list = list->right) {
+        item = list->left;
+        SpinAddLocalSymbol(item, SYM_LOCALVAR);
+    }
+    for (list = varlist; list; list = list->right) {
+        item = list->left;
+        SpinAddLocalSymbol(item, SYM_LOCALVAR);
+    }
+    
+}
+
+void
+SpinDeclareVarSymbols(AST *varlist)
+{
+    AST *list;
+    AST *item;
+
+    for (list = varlist; list; list = list->right) {
+        item = list->left;
+        SpinAddLocalSymbol(item, SYM_LOCALVAR);
+    }
+}
+
+void
+SpinDeclareObjectSymbols(AST *vars)
+{
+}
+
 // in common.c
 extern AST *GenericFunctionPtr(int numresults);
 
@@ -387,36 +435,42 @@ emptylines:
 
 topelement:
   SP_CON conblock
-  { $$ = current->conblock = AddToListEx(current->conblock, $2, &current->conblock_tail); }
+    { $$ = current->conblock = AddToListEx(current->conblock, $2, &current->conblock_tail); }
   | SP_DAT datblock
-  { $$ = current->datblock = AddToListEx(current->datblock, $2, &current->datblock_tail); }
+    { $$ = current->datblock = AddToListEx(current->datblock, $2, &current->datblock_tail); }
   | SP_DAT annotation datblock
-  {
+    {
       current->datannotations = AddToList(current->datannotations, $2);
       $$ = current->datblock = AddToListEx(current->datblock, $3, &current->datblock_tail); 
-  }
+    }
   | SP_VAR varblock
-  { $$ = current->pendingvarblock = AddToList(current->pendingvarblock, $2); }
+    {
+        AST *vars = $2;
+        SpinDeclareVarSymbols(vars);
+        $$ = current->pendingvarblock = AddToList(current->pendingvarblock, vars);
+    }
   | SP_OBJ objblock
-  {
-    $$ = current->objblock = AddToList(current->objblock, $2);
-  }
-  | SP_PUB funcdef funcbody
+    {
+        AST *objs = $2;
+        $$ = current->objblock = AddToList(current->objblock, objs);
+        SpinDeclareObjectSymbols(objs);
+    }
+  | SP_PUB funcdef funcbody funcdef_end
     { DeclareFunction(current, SpinRetType($2), 1, $2, $3, NULL, $1); }
-  | SP_PRI funcdef funcbody
+  | SP_PRI funcdef funcbody funcdef_end
     { DeclareFunction(current, SpinRetType($2), 0, $2, $3, NULL, $1); }
-  | SP_PUB annotation funcdef funcbody
+  | SP_PUB annotation funcdef funcbody funcdef_end
     { DeclareFunction(current, SpinRetType($3), 1, $3, $4, $2, $1); }
-  | SP_PRI annotation funcdef funcbody
+  | SP_PRI annotation funcdef funcbody funcdef_end
     { DeclareFunction(current, SpinRetType($3), 0, $3, $4, $2, $1); }
-  | SP_PUB SP_FILE SP_STRING funcdef
+  | SP_PUB SP_FILE SP_STRING funcdef funcdef_end
     { DeclareFunction(current, SpinRetType($4), 1, $4, $3, NULL, $1); }
-  | SP_PRI SP_FILE SP_STRING funcdef
+  | SP_PRI SP_FILE SP_STRING funcdef funcdef_end
     { DeclareFunction(current, SpinRetType($4), 0, $4, $3, NULL, $1); }
 
-  | SP_PUB annotation SP_FILE SP_STRING funcdef
+  | SP_PUB annotation SP_FILE SP_STRING funcdef funcdef_end
     { DeclareFunction(current, SpinRetType($5), 1, $5, $4, $2, $1); }
-  | SP_PRI annotation SP_FILE SP_STRING funcdef
+  | SP_PRI annotation SP_FILE SP_STRING funcdef funcdef_end
     { DeclareFunction(current, SpinRetType($5), 0, $5, $4, $2, $1); }
 
   | SP_PRI identifier '=' identifier SP_EOLN
@@ -437,9 +491,23 @@ topelement:
 
 funcdef:
   identifier optparamlist resultname localvars SP_EOLN
-  { AST *funcdecl = NewAST(AST_FUNCDECL, $1, $3);
-    AST *funcvars = NewAST(AST_FUNCVARS, $2, $4);
-    $$ = NewAST(AST_FUNCDEF, funcdecl, funcvars);
+  {
+      AST *funcname = $1;
+      AST *paramlist = $2;
+      AST *resultname = $3;
+      AST *vars = $4;
+      AST *funcdecl = NewAST(AST_FUNCDECL, funcname, resultname);
+      AST *funcvars = NewAST(AST_FUNCVARS, paramlist, vars);
+      SpinAddLocalSymbol(funcname, SYM_FUNCTION);
+      PushCurrentTypes();
+      SpinDeclareFuncSymbols(paramlist, resultname, vars);
+      $$ = NewAST(AST_FUNCDEF, funcdecl, funcvars);
+  }
+;
+
+funcdef_end:
+  {
+      PopCurrentTypes();
   }
 ;
 
@@ -482,7 +550,7 @@ localvars:
   { $$ = $2; }
     ;
 
-funcbody:
+funcbody_internal:
   /* empty */
   { $$ = NULL; }
 | SP_BYTECODE '(' SP_STRING ')' SP_EOLN
@@ -493,6 +561,22 @@ funcbody:
   }
 | stmtlist
   { $$ = $1; }
+;
+
+enter_func:
+  {
+      gl_in_spin2_funcbody = 1;
+  }
+;
+
+exit_func:
+  {
+      gl_in_spin2_funcbody = 0;
+  }
+;
+
+funcbody: enter_func funcbody_internal exit_func
+  { $$ = $2; }
 ;
 
 stmtlist:

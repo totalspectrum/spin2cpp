@@ -320,6 +320,9 @@ extern int gl_default_xinfreq;
 /* tab stop setting (in lexer.c) */
 extern int gl_tab_stops;
 
+/* flag to indicate we're in a PUB or PRI block */
+extern int gl_in_spin2_funcbody;
+
 /* types */
 extern AST *ast_type_long;
 extern AST *ast_type_word;
