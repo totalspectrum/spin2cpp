@@ -1,5 +1,6 @@
 Version 6.7.0
-- Optimize 16 bit multiplications more often
+- Fixed potential bug in shl/shr peephole optimization
+- Optimized 16 bit multiplications more often
 
 Version 6.6.2
 - Added warning (-Warray-index) for constant array indices out of bounds

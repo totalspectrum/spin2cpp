@@ -3841,11 +3841,14 @@ OptimizePeepholes(IRList *irl)
         // check for consecutive math opcodes
         if (ir_next && ir_next->opc == opc
             && ir->dst == ir_next->dst
-            && !InstrSetsAnyFlags(ir)
             && ir->cond == ir_next->cond
+            && !InstrSetsAnyFlags(ir)
+            && !InstrSetsAnyFlags(ir_next)
             && IsDirectImmediate(ir->src)
             && IsDirectImmediate(ir_next->src)
             && !IsHwReg(ir->dst)
+            /* && !InstrIsVolatile(ir) already checked above */
+            && !InstrIsVolatile(ir_next)
             )
         {
             int newval;
