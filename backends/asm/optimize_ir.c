@@ -3855,10 +3855,13 @@ OptimizePeepholes(IRList *irl)
             bool merge = true;
             // check for mergeable immediate math operands
             switch (opc) {
+/*
+  ADD and SUB are already handled in OptimizeAddSub
             case OPC_ADD:
             case OPC_SUB:
                 newval = ir_next->src->val + ir->src->val;
                 break;
+*/                
             case OPC_SHL:
             case OPC_SAR:
             case OPC_SHR:
