@@ -51,6 +51,7 @@ int gl_brkdebug = 1;
 const char *gl_intstring = "int32_t";
 int gl_warn_flags = 0;
 int gl_nostdlib = 0;
+int gl_in_spin2_funcbody = 0;
 
 // dummy needed for some symbol lookups
 Module *GetTopLevelModule(void) {
