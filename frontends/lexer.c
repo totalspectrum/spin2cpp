@@ -795,8 +795,22 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                 // see if the user has a conflicting definition
                 Symbol *sym2 = FindSymbol(currentTypes, idstr);
                 if (sym2) {
-                    // conflict: use the user's definition
-                    sym = NULL;
+                    // conflict: use the user's definition by default
+                    // but error if user set a version in which the
+                    // word is a keyword, and warn if the user asked us
+                    // to
+                    int userVersion = L->language_version;
+                    int langVersion = sym->offset;
+                    int startline = L->lineCounter;
+                    if (userVersion && userVersion >= langVersion) {
+                        // leave the symbol as is, and let the parser fail
+                        WARNING(DummyLineAst(startline), "possible conflict with keyword `%s'", idstr);
+                    } else {
+                        if (userVersion == 0 && 0 != (gl_warn_flags & WARN_LANG_VERSION)) {
+                            WARNING(DummyLineAst(startline), "symbol `%s' is a keyword in version %d of the language", idstr, langVersion);
+                        }
+                        sym = NULL;
+                    }
                 }
             }
         }
@@ -1715,6 +1729,10 @@ again:
             c = lexgetc(L);
             doccomment = 1;
             allowNestedComments = 0;
+        } else if (c == '$') {
+            // check for various special directives
+            c = lexgetc(L);
+            directive = 1;
         }
         lexungetc(L, c);
         for(;;) {
@@ -1773,6 +1791,15 @@ again:
                     if (*ptr == ' ') ptr++;
                     L->fileName = getFileName(ptr, L->fileName);
                     L->lineCounter = lineno;
+                }
+            } else if (!strncmp(dir, "ver", 3)) {
+                char *ptr = dir+3;
+                int version;
+                while (*ptr && isalpha(*ptr)) ptr++;
+                version = strtol(ptr, &ptr, 10);
+                if (version > 0) {
+                    L->language_version = version;
+                    current->curLangVersion = version;
                 }
             }
             free(dir);
@@ -2305,12 +2332,18 @@ struct reservedword init_spin2_words[] = {
 
 // Spin2 keywords added in later versions of the compiler;
 // will be overridden by user definitions
-struct reservedword init_spin2_soft_words[] = {
-    { "bytes", SP_BYTES },
-    { "field", SP_FIELD },
-    { "longs", SP_LONGS },
-    { "lstring", SP_LSTRING },
-    { "words", SP_WORDS },
+// the "version" field gives the version of the compiler wherein
+// the keyword is supported
+struct reservedword_soft {
+    const char *name;
+    intptr_t val;
+    int      version;
+} init_spin2_soft_words[] = {
+    { "field", SP_FIELD, 37 },
+    { "bytes", SP_BYTES, 42 },
+    { "longs", SP_LONGS, 42 },
+    { "lstring", SP_LSTRING, 42 },
+    { "words", SP_WORDS, 42 },
     
 };
 
@@ -3254,7 +3287,8 @@ initSpinLexer(int flags)
         AddSymbol(&spin2ReservedWords, init_spin2_words[i].name, SYM_RESERVED, (void *)init_spin2_words[i].val, NULL);
     }
     for (i = 0; i < N_ELEMENTS(init_spin2_soft_words); i++) {
-        AddSymbol(&spin2SoftReservedWords, init_spin2_soft_words[i].name, SYM_RESERVED, (void *)init_spin2_soft_words[i].val, NULL);
+        Symbol *sym = AddSymbol(&spin2SoftReservedWords, init_spin2_soft_words[i].name, SYM_RESERVED, (void *)init_spin2_soft_words[i].val, NULL);
+        sym->offset = init_spin2_soft_words[i].version;
     }
     for (i = 0; i < N_ELEMENTS(init_spin1_words); i++) {
         AddSymbol(&spin1ReservedWords, init_spin1_words[i].name, SYM_RESERVED, (void *)init_spin1_words[i].val, NULL);

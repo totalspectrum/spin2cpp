@@ -619,6 +619,7 @@ static FlagTable warnflag[] = {
     { "hide-members", WARN_HIDE_MEMBERS },
     { "init-vars", WARN_UNINIT_VARS },
     { "language-extensions", WARN_LANG_EXTENSIONS },
+    { "language-version", WARN_LANG_VERSION },
     { "array-index", WARN_ARRAY_INDEX },
     { "all", WARN_ALL },
 };

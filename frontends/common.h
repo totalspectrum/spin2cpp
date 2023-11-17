@@ -75,7 +75,8 @@ struct lexstream {
 
     /* current language being parsed */
     int language;
-    
+    int language_version;
+
     /* for handling Unicode CR+LF */
     int sawCr;
 
@@ -215,6 +216,7 @@ extern int gl_warn_flags;     /* flags for warnings */
 #define WARN_UNINIT_VARS        0x000008
 #define WARN_C_CONST_STRING     0x000010
 #define WARN_ARRAY_INDEX        0x000020
+#define WARN_LANG_VERSION       0x000040
 #define WARN_ASM_FIRST_PASS     0x800000      
 #define WARN_ALL                0xFFFFFF
 
@@ -588,6 +590,9 @@ struct modulestate {
     /* current language we are processing */
     int curLanguage;
 
+    /* language version we are processing (if applicable) */
+    int curLangVersion;
+    
     /* "body" (statements outside any function) */
     /* not all languages support this */
     AST *body;
