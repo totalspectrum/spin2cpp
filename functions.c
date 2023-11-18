@@ -1077,7 +1077,9 @@ doDeclareFunction(AST *funcblock)
         if (IsSpin1Lang(language)) {
             fdef->resultexpr = AstIdentifier("result");
             AddSymbolPlaced(&fdef->localsyms, "result", SYM_RESULT, NULL, NULL, src);
-        } else if (IsSpin2Lang(language) && !fdef->result_declared) {
+        } else if (0 && IsSpin2Lang(language) && !fdef->result_declared) {
+            /* this creates a compatibility issue with old flexspin,
+               so disabled for now */
             fdef->numresults = 0;
             fdef->overalltype->left = ast_type_void;
         } else {
@@ -2333,7 +2335,7 @@ ProcessOneFunc(Function *pf)
     pf->extradecl = AddToList(pf->extradecl, decls);
 
     /* check for void functions */
-    if (TraditionalBytecodeOutput()) {
+    if (TraditionalBytecodeOutput() && pf->language == LANG_SPIN_SPIN1) {
         pf->result_used = 1;
     }
     if (pf->result_declared && pf->language == LANG_SPIN_SPIN2) {
