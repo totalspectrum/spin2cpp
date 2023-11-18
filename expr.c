@@ -3037,6 +3037,9 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
             case SYM_TEMPVAR:
                 typexpr = (AST *)sym->v.ptr;
                 AST *old_typexpr = typexpr;
+                if (typexpr && typexpr->kind == AST_MODIFIER_SEND_ARGS) {
+                    typexpr = typexpr->left;
+                }
                 if (typexpr && (typexpr->kind == AST_PTRTYPE || typexpr->kind == AST_REFTYPE || typexpr->kind == AST_COPYREFTYPE)) {
                     typexpr = RemoveTypeModifiers(typexpr->left);
                 }

@@ -1077,6 +1077,9 @@ doDeclareFunction(AST *funcblock)
         if (IsSpin1Lang(language)) {
             fdef->resultexpr = AstIdentifier("result");
             AddSymbolPlaced(&fdef->localsyms, "result", SYM_RESULT, NULL, NULL, src);
+        } else if (IsSpin2Lang(language) && !fdef->result_declared) {
+            fdef->numresults = 0;
+            fdef->overalltype->left = ast_type_void;
         } else {
             fdef->resultexpr = AstIdentifier("___result");
             AddSymbol(&fdef->localsyms, "___result", SYM_RESULT, NULL, NULL);
@@ -1786,8 +1789,11 @@ CheckRetStatementList(Function *func, AST *ast)
 static bool
 IsResultVar(Function *func, AST *lhs)
 {
+    if (!func->resultexpr) {
+        return false;
+    }
     if (lhs->kind == AST_RESULT) {
-        if (func->resultexpr && func->resultexpr->kind == AST_EXPRLIST) {
+        if (func->resultexpr->kind == AST_EXPRLIST) {
             ERROR(lhs, "Do not use RESULT in functions returning multiple values");
             return false;
         }

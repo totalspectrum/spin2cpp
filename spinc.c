@@ -132,11 +132,18 @@ InitGlobalModule(void)
 
     sym = AddSymbol(table, "__sendptr", SYM_VARIABLE, ast_type_sendptr, NULL);
     sym->flags |= SYMF_GLOBAL;
-    sym->offset = -1; // special flag for COG internal memory
-
+    if (gl_output == OUTPUT_BYTECODE && gl_interp_kind != INTERP_KIND_NUCODE) {
+        sym->offset = 0x7ffc;
+    } else {
+        sym->offset = -1; // special flag for COG internal memory
+    }
     sym = AddSymbol(table, "__recvptr", SYM_VARIABLE, ast_type_recvptr, NULL);
     sym->flags |= SYMF_GLOBAL;
-    sym->offset = -2; // special flag for COG internal memory
+    if (gl_output == OUTPUT_BYTECODE && gl_interp_kind != INTERP_KIND_NUCODE) {
+        sym->offset = 0x7ff8;
+    } else {
+        sym->offset = -1; // special flag for COG internal memory
+    }
 
     if (gl_output != OUTPUT_BYTECODE || gl_interp_kind == INTERP_KIND_NUCODE) {
         if (gl_interp_kind == INTERP_KIND_NUCODE) {

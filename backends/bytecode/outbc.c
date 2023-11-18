@@ -673,8 +673,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
             }
         } break;
         case SYM_VARIABLE: {
-            if (!strcmp(sym->our_name,"__clkfreq_var") || !strcmp(sym->our_name,"__clkmode_var")) {
-                // FIXME figure out how to properly differentiate these
+            if (sym->flags & SYMF_GLOBAL) {
                 DEBUG(node,"Got special symbol %s with offset %d",sym->our_name,sym->offset);
                 memOp.attr.memop.base = MEMOP_BASE_POP;
                 targetKind = MOT_MEM;

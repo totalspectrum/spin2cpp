@@ -902,6 +902,7 @@ void initSpinLexer(int flags);
 #define LANG_SPIN_SPIN2  0x01
 #define IsSpinLang(lang) ((lang)>=LANG_SPIN_SPIN1 && (lang)<=LANG_SPIN_SPIN2)
 #define IsSpin1Lang(lang) ((lang)==LANG_SPIN_SPIN1)
+#define IsSpin2Lang(lang) ((lang)==LANG_SPIN_SPIN2)
 
 #define LANG_BASIC_FBASIC 0x10
 #define IsBasicLang(lang) ((lang) == LANG_BASIC_FBASIC)
