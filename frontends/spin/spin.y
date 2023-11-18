@@ -43,6 +43,26 @@ SpinRetType(AST *funcdef)
     return NULL;
 }
 
+// add a block of data to the DAT section, and return a pointer to its address
+static AST *
+SpinAddDatList(AST *datlist)
+{
+    AST *label = AstTempIdentifier("_byteptr_");
+    AST *ptr = NewAST(AST_ABSADDROF, DupAST(label), NULL);
+    AST *linebreak = NewAST(AST_LINEBREAK, NULL, NULL);
+    AST *ast = label;
+
+    ast = AddToList(ast, datlist);
+    ast = AddToList(linebreak, ast);
+
+    // add this entry to the DAT section
+    current->datblock = AddToListEx(current->datblock, ast, &current->datblock_tail);
+    
+    // return a pointer to it
+    return ptr;
+    
+}
+
 // add symbol definitions to currentTypes
 static void
 SpinAddLocalSymbol(AST *ident, int kind)
@@ -1376,6 +1396,24 @@ expr:
         AST *ptr = NewAST(AST_STRINGPTR, elist, NULL);
         ptr->d.ival = 1;
         $$ = ptr;
+    }
+  | SP_BYTES '(' datexprlist ')'
+    {
+        AST *datlist = $3;
+        datlist = NewAST(AST_BYTELIST, datlist, NULL);
+        $$ = SpinAddDatList(datlist);
+    }
+  | SP_WORDS '(' datexprlist ')'
+    {
+        AST *datlist = $3;
+        datlist = NewAST(AST_WORDLIST, datlist, NULL);
+        $$ = SpinAddDatList(datlist);
+    }
+  | SP_LONGS '(' datexprlist ')'
+    {
+        AST *datlist = $3;
+        datlist = NewAST(AST_LONGLIST, datlist, NULL);
+        $$ = SpinAddDatList(datlist);
     }
   | lhs
   | '@' expr
