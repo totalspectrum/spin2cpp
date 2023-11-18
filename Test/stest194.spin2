@@ -1,9 +1,9 @@
-PUB check1(a, b)
+PUB check1(a, b) : r
   if (a <= b)
     return 9
   return -1
 
-PUB check2(a, b)
+PUB check2(a, b) : r
   if (a =< b)
     return 9
   return -1

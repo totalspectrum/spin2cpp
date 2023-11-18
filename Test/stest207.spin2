@@ -1,2 +1,2 @@
-pub signex(x)
+pub signex(x) : r
   return (x<<16) >> 16

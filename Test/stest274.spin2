@@ -1,4 +1,4 @@
-PUB Main() | temp, tscl
+PUB Main() : r | temp, tscl
 
     temp := tempdata()
     tscl := tempscale()    ' comment me out: code runs OK

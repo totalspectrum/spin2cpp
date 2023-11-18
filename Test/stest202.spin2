@@ -1,4 +1,4 @@
-pub check(a, b)
+pub check(a, b) : r
   if a <= b
     return 1
   if a +<= b

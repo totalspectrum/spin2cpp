@@ -4,10 +4,10 @@ var
 pub maskit()
   bmask= a
 
-pub mask(n)
+pub mask(n) : r
   return bmask n
 
-pub mask2(n)
+pub mask2(n) : r
   return (1<<(n+1)) - 1
 
 pub op1

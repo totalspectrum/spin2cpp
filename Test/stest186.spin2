@@ -1,4 +1,4 @@
-pub go(x, y) | m
+pub go(x, y) : r | m
   _, m := addsub(x, y)
   return m
   
