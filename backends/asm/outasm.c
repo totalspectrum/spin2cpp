@@ -1071,8 +1071,8 @@ int EmitString(IRList *irl, AST *ast)
     if (ast) {
         count += EmitStringNoTrailingZero(irl, ast);
     }
-    // add a trailing 0
-    if (irl) {
+    // add a trailing 0 if necessary (it generally (always?) should not be)
+    if (irl && !ast) {
         EmitOp1(irl, OPC_BYTE, NewImmediate(0));
         count++;
     }
@@ -4356,7 +4356,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
     case AST_STRINGPTR:
     {
         // evaluate any const references in our current context
-        AST *stringExpr = EvalStringConst(expr->left);
+        AST *stringExpr = EvalTerminatedStringConst(expr->left, expr->d.ival);
         r = GetOneHub(STRING_DEF, NewTempLabelName(), (intptr_t)(stringExpr));
         if (gl_p2) {
             Operand *temp = NewFunctionTempRegister();

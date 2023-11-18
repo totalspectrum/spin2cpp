@@ -231,6 +231,45 @@ EvalStringConst(AST *expr)
     }
 }
 
+/* create a zero terminated string, or count prepended string */
+/* "lenVal" is the number of count bytes, 0 for a zero terminated string */
+AST *
+EvalTerminatedStringConst(AST *expr, int lenVal)
+{
+    unsigned stringLength = 0;
+    unsigned encodeLength;
+    unsigned byteMask;
+    int i;
+
+    expr = EvalStringConst(expr);
+    if (expr && expr->kind != AST_EXPRLIST) {
+        expr = NewAST(AST_EXPRLIST, expr, NULL);
+    }
+    if (lenVal <= 0) {
+        // zero terminate the string
+        expr = AddToList(expr, NewAST(AST_EXPRLIST, AstInteger(0), NULL));
+    } else {
+        // prefix the string with a length which is "lenVal" bytes long
+        lenVal *= 8; // convert to bit count
+        stringLength = AstStringLen(expr);
+        if (lenVal < LONG_SIZE*8) {
+            byteMask = (1<<lenVal) - 1;
+            encodeLength = stringLength & byteMask;
+            if (encodeLength != stringLength) {
+                ERROR(expr, "String length does not fit in %d bytes", lenVal);
+            }
+        } else {
+            encodeLength = stringLength;
+        }
+        // construct little endian prefix
+        for (i = lenVal-8; i >= 0; i -= 8) {
+            expr = NewAST(AST_EXPRLIST, AstInteger( (encodeLength >> i) & 0xff), expr);
+        }
+    }
+    return expr;
+}
+
+/* append a string */
 static void StringAppend(Flexbuf *fb,AST *expr) {
     if(!expr) return;
     switch (expr->kind) {
@@ -258,9 +297,26 @@ static void StringAppend(Flexbuf *fb,AST *expr) {
     }
 }
 
-void StringBuildBuffer(Flexbuf *fb, AST *expr) {
+void StringBuildBuffer(Flexbuf *fb, AST *expr, int lenPrefix) {
+    if (lenPrefix) {
+        int actualLen = AstStringLen(expr);
+        int i;
+        if (lenPrefix < LONG_SIZE) {
+            int maxLen = (1<<(lenPrefix*8));
+            if (maxLen >= actualLen) {
+                ERROR(expr, "String length does not fit in %d bytes", lenPrefix);
+            }
+        }
+        for (i = 0; i < lenPrefix; i++) {
+            flexbuf_addchar(fb, actualLen & 0xff);
+            actualLen = actualLen >> 8;
+        }
+    }   
     StringAppend(fb, expr);
-    flexbuf_addchar(fb, 0);
+    if (lenPrefix == 0) {
+        // zero terminate
+        flexbuf_addchar(fb, 0);
+    }
 }
 
 // Printf that auto-allocates some space (and never frees it, lol)

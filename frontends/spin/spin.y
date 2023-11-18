@@ -1370,6 +1370,13 @@ expr:
         AST *elist = $3;
         $$ = NewAST(AST_STRINGPTR, elist, NULL);
     }
+  | SP_LSTRING '(' exprlist ')'
+    {
+        AST *elist = $3;
+        AST *ptr = NewAST(AST_STRINGPTR, elist, NULL);
+        ptr->d.ival = 1;
+        $$ = ptr;
+    }
   | lhs
   | '@' expr
     {

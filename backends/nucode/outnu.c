@@ -1658,7 +1658,7 @@ NuCompileExpression(NuIrList *irl, AST *node) {
             flexbuf_init(&fdata->dataBuf, 256);
         }
         tmpLabel = NuIrOffsetLabel(fdata->dataLabel, flexbuf_curlen(&fdata->dataBuf));
-        StringBuildBuffer(&fdata->dataBuf, node->left);
+        StringBuildBuffer(&fdata->dataBuf, node->left, node->d.ival);
         NuEmitAddress(irl, tmpLabel);
         pushed = 1;
     }

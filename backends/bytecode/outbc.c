@@ -260,12 +260,12 @@ Optoken2MathOpKind(int token,bool *unaryOut,bool *needsAbsOut) {
     return mok;
 }
 
-ByteOpIR BCBuildString(AST *expr) {
+ByteOpIR BCBuildString(AST *expr, int prefixLen) {
     ByteOpIR ir = {0};
     ir.kind = BOK_FUNDATA_STRING;
     Flexbuf fb;
     flexbuf_init(&fb, 32);
-    StringBuildBuffer(&fb, expr);
+    StringBuildBuffer(&fb, expr, prefixLen);
     ir.attr.stringLength = flexbuf_curlen(&fb);
     ir.data.stringPtr = flexbuf_get(&fb);
     return ir;
@@ -2201,7 +2201,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
             case AST_STRINGPTR: {
                 ByteOpIR *stringLabel = BCNewOrphanLabel(nullcontext);
                 ByteOpIR pushOp = {.kind = BOK_FUNDATA_PUSHADDRESS,.jumpTo = stringLabel,.attr.pushaddress.addPbase = true};
-                ByteOpIR stringData = BCBuildString(node->left);
+                ByteOpIR stringData = BCBuildString(node->left, node->d.ival);
 
                 BIRB_PushCopy(irbuf,&pushOp);
                 BIRB_Push(irbuf->pending,stringLabel);

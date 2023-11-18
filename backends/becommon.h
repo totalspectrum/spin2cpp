@@ -14,10 +14,17 @@ void NormalizeVarOffsets(Function *f);
 void CompileAsmToBinary(const char *binname, const char *asmname); // in cmdline.c
 
 // evaluate any constant expressions inside a string
+// and return an AST representing the whole string
 AST *EvalStringConst(AST *expr);
 
-// turn an AST stringptr into a flexbuf buffer
-void StringBuildBuffer(Flexbuf *fb, AST *expr);
+// Similar to EvalStringConst, but either zero terminates (if lenVal is 0) or
+// else prepends a length count of lenVal bytes
+AST *EvalTerminatedStringConst(AST *expr, int lenVal);
+
+// turn an AST stringptr into a flexbuf buffer, with a length prefix
+// that is "lenPrefix" bytes long (or make it zero terminated if
+// "lenPrefix" is 0)
+void StringBuildBuffer(Flexbuf *fb, AST *expr, int lenPrefix);
 
 // print into a freshly allocated string
 char *auto_printf(size_t max,const char *format,...) __attribute__((format(printf,2,3)));

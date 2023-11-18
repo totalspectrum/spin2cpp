@@ -514,11 +514,9 @@ AstStringLen(AST *list)
 {
     int len = 1;
     if (!list) return 0;
-    if (list->kind != AST_STRINGPTR) {
-        ERROR(list, "Internal error, expected string");
-        return 1;
+    if (list->kind == AST_STRINGPTR) {
+        list = list->left;
     }
-    list = list->left;
     while (list && list->kind == AST_EXPRLIST) {
         if (!list->left) continue;
         if (list->left->kind == AST_STRING) {
@@ -565,12 +563,20 @@ AstMergeStrings(AST *left, AST *right)
             ERROR(left, "Internal errors, expected string");
             return left;
         }
+        if (left->d.ival != 0) {
+            ERROR(left, "Internal error, expected zstring not lstring");
+            return left;
+        }
         newLen += AstStringLen(left);
     }
     if (right) {
         if (right->kind != AST_STRINGPTR) {
             ERROR(right, "Internal errors, expected string");
             return left;
+        }
+        if (right->d.ival != 0) {
+            ERROR(right, "Internal error, expected zstring not lstring");
+            return right;
         }
         newLen += AstStringLen(right);
     }
@@ -865,6 +871,7 @@ static const char *astnames[] = {
 
     "signed_booltype",
     "unsigned_booltype",
+    "byteptr",
 };
 
 //
@@ -921,6 +928,16 @@ static void doASTDump(AST *ast, int indent)
     case AST_STRING:
         sprintf(buf, "<string %s/>", ast->d.string);
         leaf = 1;
+        break;
+    case AST_STRINGPTR:
+        if (ast->d.ival == 0) {
+            sprintf(buf, "<zstringptr>");
+        } else {
+            sprintf(buf, "<lstringptr %ld>", (long)ast->d.ival);
+        }
+        break;
+    case AST_BYTEPTR:
+        sprintf(buf, "<byteptr %ld>", (long)ast->d.ival);
         break;
     case AST_BYTECODE:
         sprintf(buf, "<bytecode %s/>", ast->d.string);

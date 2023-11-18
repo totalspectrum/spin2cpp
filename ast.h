@@ -246,6 +246,8 @@ enum astkind {
 
     AST_SIGNED_BOOLTYPE = 177,
     AST_UNS_BOOLTYPE = 178,
+    AST_BYTEPTR = 179,
+
 };
 
 /* forward reference */
