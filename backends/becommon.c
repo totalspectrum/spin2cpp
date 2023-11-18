@@ -251,7 +251,7 @@ EvalTerminatedStringConst(AST *expr, int lenVal)
     } else {
         // prefix the string with a length which is "lenVal" bytes long
         lenVal *= 8; // convert to bit count
-        stringLength = AstStringLen(expr);
+        stringLength = AstStringLen(expr) - 1; // AstStringLen includes a trailing 0
         if (lenVal < LONG_SIZE*8) {
             byteMask = (1<<lenVal) - 1;
             encodeLength = stringLength & byteMask;
@@ -299,11 +299,11 @@ static void StringAppend(Flexbuf *fb,AST *expr) {
 
 void StringBuildBuffer(Flexbuf *fb, AST *expr, int lenPrefix) {
     if (lenPrefix) {
-        int actualLen = AstStringLen(expr);
+        int actualLen = AstStringLen(expr) - 1; // AstStringLen includes a trailing 0
         int i;
         if (lenPrefix < LONG_SIZE) {
             int maxLen = (1<<(lenPrefix*8));
-            if (maxLen >= actualLen) {
+            if (maxLen <= actualLen) {
                 ERROR(expr, "String length does not fit in %d bytes", lenPrefix);
             }
         }
