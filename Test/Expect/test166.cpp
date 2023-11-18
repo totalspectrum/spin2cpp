@@ -11,6 +11,9 @@ int32_t test166::Check(int32_t Source, char *Addr)
 
 int32_t test166::Foo(int32_t Addr)
 {
+  int32_t Val;
+  Val = 0;
   return (_OUTA + Addr);
+  return Val;
 }
 

@@ -233,7 +233,7 @@ The first 16 registers of LUT memory (from $200 to $20f) is left free for use by
 
 ## Warnings
 
-Listed below are warnings which may be enabled on the command line or on a per-function basis. One may also specify `-Wall` to enable all warnings.
+Listed below are warnings which may be enabled on the command line or on a per-function basis. One may also specify `-Wall` to enable all warnings, or `-Wnone` to disable all warnings. `all`, `none`, and the flags below may also be combined.
 
 ### Per-function control of warnings
 
@@ -257,7 +257,7 @@ Thus, a Spin function with `{++opt(!all,hide-members)}` will always be compiled 
 
 ### Warning control on the command line
 
-Multiple `-W` options may be given, or combined separated by commas. So for example to compile with all warnings except uninitialized variables, one would give `-Wall,!init-vars`.
+Multiple `-W` options may be given, or combined separated by commas. So for example to compile with all warnings except uninitialized variables, one would give `-Wall,!init-vars`. Conversely, to compile with *only* an uninitialized variable warning, one would give `-Wnone,init-vars`.
 
 
 ### Array index warnings (-Warray-index) (enabled by default)
@@ -271,6 +271,10 @@ Warns about some common issues in assembly code, for example forgetting to put `
 ### C constant strings (-Wc-const-strings)
 
 If enabled, all string literals in C are treated as being `const`. This is a useful warning (because it is not legal to modify a string literal) but many older programs do not use `const` consistently enough to prevent this warning.
+
+### Deprecated features (-Wdeprecated) (enabled by default)
+
+Warns about flexspin extensions which are deprecated, such as allowing a Spin2 function to return a result without declaring an explicit result variable.
 
 ### Hidden members (-Whide-members)
 

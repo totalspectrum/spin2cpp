@@ -2368,7 +2368,9 @@ ProcessOneFunc(Function *pf)
             pf->resultexpr = AstInteger(0);
             pf->result_used = 1;
             if (sawreturn && pf->numresults > 0) {
-                LANGUAGE_WARNING(LANG_SPIN_SPIN2, pf->decl, "function %s returns a value but was declared without a return variable", pf->name);
+                if (pf->language == LANG_SPIN_SPIN2 && 0 != (gl_warn_flags & (WARN_DEPRECATED|WARN_LANG_EXTENSIONS))) {
+                    WARNING(pf->decl, "function %s returns a value but was declared without a return variable: this flexspin extension is deprecated", pf->name);
+                }
             }
         }
         // originally tried to optimize this away, but gotos can confuse us

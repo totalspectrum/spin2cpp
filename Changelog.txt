@@ -3,6 +3,7 @@ Version 6.7.0
 - Added versioning for Spin2 language files, controlled by {$ver NN}
 - Fixed potential bug in shl/shr peephole optimization
 - Made SEND() work in P1 bytecode
+- More forceful warning for return without a declared result in Spin2
 - Optimized 16 bit multiplications more often
 
 Version 6.6.2

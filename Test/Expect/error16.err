@@ -1,4 +1,4 @@
 error16.spin2:1: warning: omitting () for empty parameter lists is a flexspin extension
 error16.spin2:4: warning: omitting () for empty parameter lists is a flexspin extension
 error16.spin2:2: warning: omitting () on function calls is a fastspin extension
-error16.spin2:4: warning: function otherfunc returns a value but was declared without a return variable
+error16.spin2:4: warning: function otherfunc returns a value but was declared without a return variable: this flexspin extension is deprecated

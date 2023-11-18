@@ -217,10 +217,11 @@ extern int gl_warn_flags;     /* flags for warnings */
 #define WARN_C_CONST_STRING     0x000010
 #define WARN_ARRAY_INDEX        0x000020
 #define WARN_LANG_VERSION       0x000040
+#define WARN_DEPRECATED         0x000080
 #define WARN_ASM_FIRST_PASS     0x800000      
 #define WARN_ALL                0xFFFFFF
 
-#define DEFAULT_WARN_FLAGS (WARN_ASM_USAGE | WARN_UNINIT_VARS | WARN_ASM_FIRST_PASS | WARN_ARRAY_INDEX)
+#define DEFAULT_WARN_FLAGS (WARN_ASM_USAGE | WARN_UNINIT_VARS | WARN_ASM_FIRST_PASS | WARN_ARRAY_INDEX | WARN_DEPRECATED)
 
 extern int gl_list_options;   /* options for listing files */
 #define LIST_INCLUDE_CONSTANTS  0x0001

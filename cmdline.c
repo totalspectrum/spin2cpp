@@ -621,6 +621,7 @@ static FlagTable warnflag[] = {
     { "language-extensions", WARN_LANG_EXTENSIONS },
     { "language-version", WARN_LANG_VERSION },
     { "array-index", WARN_ARRAY_INDEX },
+    { "deprecated", WARN_DEPRECATED },
     { "all", WARN_ALL },
 };
 
@@ -633,8 +634,8 @@ int ParseWarnString(AST *line, const char *str, int *flag_ptr)
     char *buf;
     
     if (!(*str)) {
-        // default to -O2
-        *flag_ptr = DEFAULT_ASM_OPTS | EXTRA_ASM_OPTS;
+        // default warnings
+        *flag_ptr = DEFAULT_WARN_FLAGS;
         return 1;
     }
     while (str && *str) {
@@ -653,14 +654,19 @@ int ParseWarnString(AST *line, const char *str, int *flag_ptr)
             continue;
         }
         bits = 0;
-        for (i = 0; i < ARRAY_SIZE(warnflag); i++) {
-            if (!strcmp(warnflag[i].name, buf)) {
-                bits = warnflag[i].bits;
-                break;
+        if (!strcmp(buf, "none")) {
+            bits = WARN_ALL;
+            notflag = true;
+        } else {
+            for (i = 0; i < ARRAY_SIZE(warnflag); i++) {
+                if (!strcmp(warnflag[i].name, buf)) {
+                    bits = warnflag[i].bits;
+                    break;
+                }
             }
         }
         if (!bits) {
-            ERROR(line, "Unrecognized optimization flag: %s", buf);
+            ERROR(line, "Unrecognized warning flag: %s", buf);
             return 0;
         }
         if (notflag) {

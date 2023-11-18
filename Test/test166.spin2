@@ -5,6 +5,6 @@ PUB check(source, addr) : val
   val := (source == "F" or source == "R") ? foo(addr) : byte[addr][source]
 
 
-PUB foo(addr)
+PUB foo(addr) : val
   return outa + addr
   
