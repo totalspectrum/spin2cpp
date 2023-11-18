@@ -792,24 +792,29 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
         if (gl_in_spin2_funcbody) {
             sym = FindSymbol(&spin2SoftReservedWords, idstr);
             if (sym) {
-                // see if the user has a conflicting definition
-                Symbol *sym2 = FindSymbol(currentTypes, idstr);
-                if (sym2) {
-                    // conflict: use the user's definition by default
-                    // but error if user set a version in which the
-                    // word is a keyword, and warn if the user asked us
-                    // to
-                    int userVersion = L->language_version;
-                    int langVersion = sym->offset;
-                    int startline = L->lineCounter;
-                    if (userVersion && userVersion >= langVersion) {
-                        // leave the symbol as is, and let the parser fail
-                        WARNING(DummyLineAst(startline), "possible conflict with keyword `%s'", idstr);
-                    } else {
-                        if (userVersion == 0 && 0 != (gl_warn_flags & WARN_LANG_VERSION)) {
-                            WARNING(DummyLineAst(startline), "symbol `%s' is a keyword in version %d of the language", idstr, langVersion);
+                int userVersion = L->language_version;
+                int langVersion = sym->offset;
+                int startline = L->lineCounter;
+                // if language version less than symbol version, do not use
+                if (userVersion > 0 && userVersion < langVersion) {
+                    sym = NULL;
+                } else {
+                    // see if the user has a conflicting definition
+                    Symbol *sym2 = FindSymbol(currentTypes, idstr);
+                    if (sym2) {
+                        // conflict: use the user's definition by default
+                        // but error if user set a version in which the
+                        // word is a keyword, and warn if the user asked us
+                        // to
+                        if (userVersion && userVersion >= langVersion) {
+                            // leave the symbol as is, and let the parser fail
+                            WARNING(DummyLineAst(startline), "possible conflict with keyword `%s'", idstr);
+                        } else {
+                            if (userVersion == 0 && 0 != (gl_warn_flags & WARN_LANG_VERSION)) {
+                                WARNING(DummyLineAst(startline), "symbol `%s' is a keyword in version %d of the language", idstr, langVersion);
+                            }
+                            sym = NULL;
                         }
-                        sym = NULL;
                     }
                 }
             }
