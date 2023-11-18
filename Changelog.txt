@@ -1,4 +1,6 @@
 Version 6.7.0
+- Added new Spin2 lstring/bytes/words/longs keywords
+- Added versioning for Spin2 language files, controlled by {$ver NN}
 - Fixed potential bug in shl/shr peephole optimization
 - Optimized 16 bit multiplications more often
 

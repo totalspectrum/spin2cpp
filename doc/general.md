@@ -280,6 +280,10 @@ If enabled, any function local variables which shadow class or object members ar
 
 Warns about various FlexProp specific extensions to the Spin, Spin2, and C languages. Note that some of these extensions are detected very early in the parsing process, before functions are recognized, and so it probably isn't useful to enable/disable this warning on a per-function basis.
 
+### Language version (-Wlanguage-version)
+
+Warns about possible conflicts between user variable names and Spin2 language keywords that were added to versions of the language after PNut version 41. By default FlexProp allows user defined symbols to override later keywords. This may be overridden by adding a comment like `{$ver 45}` to the start of a file, in which case that file is processed using the keywords from PNut version 45.
+
 ### Uninitialized variables (-Winit-vars)
 
 Issues a warning about attempts to use uninitialized variables. Note that FlexProp isn't completely able to see all ways a variable could be initialized, so this warning may sometimes be spurious.

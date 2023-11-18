@@ -2,6 +2,8 @@
 #include <propeller.h>
 #undef printf
 
+struct __using("lstring_bytes.spin2") LstringTest;
+
 void myexit(int n)
 {
     _txraw(0xff);
@@ -43,6 +45,9 @@ int main(int argc, char **argv)
     y = x + x;
     printf("x = %llx y = %x : %x z = %llx\n", x, y, 0x9abcdef01234LL, 1);
     trybool(&z);
+
+    LstringTest.main();
+    
     myexit(0);
     return 0;
 }
