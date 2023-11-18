@@ -210,14 +210,17 @@ static int NuCompileFunCall(NuIrList *irl, AST *node) {
         }
     } else if (sym && sym->kind == SYM_VARIABLE) {
         // method pointer or virtual function
-        NuEmitConst(irl, sym->offset);
+        // there are some tricky features to watch out for
+        // if there are global symbols
+        NuIrOpcode ldop = NU_OP_LDL;
         if (objref) {
+            NuEmitConst(irl, sym->offset);
             NuCompileLhsAddress(irl, objref);
             NuEmitCommentedOp(irl, NU_OP_ADD, "offset into class");
         } else {
-            NuEmitCommentedOp(irl, NU_OP_ADD_VBASE, "push self");
+            ldop = NuCompileSymbolAddress(irl, sym, true, node);
         }
-        NuEmitCommentedOp(irl, NU_OP_LDL, "load methodptr");
+        NuEmitCommentedOp(irl, ldop, "load methodptr");
         NuEmitCommentedOp(irl, NU_OP_LDD, "fetch pc and objptr");
         NuEmitCommentedOp(irl, NU_OP_CALLM, "indirect call");
         functype = ExprType(node->left);
