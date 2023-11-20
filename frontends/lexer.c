@@ -23,6 +23,8 @@
 
 #define VT '\013'
 
+#define MAX_PNUT_VERSION 42 /* maximum PNut version we understand */
+
 int allow_type_names = 1;
 
 #ifndef EOF
@@ -1611,6 +1613,21 @@ commentBlockEnd(int language, int c, LexStream *L)
 }
 
 //
+// set language version for current file
+//
+static void
+SetLanguageVersion(LexStream *L, int version)
+{
+    if (L->language_version && L->language_version != version) {
+        ERROR(DummyLineAst(L->lineCounter), "Multiple different versions set for language version (was %d, changing to %d)", L->language_version, version);
+    } else if (version > MAX_PNUT_VERSION) {
+        WARNING(DummyLineAst(L->lineCounter), "Request for language version %d, but this version of the compiler supports at most version %d", version, MAX_PNUT_VERSION);
+    }
+    L->language_version = version;
+    current->curLangVersion = version;
+}
+
+//
 // skip over comments and spaces
 // return first non-comment non-space character
 // if we are inside a function, emit SP_INDENT when
@@ -1731,13 +1748,27 @@ again:
             c = lexgetc(L);
             directive = 1;
         } else if (c == doccommentchar) {
-            c = lexgetc(L);
+            c = lexgetc(L); /* eat the doccommentchar */
             doccomment = 1;
             allowNestedComments = 0;
         } else if (c == '$') {
             // check for various special directives
-            c = lexgetc(L);
+            c = lexgetc(L); /* eat the $ */
             directive = 1;
+        } else if (c == 'v') {
+            // check for PNut style version number
+            int version = 0;
+            int c2 = lexgetc(L);
+            if (c2 >= '0' && c2 <= '9') {
+                c = c2;
+                while (c >= '0' && c <= '9') {
+                    version = 10*version + (c - '0');
+                    c = lexgetc(L);
+                }
+                SetLanguageVersion(L, version);
+            } else {
+                lexungetc(L, c2);
+            }
         }
         lexungetc(L, c);
         for(;;) {
@@ -1803,8 +1834,7 @@ again:
                 while (*ptr && isalpha(*ptr)) ptr++;
                 version = strtol(ptr, &ptr, 10);
                 if (version > 0) {
-                    L->language_version = version;
-                    current->curLangVersion = version;
+                    SetLanguageVersion(L, version);
                 }
             }
             free(dir);

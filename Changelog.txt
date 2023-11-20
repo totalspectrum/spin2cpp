@@ -1,6 +1,6 @@
 Version 6.7.0
 - Added new Spin2 lstring/bytes/words/longs keywords
-- Added versioning for Spin2 language files, controlled by {$ver NN}
+- Added versioning for Spin2 language files, controlled by {$ver NN} or {vNN}
 - Fixed potential bug in shl/shr peephole optimization
 - Made SEND() work in P1 bytecode
 - More forceful warning for return without a declared result in Spin2
