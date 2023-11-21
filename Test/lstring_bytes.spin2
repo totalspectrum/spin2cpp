@@ -1,6 +1,6 @@
 obj
   f: "spin/ers_fmt.spin2"
-  longs: "bytedata.spin2"
+  longs: "longdata.spin2"
   
 pub main()
   send := @_txraw

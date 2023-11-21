@@ -802,7 +802,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                     sym = NULL;
                 } else {
                     // see if the user has a conflicting definition
-                    Symbol *sym2 = FindSymbol(currentTypes, idstr);
+                    Symbol *sym2 = FindSymbolInContext(currentTypes, idstr);
                     if (sym2) {
                         // conflict: use the user's definition by default
                         // but error if user set a version in which the

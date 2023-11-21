@@ -96,6 +96,7 @@ Symbol *FindSymbolByOffsetAndKind(SymbolTable *table, int offset, int kind);
 Symbol *LookupSymbolInTable(SymbolTable *table, const char *name);
 
 #define FindSymbol(t, n) FindSymbolEx( (t), (n), 0)
+Symbol *FindSymbolInContext(SymbolTable *table, const char *name);
 
 /* like AddSymbol, but sets the SYMF_INTERNAL flag */
 Symbol *AddInternalSymbol(SymbolTable *table, const char *name, int type, void *val, const char *user_name);

@@ -234,12 +234,6 @@ Aliases spin2alias[] = {
     { "wxpin_", "__builtin_propeller_wxpin" },
     { "wypin_", "__builtin_propeller_wypin" },
 
-    // Spin2 added keywords
-    { "bytes", "%bytes" },
-    { "longs", "%longs" },
-    { "lstring", "%lstring" },
-    { "words", "%words" },
-    
     { NULL, NULL },
 };
 Aliases basicalias[] = {

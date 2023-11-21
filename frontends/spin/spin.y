@@ -107,8 +107,19 @@ SpinDeclareVarSymbols(AST *varlist)
 }
 
 void
-SpinDeclareObjectSymbols(AST *vars)
+SpinDeclareObjectSymbols(AST *objlist)
 {
+    AST *item;
+    // this is a list of OBJECTs
+    while (objlist != NULL) {
+        item = objlist->left;
+        objlist = objlist->right;
+        if (!item) continue;
+        if (item->kind == AST_OBJECT) {
+            item = item->left;
+        }
+        SpinAddLocalSymbol(item, SYM_NAME);
+    }
 }
 
 // in common.c
@@ -1038,7 +1049,9 @@ datline:
     {   AST *linebreak;
         AST *comment = GetComments();
         AST *ast;
+        AST *label = DupAST($1);
         ast = $1;
+        SpinAddLocalSymbol(label, SYM_NAME);
         if (comment && (comment->d.string || comment->kind == AST_SRCCOMMENT)) {
             linebreak = NewCommentedAST(AST_LINEBREAK, NULL, NULL, comment);
         } else {

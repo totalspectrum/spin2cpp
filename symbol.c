@@ -64,6 +64,19 @@ FindSymbolEx(SymbolTable *table, const char *name,int forceCaseSens)
     return NULL;
 }
 
+//
+// like FindSymbol, but goes back through previous contexts too
+//
+Symbol *
+FindSymbolInContext(SymbolTable *table, const char *name)
+{
+    Symbol *sym;
+    if (!table) return NULL;
+    sym = FindSymbolEx(table, name, 0);
+    if (sym) return sym;
+    return FindSymbolInContext(table->next, name);
+}
+
 /* find a symbol in a table or in any of its links */
 /* code to find a symbol */
 static Symbol *
