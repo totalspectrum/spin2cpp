@@ -1,0 +1,5 @@
+dat
+bytes long $11223344
+
+pub getbytes() : r
+  r := @bytes

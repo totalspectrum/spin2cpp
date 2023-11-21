@@ -1,5 +1,6 @@
 obj
   f: "spin/ers_fmt.spin2"
+  longs: "bytedata.spin2"
   
 pub main()
   send := @_txraw
@@ -7,6 +8,7 @@ pub main()
   showbytes(@"lstring", lstring(10, 11, 0, 12, 13), 6)
   showbytes(@"bytes", bytes($a0, $a1, long $ccdd, word $eeff, $af), 9)
   showbytes(@"words", words($a0, $a1), 4)
+  showbytes(@"longs", longs.getbytes(), 4)
   
 pub showbytes(msg, bytes, n) | i, data
   data := bytes
