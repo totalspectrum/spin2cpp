@@ -4499,7 +4499,7 @@ static bool IsMemoryOrderSafe(Operand *op) {
 // returns NULL if we spot anything that changes src, dest,
 // memory, or a branch
 //
-static IR* FindNextRead(IR *irorig, Operand *dest, Operand *src)
+static IR* FindNextRead(IR *irorig, Operand *dest, Operand *src, bool branch_ok)
 {
     IR *ir;
     int32_t offset = 0;
@@ -4511,18 +4511,26 @@ static IR* FindNextRead(IR *irorig, Operand *dest, Operand *src)
         if (IsBranch(ir)) {
             if (ir->opc == OPC_CALL && isMulDivFunc(ir->dst) && !IsCallThatUsesReg(ir, src) && !IsCallThatUsesReg(ir, dest)) {
                 // Do nothing
+            } else if (branch_ok && IsJump(ir) && ir->cond != COND_TRUE) {
+                // Also do nothing
             } else {
                 return NULL;
             }
         }
+        #if 0
         if (ir->cond != irorig->cond) {
             return NULL;
         }
+        #endif
         if (ir->src == src && offset == 0 && (ir->opc == OPC_RDLONG||ir->opc == OPC_RDWORD||ir->opc == OPC_RDBYTE)) {
             return ir;
         }
         if ((ir->opc == OPC_ADD || ir->opc == OPC_SUB) && ir->dst == src && ir->src && ir->src->kind == IMM_INT) {
-            offset += AddSubVal(ir);
+            if (ir->cond == irorig->cond) {
+                offset += AddSubVal(ir);
+            } else {
+                return NULL;
+            }
         } else if (InstrModifies(ir, dest) || InstrModifies(ir, src)) {
             return NULL;
         }
@@ -4624,14 +4632,22 @@ restart_check:
             bool write = IsWrite(ir);
             // don't mess with it if src==dst
             if (!write && ir->src == ir->dst) goto get_next;
-            nextread = FindNextRead(ir, dst1, base);
+            nextread = FindNextRead(ir, dst1, base, (curfunc->optimize_flags & OPT_EXPERIMENTAL) && IsMemoryOrderSafe(ir->src));
             int nextsize = MemoryOpSize(nextread);
             if (nextread && CondIsSubset(ir->cond,nextread->cond)) {
                 // wrlong a, b ... rdlong c, b  -> mov c, a
                 // rdlong a, b ... rdlong c, b  -> mov c, a
-                if(size == nextsize && (!write || size==4) && (gl_p2 || !InstrSetsFlags(nextread,FLAG_WC)) ) {
+                if(size == nextsize && (!write || size==4 || gl_p2) && (gl_p2 || !InstrSetsFlags(nextread,FLAG_WC)) ) {
                     nextread->src = dst1;
-                    ReplaceOpcode(nextread, OPC_MOV);
+                    if (!write || size == 4) {
+                        ReplaceOpcode(nextread, OPC_MOV);
+                    } else if (size == 2) {
+                        ReplaceOpcode(nextread,OPC_GETWORD);
+                        nextread->src2 = NewImmediate(0);
+                    } else if (size == 1) {
+                        ReplaceOpcode(nextread,OPC_GETBYTE);
+                        nextread->src2 = NewImmediate(0);
+                    }
                     change = 1;
                     goto get_next;
                 }
