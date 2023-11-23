@@ -1,4 +1,5 @@
 Version 6.7.1
+- Added a memory read optimization in -O2, courtesy of Ada
 - Fixed a problem in DEBUG() printing functions with multiple return values
 
 Version 6.7.0
