@@ -4637,7 +4637,7 @@ restart_check:
             if (nextread && CondIsSubset(ir->cond,nextread->cond)) {
                 // wrlong a, b ... rdlong c, b  -> mov c, a
                 // rdlong a, b ... rdlong c, b  -> mov c, a
-                if(size == nextsize && (!write || size==4 || gl_p2) && (gl_p2 || !InstrSetsFlags(nextread,FLAG_WC)) ) {
+                if(size == nextsize && (!write || size==4 || gl_p2) && ((gl_p2 && size==4) || !InstrSetsFlags(nextread,FLAG_WC)) ) {
                     nextread->src = dst1;
                     if (!write || size == 4) {
                         ReplaceOpcode(nextread, OPC_MOV);
