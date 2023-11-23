@@ -12,9 +12,7 @@ _square_wave_cog
 	rdlong	arg01, ptr__dat__
 	sub	ptr__dat__, #16
 	cmp	frqa, arg01 wz
- if_ne	add	ptr__dat__, #16
- if_ne	rdlong	frqa, ptr__dat__
- if_ne	sub	ptr__dat__, #16
+ if_ne	mov	frqa, arg01
 _square_wave_cog_ret
 	ret
 
