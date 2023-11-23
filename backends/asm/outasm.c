@@ -5003,7 +5003,8 @@ int OutAsm_DebugEval(AST *ast, int regNum, int *addr, void *ourarg) {
     Operand *dstop;
     int n;
     IR *mvir;
-
+    bool needAddr = true;
+    
     if (IsConstExpr(ast)) {
         *addr = EvalConstExpr(ast);
         return PASM_EVAL_ISCONST;
@@ -5028,6 +5029,10 @@ int OutAsm_DebugEval(AST *ast, int regNum, int *addr, void *ourarg) {
                 return PASM_EVAL_ISREG_MAX;
             }
             dstop = GetDebugReg(regNum);
+            if (needAddr) {
+                *addr = debugaddr[regNum];
+                needAddr = false;
+            }
             mvir = EmitMove(irl, dstop, ptr->op, ast);
             if (mvir) mvir->flags |= FLAG_KEEP_INSTR;
             regNum++;

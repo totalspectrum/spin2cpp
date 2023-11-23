@@ -1,3 +1,6 @@
+Version 6.7.1
+- Fixed a problem in DEBUG() printing functions with multiple return values
+
 Version 6.7.0
 - Added new Spin2 lstring/bytes/words/longs keywords
 - Added versioning for Spin2 language files, controlled by {$ver NN} or {vNN}

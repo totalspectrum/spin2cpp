@@ -420,7 +420,7 @@ Unlike the "official" Spin2 compiler, flexspin does not accept an address for th
 
 (3) The area set aside for inline assembly is smaller by default in flexspin than in Parallax's Spin2. This may be changed with the --fcache parameter to flexspin.
 
-(4) In PNut/PropTool only the first 16 local variables may be accessed in inline assembly; flexspin does not have this restriction.
+(4) In PNut/PropTool only the first 16 local variables may be accessed in inline assembly; flexspin has this restriction only for bytecode output, for assembly output other locals may be accessed as well.
 
 ### Method pointers
 

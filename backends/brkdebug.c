@@ -299,6 +299,7 @@ int AsmDebug_CodeGen(AST *ast, BackendDebugEval evalFunc, void *evalArg) {
                         if (gotArgs == expectedArgs) {
                             opcode &= ~DBC_FLAG_NOCOMMA;
                             flexbuf_putc(opcode|DBC_FLAG_NOEXPR, f);
+                            DEBUG(item,"Emitting DEBUG opcode %02X",opcode|DBC_FLAG_NOEXPR);
                             gotArgs = 1;
                         } else {
                             gotArgs++;
