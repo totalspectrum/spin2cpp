@@ -1,6 +1,6 @@
 Flexspin
 ========
-(Flexspin is copyright 2011-2022 Total Spectrum Software Inc.,
+(Flexspin is copyright 2011-2023 Total Spectrum Software Inc.,
 and is distributed under the terms of the MIT License (see the
 end of this file for details)
 
@@ -33,62 +33,53 @@ run binaries. My workflow with Spin programs typically looks like:
 
 ## Propeller 2 Support ##
 
-flexspin supports the Propeller 2 instruction set (both rev A and rev B).
-To compile programs for Propeller 2, you can use the -2 option. Binaries
-may be downloaded to the board using Dave Hein's loadp2 program:
+flexspin supports the Propeller 2 instruction set (both rev A and rev B).  To compile programs for Propeller 2, you can use the -2 option. Binaries may be downloaded to the board using Dave Hein's loadp2 program:
+
 ```
     flexspin -2 program.spin2
     loadp2 -b230400 program.binary -t
 ```
 
-If the flexspin program is named something that ends in "spin2" (for
-example "flexspin2.exe") then it will use the -2 flag automatically. This
-may be more convenient for integration with IDEs.
+If the flexspin program is named something that ends in "spin2" (for example "flexspin2.exe") then it will use the -2 flag automatically. This may be more convenient for integration with IDEs.
 
 ## Speed and Size ##
 
-If you compile with flexspin, your binary program will be much larger
-than when compiled with openspin or bstc. That's because flexspin
-outputs native Propeller instructions (PASM) instead of Spin
-bytecode. It also means the flexspin compiled binary is much faster.
+If you compile with flexspin, your binary program will be much larger than when compiled with openspin or bstc. That's because flexspin outputs native Propeller instructions (PASM) instead of Spin bytecode. It also means the flexspin compiled binary is much faster.
 
 For example, the fftbench demo program compiled with
 
+```
     bstc -b -Oa fftbench.spin
+```
 
 is 3048 bytes long and runs in 1460 milliseconds. With
 
-    flexspin -O fftbench.spin
+```
+    flexspin -O2 fftbench.spin
+```
 
-it is 4968 bytes long and runs in 170 milliseconds; so it is a bit
-less than twice as big and runs more than 8 times as fast.
+it is 5120 bytes long and runs in 86 milliseconds; so it is a bit less than twice as big and runs more than 16 times as fast. A smaller and slower binary is obtained by producing bytecode output via
+
+```
+    flexspin -1bc -O2 fftbench.spin
+```
+
+which is 2768 bytes long (a bit smaller than bstc) and runs in 1434 ms (a bit faster than bstc).
 
 The SPI test benchmark gives:
-
-    openspin -u: 11732816 cycles  796 bytes
-    bstc -Oa:    11699984 cycles  796 bytes
-    flexspin -O:    98848 cycles 2056 bytes
-
+```
+    openspin -u:       11732816 cycles  796 bytes
+    bstc -Oa:          11699984 cycles  796 bytes
+    flexspin -1bc -O2: 11585296 cycles  816 bytes
+    flexspin -O2:         98800 cycles 2212 bytes
+```
 
 Spin wrappers
 -------------
 
-The simplest way to use flexspin is just to compile a whole program
-(convert everything to PASM). However, sometimes a program compiled
-this way may be too big to fit in memory; or sometimes you may want
-to convert some Spin module to PASM and make it easy to use in other
-Spin projects (which may be compiled with openspin or bstc).
+The simplest way to use flexspin is just to compile a whole program (convert everything to PASM). However, sometimes a program compiled this way may be too big to fit in memory; or sometimes you may want to convert some Spin module to PASM and make it easy to use in other Spin projects (which may be compiled with openspin or bstc).
 
-flexspin may be used to convert a Spin object into PASM code that has
-Spin wrappers. This is achieved with the `-w` ("wrap") command line
-flag. The output is a generic Spin module with a `.cog.spin` extension.
-The wrapped Spin must fit in a single COG (so no LMM mode is used) and is
-designed basically for converting device drivers from Spin to PASM
-easily. All of the PUB functions of the original `.spin` will be available
-in in the `.cog.spin`, but instead of running Spin bytecode they will send
-a message to the PASM code (which must be running in another COG) for
-execution there.  There will also be a `__cognew` method to start a COG up.
-`__cognew` must be called before any other methods.
+flexspin may be used to convert a Spin object into PASM code that has Spin wrappers. This is achieved with the `-w` ("wrap") command line flag. The output is a generic Spin module with a `.cog.spin` extension.  The wrapped Spin must fit in a single COG (so no LMM mode is used) and is designed basically for converting device drivers from Spin to PASM easily. All of the PUB functions of the original `.spin` will be available in in the `.cog.spin`, but instead of running Spin bytecode they will send a message to the PASM code (which must be running in another COG) for execution there.  There will also be a `__cognew` method to start a COG up.  `__cognew` must be called before any other methods.
 
 ### Example
 
@@ -123,9 +114,7 @@ PUB test
   answer9 := f.fibo(9)
 ```
 
-The usage is exactly the same, except that you have to insert the call
-to `__cognew` to start up the remote COG; but now the time critical
-`fibo` function will actually run in the other COG, as PASM code.
+The usage is exactly the same, except that you have to insert the call to `__cognew` to start up the remote COG; but now the time critical `fibo` function will actually run in the other COG, as PASM code.
 
 Command Line Options
 --------------------
@@ -165,12 +154,7 @@ which may modify the compilation:
 ```
 
 
-`flexspin.exe` checks the name it was invoked by. If the name starts
-with the string "bstc" (case matters) then its output messages mimic
-that of the bstc compiler; otherwise it tries to match openspin's
-messages. This is for compatibility with Propeller IDE. For example,
-you can use flexspin with the PropellerIDE by renaming `bstc.exe` to
-`bstc.orig.exe` and then copying `flexspin.exe` to `bstc.exe`.
+`flexspin.exe` checks the name it was invoked by. If the name starts with the string "bstc" (case matters) then its output messages mimic that of the bstc compiler; otherwise it tries to match openspin's messages. This is for compatibility with Propeller IDE. For example, you can use flexspin with the PropellerIDE by renaming `bstc.exe` to `bstc.orig.exe` and then copying `flexspin.exe` to `bstc.exe`.
 
 ### Changing Hub address
 
@@ -202,15 +186,11 @@ If an input file ends in `.c`, `.cc`, or `.cpp` it is compiled as a C program. S
 Limitations
 -----------
 
-Beware when compiling P1 objects that contain PASM for P2: some
-instructions have changed in subtle ways.
+Beware when compiling P1 objects that contain PASM for P2: some instructions have changed in subtle ways.
 
-Programs compiled with flexspin will always be larger than those
-compiled with openspin or bstc. If the spin code is mostly PASM (as is
-the case with, for example, PropBASIC compiler output) then the
-flexspin overhead will be relatively small and probably fixed, but for
-large programs with lots of Spin methods the difference could be
-significant.
+Programs compiled with flexspin will usually be larger than those compiled with openspin or bstc. If the spin code is mostly PASM (as is the case with, for example, PropBASIC compiler output) then the flexspin overhead will be relatively small and probably fixed, but for large programs with lots of Spin methods the difference could be significant. Use one of the bytecode output methods (P1 bytecode or P2 nucode) to produce smaller binaries, at the cost of performance.
+
+Some Spin or Spin2 features are not fully supported by flexspin; see the file `spin.md` (or `spin.pdf`) in the `docs` directory for details.
 
 License
 -------
