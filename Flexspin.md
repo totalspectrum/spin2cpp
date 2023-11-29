@@ -71,7 +71,7 @@ The SPI test benchmark gives:
     openspin -u:       11732816 cycles  796 bytes
     bstc -Oa:          11699984 cycles  796 bytes
     flexspin -1bc -O2: 11585296 cycles  816 bytes
-    flexspin -O2:         98800 cycles 2212 bytes
+    flexspin -O2:         98800 cycles 2204 bytes
 ```
 
 Spin wrappers

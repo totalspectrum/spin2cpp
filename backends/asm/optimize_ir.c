@@ -6430,6 +6430,7 @@ static PeepholePattern pat_jmp_jmp[] = {
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
+/* delete "arg" instructions */
 static int FixupDeleteInstr(int arg, IRList *irl, IR *ir) {
     IR *next_ir;
     while (ir && arg > 0) {
@@ -6975,6 +6976,13 @@ static PeepholePattern pat_signx_and[] = {
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
+/* AND x, #255; wrbyte x, y : we can delete the AND if x is dead after */
+static PeepholePattern pat_and_wrbyte[] = {
+    { COND_ANY, OPC_AND,   PEEP_OP_SET|0, PEEP_OP_IMM|255, PEEP_FLAGS_NONE },
+    { COND_ANY, OPC_WRBYTE,PEEP_OP_MATCH_DEAD|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+      
 static int FixupShlShrAndImm(int arg, IRList *irl, IR *ir0)
 {
     IR *ir1, *ir2;
@@ -7034,6 +7042,8 @@ struct Peepholes {
 
     { pat_signx_and, 0, FixupSignxAndImm },
     { pat_shl_shr_and, 0, FixupShlShrAndImm },
+
+    { pat_and_wrbyte, 1, FixupDeleteInstr },
     
     { pat_drvc1, OPC_DRVC, ReplaceDrvc },
     { pat_drvc2, OPC_DRVC, ReplaceDrvc },
