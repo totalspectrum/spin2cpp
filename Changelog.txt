@@ -2,6 +2,7 @@ Version 6.7.1
 - Added a memory read optimization in -O2, courtesy of Ada
 - Added a peephole optimization for WRBYTE x,y after AND x,#255
 - Fixed a problem in DEBUG() printing functions with multiple return values
+- Fixed some 32/64 bit confusion in Spin comparison operators
 
 Version 6.7.0
 - Added new Spin2 lstring/bytes/words/longs keywords

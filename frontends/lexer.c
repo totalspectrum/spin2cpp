@@ -2835,7 +2835,7 @@ struct constants {
     { "true", SYM_CONSTANT, -1 },
     { "false", SYM_CONSTANT, 0 },
     { "posx", SYM_CONSTANT, 0x7fffffff },
-    { "negx", SYM_CONSTANT, 0x80000000U },
+    { "negx", SYM_CONSTANT, -0x80000000 },
     { "rcfast", SYM_CONSTANT, 0x00000001 },
     { "rcslow", SYM_CONSTANT, 0x00000002 },
     { "xinput", SYM_CONSTANT, 0x00000004 },
@@ -2855,7 +2855,7 @@ struct constants p2_constants[] = {
     { "true", SYM_CONSTANT, -1 },
     { "false", SYM_CONSTANT, 0 },
     { "posx", SYM_CONSTANT, 0x7fffffff },
-    { "negx", SYM_CONSTANT, 0x80000000U },
+    { "negx", SYM_CONSTANT, -0x80000000 },
 
     { "rcfast", SYM_CONSTANT, 0x00000001 },
     { "rcslow", SYM_CONSTANT, 0x00000002 },

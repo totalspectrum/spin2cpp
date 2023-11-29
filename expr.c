@@ -1376,24 +1376,54 @@ EvalIntOperator(int op, ExprInt lval, ExprInt rval, int *valid, bool truncMath)
     case K_ROTR:
         return ((uint32_t)lval >> rval) | ((uint32_t) lval) << (32-rval);
     case '<':
+        if (truncMath) {
+            return BoolValue((int32_t)lval < (int32_t)rval);
+        }
         return BoolValue(lval < rval);
     case '>':
+        if (truncMath) {
+            return BoolValue((int32_t)lval > (int32_t)rval);
+        }
         return BoolValue(lval > rval);
     case K_LE:
+        if (truncMath) {
+            return BoolValue((int32_t)lval <= (int32_t)rval);
+        }
         return BoolValue(lval <= rval);
     case K_GE:
+        if (truncMath) {
+            return BoolValue((int32_t)lval >= (int32_t)rval);
+        }
         return BoolValue(lval >= rval);
     case K_LTU:
+        if (truncMath) {
+            return BoolValue((uint32_t)lval < (uint32_t)rval);
+        }
         return BoolValue(((UExprInt)lval < (UExprInt)rval));
     case K_GTU:
+        if (truncMath) {
+            return BoolValue((uint32_t)lval > (uint32_t)rval);
+        }
         return BoolValue(((UExprInt)lval > (UExprInt)rval));
     case K_LEU:
+        if (truncMath) {
+            return BoolValue((uint32_t)lval <= (uint32_t)rval);
+        }
         return BoolValue(((UExprInt)lval <= (UExprInt)rval));
     case K_GEU:
+        if (truncMath) {
+            return BoolValue((uint32_t)lval >= (uint32_t)rval);
+        }
         return BoolValue(((UExprInt)lval >= (UExprInt)rval));
     case K_NE:
+        if (truncMath) {
+            return BoolValue((int32_t)lval != (int32_t)rval);
+        }
         return BoolValue(lval != rval);
     case K_EQ:
+        if (truncMath) {
+            return BoolValue((int32_t)lval == (int32_t)rval);
+        }
         return BoolValue(lval == rval);
     case K_BOOL_OR:
         return BoolValue(lval || rval);
@@ -1424,12 +1454,28 @@ EvalIntOperator(int op, ExprInt lval, ExprInt rval, int *valid, bool truncMath)
     case K_ENCODE2:
         return (rval == 0) ? 0 : 31-clz32(rval);
     case K_LIMITMIN:
+        if (truncMath) {
+            lval = (int32_t) lval;
+            rval = (int32_t) rval;
+        }
         return (lval < rval) ? rval : lval;
     case K_LIMITMAX:
+        if (truncMath) {
+            lval = (int32_t) lval;
+            rval = (int32_t) rval;
+        }
         return (lval > rval) ? rval : lval;
     case K_LIMITMIN_UNS:
+        if (truncMath) {
+            lval = (uint32_t) lval;
+            rval = (uint32_t) rval;
+        }
         return ((UExprInt)lval < (UExprInt)rval) ? rval : lval;
     case K_LIMITMAX_UNS:
+        if (truncMath) {
+            lval = (uint32_t) lval;
+            rval = (uint32_t) rval;
+        }
         return ((UExprInt)lval > (UExprInt)rval) ? rval : lval;
     case K_REV:
         return ReverseBits(lval, rval);
