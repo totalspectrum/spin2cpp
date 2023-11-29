@@ -1314,7 +1314,7 @@ BoolValue(int v)
 static ExprInt
 EvalIntOperator(int op, ExprInt lval, ExprInt rval, int *valid, bool truncMath)
 {
-
+    unsigned shiftMask = truncMath ? 0x1f : 0x3f;
     switch (op) {
     case '+':
         return lval + rval;
@@ -1366,11 +1366,11 @@ EvalIntOperator(int op, ExprInt lval, ExprInt rval, int *valid, bool truncMath)
     case K_SCAS:
         return (int32_t)(((int_fast64_t)lval * (int_fast64_t)rval) >> 30LL);
     case K_SHL:
-        return lval << (rval & 0x3f);
+        return lval << (rval & shiftMask);
     case K_SHR:
-        return ((UExprInt)lval) >> (rval & 0x3f);
+        return ((UExprInt)lval) >> (rval & shiftMask);
     case K_SAR:
-        return ((ExprInt)lval) >> (rval & 0x3f);
+        return ((ExprInt)lval) >> (rval & shiftMask);
     case K_ROTL:
         return ((uint32_t)lval << rval) | ((uint32_t) lval) >> (32-rval);
     case K_ROTR:
