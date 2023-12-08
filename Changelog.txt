@@ -1,3 +1,6 @@
+Version 6.7.2
+- Added putchar to libc.a
+
 Version 6.7.1
 - Added a memory read optimization in -O2, courtesy of Ada
 - Added a peephole optimization for WRBYTE x,y after AND x,#255

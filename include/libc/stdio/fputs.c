@@ -34,6 +34,11 @@ int fputc(int c, FILE *f) {
     return(f->putcf)(c, f);
 }
 
+#undef putchar
+int putchar(int c) {
+    return (stdout->putcf)(c, stdout);
+}
+
 int fgetc(FILE *f) {
     int c;
     if (f->ungot) {
@@ -50,3 +55,5 @@ int ungetc(int c, FILE *f) {
     f->ungot = c+1;
     return c;
 }
+
+    

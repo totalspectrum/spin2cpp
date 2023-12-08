@@ -64,6 +64,7 @@ int vfprintf(_FILE *f, const char *format, unsigned long ap) __fromfile("libc/st
 
 /* libc/stdio/fputs.c */
 int fputc(int c, _FILE *f) __fromfile("libc/stdio/fputs.c");
+int putchar(int c)  __fromfile("libc/stdio/fputs.c");
 int fgetc(_FILE *f) __fromfile("libc/stdio/fputs.c");
 int fputs(const char *data, _FILE *) __fromfile("libc/stdio/fputs.c");
 int puts(const char *data) __fromfile("libc/stdio/fputs.c");
