@@ -6067,7 +6067,6 @@ static PeepholePattern pat_movadd[] = {
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
-
 // replace mov x, #2; shl x, y; sub x, #1  with bmask x, y
 static PeepholePattern pat_bmask1[] = {
     { COND_ANY, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_IMM|2, PEEP_FLAGS_P2 },
@@ -6439,6 +6438,23 @@ static int FixupDeleteInstr(int arg, IRList *irl, IR *ir) {
         ir = next_ir;
         --arg;
     }
+    return 1;
+}
+
+
+// convert mov x, #255; and x, y  to getbyte x, y, #0
+static PeepholePattern pat_mov255_and[] = {
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_IMM|255, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_AND, PEEP_OP_MATCH|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
+static int FixupMov255And(int arg, IRList *irl, IR *ir) {
+    IR *next_ir = ir->next;
+    DeleteIR(irl, ir);
+    ir = next_ir;
+    ReplaceOpcode(ir, OPC_GETBYTE);
+    ir->src2 = NewImmediate(0);
     return 1;
 }
 
@@ -7139,6 +7155,8 @@ struct Peepholes {
     { pat_mux_qmux_2p, 2, FixupQMux },
 
     { pat_jmp_jmp, 1, FixupDeleteInstr },
+
+    { pat_mov255_and, 1, FixupMov255And },
 };
 
 

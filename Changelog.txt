@@ -1,5 +1,6 @@
 Version 6.7.2
 - Added putchar to libc.a
+- Added another optimization for more AND x, #255 cases.
 
 Version 6.7.1
 - Added a memory read optimization in -O2, courtesy of Ada
