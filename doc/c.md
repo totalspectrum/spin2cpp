@@ -106,6 +106,10 @@ _clkset(_SETFREQ, _CLOCKFREQ);
 ```
 The macros `_SETFREQ` and `_CLOCKFREQ` are not special in any way, and this whole mechanism is just provided as a convenience. You may completely ignore it and calculate the mode bits and frequency setting to pass to `_clkset` yourself.
 
+### Memory Allocation
+
+Memory allocation via `malloc` and similar functions uses the standard FlexProp memory manager, which is documented in the general compiler documentation. Memory is allocated from a heap in HUB RAM, the size of which is set with a `HEAPSIZE` enum. See `general.md` or `general.pdf` for more details.
+
 ## Extensions to C
 
 ### Inline Assembly (C Style)
