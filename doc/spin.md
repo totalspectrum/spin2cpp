@@ -172,7 +172,7 @@ Symbol                   | When Defined
 
 #### Spin2 version
 
-If the first line of a file is a comment like `{$ver NN}` then the file is processed using the rules from Spin2 language version `NN`, at least as far as any reserved keywords are concerned. Thus, for example, to make sure the new version 43 keywords like `bytes` do not conflict with any of your code, you could put `{$ver 42}` at the top of the file to disable keywords from PNut versions later than 42.
+If the first line of a file is a comment like `{Spin2_vNN}`, `{$Spin2_vNN}`, or `{$ver NN}` then the file is processed using the rules from Spin2 language version `NN`, at least as far as any reserved keywords are concerned. Thus, for example, to make sure the new version 43 keywords like `lstring` do not conflict with any of your code, you could put `{Spin2_v43}` at the top of the file to enable keywords from PNut versions later than 42.
 
 Note that flexspin does have some (slightly hacky) ways to try to avoid conflicts between keywords and variables, and these will be used if no version appears, or if `{$ver 0}` is given.
 

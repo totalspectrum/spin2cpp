@@ -5,6 +5,7 @@
  */
 
 %pure-parser
+%expect 33
 
 %{
 #include <stdio.h>

@@ -795,10 +795,14 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             sym = FindSymbol(&spin2SoftReservedWords, idstr);
             if (sym) {
                 int userVersion = L->language_version;
-                int langVersion = sym->offset;
+                int minVersion = sym->offset & 0xFFFF;
+                int maxVersion = (sym->offset>>16) & 0xFFFF;
                 int startline = L->lineCounter;
                 // if language version less than symbol version, do not use
-                if (userVersion > 0 && userVersion < langVersion) {
+                // similarly if there's a max version and user version is greater than this
+                if (userVersion > 0 && userVersion < minVersion) {
+                    sym = NULL;
+                } else if (maxVersion && userVersion > maxVersion) {
                     sym = NULL;
                 } else {
                     // see if the user has a conflicting definition
@@ -808,12 +812,12 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                         // but error if user set a version in which the
                         // word is a keyword, and warn if the user asked us
                         // to
-                        if (userVersion && userVersion >= langVersion) {
+                        if (userVersion && userVersion >= minVersion && userVersion <= maxVersion) {
                             // leave the symbol as is, and let the parser fail
                             WARNING(DummyLineAst(startline), "possible conflict with keyword `%s'", idstr);
                         } else {
                             if (userVersion == 0 && 0 != (gl_warn_flags & WARN_LANG_VERSION)) {
-                                WARNING(DummyLineAst(startline), "symbol `%s' is a keyword in version %d of the language", idstr, langVersion);
+                                WARNING(DummyLineAst(startline), "symbol `%s' is a keyword in version %d of the language", idstr, minVersion);
                             }
                             sym = NULL;
                         }
@@ -934,6 +938,19 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             case SP_LONG:
             case SP_BYTE:
             case SP_WORD:
+                if (!InDatBlock(L)) {
+                    int c2 = lexgetc(L);
+                    while (c2 == ' ' || c2 == '\t') {
+                        c2 = lexgetc(L);
+                    }
+                    if (c2 == '(') {
+                        if (c == SP_LONG) c = SP_LONGS;
+                        else if (c == SP_BYTE) c = SP_BYTES;
+                        else if (c == SP_WORD) c = SP_WORDS;
+                    }
+                    lexungetc(L, c2);
+                }
+                /* fall through */
             case SP_BYTEFIT:
             case SP_WORDFIT:
                 if (InDatBlock(L)) {
@@ -1755,20 +1772,13 @@ again:
             // check for various special directives
             c = lexgetc(L); /* eat the $ */
             directive = 1;
-        } else if (c == 'v') {
-            // check for PNut style version number
-            int version = 0;
+        } else if (c == 'S') {
+            // check for PNut style version number Spin2_
             int c2 = lexgetc(L);
-            if (c2 >= '0' && c2 <= '9') {
-                c = c2;
-                while (c >= '0' && c <= '9') {
-                    version = 10*version + (c - '0');
-                    c = lexgetc(L);
-                }
-                SetLanguageVersion(L, version);
-            } else {
-                lexungetc(L, c2);
+            if (c2 == 'p') {
+                directive = 1;
             }
+            lexungetc(L, c2);
         }
         lexungetc(L, c);
         for(;;) {
@@ -1833,6 +1843,12 @@ again:
                 int version;
                 while (*ptr && isalpha(*ptr)) ptr++;
                 version = strtol(ptr, &ptr, 10);
+                if (version > 0) {
+                    SetLanguageVersion(L, version);
+                }
+            } else if (!strcmp(dir, "Spin2_v")) {
+                char *ptr = dir+7;
+                int version = strtol(ptr, &ptr, 10);
                 if (version > 0) {
                     SetLanguageVersion(L, version);
                 }
@@ -2372,13 +2388,19 @@ struct reservedword init_spin2_words[] = {
 struct reservedword_soft {
     const char *name;
     intptr_t val;
-    int      version;
+    int      min_version;
+    int      max_version;
 } init_spin2_soft_words[] = {
-    { "field", SP_FIELD, 37 },
-    { "bytes", SP_BYTES, 42 },
-    { "longs", SP_LONGS, 42 },
-    { "lstring", SP_LSTRING, 42 },
-    { "words", SP_WORDS, 42 },
+    { "field", SP_FIELD, 37, 0 },
+    { "lstring", SP_LSTRING, 42, 0 },
+
+    /* These one are weird: Chip put them
+       in Spin v42 then took them out again,
+       so they're only valid in v42
+    */
+    { "bytes", SP_BYTES, 42, 42 }, 
+    { "longs", SP_LONGS, 42, 42 },
+    { "words", SP_WORDS, 42, 42 },
     
 };
 
@@ -3323,7 +3345,7 @@ initSpinLexer(int flags)
     }
     for (i = 0; i < N_ELEMENTS(init_spin2_soft_words); i++) {
         Symbol *sym = AddSymbol(&spin2SoftReservedWords, init_spin2_soft_words[i].name, SYM_RESERVED, (void *)init_spin2_soft_words[i].val, NULL);
-        sym->offset = init_spin2_soft_words[i].version;
+        sym->offset = init_spin2_soft_words[i].min_version | (init_spin2_soft_words[i].max_version << 16);
     }
     for (i = 0; i < N_ELEMENTS(init_spin1_words); i++) {
         AddSymbol(&spin1ReservedWords, init_spin1_words[i].name, SYM_RESERVED, (void *)init_spin1_words[i].val, NULL);

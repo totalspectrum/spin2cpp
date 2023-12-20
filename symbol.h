@@ -52,7 +52,7 @@ typedef struct symbol {
     SymbolVal     v;      /* symbol value */
     int           flags;  /* various flags */
     int           offset;  /* extra value recording symbol order within a function */
-    /* NOTE: offset is overloaded to mean language version for SYM_RESERVED */
+    /* NOTE: offset is overloaded to record language version for SYM_RESERVED */
     void         *module;  /* module info */
     void         *def;     /* info about original definition */
     struct symbol *i_next; /* next in overal symbol list (for iteration) */
