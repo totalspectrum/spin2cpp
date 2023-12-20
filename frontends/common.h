@@ -163,6 +163,7 @@ extern char *gl_header2; /* second comment line to prepend to files */
 extern int gl_normalizeIdents; /* if set, change case of all identifiers to all lower except first letter upper */
 extern int gl_debug;    /* flag: if set, include debugging directives */
 extern int gl_brkdebug; /* if set, enable BRK debugger */
+extern int gl_compress_output; /* if set, make self-decompressing executable */
 extern int gl_srccomments; /* if set, include original source as comments */
 extern int gl_listing;     /* if set, produce an assembly listing */
 extern int gl_expand_constants; /* flag: if set, print constant values rather than symbolic references */

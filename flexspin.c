@@ -294,6 +294,9 @@ main(int argc, const char **argv)
                 Usage(stderr, cmd->bstcMode);
             }
             argv++; --argc;
+        } else if (!strcmp(argv[0],"--compress")) {
+            argv++; --argc;
+            gl_compress_output = 1;
         } else if (!strcmp(argv[0], "--color")) {
             gl_colorize_output = true;
             argv++; --argc;
@@ -395,9 +398,9 @@ main(int argc, const char **argv)
         } else if (!strcmp(argv[0], "-p")) {
             gl_preprocess = 0;
             argv++; --argc;
-	} else if (!strncmp(argv[0], "-o", 2)) {
-	    const char *opt;
-	    opt = argv[0];
+        } else if (!strncmp(argv[0], "-o", 2)) {
+            const char *opt;
+            opt = argv[0];
             argv++; --argc;
             if (opt[2] == 0) {
                 if (argv[0] == NULL) {
@@ -405,11 +408,11 @@ main(int argc, const char **argv)
                     exit(2);
                 }
                 opt = argv[0];
-		argv++; --argc;
+                argv++; --argc;
             } else {
                 opt += 2;
             }
-	    gl_outname = cmd->outname = strdup(opt);
+	        gl_outname = cmd->outname = strdup(opt);
         } else if (!strcmp(argv[0], "-gbrk")) {
             argv++; --argc;
             gl_debug = 1;

@@ -40,6 +40,7 @@
 #include <math.h>
 #include "common.h"
 #include "becommon.h"
+#include "compress/compress.h"
 #include "preprocess.h"
 #include "version.h"
 
@@ -66,6 +67,7 @@ int gl_gas_dat;
 int gl_normalizeIdents;
 int gl_debug;
 int gl_brkdebug;
+int gl_compress_output;
 int gl_expand_constants;
 int gl_optimize_flags;
 int gl_dat_offset;
@@ -1258,6 +1260,24 @@ DoPropellerPostprocess(const char *fname, size_t eepromSize)
 
     if (len+extralen > maxlen) {
         WARNING(NULL,"output size with debugger (%d + %d = %d) exceeps maximum of %d by %d bytes", len, extralen, len+extralen, maxlen, (len+extralen)-maxlen);
+    }
+
+    if (gl_compress_output) {
+        char buffer[len]; // allocate VLA
+        int r;
+        fseek(f,0,SEEK_SET);
+        r = fread(buffer,len,1,f);
+        if (r != 1) {
+            WARNING(NULL, "I/O error while compressing");
+        }
+        Flexbuf compressed = CompressExecutable(buffer,len);
+        if (!freopen(NULL,"w+b",f)) { // Do this to make file actually smaller
+            WARNING(NULL, "Can't truncate file");
+        }
+        fwrite(flexbuf_peek(&compressed),flexbuf_curlen(&compressed),1,f);
+        len = flexbuf_curlen(&compressed);
+        flexbuf_delete(&compressed);
+        fflush(f);
     }
 
     // if P2, no checksum needed

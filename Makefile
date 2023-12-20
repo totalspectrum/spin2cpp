@@ -123,7 +123,7 @@ CFLAGS = $(OPT) -Wall -fwrapv -Wc++-compat $(INC) $(DEFS)
 LIBS = -lm
 RM = rm -rf
 
-VPATH=.:util:frontends:frontends/basic:frontends/spin:frontends/c:backends:backends/asm:backends/cpp:backends/bytecode:backends/dat:backends/nucode:backends/objfile:backends/zip:mcpp
+VPATH=.:util:frontends:frontends/basic:frontends/spin:frontends/c:backends:backends/asm:backends/cpp:backends/bytecode:backends/dat:backends/nucode:backends/objfile:backends/zip:backends/compress:backends/compress/lz4:mcpp
 
 LEXHEADERS = $(BUILD)/spin.tab.h $(BUILD)/basic.tab.h $(BUILD)/cgram.tab.h ast.h frontends/common.h
 
@@ -138,8 +138,9 @@ PASMBACK = outasm.c assemble_ir.c optimize_ir.c inlineasm.c compress_ir.c
 BCBACK = outbc.c bcbuffers.c bcir.c bc_spin1.c
 NUBACK = outnu.c nuir.c nupeep.c
 CPPBACK = outcpp.c cppfunc.c outgas.c cppexpr.c cppbuiltin.c
+COMPBACK = compress.c lz4.c lz4hc.c
 ZIPBACK = outzip.c zip.c
-SPINSRCS = common.c case.c spinc.c $(LEXSRCS) functions.c cse.c loops.c hloptimize.c hltransform.c types.c pasm.c outdat.c outlst.c outobj.c spinlang.c basiclang.c clang.c $(PASMBACK) $(BCBACK) $(NUBACK) $(CPPBACK) $(ZIPBACK) $(MCPP) version.c becommon.c brkdebug.c printdebug.c
+SPINSRCS = common.c case.c spinc.c $(LEXSRCS) functions.c cse.c loops.c hloptimize.c hltransform.c types.c pasm.c outdat.c outlst.c outobj.c spinlang.c basiclang.c clang.c $(PASMBACK) $(BCBACK) $(NUBACK) $(CPPBACK) $(COMPBACK) $(ZIPBACK) $(MCPP) version.c becommon.c brkdebug.c printdebug.c
 
 LEXOBJS = $(LEXSRCS:%.c=$(BUILD)/%.o)
 SPINOBJS = $(SPINSRCS:%.c=$(BUILD)/%.o)
@@ -147,7 +148,7 @@ OBJS = $(SPINOBJS) $(BUILD)/spin.tab.o $(BUILD)/basic.tab.o $(BUILD)/cgram.tab.o
 
 SPIN_CODE = sys/p1_code.spin.h sys/p2_code.spin.h sys/bytecode_rom.spin.h sys/nucode_util.spin.h \
     sys/common.spin.h sys/common_pasm.spin.h sys/float.spin.h sys/gcalloc.spin.h sys/gc_bytecode.spin.h sys/gc_pasm.spin.h \
-    sys/nuinterp.spin.h sys/p2_brkdebug.spin.h
+    sys/nuinterp.spin.h sys/p2_brkdebug.spin.h sys/p2_lz4stub.spin.h
 
 PASM_SUPPORT_CODE = sys/lmm_orig.spin.h sys/lmm_slow.spin.h sys/lmm_trace.spin.h sys/lmm_cache.spin.h sys/lmm_compress.spin.h
 
