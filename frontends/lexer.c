@@ -2038,6 +2038,28 @@ getSpinToken(LexStream *L, AST **ast_ptr)
         if (c == '%') {
             ast = NewAST(AST_INTEGER, NULL, NULL);
             c = parseNumber(L, 4, &ast->d.ival);
+        } else if (c == '"') {
+            // %"ABCD" is a way to create a word from up to 4 characters
+            uint32_t val = 0;
+            int shift = 0;
+            for(;;) {
+                c = lexgetc(L);
+                if (c < 0) {
+                    SYNTAX_ERROR("end of file inside %%\" expression");
+                } else if (c == '"') {
+                    break;
+                } else {
+                    if (shift >= 32) {
+                        shift = 0;
+                        SYNTAX_ERROR("too many letters in %%\" expression");
+                    }
+                    val |= ((uint32_t)c) << shift;
+                    shift += 8;
+                }
+            }
+            ast = NewAST(AST_INTEGER, NULL, NULL);
+            ast->d.ival = val;
+            c = SP_NUM;
         } else if (isIdentifierStart(c)) {
             lexungetc(L, c);
             lexungetc(L, '%');
