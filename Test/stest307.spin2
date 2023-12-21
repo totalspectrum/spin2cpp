@@ -1,0 +1,13 @@
+con
+  _clkfreq = 180_000_000
+  
+pub main() | a, b
+  org
+         mov a, #outb
+_ret_    mov b, #label
+
+label
+    long 1
+  end
+  debug(uhex(a), uhex(b))
+  

@@ -191,6 +191,7 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
             {
                 HwReg *hw = (HwReg *)sym->v.ptr;
                 r = GetOneGlobal(REG_HW, hw->name, 0);
+                r_address = immflag;
                 break;
             }
             case SYM_FUNCTION:
@@ -225,7 +226,11 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
         return r;
     } else if (expr->kind == AST_HWREG) {
         HwReg *hw = (HwReg *)expr->d.ptr;
-        return GetOneGlobal(REG_HW, hw->name, 0);
+        r = GetOneGlobal(REG_HW, hw->name, 0);
+        if (immflag) {
+            r = GetLea(irl, r);
+        }
+        return r;
     } else if (expr->kind == AST_CATCH) {
         r = CompileInlineOperand(irl, expr->left, effects, 0);
         if (r && effects) {
