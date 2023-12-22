@@ -33,7 +33,7 @@ int __root_readdir(DIR *dir, struct dirent *ent)
     char **ptr = (char **)dir->vfsdata;
 
 again:
-    if (ptr == &mounttab[MAX_MOUNTS]) {
+    if (ptr == (mounttab + MAX_MOUNTS)) {
         // at end
         return -1; // EOF
     }
