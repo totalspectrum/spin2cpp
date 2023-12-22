@@ -1,1 +1,2 @@
 sys/*.h linguist-generated
+backends/compress/lz4/* linguist-vendored
