@@ -645,6 +645,7 @@ There are various command line options for the compiler which may modify the com
 	   C = latin1 for Latin-1 encoding
 	   C = parallax for Parallax font encoding
   [ --code=cog  ]    compile to run in COG memory instead of HUB
+  [ --compress  ]    compress output binary for faster download
   [ --fcache=N  ]    set size of FCACHE space in longs (0 to disable)
   [ --fixedreal ]    use 16.16 fixed point instead of IEEE floating point
   [ --lmm=xxx ]      use alternate LMM implementation for P1

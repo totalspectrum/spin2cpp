@@ -1,6 +1,7 @@
 Version 6.8.0
 - Added support for `%"xyzw"` constants in Spin2
 - Added locking for host file system I/O
+- Added `--compress` flag to compress binaries (courtesy of Ada)
 - Fixed incorrect inline assembly for `#outb` and other hw registers
 - Supported PNut v43 `{Spin2_vNN}` version comments
 

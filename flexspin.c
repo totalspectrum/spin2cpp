@@ -97,6 +97,7 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "  [ --charset=xxx ]  set character set for runtime\n");
     fprintf(f, "           xxx is one of utf8, latin1, shiftjis, or parallax\n");
     fprintf(f, "  [ --code=cog ]     compile for COG mode instead of LMM\n");
+    fprintf(f, "  [ --compress ]     compress output binary for faster download\n");
     fprintf(f, "  [ --interp=rom ]   compile bytecodes for P1 ROM interpreter (alpha feature!)\n");
     fprintf(f, "  [ --interp=nu ]    compile bytecodes for NuCode interpreter (alpha feature!)\n");
     fprintf(f, "  [ --fcache=N ]     set FCACHE size to N (0 to disable)\n");
