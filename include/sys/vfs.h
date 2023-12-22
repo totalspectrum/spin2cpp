@@ -114,4 +114,8 @@ int umount(const char *user_name) _IMPL("libc/unix/mount.c");
 char *__getfilebuffer();
 struct vfs *__getvfsforfile(char *fullname, const char *orig_name, char *full_path);
 
+/* file locking */
+int __lockio(int h) _IMPL("libsys/fmt.c");
+int __unlockio(int h) _IMPL("libsys/fmt.c");
+
 #endif

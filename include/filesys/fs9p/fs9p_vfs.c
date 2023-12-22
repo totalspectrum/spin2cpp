@@ -48,6 +48,8 @@ static int plain_sendrecv(uint8_t *startbuf, uint8_t *endbuf, int maxlen)
     int left;
     unsigned flags;
 
+    __lockio(0);
+    
     flags = _getrxtxflags();
     _setrxtxflags(0);  // raw mode
     startbuf[0] = len & 0xff;
@@ -77,6 +79,9 @@ static int plain_sendrecv(uint8_t *startbuf, uint8_t *endbuf, int maxlen)
         --left;
     }
     _setrxtxflags(flags);
+
+    __unlockio(0);
+
     return len;
 }
 
