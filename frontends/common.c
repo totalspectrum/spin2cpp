@@ -1261,6 +1261,7 @@ DoPropellerPostprocess(const char *fname, size_t eepromSize)
     if (len+extralen > maxlen) {
         WARNING(NULL,"output size with debugger (%d + %d = %d) exceeps maximum of %d by %d bytes", len, extralen, len+extralen, maxlen, (len+extralen)-maxlen);
     }
+    len += extralen;
 
     if (gl_compress_output) {
         char buffer[len]; // allocate VLA
