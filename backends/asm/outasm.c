@@ -4049,6 +4049,9 @@ doGetAddress(IRList *irl, AST *expr, bool isField)
                 res = GetLea(irl, tmp);
             } else if (sym->kind == SYM_FUNCTION) {
                 CompileGetFunctionInfo(irl, expr, NULL, NULL, &res, NULL);
+            } else if (sym->kind == SYM_LABEL) {
+                Operand *tmp = LabelRef(irl, sym);
+                res = GetLea(irl, tmp);
             }
         }
         if (!res) {
