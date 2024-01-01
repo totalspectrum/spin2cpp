@@ -74,6 +74,9 @@ SpinAddLocalSymbol(AST *ident, int kind)
         ident = ident->left;
     }
     if (!ident) return;
+    if (ident->kind == AST_ASSIGN) {
+        ident = ident->left;
+    }
     name = GetIdentifierName(ident);
     AddSymbol(currentTypes, name, kind, NULL, NULL);
 }

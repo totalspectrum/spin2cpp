@@ -1,0 +1,5 @@
+pub inc1(bytes = 2) : r
+  r := bytes + 1
+
+pub inc2(x) : r
+  return ++x
