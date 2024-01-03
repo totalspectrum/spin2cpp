@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2023 Total Spectrum Software Inc.
+ * Copyright 2011-2024 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -515,6 +515,7 @@ static FlagTable optflag[] = {
     { "remove-unused", OPT_REMOVE_UNUSED_FUNCS },
     { "remove-features", OPT_REMOVE_FEATURES },
     { "remove-dead", OPT_DEADCODE },
+    { "remove-duplicates", OPT_REMOVE_DUPLICATES },
     { "inline-small", OPT_INLINE_SMALLFUNCS },
     { "regs", OPT_BASIC_REGS },
     { "branch-convert", OPT_BRANCHES },

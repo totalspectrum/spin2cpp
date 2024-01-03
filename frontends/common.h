@@ -192,6 +192,7 @@ extern int gl_optimize_flags; /* flags for optimization */
 #define OPT_LOCAL_REUSE         0x00100000  /* reuse local registers inside functions */
 #define OPT_AGGRESSIVE_MEM      0x00200000  /* aggressive load/store optimization */
 #define OPT_COLD_CODE           0x00400000  /* move cold code to end of function */
+#define OPT_REMOVE_DUPLICATES   0x00800000  /* remove duplicate functions */
 
 #define OPT_EXPERIMENTAL        0x80000000  /* gate new or experimental optimizations */
 #define OPT_FLAGS_ALL           0xffffffff
@@ -205,7 +206,7 @@ extern int gl_optimize_flags; /* flags for optimization */
 // default optimization (-O1) for ASM output
 #define DEFAULT_ASM_OPTS        (OPT_ASM_BASIC|OPT_DEADCODE|OPT_REMOVE_UNUSED_FUNCS|OPT_INLINE_SMALLFUNCS|OPT_AUTO_FCACHE|OPT_LOOP_BASIC|OPT_TAIL_CALLS|OPT_SPECIAL_FUNCS|OPT_CORDIC_REORDER|OPT_LOCAL_REUSE|OPT_LOOP_BASIC)
 // extras added with -O2
-#define EXTRA_ASM_OPTS          (OPT_INLINE_SINGLEUSE|OPT_PERFORM_CSE|OPT_PERFORM_LOOPREDUCE|OPT_REMOVE_HUB_BSS|OPT_EXPERIMENTAL|OPT_AGGRESSIVE_MEM)
+#define EXTRA_ASM_OPTS          (OPT_INLINE_SINGLEUSE|OPT_PERFORM_CSE|OPT_PERFORM_LOOPREDUCE|OPT_REMOVE_HUB_BSS|OPT_EXPERIMENTAL|OPT_AGGRESSIVE_MEM|OPT_REMOVE_DUPLICATES)
 
 // default optimization (-O1) for bytecode output; defaults to much less optimization than asm
 #define DEFAULT_BYTECODE_OPTS   (OPT_REMOVE_UNUSED_FUNCS|OPT_REMOVE_FEATURES|OPT_DEADCODE|OPT_MAKE_MACROS|OPT_SPECIAL_FUNCS|OPT_PEEPHOLE|OPT_LOOP_BASIC)
