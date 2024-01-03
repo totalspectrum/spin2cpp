@@ -211,4 +211,36 @@ struct ir_lbljumps {
    IR *jump;
 };
 
+//
+// fetch the real next opcode
+//
+static inline IR *NextIR(IR *ir) {
+    do {
+        ir = ir->next;
+    } while (ir && ir->opc == OPC_COMMENT);
+    return ir;
+}
+
+static inline bool
+InstrIsVolatile(IR *ir)
+{
+    return 0 != (ir->flags & FLAG_KEEP_INSTR);
+}
+
+
+// optimization utilities
+bool InstrUsesFlags(IR *ir, unsigned flags);
+bool InstrSetsFlags(IR *ir, unsigned flags);
+bool InstrSetsAnyFlags(IR *ir);
+
+void ReplaceZWithNC(IR *ir);
+
+bool SameIROperand(Operand *, Operand *);
+bool IRIsDeadAfter(IR *instr, Operand *op);
+bool IRFlagsDeadAfter(IRList *irl, IR *ir, unsigned flags);
+int OptimizePeephole2(IRList *irl);
+
+#define SameOperand(a, b) SameIROperand(a, b)
+#define IsDeadAfter(ir, op) IRIsDeadAfter(ir, op)
+
 #endif

@@ -134,7 +134,7 @@ UTIL = dofmt.c flexbuf.c lltoa_prec.c strupr.c strrev.c strdupcat.c to_utf8.c fr
 MCPP = directive.c expand.c mbchar.c mcpp_eval.c mcpp_main.c mcpp_system.c mcpp_support.c
 
 LEXSRCS = lexer.c uni2sjis.c symbol.c ast.c expr.c $(UTIL) preprocess.c
-PASMBACK = outasm.c assemble_ir.c optimize_ir.c inlineasm.c compress_ir.c
+PASMBACK = outasm.c assemble_ir.c optimize_ir.c asm_peep.c inlineasm.c compress_ir.c
 BCBACK = outbc.c bcbuffers.c bcir.c bc_spin1.c
 NUBACK = outnu.c nuir.c nupeep.c
 CPPBACK = outcpp.c cppfunc.c outgas.c cppexpr.c cppbuiltin.c
