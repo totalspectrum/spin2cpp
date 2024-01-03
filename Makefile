@@ -1,6 +1,6 @@
 #
 # Makefile for spin compiler
-# Copyright (c) 2011-2023 Total Spectrum Software Inc. and contributors
+# Copyright (c) 2011-2024 Total Spectrum Software Inc. and contributors
 # Distributed under the MIT License (see COPYING for details)
 #
 # if CROSS is defined, we are building a cross compiler
@@ -129,7 +129,7 @@ LEXHEADERS = $(BUILD)/spin.tab.h $(BUILD)/basic.tab.h $(BUILD)/cgram.tab.h ast.h
 
 PROGS = $(BUILD)/testlex$(EXT) $(BUILD)/spin2cpp$(EXT) $(BUILD)/flexspin$(EXT) $(BUILD)/flexcc$(EXT)
 
-UTIL = dofmt.c flexbuf.c lltoa_prec.c strupr.c strrev.c strdupcat.c to_utf8.c from_utf8.c
+UTIL = dofmt.c flexbuf.c lltoa_prec.c strupr.c strrev.c strdupcat.c to_utf8.c from_utf8.c sha256.c
 
 MCPP = directive.c expand.c mbchar.c mcpp_eval.c mcpp_main.c mcpp_system.c mcpp_support.c
 
