@@ -5738,3 +5738,41 @@ OptimizeFcache(IRList *irl)
     }
 }
 
+static void
+HashOperand(SHA256_CTX *ctx, Operand *op)
+{
+    if (!op) return;
+    sha256_update(ctx, (unsigned char *)&op->kind, sizeof(op->kind));
+    sha256_update(ctx, (unsigned char *)op->name, strlen(op->name));
+    sha256_update(ctx, (unsigned char *)&op->val, sizeof(op->val));
+}
+
+static void
+HashIR(SHA256_CTX *ctx, IR *ir)
+{
+    if (IsDummy(ir)) {
+        return;
+    }
+    sha256_update(ctx, (unsigned char *)&ir->opc, sizeof(ir->opc));
+    sha256_update(ctx, (unsigned char *)&ir->cond, sizeof(ir->cond));
+    sha256_update(ctx, (unsigned char *)&ir->flags, sizeof(ir->flags));
+    sha256_update(ctx, (unsigned char *)&ir->srceffect, sizeof(ir->srceffect));
+    sha256_update(ctx, (unsigned char *)&ir->dsteffect, sizeof(ir->dsteffect));
+    
+    HashOperand(ctx, ir->dst);
+    HashOperand(ctx, ir->src);
+    HashOperand(ctx, ir->src2);
+}
+
+void
+HashIRL(IRList *irl, unsigned char *hash)
+{
+    IR *ir;
+    SHA256_CTX ctx;
+
+    sha256_init(&ctx);
+    for (ir = irl->head; ir; ir = ir->next) {
+        HashIR(&ctx, ir);
+    }
+    sha256_final(&ctx, hash);
+}

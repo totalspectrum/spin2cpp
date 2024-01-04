@@ -5421,7 +5421,8 @@ CompileFunctionBody(Function *f)
     IRList *irheader = &FuncData(f)->irheader;
     IRList cold_irl = {};
     IRList *cold_irl_ptr = (f->optimize_flags & OPT_COLD_CODE) ? &cold_irl : NULL;
-
+    unsigned char *firl_hash_ptr = &FuncData(f)->firl_hash[0];
+    
     EmitComments(irheader, f->doccomment);
 
     nextlabel = quitlabel = NULL;
@@ -5462,6 +5463,7 @@ CompileFunctionBody(Function *f)
     }
     EmitFunctionEpilog(irl, f);
     OptimizeIRLocal(irl, f);
+    HashIRL(irl, firl_hash_ptr);
 }
 
 /*

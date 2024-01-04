@@ -1,6 +1,6 @@
 /*
  * Spin to Pasm converter
- * Copyright 2016-2020 Total Spectrum Software Inc.
+ * Copyright 2016-2024 Total Spectrum Software Inc.
  * PASM output routines
  */
 
@@ -8,6 +8,7 @@
 #define OUTASM_H
 
 #include "instr.h"
+#include "util/sha256.h"
 
 // functions for producing local identifiers
 const char *IdentifierLocalName(Function *func, const char *name);
@@ -143,6 +144,10 @@ typedef struct ir_bedata {
 
     /* firl emitted already */
     bool firl_done;
+
+    /* hash of the function's instructions */
+    unsigned char firl_hash[SHA256_BLOCK_SIZE];
+    
 } IRFuncData;
 
 #define FuncData(f) ((IRFuncData *)(f)->bedata)
@@ -242,5 +247,8 @@ int OptimizePeephole2(IRList *irl);
 
 #define SameOperand(a, b) SameIROperand(a, b)
 #define IsDeadAfter(ir, op) IRIsDeadAfter(ir, op)
+
+// Hashing functions
+void HashIRL(IRList *irl, unsigned char *hash);
 
 #endif
