@@ -23,15 +23,13 @@ _maskit
 _maskit_ret
 	ret
 
+_mask2
 _mask
 	bmask	result1, arg01
 _mask_ret
-	ret
-
-_mask2
-	bmask	result1, arg01
 _mask2_ret
 	ret
+
 
 _op1
 	rdlong	_var01, objptr

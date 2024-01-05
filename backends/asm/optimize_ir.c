@@ -5764,15 +5764,72 @@ HashIR(SHA256_CTX *ctx, IR *ir)
     HashOperand(ctx, ir->src2);
 }
 
+static FunctionList *funchash[256];
+
+static FunctionList *
+NewFunctionList(Function *f)
+{
+    FunctionList *entry = (FunctionList *)calloc(1, sizeof(FunctionList));
+    entry->func = f;
+    return entry;
+}
+
 void
-HashIRL(IRList *irl, unsigned char *hash)
+HashFuncIRL(Function *f)
 {
     IR *ir;
+    IRList *irl = FuncIRL(f);
+    IRFuncData *fdata = FuncData(f);
     SHA256_CTX ctx;
-
+    FunctionList *fl;
+    unsigned char *hash = &fdata->firl_hash[0];
+    
+    static int32_t unique_func_count = 0;
+    
+    if (!(f->optimize_flags & OPT_REMOVE_DUPLICATES)) {
+        ++unique_func_count;
+        memset(hash, 0xff, 16);
+        memcpy(hash, (unsigned char *)&unique_func_count, sizeof(unique_func_count));
+        return;
+    }
+    
     sha256_init(&ctx);
+    unsigned char flags[2];
+    flags[0] = f->code_placement;
+    flags[1] = f->is_leaf;
+    
+    sha256_update(&ctx, flags, sizeof(flags));
     for (ir = irl->head; ir; ir = ir->next) {
         HashIR(&ctx, ir);
     }
     sha256_final(&ctx, hash);
+    fl = funchash[hash[0]];
+    if (!fl) {
+        funchash[hash[0]] = NewFunctionList(f);
+        return;
+    }
+    while (fl) {
+        Function *f2 = fl->func;
+        IRFuncData *f2data = f2 ? FuncData(f2) : 0;
+        if (f2data) {
+            if (memcmp(f2data->firl_hash, hash, SHA256_BLOCK_SIZE) == 0) {
+                /* same implementation for both functions */
+                /* make sure f2 does not get removed if f is needed */
+                f2->used_as_ptr |= f->used_as_ptr;
+                f2->cog_task |= f->cog_task;
+                f2->callSites += f->callSites;
+                
+                FunctionList *entry = NewFunctionList(f);
+                entry->next = f2data->funcdups;
+                f2data->funcdups = entry;
+                fdata->firl_done = true;
+                return;
+            }
+        }
+        if (!fl->next) {
+            fl->next = NewFunctionList(f);
+            break;
+        }
+        fl = fl->next;
+    }
 }

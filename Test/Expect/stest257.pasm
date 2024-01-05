@@ -4,19 +4,15 @@ dat
 	org	0
 entry
 
+_fetch2
 _fetch1
 	rdlong	result1, arg01
 	add	arg01, #4
 	rdlong	result2, arg01
 _fetch1_ret
-	ret
-
-_fetch2
-	rdlong	result1, arg01
-	add	arg01, #4
-	rdlong	result2, arg01
 _fetch2_ret
 	ret
+
 
 result1
 	long	0

@@ -500,6 +500,12 @@ typedef struct funcdef {
     struct funcdef *next_method; // next in jump table
 } Function;
 
+/* structure describing an entry in a list of functions */
+typedef struct funclist {
+    struct funclist *next;
+    Function *func;
+} FunctionList;
+
 /* structure describing a builtin function */
 typedef struct builtin {
     const char *name;

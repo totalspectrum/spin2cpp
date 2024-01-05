@@ -145,6 +145,9 @@ typedef struct ir_bedata {
     /* firl emitted already */
     bool firl_done;
 
+    /* list of duplicate functions that share the same code as this one */
+    FunctionList *funcdups;
+    
     /* hash of the function's instructions */
     unsigned char firl_hash[SHA256_BLOCK_SIZE];
     
@@ -249,6 +252,6 @@ int OptimizePeephole2(IRList *irl);
 #define IsDeadAfter(ir, op) IRIsDeadAfter(ir, op)
 
 // Hashing functions
-void HashIRL(IRList *irl, unsigned char *hash);
+void HashFuncIRL(Function *f);
 
 #endif

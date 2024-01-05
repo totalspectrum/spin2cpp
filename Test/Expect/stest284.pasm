@@ -15,6 +15,9 @@ _fetchx
 _fetchx_ret
 	ret
 
+_fetchm4
+_fetchm3
+_fetchm2
 _fetchm1
 	sub	arg02, #1
 	sub	arg01, #1
@@ -24,40 +27,13 @@ _fetchm1
 	add	arg02, arg01
 	rdlong	result1, arg02
 _fetchm1_ret
-	ret
-
-_fetchm2
-	sub	arg02, #1
-	sub	arg01, #1
-	shl	arg01, #9
-	add	arg01, arg03
-	shl	arg02, #2
-	add	arg02, arg01
-	rdlong	result1, arg02
+_fetchm4_ret
+_fetchm3_ret
 _fetchm2_ret
 	ret
 
-_fetchm3
-	sub	arg02, #1
-	sub	arg01, #1
-	shl	arg01, #9
-	add	arg01, arg03
-	shl	arg02, #2
-	add	arg02, arg01
-	rdlong	result1, arg02
-_fetchm3_ret
-	ret
 
-_fetchm4
-	sub	arg02, #1
-	sub	arg01, #1
-	shl	arg01, #9
-	add	arg01, arg03
-	shl	arg02, #2
-	add	arg02, arg01
-	rdlong	result1, arg02
-_fetchm4_ret
-	ret
+
 
 objptr
 	long	@@@objmem

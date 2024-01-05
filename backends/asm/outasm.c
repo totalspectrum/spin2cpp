@@ -1858,9 +1858,13 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
         }
     }
 
-    // now the function label
+    // emit labels for duplicate functions
+    for (FunctionList *fl = FuncData(func)->funcdups; fl; fl = fl->next) {
+        Function *subf = fl->func;
+        EmitLabel(irl, FuncData(subf)->asmname);
+    }
+    // now the main function label
     EmitLabel(irl, FuncData(func)->asmname);
-
     // push return address, if we are in cog mode
     if (func->is_recursive && InCog(func) && !gl_p2) {
         EmitPush(irl, FuncData(func)->asmretregister, linenum);
@@ -1973,6 +1977,12 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
         ir->flags |= FLAG_KEEP_INSTR;
     }
     EmitLabel(irl, FuncData(func)->asmretname);
+    // emit duplicate function return names
+    for (FunctionList *fl = FuncData(func)->funcdups; fl; fl = fl->next) {
+        Function *subf = fl->func;
+        EmitLabel(irl, FuncData(subf)->asmretname);
+    }
+    
     EmitOp0(irl, OPC_RET);
 }
 
@@ -5421,7 +5431,6 @@ CompileFunctionBody(Function *f)
     IRList *irheader = &FuncData(f)->irheader;
     IRList cold_irl = {};
     IRList *cold_irl_ptr = (f->optimize_flags & OPT_COLD_CODE) ? &cold_irl : NULL;
-    unsigned char *firl_hash_ptr = &FuncData(f)->firl_hash[0];
     
     EmitComments(irheader, f->doccomment);
 
@@ -5463,7 +5472,7 @@ CompileFunctionBody(Function *f)
     }
     EmitFunctionEpilog(irl, f);
     OptimizeIRLocal(irl, f);
-    HashIRL(irl, firl_hash_ptr);
+    HashFuncIRL(f);
 }
 
 /*
@@ -5476,7 +5485,9 @@ CompileWholeFunction(IRList *irl, Function *f)
 {
     IRList *firl = FuncIRL(f);
     if (FuncData(f)->firl_done) {
-        ERROR(NULL, "firl done");
+        //ERROR(NULL, "firl done");
+        // nothing to do
+        return;
     }
     EmitFunctionHeader(irl, f);
     AppendIRList(irl, firl);

@@ -422,6 +422,10 @@ Enables some miscellaneous optimizations that are new and hence slightly less we
 
 If a method is called only once in a whole program, it is expanded inline at the call site, even if it is a fairly large method.
 
+### Duplicate function merging (-O2, -Oremove-duplicates)
+
+If two functions have identical code, output only one copy of the function. Currently only checked in the assembly backend, bytecode is still to come.
+
 ### Common Subexpression Elimination (-O2, -Ocse)
 
 Code like:

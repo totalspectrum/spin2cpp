@@ -4,33 +4,21 @@ dat
 	org	0
 entry
 
+_getit9
+_getit3
+_getit2
 _getit1
 	rdlong	result1, arg01
 	add	arg01, #4
 	rdlong	result2, arg01
 _getit1_ret
-	ret
-
-_getit2
-	rdlong	result1, arg01
-	add	arg01, #4
-	rdlong	result2, arg01
+_getit9_ret
+_getit3_ret
 _getit2_ret
 	ret
 
-_getit3
-	rdlong	result1, arg01
-	add	arg01, #4
-	rdlong	result2, arg01
-_getit3_ret
-	ret
 
-_getit9
-	rdlong	result1, arg01
-	add	arg01, #4
-	rdlong	result2, arg01
-_getit9_ret
-	ret
+
 
 _getitA
 	rdlong	_var05, arg01

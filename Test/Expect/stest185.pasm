@@ -4,15 +4,13 @@ dat
 	org	0
 entry
 
+_getoff2
 _getoff1
 	mov	result1, #4
 _getoff1_ret
-	ret
-
-_getoff2
-	mov	result1, #4
 _getoff2_ret
 	ret
+
 
 result1
 	long	0

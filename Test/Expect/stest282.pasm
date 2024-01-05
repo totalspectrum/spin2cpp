@@ -16,11 +16,13 @@ _demo
 _demo_ret
 	ret
 
+_substest01_0002_add
 _substest01_add
 	rdlong	result1, objptr
 	add	result1, arg01
 	wrlong	result1, objptr
 _substest01_add_ret
+_substest01_0002_add_ret
 	ret
 
 _substest01_inc
@@ -30,12 +32,6 @@ _substest01_inc
 _substest01_inc_ret
 	ret
 
-_substest01_0002_add
-	rdlong	result1, objptr
-	add	result1, arg01
-	wrlong	result1, objptr
-_substest01_0002_add_ret
-	ret
 
 _substest01_0002_inc
 	rdlong	result1, objptr

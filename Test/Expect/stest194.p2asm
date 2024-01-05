@@ -14,19 +14,15 @@ dat
 	org	0
 entry
 
+_check2
 _check1
 	cmps	arg01, arg02 wcz
  if_be	mov	result1, #9
  if_a	neg	result1, #1
 _check1_ret
-	ret
-
-_check2
-	cmps	arg01, arg02 wcz
- if_be	mov	result1, #9
- if_a	neg	result1, #1
 _check2_ret
 	ret
+
 builtin_bytefill_
         shr	arg03, #1 wc
  if_c   wrbyte	arg02, arg01

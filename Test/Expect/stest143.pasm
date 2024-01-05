@@ -4,23 +4,17 @@ dat
 	org	0
 entry
 
+_sum3
+_sum2
 _sum1
 	add	arg01, arg02
 	mov	result1, arg01
 _sum1_ret
-	ret
-
-_sum2
-	add	arg01, arg02
-	mov	result1, arg01
+_sum3_ret
 _sum2_ret
 	ret
 
-_sum3
-	add	arg01, arg02
-	mov	result1, arg01
-_sum3_ret
-	ret
+
 
 _sum4
 	cmps	arg02, #0 wc

@@ -4,13 +4,12 @@ dat
 	org	0
 entry
 
+_bar
 _foo
 _foo_ret
-	ret
-
-_bar
 _bar_ret
 	ret
+
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START

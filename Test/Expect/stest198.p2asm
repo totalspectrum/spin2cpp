@@ -14,19 +14,15 @@ dat
 	org	0
 entry
 
+_setval1
 _setval2
 	andn	arg01, #3
 	or	arg01, #1
 	mov	result1, arg01
 _setval2_ret
-	ret
-
-_setval1
-	andn	arg01, #3
-	or	arg01, #1
-	mov	result1, arg01
 _setval1_ret
 	ret
+
 
 _getval2
 	shr	arg01, #4
