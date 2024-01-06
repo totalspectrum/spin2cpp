@@ -1543,6 +1543,9 @@ NuCompileFreea(NuIrList *irl) {
 static int
 NuCompileExpression(NuIrList *irl, AST *node) {
     int pushed = 0; // number results pushed on stack
+    while (node && node->kind == AST_COMMENTEDNODE) {
+        node = node->left;
+    }
     if(!node) {
         // nothing to do here
         return pushed;
@@ -1683,7 +1686,13 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         NuCompileDrop(irl, n);
         return NuCompileExpression(irl, node->right);
     }
-    break;
+    case AST_STMTLIST: {
+        while (node->right) {
+            NuCompileStatement(irl, node->left);
+            node = node->right;
+        }
+        return NuCompileExpression(irl, node->left);
+    }
     case AST_GETLOW:
     case AST_GETHIGH: {
         int n = NuCompileExpression(irl, node->left);
@@ -1839,7 +1848,15 @@ NuCompileExpression(NuIrList *irl, AST *node) {
     case AST_RANGEREF:
         pushed = NuCompileExpression(irl, TransformRangeUse(node));
         break;
-    case AST_EXPECT: return NuCompileExpression(irl,node->left);
+    case AST_EXPECT:
+        return NuCompileExpression(irl,node->left);
+    case AST_GOTO:
+    case AST_WHILE:
+    case AST_DOWHILE:
+    case AST_FOR:
+    case AST_FORATLEASTONCE:
+    /* default for many expression types is to be void */
+        return 0;
     default:
         ERROR(node, "Unknown expression node %d", node->kind);
         return 1;
