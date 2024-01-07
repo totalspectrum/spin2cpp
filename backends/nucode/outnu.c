@@ -2353,7 +2353,7 @@ static int NuConvertFunctions(void *vptr, Module *P) {
 }
 
 static int NuOptimizeFunction(Function *pf, NuIrList *irl) {
-    // for now, do nothing
+    // for now, do very little
     int change;
     int all_changes = 0;
     unsigned flags = pf->optimize_flags;
@@ -2383,15 +2383,25 @@ static int NuRevisitFunctions(void *vptr, Module *P) {
     Function *pf;
     NuIrList **global_ptr = (NuIrList **)vptr;
     NuIrList *globalList = *global_ptr;
+    bool isDup;
+    
     current = P;
 
     for (pf = P->functions; pf; pf = pf->next) {
         // optimize function
         irl = &FunData(pf)->irl;
         NuOptimizeFunction(pf, irl);
-        // thread into global list
-        irl->nextList = globalList;
-        globalList = irl;
+        if (pf->optimize_flags & OPT_MERGE_DUPLICATES) {
+            // see if it matches any other function
+            isDup = NuHashFunc(pf);
+        } else {
+            isDup = false;
+        }
+        if (!isDup) {
+            // thread into global list
+            irl->nextList = globalList;
+            globalList = irl;
+        }
     }
 
     current = save;
@@ -2426,6 +2436,13 @@ static int NuCompileObject(void *vptr, Module *P) {
         flexbuf_delete(&datBuf);
     }
     for (pf = P->functions; pf; pf = pf->next) {
+        FunctionList *fl;
+        if (FunData(pf)->isRemoved) continue;
+        for (fl = FunData(pf)->funcdups; fl; fl = fl->next) {
+            Function *f2 = fl->func;
+            flexbuf_printf(fb, "'--- Function: %s\n", f2->name);
+            NuOutputLabelNL(fb, FunData(f2)->entryLabel);
+        }
         flexbuf_printf(fb, "'--- Function: %s\n", pf->name);
         NuOutputIrList(fb, &FunData(pf)->irl);
         if (FunData(pf)->dataLabel) {
@@ -2434,6 +2451,64 @@ static int NuCompileObject(void *vptr, Module *P) {
         }
     }
     return 1;
+}
+
+//
+// hashing function
+// returns true if function is found to be a duplicate of another one,
+// otherwise false
+//
+static FunctionList *buckets[256];
+
+bool NuHashFunc(Function *f) {
+    static int unique_func_count = 0;
+    SHA256_CTX ctx;
+    FunctionList *fl;
+    
+    if (!(f->optimize_flags & OPT_MERGE_DUPLICATES)) {
+        ++unique_func_count;
+        memcpy(FunData(f)->hash, &unique_func_count, sizeof(unique_func_count));
+        return false;
+    }
+    NuIrList *irl = &FunData(f)->irl;
+    NuIr *ir;
+    
+    sha256_init(&ctx);
+    for (ir = irl->head; ir; ir = ir->next) {
+        sha256_update(&ctx, (unsigned char *)&ir->op, sizeof(ir->op));
+    }
+    sha256_final(&ctx, FunData(f)->hash);
+
+    fl = buckets[FunData(f)->hash[0]];
+    if (!fl) {
+        buckets[FunData(f)->hash[0]] = NewFunctionList(f);
+        return false;
+    }
+    for(;;) {
+        Function *f2 = fl->func;
+        if (FunData(f2)) {
+            if (memcmp(FunData(f2)->hash, FunData(f)->hash, SHA256_BLOCK_SIZE) == 0) {
+                FunData(f)->isRemoved = true;
+                // make sure we keep f2
+                f2->used_as_ptr |= f->used_as_ptr;
+                f2->cog_task |= f->cog_task;
+                f2->callSites += f->callSites;
+
+                FunctionList *entry = NewFunctionList(f);
+                entry->next = FunData(f2)->funcdups;
+                FunData(f2)->funcdups = entry;
+                FunData(f)->isRemoved = true;
+                return true;
+            }
+        }
+        if (!fl->next) {
+            fl->next = NewFunctionList(f);
+            break;
+        }
+        fl = fl->next;
+    }
+    
+    return false;
 }
 
 #ifdef NEVER
@@ -2548,3 +2623,4 @@ void OutputNuCode(const char *asmFileName, Module *P)
     current = saveCurrent;
     curfunc = saveFunc;
 }
+

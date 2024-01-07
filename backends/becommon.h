@@ -178,4 +178,7 @@ static inline bool isPowerOf2(uint32_t x)
 // shifts[2] to initial shift
 int DecomposeBits(unsigned val, int *shifts);
 
+// allocate a FunctionList entry
+FunctionList *NewFunctionList(Function *f);
+
 #endif /* BACKEND_COMMON_H */

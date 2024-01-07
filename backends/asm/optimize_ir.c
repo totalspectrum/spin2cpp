@@ -5809,14 +5809,6 @@ HashIR(SHA256_CTX *ctx, IR *ir, Function *f)
 
 static FunctionList *funchash[256];
 
-static FunctionList *
-NewFunctionList(Function *f)
-{
-    FunctionList *entry = (FunctionList *)calloc(1, sizeof(FunctionList));
-    entry->func = f;
-    return entry;
-}
-
 void
 HashFuncIRL(Function *f)
 {

@@ -8,6 +8,7 @@
 #define OUTASM_H
 
 #include "instr.h"
+#include "becommon.h"
 #include "util/sha256.h"
 
 // functions for producing local identifiers

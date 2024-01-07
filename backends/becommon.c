@@ -1,7 +1,7 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2023 Total Spectrum Software Inc.
- * Copyright 2021-2022 Ada Gottensträter
+ * Copyright 2011-2024 Total Spectrum Software Inc.
+ * Copyright 2021-2024 Ada Gottensträter
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
  * +--------------------------------------------------------------------
@@ -690,3 +690,12 @@ int DecomposeBits(unsigned val, int *shifts)
     }
     return r;
 }
+
+FunctionList *
+NewFunctionList(Function *f)
+{
+    FunctionList *entry = (FunctionList *)calloc(1, sizeof(FunctionList));
+    entry->func = f;
+    return entry;
+}
+

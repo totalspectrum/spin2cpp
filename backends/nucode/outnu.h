@@ -19,7 +19,9 @@ typedef struct {
     NuIrList irl;
     NuIrLabel *entryLabel;
     NuIrLabel *dataLabel;
-    Flexbuf dataBuf;  // inline data for the function
+    Flexbuf dataBuf;         // inline data for the function
+    FunctionList *funcdups;  // functions that are aliases to this one
+    bool isRemoved;          // flag, if set function is a duplicate of something else
     unsigned char hash[SHA256_BLOCK_SIZE];
 } NuFunData;
 
@@ -35,7 +37,7 @@ NuIrOpcode NuInvertCondition(NuIrOpcode op);
 NuIrOpcode NuReverseDirCondition(NuIrOpcode op);
 void NuDeleteIr(NuIrList *irl, NuIr *ir);
 void NuIrInsertBefore(NuIrList *irl, NuIr *anchor, NuIr *newitem);
-void NuFuncHash(Function *f);
+bool NuHashFunc(Function *f);
 
 /* ultimate output function */
 void OutputNuCode(const char *fname, Module *P);
