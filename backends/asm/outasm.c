@@ -1,7 +1,7 @@
 //
 // Pasm data output for spin2cpp
 //
-// Copyright 2016-2023 Total Spectrum Software Inc.
+// Copyright 2016-2024 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -395,7 +395,7 @@ static int IsMemRef(Operand *op)
 }
 
 static Operand *
-GetSizedVar(struct flexbuf *fb, Operandkind kind, const char *name, intptr_t value, int count)
+GetSizedVarCond(struct flexbuf *fb, Operandkind kind, const char *name, intptr_t value, int count, bool allocateIfNeeded)
 {
     size_t siz = flexbuf_curlen(fb) / sizeof(AsmVariable);
     size_t i;
@@ -410,7 +410,7 @@ GetSizedVar(struct flexbuf *fb, Operandkind kind, const char *name, intptr_t val
                    )
                 {
                     /* OK, pretend this is a match */
-                } else {
+                } else if (allocateIfNeeded) {
                     ERROR(NULL, "Internal error, redefining value of %s", name);
                 }
             }
@@ -420,11 +420,20 @@ GetSizedVar(struct flexbuf *fb, Operandkind kind, const char *name, intptr_t val
             return g[i].op;
         }
     }
-    tmp.op = NewOperand(kind, name, value);
-    tmp.val = value;
-    tmp.count = count;
-    flexbuf_addmem(fb, (const char *)&tmp, sizeof(tmp));
-    return tmp.op;
+    if (allocateIfNeeded) {
+        tmp.op = NewOperand(kind, name, value);
+        tmp.val = value;
+        tmp.count = count;
+        flexbuf_addmem(fb, (const char *)&tmp, sizeof(tmp));
+        return tmp.op;
+    }
+    return NULL;
+}
+
+static Operand *
+GetSizedVar(struct flexbuf *fb, Operandkind kind, const char *name, intptr_t value, int count)
+{
+    return GetSizedVarCond(fb, kind, name, value, count, true);
 }
 
 Operand *GetOneGlobal(Operandkind kind, const char *name, intptr_t value)
@@ -1825,6 +1834,13 @@ MarkUsedOneReg(Operand *reg)
         reg = (Operand *)reg->name;
     }
     if (reg) {
+        if (reg->kind == IMM_COG_LABEL) {
+            // see if a variable with this name exists
+            Operand *sub = GetSizedVarCond(&cogGlobalVars, REG_LOCAL, reg->name, 0, 0, false);
+            if (sub) {
+                sub->used = 1;
+            }
+        }
         reg->used = 1;
     }
 }

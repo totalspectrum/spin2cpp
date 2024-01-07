@@ -1,6 +1,7 @@
 Version 6.9.0
 - Added new optimization to merge duplicate functions (only at -O2, and so far only works for small functions)
 - Fixed some nucode compilation problems with the C test suite
+- Fixed failure to allocate memory for local variables in some cases
 
 Version 6.8.1
 - Fixed using new keywords like `bytes` in parameters with default values
