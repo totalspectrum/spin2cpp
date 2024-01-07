@@ -370,6 +370,7 @@ struct Operand {
     intptr_t val;
     int size; // only really used for MEMREFs
     int used;
+    void *origsym; // original symbol
 };
 
 typedef struct OperandList {

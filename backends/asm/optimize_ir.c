@@ -5739,17 +5739,28 @@ OptimizeFcache(IRList *irl)
 }
 
 static void
-HashOperand(SHA256_CTX *ctx, Operand *op)
+HashOperand(SHA256_CTX *ctx, Operand *op, Function *f)
 {
     if (!op) return;
     sha256_update(ctx, (unsigned char *)&op->kind, sizeof(op->kind));
-    sha256_update(ctx, (unsigned char *)op->name, strlen(op->name));
     sha256_update(ctx, (unsigned char *)&op->val, sizeof(op->val));
+    if (op->origsym) {
+        Symbol *sym = (Symbol *)op->origsym;
+        int offset = sym->offset;
+        int kind = (int) sym->kind;
+        sha256_update(ctx, (unsigned char *)&kind, sizeof(kind));
+        sha256_update(ctx, (unsigned char *)&offset, sizeof(offset));
+    } else {
+        sha256_update(ctx, (unsigned char *)op->name, strlen(op->name));
+    }
 }
 
 static void
-HashIR(SHA256_CTX *ctx, IR *ir)
+HashIR(SHA256_CTX *ctx, IR *ir, Function *f)
 {
+    Operand *dst, *src, *src2;
+    int addr;
+    
     if (IsDummy(ir)) {
         return;
     }
@@ -5758,10 +5769,42 @@ HashIR(SHA256_CTX *ctx, IR *ir)
     sha256_update(ctx, (unsigned char *)&ir->flags, sizeof(ir->flags));
     sha256_update(ctx, (unsigned char *)&ir->srceffect, sizeof(ir->srceffect));
     sha256_update(ctx, (unsigned char *)&ir->dsteffect, sizeof(ir->dsteffect));
+
+    dst = ir->dst;
+    src = ir->src;
+    src2 = ir->src2;
+
+    // handle some special cases here
+    switch (ir->opc) {
+    case OPC_LABEL:
+        addr = ir->addr;
+        sha256_update(ctx, (unsigned char *)&addr, sizeof(addr));
+        dst = 0;
+        break;
+    case OPC_JUMP:
+        if (ir->aux) {
+            IR *dest = (IR *)ir->aux;
+            addr = dest->addr;
+            sha256_update(ctx, (unsigned char *)&addr, sizeof(addr));
+            dst = 0;
+        }
+        break;
+    case OPC_DJNZ:
+        if (ir->aux) {
+            IR *dest = (IR *)ir->aux;
+            addr = dest->addr;
+            sha256_update(ctx, (unsigned char *)&addr, sizeof(addr));
+            src = 0;
+        }
+        break;
+    default:
+        /* do nothing */
+        break;
+    }
     
-    HashOperand(ctx, ir->dst);
-    HashOperand(ctx, ir->src);
-    HashOperand(ctx, ir->src2);
+    HashOperand(ctx, dst, f);
+    HashOperand(ctx, src, f);
+    HashOperand(ctx, src2, f);
 }
 
 static FunctionList *funchash[256];
@@ -5800,7 +5843,7 @@ HashFuncIRL(Function *f)
     
     sha256_update(&ctx, flags, sizeof(flags));
     for (ir = irl->head; ir; ir = ir->next) {
-        HashIR(&ctx, ir);
+        HashIR(&ctx, ir, f);
     }
     sha256_final(&ctx, hash);
     fl = funchash[hash[0]];

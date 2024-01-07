@@ -1309,14 +1309,17 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func, AST *ast)
             }
             ValidateObjbase();
             exprtype = (AST *)sym->v.ptr;
+            Operand *op;
             if (COG_DATA) {
                 // COG memory
                 size = TypeSize(exprtype);
-                return GetSizedGlobal(REG_REG, IdentifierModuleName(P, sym->our_name), 0, size);
+                op = GetSizedGlobal(REG_REG, IdentifierModuleName(P, sym->our_name), 0, size);
             } else {
                 // HUB memory
-                return TypedHubMemRef(exprtype, objbase, (int)sym->offset);
+                op = TypedHubMemRef(exprtype, objbase, (int)sym->offset);
             }
+            op->origsym = (void *)sym;
+            return op;
         case SYM_FUNCTION:
         {
             Function *calledf = (Function *)sym->v.ptr;
@@ -1358,10 +1361,14 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func, AST *ast)
                     return FrameRef(offset, size);
                 }
             }
-            return GetSizedGlobal(REG_LOCAL, IdentifierLocalName(func, sym->our_name), 0, size);
+            op = GetSizedGlobal(REG_LOCAL, IdentifierLocalName(func, sym->our_name), 0, size);
+            op->origsym = (void *)sym;
+            return op;
         case SYM_TEMPVAR:
             size = TypeSize((AST *)sym->v.ptr);
-            return GetSizedGlobal(REG_TEMP, IdentifierLocalName(func, sym->our_name), 0, size);
+            op = GetSizedGlobal(REG_TEMP, IdentifierLocalName(func, sym->our_name), 0, size);
+            op->origsym = (void *)sym;
+            return op;
         case SYM_LABEL:
             return LabelRef(irl, sym);
         case SYM_ALIAS:
