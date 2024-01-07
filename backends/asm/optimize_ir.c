@@ -5829,7 +5829,7 @@ HashFuncIRL(Function *f)
     
     static int32_t unique_func_count = 0;
     
-    if (!(f->optimize_flags & OPT_REMOVE_DUPLICATES)) {
+    if (!(f->optimize_flags & OPT_MERGE_DUPLICATES)) {
         ++unique_func_count;
         memset(hash, 0xff, 16);
         memcpy(hash, (unsigned char *)&unique_func_count, sizeof(unique_func_count));
