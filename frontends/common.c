@@ -1009,7 +1009,7 @@ ERROR_UNKNOWN_SYMBOL(AST *ast)
     } else {
         name = "";
     }
-    ERROR(ast, "Unknown symbol `%s'", name);
+    ERROR(ast, "Unknown symbol '%s'", name);
     // add a definition for this symbol so we don't get this error again
     if (curfunc) {
         AddLocalVariable(curfunc, ast, NULL, SYM_LOCALVAR);
