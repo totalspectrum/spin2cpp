@@ -608,6 +608,8 @@ __system___gc_docollect_ptr
 	res	1
 __system___gc_docollect_startheap
 	res	1
+__system___gc_markcog_ptr
+	res	1
 __system___gc_tryalloc__cse__0002
 	res	1
 __system___gc_tryalloc_availsize
