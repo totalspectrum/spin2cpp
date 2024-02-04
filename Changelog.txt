@@ -3,6 +3,7 @@ Version 6.9.0
 - Fixed some nucode compilation problems with the C test suite
 - Fixed failure to allocate memory for local variables in some cases
 - Fixed incorrect removal of some functions that were not completely inlined
+- Fixed sizeof() for boolean types
 
 Version 6.8.1
 - Fixed using new keywords like `bytes` in parameters with default values

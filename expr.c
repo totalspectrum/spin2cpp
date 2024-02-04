@@ -2925,6 +2925,10 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
     switch (expr->kind) {
     case AST_TYPEOF:
         return ExprTypeRelative(table, expr->left, P);
+    case AST_UNS_BOOLTYPE:
+        return ast_type_basic_boolean;
+    case AST_SIGNED_BOOLTYPE:
+        return ast_type_c_boolean;
     case AST_INTEGER:
         if ( IsCLang(lang) && expr->d.ival == 0) {
             return ast_type_generic;
