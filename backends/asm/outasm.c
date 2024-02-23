@@ -2215,7 +2215,7 @@ CompileMul(IRList *irl, AST *expr, int gethi, Operand *dest)
     lhs = CompileExpression(irl, expr->left, NULL);
     rhs = CompileExpression(irl, expr->right, NULL);
     if (gl_p2 && gethi == 0) {
-        enum SixteenBitSafe sixteen_safe = is16BitCompatible(is16BitSafe(expr->left),is16BitSafe(expr->left));
+        enum SixteenBitSafe sixteen_safe = is16BitCompatible(is16BitSafe(expr->left),is16BitSafe(expr->right));
         if (sixteen_safe) {
             Operand *temp = NewFunctionTempRegister();
             EmitMove(irl, temp, lhs, expr);
