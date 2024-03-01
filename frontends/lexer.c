@@ -866,6 +866,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                 break;
             case SP_ORGH:
             case SP_RES:
+            case SP_FIT:
                 L->sawInstruction = 1;
                 break;
             case SP_ASM:
