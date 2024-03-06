@@ -667,7 +667,7 @@ doSpinTransform(AST **astptr, int level, AST *parent)
             ASSERT_AST_KIND(list,AST_STMTLIST,);
 
             caseitem = list->left;
-            doSpinTransform(&caseitem->left, 0, ast);
+            doSpinTransform(&caseitem->left, level, ast);
             doSpinTransform(&caseitem->right, level, ast);
             list = list->right;
         }
