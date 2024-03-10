@@ -653,7 +653,7 @@ doSpinTransform(AST **astptr, int level, AST *parent)
     {
         AST *list = ast->right;
         const char *case_name = ast->kind == AST_CASETABLE ? "case_fast" : NULL;
-        doSpinTransform(&ast->left, level, ast);
+        doSpinTransform(&ast->left, 0, ast);
         AstReportAs(ast, &saveinfo); // any newly created AST nodes should reflect debug info from this one
 #ifdef NEVER // handled in CreateSwitch now        
         if (ast->left->kind != AST_IDENTIFIER && ast->left->kind != AST_ASSIGN) {
