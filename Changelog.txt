@@ -6,6 +6,8 @@ Version 6.9.0
 - Fixed incorrect removal of some functions that were not completely inlined
 - Fixed sizeof() for boolean types
 - Fixed incorrect test for 16 bit multiplies on P2
+- Fixed a problem with CASE statements in Spin (thanks again, Ada!)
+- Updated SD card code to work better and in more configurations (thanks to Evan)
 
 Version 6.8.1
 - Fixed using new keywords like `bytes` in parameters with default values

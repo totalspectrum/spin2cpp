@@ -30,6 +30,7 @@
 
 #include "ff.h"		/* Obtains integer types for FatFs */
 #include "diskio.h"	/* Common include file for FatFs and disk I/O layer */
+#include <stdlib.h>
 
 /*-------------------------------------------------------------------------*/
 /* Platform dependent macros and functions needed to be modified           */
@@ -52,6 +53,8 @@ int _pin_do;
 #ifdef __propeller2__
 #define _smartpins_mode_eh /* enable Evanh's fast smartpin code */
 #endif
+
+//#define _DEBUG_SDMM
 
 /*
 #define PIN_CLK  _pin_clk
@@ -518,6 +521,7 @@ DSTATUS disk_initialize (
 	int PIN_CLK = _pin_clk;
 	int PIN_DI = _pin_di;
 	int PIN_DO = _pin_do;
+	int SMPIN_DO;
 
         Stat = STA_NOINIT;
         
@@ -553,8 +557,32 @@ DSTATUS disk_initialize (
 	spm_tx = P_SYNC_TX | P_OE | (((PIN_CLK - PIN_DI) & 7) << 24);  // tx smartpin mode and clock pin offset
 	_pinstart( PIN_DI, spm_tx | P_SYNC_IO, 31, -1 );  // rising clock + 5 ticks lag, 32-bit, continuous mode, initial 0xff
 
-	spm_rx = ((PIN_CLK - PIN_DO) & 7) << 24;  // clock pin offset for rx smartpin
-	spm_rx |= P_SYNC_RX | P_OE | P_INVERT_OUTPUT | P_HIGH_15K | P_LOW_15K;  // rx smartpin mode, with 15 k pull-up
+	if( abs(PIN_CLK - PIN_DO) <= 3 )
+	{
+		spm_rx = ((PIN_CLK - PIN_DO) & 7) << 24;  // clock pin offset for smartB input to rx smartpin
+		spm_rx |= P_SYNC_RX | P_OE | P_INVERT_OUTPUT | P_HIGH_15K | P_LOW_15K;  // rx smartpin mode, with 15 k pull-up
+	} else {
+		if( PIN_CLK > PIN_DO )  // NOTE:  This can only be accomplished for input pins!
+		{
+			SMPIN_DO = PIN_CLK - 3;
+			if( (SMPIN_DO == PIN_DI) || (SMPIN_DO == PIN_SS) )
+				SMPIN_DO++;
+			if( (SMPIN_DO == PIN_DI) || (SMPIN_DO == PIN_SS) )
+				SMPIN_DO++;
+		} else {
+			SMPIN_DO = PIN_CLK + 3;
+			if( (SMPIN_DO == PIN_DI) || (SMPIN_DO == PIN_SS) )
+				SMPIN_DO--;
+			if( (SMPIN_DO == PIN_DI) || (SMPIN_DO == PIN_SS) )
+				SMPIN_DO--;
+		}
+		spm_rx = ((PIN_DO - SMPIN_DO) & 7) << 28;  // rx data pin offset for smartA input to rx smartpin
+		spm_rx |= ((PIN_CLK - SMPIN_DO) & 7) << 24;  // clock pin offset for smartB input to rx smartpin
+		spm_rx |= P_SYNC_RX;  // rx smartpin mode
+		_wrpin( PIN_DO, P_HIGH_15K | P_LOW_15K );  // 15 k pull-up
+		_pinh( PIN_DO );  // set pull-up
+		_pin_do = PIN_DO = SMPIN_DO;  // smartpin in place of the rx pin
+	}
 	_pinstart( PIN_DO, spm_rx, 7 | 32, 0 );  // 8-bit, sample after rising clock + 1 tick delay (smartB registration)
 #else        
 	CS_INIT(); CS_H();		/* Initialize port pin tied to CS */
@@ -562,7 +590,7 @@ DSTATUS disk_initialize (
 	DI_INIT();				/* Initialize port pin tied to DI */
 	DO_INIT();				/* Initialize port pin tied to DO */
 #endif
-        
+
 	rcvr_mmc(buf, 10);  // Apply 80 dummy clocks and the card gets ready to receive command
 	send_cmd(CMD0, 0);  // Enter Idle state
 	deselect();
@@ -588,12 +616,22 @@ DSTATUS disk_initialize (
 				}
 #ifdef _smartpins_mode_eh
 				tmr = _clockfreq();
-				spm_tx |= P_INVERT_B;
-				// Performance option for "Default Speed" (Up to 50 MHz SPI clock)
+			// Performance option for "Default Speed" (Up to 50 MHz SPI clock)
+/*				spm_tx |= P_INVERT_B;  // falling clock + 4 tick lag + 1 tick (smartB registration)
 				if( tmr <= 150_000_000 )  ck_div = 0x0002_0004;  // sysclock/4
 				else if( tmr <= 200_000_000 )  ck_div = 0x0002_0005;  // sysclock/5
 				else if( tmr <= 280_000_000 )  ck_div = 0x0002_0006;  // sysclock/6
 				else  ck_div = 0x0003_0008;  // sysclock/8
+*/
+			// Reliable option (Up to 25 MHz SPI clock)
+				if( tmr <= 100_000_000 )  spm_tx |= P_INVERT_B;  // falling clock + 4 tick lag + 1 tick (smartB registration)
+				else if( tmr <= 200_000_000 )  spm_tx |= P_INVERT_B | P_SYNC_IO;  // falling clock + 5 tick lag + 1 tick
+				// else:  spm_tx default, rising clock + 4 tick lag + 1 tick (smartB registration)
+				if( tmr <= 100_000_000 )  ck_div = 0x0002_0004;  // sysclock/4
+				else if( tmr <= 150_000_000 )  ck_div = 0x0003_0006;  // sysclock/6
+				else if( tmr <= 200_000_000 )  ck_div = 0x0004_0008;  // sysclock/8
+				else if( tmr <= 250_000_000 )  ck_div = 0x0005_000a;  // sysclock/10
+				else ck_div = 0x0006_000c;  // sysclock/12
 #endif
 			}
 		} else {							/* SDv1 or MMCv3 */
