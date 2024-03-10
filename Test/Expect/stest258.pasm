@@ -5,26 +5,18 @@ dat
 entry
 
 _allbits
-	mov	_var01, #0
-	mov	_var02, #0
+	mov	result1, #0
+	mov	result2, #0
 LR__0001
 	cmps	arg02, #1 wc
- if_b	jmp	#LR__0002
-	mov	result1, _var01
-	mov	result2, _var02
-	rdlong	arg03, arg01
-	add	arg01, #4
-	rdlong	arg04, arg01
-	or	result1, arg03
-	or	result2, arg04
-	mov	_var01, result1
-	mov	_var02, result2
-	add	arg01, #4
-	sub	arg02, #1
-	jmp	#LR__0001
-LR__0002
-	mov	result2, _var02
-	mov	result1, _var01
+ if_ae	rdlong	arg03, arg01
+ if_ae	add	arg01, #4
+ if_ae	rdlong	arg04, arg01
+ if_ae	or	result1, arg03
+ if_ae	or	result2, arg04
+ if_ae	add	arg01, #4
+ if_ae	sub	arg02, #1
+ if_ae	jmp	#LR__0001
 _allbits_ret
 	ret
 

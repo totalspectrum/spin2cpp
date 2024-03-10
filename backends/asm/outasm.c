@@ -201,15 +201,45 @@ OffsetName(const char *basename, unsigned long offset)
     return tempname;
 }
 
+static struct flexbuf subRegVars;
+
+static void AddSubRegister(Operand *sub, Operand *reg, unsigned long offset)
+{
+    flexbuf_addmem(&subRegVars, (const char *)&reg, sizeof(reg));
+}
+
+static Operand *FindSubRegister(Operand *reg, unsigned long offset)
+{
+    size_t siz = flexbuf_curlen(&subRegVars) / sizeof(reg);
+    size_t i;
+    Operand **ptr;
+    Operand *sub;
+    
+    ptr = (Operand **)flexbuf_peek(&subRegVars);
+    offset /= LONG_SIZE;
+    
+    for (i = 0; i < siz; i++) {
+        sub = ptr[i];
+        if (sub->name == (char *)reg && sub->val == offset)
+            return sub;
+    }
+    return NULL;
+}
+
 Operand *
 SubRegister(Operand *reg, unsigned long offset)
 {
-    Operand *sub = NewOperand(REG_SUBREG, (char *)reg, 0);
-    if (reg->size < offset) {
-        reg->size = offset;
+    Operand *sub = FindSubRegister(reg, offset);
+
+    if (!sub) {
+        sub = NewOperand(REG_SUBREG, (char *)reg, 0);
+        if (reg->size < offset) {
+            reg->size = offset;
+        }
+        sub->val = offset / LONG_SIZE;
+        AddSubRegister(sub, reg, offset / LONG_SIZE);
     }
     reg->used++;
-    sub->val = offset / LONG_SIZE;
     return sub;
 }
 
@@ -1755,12 +1785,13 @@ RenameSubregs(IRList *irl, Operand *base, int numlocals, int isLeaf)
  */
 
 static int
-RenameLocalRegs(IRList *irl, bool isLeaf)
+doRenameLocalRegs(Function *func, bool isLeaf)
 {
     IR *ir;
     Operand *replace = NULL;
     int numlocals = 0;
-
+    IRList *irl = FuncIRL(func);
+    
     /* first, look for any subregisters; if found, rename those
      * in a way that guarantees the arrays stay in order
      */
@@ -1784,6 +1815,17 @@ RenameLocalRegs(IRList *irl, bool isLeaf)
         }
     }
     return numlocals;
+}
+
+static int
+RenameLocalRegs(Function *func, bool isLeaf)
+{
+    IRList *irl = FuncIRL(func);
+    if (isLeaf) {
+        doRenameLocalRegs(func, true);
+        OptimizeIRLocal(irl, func);
+    }
+    return doRenameLocalRegs(func, isLeaf);
 }
 
 static bool
@@ -1912,7 +1954,7 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     needFrame = NeedFramePointer(func);
     if (needFrame == FRAME_YES || needFrame == FRAME_MAYBE) {
         if (NeedToSaveLocals(func)) {
-            n = RenameLocalRegs(FuncIRL(func), false);
+            n = RenameLocalRegs(func, false);
         } else {
             MarkUsedAsmVars(FuncIRL(func));
         }
@@ -1938,7 +1980,7 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
         }
     }
     if (IS_LEAF(func)) {
-        RenameLocalRegs(FuncIRL(func), true);
+        RenameLocalRegs(func, true);
     }
     if (ANY_VARS_ON_STACK(func)) {
         int localsize;

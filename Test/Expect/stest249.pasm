@@ -6,9 +6,8 @@ entry
 
 _insertstr
 	mov	result1, arg01
-	mov	_var02, arg02
 	add	result1, arg03
-	mov	result2, _var02
+	mov	result2, arg02
 _insertstr_ret
 	ret
 

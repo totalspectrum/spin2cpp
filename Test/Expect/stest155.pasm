@@ -6,15 +6,13 @@ entry
 
 _ident
 	mov	result1, arg01
-	mov	_var02, arg02
-	mov	result2, _var02
+	mov	result2, arg02
 _ident_ret
 	ret
 
 _test
 	mov	result1, #0
-	mov	_var02, #0
-	mov	result2, _var02
+	mov	result2, #0
 	wrlong	result1, ptr__dat__
 	add	ptr__dat__, #4
 	wrlong	result2, ptr__dat__

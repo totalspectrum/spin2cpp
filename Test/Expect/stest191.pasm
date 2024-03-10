@@ -5,28 +5,19 @@ dat
 entry
 
 _fetch
-	mov	_var01, arg01
-	mov	_var02, arg02
-	mov	result1, _var02
+	mov	result1, arg02
 _fetch_ret
 	ret
 
 _fetch2
-	mov	_var02, arg02
-	mov	arg02, _var02
-	mov	_var03, arg01
-	mov	_var04, arg02
-	mov	result1, _var04
+	mov	result1, arg02
 _fetch2_ret
 	ret
 
 _fetchu
-	rdlong	_var01, ptr__dat__
 	add	ptr__dat__, #4
-	rdlong	arg02, ptr__dat__
+	rdlong	result1, ptr__dat__
 	sub	ptr__dat__, #4
-	mov	_var02, arg02
-	mov	result1, _var02
 _fetchu_ret
 	ret
 

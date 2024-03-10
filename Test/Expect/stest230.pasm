@@ -5,12 +5,9 @@ dat
 entry
 
 _show
-	mov	_var01, arg01
-	mov	_var02, arg02
-	mov	_var03, arg03
-	mov	outa, _var01
-	mov	outb, _var02
-	mov	ina, _var03
+	mov	outa, arg01
+	mov	outb, arg02
+	mov	ina, arg03
 _show_ret
 	ret
 

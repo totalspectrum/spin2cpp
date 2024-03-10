@@ -5,9 +5,7 @@ dat
 entry
 
 _demo
-	mov	_var01, arg01
-	mov	_var02, arg02
-	mov	result1, _var02
+	mov	result1, arg02
 _demo_ret
 	ret
 

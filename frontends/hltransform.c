@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2023 Total Spectrum Software Inc.
+ * Copyright 2011-2024 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * various high level transformations that should take
@@ -305,8 +305,10 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
     }
     if (ast->kind == AST_ASSIGN) {
         int op = ast->d.ival;
+        int size;
         lhs = ast->left;
         rhs = ast->right;
+        size = TypeSize(ExprType(lhs));
         if (IsConstExpr(lhs)) {
             if (IsIdentifier(lhs)) {
                 // check for CON := x
@@ -325,8 +327,9 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
                 return;
             }
         }
-        else if (op && op != K_ASSIGN )
+        else if (op && (op != K_ASSIGN || size > LONG_SIZE) )
         {
+            bool change = false;
             AstReportAs(ast, &saveinfo);
             // if B has side effects,
             // transform A op= B
@@ -334,10 +337,11 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
             // then if A has side effects, further decompose
             // those so eventually we can get A = A' op tmp
             if (rhs && ExprHasSideEffects(rhs) && !TraditionalBytecodeOutput()) {
-                AST *typ = ExprType(rhs);
-                AST *temp = AstTempLocalVariable("_temp_", typ);
-                preseq = AstAssign(temp, rhs);
-                rhs = temp;
+                AST *oldrhs = rhs;
+                rhs = ExtractSideEffects(rhs, &preseq);
+                if (! (rhs == oldrhs && preseq == NULL) ) {
+                    change = true;
+                }
             }
             if ((ExprHasSideEffects(lhs) || IsBoolOp(op)) && !TraditionalBytecodeOutput()) {
                 if (curfunc && IsSpinLang(curfunc->language) && rhs && !IsConstExpr(rhs)) {
@@ -351,11 +355,18 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
                         preseq = p2;
                     }
                     rhs = temp;
+                    change = true;
                 }
+                AST *oldlhs = lhs;
                 lhs = ExtractSideEffects(lhs, &preseq);
+                if (lhs != oldlhs) {
+                    change = true;
+                }
             }
             if (op == 0 || op == K_ASSIGN) {
-                ast = AstAssign(lhs, rhs);
+                if (change) {
+                    ast = AstAssign(lhs, rhs);
+                }
             } else {
                 if (rhs) {
                     ast = AstAssign(lhs, AstOperator(op, DupAST(lhs), rhs));
@@ -371,7 +382,6 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
             lhs = ast->left;
             rhs = ast->right;
         }
-
         // check for special cases like local.byte[N] := X where N is a constant
         if (lhs && lhs->kind == AST_ARRAYREF) {
             AST *newexpr = CheckSimpleArrayref(lhs);

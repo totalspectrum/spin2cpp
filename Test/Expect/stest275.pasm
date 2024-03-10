@@ -24,13 +24,10 @@ _getitA
 	rdlong	_var05, arg01
 	rdlong	result1, _var05
 	add	_var05, #4
-	rdlong	_var02, _var05
+	rdlong	result2, _var05
 	rdlong	_var06, arg01
 	add	_var06, #8
 	wrlong	_var06, arg01
-	mov	_var05, _var02
-	mov	_var04, _var05
-	mov	result2, _var04
 _getitA_ret
 	ret
 

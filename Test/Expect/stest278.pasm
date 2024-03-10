@@ -9,7 +9,7 @@ _bump1
 	add	ptr__dat__, #4
 	rdlong	arg03, ptr__dat__
 	mov	result1, arg04
-	mov	_var02, arg03
+	mov	result2, arg03
 	sub	ptr__dat__, #4
 	add	arg04, #1 wc
 	addx	arg03, #0
@@ -17,9 +17,6 @@ _bump1
 	add	ptr__dat__, #4
 	wrlong	arg03, ptr__dat__
 	sub	ptr__dat__, #4
-	mov	result2, _var02
-	mov	_var04, result2
-	mov	result2, _var04
 _bump1_ret
 	ret
 
@@ -40,16 +37,14 @@ _bump2_ret
 _bump3
 	rdlong	result1, ptr__dat__
 	add	ptr__dat__, #4
-	rdlong	arg04, ptr__dat__
+	rdlong	result2, ptr__dat__
 	sub	ptr__dat__, #4
 	add	result1, #1 wc
-	addx	arg04, #0
+	addx	result2, #0
 	wrlong	result1, ptr__dat__
 	add	ptr__dat__, #4
-	wrlong	arg04, ptr__dat__
+	wrlong	result2, ptr__dat__
 	sub	ptr__dat__, #4
-	mov	_var02, arg04
-	mov	result2, _var02
 _bump3_ret
 	ret
 
