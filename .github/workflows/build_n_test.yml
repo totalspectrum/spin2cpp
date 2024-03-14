@@ -15,7 +15,7 @@ jobs:
     steps:
       - name: Install MinGW
         run: "sudo apt-get install gcc-mingw-w64-i686"
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - run: make zip CROSS=win32
@@ -31,7 +31,7 @@ jobs:
     steps:
       - name: Install musl-gcc
         run: "sudo apt-get install musl-tools"
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - run: make zip CROSS=linux-musl
@@ -45,7 +45,7 @@ jobs:
   test_offline:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: make
         run: make
       - name: test
@@ -54,7 +54,7 @@ jobs:
     runs-on: ubuntu-20.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
       - name: make
