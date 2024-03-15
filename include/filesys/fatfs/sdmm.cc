@@ -49,12 +49,11 @@ int _pin_clk;
 int _pin_ss;
 int _pin_di;
 int _pin_do;
+int _pin_do_in;
 
 #ifdef __propeller2__
 #define _smartpins_mode_eh /* enable Evanh's fast smartpin code */
 #endif
-
-//#define _DEBUG_SDMM
 
 /*
 #define PIN_CLK  _pin_clk
@@ -517,23 +516,23 @@ DSTATUS disk_initialize (
 	BYTE n, ty, cmd, buf[4];
 	UINT tmr, ck_div, spm_ck, spm_tx, spm_rx;
 	DSTATUS s;
-	int PIN_SS = _pin_ss;
 	int PIN_CLK = _pin_clk;
+	int PIN_SS = _pin_ss;
 	int PIN_DI = _pin_di;
 	int PIN_DO = _pin_do;
 	int SMPIN_DO;
 
-        Stat = STA_NOINIT;
-        
+	Stat = STA_NOINIT;
+
 #ifdef _DEBUG_SDMM
-        __builtin_printf("disk_initialize: PINS=%d %d %d %d\n", PIN_SS, PIN_CLK, PIN_DI, PIN_DO);
+	__builtin_printf("disk_initialize: PINS=%d %d %d %d\n", PIN_CLK, PIN_SS, PIN_DI, PIN_DO);
 #endif	
 	if (drv) {
 #ifdef _DEBUG_SDMM
-            __builtin_printf("bad drv %d\n", drv);
+		__builtin_printf("bad drv %d\n", drv);
 #endif	    
-            return RES_NOTRDY;
-        }
+		return RES_NOTRDY;
+	}
 
 	dly_us(10000);			/* 10ms */
 
@@ -561,6 +560,7 @@ DSTATUS disk_initialize (
 	{
 		spm_rx = ((PIN_CLK - PIN_DO) & 7) << 24;  // clock pin offset for smartB input to rx smartpin
 		spm_rx |= P_SYNC_RX | P_OE | P_INVERT_OUTPUT | P_HIGH_15K | P_LOW_15K;  // rx smartpin mode, with 15 k pull-up
+		_pin_do_in = _pin_do = SMPIN_DO = PIN_DO;  // rx pin is smartpin
 	} else {
 		if( PIN_CLK > PIN_DO )  // NOTE:  This can only be accomplished for input pins!
 		{
@@ -581,9 +581,10 @@ DSTATUS disk_initialize (
 		spm_rx |= P_SYNC_RX;  // rx smartpin mode
 		_wrpin( PIN_DO, P_HIGH_15K | P_LOW_15K );  // 15 k pull-up
 		_pinh( PIN_DO );  // set pull-up
-		_pin_do = PIN_DO = SMPIN_DO;  // smartpin in place of the rx pin
+                _pin_do_in = PIN_DO;  // remember rx input mapping for later de-init
+		_pin_do = SMPIN_DO;  // smartpin in place of the rx pin
 	}
-	_pinstart( PIN_DO, spm_rx, 7 | 32, 0 );  // 8-bit, sample after rising clock + 1 tick delay (smartB registration)
+	_pinstart( SMPIN_DO, spm_rx, 7 | 32, 0 );  // 8-bit, sample after rising clock + 1 tick delay (smartB registration)
 #else        
 	CS_INIT(); CS_H();		/* Initialize port pin tied to CS */
 	CK_INIT(); CK_L();		/* Initialize port pin tied to SCLK */
@@ -616,14 +617,15 @@ DSTATUS disk_initialize (
 				}
 #ifdef _smartpins_mode_eh
 				tmr = _clockfreq();
+#ifdef _SDHC_45MHZ
 			// Performance option for "Default Speed" (Up to 50 MHz SPI clock)
-/*				spm_tx |= P_INVERT_B;  // falling clock + 4 tick lag + 1 tick (smartB registration)
+				spm_tx |= P_INVERT_B;  // falling clock + 4 tick lag + 1 tick (smartB registration)
 				if( tmr <= 150_000_000 )  ck_div = 0x0002_0004;  // sysclock/4
 				else if( tmr <= 200_000_000 )  ck_div = 0x0002_0005;  // sysclock/5
 				else if( tmr <= 280_000_000 )  ck_div = 0x0002_0006;  // sysclock/6
 				else  ck_div = 0x0003_0008;  // sysclock/8
-*/
-			// Reliable option (Up to 25 MHz SPI clock)
+#else
+			// Reliable option (Up to 30 MHz SPI clock)
 				if( tmr <= 100_000_000 )  spm_tx |= P_INVERT_B;  // falling clock + 4 tick lag + 1 tick (smartB registration)
 				else if( tmr <= 200_000_000 )  spm_tx |= P_INVERT_B | P_SYNC_IO;  // falling clock + 5 tick lag + 1 tick
 				// else:  spm_tx default, rising clock + 4 tick lag + 1 tick (smartB registration)
@@ -632,6 +634,10 @@ DSTATUS disk_initialize (
 				else if( tmr <= 200_000_000 )  ck_div = 0x0004_0008;  // sysclock/8
 				else if( tmr <= 250_000_000 )  ck_div = 0x0005_000a;  // sysclock/10
 				else ck_div = 0x0006_000c;  // sysclock/12
+#endif
+#ifdef _DEBUG_SDMM
+				__builtin_printf("SDHC %d MHz selected\n", tmr / ((ck_div&0xffff) * 1000000));
+#endif
 #endif
 			}
 		} else {							/* SDv1 or MMCv3 */
@@ -645,9 +651,9 @@ DSTATUS disk_initialize (
 				dly_us(1000);
 			}
 			if (!tmr || send_cmd(CMD16, 512) != 0)	{/* Set R/W block length to 512 */
-                            //printf("tmr = %d\n", tmr);
-                            ty = 0;
-                        }
+				//printf("tmr = %d\n", tmr);
+				ty = 0;
+			}
 #ifdef _smartpins_mode_eh
 			tmr = _clockfreq();
 			if( tmr <= 100_000_000 )  spm_tx |= P_INVERT_B;  // falling clock + 4 tick lag + 1 tick (smartB registration)
@@ -660,11 +666,14 @@ DSTATUS disk_initialize (
 			else if( tmr <= 250_000_000 )  ck_div = 0x0005_000a;  // sysclock/10
 			else if( tmr <= 300_000_000 )  ck_div = 0x0006_000c;  // sysclock/12
 			else  ck_div = 0x0007_000e;  // sysclock/14
+#ifdef _DEBUG_SDMM
+			__builtin_printf("SDSC %d MHz selected\n", tmr / ((ck_div&0xffff) * 1000000));
+#endif
 #endif
 		}
 	}
 #ifdef _DEBUG_SDMM
-        __builtin_printf("ty = %d\n", ty);
+	__builtin_printf("ty = %d\n", ty);
 #endif	
 	CardType = ty;
 	s = ty ? 0 : STA_NOINIT;
@@ -826,26 +835,28 @@ DRESULT disk_setpins(int drv, int pclk, int pss, int pdi, int pdo)
 //
 DSTATUS disk_deinitialize( BYTE drv )
 {
-    int PIN_SS = _pin_ss;
     int PIN_CLK = _pin_clk;
+    int PIN_SS = _pin_ss;
     int PIN_DI = _pin_di;
-    int PIN_DO = _pin_do;
+    int PIN_DO = _pin_do_in;
+    int SMPIN_DO = _pin_do;
     if (drv) {
 #ifdef _DEBUG_SDMM
         __builtin_printf("deinitialize: bad drv %d\n", drv);
-#endif	    
+#endif
         return RES_NOTRDY;
     }
 #ifdef _smartpins_mode_eh
 #ifdef _DEBUG_SDMM
-    __builtin_printf("clear pins %d %d %d %d\n", PIN_SS, PIN_CLK, PIN_DI, PIN_DO);
-#endif	    
-    _pinclear(PIN_SS);
+    __builtin_printf("clear pins %d %d %d %d\n", PIN_CLK, PIN_SS, PIN_DI, PIN_DO);
+#endif
     _pinclear(PIN_CLK);
+    _pinclear(PIN_SS);
     _pinclear(PIN_DI);
+    _pinclear(SMPIN_DO);
     _pinclear(PIN_DO);
-    
+
     _waitms(10);
-#endif    
+#endif
     return 0;
 }
