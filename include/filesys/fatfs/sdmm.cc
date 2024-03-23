@@ -359,7 +359,7 @@ int select (void)	/* 1:OK, 0:Timeout */
 #ifdef _smartpins_mode_eh
 	int PIN_DO = _pin_do;
 
-	_pinf(PIN_DO);  // disable rx smartpin
+	_fltl(PIN_DO);  // disable rx smartpin
 	CS_L();			/* Set CS# low */
 	_dirh(PIN_DO);  // enable rx smartpin
 #else
@@ -526,35 +526,18 @@ DSTATUS disk_initialize (
 
 #ifdef _DEBUG_SDMM
 	__builtin_printf("disk_initialize: PINS=%d %d %d %d\n", PIN_CLK, PIN_SS, PIN_DI, PIN_DO);
-#endif	
+#endif
 	if (drv) {
 #ifdef _DEBUG_SDMM
 		__builtin_printf("bad drv %d\n", drv);
-#endif	    
+#endif
 		return RES_NOTRDY;
 	}
 
 	dly_us(10000);			/* 10ms */
 
 #ifdef _smartpins_mode_eh
-	_wrpin( PIN_SS, 0 );
-	_wrpin( PIN_CLK, 0 );
-	_wrpin( PIN_DI, 0 );
-	_wrpin( PIN_DO, P_HIGH_15K | P_LOW_15K );
-	_pinh( PIN_SS );  // Deselect SD card
-	_pinh( PIN_CLK );  // CLK idles high
-	_pinh( PIN_DI );  // DI idles 0xff
-	_pinh( PIN_DO );  // 15 k pull-up on DO
-
-// I/O registering (P_SYNC_IO) the SPI clock pin was found to be vital for stability.  Although it
-//   adds extra lag to the tx pin, it also effectively (when rx pin is unregistered) makes a late-late
-//   rx sample point.
-	ck_div = 0x0008_0010;  // sysclock/16
-	spm_ck = P_PULSE | P_OE | P_INVERT_OUTPUT | P_SCHMITT_A;  // CPOL = 1 (SPI mode 3)
-	_pinstart( PIN_CLK, spm_ck | P_SYNC_IO, ck_div, 0 );
-
-	spm_tx = P_SYNC_TX | P_OE | (((PIN_CLK - PIN_DI) & 7) << 24);  // tx smartpin mode and clock pin offset
-	_pinstart( PIN_DI, spm_tx | P_SYNC_IO, 31, -1 );  // rising clock + 5 ticks lag, 32-bit, continuous mode, initial 0xff
+	if( abs(PIN_CLK - PIN_DI) > 3 )  return RES_PARERR;
 
 	if( abs(PIN_CLK - PIN_DO) <= 3 )
 	{
@@ -576,16 +559,37 @@ DSTATUS disk_initialize (
 			if( (SMPIN_DO == PIN_DI) || (SMPIN_DO == PIN_SS) )
 				SMPIN_DO--;
 		}
+
+		if( abs(PIN_DO - SMPIN_DO) > 3 )  return RES_PARERR;
+#ifdef _DEBUG_SDMM
+		__builtin_printf("remapped PINS=%d %d %d %d %d\n", PIN_CLK, PIN_SS, PIN_DI, PIN_DO, SMPIN_DO);
+#endif
 		spm_rx = ((PIN_DO - SMPIN_DO) & 7) << 28;  // rx data pin offset for smartA input to rx smartpin
 		spm_rx |= ((PIN_CLK - SMPIN_DO) & 7) << 24;  // clock pin offset for smartB input to rx smartpin
 		spm_rx |= P_SYNC_RX;  // rx smartpin mode
-		_wrpin( PIN_DO, P_HIGH_15K | P_LOW_15K );  // 15 k pull-up
-		_pinh( PIN_DO );  // set pull-up
-                _pin_do_in = PIN_DO;  // remember rx input mapping for later de-init
+		_pin_do_in = PIN_DO;  // remember rx input mapping for later de-init
 		_pin_do = SMPIN_DO;  // smartpin in place of the rx pin
 	}
-	_pinstart( SMPIN_DO, spm_rx, 7 | 32, 0 );  // 8-bit, sample after rising clock + 1 tick delay (smartB registration)
-#else        
+
+	_wrpin( PIN_SS, 0 );
+	_pinh( PIN_SS );  // Deselect SD card
+
+// I/O registering (P_SYNC_IO) the SPI clock pin was found to be vital for stability.  Although it
+//   adds extra lag to the tx pin, it also effectively (when rx pin is unregistered) makes a late-late
+//   rx sample point.
+	ck_div = 0x0010_0020;  // sysclock/32
+	spm_ck = P_PULSE | P_OE | P_INVERT_OUTPUT | P_SCHMITT_A;  // CPOL = 1 (SPI mode 3)
+	_pinstart( PIN_CLK, spm_ck | P_SYNC_IO, ck_div, 0 );
+
+	spm_tx = P_SYNC_TX | P_OE | (((PIN_CLK - PIN_DI) & 7) << 24);  // tx smartpin mode and clock pin offset
+	_pinstart( PIN_DI, spm_tx | P_SYNC_IO, 31, -1 );  // rising clock + 5 + 1 ticks lag, 32-bit, continuous mode, initial 0xff
+
+	_wrpin( PIN_DO, P_INVERT_OUTPUT | P_HIGH_15K | P_LOW_15K );  // config for 15 k pull-up
+	_pinstart( SMPIN_DO, spm_rx, 7 | 32, 0 );  // 8-bit, late-late sampling (post-clock + smartB registration)
+#ifdef _DEBUG_SDMM
+	__builtin_printf("smartpin modes:  %d=%08x  %d=%08x  %d=%08x\n", PIN_CLK, spm_ck, PIN_DI, spm_tx, SMPIN_DO, spm_rx);
+#endif
+#else
 	CS_INIT(); CS_H();		/* Initialize port pin tied to CS */
 	CK_INIT(); CK_L();		/* Initialize port pin tied to SCLK */
 	DI_INIT();				/* Initialize port pin tied to DI */
@@ -602,8 +606,8 @@ DSTATUS disk_initialize (
 	ty = 0;
 	if (send_cmd(CMD0, 0) == 1) {			/* Enter Idle state */
 #ifdef _DEBUG_SDMM
-            __builtin_printf("idle OK\n");
-#endif	    
+		__builtin_printf("idle OK\n");
+#endif
 		if (send_cmd(CMD8, 0x1AA) == 1) {	/* SDv2? */
 			rcvr_mmc(buf, 4);							/* Get trailing return value of R7 resp */
 			if (buf[2] == 0x01 && buf[3] == 0xAA) {		/* The card can work at vdd range of 2.7-3.6V */
@@ -641,7 +645,7 @@ DSTATUS disk_initialize (
 #endif
 			}
 		} else {							/* SDv1 or MMCv3 */
-			if (send_cmd(ACMD41, 0) <= 1) 	{
+			if (send_cmd(ACMD41, 0) <= 1) {
 				ty = CT_SD1; cmd = ACMD41;	/* SDv1 */
 			} else {
 				ty = CT_MMC; cmd = CMD1;	/* MMCv3 */
@@ -650,7 +654,7 @@ DSTATUS disk_initialize (
 				if (send_cmd(cmd, 0) == 0) break;
 				dly_us(1000);
 			}
-			if (!tmr || send_cmd(CMD16, 512) != 0)	{/* Set R/W block length to 512 */
+			if (!tmr || send_cmd(CMD16, 512) != 0) {/* Set R/W block length to 512 */
 				//printf("tmr = %d\n", tmr);
 				ty = 0;
 			}
@@ -674,7 +678,7 @@ DSTATUS disk_initialize (
 	}
 #ifdef _DEBUG_SDMM
 	__builtin_printf("ty = %d\n", ty);
-#endif	
+#endif
 	CardType = ty;
 	s = ty ? 0 : STA_NOINIT;
 	Stat = s;
@@ -682,11 +686,11 @@ DSTATUS disk_initialize (
 	deselect();
 
 #ifdef _smartpins_mode_eh
-	_wxpin( PIN_CLK, ck_div );
-	_wrpin( PIN_DI, spm_tx );
-  #ifdef _DEBUG_SDMM
+	_wxpin( PIN_CLK, ck_div );  // update clock smartpin sysclock divider
+	_wrpin( PIN_DI, spm_tx );  // update tx smartpin clock inversion and data registration
+#ifdef _DEBUG_SDMM
 	__builtin_printf( "SPI clock ratio = sysclock/%d\n", ck_div & 0xffff );
-  #endif
+#endif
 #endif
 	return s;
 }
@@ -708,7 +712,7 @@ DRESULT disk_read (
 	DWORD sect = (DWORD)sector;
 
 #ifdef _DEBUG
-        __builtin_printf("disk_read: PINS=%d %d %d %d\n", _pin_ss, _pin_clk, _pin_di, _pin_do);
+        __builtin_printf("disk_read: PINS=%d %d %d %d\n", _pin_clk, _pin_ss, _pin_di, _pin_do);
 #endif	
 
 	if (disk_status(drv) & STA_NOINIT) return RES_NOTRDY;
@@ -848,13 +852,13 @@ DSTATUS disk_deinitialize( BYTE drv )
     }
 #ifdef _smartpins_mode_eh
 #ifdef _DEBUG_SDMM
-    __builtin_printf("clear pins %d %d %d %d\n", PIN_CLK, PIN_SS, PIN_DI, PIN_DO);
+    __builtin_printf("clear pins %d %d %d %d %d\n", PIN_CLK, PIN_SS, PIN_DI, PIN_DO, SMPIN_DO);
 #endif
-    _pinclear(PIN_CLK);
-    _pinclear(PIN_SS);
-    _pinclear(PIN_DI);
     _pinclear(SMPIN_DO);
     _pinclear(PIN_DO);
+    _pinclear(PIN_DI);
+    _pinclear(PIN_CLK);
+    _pinclear(PIN_SS);
 
     _waitms(10);
 #endif
