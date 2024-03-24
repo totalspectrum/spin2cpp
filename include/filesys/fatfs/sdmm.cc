@@ -461,10 +461,14 @@ BYTE send_cmd (		/* Returns command response (bit7==1:Send failed)*/
 
 	/* Send a command packet */
 	buf[0] = 0x40 | cmd;			/* Start + Command index */
+	#ifdef __propeller2__
+	*(DWORD*)(buf+1) = __builtin_bswap32(arg);
+	#else
 	buf[1] = (BYTE)(arg >> 24);		/* Argument[31..24] */
 	buf[2] = (BYTE)(arg >> 16);		/* Argument[23..16] */
 	buf[3] = (BYTE)(arg >> 8);		/* Argument[15..8] */
 	buf[4] = (BYTE)arg;				/* Argument[7..0] */
+	#endif
 	n = 0x01;						/* Dummy CRC + Stop */
 	if (cmd == CMD0) n = 0x95;		/* (valid CRC for CMD0(0)) */
 	if (cmd == CMD8) n = 0x87;		/* (valid CRC for CMD8(0x1AA)) */
