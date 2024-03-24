@@ -517,7 +517,7 @@ DSTATUS disk_initialize (
 	BYTE drv		/* Physical drive nmuber (0) */
 )
 {
-	BYTE n, ty, cmd, *buf = __builtin_alloca(4);
+	BYTE n, ty, cmd, *buf = __builtin_alloca(10);
 	UINT tmr, ck_div, spm_ck, spm_tx, spm_rx;
 	DSTATUS s;
 	int PIN_CLK = _pin_clk;
