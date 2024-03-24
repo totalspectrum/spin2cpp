@@ -472,13 +472,13 @@ BYTE send_cmd (		/* Returns command response (bit7==1:Send failed)*/
 	xmit_mmc(buf, 6);
 
 	/* Receive command response */
-	if (cmd == CMD12) rcvr_mmc(buf+7, 1);	/* Skip a stuff byte when stop reading */
+	if (cmd == CMD12) rcvr_mmc(buf+6, 1);	/* Skip a stuff byte when stop reading */
 	n = 10;								/* Wait for a valid response in timeout of 10 attempts */
 	do
-		rcvr_mmc(buf+7, 1);
-	while ((buf[7] & 0x80) && --n);
+		rcvr_mmc(buf+6, 1);
+	while ((buf[6] & 0x80) && --n);
 
-	return buf[7];			/* Return with the response value */
+	return buf[6];			/* Return with the response value */
 }
 
 
