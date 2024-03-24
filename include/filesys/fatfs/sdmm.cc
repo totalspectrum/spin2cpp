@@ -313,14 +313,14 @@ rx_wait1
 static
 int wait_ready (void)	/* 1:OK, 0:Timeout */
 {
-	BYTE d;
+	BYTE *d = __builtin_alloca(1);
 	UINT tmr, tmout;
 
 	tmr = _cnt();
 	tmout = _clockfreq() >> 1;  // 500 ms timeout
 	for(;;) {
-		rcvr_mmc( &d, 1 );
-		if( d == 0xFF )  return 1;
+		rcvr_mmc( d, 1 );
+		if( *d == 0xFF )  return 1;
 		if( _cnt() - tmr >= tmout )  return 0;
 	}
 }
@@ -334,14 +334,14 @@ int wait_ready (void)	/* 1:OK, 0:Timeout */
 static
 void deselect (void)
 {
-	BYTE d;
+	BYTE *d = __builtin_alloca(1);
 	int PIN_SS = _pin_ss;
 	int PIN_CLK = _pin_clk;
 	int PIN_DI = _pin_di;
 	int PIN_DO = _pin_do;
 
 	CS_H();				/* Set CS# high */
-	rcvr_mmc(&d, 1);	/* Dummy clock (force DO hi-z for multiple slave SPI) */
+	rcvr_mmc(d, 1);	/* Dummy clock (force DO hi-z for multiple slave SPI) */
 }
 
 
@@ -353,7 +353,7 @@ void deselect (void)
 static
 int select (void)	/* 1:OK, 0:Timeout */
 {
-	BYTE d;
+	BYTE *d = __builtin_alloca(1);
 	int PIN_SS = _pin_ss;
 	
 #ifdef _smartpins_mode_eh
@@ -365,7 +365,7 @@ int select (void)	/* 1:OK, 0:Timeout */
 #else
 	CS_L();			/* Set CS# low */
 #endif
-	rcvr_mmc(&d, 1);	/* Dummy clock (force DO enabled) */
+	rcvr_mmc(d, 1);	/* Dummy clock (force DO enabled) */
 	if (wait_ready()) return 1;	/* Wait for card ready */
 
 	deselect();
@@ -384,13 +384,13 @@ int rcvr_datablock (	/* 1:OK, 0:Failed */
 	UINT btr			/* Byte count */
 )
 {
-	BYTE d[2];
+	BYTE *d = __builtin_alloca(2);
 	UINT tmr, tmout;
 
 	tmr = _cnt();
 	tmout = _clockfreq() >> 3;  // 125 ms timeout
 	for(;;) {
-		rcvr_mmc( &d[0], 1 );
+		rcvr_mmc( d, 1 );
 		if( d[0] != 0xFF )  break;
 		if( _cnt() - tmr >= tmout )  break;
 	}
@@ -414,7 +414,7 @@ int xmit_datablock (	/* 1:OK, 0:Failed */
 	BYTE token			/* Data/Stop token */
 )
 {
-	BYTE d[2];
+	BYTE *d = __builtin_alloca(2);
 
 
 	if (!wait_ready()) return 0;
@@ -444,7 +444,7 @@ BYTE send_cmd (		/* Returns command response (bit7==1:Send failed)*/
 	DWORD arg		/* Argument */
 )
 {
-	BYTE n, d, buf[6];
+	BYTE n, *buf = __builtin_alloca(7);
 
 
 	if (cmd & 0x80) {	/* ACMD<n> is the command sequense of CMD55-CMD<n> */
@@ -472,13 +472,13 @@ BYTE send_cmd (		/* Returns command response (bit7==1:Send failed)*/
 	xmit_mmc(buf, 6);
 
 	/* Receive command response */
-	if (cmd == CMD12) rcvr_mmc(&d, 1);	/* Skip a stuff byte when stop reading */
+	if (cmd == CMD12) rcvr_mmc(buf+7, 1);	/* Skip a stuff byte when stop reading */
 	n = 10;								/* Wait for a valid response in timeout of 10 attempts */
 	do
-		rcvr_mmc(&d, 1);
-	while ((d & 0x80) && --n);
+		rcvr_mmc(buf+7, 1);
+	while ((buf[7] & 0x80) && --n);
 
-	return d;			/* Return with the response value */
+	return buf[7];			/* Return with the response value */
 }
 
 
@@ -513,7 +513,7 @@ DSTATUS disk_initialize (
 	BYTE drv		/* Physical drive nmuber (0) */
 )
 {
-	BYTE n, ty, cmd, buf[4];
+	BYTE n, ty, cmd, *buf = __builtin_alloca(4);
 	UINT tmr, ck_div, spm_ck, spm_tx, spm_rx;
 	DSTATUS s;
 	int PIN_CLK = _pin_clk;
