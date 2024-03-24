@@ -463,36 +463,6 @@ int v_deinit(const char *mountname)
     return 0;
 }
 
-static struct vfs fat_vfs =
-{
-    &v_close,
-    &v_read,
-    &v_write,
-    &v_lseek,
-    
-    &v_ioctl,
-    &v_flush,
-    0, /* vfs_data */
-    0, /* reserved2 */
-    
-    &v_open,
-    &v_creat,
-
-    &v_opendir,
-    &v_closedir,
-    &v_readdir,
-    &v_stat,
-
-    &v_mkdir,
-    &v_rmdir,
-    &v_remove,
-
-    &v_rename,
-
-    &v_init, /* init */
-    &v_deinit, /* deinit */
-};
-
 struct vfs *
 get_vfs(void *ptr)
 {
@@ -503,7 +473,7 @@ get_vfs(void *ptr)
     v->write = &v_write;
     v->lseek = &v_lseek;
     v->ioctl = &v_ioctl;
-    v->flush = 0;  // no flush function
+    v->flush = &v_flush;
     v->vfs_data = ptr;
     v->reserved = 0;
 
