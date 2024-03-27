@@ -5,7 +5,7 @@
  */
 
 %pure-parser
-%expect 33
+ /*%expect 33*/
 
 %{
 #include <stdio.h>
@@ -1811,80 +1811,76 @@ expr:
   ;
 
 lhs: identifier
-  | identifier '[' expr ']'
-    {
-        $$ = NewAST(AST_ARRAYREF, $1, $3);
-    }
-  | identifier '.' identifier '[' expr ']'
-    {
-        AST *objroot = $1;
-        AST *method = $3;
-        AST *index = $5;
-        AST *expr;
-        expr = NewAST(AST_METHODREF, objroot, method);
-        expr = NewAST(AST_ARRAYREF, expr, index);
-        $$ = expr;
-    }
-  | identifier '[' expr ']' '.' '[' range ']'
-    {
-        AST *arr = NewAST(AST_ARRAYREF, $1, $3);
-        AST *range = $7;
-        $$ = NewAST(AST_RANGEREF, arr, range);
-    }
   | hwreg
-    { $$ = $1; }
   | hwreg '[' range ']'
     { $$ = NewAST(AST_RANGEREF, $1, $3);
     }
-  | hwreg '[' '#' '#' range ']'
-    {
-        AST *reg = $1;
-        AST *index = $5;
-        AST *base = NewAST(AST_RANGEREF, reg, index);
-        AST *holder = NewAST(AST_BIGIMMHOLDER, base, NULL);
-        $$ = holder;
-    }
-  | hwreg '.' '[' range ']'
-    { $$ = NewAST(AST_RANGEREF, $1, $4);
-    }
-  | memref '[' expr ']'
-    { $$ = NewAST(AST_ARRAYREF, $1, $3); }
-  | memref '[' expr ']' '.' '[' range ']'
-    {
-        AST *ast = NewAST(AST_ARRAYREF, $1, $3);
-        AST *range = $7;
-        $$ = NewAST(AST_RANGEREF, ast, range);
-    }
-  | memref '.' '[' range ']'
-    { $$ = NewAST(AST_RANGEREF, $1, $4); }
-  | '(' expr ')' '[' expr ']'
-    { $$ = NewAST(AST_ARRAYREF, $2, $5); }
-  | memref
-    { $$ = NewAST(AST_ARRAYREF, $1, AstInteger(0)); }
   | SP_SPR '[' expr ']'
     { $$ = AstSprRef($3, 0x1f0); }
   | SP_COGREG '[' expr ']'
     { $$ = AstSprRef($3, 0x0); }
-  | SP_COGREG '[' expr ']' '[' expr ']'
+  | SP_BYTE '[' expr ']'
     {
-        AST *cogmem = $3;
-        AST *off = $6;
-        $$ = AstSprRef(AstOperator('+', cogmem, off), 0x0);
+        AST *base = NewAST(AST_MEMREF, ast_type_byte, $3);
+        $$ = base;
     }
-  | identifier '.' '[' range ']'
-    { $$ = NewAST(AST_RANGEREF, $1, $4);
-    }
-  | SP_FIELD '[' expr ']'
+  | SP_WORD '[' expr ']'
     {
-        AST *ref = $3;
-        AST *idx = AstInteger(0);
-        $$ = NewAST(AST_FIELDREF, ref, idx);
+        AST *base = NewAST(AST_MEMREF, ast_type_word, $3);
+        $$ = base;
     }
-  | SP_FIELD '[' expr ']' '[' expr ']'
+  | SP_LONG '[' expr ']'
     {
-        AST *ref = $3;
-        AST *idx = $6;
-        $$ = NewAST(AST_FIELDREF, ref, idx);
+        AST *base = NewAST(AST_MEMREF, ast_type_long, $3);
+        $$ = base;
+    }
+  | lhs '.' SP_BYTE '[' expr ']'
+    {
+        AST *base = NewAST(AST_MEMREF, ast_type_byte, NewAST(AST_ADDROF, $1, NULL));
+        $$ = NewAST(AST_ARRAYREF, base, $5);
+    }
+  | lhs '.' SP_BYTE
+    {
+        AST *base = NewAST(AST_MEMREF, ast_type_byte, NewAST(AST_ADDROF, $1, NULL));
+        $$ = NewAST(AST_ARRAYREF, base, AstInteger(0));
+    }
+  | lhs '.' SP_WORD '[' expr ']'
+    {
+        AST *base = NewAST(AST_MEMREF, ast_type_word, NewAST(AST_ADDROF, $1, NULL));
+        $$ = NewAST(AST_ARRAYREF, base, AstInteger(0));
+    }
+  | lhs '.' SP_WORD
+    {
+        AST *base = NewAST(AST_MEMREF, ast_type_word, NewAST(AST_ADDROF, $1, NULL));
+        $$ = NewAST(AST_ARRAYREF, base, AstInteger(0));
+    }
+  | lhs '.' SP_LONG '[' expr ']'
+    {
+        AST *base = NewAST(AST_MEMREF, ast_type_long, NewAST(AST_ADDROF, $1, NULL));
+        $$ = NewAST(AST_ARRAYREF, base, $5);
+    }
+  | lhs '.' SP_LONG
+    {
+        AST *base = NewAST(AST_MEMREF, ast_type_long, NewAST(AST_ADDROF, $1, NULL));
+        $$ = NewAST(AST_ARRAYREF, base, AstInteger(0));
+    }
+  | lhs '.' '[' range ']'
+    {
+        AST *arr = $1;
+        AST *range = $4;
+        $$ = NewAST(AST_RANGEREF, arr, range);
+    }
+  | lhs '.' identifier
+    {
+        AST *objroot = $1;
+        AST *method = $3;
+        AST *expr;
+        expr = NewAST(AST_METHODREF, objroot, method);
+        $$ = expr;
+    }
+  | lhs '[' expr ']'
+    {
+        $$ = NewAST(AST_ARRAYREF, $1, $3);
     }
   ;
 
@@ -1907,21 +1903,6 @@ lhssingle:
        { $$ = $1; }
     | SP_EMPTY
        { $$ = NewAST(AST_EMPTY, NULL, NULL); }
-;
-
-memref:
-  SP_BYTE '[' expr ']'
-    { $$ = NewAST(AST_MEMREF, ast_type_byte, $3); }
-  | SP_WORD '[' expr ']'
-    { $$ = NewAST(AST_MEMREF, ast_type_word, $3); }
-  | SP_LONG '[' expr ']'
-    { $$ = NewAST(AST_MEMREF, ast_type_long, $3); }
-  | identifier '.' SP_BYTE
-    { $$ = NewAST(AST_MEMREF, ast_type_byte, NewAST(AST_ADDROF, $1, NULL)); }
-  | identifier '.' SP_WORD
-    { $$ = NewAST(AST_MEMREF, ast_type_word, NewAST(AST_ADDROF, $1, NULL)); }
-  | identifier '.' SP_LONG
-    { $$ = NewAST(AST_MEMREF, ast_type_long, NewAST(AST_ADDROF, $1, NULL)); }
 ;
 
 opt_numrets:
@@ -1989,35 +1970,6 @@ funccall:
         elist = FixupList(elist);
         $$ = NewAST(AST_COGINIT, elist, NULL);
         LANGUAGE_WARNING(LANG_SPIN_SPIN2, NULL, "cognew support in Spin2 is a flexspin extension");
-    }
-  | identifier '.' identifier '(' exprlist ')' opt_numrets
-    { 
-        $$ = MakeFunccall(NewAST(AST_METHODREF, $1, $3), FixupList($5), $7);
-    }
-  | identifier '.' identifier '(' ')' opt_numrets
-    { 
-        $$ = MakeFunccall(NewAST(AST_METHODREF, $1, $3), NULL, $6);
-        LANGUAGE_WARNING(LANG_SPIN_SPIN1, NULL, "Using () for functions with no parameters is a flexspin extension");
-    }
-  | identifier '.' identifier
-    { 
-        $$ = NewAST(AST_METHODREF, $1, $3);
-    }
-  | identifier '[' expr ']' '.' identifier '(' exprlist ')' opt_numrets
-    { 
-        AST *arr = NewAST(AST_ARRAYREF, $1, $3);
-        $$ = MakeFunccall(NewAST(AST_METHODREF, arr, $6), FixupList($8), $10);
-    }
-  | identifier '[' expr ']' '.' identifier '(' ')' opt_numrets
-    { 
-        AST *arr = NewAST(AST_ARRAYREF, $1, $3);
-        $$ = MakeFunccall(NewAST(AST_METHODREF, arr, $6), NULL, $9);
-        LANGUAGE_WARNING(LANG_SPIN_SPIN1, NULL, "Using () for functions with no parameters is a flexspin extension");
-    }
-  | identifier '[' expr ']' '.' identifier
-    { 
-        AST *arr = NewAST(AST_ARRAYREF, $1, $3);
-        $$ = NewAST(AST_METHODREF, arr, $6);
     }
   | SP_REGEXEC '(' exprlist ')'
     {
