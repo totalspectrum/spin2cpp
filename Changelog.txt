@@ -1,6 +1,7 @@
 Version 6.9.1
 - Fixed initialization of boolean types
-- Reduced storage size required for boolean types
+- Fixed several bugs around 
+- Reduced storage size required for boolean types (in most cases)
 
 Version 6.9.0
 - Added new optimization to merge duplicate functions (only at -O2, and so far only works for small functions)

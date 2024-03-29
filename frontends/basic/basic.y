@@ -2415,7 +2415,14 @@ basetypename:
   | BAS_INTEGER_KW
     { $$ = ast_type_long; }
   | BAS_BOOLEAN
-    { $$ = ast_type_basic_boolean_small; }
+    {
+        AST *typ = ast_type_basic_boolean_small;
+        if (TraditionalBytecodeOutput()) {
+            // sign extension is a problem in bytecode output
+            typ = ast_type_basic_boolean;
+        }
+        $$ = typ;
+    }
   | BAS_UINTEGER
     { $$ = ast_type_unsigned_long; }
   | BAS_SINGLE
