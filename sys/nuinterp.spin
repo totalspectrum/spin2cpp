@@ -563,7 +563,7 @@ impl_LDB
 
 impl_LDBS
 	rdbyte tos, tos
-  _ret_	signx  tos, #15
+  _ret_	signx  tos, #7
 
 impl_LDW
   _ret_ rdword tos, tos
