@@ -307,7 +307,15 @@ static AST *forcepromote(AST *type, AST *expr)
         ERROR(expr, "internal error in forcepromote");
     }
     tsize = TypeSize(type);
-    op = IsUnsignedType(type) ? K_ZEROEXTEND : K_SIGNEXTEND;
+    if (IsUnsignedType(type)) {
+        if (IsBoolType(type)) {
+            /* no widening needed */
+            return expr;
+        }
+        op = K_ZEROEXTEND;
+    } else {
+        op = K_SIGNEXTEND;
+    }
     if (tsize < LONG_SIZE) {
         return dopromote(expr, tsize, LONG_SIZE, op);
     }

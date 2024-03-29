@@ -332,6 +332,8 @@ extern int gl_in_spin2_funcbody;
 extern AST *ast_type_long;
 extern AST *ast_type_word;
 extern AST *ast_type_byte;
+extern AST *ast_type_c_boolean_small;
+extern AST *ast_type_basic_boolean_small;
 extern AST *ast_type_c_boolean;
 extern AST *ast_type_basic_boolean;
 extern AST *ast_type_unsigned_long;

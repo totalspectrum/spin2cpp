@@ -1621,7 +1621,7 @@ type_specifier
 	| C_CHAR
             { $$ = ast_type_byte; }
 	| C_BOOL
-            { $$ = ast_type_c_boolean; }
+            { $$ = ast_type_c_boolean_small; }
 	| C_SHORT
             { $$ = ast_type_signed_word; }
 	| C_INT
