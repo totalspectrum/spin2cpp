@@ -189,8 +189,9 @@ static NuPeepholePattern pat_ldwss[] = {
     { NU_OP_PUSHI,     15,           PEEP_FLAGS_MATCH_IMM },
     { NU_OP_SIGNX,     PEEP_ARG_ANY, PEEP_FLAGS_NONE },
 
-    /* just delete */
-    { NU_OP_ILLEGAL,   0,            PEEP_FLAGS_REPLACE|PEEP_FLAGS_DONE },
+    /* just do the LDWS */
+    { NU_OP_LDWS,      PEEP_ARG_ANY, PEEP_FLAGS_REPLACE },
+    { NU_OP_ILLEGAL,   0,            PEEP_FLAGS_DONE },
     
 };
 // change LDBS / SIGNX #7 into LDBS
@@ -199,9 +200,9 @@ static NuPeepholePattern pat_ldbss[] = {
     { NU_OP_PUSHI,     7,           PEEP_FLAGS_MATCH_IMM },
     { NU_OP_SIGNX,     PEEP_ARG_ANY, PEEP_FLAGS_NONE },
 
-    /* just delete */
-    { NU_OP_ILLEGAL,   0,            PEEP_FLAGS_REPLACE|PEEP_FLAGS_DONE },
-    
+    /* just do the LDBS */
+    { NU_OP_LDBS,      PEEP_ARG_ANY, PEEP_FLAGS_REPLACE },
+    { NU_OP_ILLEGAL,   0,            PEEP_FLAGS_DONE },
 };
 
 // pattern for INC/DEC
