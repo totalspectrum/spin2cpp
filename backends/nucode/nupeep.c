@@ -1,7 +1,7 @@
 //
 // Bytecode (nucode) compiler for spin2cpp
 //
-// Copyright 2021-2023 Total Spectrum Software Inc.
+// Copyright 2021-2024 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include "outnu.h"
@@ -180,6 +180,27 @@ static NuPeepholePattern pat_ldbs[] = {
     /* replace */
     { NU_OP_LDBS,      PEEP_ARG_ANY, PEEP_FLAGS_REPLACE },
     { NU_OP_ILLEGAL,   0,            PEEP_FLAGS_DONE },
+    
+};
+
+// delete LDWS / SIGNX #15
+static NuPeepholePattern pat_ldwss[] = { 
+    { NU_OP_LDWS,      PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_PUSHI,     15,           PEEP_FLAGS_MATCH_IMM },
+    { NU_OP_SIGNX,     PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+
+    /* just delete */
+    { NU_OP_ILLEGAL,   0,            PEEP_FLAGS_REPLACE|PEEP_FLAGS_DONE },
+    
+};
+// change LDBS / SIGNX #7 into LDBS
+static NuPeepholePattern pat_ldbss[] = { 
+    { NU_OP_LDBS,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_PUSHI,     7,           PEEP_FLAGS_MATCH_IMM },
+    { NU_OP_SIGNX,     PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+
+    /* just delete */
+    { NU_OP_ILLEGAL,   0,            PEEP_FLAGS_REPLACE|PEEP_FLAGS_DONE },
     
 };
 
@@ -469,6 +490,8 @@ struct nupeeps {
     { pat_push_1_bz, 0, NULL },
     { pat_ldws, 0, NULL },
     { pat_ldbs, 0, NULL },
+    { pat_ldwss, 0, NULL },
+    { pat_ldbss, 0, NULL },
     { pat_cbxx, 0, NuReplaceCBxx },
     { pat_swap_cbxx, 0, NuReplaceSwapCBxx },
     { pat_cbnz, NU_OP_BNZ, NuReplaceSecond },

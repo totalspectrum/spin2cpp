@@ -1,7 +1,7 @@
 //
 // Bytecode (nucode) compiler for spin2cpp
 //
-// Copyright 2021-2023 Total Spectrum Software Inc.
+// Copyright 2021-2024 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include "outnu.h"
@@ -1617,6 +1617,16 @@ NuCompileExpression(NuIrList *irl, AST *node) {
                 }
                 NuEmitOp(irl, NU_OP_SWAP); // stack looks like origV newV A
                 NuEmitOp(irl, storeOp);
+            }
+            if (!IsUnsignedType(typ)) {
+                /* make sure to sign extend on stack, if necessary */
+                if (siz == 1) {
+                    NuEmitConst(irl, 7);
+                    NuEmitOp(irl, NU_OP_SIGNX);
+                } else if (siz == 2) {
+                    NuEmitConst(irl, 15);
+                    NuEmitOp(irl, NU_OP_SIGNX);
+                }
             }
         }
     }
