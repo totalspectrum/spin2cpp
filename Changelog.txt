@@ -1,3 +1,6 @@
+Version 6.9.1
+- Fixed initialization of boolean types
+
 Version 6.9.0
 - Added new optimization to merge duplicate functions (only at -O2, and so far only works for small functions)
 - Extract side effects in more cases to avoid errors with ++,-- in complex expressions

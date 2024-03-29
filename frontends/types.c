@@ -453,6 +453,9 @@ dofloatToInt(AST *ast, AST *srctyp, AST *dsttyp)
             ret->left = MakeOperatorCall(float_cmp, ast, AstInteger(0), AstInteger(UnorderedResult(K_NE)));
         }
         ret->right = AstInteger(0);
+        if (IsUnsignedType(dsttyp)) {
+            ret = AstOperator('&', ret, AstInteger(1));
+        }
     } else if (gl_fixedreal) {
         // FIXME: should we round here??
         ret = AstOperator(K_SAR, ast, AstInteger(G_FIXPOINT));

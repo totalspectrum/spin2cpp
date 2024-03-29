@@ -1,7 +1,7 @@
 //
 // binary data output for spin2cpp
 //
-// Copyright 2012-2023 Total Spectrum Software Inc.
+// Copyright 2012-2024 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -393,12 +393,13 @@ IsRelocatable(AST *sub, Symbol **symptr, int32_t *offptr, bool isInitVal)
 }
 
 int64_t
-EvalRelocPasmExpr(AST *expr, Flexbuf *f, Flexbuf *relocs, int *relocOff, bool isInitVal, int relocKind)
+EvalRelocPasmExpr(AST *expr, Flexbuf *f, Flexbuf *relocs, int *relocOff, bool isInitVal, int relocKind, AST *type)
 {
     int checkReloc;
     int32_t offset;
     Symbol *sym;
-
+    int64_t val;
+    
     if (expr->kind == AST_OPERATOR) {
         if (expr->d.ival == K_INCREMENT || expr->d.ival == K_DECREMENT) {
             ERROR(expr, "invalid addressing mode for instruction");
@@ -428,7 +429,11 @@ EvalRelocPasmExpr(AST *expr, Flexbuf *f, Flexbuf *relocs, int *relocOff, bool is
             return offset;
         }
     }
-    return EvalPasmExpr(expr);
+    val = EvalPasmExpr(expr);
+    if (type && type->kind == AST_UNS_BOOLTYPE) {
+        val &= 1;
+    }
+    return val;
 }
 
 static int
@@ -482,7 +487,7 @@ outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs, A
                 relocKind = (gl_p2) ? RELOC_KIND_FPTR12 : RELOC_KIND_FPTR16;
             }
         }
-        origval = EvalRelocPasmExpr(item, f, relocs, &relocOff, true, relocKind);
+        origval = EvalRelocPasmExpr(item, f, relocs, &relocOff, true, relocKind, type);
         if (relocOff >= 0) {
             rptr = (Reloc *)(flexbuf_peek(relocs) + relocOff);
         } else {
@@ -576,6 +581,8 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
     case AST_INTTYPE:
     case AST_UNSIGNEDTYPE:
     case AST_FLOATTYPE:
+    case AST_UNS_BOOLTYPE:
+    case AST_SIGNED_BOOLTYPE:
     case AST_PTRTYPE:
         siz += outputInitList(f, elemsize, initval, numelems, relocs, type);
         break;
@@ -683,7 +690,7 @@ outputFvar(Flexbuf *f, Flexbuf *relocs, AST *ast, int isSigned, int32_t *relocOf
         return;
     }
     ast = ast->left;
-    val = origVal = EvalRelocPasmExpr(ast, f, relocs, relocOff, false, RELOC_KIND_I32);
+    val = origVal = EvalRelocPasmExpr(ast, f, relocs, relocOff, false, RELOC_KIND_I32, NULL);
     if (!isSigned && val < 0) {
         ERROR(ast, "FVAR item is out of range");
         return;
@@ -783,7 +790,7 @@ outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs, int checkSize)
             outputFvar(f, relocs, sub->left, 1, &relocOff);
             reps = 0;
         } else {
-            origval = EvalRelocPasmExpr(sub, f, relocs, &relocOff, false, RELOC_KIND_I32);
+            origval = EvalRelocPasmExpr(sub, f, relocs, &relocOff, false, RELOC_KIND_I32, NULL);
             if (relocOff >= 0) {
                 Reloc *r = (Reloc *)(flexbuf_peek(relocs) + relocOff);       
                 (void)r;
@@ -1545,8 +1552,8 @@ decode_instr:
     case TWO_OPERANDS_OPTIONAL:
     case TWO_OPERANDS_DEFZ:
     handle_two_operands:
-        dst = EvalRelocPasmExpr(operand[0], f, relocs, &dstRelocOff, true, RELOC_KIND_AUGD);
-        src = EvalRelocPasmExpr(operand[1], f, relocs, &srcRelocOff, true, RELOC_KIND_AUGS);
+        dst = EvalRelocPasmExpr(operand[0], f, relocs, &dstRelocOff, true, RELOC_KIND_AUGD, NULL);
+        src = EvalRelocPasmExpr(operand[1], f, relocs, &srcRelocOff, true, RELOC_KIND_AUGS, NULL);
         break;
     case P2_MODCZ:
         dst = EvalOperandExpr(instr, operand[0]);
@@ -1560,7 +1567,7 @@ decode_instr:
         break;
     case P2_RDWR_OPERANDS:
         //dst = EvalOperandExpr(instr, operand[0]);
-        dst = EvalRelocPasmExpr(operand[0], f, relocs, &dstRelocOff, true, RELOC_KIND_AUGD);
+        dst = EvalRelocPasmExpr(operand[0], f, relocs, &dstRelocOff, true, RELOC_KIND_AUGD, NULL);
         if (gl_p2 == P2_REV_A && strstr(instr->name, "lut")) {
             // in the original P2 silicon the LUT instructions are just
             // regular two operand instructions
@@ -1727,12 +1734,12 @@ decode_instr:
             if (realval->kind == AST_FUNCCALL) {
                 realval = realval->left;  // correct for parser misreading
             }
-            isrc = EvalRelocPasmExpr(realval, f, relocs, &srcRelocOff, true, RELOC_KIND_I32);
+            isrc = EvalRelocPasmExpr(realval, f, relocs, &srcRelocOff, true, RELOC_KIND_I32, NULL);
             isRelJmp = 0;
             isRelHubAddr = 0;
         } else {
             isRelHubAddr = IsRelativeHubAddress(operand[opidx]);
-            isrc = EvalRelocPasmExpr(operand[opidx], f, relocs, &srcRelocOff, true, RELOC_KIND_I32);
+            isrc = EvalRelocPasmExpr(operand[opidx], f, relocs, &srcRelocOff, true, RELOC_KIND_I32, NULL);
            
             if (inHub) {
                 if (isRelHubAddr) {
@@ -1777,7 +1784,7 @@ decode_instr:
         goto instr_ok;
     case DST_OPERAND_ONLY:
     case P2_DST_CONST_OK:
-        dst = EvalRelocPasmExpr(operand[0], f, relocs, &dstRelocOff, true, RELOC_KIND_AUGD);
+        dst = EvalRelocPasmExpr(operand[0], f, relocs, &dstRelocOff, true, RELOC_KIND_AUGD, NULL);
         src = 0;
         break;
     case CALL_OPERAND:
