@@ -1815,6 +1815,14 @@ lhs: identifier
   | hwreg '[' range ']'
     { $$ = NewAST(AST_RANGEREF, $1, $3);
     }
+  | hwreg '[' '#' '#' range ']'
+    {
+        AST *reg = $1;
+        AST *index = $5;
+        AST *base = NewAST(AST_RANGEREF, reg, index);
+        AST *holder = NewAST(AST_BIGIMMHOLDER, base, NULL);
+        $$ = holder;
+    }
   | SP_SPR '[' expr ']'
     { $$ = AstSprRef($3, 0x1f0); }
   | SP_COGREG '[' expr ']'
