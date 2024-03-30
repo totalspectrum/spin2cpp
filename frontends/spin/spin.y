@@ -1847,7 +1847,7 @@ lhs: identifier
   | lhs '.' SP_WORD '[' expr ']'
     {
         AST *base = NewAST(AST_MEMREF, ast_type_word, NewAST(AST_ADDROF, $1, NULL));
-        $$ = NewAST(AST_ARRAYREF, base, AstInteger(0));
+        $$ = NewAST(AST_ARRAYREF, base, $5);
     }
   | lhs '.' SP_WORD
     {
