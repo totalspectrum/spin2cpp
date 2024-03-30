@@ -756,7 +756,6 @@ doSpinTransform(AST **astptr, int level, AST *parent)
             AST *args = NewAST(AST_EXPRLIST, p,
                                NewAST(AST_EXPRLIST, i,
                                       NewAST(AST_EXPRLIST, x, NULL)));
-            ASTReportInfo saveinfo;
             AstReportAs(ast, &saveinfo);
             *astptr = ast = NewAST(AST_FUNCCALL, func, args);
             AstReportDone(&saveinfo);
@@ -823,6 +822,19 @@ doSpinTransform(AST **astptr, int level, AST *parent)
         doSpinTransform(&ast->left, 0, ast);
         if (IsLocalVariable(ast->left)) {
             curfunc->local_address_taken = 1;
+        }
+        break;
+    case AST_MEMREF:
+        // add memory dereferences if necessary
+        doSpinTransform(&ast->left, 0, ast);
+        doSpinTransform(&ast->right, 0, ast);
+        if (parent->kind != AST_ARRAYREF) {
+            AstReportAs(ast, &saveinfo);
+            AST *dup = NewAST(AST_MEMREF, ast->left, ast->right);
+            AST *deref = NewAST(AST_ARRAYREF, dup, AstInteger(0));
+            AstReportDone(&saveinfo);
+            *ast = *deref;
+            break;
         }
         break;
     case AST_ARRAYREF:
