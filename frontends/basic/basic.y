@@ -2185,9 +2185,9 @@ classheader:
       AST *ident = $2;
       const char *classname = ident->d.string;
       Module *P = NewModule(classname, current->curLanguage);
-      AST *newobj = NewAbstractObject( $2, NULL, 0 );
+      AST *newobj = NewAbstractObject( ident, NULL, 0 );
       newobj->d.ptr = P;
-      AddSymbol(currentTypes, $2->d.string, SYM_TYPEDEF, newobj, NULL);
+      AddSymbol(currentTypes, classname, SYM_TYPEDEF, newobj, NULL);
       if (P != current) {
           P->Lptr = current->Lptr;
           P->subclasses = current->subclasses;
