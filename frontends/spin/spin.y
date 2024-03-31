@@ -1,11 +1,11 @@
 /*
  * Spin compiler parser
- * Copyright (c) 2011-2023 Total Spectrum Software Inc.
+ * Copyright (c) 2011-2024 Total Spectrum Software Inc.
  * See the file COPYING for terms of use.
  */
 
 %pure-parser
- /*%expect 33*/
+%expect 29
 
 %{
 #include <stdio.h>
@@ -336,6 +336,18 @@ FixupList(AST *list)
 %token SP_WORDS      "WORDS"
 %token SP_LONGS      "LONGS"
 %token SP_LSTRING    "LSTRING"
+
+/* v44 additions */
+%token SP_BYTESWAP   "BYTESWAP"
+%token SP_WORDSWAP   "WORDSWAP"
+%token SP_LONGSWAP   "LONGSWAP"
+%token SP_BYTECOMP   "BYTECOMP"
+%token SP_WORDCOMP   "WORDCOMP"
+%token SP_LONGCOMP   "LONGCOMP"
+%token SP_FILL       "FILL"
+%token SP_COPY       "COPY"
+%token SP_SWAP       "SWAP"
+%token SP_COMP       "COMP"
 
 /* operators */
 %token SP_ASSIGN     ":="
