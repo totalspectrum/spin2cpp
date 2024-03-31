@@ -2,7 +2,7 @@
 // Simple lexical analyzer for a language where indentation
 // may be significant (Spin); also contains lexers for BASIC and C
 //
-// Copyright (c) 2011-2023 Total Spectrum Software Inc.
+// Copyright (c) 2011-2024 Total Spectrum Software Inc.
 //
 #include <stdio.h>
 #include <string.h>
@@ -1010,6 +1010,16 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
         fprintf(stderr, "Internal error, Unknown symbol type %d\n", sym->kind);
     }
 
+    if (current) {
+        sym = LookupSymbolInTable(currentTypes, idstr);
+        if (sym && sym->kind == SYM_TYPEDEF) {
+            ast = (AST *)sym->v.ptr;
+            *ast_ptr = ast;
+            last_ast = AstIdentifier(idstr);
+            return SP_TYPENAME;
+        }
+    }
+    
 is_identifier:
     ast = NewAST(AST_IDENTIFIER, NULL, NULL);
 

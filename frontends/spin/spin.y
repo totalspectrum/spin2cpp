@@ -226,7 +226,30 @@ FixupList(AST *list)
     return origlist;
 }
 
+// declare a Spin structure
+static void
+SpinDeclareStruct(AST *ident, AST *defs)
+{
+    const char *classname = GetUserIdentifierName(ident);
+    Module *P = NewModule(classname, current->curLanguage);
+    AST *newobj = NewAbstractObject(ident, NULL, 0);
+    AddSymbol(currentTypes, classname, SYM_TYPEDEF, newobj, NULL);
 
+    if (P != current) {
+        P->Lptr = current->Lptr;
+        P->subclasses = current->subclasses;
+        current->subclasses = P;
+        P->superclass = current;
+        P->fullname = current->fullname; // for finding "class using"
+    }
+
+    PushCurrentModule();
+    current = P;
+    /* declare member variables */
+    SpinDeclareVarSymbols(defs);
+    PopCurrentModule();
+}
+    
 #define YYERROR_VERBOSE 1
 %}
 
@@ -338,6 +361,7 @@ FixupList(AST *list)
 %token SP_LSTRING    "LSTRING"
 
 /* v44 additions */
+%token SP_TYPENAME   "STRUCTURE NAME"
 %token SP_BYTESWAP   "BYTESWAP"
 %token SP_WORDSWAP   "WORDSWAP"
 %token SP_LONGSWAP   "LONGSWAP"
@@ -1018,11 +1042,49 @@ conblock:
 conline:
   enumlist SP_EOLN
     { $$ = $1; }
+  | SP_IDENTIFIER '(' structlist ')' SP_EOLN
+    {
+        /* basically an inline object definition */
+        AST *defs = $3;
+        AST *name = $1;
+        SpinDeclareStruct(name, defs);
+        $$ = NULL;
+    }
   | SP_EOLN
     { $$ = NULL; }
   | error SP_EOLN
     { $$ = NULL; }
   ;
+
+structlist:
+  structitem
+    { $$ = CommentedListHolder($1); }
+  | structlist ',' structitem
+    { $$ = AddToList($1, CommentedListHolder($3)); }
+;
+
+structitem:
+  SP_IDENTIFIER
+    { $$ = NewAST(AST_DECLARE_VAR, NULL, $1); }
+  | SP_BYTE SP_IDENTIFIER
+    {
+        $$ = NewAST(AST_DECLARE_VAR, ast_type_byte, $2);
+    }
+  | SP_WORD SP_IDENTIFIER
+    {
+        $$ = NewAST(AST_DECLARE_VAR, ast_type_word, $2);
+    }
+  | SP_LONG SP_IDENTIFIER
+    {
+        $$ = NewAST(AST_DECLARE_VAR, NULL, $2);
+    }
+  | SP_TYPENAME SP_IDENTIFIER
+  {
+      AST *name = $2;
+      AST *typname = $1;
+      $$ = NewAST(AST_DECLARE_VAR, typname, name);
+  }
+;
 
 enumlist:
   enumitem
@@ -1279,6 +1341,13 @@ varline:
     { $$ = NewAST(AST_WORDLIST, $2, NULL); }
   | SP_LONG identlist SP_EOLN
     { $$ = NewAST(AST_LONGLIST, $2, NULL); }
+  | SP_TYPENAME identlist SP_EOLN
+    {
+        AST *typ = $1;
+        AST *decllist = $2;
+        AST *def = NewAST(AST_DECLARE_VAR, typ, decllist);
+        $$ = def; // NewAST(AST_LISTHOLDER, def, NULL);
+    }
   | identdecl SP_EOLN
     {
         AST *decl = NewAST(AST_LISTHOLDER, $1, NULL);
@@ -1839,6 +1908,11 @@ lhs: identifier
     { $$ = AstSprRef($3, 0x1f0); }
   | SP_COGREG '[' expr ']'
     { $$ = AstSprRef($3, 0x0); }
+  | SP_TYPENAME '[' expr ']'
+    {
+        AST *base = NewAST(AST_MEMREF, $1, $3);
+        $$ = base;
+    }
   | SP_BYTE '[' expr ']'
     {
         AST *base = NewAST(AST_MEMREF, ast_type_byte, $3);
