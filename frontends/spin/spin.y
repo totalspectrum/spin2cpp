@@ -241,12 +241,21 @@ SpinDeclareStruct(AST *ident, AST *defs)
         current->subclasses = P;
         P->superclass = current;
         P->fullname = current->fullname; // for finding "class using"
+        newobj->d.ptr = (void *)P;
     }
 
     PushCurrentModule();
     current = P;
+    AST *item;
     /* declare member variables */
-    SpinDeclareVarSymbols(defs);
+    while (defs) {
+        item = defs->left;
+        defs = defs->right;
+        while (item && item->kind == AST_COMMENTEDNODE) {
+            item = item->left;
+        }
+        DeclareBASICMemberVariables(item);
+    }
     PopCurrentModule();
 }
     
