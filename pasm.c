@@ -884,7 +884,9 @@ again:
                 ERROR(ast, "ORGF only valid in cog mode");
                 ast->d.ival = 0;
             } else {
-                uint32_t newpc = 4*EvalPasmExpr(ast->left);
+                AST *addr = ast->left;
+                replaceHeres(addr, HEREPC, lastOrg);
+                uint32_t newpc = 4*EvalPasmExpr(addr);
                 uint32_t pad = 0;
                 while (cogpc < newpc) {
                     cogpc++;
