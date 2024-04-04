@@ -2927,7 +2927,7 @@ void FixupOffsets(Module *P) {
     printf("%s\n", P->classname);
 #endif
     // Spin language offsets have to be set up in a very specific way
-    if (IsSpinLang(P->mainLanguage)) {
+    if (IsSpinLang(P->mainLanguage) && !P->isPacked) {
         IterateOverSymbols(&P->objsyms, fixupByteWordLongOffset, (void *)&A);
         IterateOverSymbols(&P->objsyms, fixupObjectOffset, (void *)&A);
     } else {
