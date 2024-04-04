@@ -242,6 +242,7 @@ SpinDeclareStruct(AST *ident, AST *defs)
         P->superclass = current;
         P->fullname = current->fullname; // for finding "class using"
         newobj->d.ptr = (void *)P;
+        P->isPacked = 1;
     }
 
     PushCurrentModule();

@@ -591,7 +591,8 @@ struct modulestate {
     char defaultPrivate; // if 1, member variables default to private
     char longOnly;   // if 1, all module variables are longs
     char fromUsing;  // if 1, C code is included via struct __using or similar
-
+    char isPacked;   // if 1, pack the struct as much as possible
+    
     /* back end specific flags */
     void *bedata;
 
