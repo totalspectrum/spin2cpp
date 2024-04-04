@@ -764,14 +764,14 @@ Type    |    Storage size  |   Range
 --------|------------------|--------------
 ubyte   |     1 byte       |   0 to 255
 byte    |     1 byte       |  -128 to 127
-short   |     2 bytes      |   0 to 65,535
-ushort  |     2 bytes      |  -32,768 to 32,767
-integer |     4 bytes      |  -2,147,483,648 to 2,147,483,647
+ushort  |     2 bytes      |   0 to 65,535
+short   |     2 bytes      |  -32,768 to 32,767
 uinteger |    4 bytes      |   0 to 4,294,967,295
-long    |     4 bytes      |  -2,147,483,648 to 2,147,483,647
+integer |     4 bytes      |  -2,147,483,648 to 2,147,483,647
 ulong   |     4 bytes      |   0 to 4,294,967,295
-longint |     8 bytes      |  -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807
+long    |     4 bytes      |  -2,147,483,648 to 2,147,483,647
 ulongint |    8 bytes      |  0 to 18,446,744,073,709,551,615
+longint |     8 bytes      |  -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807
 single  |     4 bytes      |  1.2E-38 to 3.4E+38     (~6 decimal places of precision)
 double  |     8 bytes      |  2.3E-308 to 1.7E+308     (~15 decimal places of precision)   
 ------------------------------------------------------------------
