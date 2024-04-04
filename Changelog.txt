@@ -1,3 +1,7 @@
+Version 6.9.2
+- Fixed $ relative ORGF (thanks, Ada)
+- Fixed annoying error spam with bad instructions when -l given
+
 Version 6.9.1
 - Fixed initialization of boolean types
 - Fixed several bugs around 

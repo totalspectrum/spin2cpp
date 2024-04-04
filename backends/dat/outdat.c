@@ -1510,7 +1510,7 @@ decode_instr:
     opidx = 0;
 
     numoperands = DecodeAsmOperands(instr, ast, operand, opimm, &val, &effects);
-    if (numoperands < 0) return;
+    if (numoperands < 0) goto output_nop;
 
     immmask = 0;
 
@@ -1613,7 +1613,7 @@ decode_instr:
             }
             if (!instr_p2[k].name) {
                 ERROR(line, "Internal error in calld parsing");
-                return;
+                goto output_nop;
             }
             instr = &instr_p2[k];
             ast = origast;
@@ -1702,7 +1702,7 @@ decode_instr:
             int k;
             if (instr->ops == P2_LOC && instr->opc != OPC_GENERIC_BRANCH) {
                 ERROR(line, "loc requires immediate operand");
-                return;
+                goto output_nop;
             }
             strcpy(tempName, instr->name);
             strcat(tempName, ".ind"); // convert to indirect
@@ -1712,7 +1712,7 @@ decode_instr:
             }
             if (!instr_p2[k].name) {
                 ERROR(line, "Internal error, could not find %s", tempName);
-                return;
+                goto output_nop;
             }
             instr = &instr_p2[k];
             ast = origast;
@@ -1790,7 +1790,7 @@ decode_instr:
     case CALL_OPERAND:
         if (operand[0]->kind != AST_IDENTIFIER) {
             ERROR(operand[0], "call operand must be an identifier");
-            return;
+            goto output_nop;
         }
         src = EvalPasmExpr(operand[0]);
         callname = (char *)malloc(strlen(operand[0]->d.string) + 8);
@@ -1811,7 +1811,7 @@ decode_instr:
         goto handle_two_operands;
     default:
         ERROR(line, "Unsupported instruction `%s'", instr->name);
-        return;
+        goto output_nop;
     }
 
     if (instr->ops == P2_AUG) {
@@ -1878,7 +1878,7 @@ decode_instr:
             } else {
                 ERROR(line, "Source operand of %s does not appear to be a register", instr->name);
             }
-            return;
+            goto output_nop;
         }
     }
     if (dst > 511) {
@@ -1887,7 +1887,7 @@ decode_instr:
         } else {
             ERROR(line, "Destination operand of %s does not appear to be a register", instr->name);
         }
-        return;
+        goto output_nop;
     }
 instr_ok:
     val = val | (dst << 9) | src | (immmask & ~0xff);
@@ -1900,6 +1900,10 @@ instr_ok:
         val = (val >> 14) | (val << 18);
     }
     outputInstrLong(f, val);
+    return;
+output_nop:
+    outputInstrLong(f, 0);
+    return;
 }
 
 void
