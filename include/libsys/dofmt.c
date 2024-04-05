@@ -3,6 +3,9 @@
 #include <sys/types.h>
 #include "sys/fmt.h"
 
+/* turns an already uppercase letter into lowercase version */
+#define quick_tolower(c) ((c) | 0x20)
+
 #ifdef __FLEXC__
 # ifdef __FEATURE_FLOATS__
 #  define INCLUDE_FLOATS
@@ -189,11 +192,6 @@ int _dofmt(putfunc fn, const char *fmtstr, va_list *args)
         {
             val = va_ptrarg(args, unsigned int);
         }
-        if (c >= 'A' && c <= 'Z') {
-            flags |= (1<<UPCASE_BIT);
-            c -= 'A';
-            c += 'a';
-        }
         if (prec < 0) {
             prec = 0;
         }
@@ -240,6 +238,11 @@ int _dofmt(putfunc fn, const char *fmtstr, va_list *args)
                 q = _fmtnumlong(fn, flags, val_LL, 8);
             }
             break;
+        case 'X':
+        case 'P':
+            flags |= 1<<UPCASE_BIT;
+            c = quick_tolower(c);
+            /* fall through */
         case 'x':
         case 'p':
             if (prec == 0 && padchar == PADCHAR_ZERO) {
@@ -253,6 +256,7 @@ int _dofmt(putfunc fn, const char *fmtstr, va_list *args)
             }
             break;
         case 'b':
+            /* binary output: a FlexC extension */
             if (prec == 0 && padchar == PADCHAR_ZERO) {
                 flags |= ((width+1)<<PREC_BIT);
             }
@@ -263,7 +267,21 @@ int _dofmt(putfunc fn, const char *fmtstr, va_list *args)
                 q = _fmtnumlong(fn, flags, val_LL, 2);
             }
             break;
-#ifdef INCLUDE_FLOATS            
+        case 'B':
+            /* bool output: a FlexC extension */
+            if (prec) {
+                flags |= ((prec-1) << MAXWIDTH_BIT);
+            }
+            q = _fmtstr(fn, flags, val ? "TRUE" : "FALSE");
+            break;
+#ifdef INCLUDE_FLOATS
+        case 'A':
+        case 'E':
+        case 'F':
+        case 'G':
+            flags |= 1<<UPCASE_BIT;
+            c = quick_tolower(c);
+            /* fall through */
         case 'a':
         case 'e':
         case 'f':
