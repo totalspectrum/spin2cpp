@@ -58,11 +58,11 @@ int vprintf(const char *format, unsigned long ap) _IMPL("libc/stdio/fprintf.c");
 int vfprintf(FILE *f, const char *format, unsigned long ap) _COMPLEXIO _IMPL("libc/stdio/fprintf.c");
 
 int vscanf(const char *format, unsigned long ap) _IMPL("libc/stdio/vscanf.c");
-int vsscanf(char *str, const char *format, unsigned long ap) _STRINGIO _IMPL("libc/stdio/sscanf.c");
+int vsscanf(const char *str, const char *format, unsigned long ap) _STRINGIO _IMPL("libc/stdio/sscanf.c");
 int vfscanf(FILE *f, const char *format, unsigned long ap) _COMPLEXIO _IMPL("libc/stdio/vfscanf.c");
 
 int scanf(const char *format, ...) _IMPL("libc/stdio/scanf.c");
-int sscanf(char *str, const char *format, ...) _STRINGIO _IMPL("libc/stdio/sscanf.c");
+int sscanf(const char *str, const char *format, ...) _STRINGIO _IMPL("libc/stdio/sscanf.c");
 int fscanf(FILE *f, const char *format, ...) _COMPLEXIO _IMPL("libc/stdio/fscanf.c");
 
 int fputs(const char *s, FILE *f) _COMPLEXIO _IMPL("libc/stdio/fputs.c");
