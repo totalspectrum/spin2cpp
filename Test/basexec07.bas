@@ -18,6 +18,7 @@ settime "2023-12-25 01:30:15"
 print "Date is: ";date$()
 print "Time is: ";time$()
 #else
+#warn "test is faked on P1"
 print "Date is: 2023-12-25"
 print "Time is: 01:30:15"
 #endif
