@@ -1033,6 +1033,7 @@ NuCompileMul(NuIrList *irl, AST *lhs, AST *rhs, int gethi)
                     if (shifts[1] > 0) {
                         NuEmitOp(irl, NU_OP_ADD);
                     } else {
+                        NuEmitOp(irl, NU_OP_SWAP);
                         NuEmitOp(irl, NU_OP_SUB);
                     }
                     NuEmitConst(irl, shifts[0]);
