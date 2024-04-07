@@ -40,5 +40,3 @@ backwards:
 98 goodbye
 -4 again
 -2 done
-Date is: 2023-12-25
-Time is: 01:30:15
