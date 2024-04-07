@@ -2407,6 +2407,7 @@ int TypeSize(AST *typ)
         return 1;
     }
     case AST_TYPEOF:
+    case AST_USING:
         return TypeSize(ExprType(typ->left));
     default:
         ERROR(typ, "Internal error, unknown type %d passed to TypeSize",

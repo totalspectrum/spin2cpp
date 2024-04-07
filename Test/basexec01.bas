@@ -113,6 +113,11 @@ for i = 0 to 3
   print a%(i); " "; ba$(i)
 next i
 
+'' date/time tests
+settime "2023-12-25 01:30:15"
+print "Date is: ";date$()
+print "Time is: ";time$()
+
 ''
 '' done
 ''

@@ -1,6 +1,7 @@
 Version 6.9.2
 - Fixed $ relative ORGF (thanks, Ada)
 - Fixed annoying error spam with bad instructions when -l given
+- Fixed a missing type check which caused vfscanf() to fail to compile
 
 Version 6.9.1
 - Fixed initialization of boolean types
