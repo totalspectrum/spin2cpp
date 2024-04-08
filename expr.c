@@ -2330,6 +2330,8 @@ int TypeAlign(AST *typ)
     case AST_UNSIGNEDTYPE:
     case AST_GENERICTYPE:
     case AST_FLOATTYPE:
+    case AST_UNS_BOOLTYPE:
+    case AST_SIGNED_BOOLTYPE:
         r = EvalConstExpr(typ->left);
         if (r <= LONG_SIZE) return r;
         return LONG_SIZE;
