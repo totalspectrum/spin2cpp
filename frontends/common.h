@@ -1114,4 +1114,7 @@ extern AST *basic_unlock_io;
 
 extern AST *varargs_ident;
 
+// kind of hacky, this should be elsewhere, but for now it's in basic.y
+extern void DeclareBASICMemberVariables(AST *ast);
+
 #endif

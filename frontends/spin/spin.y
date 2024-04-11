@@ -1418,6 +1418,14 @@ paramidentdecl:
       LANGUAGE_WARNING(LANG_ANY, $1, "default parameter values are a flexspin extension");
       $$ = AstAssign($1, $3);
   }
+  | '^' SP_TYPENAME identifier
+  {
+      AST *typ = $2;
+      AST *ident = $3;
+
+      typ = NewAST(AST_REFTYPE, typ, NULL);
+      $$ = NewAST(AST_DECLARE_VAR, typ, ident);
+  }
   | identifier '=' SP_LONG
   {
       LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a flexspin extension");
