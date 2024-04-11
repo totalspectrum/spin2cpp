@@ -1,3 +1,6 @@
+Version 6.9.3
+- Fixed typo in datetime
+
 Version 6.9.2
 - Fixed $ relative ORGF (thanks, Ada)
 - Fixed annoying error spam with bad instructions when -l given

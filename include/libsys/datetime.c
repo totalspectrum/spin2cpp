@@ -34,7 +34,7 @@ time_t _basic_settime(const char *timestr) {
     int hour, minute, second;
     time_t newtime;
     
-    sscanf(timestr, "%d-%d-%d %i:%i:%i", &year, &month, &day, &hour, &minute, &second);
+    sscanf(timestr, "%d-%d-%d %d:%d:%d", &year, &month, &day, &hour, &minute, &second);
 
 //    __builtin_printf("settime(%s): read year=%d month=%d\n", timestr, year, month);
     
