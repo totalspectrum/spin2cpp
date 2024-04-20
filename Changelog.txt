@@ -1,5 +1,6 @@
 Version 6.9.3
 - Fixed typo in datetime
+- Ignore ' style comments in #define definitions
 
 Version 6.9.2
 - Fixed $ relative ORGF (thanks, Ada)

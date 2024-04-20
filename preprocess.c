@@ -618,7 +618,7 @@ static char *parse_getword(ParseState *P)
     return word;
 }
 
-static char *parse_restofline(ParseState *P)
+static char *parse_restofline(struct preprocess *pp, ParseState *P)
 {
     char *ptr;
     char *ret;
@@ -638,6 +638,15 @@ static char *parse_restofline(ParseState *P)
         P->save = ptr;
     } else {
         P->save = NULL;
+    }
+
+    // ignore line comments
+    if (pp->linecomment) {
+        size_t len = strlen(pp->linecomment);
+        ptr = ret;
+        while (*ptr && 0 != strncmp(ptr, pp->linecomment, len))
+            ptr++;
+        *ptr = 0;
     }
     P->str = ret;
     return P->str;
@@ -871,7 +880,7 @@ handle_error(struct preprocess *pp, ParseState *P)
     if (!pp_active(pp)) {
         return;
     }
-    msg = parse_restofline(P);
+    msg = parse_restofline(pp, P);
     doerror(pp, "#error: %s", msg);
 }
 
@@ -882,7 +891,7 @@ handle_warn(struct preprocess *pp, ParseState *P)
     if (!pp_active(pp)) {
         return;
     }
-    msg = parse_restofline(P);
+    msg = parse_restofline(pp, P);
     dowarning(pp, "#warn: %s", msg);
 }
 
@@ -910,7 +919,7 @@ handle_define(struct preprocess *pp, ParseState *P, int isDef)
 
     if (isDef) {
         parse_skipspaces(P);
-        def = parse_restofline(P);
+        def = parse_restofline(pp, P);
         flexbuf_init(&newdef, 80);
         do_expand(pp, &newdef, def, 0);
         def = flexbuf_get(&newdef);
