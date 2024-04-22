@@ -1262,7 +1262,7 @@ DoPropellerPostprocess(const char *fname, size_t eepromSize)
     }
 
     if (len+extralen > maxlen) {
-        WARNING(NULL,"output size with debugger (%d + %d = %d) exceeps maximum of %d by %d bytes", len, extralen, len+extralen, maxlen, (len+extralen)-maxlen);
+        WARNING(NULL,"output size with debugger (%d + %d = %d) exceeds maximum of %d by %d bytes", len, extralen, len+extralen, maxlen, (len+extralen)-maxlen);
     }
     len += extralen;
 
