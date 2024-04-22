@@ -431,7 +431,9 @@ int ProcessCommandLine(CmdLineOptions *cmd)
                 gl_optimize_flags = 0; // no need to re-optimize
                 gl_cenv_flags = 0;     // already handled C startup code
                 CompileAsmToBinary(binname, asmname);
-                DoPropellerPostprocess(binname, cmd->useEeprom ? cmd->eepromSize : 0);
+                if (gl_errors == 0) {
+                    DoPropellerPostprocess(binname, cmd->useEeprom ? cmd->eepromSize : 0);
+                }
                 if (!cmd->quiet) {
                     printf("Done.\n");
                     if (gl_errors == 0) {
