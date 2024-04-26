@@ -115,7 +115,7 @@ NeedLineEnd(const char *str) {
 
 // helper function for printing operands
 static void
-doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect effect_orig)
+doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect effect_orig, int maximm)
 {
     char temp[128];
     const char *regname;
@@ -163,7 +163,7 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
         ERROR(NULL, "internal error, pcrelative operand found");
         break;
     case IMM_INT:
-        if (reg->val >= 0 && reg->val < 512) {
+        if (reg->val >= 0 && reg->val <= maximm) {
             flexbuf_addstr(fb, "#");
             if (reg->name && reg->name[0]) {
                 flexbuf_addstr(fb, RemappedName(reg->name));
@@ -285,13 +285,20 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
 static void
 PrintOperandSrc(struct flexbuf *fb, Operand *reg, enum OperandEffect effect)
 {
-    doPrintOperand(fb, reg, 1, effect);
+    doPrintOperand(fb, reg, 1, effect, 511);
+}
+
+// Special case for P2 RDxxxx and WRxxxx instructions (max. immediate is 255)
+static void
+PrintOperandSrcRdwr(struct flexbuf *fb, Operand *reg, enum OperandEffect effect)
+{
+    doPrintOperand(fb, reg, 1, effect, 255);
 }
 
 static void
 PrintOperand(struct flexbuf *fb, Operand *reg)
 {
-    doPrintOperand(fb, reg, 0, OPEFFECT_NONE);
+    doPrintOperand(fb, reg, 0, OPEFFECT_NONE, 511);
 }
 
 void
@@ -1313,7 +1320,11 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
             }
             if (ir->src) {
                 flexbuf_addstr(fb, ", ");
-                PrintOperandSrc(fb, ir->src, ir->srceffect);
+                if (ir->instr->ops == P2_RDWR_OPERANDS) {
+                    PrintOperandSrcRdwr(fb, ir->src, ir->srceffect);
+                } else {
+                    PrintOperandSrc(fb, ir->src, ir->srceffect);
+                }
             }
             if (ir->src2) {
                 flexbuf_addstr(fb, ", ");
