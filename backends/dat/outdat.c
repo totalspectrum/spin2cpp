@@ -924,7 +924,7 @@ SpecialRdOperand(AST *ast, uint32_t opimm)
         // fits in $00-$ff
         val = EvalPasmExpr(ast);
         if ( (val > 0xff) && 0 == (opimm & BIG_IMM_SRC) ) {
-            WARNING(ast, "immediate value out of range");
+            ERROR(ast, "immediate value out of range");
         }
     }
     val = 0;
