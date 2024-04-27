@@ -450,6 +450,7 @@ typedef struct funcdef {
     unsigned cog_task:1;     // 1 if function is started in another cog
     unsigned used_as_ptr:1;  // 1 if function's address is taken as a pointer
     unsigned local_address_taken: 1; // 1 if a local variable or parameter has its address taken
+    unsigned force_locals_to_stack: 1; // 1 if function must store all locals on the stack
     unsigned no_inline:1;    // 1 if function cannot be inlined
     unsigned prefer_inline:1; // 1 if function should be inlined more often
     unsigned is_leaf:1;      // 1 if function is a leaf function
@@ -978,6 +979,7 @@ AST *GetComments(void);
 
 /* is an AST identifier a local variable? */
 bool IsLocalVariable(AST *ast);
+bool IsLocalVariableEx(AST *ast, Symbol **symout);
 
 /* push the current types identifier */
 void PushCurrentTypes(void);

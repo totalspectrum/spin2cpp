@@ -13,8 +13,9 @@
 extern AST *ParsePrintStatement(AST *ast); /* in basiclang.c */
 
 bool
-IsLocalVariable(AST *ast) {
+IsLocalVariableEx(AST *ast, Symbol **symout) {
     Symbol *sym;
+    if (symout) *symout = NULL;
 
     if (!ast) return false;
     if (ast->kind == AST_STMTLIST || ast->kind == AST_SEQUENCE) {
@@ -37,6 +38,7 @@ IsLocalVariable(AST *ast) {
         case SYM_RESULT:
         case SYM_LOCALVAR:
         case SYM_PARAMETER:
+            if (symout) *symout = sym;
             return true;
         default:
             return false;
@@ -45,7 +47,7 @@ IsLocalVariable(AST *ast) {
     case AST_RANGEREF:
     case AST_METHODREF:
     case AST_ARRAYREF:
-        if (IsLocalVariable(ast->left)) {
+        if (IsLocalVariableEx(ast->left,symout)) {
             // check for pointer dereference, which is not
             // actually going to cause us grief
             if (IsPointerType(ExprType(ast->left))) {
@@ -59,6 +61,10 @@ IsLocalVariable(AST *ast) {
     default:
         return false;
     }
+}
+bool
+IsLocalVariable(AST *ast) {
+    return IsLocalVariableEx(ast,NULL);
 }
 
 /*
@@ -612,7 +618,7 @@ doSpinTransform(AST **astptr, int level, AST *parent)
         // in that you can only set up a catch on a call
         // and can't differentiate a normal return from an abort.
         if (gl_output != OUTPUT_BYTECODE /*|| gl_interp_kind == INTERP_KIND_NUCODE */ ) {
-            curfunc->local_address_taken = 1; // if we do a catch we will want data on stack
+            curfunc->force_locals_to_stack = 1; // if we do a catch we will want data on stack
             AstReportAs(ast, &saveinfo); // any newly created AST nodes should reflect debug info from this one
             *astptr = ast = NewAST(AST_TRYENV,
                                 NewAST(AST_CONDRESULT,
@@ -814,15 +820,25 @@ doSpinTransform(AST **astptr, int level, AST *parent)
         if (ast->left && ast->left->kind != AST_RANGEREF) {
             doSpinTransform(&ast->left, 0, ast);
         }
-        if (IsLocalVariable(ast->left)) {
+        if (IsLocalVariableEx(ast->left,&sym)) {
             curfunc->local_address_taken = 1;
+            if (sym) {
+                sym->flags |= SYMF_ADDRESSABLE;
+            } else {
+                curfunc->force_locals_to_stack = 1; // Fallback if we couldn't get a symbol
+            }
         }
         break;
     case AST_ADDROF:
     case AST_ABSADDROF:
         doSpinTransform(&ast->left, 0, ast);
-        if (IsLocalVariable(ast->left)) {
+        if (IsLocalVariableEx(ast->left,&sym)) {
             curfunc->local_address_taken = 1;
+            if (sym) {
+                sym->flags |= SYMF_ADDRESSABLE;
+            } else {
+                curfunc->force_locals_to_stack = 1; // Fallback if we couldn't get a symbol
+            }
         }
         break;
     case AST_ARRAYREF:
@@ -862,6 +878,7 @@ doSpinTransform(AST **astptr, int level, AST *parent)
                         *ast = *NewAST(AST_ARRAYREF, memref, ast->right);
                         if (isLocal) {
                             SetLocalArray(curfunc, sym, NULL);
+                            sym->flags |= SYMF_ADDRESSABLE;
                             curfunc->local_address_taken = 1;
                         }
                         AstReportDone(&saveinfo);

@@ -31,8 +31,8 @@
 #define IS_FAST_CALL(f) ( (f == 0) || !FuncData(f) || FuncData(f)->convention == FAST_CALL)
 #define IS_STACK_CALL(f) ( (f != 0) && FuncData(f)->convention == STACK_CALL)
 
-#define ALL_VARS_ON_STACK(f) ( IS_STACK_CALL(f) || f->local_address_taken || f->closure)
-#define ANY_VARS_ON_STACK(f) ( ALL_VARS_ON_STACK(f) || f->stack_local )
+#define ALL_VARS_ON_STACK(f) ( IS_STACK_CALL(f) || f->force_locals_to_stack || (f->local_address_taken && IsSpinLang(f->language)) || f->closure)
+#define ANY_VARS_ON_STACK(f) ( ALL_VARS_ON_STACK(f) || f->stack_local || f->local_address_taken)
 
 #define IS_LEAF(func) ((gl_compress == 0) && ((func)->is_leaf || (FuncData(func) && FuncData(func)->effectivelyLeaf)))
 
@@ -297,6 +297,9 @@ PutVarOnStack(Function *func, Symbol *sym, int size)
         return false;
     }
     if (sym->kind == SYM_LOCALVAR && TypeGoesOnStack((AST *)sym->v.ptr)) {
+        return true;
+    }
+    if (sym->flags & SYMF_ADDRESSABLE) {
         return true;
     }
     return false;
