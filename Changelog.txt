@@ -1,5 +1,6 @@
 Version 6.9.5
 - Fixed immediate ranges for load/store, and made out of range immediates an error (thanks to Ada)
+- Fixed an inappropriate memory forwarding with WZ (also thanks to Ada)
 
 Version 6.9.4
 - Fixed a use of uninitialized memory on 32 bit platforms
