@@ -215,6 +215,13 @@ AddSymbol(SymbolTable *table, const char *name, int type, void *val, const char 
         sym = NewSymbol();
         sym->next = table->hash[hash];
         table->hash[hash] = sym;
+        // now link into global list
+        if (table->i_last) {
+            table->i_last->i_next = sym;
+            table->i_last = sym;
+        } else {
+            table->i_last = table->i_first = sym;
+        }
     } 
     sym->our_name = name;
     sym->user_name = user_name ? user_name : name;
@@ -222,13 +229,6 @@ AddSymbol(SymbolTable *table, const char *name, int type, void *val, const char 
     sym->v.ptr = val;
     sym->module = 0;
     
-    // now link into global list
-    if (table->i_last) {
-        table->i_last->i_next = sym;
-        table->i_last = sym;
-    } else {
-        table->i_last = table->i_first = sym;
-    }
     return sym;
 }
 
