@@ -1399,6 +1399,8 @@ vardecl:
     { $$ = NewAST(AST_DECLARE_VAR, ast_type_word, $2); }
   | SP_LONG identdecl
     { $$ = NewAST(AST_DECLARE_VAR, NULL, $2); }
+  | SP_TYPENAME identdecl
+    { $$ = NewAST(AST_DECLARE_VAR, $1, $2); }
 ;
 
 vardecllist:
