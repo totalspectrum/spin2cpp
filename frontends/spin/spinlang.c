@@ -789,6 +789,13 @@ doSpinTransform(AST **astptr, int level, AST *parent)
                 lookup = NewAST(AST_ARRAYREF, ast->left, AstInteger(0));
                 *ast = *NewAST(ast->kind, lookup, ast->right);
                 AstReportDone(&saveinfo);
+            } else if (IsRefType(objtype)) {
+                AST *deref;
+                AstReportAs(ast, &saveinfo);
+                deref = NewAST(AST_MEMREF, objtype->left, ast->left);
+                deref = NewAST(AST_ARRAYREF, deref, AstInteger(0));
+                *ast = *NewAST(ast->kind, deref, ast->right);
+                AstReportDone(&saveinfo);
             }
         }
         break;
