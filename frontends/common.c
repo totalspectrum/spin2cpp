@@ -1986,9 +1986,9 @@ DeclareMemberVariablesOfSizeFlag(Module *P, int sizeRequest, int offset)
     int curSizeFlag = 0;
     int isUnion = P->isUnion;
     AST *varblocklist;
-    int oldoffset = offset;
     unsigned sym_flags = 0;
-
+    bool sawSmall = false;
+    
     if (P->defaultPrivate) {
         sym_flags = SYMF_PRIVATE;
     }
@@ -2010,12 +2010,14 @@ DeclareMemberVariablesOfSizeFlag(Module *P, int sizeRequest, int offset)
             curtype = ast_type_byte;
             curtypesize = 1;
             curSizeFlag = SIZEFLAG_BYTE;
+            sawSmall = true;
             idlist = ast->left;
             break;
         case AST_WORDLIST:
             curtype = ast_type_word;
             curtypesize = 2;
             curSizeFlag = SIZEFLAG_WORD;
+            sawSmall = true;
             idlist = ast->left;
             break;
         case AST_LONGLIST:
@@ -2041,8 +2043,13 @@ DeclareMemberVariablesOfSizeFlag(Module *P, int sizeRequest, int offset)
                     Q->varsize_used = curtypesize;
                     Q->varsize_used_valid = true;
                 }
+                sawSmall = !Q->longOnly;
             } else {
                 curSizeFlag = (curtypesize == 0) ? SIZEFLAG_OBJ : SIZEFLAG_VAR;
+                if (IsArrayType(curtype)) {
+                    int size = TypeSize(BaseType(curtype));
+                    sawSmall = size < LONG_SIZE;
+                }
             }
             if (ast->d.ival) {
                 // variable should be private
@@ -2112,7 +2119,7 @@ DeclareMemberVariablesOfSizeFlag(Module *P, int sizeRequest, int offset)
             offset = EnterVars(SYM_VARIABLE, &P->objsyms, curtype, idlist, offset, P->isUnion, sym_flags);
         }
     }
-    if (curtypesize != 4 && offset != oldoffset) {
+    if (sawSmall) {
         P->longOnly = 0;
     }
     return offset;
