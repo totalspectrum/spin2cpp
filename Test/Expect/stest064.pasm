@@ -5,9 +5,8 @@ dat
 entry
 
 _getptr
-	add	objptr, #16
 	mov	result1, objptr
-	sub	objptr, #16
+	add	result1, #16
 _getptr_ret
 	ret
 

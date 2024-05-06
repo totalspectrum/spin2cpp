@@ -14,11 +14,11 @@ _f3
 	mov	result1, arg01
 	shl	result1, #1
 	add	result1, arg01
-	add	ptr__dat__, #4
-	add	result1, ptr__dat__
+	mov	arg01, ptr__dat__
+	add	arg01, #4
+	add	result1, arg01
 	add	arg02, result1
 	rdbyte	result1, arg02
-	sub	ptr__dat__, #4
 _f3_ret
 	ret
 
@@ -26,11 +26,11 @@ _f2
 	mov	result1, arg01
 	shl	result1, #1
 	add	result1, arg01
-	add	ptr__dat__, #10
-	add	result1, ptr__dat__
+	mov	arg01, ptr__dat__
+	add	arg01, #10
+	add	result1, arg01
 	add	arg02, result1
 	rdbyte	result1, arg02
-	sub	ptr__dat__, #10
 _f2_ret
 	ret
 

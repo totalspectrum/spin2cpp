@@ -11,9 +11,8 @@ _getval_ret
 
 _getval2
 	mov	arg01, ptr__dat__
-	add	ptr__dat__, #4
 	mov	arg02, ptr__dat__
-	sub	ptr__dat__, #4
+	add	arg02, #4
 	call	#_getval
 _getval2_ret
 	ret

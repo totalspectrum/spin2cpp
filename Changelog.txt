@@ -1,4 +1,5 @@
 Version 6.9.6
+- Added a peephole for some address calculations (as suggested by Evan)
 - Fixed some built-in functions in spin2cpp
 
 Version 6.9.5

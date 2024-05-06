@@ -244,10 +244,9 @@ __system___gc_doalloc
 	add	__system___gc_doalloc_size, #23
 	andn	__system___gc_doalloc_size, #15
 	shr	__system___gc_doalloc_size, #4
-	add	ptr___system__dat__, #44
 	mov	__system___gc_doalloc__cse__0005, ptr___system__dat__
+	add	__system___gc_doalloc__cse__0005, #44
 	mov	arg01, __system___gc_doalloc__cse__0005
-	sub	ptr___system__dat__, #44
 	cogid	result1
 	add	result1, #256
 LR__0030

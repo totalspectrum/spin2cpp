@@ -5,11 +5,11 @@ dat
 entry
 
 _fetch
-	add	ptr__dat__, #1
-	rdbyte	result1, ptr__dat__
-	mov	_var01, #88
-	wrbyte	_var01, ptr__dat__
-	sub	ptr__dat__, #1
+	mov	_var01, ptr__dat__
+	add	_var01, #1
+	rdbyte	result1, _var01
+	mov	_var02, #88
+	wrbyte	_var02, _var01
 _fetch_ret
 	ret
 
@@ -25,5 +25,7 @@ _dat_
 	byte	$00[64]
 	org	COG_BSS_START
 _var01
+	res	1
+_var02
 	res	1
 	fit	496

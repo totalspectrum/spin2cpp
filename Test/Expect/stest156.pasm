@@ -19,9 +19,8 @@ _getbaz_ret
 	ret
 
 _getbazaddr
-	add	ptr__dat__, #12
 	mov	result1, ptr__dat__
-	sub	ptr__dat__, #12
+	add	result1, #12
 _getbazaddr_ret
 	ret
 

@@ -6,9 +6,8 @@ entry
 
 _clr
 	mov	_var01, #10
-	add	objptr, #40
 	mov	_var02, objptr
-	sub	objptr, #40
+	add	_var02, #40
 LR__0001
 	sub	_var02, #4
 	mov	_var03, #0

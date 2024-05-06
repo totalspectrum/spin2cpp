@@ -1294,6 +1294,30 @@ static int FixupSignxAndImm(int arg, IRList *irl, IR *ir0)
     return 0;
 }
 
+// add objptr, #N
+// mov x, objptr
+// sub objptr, #N
+// This happens often enough that it's worth optimizing to
+// mov x, objptr
+// add x, #N
+static PeepholePattern pat_lea_ptr[] = {
+    { COND_TRUE, OPC_ADD, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|2, PEEP_OP_MATCH|0, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_SUB, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
+static int FixupLeaPtr(int arg, IRList *irl, IR *ir) {
+    IR *next_ir = NextIR(ir);
+    IR *last_ir = NextIR(next_ir);
+    Operand *dest = next_ir->dst;
+
+    ReplaceOpcode(last_ir, OPC_ADD);
+    last_ir->dst = dest;
+    DeleteIR(irl, ir);
+    return 1;
+}
+
 /*
  * the actual list of peepholes
  */
@@ -1414,6 +1438,8 @@ struct Peepholes {
     { pat_jmp_jmp, 1, FixupDeleteInstr },
 
     { pat_mov255_and, 1, FixupMov255And },
+
+    { pat_lea_ptr, 0, FixupLeaPtr },
 };
 
 

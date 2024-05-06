@@ -21,12 +21,12 @@ _fetchy
 	shl	result1, #1
 	add	result1, arg01
 	shl	result1, #3
-	add	objptr, #96
-	add	result1, objptr
+	mov	arg01, objptr
+	add	arg01, #96
+	add	result1, arg01
 	shl	arg02, #2
 	add	arg02, result1
 	rdlong	result1, arg02
-	sub	objptr, #96
 _fetchy_ret
 	ret
 
@@ -35,12 +35,12 @@ _fetchz
 	shl	result1, #1
 	add	result1, arg01
 	shl	result1, #3
-	add	objptr, #192
-	add	result1, objptr
+	mov	arg01, objptr
+	add	arg01, #192
+	add	result1, arg01
 	shl	arg02, #2
 	add	arg02, result1
 	rdlong	result1, arg02
-	sub	objptr, #192
 _fetchz_ret
 	ret
 
