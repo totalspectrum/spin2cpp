@@ -1,3 +1,6 @@
+Version 6.9.6
+- Fixed some built-in functions in spin2cpp
+
 Version 6.9.5
 - Fixed immediate ranges for load/store, and made out of range immediates an error (thanks to Ada)
 - Fixed an inappropriate memory forwarding with WZ (also thanks to Ada)

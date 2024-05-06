@@ -2854,15 +2854,16 @@ Builtin builtinfuncs[] = {
     { "__builtin_propeller_rdpin",    1, defaultBuiltin, "_rdpin", "_rdpin", NULL, 0, NULL },
     { "__builtin_propeller_rqpin",    1, defaultBuiltin, "_rqpin", "_rqpin", NULL, 0, NULL },
 
-    { "__builtin_propeller_fltl",     1, defaultBuiltin, "_pinf", "_pinf", NULL, 0, NULL },
-    { "__builtin_propeller_drvh",     1, defaultBuiltin, "_pinh", "_pinh", NULL, 0, NULL },
-    { "__builtin_propeller_drvl",     1, defaultBuiltin, "_pinl", "_pinl", NULL, 0, NULL },
-    { "__builtin_propeller_pinr",     1, defaultBuiltin, "_pinr", "_pinr", NULL, 0, NULL },
+    { "_fltl",     1, defaultBuiltin, "_pinf", "_pinf", NULL, 0, NULL },
+    { "_drvh",     1, defaultBuiltin, "_pinh", "_pinh", NULL, 0, NULL },
+    { "_drvl",     1, defaultBuiltin, "_pinl", "_pinl", NULL, 0, NULL },
+    { "_pinread",     1, defaultBuiltin, "_pinr", "_pinr", NULL, 0, NULL },
     { "_pinwrite", 2, defaultBuiltin, "_pinw", "_pinw", NULL, 0, NULL },
 
     { "_waitms",   1, defaultBuiltin, "_waitms", "_waitms", NULL, 0, NULL },
     { "_waitus",   1, defaultBuiltin, "_waitus", "_waitus", NULL, 0, NULL },
 
+    { "_rdpin",    1, defaultBuiltin, "_rdpin", "_rdpin", NULL, 0, NULL },
     { "_wrpin",    2, defaultBuiltin, "_wrpin", "_wrpin", NULL, 0, NULL },
     { "_wxpin",    2, defaultBuiltin, "_wxpin", "_wxpin", NULL, 0, NULL },
     { "_wypin",    2, defaultBuiltin, "_wypin", "_wypin", NULL, 0, NULL },
