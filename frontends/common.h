@@ -1007,6 +1007,10 @@ char *NormalizePath(const char *path);
 
 /* check types in an expression; returns the overall result of the expression */
 AST *CheckTypes(AST *expr);
+
+/* special case of above, just handles function parameter coercion */
+AST *FixupFunccallTypes(AST *call, bool isTypedLanguage);
+
 /* type conversion */
 /* "kind" is AST_ASSIGN, AST_FUNCCALL, AST_RETURN to indicate reason for conversion */
 AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *srctype, const char *msg);
