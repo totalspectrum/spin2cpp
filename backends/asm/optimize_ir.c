@@ -4683,7 +4683,7 @@ restart_check:
 #if 1
         // try to avoid having two read/write ops in a row
         if (IsReadWrite(ir) && IsReadWrite(next_ir) && IsNonReadWriteOpcode(prev_ir)) {
-            if (CanSwap(ir, prev_ir)) {
+            if (CanSwap(ir, prev_ir) && !IsCordicCommand(prev_ir)) {
                 // want to swap prev_ir and ir here
                 DeleteIR(irl, prev_ir);  // remove prev_ir from list
                 prev_ir->next = NULL;
