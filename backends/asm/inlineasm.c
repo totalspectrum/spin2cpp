@@ -315,12 +315,19 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
                 AST *ref = (expr->left->kind == AST_ARRAYREF) ? expr->left->left : expr->left;
                 //AST *typ = ExprType(ref);
                 offset = offset + sign * EvalConstExpr(expr->right);
-                r = CompileInlineOperand(irl, ref, effects, 0);
+                r = CompileInlineOperand(irl, ref, effects, immflag);
                 if (offset != 0) {
-                    if (r->kind == IMM_COG_LABEL || r->kind == REG_HW) {
+                    switch (r->kind) {
+                    case IMM_COG_LABEL:
+                    case IMM_HUB_LABEL:
+                    case REG_HW:
+                    case HUBMEM_REF:
+                    case COGMEM_REF:
                         r->val = offset;
-                    } else {
+                        break;
+                    default:
                         r = SubRegister(r, offset * LONG_SIZE);
+                        break;
                     }
                 }
                 return r;
