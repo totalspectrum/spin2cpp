@@ -1101,7 +1101,7 @@ resolveFuncSymbols(Module *Q)
                 const char *filename = pf->body->d.string;
                 LoadFileIntoModule(filename, pf->module, NULL);
                 pf->callSites++;
-                if (pf->body->kind == AST_STRING) {
+                if (pf->body && pf->body->kind == AST_STRING) {
                     ERROR(NULL, "No implementation for `%s' found in `%s'", pf->name, filename);
                 } else {
                     resolveChanges = 1;
