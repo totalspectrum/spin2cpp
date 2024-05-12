@@ -1955,7 +1955,6 @@ getSpinToken(LexStream *L, AST **ast_ptr)
     int peekc;
 
     if (L->backtick_state) {
-        int sawSpaces = 0;
         //printf(" %d: L->backtick_state\n", L->backtick_state);
         c = lexgetc(L); // note: could change L->backtick_state in some cases
         switch (L->backtick_state) {
@@ -1976,7 +1975,6 @@ getSpinToken(LexStream *L, AST **ast_ptr)
             /* ignore spaces */
             while (c == ' ' || c == '\t') {
                 c = lexgetc(L);
-                sawSpaces++;
             }
             if (c == ')') {
                 // done with the backtick escape
