@@ -404,11 +404,7 @@ static NuMacro *NuScanForMacros(NuIrList *lists, int *savings) {
     NuBytecode *prevCode, *curCode;
     NuMacro *where = 0;
     int savedBytes;
-    static int found_macro = 0;
 
-//    if (found_macro > 48) {
-//        return NULL;
-//    }
     memset(macros, 0, sizeof(macros));
     while (irl) {
         prevCode = NULL;
@@ -449,7 +445,6 @@ static NuMacro *NuScanForMacros(NuIrList *lists, int *savings) {
         return NULL;
     }
     *savings = savedBytes;
-    found_macro++;
     where->depth = where->firstCode->macro_depth;
     if (where->secondCode->macro_depth > where->depth) {
         where->depth = where->secondCode->macro_depth;

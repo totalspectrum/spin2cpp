@@ -398,7 +398,6 @@ PrintCaseItem(Flexbuf *f, AST *var, AST *ast, int indent, int how)
 static void
 PrintCaseStmt(Flexbuf *f, AST *expr, AST *ast, int indent)
 {
-    int items = 0;
     int first = 1;
     int otherIsLast = 1;
     int noOther = 1;
@@ -471,7 +470,6 @@ PrintCaseStmt(Flexbuf *f, AST *expr, AST *ast, int indent)
         }
         PrintCaseItem(f, var, ast->left, indent, USE_IF);
         ast = ast->right;
-        items++;
     }
     PrintNewline(f);
 }
