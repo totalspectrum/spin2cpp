@@ -1,7 +1,7 @@
 //
 // Inline assembly code
 //
-// Copyright 2016-2023 Total Spectrum Software Inc.
+// Copyright 2016-2024 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include "spinc.h"
@@ -323,7 +323,7 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
                     case REG_HW:
                     case HUBMEM_REF:
                     case COGMEM_REF:
-                        r->val = offset;
+                        r->val += offset;
                         break;
                     default:
                         r = SubRegister(r, offset * LONG_SIZE);

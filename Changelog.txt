@@ -1,3 +1,6 @@
+Version 6.9.8
+- Fix `#foo+CONST` calculation
+
 Version 6.9.7
 - Fixed infinite loop when CORDIC and Read/Write optimizations fight
 - Fixed potential crash when compiling empty functions
