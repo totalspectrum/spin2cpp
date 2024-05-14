@@ -247,6 +247,7 @@ enum astkind {
     AST_SIGNED_BOOLTYPE = 177,
     AST_UNS_BOOLTYPE = 178,
     AST_BYTEPTR = 179,
+    AST_STATIC_ASSERT = 180,
 
 };
 
@@ -285,6 +286,7 @@ AST *AstFloat(float f);
 AST *AstBitValue(int64_t intval);
 AST *AstPlainString(const char *string);
 AST *AstStringPtr(const char *string);
+const char *GetStringFromAst(AST *ast);
 AST *AstIdentifier(const char *name);
 AST *AstSymbol(void *sym);
 AST *AstTempIdentifier(const char *name);

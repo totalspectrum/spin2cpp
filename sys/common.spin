@@ -93,6 +93,42 @@ pri __builtin_strncpy(dst, src, maxn) : r=@byte | n
   byte[dst][n] := 0
   return dst
 
+' Spin2 style memory comparison function
+' return 0 for unequal, -1 for equal
+pri __builtin_compdata(s1, s2, count=long) : r | n, a, b
+  n := count / 4   ' number of longs to compare
+  repeat while n-- > 0
+    a := long[s1]
+    b := long[s2]
+    if a <> b
+      return 0
+    s1 += 4
+    s2 += 4
+    count -= 4
+  repeat while count-- > 0
+    a := byte[s1++]
+    b := byte[s2++]
+    if a <> b
+      return 0
+  return -1
+
+' Spin2 style memory data swap operation
+pri __builtin_swapdata(s1, s2, count=long) | n, a, b
+  n := count / 4   ' number of longs to swap
+  repeat while n-- > 0
+    a := long[s1]
+    b := long[s2]
+    long[s1] := b
+    long[s2] := a
+    s1 += 4
+    s2 += 4
+    count -= 4
+  repeat while count-- > 0
+    a := byte[s1]
+    b := byte[s2]
+    byte[s1++] := b
+    byte[s2++] := a
+
 pri SendRecvDevice(sendf, recvf = 0, closef = 0)
   return (sendf, recvf, closef)
 

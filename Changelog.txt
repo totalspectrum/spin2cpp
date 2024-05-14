@@ -1,7 +1,7 @@
 Version 7.0.0
 - Added Spin2 structures (basically small objects)
 - Added BOOL debug modifier for -g
-- Added some of the v43 Spin2 builtin methods like byteswap 
+- Added some of the v44 Spin2 builtin methods like byteswap 
 
 Version 6.9.8
 - Fix `#foo+CONST` calculation

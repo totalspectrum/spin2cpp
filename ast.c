@@ -395,12 +395,25 @@ AstStringPtr(const char *name)
     ast->d.string = name;
     return NewAST(AST_STRINGPTR, ast, NULL);
 }
+
+/* a literal string without STRINGPTR wrapper */
 AST *
 AstPlainString(const char *name)
 {
     AST *ast = NewAST(AST_STRING, NULL, NULL);
     ast->d.string = name;
     return ast;
+}
+
+/* get a string from an AST */
+const char *
+GetStringFromAst(AST *ast)
+{
+    if (ast && ast->kind == AST_STRINGPTR)
+        ast = ast->left;
+    if (!ast || ast->kind != AST_STRING)
+        return "unknown";
+    return ast->d.string;
 }
 
 /*
@@ -872,6 +885,7 @@ static const char *astnames[] = {
     "signed_booltype",
     "unsigned_booltype",
     "byteptr",
+    "static_assert",
 };
 
 //

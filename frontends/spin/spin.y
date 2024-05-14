@@ -2093,6 +2093,52 @@ funccall:
     {
         SYNTAX_ERROR("REGLOAD is not supported by flexspin");
     }
+  | SP_COPY '(' expr ',' expr ')'
+    {
+        AST *dst = $3;
+        AST *src = $5;
+        AST *check = NewAST(AST_STATIC_ASSERT,
+                            NewAST(AST_SAMETYPES,
+                                   NewAST(AST_TYPEOF, dst, NULL),
+                                   NewAST(AST_TYPEOF, src, NULL)),
+                            AstStringPtr("Parameters to COPY must have the same type"));
+        AST *dstptr = NewAST(AST_ADDROF, dst, NULL);
+        AST *srcptr = NewAST(AST_ADDROF, src, NULL);
+        AST *copyparams = NewAST(AST_EXPRLIST,
+                                 dstptr,
+                                 NewAST(AST_EXPRLIST,
+                                        srcptr,
+                                        NewAST(AST_EXPRLIST,
+                                               NewAST(AST_SIZEOF, src, NULL),
+                                               NULL)));
+        AST *copy = NewAST(AST_FUNCCALL,
+                           AstIdentifier("__builtin_memmove"),
+                           copyparams);
+        $$ = NewAST(AST_SEQUENCE, check, copy);
+    }  
+  | SP_SWAP '(' expr ',' expr ')'
+    {
+        AST *dst = $3;
+        AST *src = $5;
+        AST *check = NewAST(AST_STATIC_ASSERT,
+                            NewAST(AST_SAMETYPES,
+                                   NewAST(AST_TYPEOF, dst, NULL),
+                                   NewAST(AST_TYPEOF, src, NULL)),
+                            AstStringPtr("Parameters to SWAP must have the same type"));
+        AST *dstptr = NewAST(AST_ADDROF, dst, NULL);
+        AST *srcptr = NewAST(AST_ADDROF, src, NULL);
+        AST *copyparams = NewAST(AST_EXPRLIST,
+                                 dstptr,
+                                 NewAST(AST_EXPRLIST,
+                                        srcptr,
+                                        NewAST(AST_EXPRLIST,
+                                               NewAST(AST_SIZEOF, src, NULL),
+                                               NULL)));
+        AST *copy = NewAST(AST_FUNCCALL,
+                           AstIdentifier("__builtin_byteswap"),
+                           copyparams);
+        $$ = NewAST(AST_SEQUENCE, check, copy);
+    }  
 ;
 
 

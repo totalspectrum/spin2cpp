@@ -4660,7 +4660,18 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
         }
         return r;
     }
-    case AST_EXPECT: return CompileExpression(irl,expr->left,dest);
+    case AST_EXPECT:
+        return CompileExpression(irl,expr->left,dest);
+    case AST_STATIC_ASSERT:
+    {
+        int32_t x = EvalConstExpr(expr->left);
+        if (x == 0) {
+            AST *astmsg = expr->right;
+            const char *msg = GetStringFromAst(astmsg);
+            ERROR(expr, msg);
+        }
+        return NewImmediate(x);
+    }
     case AST_EXPRLIST: {
         /* a singleton expression list is just like an expression */
         if (!expr->right) {

@@ -2432,6 +2432,11 @@ struct reservedword_soft {
     { "bytes", SP_BYTES, 42, 42 }, 
     { "longs", SP_LONGS, 42, 42 },
     { "words", SP_WORDS, 42, 42 },
+
+    /* new v44 keywords */
+    { "fill", SP_FILL, 44, 0 },
+    { "copy", SP_COPY, 44, 0 },
+    { "swap", SP_SWAP, 44, 0 },
     
 };
 
