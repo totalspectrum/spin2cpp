@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2023 Total Spectrum Software Inc.
+ * Copyright 2011-2024 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for Spin specific features
@@ -204,10 +204,21 @@ TransformLongMove(AST **astptr, AST *ast)
     return true;
 }
 
+//
+// fix up any parameters passed by reference
+// this applies both to calls into BASIC/C++ functions, but
+// also ^Struct parameters in Spin2
+//
+static void
+FixupSpinParameterTypes(AST **astptr, AST *ast)
+{
+    (void)FixupFunccallTypes(ast, false);
+}
+
 // special processing for various Spin functions
 //   longmove(@x, @y, n) gets turned into direct moves
 //   pinw(p, n) gets turned into _drvw(p, n) if we can prove
-//     n is just 1 bit
+//     n is just 1 bit (not done here any more, it's language independent)
 // returns true if anything changed
 // ast is the FUNCCALL ast, with ast->left known to be an identifier
 // *astptr should match ast
@@ -220,78 +231,6 @@ SpinFunctionSpecialCase(AST **astptr, AST *ast)
     if (!strcasecmp(name, "longmove")) {
         return TransformLongMove(astptr, ast);
     }
-#if 0
-    // these are handled in the high level optimization now
-    if (!strcasecmp(name, "pinw") || !strcasecmp(name, "pinwrite")) {
-        // check for simple cases:
-        // pinwrite(p, x) where x is in { 0, 1, x & 1, or !(x & 1) }
-        // or where p is <= 32
-        // change function name
-        AST *arglist;
-        AST *pin_expr;
-        AST *x_expr;
-        arglist = ast->right;
-        if (!arglist || !arglist->right) {
-            return false;
-        }
-        pin_expr = arglist->left;
-        x_expr = arglist->right->left;
-        if (!x_expr) {
-            return false;
-        }
-        if (IsConstExpr(pin_expr) && (64 > (unsigned)EvalConstExpr(pin_expr))) {
-            /* yes, do the switch */
-        } else if (IsConstExpr(x_expr)) {
-            int x = EvalConstExpr(x_expr);
-            if (x != 0 && x != 1) {
-                return false;
-            }
-        } else if (x_expr->kind == AST_OPERATOR) {
-            int x = 9999;
-            if (x_expr->d.ival == '&') {
-                if (IsConstExpr(x_expr->left)) {
-                    x = EvalConstExpr(x_expr->left);
-                } else if (IsConstExpr(x_expr->right)) {
-                    x = EvalConstExpr(x_expr->right);
-                }
-                if (x != 0 && x != 1) {
-                    return false;
-                }
-            } else if (x_expr->d.ival == K_SHR) {
-                if (!IsConstExpr(x_expr->right)) {
-                    return false;
-                }
-                x = EvalConstExpr(x_expr->right);
-                if (x != 31) {
-                    return false;
-                }
-            } else {
-                return false;
-            }
-        } else {
-            return false;
-        }
-        ast->left = AstIdentifier("_drvw");
-        return true;
-    }
-    if (!strcasecmp(name, "pinr") || !strcasecmp(name, "pinread")) {
-        // check for simple cases:
-        // pinwrite(p) where p is known to be a single pin
-        // change function name
-        AST *arglist;
-        AST *pin_expr;
-        arglist = ast->right;
-        if (!arglist) {
-            return false;
-        }
-        pin_expr = arglist->left;
-        if (IsConstExpr(pin_expr) && (64 > (unsigned)EvalConstExpr(pin_expr))) {
-            /* yes, do the switch */
-            ast->left = AstIdentifier("_pinr");
-            return true;
-        }
-    }
-#endif    
     return false;
 }
 
@@ -705,6 +644,9 @@ doSpinTransform(AST **astptr, int level, AST *parent)
         }
         doSpinTransform(&ast->left, 0, ast);
         doSpinTransform(&ast->right, 0, ast);
+
+        /* fix up any implicit pointers in the parameter list */
+        FixupSpinParameterTypes(astptr, ast);
         break;
     case AST_POSTSET:
     {
@@ -756,7 +698,6 @@ doSpinTransform(AST **astptr, int level, AST *parent)
             AST *args = NewAST(AST_EXPRLIST, p,
                                NewAST(AST_EXPRLIST, i,
                                       NewAST(AST_EXPRLIST, x, NULL)));
-            ASTReportInfo saveinfo;
             AstReportAs(ast, &saveinfo);
             *astptr = ast = NewAST(AST_FUNCCALL, func, args);
             AstReportDone(&saveinfo);
@@ -789,6 +730,13 @@ doSpinTransform(AST **astptr, int level, AST *parent)
                 AstReportAs(ast, &saveinfo);
                 lookup = NewAST(AST_ARRAYREF, ast->left, AstInteger(0));
                 *ast = *NewAST(ast->kind, lookup, ast->right);
+                AstReportDone(&saveinfo);
+            } else if (IsRefType(objtype)) {
+                AST *deref;
+                AstReportAs(ast, &saveinfo);
+                deref = NewAST(AST_MEMREF, objtype->left, ast->left);
+                deref = NewAST(AST_ARRAYREF, deref, AstInteger(0));
+                *ast = *NewAST(ast->kind, deref, ast->right);
                 AstReportDone(&saveinfo);
             }
         }
@@ -823,6 +771,19 @@ doSpinTransform(AST **astptr, int level, AST *parent)
         doSpinTransform(&ast->left, 0, ast);
         if (IsLocalVariable(ast->left)) {
             curfunc->local_address_taken = 1;
+        }
+        break;
+    case AST_MEMREF:
+        // add memory dereferences if necessary
+        doSpinTransform(&ast->left, 0, ast);
+        doSpinTransform(&ast->right, 0, ast);
+        if (parent->kind != AST_ARRAYREF) {
+            AstReportAs(ast, &saveinfo);
+            AST *dup = NewAST(AST_MEMREF, ast->left, ast->right);
+            AST *deref = NewAST(AST_ARRAYREF, dup, AstInteger(0));
+            AstReportDone(&saveinfo);
+            *ast = *deref;
+            break;
         }
         break;
     case AST_ARRAYREF:

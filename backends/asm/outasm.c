@@ -4576,8 +4576,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
         if (!objtype) {
             ERROR(expr, "%s is not accessible in this context", GetIdentifierName(expr->left));
             return EmptyOperand();
-        }
-        else if (!IsClassType(objtype)) {
+        } else if (!IsClassType(objtype)) {
             ERROR(expr, "Request for member %s in something that is not a class", name);
             return EmptyOperand();
         }

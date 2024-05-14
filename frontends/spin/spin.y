@@ -1,11 +1,11 @@
 /*
  * Spin compiler parser
- * Copyright (c) 2011-2023 Total Spectrum Software Inc.
+ * Copyright (c) 2011-2024 Total Spectrum Software Inc.
  * See the file COPYING for terms of use.
  */
 
 %pure-parser
-%expect 33
+%expect 29
 
 %{
 #include <stdio.h>
@@ -226,7 +226,40 @@ FixupList(AST *list)
     return origlist;
 }
 
+// declare a Spin structure
+static void
+SpinDeclareStruct(AST *ident, AST *defs)
+{
+    const char *classname = GetUserIdentifierName(ident);
+    Module *P = NewModule(classname, current->curLanguage);
+    AST *newobj = NewAbstractObject(ident, NULL, 0);
+    AddSymbol(currentTypes, classname, SYM_TYPEDEF, newobj, NULL);
 
+    if (P != current) {
+        P->Lptr = current->Lptr;
+        P->subclasses = current->subclasses;
+        current->subclasses = P;
+        P->superclass = current;
+        P->fullname = current->fullname; // for finding "class using"
+        newobj->d.ptr = (void *)P;
+        P->isPacked = 1;
+    }
+
+    PushCurrentModule();
+    current = P;
+    AST *item;
+    /* declare member variables */
+    while (defs) {
+        item = defs->left;
+        defs = defs->right;
+        while (item && item->kind == AST_COMMENTEDNODE) {
+            item = item->left;
+        }
+        DeclareBASICMemberVariables(item);
+    }
+    PopCurrentModule();
+}
+    
 #define YYERROR_VERBOSE 1
 %}
 
@@ -336,6 +369,19 @@ FixupList(AST *list)
 %token SP_WORDS      "WORDS"
 %token SP_LONGS      "LONGS"
 %token SP_LSTRING    "LSTRING"
+
+/* v44 additions */
+%token SP_TYPENAME   "STRUCTURE NAME"
+%token SP_BYTESWAP   "BYTESWAP"
+%token SP_WORDSWAP   "WORDSWAP"
+%token SP_LONGSWAP   "LONGSWAP"
+%token SP_BYTECOMP   "BYTECOMP"
+%token SP_WORDCOMP   "WORDCOMP"
+%token SP_LONGCOMP   "LONGCOMP"
+%token SP_FILL       "FILL"
+%token SP_COPY       "COPY"
+%token SP_SWAP       "SWAP"
+%token SP_COMP       "COMP"
 
 /* operators */
 %token SP_ASSIGN     ":="
@@ -1006,11 +1052,49 @@ conblock:
 conline:
   enumlist SP_EOLN
     { $$ = $1; }
+  | SP_IDENTIFIER '(' structlist ')' SP_EOLN
+    {
+        /* basically an inline object definition */
+        AST *defs = $3;
+        AST *name = $1;
+        SpinDeclareStruct(name, defs);
+        $$ = NULL;
+    }
   | SP_EOLN
     { $$ = NULL; }
   | error SP_EOLN
     { $$ = NULL; }
   ;
+
+structlist:
+  structitem
+    { $$ = CommentedListHolder($1); }
+  | structlist ',' structitem
+    { $$ = AddToList($1, CommentedListHolder($3)); }
+;
+
+structitem:
+  SP_IDENTIFIER
+    { $$ = NewAST(AST_DECLARE_VAR, NULL, $1); }
+  | SP_BYTE SP_IDENTIFIER
+    {
+        $$ = NewAST(AST_DECLARE_VAR, ast_type_byte, $2);
+    }
+  | SP_WORD SP_IDENTIFIER
+    {
+        $$ = NewAST(AST_DECLARE_VAR, ast_type_word, $2);
+    }
+  | SP_LONG SP_IDENTIFIER
+    {
+        $$ = NewAST(AST_DECLARE_VAR, NULL, $2);
+    }
+  | SP_TYPENAME SP_IDENTIFIER
+  {
+      AST *name = $2;
+      AST *typname = $1;
+      $$ = NewAST(AST_DECLARE_VAR, typname, name);
+  }
+;
 
 enumlist:
   enumitem
@@ -1267,6 +1351,13 @@ varline:
     { $$ = NewAST(AST_WORDLIST, $2, NULL); }
   | SP_LONG identlist SP_EOLN
     { $$ = NewAST(AST_LONGLIST, $2, NULL); }
+  | SP_TYPENAME identlist SP_EOLN
+    {
+        AST *typ = $1;
+        AST *decllist = $2;
+        AST *def = NewAST(AST_DECLARE_VAR, typ, decllist);
+        $$ = def; // NewAST(AST_LISTHOLDER, def, NULL);
+    }
   | identdecl SP_EOLN
     {
         AST *decl = NewAST(AST_LISTHOLDER, $1, NULL);
@@ -1308,6 +1399,8 @@ vardecl:
     { $$ = NewAST(AST_DECLARE_VAR, ast_type_word, $2); }
   | SP_LONG identdecl
     { $$ = NewAST(AST_DECLARE_VAR, NULL, $2); }
+  | SP_TYPENAME identdecl
+    { $$ = NewAST(AST_DECLARE_VAR, $1, $2); }
 ;
 
 vardecllist:
@@ -1326,6 +1419,14 @@ paramidentdecl:
   {
       LANGUAGE_WARNING(LANG_ANY, $1, "default parameter values are a flexspin extension");
       $$ = AstAssign($1, $3);
+  }
+  | '^' SP_TYPENAME identifier
+  {
+      AST *typ = $2;
+      AST *ident = $3;
+
+      typ = NewAST(AST_REFTYPE, typ, NULL);
+      $$ = NewAST(AST_DECLARE_VAR, typ, ident);
   }
   | identifier '=' SP_LONG
   {
@@ -1811,28 +1912,7 @@ expr:
   ;
 
 lhs: identifier
-  | identifier '[' expr ']'
-    {
-        $$ = NewAST(AST_ARRAYREF, $1, $3);
-    }
-  | identifier '.' identifier '[' expr ']'
-    {
-        AST *objroot = $1;
-        AST *method = $3;
-        AST *index = $5;
-        AST *expr;
-        expr = NewAST(AST_METHODREF, objroot, method);
-        expr = NewAST(AST_ARRAYREF, expr, index);
-        $$ = expr;
-    }
-  | identifier '[' expr ']' '.' '[' range ']'
-    {
-        AST *arr = NewAST(AST_ARRAYREF, $1, $3);
-        AST *range = $7;
-        $$ = NewAST(AST_RANGEREF, arr, range);
-    }
   | hwreg
-    { $$ = $1; }
   | hwreg '[' range ']'
     { $$ = NewAST(AST_RANGEREF, $1, $3);
     }
@@ -1844,47 +1924,77 @@ lhs: identifier
         AST *holder = NewAST(AST_BIGIMMHOLDER, base, NULL);
         $$ = holder;
     }
-  | hwreg '.' '[' range ']'
-    { $$ = NewAST(AST_RANGEREF, $1, $4);
-    }
-  | memref '[' expr ']'
-    { $$ = NewAST(AST_ARRAYREF, $1, $3); }
-  | memref '[' expr ']' '.' '[' range ']'
-    {
-        AST *ast = NewAST(AST_ARRAYREF, $1, $3);
-        AST *range = $7;
-        $$ = NewAST(AST_RANGEREF, ast, range);
-    }
-  | memref '.' '[' range ']'
-    { $$ = NewAST(AST_RANGEREF, $1, $4); }
-  | '(' expr ')' '[' expr ']'
-    { $$ = NewAST(AST_ARRAYREF, $2, $5); }
-  | memref
-    { $$ = NewAST(AST_ARRAYREF, $1, AstInteger(0)); }
   | SP_SPR '[' expr ']'
     { $$ = AstSprRef($3, 0x1f0); }
   | SP_COGREG '[' expr ']'
     { $$ = AstSprRef($3, 0x0); }
-  | SP_COGREG '[' expr ']' '[' expr ']'
+  | SP_TYPENAME '[' expr ']'
     {
-        AST *cogmem = $3;
-        AST *off = $6;
-        $$ = AstSprRef(AstOperator('+', cogmem, off), 0x0);
+        AST *base = NewAST(AST_MEMREF, $1, $3);
+        $$ = base;
     }
-  | identifier '.' '[' range ']'
-    { $$ = NewAST(AST_RANGEREF, $1, $4);
-    }
-  | SP_FIELD '[' expr ']'
+  | SP_BYTE '[' expr ']'
     {
-        AST *ref = $3;
-        AST *idx = AstInteger(0);
-        $$ = NewAST(AST_FIELDREF, ref, idx);
+        AST *base = NewAST(AST_MEMREF, ast_type_byte, $3);
+        $$ = base;
     }
-  | SP_FIELD '[' expr ']' '[' expr ']'
+  | SP_WORD '[' expr ']'
     {
-        AST *ref = $3;
-        AST *idx = $6;
-        $$ = NewAST(AST_FIELDREF, ref, idx);
+        AST *base = NewAST(AST_MEMREF, ast_type_word, $3);
+        $$ = base;
+    }
+  | SP_LONG '[' expr ']'
+    {
+        AST *base = NewAST(AST_MEMREF, ast_type_long, $3);
+        $$ = base;
+    }
+  | lhs '.' SP_BYTE '[' expr ']'
+    {
+        AST *base = NewAST(AST_MEMREF, ast_type_byte, NewAST(AST_ADDROF, $1, NULL));
+        $$ = NewAST(AST_ARRAYREF, base, $5);
+    }
+  | lhs '.' SP_BYTE
+    {
+        AST *base = NewAST(AST_MEMREF, ast_type_byte, NewAST(AST_ADDROF, $1, NULL));
+        $$ = NewAST(AST_ARRAYREF, base, AstInteger(0));
+    }
+  | lhs '.' SP_WORD '[' expr ']'
+    {
+        AST *base = NewAST(AST_MEMREF, ast_type_word, NewAST(AST_ADDROF, $1, NULL));
+        $$ = NewAST(AST_ARRAYREF, base, $5);
+    }
+  | lhs '.' SP_WORD
+    {
+        AST *base = NewAST(AST_MEMREF, ast_type_word, NewAST(AST_ADDROF, $1, NULL));
+        $$ = NewAST(AST_ARRAYREF, base, AstInteger(0));
+    }
+  | lhs '.' SP_LONG '[' expr ']'
+    {
+        AST *base = NewAST(AST_MEMREF, ast_type_long, NewAST(AST_ADDROF, $1, NULL));
+        $$ = NewAST(AST_ARRAYREF, base, $5);
+    }
+  | lhs '.' SP_LONG
+    {
+        AST *base = NewAST(AST_MEMREF, ast_type_long, NewAST(AST_ADDROF, $1, NULL));
+        $$ = NewAST(AST_ARRAYREF, base, AstInteger(0));
+    }
+  | lhs '.' '[' range ']'
+    {
+        AST *arr = $1;
+        AST *range = $4;
+        $$ = NewAST(AST_RANGEREF, arr, range);
+    }
+  | lhs '.' identifier
+    {
+        AST *objroot = $1;
+        AST *method = $3;
+        AST *expr;
+        expr = NewAST(AST_METHODREF, objroot, method);
+        $$ = expr;
+    }
+  | lhs '[' expr ']'
+    {
+        $$ = NewAST(AST_ARRAYREF, $1, $3);
     }
   ;
 
@@ -1907,21 +2017,6 @@ lhssingle:
        { $$ = $1; }
     | SP_EMPTY
        { $$ = NewAST(AST_EMPTY, NULL, NULL); }
-;
-
-memref:
-  SP_BYTE '[' expr ']'
-    { $$ = NewAST(AST_MEMREF, ast_type_byte, $3); }
-  | SP_WORD '[' expr ']'
-    { $$ = NewAST(AST_MEMREF, ast_type_word, $3); }
-  | SP_LONG '[' expr ']'
-    { $$ = NewAST(AST_MEMREF, ast_type_long, $3); }
-  | identifier '.' SP_BYTE
-    { $$ = NewAST(AST_MEMREF, ast_type_byte, NewAST(AST_ADDROF, $1, NULL)); }
-  | identifier '.' SP_WORD
-    { $$ = NewAST(AST_MEMREF, ast_type_word, NewAST(AST_ADDROF, $1, NULL)); }
-  | identifier '.' SP_LONG
-    { $$ = NewAST(AST_MEMREF, ast_type_long, NewAST(AST_ADDROF, $1, NULL)); }
 ;
 
 opt_numrets:
@@ -1989,35 +2084,6 @@ funccall:
         elist = FixupList(elist);
         $$ = NewAST(AST_COGINIT, elist, NULL);
         LANGUAGE_WARNING(LANG_SPIN_SPIN2, NULL, "cognew support in Spin2 is a flexspin extension");
-    }
-  | identifier '.' identifier '(' exprlist ')' opt_numrets
-    { 
-        $$ = MakeFunccall(NewAST(AST_METHODREF, $1, $3), FixupList($5), $7);
-    }
-  | identifier '.' identifier '(' ')' opt_numrets
-    { 
-        $$ = MakeFunccall(NewAST(AST_METHODREF, $1, $3), NULL, $6);
-        LANGUAGE_WARNING(LANG_SPIN_SPIN1, NULL, "Using () for functions with no parameters is a flexspin extension");
-    }
-  | identifier '.' identifier
-    { 
-        $$ = NewAST(AST_METHODREF, $1, $3);
-    }
-  | identifier '[' expr ']' '.' identifier '(' exprlist ')' opt_numrets
-    { 
-        AST *arr = NewAST(AST_ARRAYREF, $1, $3);
-        $$ = MakeFunccall(NewAST(AST_METHODREF, arr, $6), FixupList($8), $10);
-    }
-  | identifier '[' expr ']' '.' identifier '(' ')' opt_numrets
-    { 
-        AST *arr = NewAST(AST_ARRAYREF, $1, $3);
-        $$ = MakeFunccall(NewAST(AST_METHODREF, arr, $6), NULL, $9);
-        LANGUAGE_WARNING(LANG_SPIN_SPIN1, NULL, "Using () for functions with no parameters is a flexspin extension");
-    }
-  | identifier '[' expr ']' '.' identifier
-    { 
-        AST *arr = NewAST(AST_ARRAYREF, $1, $3);
-        $$ = NewAST(AST_METHODREF, arr, $6);
     }
   | SP_REGEXEC '(' exprlist ')'
     {

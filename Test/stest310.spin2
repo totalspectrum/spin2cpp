@@ -1,0 +1,15 @@
+con
+  point(long x, long y)
+
+var
+  point q
+  
+pub foo(a, b)
+  q.x := a
+  q.y := b
+  sendx(q)
+
+pub {++noinline} sendx(^point p)
+  outa := p.y
+  p.x := inb
+

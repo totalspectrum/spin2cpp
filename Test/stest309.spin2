@@ -1,0 +1,6 @@
+con
+  point(long x, long y)
+
+pub sendx(^point p)
+  outa := p.y
+  p.x := inb

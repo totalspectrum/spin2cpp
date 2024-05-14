@@ -2267,13 +2267,14 @@ void
 DeclareMemberVariables(Module *P)
 {
     int offset;
-
+    bool isPacked = P->isPacked;
+    
     if (P->isUnion) {
         offset = 0;
     } else {
         offset = P->varsize;
     }
-    if (P->mainLanguage == LANG_SPIN_SPIN1) {
+    if (!isPacked && P->mainLanguage == LANG_SPIN_SPIN1) {
         // Spin always declares longs first, then words, then bytes
         // but other languages may have other preferences
         offset = DeclareMemberVariablesOfSizeFlag(P, SIZEFLAG_LONG, offset);
@@ -2281,7 +2282,7 @@ DeclareMemberVariables(Module *P)
         offset = DeclareMemberVariablesOfSizeFlag(P, SIZEFLAG_BYTE, offset);
         offset = DeclareMemberVariablesOfSizeFlag(P, SIZEFLAG_VAR, offset);
         offset = DeclareMemberVariablesOfSizeFlag(P, SIZEFLAG_OBJ|SIZEFLAG_DONE, offset);
-    } else if (P->mainLanguage == LANG_SPIN_SPIN2) {
+    } else if (!isPacked && P->mainLanguage == LANG_SPIN_SPIN2) {
         // Spin2 allows the variables to be mixed, but puts the objects at the end
         offset = DeclareMemberVariablesOfSizeFlag(P, SIZEFLAG_LONG|SIZEFLAG_WORD|SIZEFLAG_BYTE, offset);
         offset = DeclareMemberVariablesOfSizeFlag(P, SIZEFLAG_VAR|SIZEFLAG_OBJ|SIZEFLAG_DONE, offset);
@@ -2933,7 +2934,7 @@ void FixupOffsets(Module *P) {
     printf("%s\n", P->classname);
 #endif
     // Spin language offsets have to be set up in a very specific way
-    if (IsSpinLang(P->mainLanguage)) {
+    if (IsSpinLang(P->mainLanguage) && !P->isPacked) {
         IterateOverSymbols(&P->objsyms, fixupByteWordLongOffset, (void *)&A);
         IterateOverSymbols(&P->objsyms, fixupObjectOffset, (void *)&A);
     } else {

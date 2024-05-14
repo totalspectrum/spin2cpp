@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2023 Total Spectrum Software Inc.
+ * Copyright 2011-2024 Total Spectrum Software Inc.
  *
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -1661,6 +1661,131 @@ static int PushSize(AST *list)
     return size;
 }
 
+AST *
+FixupFunccallTypes(AST *ast, bool typedLanguage)
+{
+    AST *ltype = NULL;
+    AST *actualParamList = ast->right;
+    AST *actualParamListPrev = ast;
+    AST *calledParamList;
+    AST *expectType, *passedType;
+    AST *functype;
+    AST *tupleType = NULL;
+    AST **varArgsPlace = NULL;
+    AST *varArgs = NULL;
+    AST *varArgsList = NULL;
+    int varargsOffset = 0;
+    int tupleCount = 0;
+
+    functype = RemoveTypeModifiers(ExprType(ast->left));
+    if (functype && functype->kind == AST_PTRTYPE) {
+        functype = RemoveTypeModifiers(functype->left);
+    }
+    if (!functype || IsFunctionType(functype)) {
+        calledParamList = functype ? functype->right : NULL;
+        while (actualParamList) {
+            AST *paramId = calledParamList ? calledParamList->left : NULL;
+            AST *actualParam = actualParamList->left;
+
+            expectType = NULL;
+            if (tupleType) {
+                passedType = tupleType->left;
+            } else {
+                passedType = ExprType(actualParam);
+                if (passedType && passedType->kind == AST_TUPLE_TYPE) {
+                    // a tuple substitutes for multiple parameters
+                    tupleType = passedType;
+                    passedType = passedType->left;
+                    tupleCount = TypeSize(tupleType)/LONG_SIZE;
+                } else {
+                    tupleCount = 0;
+                }
+            }
+            if (paramId) {
+                // if the parameter has a type declaration, use it
+                if (paramId->kind == AST_DECLARE_VAR) {
+                    expectType = ExprType(paramId);
+                } else if (paramId->kind == AST_VARARGS) {
+                    /* anything */
+                    if (!varArgsPlace) {
+                        if (NoVarargsOutput()) {
+                            int bytes = PushSize(actualParamList);
+                            AST *funcall = NewAST(AST_FUNCCALL, gc_alloc_managed,
+                                                  NewAST(AST_EXPRLIST, AstInteger(bytes), NULL));
+                            varArgs = AstTempLocalVariable("_varargs_", NULL);
+
+                            varArgsPlace = &actualParamListPrev->right;
+                            varArgsList = NewAST(AST_SEQUENCE, AstAssign(varArgs, funcall), NULL);
+                        }
+                    }
+                }
+            }
+            if (!expectType) {
+                // pass arrays as pointers
+                if (IsArrayType(passedType)) {
+                    expectType = ArrayToPointerType(passedType);
+                } else if (TypeGoesOnStack(passedType)) {
+                    // need to emit a copy
+                    expectType = NewAST(AST_COPYREFTYPE, passedType, NULL);
+                } else if (TypeSize(passedType) > LONG_SIZE) {
+                    expectType = passedType;
+                } else {
+                    // we use const generic to avoid lots of warning
+                    // messages about passing strings to printf
+                    expectType = ast_type_const_generic;
+                }
+            }
+            if (tupleType) {
+                // we can't actually modify the arguments
+                if (typedLanguage || IsRefType(expectType)) {
+                    CoerceAssignTypes(ast, AST_FUNCCALL, NULL, expectType, passedType, "parameter passing");
+                }
+                tupleType = tupleType->right;
+            } else {
+                if (typedLanguage || IsRefType(expectType)) {
+                    CoerceAssignTypes(ast, AST_FUNCCALL, &actualParamList->left, expectType, passedType, "parameter passing");
+                }
+            }
+            if (!tupleType) {
+                if (varArgsList) {
+                    AST *memref = NewAST(AST_MEMREF, expectType, AstOperator('+', varArgs, AstInteger(varargsOffset)));
+                    AST *assignref = NULL;
+
+                    if (tupleCount) {
+                        int tupleOffset;
+                        for (tupleOffset = tupleCount-1; tupleOffset >= 0; tupleOffset--) {
+                            assignref = NewAST(AST_EXPRLIST,
+                                               NewAST(AST_ARRAYREF, memref, AstInteger(tupleOffset)),
+                                               assignref);
+                        }
+                    } else {
+                        assignref = NewAST(AST_ARRAYREF, memref, AstInteger(0));
+                    }
+                    AST *assign = AstAssign(assignref,
+                                            actualParamList->left);
+                    varArgsList->right = assign;
+                    varArgsList = NewAST(AST_SEQUENCE, varArgsList, NULL);
+                    varargsOffset += TypeSize(expectType);
+                }
+                actualParamListPrev = actualParamList;
+                actualParamList = actualParamList->right;
+            }
+            if (calledParamList) {
+                calledParamList = calledParamList->right;
+            }
+        }
+        ltype = functype ? functype->left : NULL;
+        if (varArgsPlace) {
+            varArgsList = NewAST(AST_SEQUENCE, varArgsList, varArgs);
+            *varArgsPlace = NewAST(AST_EXPRLIST, varArgsList, NULL);
+        }
+    } else {
+        return NULL;
+    }
+    return ltype;
+}
+
+
 //
 // function for doing type checking and various kinds of
 // type related manipulations. for example:
@@ -1822,122 +1947,8 @@ static AST *doCheckTypes(AST *ast)
         }
         break;
     case AST_FUNCCALL:
-    {
-        AST *actualParamList = ast->right;
-        AST *actualParamListPrev = ast;
-        AST *calledParamList;
-        AST *expectType, *passedType;
-        AST *functype;
-        AST *tupleType = NULL;
-        AST **varArgsPlace = NULL;
-        AST *varArgs = NULL;
-        AST *varArgsList = NULL;
-        int varargsOffset = 0;
-        int tupleCount = 0;
-
-        functype = RemoveTypeModifiers(ExprType(ast->left));
-        if (functype && functype->kind == AST_PTRTYPE) {
-            functype = RemoveTypeModifiers(functype->left);
-        }
-        if (!functype || IsFunctionType(functype)) {
-            calledParamList = functype ? functype->right : NULL;
-            while (actualParamList) {
-                AST *paramId = calledParamList ? calledParamList->left : NULL;
-                AST *actualParam = actualParamList->left;
-
-                expectType = NULL;
-                if (tupleType) {
-                    passedType = tupleType->left;
-                } else {
-                    passedType = ExprType(actualParam);
-                    if (passedType && passedType->kind == AST_TUPLE_TYPE) {
-                        // a tuple substitutes for multiple parameters
-                        tupleType = passedType;
-                        passedType = passedType->left;
-                        tupleCount = TypeSize(tupleType)/LONG_SIZE;
-                    } else {
-                        tupleCount = 0;
-                    }
-                }
-                if (paramId) {
-                    // if the parameter has a type declaration, use it
-                    if (paramId->kind == AST_DECLARE_VAR) {
-                        expectType = ExprType(paramId);
-                    } else if (paramId->kind == AST_VARARGS) {
-                        /* anything */
-                        if (!varArgsPlace) {
-                            if (NoVarargsOutput()) {
-                                int bytes = PushSize(actualParamList);
-                                AST *funcall = NewAST(AST_FUNCCALL, gc_alloc_managed,
-                                                      NewAST(AST_EXPRLIST, AstInteger(bytes), NULL));
-                                varArgs = AstTempLocalVariable("_varargs_", NULL);
-
-                                varArgsPlace = &actualParamListPrev->right;
-                                varArgsList = NewAST(AST_SEQUENCE, AstAssign(varArgs, funcall), NULL);
-                            }
-                        }
-                    }
-                }
-                if (!expectType) {
-                    // pass arrays as pointers
-                    if (IsArrayType(passedType)) {
-                        expectType = ArrayToPointerType(passedType);
-                    } else if (TypeGoesOnStack(passedType)) {
-                        // need to emit a copy
-                        expectType = NewAST(AST_COPYREFTYPE, passedType, NULL);
-                    } else if (TypeSize(passedType) > LONG_SIZE) {
-                        expectType = passedType;
-                    } else {
-                        // we use const generic to avoid lots of warning
-                        // messages about passing strings to printf
-                        expectType = ast_type_const_generic;
-                    }
-                }
-                if (tupleType) {
-                    // cannot coerce function arguments, really
-                    CoerceAssignTypes(ast, AST_FUNCCALL, NULL, expectType, passedType, "parameter passing");
-                    tupleType = tupleType->right;
-                } else {
-                    CoerceAssignTypes(ast, AST_FUNCCALL, &actualParamList->left, expectType, passedType, "parameter passing");
-                }
-                if (!tupleType) {
-                    if (varArgsList) {
-                        AST *memref = NewAST(AST_MEMREF, expectType, AstOperator('+', varArgs, AstInteger(varargsOffset)));
-                        AST *assignref = NULL;
-
-                        if (tupleCount) {
-                            int tupleOffset;
-                            for (tupleOffset = tupleCount-1; tupleOffset >= 0; tupleOffset--) {
-                                assignref = NewAST(AST_EXPRLIST,
-                                                   NewAST(AST_ARRAYREF, memref, AstInteger(tupleOffset)),
-                                                   assignref);
-                            }
-                        } else {
-                            assignref = NewAST(AST_ARRAYREF, memref, AstInteger(0));
-                        }
-                        AST *assign = AstAssign(assignref,
-                                                actualParamList->left);
-                        varArgsList->right = assign;
-                        varArgsList = NewAST(AST_SEQUENCE, varArgsList, NULL);
-                        varargsOffset += TypeSize(expectType);
-                    }
-                    actualParamListPrev = actualParamList;
-                    actualParamList = actualParamList->right;
-                }
-                if (calledParamList) {
-                    calledParamList = calledParamList->right;
-                }
-            }
-            ltype = functype ? functype->left : NULL;
-            if (varArgsPlace) {
-                varArgsList = NewAST(AST_SEQUENCE, varArgsList, varArgs);
-                *varArgsPlace = NewAST(AST_EXPRLIST, varArgsList, NULL);
-            }
-        } else {
-            return NULL;
-        }
-    }
-    break;
+        ltype = FixupFunccallTypes(ast, true);
+        break;
     case AST_RESULT:
         return GetFunctionReturnType(curfunc);
     case AST_FLOAT:

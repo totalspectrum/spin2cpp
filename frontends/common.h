@@ -591,7 +591,8 @@ struct modulestate {
     char defaultPrivate; // if 1, member variables default to private
     char longOnly;   // if 1, all module variables are longs
     char fromUsing;  // if 1, C code is included via struct __using or similar
-
+    char isPacked;   // if 1, pack the struct as much as possible
+    
     /* back end specific flags */
     void *bedata;
 
@@ -1006,6 +1007,10 @@ char *NormalizePath(const char *path);
 
 /* check types in an expression; returns the overall result of the expression */
 AST *CheckTypes(AST *expr);
+
+/* special case of above, just handles function parameter coercion */
+AST *FixupFunccallTypes(AST *call, bool isTypedLanguage);
+
 /* type conversion */
 /* "kind" is AST_ASSIGN, AST_FUNCCALL, AST_RETURN to indicate reason for conversion */
 AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *srctype, const char *msg);
@@ -1112,5 +1117,8 @@ extern AST *basic_lock_io;
 extern AST *basic_unlock_io;
 
 extern AST *varargs_ident;
+
+// kind of hacky, this should be elsewhere, but for now it's in basic.y
+extern void DeclareBASICMemberVariables(AST *ast);
 
 #endif

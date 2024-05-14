@@ -36,6 +36,7 @@ static struct s_dbgfmt {
     { "ubin_byte", "%%%08b", 8 },
     { "ubin_word", "%%%016b", 16 },
     { "ubin_long", "%%%032b", 0 },
+    { "bool", "%B", 0 },
     { "dly", "%.0s", DBG_BITS_DELAY },
     { 0, 0, 0 }
 };
