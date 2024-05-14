@@ -112,6 +112,15 @@ pri __builtin_compdata(s1, s2, count=long) : r | n, a, b
       return 0
   return -1
 
+pri bytecomp(a, b, count) : r
+  return __builtin_compdata(a, b, count)
+
+pri wordcomp(a, b, count) : r
+  return __builtin_compdata(a, b, 2*count)
+
+pri longcomp(a, b, count) : r
+  return __builtin_compdata(a, b, 4*count)
+
 ' Spin2 style memory data swap operation
 pri __builtin_swapdata(s1, s2, count=long) | n, a, b
   n := count / 4   ' number of longs to swap
@@ -128,6 +137,15 @@ pri __builtin_swapdata(s1, s2, count=long) | n, a, b
     b := byte[s2]
     byte[s1++] := b
     byte[s2++] := a
+
+pri byteswap(a, b, count)
+  __builtin_swapdata(a, b, count)
+
+pri wordswap(a, b, count)
+  __builtin_swapdata(a, b, count*2)
+
+pri longswap(a, b, count)
+  __builtin_swapdata(a, b, count*4)
 
 pri SendRecvDevice(sendf, recvf = 0, closef = 0)
   return (sendf, recvf, closef)
