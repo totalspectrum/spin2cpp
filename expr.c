@@ -1716,7 +1716,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
     }
     case AST_SAMETYPES:
     {
-        return intExpr(AstMatch(expr->left, expr->right));
+        return intExpr(SameTypes(expr->left, expr->right));
     }
     case AST_STRING:
     {
@@ -3385,6 +3385,10 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
 int
 SameTypes(AST *A, AST *B)
 {
+    if (A && A->kind == AST_TYPEOF)
+        A = ExprType(A);
+    if (B && B->kind == AST_TYPEOF)
+        B = ExprType(B);
     if (A == B) return 1;
     // NULL is the same as ast_type_generic */
     if (!A) return (B == ast_type_generic);
