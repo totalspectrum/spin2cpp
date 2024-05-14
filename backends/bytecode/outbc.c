@@ -2315,6 +2315,13 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                                       valast);
                 BCCompileExpression(irbuf, newnode, context, asStatement);
             } break;
+            case AST_STATIC_ASSERT: {
+                int32_t val = EvalConstExpr(node->left);
+                if (val == 0) {
+                    ERROR(node, GetStringFromAst(node->right));
+                }
+                popResults = 0;
+            } break;        
             case AST_EXPECT: return BCCompileExpression(irbuf,node->left,context,asStatement);
             default:
                 ERROR(node,"Unhandled node kind %d in expression",node->kind);

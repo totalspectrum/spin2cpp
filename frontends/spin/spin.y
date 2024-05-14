@@ -2112,7 +2112,7 @@ funccall:
                                                NewAST(AST_SIZEOF, src, NULL),
                                                NULL)));
         AST *copy = NewAST(AST_FUNCCALL,
-                           AstIdentifier("__builtin_memmove"),
+                           AstIdentifier("__builtin_memcpy"),
                            copyparams);
         $$ = NewAST(AST_SEQUENCE, check, copy);
     }  

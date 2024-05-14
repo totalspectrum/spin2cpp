@@ -1861,6 +1861,16 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         break;
     case AST_EXPECT:
         return NuCompileExpression(irl,node->left);
+    case AST_STATIC_ASSERT:
+    {
+        int32_t x = EvalConstExpr(node->left);
+        if (x == 0) {
+            AST *astmsg = node->right;
+            const char *msg = GetStringFromAst(astmsg);
+            ERROR(node, msg);
+        }
+        return 0;
+    }
     case AST_GOTO:
     case AST_WHILE:
     case AST_DOWHILE:
