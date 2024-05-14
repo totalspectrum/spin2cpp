@@ -2162,6 +2162,23 @@ funccall:
                            copyparams);
         $$ = NewAST(AST_SEQUENCE, check, copy);
     }  
+  | SP_FILL '(' expr ',' expr ')'
+    {
+        AST *dst = $3;
+        AST *val = $5;
+        AST *dstptr = NewAST(AST_ADDROF, dst, NULL);
+        AST *params = NewAST(AST_EXPRLIST,
+                                 dstptr,
+                                 NewAST(AST_EXPRLIST,
+                                        val,
+                                        NewAST(AST_EXPRLIST,
+                                               NewAST(AST_SIZEOF, dst, NULL),
+                                               NULL)));
+        AST *call = NewAST(AST_FUNCCALL,
+                           AstIdentifier("__builtin_memset"),
+                           params);
+        $$ = call;
+    }  
 ;
 
 
