@@ -740,6 +740,36 @@ doSpinTransform(AST **astptr, int level, AST *parent)
                 AstReportDone(&saveinfo);
             }
         }
+        /* check for references to abstract objects (which will have NULL pointers) */
+        if (ast->left && ast->left->kind == AST_ARRAYREF && ast->left->left && ast->left->left->kind == AST_MEMREF)
+        {
+            AST *ref = ast->left->left;
+            AST *methodname = ast->right;
+            AST *basetyp = ref->left;
+            AST *baseobj = ref->right;
+            if (baseobj && baseobj->kind == AST_INTEGER && baseobj->d.ival == 0) {
+                Module *P = GetClassPtr(basetyp);
+                if (P && IsIdentifier(methodname)) {
+                    Symbol *sym = LookupSymbolInTable(&P->objsyms,
+                                                      GetIdentifierName(methodname));
+                    if (sym) {
+                        switch (sym->kind) {
+                        case SYM_CONSTANT:
+                        case SYM_FLOAT_CONSTANT:
+                        case SYM_LABEL:
+                            break;
+                        case SYM_FUNCTION:
+                            /* FIXME: at least in principle we could allow
+                               calls to static functions, but punt for now */
+                            /* fall through */
+                        default:
+                            ERROR(ast, "attempt to dereference abstract object");
+                            break;
+                        }
+                    }
+                }
+            }
+        }
         break;
     case AST_FIELDREF:
     {

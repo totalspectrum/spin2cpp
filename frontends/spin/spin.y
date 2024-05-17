@@ -1933,6 +1933,20 @@ lhs: identifier
         AST *base = NewAST(AST_MEMREF, $1, $3);
         $$ = base;
     }
+  | SP_TYPENAME '.' identifier
+    {
+        AST *base = NewAST(AST_MEMREF, $1, AstInteger(0));
+        AST *ident = $3;
+        AST *method = NewAST(AST_METHODREF, base, ident);
+        $$ = method;
+    }
+  | SP_TYPENAME '#' identifier
+    {
+        AST *base = $1;
+        AST *ident = $3;
+        AST *method = NewAST(AST_CONSTREF, base, ident);
+        $$ = method;
+    }
   | SP_BYTE '[' expr ']'
     {
         AST *base = NewAST(AST_MEMREF, ast_type_byte, $3);
