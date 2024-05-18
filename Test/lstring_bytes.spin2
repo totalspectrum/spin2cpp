@@ -1,3 +1,5 @@
+{Spin2_v43}
+
 obj
   f: "spin/ers_fmt.spin2"
   longs: "longdata.spin2"

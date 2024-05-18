@@ -23,7 +23,7 @@
 
 #define VT '\013'
 
-#define MAX_PNUT_VERSION 42 /* maximum PNut version we understand */
+#define MAX_PNUT_VERSION 43 /* maximum PNut version we understand */
 
 int allow_type_names = 1;
 
@@ -1860,7 +1860,7 @@ again:
                 if (version > 0) {
                     SetLanguageVersion(L, version);
                 }
-            } else if (!strcmp(dir, "Spin2_v")) {
+            } else if (!strncmp(dir, "Spin2_v", 7)) {
                 char *ptr = dir+7;
                 int version = strtol(ptr, &ptr, 10);
                 if (version > 0) {
