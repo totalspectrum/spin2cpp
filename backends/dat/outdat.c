@@ -1663,10 +1663,15 @@ decode_instr:
             }
 
             isrc = (isrc - (int)(curpc+4)) / 4;
-            if (immmask & BIG_IMM_DST) {
+            if (immmask & BIG_IMM_SRC) {
+                uint32_t augval = val & 0xf0000000; // preserve condition
                 isrc--;
-            }
-            if ( (isrc < -256) || (isrc > 255) ) {
+                augval |= (isrc >> 9) & 0x1ff;  // relative jumps only get 9 bits in AUG
+                augval |= 0x0f000000; // AUGS
+                outputInstrLong(f, augval);
+                isrc = isrc & 0x1ff;
+                immmask &= ~BIG_IMM_SRC;
+            } else if ( (isrc < -256) || (isrc > 255) ) {
                 ERROR(line, "Source out of range for relative branch %s", instr->name);
                 isrc = 0;
             }

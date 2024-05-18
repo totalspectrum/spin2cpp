@@ -1,7 +1,9 @@
 Version 7.0.0
 - Added Spin2 structures (basically small objects)
 - Added BOOL debug modifier for -g
-- Added some of the v44 Spin2 builtin methods like byteswap 
+- Added some of the v44 Spin2 builtin methods like byteswap
+- Cleaned up the Spin parser to enable direct access to struct/obj members
+- Fixed long relative branches (tjz, djnz, etc.)
 
 Version 6.9.8
 - Fix `#foo+CONST` calculation
