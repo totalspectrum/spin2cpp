@@ -1663,6 +1663,9 @@ decode_instr:
             }
 
             isrc = (isrc - (int)(curpc+4)) / 4;
+            if (immmask & BIG_IMM_DST) {
+                isrc--; /* adjust for AUGD that we will need */
+            }
             if (immmask & BIG_IMM_SRC) {
                 uint32_t augval = val & 0xf0000000; // preserve condition
                 isrc--;
