@@ -821,9 +821,6 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                             }
                             sym = NULL;
                         }
-                    } else if (userVersion == 0 && minVersion > 0) {
-                        /* don't use the new keywords unless asked to */
-                        sym = NULL;
                     }
                 }
             }
@@ -2415,7 +2412,7 @@ struct reservedword_soft {
     int      min_version;
     int      max_version;
 } init_spin2_soft_words[] = {
-    { "field", SP_FIELD, 0, 0 },
+    { "field", SP_FIELD, 37, 0 },
     { "lstring", SP_LSTRING, 42, 0 },
 
     /* These one are weird: Chip put them
