@@ -1847,7 +1847,7 @@ again:
                 if (version > 0) {
                     SetLanguageVersion(L, version);
                 }
-            } else if (!strcmp(dir, "Spin2_v")) {
+            } else if (!strncmp(dir, "Spin2_v", 7)) {
                 char *ptr = dir+7;
                 int version = strtol(ptr, &ptr, 10);
                 if (version > 0) {
