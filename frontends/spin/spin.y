@@ -5,7 +5,7 @@
  */
 
 %pure-parser
-%expect 29
+%expect 30
 
 %{
 #include <stdio.h>
@@ -1923,6 +1923,18 @@ lhs: identifier
         AST *base = NewAST(AST_RANGEREF, reg, index);
         AST *holder = NewAST(AST_BIGIMMHOLDER, base, NULL);
         $$ = holder;
+    }
+  | SP_FIELD '[' expr ']' '[' expr ']'
+    {
+        AST *ref = $3;
+        AST *idx = $6;
+        $$ = NewAST(AST_FIELDREF, ref, idx);
+    }
+  | SP_FIELD '[' expr ']'
+    {
+        AST *ref = $3;
+        AST *idx = AstInteger(0);
+        $$ = NewAST(AST_FIELDREF, ref, idx);
     }
   | SP_SPR '[' expr ']'
     { $$ = AstSprRef($3, 0x1f0); }
