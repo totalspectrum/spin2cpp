@@ -1275,9 +1275,18 @@ DoPropellerPostprocess(const char *fname, size_t eepromSize)
             WARNING(NULL, "I/O error while compressing");
         }
         Flexbuf compressed = CompressExecutable(buffer,len);
+#ifdef WIN32
+        fclose(f);
+        f = fopen(fname, "w+b");
+        if (!f) {
+            ERROR(NULL, "Can't truncate file");
+            return -1;
+        }
+#else
         if (!freopen(NULL,"w+b",f)) { // Do this to make file actually smaller
             WARNING(NULL, "Can't truncate file");
         }
+#endif
         fwrite(flexbuf_peek(&compressed),flexbuf_curlen(&compressed),1,f);
         len = flexbuf_curlen(&compressed);
         flexbuf_delete(&compressed);
