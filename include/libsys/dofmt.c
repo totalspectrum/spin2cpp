@@ -1,7 +1,7 @@
 #include <stdarg.h>
 #include <compiler.h>
 #include <sys/types.h>
-#include "sys/fmt.h"
+#include <sys/fmt.h>
 
 /* turns an already uppercase letter into lowercase version */
 #define quick_tolower(c) ((c) | 0x20)

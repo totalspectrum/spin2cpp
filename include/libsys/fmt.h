@@ -32,7 +32,7 @@
 
 #define alloca(x) __builtin_alloca(x)
 
-#include "sys/fmt.h"
+#include <sys/fmt.h>
 
 #define DEFAULT_PREC 6
 #define DEFAULT_BASIC_FLOAT_FMT ((1<<UPCASE_BIT)|((4+1)<<PREC_BIT))
