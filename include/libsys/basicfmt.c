@@ -2,7 +2,7 @@
  * BASIC language I/O
  */
 
-#include "fmt.h"
+#include <libsys/fmt.h>
 
 #ifndef __FLEXC__
 // BASIC support routines

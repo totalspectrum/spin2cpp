@@ -1,7 +1,7 @@
 #include <stdarg.h>
 #include <compiler.h>
 #include <sys/types.h>
-#include "sys/fmt.h"
+#include <sys/fmt.h>
 
 #ifdef __FLEXC__
 # ifdef __FEATURE_FLOATS__
