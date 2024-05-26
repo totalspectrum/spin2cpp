@@ -82,6 +82,7 @@ Usage(FILE *f)
     fprintf(f, "  [ --sizes]         print info about program sizes\n");
     fprintf(f, "  [ --verbose ]      print additional diagnostic messages (for debugging the compiler)\n");
     fprintf(f, "  [ --version ]      just show compiler version\n");
+    fprintf(f, "  [ --zip ]          create zip archive of source files\n");
     
     fflush(stderr);
     exit(2);
@@ -300,6 +301,10 @@ main(int argc, const char **argv)
         } else if (!strcmp(argv[0], "--version")) {
             PrintInfo(stdout);
             exit(0);
+        } else if (!strcmp(argv[0], "--zip")) {
+            cmd->compile = 0;
+            gl_output = OUTPUT_ZIP;
+            argv++; --argc;            
 	} else if (!strncmp(argv[0], "-o", 2)) {
 	    const char *opt;
 	    opt = argv[0];
