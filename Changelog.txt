@@ -1,6 +1,7 @@
 Version 6.9.9
 - Fixed `--compress` flag on Windows
 - Added `--zip` flag to flexcc
+- Improved handling of file names in .zip output
 
 Version 6.9.8
 - Fix `#foo+CONST` calculation
