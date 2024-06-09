@@ -1689,7 +1689,11 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
     {
         AST *typ = ExprType(expr->left);
         if (!typ) {
-            ERROR(expr, "Unknown type for sizeof");
+            if (IsIdentifier(expr->left)) {
+                ERROR(expr, "Unable to find size of `%s'; perhaps it is undeclared?", GetUserIdentifierName(expr->left));
+            } else {
+                ERROR(expr, "Unknown type for sizeof");
+            }
         }
         return intExpr(TypeSize(typ));
     }
