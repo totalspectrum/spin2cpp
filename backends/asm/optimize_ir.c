@@ -3970,6 +3970,7 @@ no_getx:
                 changed = 1;
             } else if (previr && previr->opc == OPC_GETWORD) {
                 ReplaceOpcode(previr,OPC_MOV);
+                previr->src2 = NULL;
                 changed = 1;
             }
             // Check src
