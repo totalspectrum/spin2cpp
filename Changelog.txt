@@ -1,3 +1,6 @@
+Version 6.9.10
+- Fix compilation error when GETWORD is replaced by MOV
+
 Version 6.9.9
 - Fixed `--compress` flag on Windows
 - Added `--zip` flag to flexcc
