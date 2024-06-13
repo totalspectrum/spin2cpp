@@ -1932,6 +1932,14 @@ static AST *doCheckTypes(AST *ast)
             if (varArgsPlace) {
                 varArgsList = NewAST(AST_SEQUENCE, varArgsList, varArgs);
                 *varArgsPlace = NewAST(AST_EXPRLIST, varArgsList, NULL);
+            } else if (NoVarargsOutput() && calledParamList
+                       && calledParamList->left
+                       && calledParamList->left->kind == AST_VARARGS
+                       && actualParamListPrev
+                )
+            {
+                // provide a dummy argument for varargs
+                actualParamListPrev->right = NewAST(AST_EXPRLIST, AstInteger(0), NULL);
             }
         } else {
             return NULL;
