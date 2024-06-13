@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2023 Total Spectrum Software Inc.
+ * Copyright 2011-2024 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling functions
@@ -153,7 +153,7 @@ EnterVariable(int kind, SymbolTable *stab, AST *astname, AST *type, unsigned sym
     } else {
         sym->flags |= sym_flag;
         sym->module = (void *)current;
-        if (current && current != systemModule) {
+        if (current && current != systemModule && IsSpinLang(current->curLanguage)) {
             int warn_flags = curfunc ? curfunc->warn_flags : gl_warn_flags;
             if ( (warn_flags & WARN_HIDE_MEMBERS)
                     || ( (warn_flags & WARN_LANG_EXTENSIONS) && current->curLanguage == LANG_SPIN_SPIN2 ) )
