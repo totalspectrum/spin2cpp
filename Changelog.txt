@@ -1,5 +1,6 @@
 Version 6.9.10
 - Fix compilation error when GETWORD is replaced by MOV
+- Fix varargs calls in nucode when no varying arguments present
 
 Version 6.9.9
 - Fixed `--compress` flag on Windows
