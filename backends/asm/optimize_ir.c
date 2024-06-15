@@ -3968,7 +3968,7 @@ no_getx:
             } else if (previr && isMaskingOp(previr,&tmp) && (tmp&0xFFFF)==0xFFFF) {
                 DeleteIR(irl,previr);
                 changed = 1;
-            } else if (previr && previr->opc == OPC_GETWORD) {
+            } else if (previr && previr->opc == OPC_GETWORD && previr->src2->kind == IMM_INT && previr->src2->val == 0) {
                 ReplaceOpcode(previr,OPC_MOV);
                 previr->src2 = NULL;
                 changed = 1;
@@ -3982,8 +3982,9 @@ no_getx:
                 } else if (previr && isMaskingOp(previr,&tmp) && (tmp&0xFFFF)==0xFFFF) {
                     DeleteIR(irl,previr);
                     changed = 1;
-                } else if (previr && previr->opc == OPC_GETWORD) {
+                } else if (previr && previr->opc == OPC_GETWORD && previr->src2->kind == IMM_INT && previr->src2->val == 0) {
                     ReplaceOpcode(previr,OPC_MOV);
+                    previr->src2 = NULL;
                     changed = 1;
                 }
             }
