@@ -1,6 +1,7 @@
 Version 6.9.10
-- Fix compilation error when GETWORD is replaced by MOV
+- Fix compilation error when GETWORD is replaced by MOV or MUL
 - Fix varargs calls in nucode when no varying arguments present
+- Fix an incorrect warning about locals shadowing globals in C
 
 Version 6.9.9
 - Fixed `--compress` flag on Windows
