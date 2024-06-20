@@ -4572,6 +4572,9 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
         Module *P;
         const char *name;
         objtype = ExprType(expr->left);
+        if (curfunc && IsSpinLang(curfunc->language) && IsRefType(objtype)) {
+            objtype = objtype->left;
+        }
         name = GetUserIdentifierName(expr->right);
         if (!objtype) {
             ERROR(expr, "%s is not accessible in this context", GetIdentifierName(expr->left));

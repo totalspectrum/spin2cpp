@@ -1455,6 +1455,12 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
         if (IsPointerType(desttype) && IsPointerType(srctype)) {
             if (curfunc && IsBasicLang(curfunc->language) && IsRefType(desttype) && IsArrayType(desttype->left) && TypeSize(desttype->left) == 0) {
                 /* OK, parameter declared as foo() so can accept any array */
+            } else if (curfunc && IsSpinLang(curfunc->language) && IsRefType(desttype) && IsRefType(srctype)
+                       && IsArrayType(srctype->left)
+                       && CompatibleTypes(BaseType(srctype->left), BaseType(desttype))
+                )
+            {
+                /* no warning for passing arrays to Spin pointers */
             } else {
                 WARNING(line, "incompatible pointer types in %s: expected %s but got %s", msg, desttype_name, srctype_name);
             }
