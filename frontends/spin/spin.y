@@ -1071,6 +1071,8 @@ structlist:
     { $$ = CommentedListHolder($1); }
   | structlist ',' structitem
     { $$ = AddToList($1, CommentedListHolder($3)); }
+  | structlist ',' SP_EOLN structitem
+    { $$ = AddToList($1, CommentedListHolder($4)); }
 ;
 
 structitem:
