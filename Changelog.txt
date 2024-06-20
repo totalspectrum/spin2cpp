@@ -5,6 +5,17 @@ Version 7.0.0
 - Cleaned up the Spin parser to enable direct access to struct/obj members
 - Fixed long relative branches (tjz, djnz, etc.)
 
+Version 6.9.10
+- Fix compilation error when GETWORD is replaced by MOV or MUL
+- Fix varargs calls in nucode when no varying arguments present
+- Fix an incorrect warning about locals shadowing globals in C
+
+Version 6.9.9
+- Fixed `--compress` flag on Windows
+- Added `--zip` flag to flexcc
+- Improved handling of file names in .zip output
+- Improved error message for sizeof(x) when x is undefined
+
 Version 6.9.8
 - Fix `#foo+CONST` calculation
 
