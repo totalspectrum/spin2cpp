@@ -457,16 +457,17 @@ is converted to the equivalent of
       bptr += 4
 ```
 
+#### Multiply to addition
+
+An expression like `(i*100)` where `i` is a loop index can be converted to
+something like `itmp \ itmp + 100`
+
 ### Cold code (-Ocold-code)
 
 Moves unlikely code paths (indicated using `__builtin_expect`) to the end of the function. This means the likely path can execute without taking any branches, in exchange for the unlikely path taking two branches. Also, due to outstanding refactoring of function epilogues, using this feature adds one taken branch when the function returns at its end.
 
 This optimization is not currently enabled by any flags. Use it cautiously.
 
-#### Multiply to addition
-
-An expression like `(i*100)` where `i` is a loop index can be converted to
-something like `itmp \ itmp + 100`
 
 ## Memory Allocation and Management
 
