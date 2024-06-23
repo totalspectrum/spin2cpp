@@ -193,10 +193,10 @@ extern int gl_optimize_flags; /* flags for optimization */
 #define OPT_AGGRESSIVE_MEM      0x00200000  /* aggressive load/store optimization */
 #define OPT_COLD_CODE           0x00400000  /* move cold code to end of function */
 #define OPT_MERGE_DUPLICATES    0x00800000  /* merge duplicate functions */
-#define OPT_SPIN_STRICTMEM      0x01000000  /* strict memory semantics for Spin */
+#define OPT_SPIN_RELAXMEM       0x01000000  /* relax strict memory semantics for Spin */
 
 #define OPT_EXPERIMENTAL        0x80000000  /* gate new or experimental optimizations */
-#define OPT_FLAGS_ALL           (0xffffffff & ~OPT_SPIN_STRICTMEM)
+#define OPT_FLAGS_ALL           0xffffffff
 
 #define OPT_ASM_BASIC  (OPT_BASIC_REGS|OPT_BRANCHES|OPT_PEEPHOLE|OPT_CONST_PROPAGATE|OPT_REMOVE_FEATURES|OPT_MAKE_MACROS)
 

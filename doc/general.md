@@ -468,6 +468,10 @@ Moves unlikely code paths (indicated using `__builtin_expect`) to the end of the
 
 This optimization is not currently enabled by any flags. Use it cautiously.
 
+### Relax Spin memory semantics (-Ospin-relax-memory)
+
+Relaxes the Spin memory model. Normally if any local in a Spin function is put on the stack, all of the locals are; this allows for some common Spin idioms involving memory copies assuming that multiple variables may be copied. This option relaxes that and only puts variables on the stack if their addresses are explicitly taken.
+
 
 ## Memory Allocation and Management
 

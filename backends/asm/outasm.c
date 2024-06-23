@@ -31,7 +31,7 @@
 #define IS_FAST_CALL(f) ( (f == 0) || !FuncData(f) || FuncData(f)->convention == FAST_CALL)
 #define IS_STACK_CALL(f) ( (f != 0) && FuncData(f)->convention == STACK_CALL)
 
-#define ALL_VARS_ON_STACK(f) ( IS_STACK_CALL(f) || f->force_locals_to_stack || (f->local_address_taken && IsSpinLang(f->language) && !(f->optimize_flags & OPT_SPIN_STRICTMEM)) || f->closure)
+#define ALL_VARS_ON_STACK(f) ( IS_STACK_CALL(f) || f->force_locals_to_stack || (f->local_address_taken && IsSpinLang(f->language) && !(f->optimize_flags & OPT_SPIN_RELAXMEM)) || f->closure)
 #define ANY_VARS_ON_STACK(f) ( ALL_VARS_ON_STACK(f) || f->stack_local || f->local_address_taken )
 
 #define IS_LEAF(func) ((gl_compress == 0) && ((func)->is_leaf || (FuncData(func) && FuncData(func)->effectivelyLeaf)))
