@@ -9,24 +9,20 @@ _blah1
 	add	sp, #4
 	mov	fp, sp
 	add	sp, #48
-	add	fp, #4
-	wrlong	arg01, fp
-	add	fp, #4
+	mov	_var01, arg01
 	mov	arg01, fp
-	sub	fp, #8
+	add	arg01, #8
 	mov	arg02, #0
 	mov	arg03, #40
 LR__0001
 	wrbyte	arg02, arg01
 	add	arg01, #1
 	djnz	arg03, #LR__0001
-	add	fp, #4
-	rdlong	result1, fp
-	shl	result1, #2
-	add	fp, #4
-	add	result1, fp
-	rdlong	result1, result1
-	sub	fp, #8
+	shl	_var01, #2
+	mov	result1, fp
+	add	result1, #8
+	add	_var01, result1
+	rdlong	result1, _var01
 	mov	sp, fp
 	sub	sp, #4
 	rdlong	fp, sp
@@ -38,42 +34,38 @@ _blah2
 	add	sp, #4
 	mov	fp, sp
 	add	sp, #20
-	add	fp, #4
-	wrlong	arg01, fp
-	add	fp, #4
+	mov	_var01, arg01
 	mov	arg01, fp
-	sub	fp, #8
+	add	arg01, #8
 	mov	arg02, ptr__dat__
 	mov	arg03, #8
 	cmps	arg01, arg02 wc
  if_ae	jmp	#LR__0011
-	mov	_var01, #8
+	mov	_var02, #8
 LR__0010
 	rdbyte	result1, arg02
 	wrbyte	result1, arg01
 	add	arg01, #1
 	add	arg02, #1
-	djnz	_var01, #LR__0010
+	djnz	_var02, #LR__0010
 	jmp	#LR__0014
 LR__0011
 	add	arg01, arg03
 	add	arg02, arg03
-	mov	_var02, arg03 wz
+	mov	_var03, arg03 wz
  if_e	jmp	#LR__0013
 LR__0012
 	sub	arg01, #1
 	sub	arg02, #1
-	rdbyte	_var01, arg02
-	wrbyte	_var01, arg01
-	djnz	_var02, #LR__0012
+	rdbyte	_var02, arg02
+	wrbyte	_var02, arg01
+	djnz	_var03, #LR__0012
 LR__0013
 LR__0014
-	add	fp, #4
-	rdlong	result1, fp
-	add	fp, #4
-	add	result1, fp
-	rdbyte	result1, result1
-	sub	fp, #8
+	mov	result1, fp
+	add	result1, #8
+	add	_var01, result1
+	rdbyte	result1, _var01
 	mov	sp, fp
 	sub	sp, #4
 	rdlong	fp, sp
@@ -99,6 +91,8 @@ stackspace
 _var01
 	res	1
 _var02
+	res	1
+_var03
 	res	1
 arg01
 	res	1

@@ -927,12 +927,17 @@ doBasicTransform(AST **astptr, bool transformFuncall)
     {
         doBasicTransform(&ast->left, transformFuncall);
         doBasicTransform(&ast->right, transformFuncall);
-        if (IsLocalVariable(ast->left)) {
+        Symbol *sym;
+        if (IsLocalVariableEx(ast->left, &sym)) {
             curfunc->local_address_taken = 1;
+            if (sym) {
+                sym->flags |= SYMF_ADDRESSABLE;
+            } else {
+                curfunc->force_locals_to_stack = 1; // fallback if we couldn't get a symbol
+            }
         }
         // taking the address of a function may restrict how
         // we can call it (stack vs. register calling)
-        Symbol *sym;
         Function *f = NULL;
         sym = FindCalledFuncSymbol(ast, NULL, 0);
         if (sym && sym->kind == SYM_FUNCTION) {
@@ -997,7 +1002,7 @@ doBasicTransform(AST **astptr, bool transformFuncall)
         doBasicTransform(&ast->right, transformFuncall);
         // keep local variables on stack, so they will be preserved
         // if an exception throws us back here without cleanup
-        curfunc->local_address_taken = 1;
+        curfunc->force_locals_to_stack = 1;
         break;
     case AST_READ:
         doBasicTransform(&ast->left, transformFuncall);

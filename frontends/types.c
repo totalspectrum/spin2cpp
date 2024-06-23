@@ -909,8 +909,14 @@ static AST *ScalePointer(AST *type, AST *val)
 // return the address of an array
 AST *ArrayAddress(AST *expr)
 {
-    if (curfunc && IsLocalVariable(expr)) {
+    Symbol *sym;
+    if (curfunc && IsLocalVariableEx(expr, &sym)) {
         curfunc->local_address_taken = 1;
+        if (sym) {
+            sym->flags |= SYMF_ADDRESSABLE;
+        } else {
+            curfunc->force_locals_to_stack = 1; // fallback if we couldn't get a symbol
+        }
     }
     return NewAST(AST_ABSADDROF,
                   NewAST(AST_ARRAYREF, expr, AstInteger(0)),
@@ -1332,9 +1338,15 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
             AST *copy = MakeOperatorCall(struct_copy, lptr, rptr, sizeExpr);
             *astptr = copy;
         } else {
+            Symbol *sym;
             *astptr = NewAST(AST_ADDROF, expr, NULL);
-            if (curfunc && IsLocalVariable(expr)) {
+            if (curfunc && IsLocalVariableEx(expr, &sym)) {
                 curfunc->local_address_taken = 1;
+                if (sym) {
+                    sym->flags |= SYMF_ADDRESSABLE;
+                } else {
+                    curfunc->force_locals_to_stack = 1; // fallback if we couldn't get a symbol
+                }
             }
         }
         srctype = NewAST(AST_REFTYPE, srctype, NULL);

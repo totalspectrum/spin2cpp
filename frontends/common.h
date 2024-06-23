@@ -193,9 +193,10 @@ extern int gl_optimize_flags; /* flags for optimization */
 #define OPT_AGGRESSIVE_MEM      0x00200000  /* aggressive load/store optimization */
 #define OPT_COLD_CODE           0x00400000  /* move cold code to end of function */
 #define OPT_MERGE_DUPLICATES    0x00800000  /* merge duplicate functions */
+#define OPT_SPIN_STRICTMEM      0x01000000  /* strict memory semantics for Spin */
 
 #define OPT_EXPERIMENTAL        0x80000000  /* gate new or experimental optimizations */
-#define OPT_FLAGS_ALL           0xffffffff
+#define OPT_FLAGS_ALL           (0xffffffff & ~OPT_SPIN_STRICTMEM)
 
 #define OPT_ASM_BASIC  (OPT_BASIC_REGS|OPT_BRANCHES|OPT_PEEPHOLE|OPT_CONST_PROPAGATE|OPT_REMOVE_FEATURES|OPT_MAKE_MACROS)
 
@@ -450,6 +451,7 @@ typedef struct funcdef {
     unsigned cog_task:1;     // 1 if function is started in another cog
     unsigned used_as_ptr:1;  // 1 if function's address is taken as a pointer
     unsigned local_address_taken: 1; // 1 if a local variable or parameter has its address taken
+    unsigned force_locals_to_stack: 1; // 1 if function must store all locals on the stack
     unsigned no_inline:1;    // 1 if function cannot be inlined
     unsigned prefer_inline:1; // 1 if function should be inlined more often
     unsigned is_leaf:1;      // 1 if function is a leaf function
@@ -979,6 +981,9 @@ AST *GetComments(void);
 
 /* is an AST identifier a local variable? */
 bool IsLocalVariable(AST *ast);
+
+/* like IsLocalVariable but looks up symbol too */
+bool IsLocalVariableEx(AST *ast, Symbol **symout);
 
 /* push the current types identifier */
 void PushCurrentTypes(void);

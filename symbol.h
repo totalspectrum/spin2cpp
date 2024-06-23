@@ -59,11 +59,11 @@ typedef struct symbol {
 } Symbol;
 
 /* symbol flags */
-#define SYMF_GLOBAL   0x01  /* used for some special system globals */
-#define SYMF_PRIVATE  0x02  /* symbol should not be used from other modules */
-#define SYMF_INTERNAL 0x04  /* symbol is created by flexspin itself, should not be shown in listings */
-#define SYMF_NOALLOC  0x08  /* symbol should not be allocated */
-
+#define SYMF_GLOBAL      0x01 /* used for some special system globals */
+#define SYMF_PRIVATE     0x02 /* symbol should not be used from other modules */
+#define SYMF_INTERNAL    0x04 /* symbol is created by flexspin itself, should not be shown in listings */
+#define SYMF_NOALLOC     0x08 /* symbol should not be allocated */
+#define SYMF_ADDRESSABLE 0x10 /* symbol has its address taken and therefore must exist in memory */
 #define INTVAL(sym) ((sym)->v.i)
 
 

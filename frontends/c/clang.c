@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2023 Total Spectrum Software Inc.
+ * Copyright 2011-2024 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for C specific features
@@ -66,12 +66,17 @@ doCTransform(AST **astptr, unsigned cflags)
         {
             doCTransform(&ast->left, cflags);
             doCTransform(&ast->right, cflags);
-            if (curfunc && IsLocalVariable(ast->left)) {
+            Symbol *sym;
+            if (curfunc && IsLocalVariableEx(ast->left, &sym)) {
                 curfunc->local_address_taken = 1;
+                if (sym) {
+                    sym->flags |= SYMF_ADDRESSABLE;
+                } else {
+                    curfunc->force_locals_to_stack = 1; // fallback if we couldn't get a symbol
+                }
             }
             // taking the address of a function may restrict how
             // we can call it (stack vs. register calling)
-            Symbol *sym;
             Function *f = NULL;
             sym = FindCalledFuncSymbol(ast, NULL, 0);
             if (sym && sym->kind == SYM_FUNCTION) {
@@ -107,7 +112,7 @@ doCTransform(AST **astptr, unsigned cflags)
         // keep local variables on stack, so they will be preserved
         // if an exception throws us back here without cleanup
         if (curfunc) {
-            curfunc->local_address_taken = 1;
+            curfunc->force_locals_to_stack = 1;
         } else {
             ERROR(ast, "setjmp/longjmp outside of a function");
         }

@@ -538,7 +538,7 @@ static FlagTable optflag[] = {
     { "local-reuse", OPT_LOCAL_REUSE},
     { "aggressive-mem", OPT_AGGRESSIVE_MEM},
     { "cold-code", OPT_COLD_CODE},
-    
+    { "spin-strict-memory", OPT_SPIN_STRICTMEM},
     { "experimental", OPT_EXPERIMENTAL },
     { "all", OPT_FLAGS_ALL },
 };
