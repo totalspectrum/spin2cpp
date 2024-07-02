@@ -52,10 +52,14 @@ static int plain_sendrecv(uint8_t *startbuf, uint8_t *endbuf, int maxlen)
     
     flags = _getrxtxflags();
     _setrxtxflags(0);  // raw mode
+#ifdef __P2__
+    *(int*)startbuf = len;
+#else  
     startbuf[0] = len & 0xff;
     startbuf[1] = (len>>8) & 0xff;
     startbuf[2] = (len>>16) & 0xff;
     startbuf[3] = (len>>24) & 0xff;
+#endif
 
     if (len <= 4) {
         return -1; // not a valid message
@@ -68,10 +72,14 @@ static int plain_sendrecv(uint8_t *startbuf, uint8_t *endbuf, int maxlen)
         --len;
     }
     len = zdoGet4();
+#ifdef __P2__
+    *(int*)startbuf = len;
+#else  
     startbuf[0] = len & 0xff;
     startbuf[1] = (len>>8) & 0xff;
     startbuf[2] = (len>>16) & 0xff;
     startbuf[3] = (len>>24) & 0xff;
+#endif
     buf = startbuf+4;
     left = len - 4;
     while (left > 0 && i < maxlen) {
