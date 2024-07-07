@@ -4,6 +4,7 @@ Version 7.0.0
 - Added some of the v44 Spin2 builtin methods like byteswap
 - Cleaned up the Spin parser to enable direct access to struct/obj members
 - Fixed long relative branches (tjz, djnz, etc.)
+- Fixed incorrect handling of simple for loops with unsigned variables
 - Only use the stack for variables whose address is actually taken (thanks to Ada for this!)
 
 Version 6.9.10
