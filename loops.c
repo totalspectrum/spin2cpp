@@ -799,12 +799,12 @@ AST *GetRevisedLimit(int updateTestOp, AST *oldLimit)
 {
     if (IsConstExpr(oldLimit) || IsIdentifier(oldLimit)) {
         // a constant expression is always good
-        if (updateTestOp == K_LE) {
+        if (updateTestOp == K_LE || updateTestOp == K_LEU) {
             oldLimit = AstOperator('+', oldLimit, AstInteger(1));
         }
         return oldLimit;
     }
-    if (updateTestOp != K_LE) {
+    if (updateTestOp != K_LE && updateTestOp != K_LEU) {
         return NULL;
     }
     // only accept very simple expressions
