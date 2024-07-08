@@ -226,6 +226,15 @@ FixupList(AST *list)
     return origlist;
 }
 
+// possibly create an array type
+AST *
+MaybeArrayType(AST *basetype, AST *size)
+{
+    if (!size) return basetype;
+
+    return MakeArrayType(basetype, size);
+}
+
 // declare a Spin structure
 static void
 SpinDeclareStruct(AST *ident, AST *defs)
@@ -1075,26 +1084,33 @@ structlist:
     { $$ = AddToList($1, CommentedListHolder($4)); }
 ;
 
+optarray:
+  '[' expr ']'
+     { $$ = $2; }
+  | /* nothing */
+     { $$ = NULL; }
+;
+
 structitem:
-  SP_IDENTIFIER
-    { $$ = NewAST(AST_DECLARE_VAR, NULL, $1); }
-  | SP_BYTE SP_IDENTIFIER
+  SP_IDENTIFIER optarray
+    { $$ = NewAST(AST_DECLARE_VAR, MaybeArrayType(NULL, $2), $1); }
+  | SP_BYTE SP_IDENTIFIER optarray
     {
-        $$ = NewAST(AST_DECLARE_VAR, ast_type_byte, $2);
+        $$ = NewAST(AST_DECLARE_VAR, MaybeArrayType(ast_type_byte, $3), $2);
     }
-  | SP_WORD SP_IDENTIFIER
+  | SP_WORD SP_IDENTIFIER optarray
     {
-        $$ = NewAST(AST_DECLARE_VAR, ast_type_word, $2);
+        $$ = NewAST(AST_DECLARE_VAR, MaybeArrayType(ast_type_word, $3), $2);
     }
-  | SP_LONG SP_IDENTIFIER
+  | SP_LONG SP_IDENTIFIER optarray
     {
-        $$ = NewAST(AST_DECLARE_VAR, NULL, $2);
+        $$ = NewAST(AST_DECLARE_VAR, MaybeArrayType(NULL, $3), $2);
     }
-  | SP_TYPENAME SP_IDENTIFIER
+  | SP_TYPENAME SP_IDENTIFIER optarray
   {
       AST *name = $2;
       AST *typname = $1;
-      $$ = NewAST(AST_DECLARE_VAR, typname, name);
+      $$ = NewAST(AST_DECLARE_VAR, MaybeArrayType(typname, $3), name);
   }
 ;
 
