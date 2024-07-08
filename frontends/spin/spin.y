@@ -1069,6 +1069,16 @@ conline:
         SpinDeclareStruct(name, defs);
         $$ = NULL;
     }
+  | SP_IDENTIFIER ':' string optobjparams SP_EOLN
+    {
+        /* basically an inline object definition */
+        AST *paramlist = $4;
+        AST *filename = $3;
+        AST *ident = $1;
+        AST *typ = NewAbstractObjectWithParams(ident, filename, 1, paramlist);
+        AddSymbol(currentTypes, GetUserIdentifierName(ident), SYM_TYPEDEF, typ, NULL);
+        $$ = NULL;
+    }
   | SP_EOLN
     { $$ = NULL; }
   | error SP_EOLN
