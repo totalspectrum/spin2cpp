@@ -524,6 +524,19 @@ PUB doprint22
   print(@aFullDuplexSerialObj, 22)
 ```
 
+### Object structures
+
+The Spin2 syntax for declaring structures in the `CON` section is accepted
+by flexspin, even for Spin1 files. For example:
+```
+CON sLine( long x, long y )
+```
+Flexspin also extends this to allow objects to be used as structures:
+```
+CON sLine("foo.spin2")
+```
+creates an abstract object named `sLine` which has the same methods and members as the object `foo.spin2`.
+
 ### PUB FILE and PRI FILE
 
 A `pub` or `pri` function declaration may include a `file` directive which gives the file which contains the actual definition of the function. This looks like:

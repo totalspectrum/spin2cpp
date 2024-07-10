@@ -1069,7 +1069,7 @@ conline:
         SpinDeclareStruct(name, defs);
         $$ = NULL;
     }
-  | SP_IDENTIFIER ':' string optobjparams SP_EOLN
+  | SP_IDENTIFIER '(' string optobjparams ')' SP_EOLN
     {
         /* basically an inline object definition */
         AST *paramlist = $4;
