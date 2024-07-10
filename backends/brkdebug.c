@@ -3,7 +3,7 @@
 //
 // See the debugger code for more insight.
 //
-// Copyright 2021-2023 Ada Gottensträter and Total Spectrum Software Inc.
+// Copyright 2021-2024 Ada Gottensträter and Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 
@@ -325,8 +325,12 @@ int AsmDebug_CodeGen(AST *ast, BackendDebugEval evalFunc, void *evalArg) {
             }
             needcomma = true;
         } break;
+        case AST_IDENTIFIER:
+        case AST_LOCAL_IDENTIFIER:
+            ERROR(item, "Raw identifier found in DEBUG; did you forget sdec() or some similar wrapper?");
+            break;
         default:
-            ERROR(item,"Unhandled node kind %d in DEBUG",item->kind);
+            ERROR(item,"Unhandled item in DEBUG (%d)",item->kind);
             break;
         }
     }
