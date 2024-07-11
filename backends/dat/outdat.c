@@ -1544,6 +1544,16 @@ decode_instr:
                 operand[0] = AstInteger(count);
                 opimm[0] = P2_IMM_DST;
                 immmask |= P2_IMM_DST;
+            } else if (IsIdentifier(operand[0])) {
+                const char *internal_name = GetIdentifierName(operand[0]);
+                const char *user_name = GetUserIdentifierName(operand[0]);
+                Symbol *sym = LookupSymbol(internal_name);
+                if (sym && sym->kind == SYM_LABEL) {
+                    Label *lab = (Label *)sym->v.ptr;
+                    if (lab && (lab->flags & LABEL_HAS_INSTR)) {
+                        WARNING(line, "%s to %s without @; are you sure this is correct? If so, change the first operand to %s-0 to suppress this warning", instr->name, user_name, user_name);
+                    }
+                }
             }
         }
         // fall through
