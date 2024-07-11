@@ -420,7 +420,7 @@ Unlike the "official" Spin2 compiler, flexspin does not accept an address for th
 
 (3) The area set aside for inline assembly is smaller by default in flexspin than in Parallax's Spin2. This may be changed with the --fcache parameter to flexspin.
 
-(4) In PNut/PropTool only the first 16 local variables may be accessed in inline assembly; flexspin has this restriction only for bytecode output, for assembly output other locals may be accessed as well.
+(4) In PNut/PropTool only the first 16 local variables may be accessed in inline assembly; flexspin has this restriction only for bytecode output. For assembly output other locals may be accessed as well.
 
 ### Method pointers
 
@@ -807,7 +807,7 @@ There are some work-arounds to reduce the impact of this, so it probably will on
 
 Many Spin1 programs may be ported from the Propeller 1 to the Propeller 2, but there are some important exceptions:
 
-- PASM must be translated to P2ASM. The assembly language for the Propeller 1 and Propeller 2 are different; there are some similarities, but in general any assembly language code will have to be translated to work on the different processor.
+- PASM must be converted to P2ASM. The assembly language for the Propeller 1 and Propeller 2 are different; there are some similarities, but in general any assembly language code will have to be translated ``by hand'' to work on the different processor.
 
 - WAITPEQ, WAITPNE, and WAITVID are not implemented on P2
 
@@ -815,7 +815,7 @@ Many Spin1 programs may be ported from the Propeller 1 to the Propeller 2, but t
 
 ## Compatibility with PropTool
 
-flexspin is mostly, but not completely, compatible with the standard Spin2 compiler. Not all Spin2 builtin functions are available on the P1; only the ones listed in the "New intrinsics for both P1 and P2" are available on all platforms. But when compiling for P2 all of the Spin2 builtin functions should be available.
+flexspin is mostly, but not completely, compatible with the standard Spin2 compiler. Not all Spin2 builtin functions are available on the P1; only the ones listed in the "New intrinsics for both P1 and P2" are available on all platforms. But when compiling for P2 all of the Spin2 builtin functions should be available, unless otherwise noted.
 
 ### Layout of variables in memory
 
@@ -833,7 +833,7 @@ The flexspin parser works differently from the PNut parser, and in complicated n
 
   - In general try not to nest expressions involving `:`
   - Do not use `:` in `lookup`/`lookdown` type expressions except as the separator between the selection expression and the list of results
-  - Make liberal use of parentheses to resolve ambiguity, e.g. write `a ? (b()) : 1` or `a ? (b():1) : 2` to distinguish between `:1` as an indirect method marker nad `:1` as the "else" part of the `?` operator.
+  - Make liberal use of parentheses to resolve ambiguity, e.g. write `a ? (b()) : 1` or `a ? (b():1) : 2` to distinguish between `:1` as an indirect method marker and `:1` as the "else" part of the `?` operator.
   
 ### ORG/END
 
@@ -857,7 +857,7 @@ Debug statements are output only when some variant of the `-g` flag (e.g. `-g` o
 
 Only a subset of the Spin2 `DEBUG` directives are accepted in normal `-g` mode:
 ```
-ZSTR, UDEC, UDEC_BYTE, UDEC_WORD, UDEC_LONG, SDEC, SDEC_BYTE, SDEC_WORD, SDEC_LONG, UHEX, UHEX_BYTE, UHEX_WORD, UHEX_LONG, DLY
+ZSTR, UDEC, UDEC_BYTE, UDEC_WORD, UDEC_LONG, SDEC, SDEC_BYTE, SDEC_WORD, SDEC_LONG, UHEX, UHEX_BYTE, UHEX_WORD, UHEX_LONG, BOOL, DLY
 ```
 Other debug directives are ignored, with a warning.
 
@@ -877,4 +877,4 @@ The `REGLOAD` and `REGEXEC` Spin2 instructions are not supported at this time, m
 
 ### Detecting FlexSpin versus PNut
 
-FlexSpin understands a special comments that start with `{$flexspin` and treats these as regular code. PNut will ignore these comments, so this provides a way to mix FlexSpin specific code and PNut specific code. See the preprocessor section above ("Special Preprocessor Comments") for further details and an example.
+FlexSpin understands special comments that start with `{$flexspin` and treats these as regular code. PNut will ignore these comments, so this provides a way to mix FlexSpin specific code and PNut specific code. See the preprocessor section above ("Special Preprocessor Comments") for further details and an example.
