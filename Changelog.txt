@@ -8,6 +8,7 @@ Version 7.0.0
 - Fixed incorrect handling of simple for loops with unsigned variables
 - Improved some debug error messages
 - Only use the stack for variables whose address is actually taken (thanks to Ada for this!)
+- Modified _BlockDevice data structure (used for littlefs, but someday may be used for fatfs too)
 
 Version 6.9.10
 - Fix compilation error when GETWORD is replaced by MOV or MUL

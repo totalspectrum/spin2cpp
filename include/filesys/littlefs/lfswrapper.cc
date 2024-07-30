@@ -20,9 +20,6 @@ static _BlockDevice *Default_SPI_Init(unsigned offset, unsigned used_size, unsig
 {
     static _SpiFlash spi;
     static _BlockDevice blk;
-    static char read_cache[SPI_PROG_SIZE];
-    static char prog_cache[SPI_PROG_SIZE];
-    static char lookahead_cache[SPI_PROG_SIZE];
 
     spi.Init(offset, used_size, erase_size);
     blk.blk_read = &spi.Read;
@@ -30,10 +27,6 @@ static _BlockDevice *Default_SPI_Init(unsigned offset, unsigned used_size, unsig
     blk.blk_erase = &spi.Erase;
     blk.blk_sync = &spi.Sync;
 
-    blk.read_cache = read_cache;
-    blk.write_cache = prog_cache;
-    blk.lookahead_cache = lookahead_cache;
-    
     return &blk;
 }
 
@@ -97,6 +90,10 @@ static int _flash_sync(const struct lfs_config *cfg) {
 static int _flash_create(struct lfs_config *cfg, struct littlefs_flash_config *flashcfg)
 {
     _BlockDevice *blk = flashcfg->dev;
+    static bool default_cache_used = false;
+    static char read_cache[SPI_PROG_SIZE];
+    static char prog_cache[SPI_PROG_SIZE];
+    static char lookahead_cache[SPI_PROG_SIZE];
 
     if (!blk) {
         blk = Default_SPI_Init(flashcfg->offset, flashcfg->used_size, flashcfg->erase_size);
@@ -123,10 +120,18 @@ static int _flash_create(struct lfs_config *cfg, struct littlefs_flash_config *f
     cfg->block_cycles = 400;
 
     // buffers
-    cfg->read_buffer = blk->read_cache;
-    cfg->prog_buffer = blk->write_cache;
-    cfg->lookahead_buffer = blk->lookahead_cache;
-    
+    if (default_cache_used) {
+        // dynamically allocate more memory
+        int blksize = SPI_PROG_SIZE;
+        cfg->read_buffer = malloc(blksize);
+        cfg->prog_buffer = malloc(blksize);
+        cfg->lookahead_buffer = malloc(blksize);
+    } else {
+        cfg->read_buffer = read_cache;
+        cfg->prog_buffer = prog_cache;
+        cfg->lookahead_buffer = lookahead_cache;
+        default_cache_used = true;
+    }
     // set up block device operations
     cfg->read = _flash_read;
     cfg->prog = _flash_prog;

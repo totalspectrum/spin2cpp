@@ -57,15 +57,23 @@ int _mkfs_parallaxfs(void) _IMPL("filesys/parallax/parallaxfs_vfs.c");
 /* block read/write device */
 typedef struct block_device {
     /* functions for doing I/O */
+
+    /* read an arbitrary number of bytes (need not be block aligned */
     int (*blk_read)(void *dst, unsigned long flashAdr, unsigned long size);
+
+    /* write & erase blocks (erase may be a no-op if not required) */
     int (*blk_write)(void *src, unsigned long flashAdr);  // write one block
     int (*blk_erase)(unsigned long flashAdr);             // erase one block
+
+    /* sync to device */
     int (*blk_sync)(void);
 
-    /* buffers for the I/O */
-    char *read_cache;
-    char *write_cache;
-    char *lookahead_cache;
+    /* general ioctl */
+    int (*blk_ioctl)(int request, void *arg);
+
+    /* block size */
+    int blksize;
+    
 } _BlockDevice;
 
 /* structure for configuring a littlefs flash file system */
