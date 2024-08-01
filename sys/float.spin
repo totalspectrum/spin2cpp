@@ -148,14 +148,19 @@ pri _float_tointeger(a=float, r) : integer=long | s, x, m
 'Convert float to rounded/truncated integer
 
   (s,x,m) := _float_Unpack(a)
-  if x => -1 and x =< 30        'if exponent not -1..30, result 0
+  if x > 30
+    m := (s) ? $8000_0000 : $7FFF_FFFF
+  elseif x < -1
+    m := 0
+  else
     m <<= 2                     'msb-justify mantissa
     m >>= 30 - x                'shift down to 1/2-lsb
     m += r                      'round (1) or truncate (0)
-    m >>= 1                     'shift down to lsb
+    m >>= 1                     'shift down to lsb  
     if s                        'handle negation
-      -m
-    return m                    'return integer
+     -m
+
+  return m                    'return integer
 
 
 pri _float_Unpack(single=float) : s, x, m | tmp
