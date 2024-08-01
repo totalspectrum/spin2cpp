@@ -174,23 +174,25 @@ LR__0020
 LR__0021
 	sub	_var02, #127
 	mov	result3, arg01
-	mov	result1, _var01
 	mov	result2, _var02
-	cmps	result2, imm_4294967295_ wc
- if_b	jmp	#LR__0022
 	cmps	result2, #31 wc
- if_b	shl	result3, #2
- if_b	mov	_var05, #30
- if_b	sub	_var05, result2
- if_b	shr	result3, _var05
- if_b	add	result3, arg02
- if_b	shr	result3, #1
- if_b	cmp	result1, #0 wz
- if_c_and_nz	neg	result3, result3
- if_b	mov	result1, result3
- if_b	jmp	#__system___float_tointeger_ret
+ if_ae	cmp	_var01, #0 wz
+ if_a	mov	_var05, imm_2147483648_
+ if_nc_and_z	mov	_var05, imm_2147483647_
+ if_ae	mov	result3, _var05
+ if_ae	jmp	#LR__0022
+	cmps	result2, imm_4294967295_ wc
+ if_b	mov	result3, #0
+ if_ae	shl	result3, #2
+ if_ae	mov	_var06, #30
+ if_ae	sub	_var06, result2
+ if_ae	shr	result3, _var06
+ if_ae	add	result3, arg02
+ if_ae	shr	result3, #1
+ if_ae	cmp	_var01, #0 wz
+ if_a	neg	result3, result3
 LR__0022
-	mov	result1, #0
+	mov	result1, result3
 __system___float_tointeger_ret
 	ret
 
@@ -379,6 +381,8 @@ _var03
 _var04
 	res	1
 _var05
+	res	1
+_var06
 	res	1
 arg01
 	res	1

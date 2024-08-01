@@ -143,7 +143,7 @@ pri _float_cmp(a=float, b=float, u=1) : r=long
     return 1
   return a - b
   
-pri _float_tointeger(a=float, r) : integer=long | s, x, m
+pri {++noinline}  _float_tointeger(a=float, r) : integer=long | s, x, m
 
 'Convert float to rounded/truncated integer
 
