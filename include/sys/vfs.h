@@ -58,12 +58,12 @@ int _mkfs_parallaxfs(void) _IMPL("filesys/parallax/parallaxfs_vfs.c");
 typedef struct block_device {
     /* functions for doing I/O */
 
-    /* read an arbitrary number of bytes (need not be block aligned */
-    int (*blk_read)(void *dst, unsigned long flashAdr, unsigned long size);
+    /* read count blocks into dst */
+    int (*blk_read)(void *dst, unsigned firstBlockNum, unsigned count);
 
     /* write & erase blocks (erase may be a no-op if not required) */
-    int (*blk_write)(void *src, unsigned long flashAdr);  // write one block
-    int (*blk_erase)(unsigned long flashAdr);             // erase one block
+    int (*blk_write)(void *src, unsigned firstBlock, unsigned count);
+    int (*blk_erase)(unsigned firstBlock, unsigned count);
 
     /* sync to device */
     int (*blk_sync)(void);
@@ -72,7 +72,7 @@ typedef struct block_device {
     int (*blk_ioctl)(int request, void *arg);
 
     /* block size */
-    int blksize;
+    unsigned blksize;
     
 } _BlockDevice;
 

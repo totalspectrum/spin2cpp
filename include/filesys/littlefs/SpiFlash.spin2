@@ -90,7 +90,7 @@ PUB Erase(flashAdr) : r | cmd, size
 ' size can be 4kB or 64kB
   flashAdr += g_offset
   if flashAdr > g_max_addr
-    return
+    return 0
   size:= g_erase_size
   cmd:= Erase_4k
   if size > $1000
@@ -101,6 +101,15 @@ PUB Erase(flashAdr) : r | cmd, size
   Spi_Wait()
   return 0
 
+
+PUB EraseBlocks(blockNum, blockCount) : r | flashAdr, size
+  flashAdr := blockNum * 256
+  size := g_erase_size / 256
+  repeat while blockCount > 0
+    r := Erase(flashAdr)
+    flashAdr += g_erase_size
+    blockCount -= size
+  return r
 
 PUB WritePage(hubAdr, flashAdr) : r
 ' writes a page of 256 bytes
@@ -116,6 +125,12 @@ PUB WritePage(hubAdr, flashAdr) : r
   Spi_Wait()
   return 0
 
+PUB WriteBlocks(hubAdr, blockNum, blockCount) : r
+  repeat while blockCount > 0
+    r := WritePage(hubAdr, blockNum * 256)
+    --blockCount
+    ++blockNum
+  return r
 
 PUB Read (hubAdr, flashAdr, size) : r | data
 ' read any number of bytes
@@ -145,6 +160,9 @@ PUB Read (hubAdr, flashAdr, size) : r | data
   pinh (spi_cs)
   return 0
 
+
+PUB ReadBlocks(hubAdr, blockNum, blockCount) : r
+  r := Read(hubAdr, blockNum * 256, blockCount * 256)
 
 PUB Verify(hubAdr, flashAdr, size) : ok
 ' compare HUBRAM to flash contents, true means match
