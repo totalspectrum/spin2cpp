@@ -33,52 +33,61 @@ static _BlockDevice *Default_SPI_Init(unsigned offset, unsigned used_size, unsig
 
 static int _flash_read(const struct lfs_config *cfg, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size) {
     _BlockDevice *blk = (_BlockDevice *)cfg->context;
-    if (off) {
+    unsigned blksize = blk->blksize;
+    unsigned long flashAdr = block * cfg->block_size + off;
+    
+    if (flashAdr % blksize) {
 #ifdef _DEBUG_LFS
-        __builtin_printf(" *** flash_read: bad offset off=%d\n", off);
+        __builtin_printf(" *** flash_read: bad start=%d\n", flashAdr);
 #endif        
         return -EINVAL;
     }
-    if (size % cfg->block_size) {
+    if (size % blksize) {
 #ifdef _DEBUG_LFS
-        __builtin_printf(" *** flash_read: bad size size=%d\n", size);
+        __builtin_printf(" *** flash_read: bad size=%d (block_size=%d)\n", size, blksize);
 #endif        
         return -EINVAL;
     }
-    size /= cfg->block_size;
+    block = flashAdr / blksize;
+    size /= blksize;
     blk->blk_read(buffer, block, size);
     return 0;
 }
 
 static int _flash_prog(const struct lfs_config *cfg, lfs_block_t block, lfs_off_t off, void *buffer_orig, lfs_size_t size) {
     _BlockDevice *blk = (_BlockDevice *)cfg->context;
+    unsigned blksize = blk->blksize; /* device block size */
+    unsigned flashAdr = block * cfg->block_size + off;
     char *buffer = buffer_orig;
     unsigned PAGE_SIZE = cfg->prog_size;
     unsigned PAGE_MASK = PAGE_SIZE-1; // assumes PAGE_SIZE is a power of 2
 
-    if (off) {
+    if (flashAdr % blksize) {
 #ifdef _DEBUG_LFS
-        __builtin_printf(" *** flash_read: bad offset off=%d\n", off);
+        __builtin_printf(" *** flash_read: bad offset addr=%lu\n", flashAdr);
 #endif        
         return -1;
     }
 #ifdef _DEBUG_LFS
-    __builtin_printf(" *** flash_prog: block=%d flashAdr=%x size=%x\n", block, flashAdr, size);
+    __builtin_printf(" *** flash_prog: block=%d off=%x size=%x\n", block, off, size);
 #endif        
     // make sure size is a page multiple
-    if ( 0 != (size & PAGE_MASK) ) {
+    if ( size % blksize ) {
 #ifdef _DEBUG_LFS
-    __builtin_printf(" *** flash_prog: EINVAL\n");
+    __builtin_printf(" *** flash_prog: bad size EINVAL\n");
 #endif        
         return -EINVAL;
     }
-    blk->blk_write(buffer, block, size / PAGE_SIZE);
+    blk->blk_write(buffer, flashAdr / blksize, size / blksize);
     return 0;
 }
 
 static int _flash_erase(const struct lfs_config *cfg, lfs_block_t block) {
     _BlockDevice *blk = (_BlockDevice *)cfg->context;
-
+    unsigned blksize = blk->blksize; /* device block size */
+    unsigned long flashAdr = block * cfg->block_size;
+    unsigned num_blocks = cfg->block_size / blksize;
+    
 #ifdef _DEBUG_LFS
     __builtin_printf(" *** flash_erase: block=0x%x\n", block);
 #endif        
@@ -89,7 +98,12 @@ static int _flash_erase(const struct lfs_config *cfg, lfs_block_t block) {
 #endif        
         return -1;
     }
-    blk->blk_erase(block, 1);
+    if (num_blocks == 0) {
+#ifdef _DEBUG_LFS
+        __builtin_printf(" *** flash_erase: num_blocks == 0\n");
+#endif        
+    }
+    blk->blk_erase(flashAdr / blksize, num_blocks);
     return 0;
 }
 
