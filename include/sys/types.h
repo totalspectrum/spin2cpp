@@ -8,7 +8,8 @@
 #include <time.h> /* for time_t */
 
 #ifndef __OFF_T_DEFINED__
-typedef long off_t;
+typedef long long off_t;  // what we eventually want
+//typedef long off_t;
 #define __OFF_T_DEFINED__
 #endif
 #ifndef __SSIZE_T_DEFINED__
@@ -33,9 +34,9 @@ struct stat {
   uid_t st_uid;
   gid_t st_gid;
   int st_rdev;
-  long st_size;
-  long st_blksize;
-  long st_blocks;
+  off_t st_size;
+  unsigned st_blksize;
+  unsigned st_blocks;
   time_t st_atime;
   time_t st_mtime;
   time_t st_ctime;

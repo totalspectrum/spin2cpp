@@ -804,23 +804,21 @@ static ssize_t v_write(vfs_file_t *fil, void *buf, size_t siz)
 static off_t v_lseek(vfs_file_t *fil, off_t offset, int whence)
 {
     fs9_file *f = fil->vfsdata;
-    unsigned tmp;
+    long long tmp;
     if (!f) {
         return _seterror(EBADF);
     }
 #ifdef _DEBUG_9P
-    __builtin_printf("v_lseek(%d, %d) start=%d ", offset, whence, f->offlo);
+    __builtin_printf("v_lseek(%d, %d) start=%d ", (long)offset, whence, f->offlo);
 #endif    
     if (whence == SEEK_SET) {
         f->offlo = offset;
+        f->offhi = ((long long)offset) >> 32;
     } else if (whence == SEEK_CUR) {
-        tmp = f->offlo + offset;
-        if (offset > 0 && tmp < f->offlo) {
-            f->offhi++;
-        } else if (offset < 0 && tmp > f->offlo) {
-	    f->offhi--;
-	}
+        tmp = f->offlo | (((long long)f->offhi) << 32);
+        tmp += offset;
         f->offlo = tmp;
+        f->offhi = tmp >> 32;
     } else {
         // SEEK_END; do a stat on the file and seek accordingly
         struct stat stbuf;
@@ -828,8 +826,9 @@ static off_t v_lseek(vfs_file_t *fil, off_t offset, int whence)
 	if (r < 0) {
 	    return _seterror(EINVAL);
 	}
-	f->offlo = stbuf.st_size - offset;
-	f->offhi = 0;
+        tmp = stbuf.st_size - offset;
+	f->offlo = tmp;
+	f->offhi = tmp >> 32;
     }
 #ifdef _DEBUG_9P
     __builtin_printf("end=%d\n", f->offlo);

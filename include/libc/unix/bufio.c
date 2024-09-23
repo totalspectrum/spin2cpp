@@ -17,7 +17,7 @@ int __default_flush(vfs_file_t *f)
         if (cnt > 0) {
             if (f->state & _VFS_STATE_APPEND) {
                 if (f->state & _VFS_STATE_NEEDSEEK) {
-                    r = (*f->lseek)(f, 0L, SEEK_END);
+                    r = (*f->lseek)(f, (off_t)0, SEEK_END);
                     f->state &= ~_VFS_STATE_NEEDSEEK;
                 }
             }
@@ -31,7 +31,7 @@ int __default_flush(vfs_file_t *f)
 #ifdef _DEBUG
         __builtin_printf("default_flush: reading: cnt=%d ptr=%x\n", cnt, (unsigned)&b->ptr[0]);
 #endif    
-        r = (*f->lseek)(f, -cnt, SEEK_CUR);
+        r = (*f->lseek)(f, (off_t)-cnt, SEEK_CUR);
 #ifdef _DEBUG
         __builtin_printf("default_flush: seek returned: cnt=%d\n", r);
 #endif    

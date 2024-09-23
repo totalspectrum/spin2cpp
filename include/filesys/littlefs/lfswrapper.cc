@@ -365,12 +365,12 @@ static off_t v_lseek(vfs_file_t *fil, off_t offset, int whence)
     int r;
     
 #ifdef _DEBUG_LFS
-    __builtin_printf("v_lseek(%d, %d) ", offset, whence);
+    __builtin_printf("v_lseek(%ld, %d) ", (long)offset, whence);
 #endif
     if (!f) {
         return _seterror(EBADF);
     }
-    r = lfs_file_seek(&lfs, &f->fd, offset, whence);
+    r = lfs_file_seek(&lfs, &f->fd, (lfs_soff_t)offset, whence);
 #ifdef _DEBUG_LFS
     __builtin_printf("result=%d\n", r);
 #endif

@@ -299,11 +299,12 @@ ssize_t v_write(vfs_file_t *fil, void *buf, size_t siz)
     return x;
 #endif
 }
-off_t v_lseek(vfs_file_t *fil, off_t offset, int whence)
+off_t v_lseek(vfs_file_t *fil, off_t lloffset, int whence)
 {
     FAT_FIL *vf = fil->vfsdata;
     FIL *f = &vf->fil;
     int result;
+    long offset = (long)lloffset;
     
     if (!f) {
         return _seterror(EBADF);
@@ -325,7 +326,7 @@ off_t v_lseek(vfs_file_t *fil, off_t offset, int whence)
     if (result) {
         return _set_dos_error(result);
     }
-    return offset;
+    return (off_t)offset;
 }
 
 int v_ioctl(vfs_file_t *fil, unsigned long req, void *argp)

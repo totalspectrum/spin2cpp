@@ -285,7 +285,7 @@ ssize_t _vfswrite(vfs_file_t *f, const void *vbuf, size_t count)
     }
     if (f->state & _VFS_STATE_APPEND) {
         if (f->state & _VFS_STATE_NEEDSEEK) {
-            r = (*f->lseek)(f, 0L, SEEK_END);
+            r = (*f->lseek)(f, (off_t)0, SEEK_END);
             f->state &= ~_VFS_STATE_NEEDSEEK;
         }
     }
@@ -401,7 +401,7 @@ off_t lseek(int fd, off_t offset, int whence)
     }
     r = (*f->lseek)(f, offset, whence);
     if (r < 0) {
-        return _seterror(-r);
+        return _seterror(-(int)r);
     }
     return r;
 }
