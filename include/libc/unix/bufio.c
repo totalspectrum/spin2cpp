@@ -11,7 +11,8 @@ int __default_flush(vfs_file_t *f)
     int r;
 
 #ifdef _DEBUG
-    __builtin_printf("default_flush: cnt=%d state=0x%x\n", cnt, f->state);
+    __builtin_printf("default_flush: cnt=%d b->flags=0x%x f->state=0x%x\n",
+                     cnt, b->flags, f->state);
 #endif    
     if ( (b->flags & _BUF_FLAGS_WRITING) ) {
         if (cnt > 0) {
@@ -22,6 +23,10 @@ int __default_flush(vfs_file_t *f)
                 }
             }
             r = (*f->write)(f, b->bufptr, cnt);
+#ifdef _DEBUG
+            __builtin_printf("default_flush: write of %d bytes returned %d\n",
+                             cnt, r);
+#endif            
         } else {
             r = 0;
         }
@@ -79,6 +84,9 @@ int __default_putc(int c,  vfs_file_t *f)
     unsigned mode = f->bufmode;
     if ( mode == _IONBF || i == b->bufsiz || (c == '\n' && mode == _IOLBF)) {
         if (__default_flush(f)) {
+#ifdef _DEBUG
+            __builtin_printf("__default_flush returned error\n");
+#endif            
             c = -1;
         }
     }
