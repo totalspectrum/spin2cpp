@@ -421,6 +421,7 @@ int v_open(vfs_file_t *fil, const char *name, int flags)
 }
 
 int v_flush(vfs_file_t *fil) {
+    __default_flush(fil);  /* flush fputc/fgetc buffers */
 #if FF_FS_READONLY
     return 0;
 #else
