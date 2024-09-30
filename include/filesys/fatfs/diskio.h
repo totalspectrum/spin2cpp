@@ -7,6 +7,7 @@
 #define _DISKIO_DEFINED
 
 #include <compiler.h> /* for _IMPL() */
+#include <sys/types.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,12 +30,12 @@ typedef enum {
 /* Prototypes for disk control functions */
 
 
-    DSTATUS disk_initialize (BYTE pdrv) _IMPL("sdmm.cc");
-    DSTATUS disk_status (BYTE pdrv) _IMPL("sdmm.cc");
-    DRESULT disk_read (BYTE pdrv, BYTE* buff, LBA_t sector, UINT count) _IMPL("sdmm.cc");
-    DRESULT disk_write (BYTE pdrv, const BYTE* buff, LBA_t sector, UINT count) _IMPL("sdmm.cc");
-    DRESULT disk_ioctl (BYTE pdrv, BYTE cmd, void* buff) _IMPL("sdmm.cc");
-    DRESULT disk_setpins (BYTE pdrv, int pclk, int pss, int pdi, int pdo) _IMPL("sdmm.cc");
+    DSTATUS disk_initialize (BYTE pdrv) _IMPL("diskio.cc");
+    DSTATUS disk_status (BYTE pdrv) _IMPL("diskio.cc");
+    DRESULT disk_read (BYTE pdrv, BYTE* buff, LBA_t sector, UINT count) _IMPL("diskio.cc");
+    DRESULT disk_write (BYTE pdrv, const BYTE* buff, LBA_t sector, UINT count) _IMPL("diskio.cc");
+    DRESULT disk_ioctl (BYTE pdrv, BYTE cmd, void* buff) _IMPL("diskio.cc");
+    DRESULT disk_sethandle (BYTE pdrv, vfs_file_t *fhandle) _IMPL("diskio.cc");
 
 /* Disk Status Bits (DSTATUS) */
 #define STA_NOINIT		0x01	/* Drive not initialized */
