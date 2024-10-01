@@ -48,7 +48,10 @@ struct vfs *_getrootvfs(void);
 void _setrootvfs(struct vfs *);
 
 struct vfs *_vfs_open_host(void) _IMPL("filesys/fs9p/fs9p_vfs.c");
+struct vfs *_vfs_open_fat_handle(vfs_file_t *handle) _IMPL("filesys/fs9p/fs9p_vfs.c");
 struct vfs *_vfs_open_fat_file(const char *name) _IMPL("filesys/fatfs/fatfs_vfs.c");
+
+/* legacy calls */
 struct vfs *_vfs_open_sdcard(void) _IMPL("filesys/fatfs/fatfs_vfs.c");
 struct vfs *_vfs_open_sdcardx(int pclk = 61, int pss = 60, int pdi = 59, int pdo = 58) _IMPL("filesys/fatfs/fatfs_vfs.c");
 
