@@ -95,6 +95,7 @@ static vfs_file_t __filetab[_MAX_FILES] = {
     },
 };
 
+/* get vfs file handle corresponding to file i */
 vfs_file_t *
 __getftab(int i)
 {
@@ -103,6 +104,7 @@ __getftab(int i)
     }
     return &__filetab[i];
 }
+
 
 int
 _openraw(void *fil_ptr, const char *orig_name, int flags, mode_t mode)
@@ -221,16 +223,6 @@ int _closeraw(void *f_ptr)
     return r;
 }
 
-int _freefile()
-{
-    vfs_file_t *tab = &__filetab[0];
-    int fd;
-    for (fd = 0; fd < _MAX_FILES; fd++) {
-        if (tab[fd].state == 0) return fd;
-    }
-    return -1;
-}
-
 int _find_free_file()
 {
     vfs_file_t *tab = &__filetab[0];
@@ -244,6 +236,16 @@ int _find_free_file()
     }
     return fd;
 }
+
+/* get a new vfs file handle */
+vfs_file_t *
+_get_vfs_file_handle()
+{
+    int fd = _find_free_file();
+    if (fd < 0) return 0;
+    return &__filetab[fd];
+}
+
 
 int open(const char *orig_name, int flags, mode_t mode=0644)
 {

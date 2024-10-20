@@ -381,7 +381,7 @@ pri file "libsys/fmt.c" __unlockio(h=long) : r
 pri {++complexio} file "libsys/basicfmt.c" _basic_open(h, sendf, recf, closef) : r=long
 pri {++complexio} file "libsys/basicfmt.c" _basic_open_string(h, str, iomode) : r=long
 pri {++complexio} file "libsys/basicfmt.c" _basic_close(h)
-pri {++complexio} file "libc/unix/posixio.c" _freefile() : r=long
+pri {++complexio} file "libc/unix/posixio.c" _find_free_file() : r=long
 pri file "libsys/basicfmt.c" _basic_print_nl(h)
 pri file "libsys/basicfmt.c" _basic_print_char(h, c, fmt = 0)
 pri file "libsys/basicfmt.c" _basic_print_boolean(h, c, fmt = 0)

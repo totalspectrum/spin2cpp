@@ -7,4 +7,11 @@
 #define TTY_FLAG_ECHO 0x01
 #define TTY_FLAG_CRNL 0x02
 
+#define BLKIOCTLERASE 0x0200
+
+struct _blkio_info {
+    unsigned addr;
+    unsigned size;
+};
+
 #endif

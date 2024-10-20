@@ -83,4 +83,7 @@ typedef int (*getcfunc_t)(vfs_file_t *fil);
 #define _VFS_STATE_NEEDSEEK (0x80)
 #define _VFS_STATE_ISATTY (0x100)
 
+/* fetch a new vfs_file_t handle */
+vfs_file_t *_get_vfs_file_handle() __fromfile("libc/unix/posixio.c");
+
 #endif

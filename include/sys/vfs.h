@@ -55,30 +55,11 @@ struct vfs *_vfs_open_fat_file(const char *name) _IMPL("filesys/fatfs/fatfs_vfs.
 struct vfs *_vfs_open_sdcard(void) _IMPL("filesys/fatfs/fatfs_vfs.c");
 struct vfs *_vfs_open_sdcardx(int pclk = 61, int pss = 60, int pdi = 59, int pdo = 58) _IMPL("filesys/fatfs/fatfs_vfs.c");
 
+/* parallax file system */
 struct vfs *_vfs_open_parallaxfs(void) _IMPL("filesys/parallax/parallaxfs_vfs.c");
 int _mkfs_parallaxfs(void) _IMPL("filesys/parallax/parallaxfs_vfs.c");
 
-/* block read/write device */
-typedef struct block_device {
-    /* functions for doing I/O */
-
-    /* read count blocks into dst */
-    int (*blk_read)(void *dst, unsigned firstBlockNum, unsigned count);
-
-    /* write & erase blocks (erase may be a no-op if not required) */
-    int (*blk_write)(void *src, unsigned firstBlock, unsigned count);
-    int (*blk_erase)(unsigned firstBlock, unsigned count);
-
-    /* sync to device */
-    int (*blk_sync)(void);
-
-    /* general ioctl */
-    int (*blk_ioctl)(int request, void *arg);
-
-    /* block size */
-    unsigned blksize;
-    
-} _BlockDevice;
+/* littlefs */
 
 /* structure for configuring a littlefs flash file system */
 struct littlefs_flash_config {
@@ -86,9 +67,9 @@ struct littlefs_flash_config {
     unsigned erase_size;     // size of erase blocks, typically 4K or 64K; must be a power of 2 and multiple of page_size
     unsigned offset;         // base address within flash, must be a multiple of erase_size
     unsigned used_size;      // size to be used within flash, must be a multiple of erase_size
-    _BlockDevice *dev;       // device to use for I/O (NULL for default SPI flash)
+    vfs_file_t *handle;      // device to use for I/O (NULL for default SPI flash)
     unsigned long long pinmask;        // pins used by device (0 for default)
-    unsigned reserved;    // reserved for future use (pins and whatnot)
+    unsigned reserved;       // reserved for future use (pins and whatnot)
 };
 struct vfs *_vfs_open_littlefs_flash(int do_format = 1, struct littlefs_flash_config *cfg = 0) _IMPL("filesys/littlefs/lfs_spi_vfs.c");
 int _mkfs_littlefs_flash(struct littlefs_flash_config *cfg = 0) _IMPL("filesys/littlefs/lfs_spi_vfs.c");
@@ -129,5 +110,6 @@ struct vfs *__getvfsforfile(char *fullname, const char *orig_name, char *full_pa
 /* file locking */
 int __lockio(int h) _IMPL("libsys/fmt.c");
 int __unlockio(int h) _IMPL("libsys/fmt.c");
+
 
 #endif

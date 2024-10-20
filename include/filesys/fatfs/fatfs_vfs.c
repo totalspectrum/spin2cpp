@@ -38,12 +38,8 @@ _sdmm_open(int pclk, int pss, int pdi, int pdo)
 #endif
        goto cleanup_and_out;
     }
-    int fd = _find_free_file();
-    if (fd < 0) goto cleanup_and_out;
-    handle = __getftab(fd);
+    handle = _get_vfs_file_handle();
     if (!handle) goto cleanup_and_out;
-
-    memset(handle, 0, sizeof(*handle));
 
     handle->flags = O_RDWR;
     handle->bufmode = _IONBF;
