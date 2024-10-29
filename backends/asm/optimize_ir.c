@@ -2909,6 +2909,38 @@ int OptimizeShortBranches(IRList *irl)
     return change;
 }
 
+// Special case of remapping a local to resultN for when general ReplaceBack fails to do the job
+int OptimizeReturnValues(IRList *irl) {
+    if (!curfunc->is_leaf) return 0; // Leaf functions only for now
+    int change = 0;
+
+    
+    for (IR *backIR = irl->tail;backIR;backIR=backIR->prev) {
+        if (IsLabel(backIR)||IsJump(backIR)||InstrIsVolatile(backIR)) break;
+
+        if (backIR->opc == OPC_MOV && isResult(backIR->dst) && IsLocal(backIR->src) && backIR->cond == COND_TRUE) {
+            Operand *res = backIR->dst, *local = backIR->src;
+            // found move from local to result, now check if it's legal to replace
+            // local can't be used after move
+            for(IR *ir=backIR->next;ir;ir=ir->next) {
+                if (InstrUses(ir,local)) goto nope;
+            }
+            // result can't be used or set before move
+            for(IR *ir=backIR->prev;ir;ir=ir->prev) {
+                if (InstrUses(ir,res)||InstrModifies(ir,res)) goto nope;
+            }
+            // All OK, do replace
+            for (IR *ir=irl->head;ir;ir=ir->next) {
+                if (ir->src == local) ir->src = res;
+                if (ir->dst == local) ir->dst = res;
+            }
+            change++;
+        }
+        nope: ;
+    }
+    return change;
+}
+
 #if 0
 static void DumpIR(IRList *irl,int suscnt,...) {
     struct flexbuf flex;
@@ -5303,6 +5335,9 @@ again:
             OPT_PASS(OptimizeCogWrites(irl));
             OPT_PASS(OptimizeSimpleAssignments(irl));
             OPT_PASS(OptimizeMoves(irl));
+            if (flags & OPT_EXPERIMENTAL) {
+                OPT_PASS(OptimizeReturnValues(irl));
+            }
         }
         if (flags & OPT_CONST_PROPAGATE) {
             OPT_PASS(OptimizeImmediates(irl));
