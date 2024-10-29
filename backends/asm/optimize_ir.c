@@ -2920,10 +2920,13 @@ int OptimizeReturnValues(IRList *irl) {
 
         if (backIR->opc == OPC_MOV && isResult(backIR->dst) && IsLocal(backIR->src) && backIR->cond == COND_TRUE) {
             Operand *res = backIR->dst, *local = backIR->src;
+
+            if (local->kind == REG_SUBREG) goto nope; // Subregisters work strangely
+
             // found move from local to result, now check if it's legal to replace
             // local can't be used after move
             for(IR *ir=backIR->next;ir;ir=ir->next) {
-                if (InstrUses(ir,local)) goto nope;
+                if (InstrUses(ir,local)||InstrModifies(ir,local)) goto nope;
             }
             // result can't be used or set before move
             for(IR *ir=backIR->prev;ir;ir=ir->prev) {
