@@ -776,6 +776,21 @@ DRESULT disk_write (
 	return count ? RES_ERROR : RES_OK;
 }
 
+static inline LBA_t disc_size(
+    uint8_t *csd )
+{
+    uint32_t  cs = __builtin_bswap32(*(uint32_t*)(&csd[6]));
+    unsigned n;
+    if( csd[0]>>6 == 1) { // SDC ver 2.00
+        cs = (cs & 0x3fffff)+1;
+        n = 10;
+    } else {    // SDC ver 1.00
+        cs = (LBA_t)(cs>>14 & 0xfff)+1;
+        n = (csd[5] & 15) + (__builtin_bswap32(*(uint16_t*)(&csd[9]))>>23 & 0x7)+(2-9);
+    }
+    return (LBA_t)cs << n;    // 32/64-bit block count
+}
+
 
 /*-----------------------------------------------------------------------*/
 /* Miscellaneous Functions                                               */
@@ -801,14 +816,7 @@ DRESULT disk_ioctl (
 
 		case GET_SECTOR_COUNT :	/* Get number of sectors on the disk (DWORD) */
 			if ((send_cmd(CMD9, 0) == 0) && rcvr_datablock(csd, 16)) {
-				if ((csd[0] >> 6) == 1) {	/* SDC ver 2.00 */
-					cs = csd[9] + ((WORD)csd[8] << 8) + ((DWORD)(csd[7] & 63) << 16) + 1;
-					*(LBA_t*)buff = cs << 10;
-				} else {					/* SDC ver 1.XX or MMC */
-					n = (csd[5] & 15) + ((csd[10] & 128) >> 7) + ((csd[9] & 3) << 1) + 2;
-					cs = (csd[8] >> 6) + ((WORD)csd[7] << 2) + ((WORD)(csd[6] & 3) << 10) + 1;
-					*(LBA_t*)buff = cs << (n - 9);
-				}
+               			*(LBA_t*)buff = disc_size(csd);
 				res = RES_OK;
 			}
 			break;
