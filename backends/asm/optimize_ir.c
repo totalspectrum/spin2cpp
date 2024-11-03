@@ -965,6 +965,7 @@ AddSubVal(IR *ir)
 }
 
 extern Operand *mulfunc, *unsmulfunc, *divfunc, *unsdivfunc, *muldiva, *muldivb;
+extern Operand *putcogreg;
 
 static bool isMulDivFunc(Operand *func) {
     return !!func && (func == mulfunc || func == unsmulfunc || func == divfunc || func == unsdivfunc);
@@ -1226,6 +1227,8 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
                     return true; // Value not actually used, goes dead.
                 } else if (isResult(op) && isMulDivFunc(ir->dst)) {
                     /* Result not affected by mul/div */
+                } else if (isResult(op) && putcogreg && ir->dst == putcogreg) {
+                    /* Result not (directly) affected by wrcog */
                 } else if (isResult(op)) {
                     if (ir->cond == COND_TRUE) return true; // Results get set by functions
                 } else {
@@ -2909,6 +2912,49 @@ int OptimizeShortBranches(IRList *irl)
     return change;
 }
 
+// Special case of remapping a local to resultN for when general ReplaceBack fails to do the job
+int OptimizeReturnValues(IRList *irl) {
+    if (!curfunc->is_leaf) return 0; // Leaf functions only for now
+    int change = 0;
+
+    
+    for (IR *backIR = irl->tail;backIR;backIR=backIR->prev) {
+        if (IsLabel(backIR)||IsJump(backIR)||InstrIsVolatile(backIR)) break;
+
+        if (backIR->opc == OPC_MOV && isResult(backIR->dst) && IsLocal(backIR->src) && backIR->cond == COND_TRUE) {
+            Operand *res = backIR->dst, *local = backIR->src;
+
+            if (local->kind == REG_SUBREG) goto nope; // Subregisters work strangely
+
+            // found move from local to result, now check if it's legal to replace
+            // local can't be used after move
+            for(IR *ir=backIR->next;ir;ir=ir->next) {
+                if (InstrUses(ir,local)||InstrModifies(ir,local)) goto nope;
+            }
+            // result can't be used or set before move
+            for(IR *ir=backIR->prev;ir;ir=ir->prev) {
+                if (InstrUses(ir,res)||InstrModifies(ir,res)) goto nope;
+            }
+            // All OK, do replace
+            for (IR *ir=irl->head;ir;ir=ir->next) {
+                if (ir->src == local) {
+                    ir->src = res;
+                } else if (ir->src && ir->src->kind == IMM_COG_LABEL && !strcmp(ir->src->name,local->name)) {
+                    ir->src = NewOperand(IMM_COG_LABEL,res->name,ir->src->val);
+                } 
+                if (ir->dst == local) {
+                    ir->dst = res;
+                } else if (ir->dst && ir->dst->kind == IMM_COG_LABEL && !strcmp(ir->dst->name,local->name)) {
+                    ir->dst = NewOperand(IMM_COG_LABEL,res->name,ir->dst->val);
+                }
+            }
+            change++;
+        }
+        nope: ;
+    }
+    return change;
+}
+
 #if 0
 static void DumpIR(IRList *irl,int suscnt,...) {
     struct flexbuf flex;
@@ -4237,7 +4283,6 @@ FindNamedOperand(IRList *irl, const char *name, int val)
  * we can replace it with
  *   mov x, y
  */
-extern Operand *putcogreg;
 
 static int
 IsMovIndirect(IR *ir, IR *ir_prev, IR *ir_next)
@@ -5303,6 +5348,9 @@ again:
             OPT_PASS(OptimizeCogWrites(irl));
             OPT_PASS(OptimizeSimpleAssignments(irl));
             OPT_PASS(OptimizeMoves(irl));
+            if (flags & OPT_EXPERIMENTAL) {
+                OPT_PASS(OptimizeReturnValues(irl));
+            }
         }
         if (flags & OPT_CONST_PROPAGATE) {
             OPT_PASS(OptimizeImmediates(irl));
