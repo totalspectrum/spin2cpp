@@ -3,7 +3,7 @@
 #define wint_t int
 #define time_t unsigned int
 #define mode_t unsigned int
-#define off_t long
+#define off_t long long
 #define _FILE struct s_vfs_file_t
 #define DIR struct _dir
 #define DIRENT struct dirent
