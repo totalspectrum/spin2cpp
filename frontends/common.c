@@ -100,6 +100,7 @@ AST *ast_type_float, *ast_type_string;
 AST *ast_type_c_boolean, *ast_type_basic_boolean;
 AST *ast_type_c_boolean_small, *ast_type_basic_boolean_small;
 AST *ast_type_ptr_long;
+AST *ast_type_ptr_long64;
 AST *ast_type_ptr_word;
 AST *ast_type_ptr_byte;
 AST *ast_type_ptr_void;
@@ -1066,6 +1067,7 @@ Init()
     ast_type_const_generic = NewAST(AST_MODIFIER_CONST, ast_type_generic, NULL);
     ast_type_void = NewAST(AST_VOIDTYPE, AstInteger(0), NULL);
 
+    ast_type_ptr_long64 = NewAST(AST_PTRTYPE, ast_type_long64, NULL);
     ast_type_ptr_long = NewAST(AST_PTRTYPE, ast_type_long, NULL);
     ast_type_ptr_word = NewAST(AST_PTRTYPE, ast_type_word, NULL);
     ast_type_ptr_byte = NewAST(AST_PTRTYPE, ast_type_byte, NULL);

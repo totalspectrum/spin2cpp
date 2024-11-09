@@ -2255,6 +2255,7 @@ struct reservedword {
     { "orgf", SP_ORGF }, // NON-STANDARD
     { "other", SP_OTHER },
 
+    { "%quad", SP_QUAD },
     { "quit", SP_QUIT },
     { "pri", SP_PRI },
     { "pub", SP_PUB },

@@ -301,6 +301,7 @@ SpinDeclareStruct(AST *ident, AST *defs)
 %token SP_BYTE       "BYTE"
 %token SP_WORD       "WORD"
 %token SP_LONG       "LONG"
+%token SP_QUAD       "%QUAD"
 %token SP_BYTEFIT    "BYTEFIT"
 %token SP_WORDFIT    "WORDFIT"
 %token SP_FVAR       "FVAR"
@@ -1116,6 +1117,10 @@ structitem:
     {
         $$ = NewAST(AST_DECLARE_VAR, MaybeArrayType(NULL, $3), $2);
     }
+  | SP_QUAD SP_IDENTIFIER optarray
+    {
+        $$ = NewAST(AST_DECLARE_VAR, MaybeArrayType(ast_type_long64, $3), $2);
+    }
   | SP_TYPENAME SP_IDENTIFIER optarray
   {
       AST *name = $2;
@@ -1427,6 +1432,8 @@ vardecl:
     { $$ = NewAST(AST_DECLARE_VAR, ast_type_word, $2); }
   | SP_LONG identdecl
     { $$ = NewAST(AST_DECLARE_VAR, NULL, $2); }
+  | SP_QUAD identdecl
+    { $$ = NewAST(AST_DECLARE_VAR, ast_type_long64, $2); }
   | SP_TYPENAME identdecl
     { $$ = NewAST(AST_DECLARE_VAR, $1, $2); }
 ;
@@ -1476,6 +1483,11 @@ paramidentdecl:
       LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a flexspin extension");
       $$ = NewAST(AST_DECLARE_VAR, ast_type_long64, $1);
   }
+  | identifier '=' SP_QUAD
+  {
+      LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a flexspin extension");
+      $$ = NewAST(AST_DECLARE_VAR, ast_type_long64, $1);
+  }
   | identifier '=' '>' '+' SP_LONG
   {
       LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a flexspin extension");
@@ -1485,6 +1497,11 @@ paramidentdecl:
   {
       LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a flexspin extension");
       $$ = NewAST(AST_DECLARE_VAR, ast_type_float, $1);
+  }
+  | identifier '=' '@' SP_QUAD
+  {
+      LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a flexspin extension");
+      $$ = NewAST(AST_DECLARE_VAR, ast_type_ptr_long64, $1);
   }
   | identifier '=' '@' SP_LONG
   {

@@ -3,13 +3,16 @@ Version 7.0.0
 - Added BOOL debug modifier for -g
 - Added some of the v44 Spin2 builtin methods like byteswap
 - Added warning for rep without @
+- Added %QUAD keyword for 64 bit variables in Spin2
 - Cleaned up the Spin parser to enable direct access to struct/obj members
 - Fixed long relative branches (tjz, djnz, etc.)
 - Fixed incorrect handling of simple for loops with unsigned variables
 - Improved some debug error messages
 - Only use the stack for variables whose address is actually taken (thanks to Ada for this!)
 - Modified _BlockDevice data structure (used for littlefs, but someday may be used for fatfs too)
-- Make _float_tointeger() saturate when the result is too big/small
+- Made _float_tointeger() saturate when the result is too big/small
+- Made off_t be 64 bits, to allow for files > 2GB
+- Revised file systems to all read from devices; this makes it possible to do loopback file systems or to use non-standard devices for file systems
 
 Version 6.9.10
 - Fix compilation error when GETWORD is replaced by MOV or MUL
