@@ -35,7 +35,7 @@ static vfs_file_t *Default_SPI_Init(unsigned offset, unsigned used_size, unsigne
     
     handle->read = &spi.v_read;
     handle->write = &spi.v_write;
-    handle->lseek = &spi.v_lseek;
+    handle->lseek = (void *)&spi.v_lseek; /* cast to fix a warning */
     handle->ioctl = &spi.v_ioctl;
     handle->flush = &spi.v_flush;
 #ifdef _DEBUG_LFS
