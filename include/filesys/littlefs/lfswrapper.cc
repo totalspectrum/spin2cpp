@@ -656,6 +656,9 @@ get_vfs(struct littlefs_flash_config *fcfg, int do_format)
     v->init = &v_init;
     v->deinit = &v_deinit;
 
+    v->getcf = 0;
+    v->putcf = 0;
+
     v->vfs_data = &lfs;
     return v;
 }

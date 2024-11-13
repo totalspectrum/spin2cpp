@@ -160,6 +160,8 @@ _openraw(void *fil_ptr, const char *orig_name, int flags, mode_t mode)
         if (!fil->close) fil->close = v->close;
         if (!fil->ioctl) fil->ioctl = v->ioctl;
         if (!fil->lseek) fil->lseek = v->lseek;
+        if (!fil->getcf) fil->getcf = v->getcf;
+        if (!fil->putcf) fil->putcf = v->putcf;
         if (!fil->putcf) {
             // check for TTY
             defaultBuffering = 1;

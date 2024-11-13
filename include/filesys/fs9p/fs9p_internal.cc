@@ -940,6 +940,8 @@ static struct vfs fs9_vfs =
 
     0, /* init */
     0, /* deinit */
+    0, /* getcf */
+    0, /* putcf */
 };
 
 struct vfs *

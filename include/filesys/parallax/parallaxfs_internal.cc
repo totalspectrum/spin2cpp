@@ -485,6 +485,9 @@ static struct vfs parallax_vfs =
 
     0, /* init */
     &v_deinit, /* deinit */
+
+    0, /* getcf */
+    0, /* putcf */
 };
 
 struct vfs *

@@ -6,6 +6,12 @@
  * below; see also ff.c and similar files.
  */
 
+#ifndef _NO_STDIO_BUF
+#define _STDIO_BUF
+#else
+#define FF_USE_STRFUNC (1)
+#endif
+
 #define DIR FFDIR
 #define get_fattime _get_fattime
 #define static
@@ -61,7 +67,9 @@ static time_t unixtime(unsigned int dosdate, unsigned int dostime)
 }
 
 typedef struct fat_file {
+#ifdef _STDIO_BUF    
     struct _default_buffer b;
+#endif    
     FIL fil;
 } FAT_FIL;
 
@@ -422,7 +430,9 @@ int v_open(vfs_file_t *fil, const char *name, int flags)
 }
 
 int v_flush(vfs_file_t *fil) {
+#ifdef _STDIO_BUF    
     __default_flush(fil);  /* flush fputc/fgetc buffers */
+#endif    
 #if FF_FS_READONLY
     return 0;
 #else
@@ -465,6 +475,23 @@ int v_deinit(const char *mountname)
     return 0;
 }
 
+#ifndef _STDIO_BUF
+int v_putcf(int c, vfs_file_t *fil)
+{
+    FAT_FIL *f = fil->vfsdata;
+    int r = f_putc(c, &f->fil);
+    return r;
+}
+
+int v_getcf(vfs_file_t *fil)
+{
+    char c;
+    int r = v_read(fil, &c, 1);
+    if (r < 0) return -1;
+    return r;
+}
+#endif
+
 struct vfs *
 get_vfs(void *ptr)
 {
@@ -494,6 +521,13 @@ get_vfs(void *ptr)
 
     v->init = &v_init;
     v->deinit = &v_deinit;
-    
+
+#ifdef _STDIO_BUF
+    v->getcf = 0;
+    v->putcf = 0;
+#else    
+    v->getcf = &v_getcf;
+    v->putcf = &v_putcf;
+#endif    
     return v;
 }

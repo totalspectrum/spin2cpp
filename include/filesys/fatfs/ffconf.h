@@ -58,7 +58,9 @@
 /* This option switches f_forward() function. (0:Disable or 1:Enable) */
 
 
+#ifndef FF_USE_STRFUNC
 #define FF_USE_STRFUNC	0
+#endif
 #define FF_PRINT_LLI	0
 #define FF_PRINT_FLOAT	0
 #define FF_STRF_ENCODE	0

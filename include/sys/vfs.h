@@ -35,6 +35,9 @@ struct vfs {
 
     int (*init)(const char *mountname);
     int (*deinit)(const char *mountname);
+
+    int (*getcf)(vfs_file_t *f);
+    int (*putcf)(int c, vfs_file_t *f);
 };
 
 typedef struct vfs vfs_t;
