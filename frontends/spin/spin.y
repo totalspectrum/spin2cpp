@@ -393,6 +393,11 @@ SpinDeclareStruct(AST *ident, AST *defs)
 %token SP_SWAP       "SWAP"
 %token SP_COMP       "COMP"
 
+/* v45 additions */
+%token SP_STRUCT     "STRUCT"
+%token SP_SIZEOF     "SIZEOF"
+%token SP_SWAP_OP    ":=:"
+
 /* operators */
 %token SP_ASSIGN     ":="
 %token SP_XOR        "XOR (^^)"
@@ -478,7 +483,7 @@ SpinDeclareStruct(AST *ident, AST *defs)
 %token SP_DAT_RBRACK "] in DAT"
 
 /* operator precedence */
-%right SP_ASSIGN
+%right SP_ASSIGN SP_SWAP_OP
 %left '\\'
 %right SP_THEN
 %right SP_ELSE
@@ -1067,6 +1072,14 @@ conline:
         /* basically an inline object definition */
         AST *defs = $3;
         AST *name = $1;
+        SpinDeclareStruct(name, defs);
+        $$ = NULL;
+    }
+  | SP_STRUCT SP_IDENTIFIER '(' structlist ')' SP_EOLN
+    {
+        /* basically an inline object definition */
+        AST *defs = $4;
+        AST *name = $2;
         SpinDeclareStruct(name, defs);
         $$ = NULL;
     }
@@ -1954,6 +1967,29 @@ expr:
     { $$ = $1; }
   | SP_IF expr SP_THEN expr SP_ELSE expr
     { $$ = NewAST(AST_CONDRESULT, $2, NewAST(AST_THENELSE, $4, $6)); }
+  | lhs SP_SWAP_OP expr
+    {
+        AST *dst = $1;
+        AST *src = $3;
+        AST *check = NewAST(AST_STATIC_ASSERT,
+                            NewAST(AST_SAMETYPES,
+                                   NewAST(AST_TYPEOF, dst, NULL),
+                                   NewAST(AST_TYPEOF, src, NULL)),
+                            AstStringPtr("Parameters to :=: must have the same type"));
+        AST *dstptr = NewAST(AST_ADDROF, dst, NULL);
+        AST *srcptr = NewAST(AST_ADDROF, src, NULL);
+        AST *copyparams = NewAST(AST_EXPRLIST,
+                                 dstptr,
+                                 NewAST(AST_EXPRLIST,
+                                        srcptr,
+                                        NewAST(AST_EXPRLIST,
+                                               NewAST(AST_SIZEOF, src, NULL),
+                                               NULL)));
+        AST *copy = NewAST(AST_FUNCCALL,
+                           AstIdentifier("__builtin_swapdata"),
+                           copyparams);
+        $$ = NewAST(AST_SEQUENCE, check, copy);
+    }  
   ;
 
 lhs: identifier

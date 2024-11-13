@@ -2095,7 +2095,13 @@ getSpinToken(LexStream *L, AST **ast_ptr)
     } else if (c == ':') {
         peekc = lexgetc(L);
         if (peekc == '=') {
-            c = SP_ASSIGN;
+            peekc = lexgetc(L);
+            if (peekc == ':') {
+                c = SP_SWAP_OP; /* :=: swap operator */
+            } else {
+                lexungetc(L, peekc);
+                c = SP_ASSIGN;
+            }
         } else if (isIdentifierStart(peekc) && InDatBlock(L)) {
             lexungetc(L, peekc);
             if (gl_p2) {
@@ -2437,10 +2443,14 @@ struct reservedword_soft {
     { "longs", SP_LONGS, 42, 42 },
     { "words", SP_WORDS, 42, 42 },
 
-    /* new v44 keywords */
-    { "fill", SP_FILL, 44, 0 },
-    { "copy", SP_COPY, 44, 0 },
-    { "swap", SP_SWAP, 44, 0 },
+    /* new v44 keywords, taken away in v45 */
+    { "fill", SP_FILL, 44, 44 },
+    { "copy", SP_COPY, 44, 44 },
+    { "swap", SP_SWAP, 44, 44 },
+
+    /* new v45 keywords */
+    { "sizeof", SP_SIZEOF, 45, 0 },
+    { "struct", SP_STRUCT, 45, 0 },
     
 };
 
