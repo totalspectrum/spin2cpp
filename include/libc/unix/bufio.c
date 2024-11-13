@@ -11,10 +11,10 @@ int __default_flush(vfs_file_t *f)
     int r;
 
 #ifdef _DEBUG
-    __builtin_printf("default_flush: cnt=%d b->flags=0x%x f->state=0x%x\n",
-                     cnt, b->flags, f->state);
+    __builtin_printf("default_flush: cnt=%d f->state=0x%x\n",
+                     cnt, f->state);
 #endif    
-    if ( (b->flags & _BUF_FLAGS_WRITING) ) {
+    if ( (f->state & _BUF_FLAGS_WRITING) ) {
         if (cnt > 0) {
             if (f->state & _VFS_STATE_APPEND) {
                 if (f->state & _VFS_STATE_NEEDSEEK) {
@@ -30,7 +30,7 @@ int __default_flush(vfs_file_t *f)
         } else {
             r = 0;
         }
-    } else if ( (b->flags & _BUF_FLAGS_READING) && cnt ) {
+    } else if ( (f->state & _BUF_FLAGS_READING) && cnt ) {
         // have to seek backwards to skip over the read but not
         // consumed bytes
 #ifdef _DEBUG
@@ -44,7 +44,7 @@ int __default_flush(vfs_file_t *f)
     }
     b->cnt = 0;
     b->ptr = 0;
-    b->flags = 0;
+    f->state &= ~(_BUF_FLAGS_WRITING|_BUF_FLAGS_READING);
     return 0;
 }
 
@@ -63,17 +63,17 @@ int __default_filbuf(vfs_file_t *f)
     }
     b->cnt = r;
     b->ptr = &b->bufptr[0];
-    b->flags |= _BUF_FLAGS_READING;
+    f->state |= _BUF_FLAGS_READING;
     return r;
 }
 
 int __default_putc(int c,  vfs_file_t *f)
 {
     struct _default_buffer *b = (struct _default_buffer *)f->vfsdata;
-    if (b->flags & _BUF_FLAGS_READING) {
+    if (f->state & _BUF_FLAGS_READING) {
         __default_flush(f);
     }
-    b->flags |= _BUF_FLAGS_WRITING;
+    f->state |= _BUF_FLAGS_WRITING;
     int i = b->cnt;
 #ifdef _DEBUG_EXTRA
     __builtin_printf("putc: %d f=%x b=%x cnt=%d\n", c, (unsigned)f, (unsigned)b, i);
@@ -95,10 +95,10 @@ int __default_putc(int c,  vfs_file_t *f)
 
 int __default_getc(vfs_file_t *f) {
     struct _default_buffer *b = (struct _default_buffer *)f->vfsdata;
-    if (b->flags & _BUF_FLAGS_WRITING) {
+    if (f->state & _BUF_FLAGS_WRITING) {
         __default_flush(f);
     }
-    b->flags |= _BUF_FLAGS_READING;
+    f->state |= _BUF_FLAGS_READING;
     int i = b->cnt;
     unsigned char *ptr;
 

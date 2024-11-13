@@ -4,7 +4,10 @@
 size_t fwrite(const void *ptr, size_t size, size_t n, FILE *f)
 {
     size *= n;
-    fflush(f);
+    if (f->state & (_BUF_FLAGS_READING|_BUF_FLAGS_WRITING)) {
+        fflush(f); /* buffer in use, re-sync */
+        f->state &= ~(BUF_FLAGS_READING|_BUF_FLAGS_WRITING);
+    }
     return _vfswrite(f, ptr, size);
 }
 
@@ -36,7 +39,10 @@ size_t fread(void *ptr, size_t size, size_t n, FILE *f)
         ptr = (void *)dst;
     }
     if (size == 0) return r;
-    fflush(f); /* re-sync */
+    if (f->state & (_BUF_FLAGS_READING|_BUF_FLAGS_WRITING)) {
+        fflush(f); /* buffer in use, re-sync */
+        f->state &= ~(BUF_FLAGS_READING|_BUF_FLAGS_WRITING);
+    }
     r += _vfsread(f, ptr, size);
 #ifdef _DEBUG
     __builtin_printf("vfsread returned %d\n", r);

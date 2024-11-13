@@ -90,9 +90,6 @@ int _mkfs_littlefs_flash(struct littlefs_flash_config *cfg = 0) _IMPL("filesys/l
 struct _default_buffer {
     int cnt;
     unsigned char *ptr;
-    unsigned flags;
-#define _BUF_FLAGS_READING (0x01)
-#define _BUF_FLAGS_WRITING (0x02)
     unsigned bufsiz;
     unsigned char *bufptr;
     unsigned char bufdata[_DEFAULT_BUFSIZ];
