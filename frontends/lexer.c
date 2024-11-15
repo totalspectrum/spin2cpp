@@ -23,7 +23,7 @@
 
 #define VT '\013'
 
-#define MAX_PNUT_VERSION 44 /* maximum PNut version we understand */
+#define MAX_PNUT_VERSION 45 /* maximum PNut version we understand */
 
 int allow_type_names = 1;
 
@@ -790,11 +790,11 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
         }
     }
     if (L->language == LANG_SPIN_SPIN2) {
+        int userVersion = L->language_version;
         sym = NULL;
-        if (gl_in_spin2_funcbody) {
+        if (userVersion > 0 || gl_in_spin2_funcbody) {
             sym = FindSymbol(&spin2SoftReservedWords, idstr);
             if (sym) {
-                int userVersion = L->language_version;
                 int minVersion = sym->offset & 0xFFFF;
                 int maxVersion = (sym->offset>>16) & 0xFFFF;
                 int startline = L->lineCounter;
@@ -804,7 +804,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                     sym = NULL;
                 } else if (maxVersion && userVersion > maxVersion) {
                     sym = NULL;
-                } else {
+                } else if (gl_in_spin2_funcbody) {
                     // see if the user has a conflicting definition
                     Symbol *sym2 = FindSymbolInContext(currentTypes, idstr);
                     if (sym2) {

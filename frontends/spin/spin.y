@@ -2200,6 +2200,16 @@ funccall:
     {
         SYNTAX_ERROR("REGLOAD is not supported by flexspin");
     }
+  | SP_SIZEOF '(' SP_TYPENAME ')'
+    {
+        AST *src = $3;
+        $$ = NewAST(AST_SIZEOF, src, NULL);
+    }
+  | SP_SIZEOF '(' expr ')'
+    {
+        AST *src = $3;
+        $$ = NewAST(AST_SIZEOF, src, NULL);
+    }
   | SP_COPY '(' expr ',' expr ')'
     {
         AST *dst = $3;
