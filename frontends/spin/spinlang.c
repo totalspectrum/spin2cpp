@@ -929,6 +929,14 @@ doSpinTransform(AST **astptr, int level, AST *parent)
         doSpinTransform(&debugprint->right, 0, ast);
         break;
     }
+    case AST_SIZEOF:
+    {
+        AST *typ = ExprType(ast->left);
+        if (typ && IsRefType(typ)) {
+            ast->left = typ->left;
+        }
+        break;
+    }
     case AST_OPERATOR:
         if (level == 1) {
             AST *lhsast;
