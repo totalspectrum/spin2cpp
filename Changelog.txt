@@ -13,6 +13,7 @@ Version 7.0.0
 - Made _float_tointeger() saturate when the result is too big/small
 - Made off_t be 64 bits, to allow for files > 2GB
 - Revised file systems to all read from devices; this makes it possible to do loopback file systems or to use non-standard devices for file systems
+- Suppress some asm warnings when building assembler output
 
 Version 6.9.10
 - Fix compilation error when GETWORD is replaced by MOV or MUL
