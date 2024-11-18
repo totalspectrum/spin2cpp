@@ -1,0 +1,12 @@
+{$Spin2_v45}
+
+CON
+  STRUCT point(x, y, z)
+
+PUB zz(^point p) : r
+  p~
+  p.x := SIZEOF(p)
+  r := p.y
+
+PUB zb(^byte b)
+  b := 1

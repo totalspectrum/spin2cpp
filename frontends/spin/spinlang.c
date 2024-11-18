@@ -674,6 +674,9 @@ doSpinTransform(AST **astptr, int level, AST *parent)
             // Do this even if we could do it natively, 
             // since normal assignment is generally faster
             AST *typ = ExprType(ast->left);
+            if (typ && IsRefType(typ)) {
+                typ = typ->left;
+            }
             int destSize = typ ? TypeSize(typ) : LONG_SIZE;
             if (destSize > LONG_SIZE) {
                 // use memset or memcpy?
