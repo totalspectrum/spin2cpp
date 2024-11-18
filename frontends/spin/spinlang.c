@@ -664,10 +664,6 @@ doSpinTransform(AST **astptr, int level, AST *parent)
         AST *tmp;
         AST *seq1, *seq2;
 
-        /* fix up sub-pieces */
-        doSpinTransform(&ast->left, 0, ast);
-        doSpinTransform(&ast->right, 0, ast);
-        
         AstReportAs(ast, &saveinfo);
         ast->right = target = DupAST(ast->right);
         if (IsConstExpr(ast->left)) {
@@ -717,6 +713,10 @@ doSpinTransform(AST **astptr, int level, AST *parent)
             *astptr = ast = seq2;
         }
         AstReportDone(&saveinfo);
+        // if we did a transform,
+        // we may have a range reference in here, so do the
+        // transform on the result
+        doSpinTransform(astptr, level, ast);
 	break;
     }
     case AST_ASSIGN:
