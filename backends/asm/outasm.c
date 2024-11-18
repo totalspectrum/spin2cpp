@@ -5134,6 +5134,11 @@ int OutAsm_DebugEval(AST *ast, int regNum, int *addr, void *ourarg) {
         }
         return n;
     }
+    if (ast && ast->kind == AST_HWREG) {
+        HwReg *hw = (HwReg *)ast->d.ptr;
+        *addr = hw->addr;
+        return PASM_EVAL_ISREG;
+    }
     srcop = CompileExpression(irl, ast, NULL);
 single_value:
     dstop = GetDebugReg(regNum);
