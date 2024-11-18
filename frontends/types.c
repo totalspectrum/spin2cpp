@@ -104,8 +104,8 @@ static AST *int64_shl, *int64_shr, *int64_sar;
 static AST *int64_and, *int64_or, *int64_xor;
 static AST *int64_signx, *int64_zerox;
 
-static AST *struct_copy;
-static AST *struct_memset;
+AST *struct_copy;
+AST *struct_memset;
 static AST *string_cmp;
 static AST *string_concat;
 static AST *string_length;
@@ -171,7 +171,7 @@ UnorderedResult(int op)
 
 // create a call to function func with parameters ast->left, ast->right
 // there is an optional 3rd argument too
-static AST *
+AST *
 MakeOperatorCall(AST *func, AST *left, AST *right, AST *extraArg)
 {
     AST *call;

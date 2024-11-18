@@ -663,6 +663,11 @@ doSpinTransform(AST **astptr, int level, AST *parent)
         AST *target;
         AST *tmp;
         AST *seq1, *seq2;
+
+        /* fix up sub-pieces */
+        doSpinTransform(&ast->left, 0, ast);
+        doSpinTransform(&ast->right, 0, ast);
+        
         AstReportAs(ast, &saveinfo);
         ast->right = target = DupAST(ast->right);
         if (IsConstExpr(ast->left)) {
@@ -672,7 +677,30 @@ doSpinTransform(AST **astptr, int level, AST *parent)
             // at toplevel we can ignore the old result
             // Do this even if we could do it natively, 
             // since normal assignment is generally faster
-            *astptr = ast = AstAssign(ast->left, target);
+            AST *typ = ExprType(ast->left);
+            int destSize = typ ? TypeSize(typ) : LONG_SIZE;
+            if (destSize > LONG_SIZE) {
+                // use memset or memcpy?
+                if (IsConstExpr(target)) {
+                    *astptr = ast = MakeOperatorCall(struct_memset,
+                                                     NewAST(AST_ABSADDROF,
+                                                            ast->left, NULL),
+                                                     target,
+                                                     AstInteger(destSize));
+                } else if (TypeSize(target) != destSize) {
+                    ERROR(ast, "Type size mismatch");
+                } else {
+                    // memcpy
+                    *astptr = ast = MakeOperatorCall(struct_copy,
+                                                     NewAST(AST_ABSADDROF,
+                                                            ast->left, NULL),
+                                                     NewAST(AST_ABSADDROF,
+                                                            target, NULL),
+                                                     AstInteger(destSize));
+                }
+            } else {
+                *astptr = ast = AstAssign(ast->left, target);
+            }
         } else if (TraditionalBytecodeOutput()) {
             // Do nothing except transform the children
             AstReportDone(&saveinfo);
@@ -689,10 +717,6 @@ doSpinTransform(AST **astptr, int level, AST *parent)
             *astptr = ast = seq2;
         }
         AstReportDone(&saveinfo);
-        // if we did a transform,
-        // we may have a range reference in here, so do the
-        // transform on the result
-        doSpinTransform(astptr, level, ast);
 	break;
     }
     case AST_ASSIGN:
@@ -737,13 +761,6 @@ doSpinTransform(AST **astptr, int level, AST *parent)
                 AstReportAs(ast, &saveinfo);
                 lookup = NewAST(AST_ARRAYREF, ast->left, AstInteger(0));
                 *ast = *NewAST(ast->kind, lookup, ast->right);
-                AstReportDone(&saveinfo);
-            } else if (IsRefType(objtype)) {
-                AST *deref;
-                AstReportAs(ast, &saveinfo);
-                deref = NewAST(AST_MEMREF, objtype->left, ast->left);
-                deref = NewAST(AST_ARRAYREF, deref, AstInteger(0));
-                *ast = *NewAST(ast->kind, deref, ast->right);
                 AstReportDone(&saveinfo);
             }
         }
@@ -911,13 +928,21 @@ doSpinTransform(AST **astptr, int level, AST *parent)
     case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER:
     {
+        AST *typ = ExprType(ast);
         if (curfunc && !curfunc->stack_local && IsLocalVariable(ast)) {
-            AST *typ = ExprType(ast);
             if (typ) {
                 if (TypeGoesOnStack(typ)) {
                     curfunc->stack_local = 1;
                 }
             }
+        }
+        if (typ && IsRefType(typ)) {
+            AST *deref;
+            AstReportAs(ast, &saveinfo);
+            deref = NewAST(AST_MEMREF, typ->left, DupAST(ast));
+            deref = NewAST(AST_ARRAYREF, deref, AstInteger(0));
+            *ast = *deref;
+            AstReportDone(&saveinfo);
         }
         break;
     }

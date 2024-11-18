@@ -1458,6 +1458,19 @@ vardecllist:
       { $$ = AddToList($1, NewAST(AST_LISTHOLDER, $3, NULL)); }
    ;
 
+general_type:
+  SP_BYTE
+    { $$ = ast_type_byte; }
+  | SP_WORD
+    { $$ = ast_type_word; }
+  | SP_LONG
+    { $$ = ast_type_long; }
+  | SP_QUAD
+    { $$ = ast_type_long64; }
+  | SP_TYPENAME
+    { $$ = $1; }
+  ;
+
 paramidentdecl:
   identifier
   { $$ = $1; }
@@ -1468,7 +1481,7 @@ paramidentdecl:
       LANGUAGE_WARNING(LANG_ANY, $1, "default parameter values are a flexspin extension");
       $$ = AstAssign($1, $3);
   }
-  | '^' SP_TYPENAME identifier
+  | '^' general_type identifier
   {
       AST *typ = $2;
       AST *ident = $3;

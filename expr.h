@@ -198,6 +198,9 @@ int32_t const_or_default(Module *M, const char *name, int32_t defaultval);
 /* type name */
 const char *TypeName(AST *typ);
 
+/* create a function call with parameters left, right, extra (some may
+   be NULL */
+AST *MakeOperatorCall(AST *func, AST *left, AST *right, AST *extra);
 #if (defined(__GNUC__) || defined(__clang__))
 #define clz32(x)    __builtin_clz((uint32_t)(x))
 #define ctz32(x)    __builtin_ctz((uint32_t)(x))
@@ -218,5 +221,8 @@ extern uint16_t bswap16(uint16_t x);
 #define __ORDER_BIG_ENDIAN__    1
 #define __BYTE_ORDER__ __ORDER_LITTLE_ENDIAN__
 #endif
+
+extern AST *struct_copy;
+extern AST *struct_memset;
 
 #endif
