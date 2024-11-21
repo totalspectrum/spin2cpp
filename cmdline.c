@@ -603,8 +603,7 @@ int ParseOptimizeString(AST *line, const char *str, int *flag_ptr)
             }
         }
         if (!bits) {
-            ERROR(line, "Unrecognized optimization flag: %s", buf);
-            return 0;
+            WARNING(line, "Unrecognized optimization flag: %s", buf);
         }
         if (notflag) {
             flags &= ~bits;
