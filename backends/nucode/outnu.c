@@ -1936,8 +1936,9 @@ static void NuCompileInlineAsm(NuIrList *irl, AST *ast) {
     // adjust to number of longs
     endPos = ((endPos - startPos) + 3) / 4;
     // sanity check size
-    if (endPos > 0xff) {
-        ERROR(ast, "Inline assembly is too long (%d longs)\n", endPos);
+    int maxSize = gl_fcache_size ? gl_fcache_size : 0xff;
+    if (endPos > maxSize) {
+        ERROR(ast, "Inline assembly is too long (%d longs, max is %d)\n", endPos, maxSize);
     }
     NuEmitAddress(irl, startLabel);
     NuEmitConst(irl, endPos - 1);
