@@ -5,7 +5,7 @@
  */
 
 %pure-parser
-%expect 30
+%expect 36
 
 %{
 #include <stdio.h>
@@ -445,6 +445,8 @@ SpinDeclareStruct(AST *ident, AST *defs)
 %token SP_DOUBLETILDE "~~"
 %token SP_INCREMENT  "++"
 %token SP_DECREMENT  "--"
+%token SP_REF_INC    "[++]"
+%token SP_REF_DEC    "[--]"
 %token SP_DOUBLEAT   "@@"
 %token SP_TRIPLEAT   "@@@"
 %token SP_FIELDPTR   "^@"
@@ -503,6 +505,7 @@ SpinDeclareStruct(AST *ident, AST *defs)
 %left SP_ROTL SP_ROTR SP_SHL SP_SHR SP_SAR SP_REV SP_REV2 SP_SIGNX SP_ZEROX /* priority 3 */
 %left SP_NEGATE SP_FNEGATE SP_BIT_NOT SP_ABS SP_FABS SP_SQRT SP_FSQRT SP_DECODE SP_ENCODE SP_ENCODE2 SP_ALLOCA SP_ONES SP_BMASK SP_QLOG SP_QEXP /* priority 2 in Spin2 */
 %left '@' '~' '?' SP_RANDOM SP_DOUBLETILDE SP_INCREMENT SP_DECREMENT SP_DOUBLEAT SP_TRIPLEAT  SP_FIELDPTR /* priority 1 in Spin2 */
+%left SP_REF_INC SP_REF_DEC
 %left SP_CONSTANT SP_FLOAT SP_TRUNC SP_ROUND SP_NAN
 
 %%
@@ -2116,6 +2119,14 @@ lhs: identifier
     {
         $$ = NewAST(AST_ARRAYREF, $1, $3);
     }
+  | lhs SP_REF_INC
+    { $$ = AstOperator(K_REF_INCREMENT, $1, NULL); }
+  | lhs SP_REF_DEC
+    { $$ = AstOperator(K_REF_DECREMENT, $1, NULL); }
+  | SP_REF_INC lhs
+    { $$ = AstOperator(K_REF_INCREMENT, NULL, $2); }
+  | SP_REF_DEC lhs
+    { $$ = AstOperator(K_REF_DECREMENT, NULL, $2); }
   ;
 
 lhsseq:

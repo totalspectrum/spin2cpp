@@ -2128,6 +2128,26 @@ getSpinToken(LexStream *L, AST **ast_ptr)
         c = SP_DAT_LBRACK;
     } else if (InDatBlock(L) && L->sawDataDirective && c == ']') {
         c = SP_DAT_RBRACK;
+    } else if (c == '[' && !InDatBlock(L)) {
+        int c2 = lexgetc(L);
+        if (c2 == '+' || c2 == '-') {
+            int c3 = lexgetc(L);
+            if (c2 == c3) {
+                int c4 = lexgetc(L);
+                if (c4 == ']') {
+                    c = (c2 == '+') ? SP_REF_INC : SP_REF_DEC;
+                } else {
+                    lexungetc(L, c4);
+                    lexungetc(L, c3);
+                    lexungetc(L, c2);
+                }
+            } else {
+                lexungetc(L, c3);
+                lexungetc(L, c2);
+            }
+        } else {
+            lexungetc(L, c2);
+        }
     } else if (strchr(operator_chars, c) != NULL) {
         char op[6];
         int i;

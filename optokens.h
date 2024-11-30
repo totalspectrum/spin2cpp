@@ -79,6 +79,10 @@ enum OpToken {
 /* special 16 bit multiplies */
     K_MULU16,
     K_MULS16,
+
+    /* reference pointer pre-inc/dec */
+    K_REF_INCREMENT,
+    K_REF_DECREMENT,
 };
 
 #endif
