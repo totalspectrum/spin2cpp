@@ -699,12 +699,12 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
             if (extrair) {
                 ir->next = NULL;
             }
-            AppendIR(irl, ir);
             if (isConst) {
                 ir->flags |= FLAG_KEEP_INSTR;
             }
             ir->addr = relpc;
             if (!firstir) firstir = ir;
+            AppendIR(irl, ir);
             relpc++;
             if (ir->opc == OPC_REPEAT && !isConst) {
                 WARNING(ast, "REP in inline assembly may interfere with optimization");
@@ -738,6 +738,7 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
                     }
                 }
                 AppendIR(irl, extrair);
+                relpc++;
             }
         } else if (ast->kind == AST_IDENTIFIER) {
             Symbol *sym = FindSymbol(&curfunc->localsyms, ast->d.string);
@@ -763,6 +764,7 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
             Operand *op;
             int32_t val;
             IR *ir;
+            int count = 1;
             while (list) {
                 if (list->kind != AST_EXPRLIST) {
                     ERROR(list, "Expected list of items");
@@ -770,16 +772,23 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
                 }
                 item = list->left;
                 list = list->right;
-                if (!IsConstExpr(item)) {
+                if (item && item->kind == AST_ARRAYREF) {
+                    // long x[y] kind of thing
+                    val = EvalConstExpr(item->left);
+                    count = EvalConstExpr(item->right);
+                } else if (!IsConstExpr(item)) {
                     ERROR(item, "data item is not constant");
                     val = 0;
                 } else {
                     val = EvalPasmExpr(item);
                 }
-                op = NewOperand(IMM_INT, "", val);
-                ir = EmitOp1(irl, OPC_LONG, op);
-                if (isConst) {
-                    ir->flags |= FLAG_KEEP_INSTR;
+                for (int j = 0; j < count; j++) {
+                    op = NewOperand(IMM_INT, "", val);
+                    ir = EmitOp1(irl, OPC_LONG, op);
+                    relpc++;
+                    if (isConst) {
+                        ir->flags |= FLAG_KEEP_INSTR;
+                    }
                 }
             }
         } else if (ast->kind == AST_WORDLIST || ast->kind == AST_BYTELIST || ast->kind == AST_RES) {
@@ -802,9 +811,14 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
         }
     }
     if (fcache || endlabel) {
+        IR *fitir;
         if (relpc > gl_fcache_size) {
             ERROR(origtop, "Inline assembly too large to fit in fcache");
         }
+        fitir = NewIR(OPC_FIT);
+        fitir->dst = NewImmediate(gl_fcache_size);
+        fitir->flags |= FLAG_USER_INSTR;
+        AppendIR(irl, fitir);
         AppendIR(irl, endlabel);
         if (fcache && gl_p2) {
             AppendIR(irl, orgh);
