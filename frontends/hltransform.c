@@ -15,7 +15,7 @@
  * fix up references
  */
 static void
-fixReferences(AST **astptr)
+fixReferences(AST **astptr, int incdecop)
 {
     AST *ast = *astptr;
     AST *typ;
@@ -29,6 +29,20 @@ fixReferences(AST **astptr)
         typ = ExprType(ast);
         if (typ && IsRefType(typ)) {
             AstReportAs(ast, &saveinfo);
+            if (incdecop) {
+                switch (incdecop) {
+                case K_REF_POSTDEC:
+                    ast = AstOperator(K_DECREMENT, ast, NULL); break;
+                case K_REF_POSTINC:
+                    ast = AstOperator(K_INCREMENT, ast, NULL); break;
+                case K_REF_PREDEC:
+                    ast = AstOperator(K_DECREMENT, NULL, ast); break;
+                case K_REF_PREINC:
+                    ast = AstOperator(K_INCREMENT, NULL, ast); break;
+                default:
+                    ERROR(ast, "Internal compiler error: unknown op\n"); break;
+                }
+            }
             deref = NewAST(AST_MEMREF, typ->left, ast);
             deref = NewAST(AST_ARRAYREF, deref, AstInteger(0));
             *astptr = deref;
@@ -37,23 +51,26 @@ fixReferences(AST **astptr)
         return;
     case AST_ASSIGN_INIT:
         /* leave the LHS alone, if it's a reference we are assigning it */
-        fixReferences(&ast->right);
+        fixReferences(&ast->right, incdecop);
         break;
     case AST_OPERATOR:
-        fixReferences(&ast->left);
-        fixReferences(&ast->right);
-        if (ast->d.ival == K_REF_INCREMENT || ast->d.ival == K_REF_DECREMENT) {
+        if (ast->d.ival == K_REF_PREINC || ast->d.ival == K_REF_PREDEC
+            || ast->d.ival == K_REF_POSTINC || ast->d.ival == K_REF_POSTDEC) {
             bool onLeft = (ast->left != NULL);
+            int op = ast->d.ival;
             AST *typ = onLeft ? ExprType(ast->left) : ExprType(ast->right);
             if (!IsRefType(typ)) {
                 ERROR(ast, "Applying [++] or [--] to a non-pointer\n");
+            } else {
+                fixReferences(&ast->left, op);
+                fixReferences(&ast->right, op);
+                *astptr = (ast->left) ? ast->left : ast->right;
             }
-            WARNING(ast, "Unfinished operator here");
         }
         break;
     default:
-        fixReferences(&ast->left);
-        fixReferences(&ast->right);
+        fixReferences(&ast->left, incdecop);
+        fixReferences(&ast->right, incdecop);
         break;
     }
 }
@@ -554,7 +571,7 @@ DoHLTransforms(Function *F)
         }
     }
     // fix up references
-    fixReferences(&F->body);
+    fixReferences(&F->body, 0);
     // simplify assignments within the function
     int insertCasts = !IsSpinLang(F->language);
     doSimplifyAssignments(&F->body, insertCasts, 1);

@@ -2120,13 +2120,13 @@ lhs: identifier
         $$ = NewAST(AST_ARRAYREF, $1, $3);
     }
   | lhs SP_REF_INC
-    { $$ = AstOperator(K_REF_INCREMENT, $1, NULL); }
+    { $$ = AstOperator(K_REF_POSTINC, $1, NULL); }
   | lhs SP_REF_DEC
-    { $$ = AstOperator(K_REF_DECREMENT, $1, NULL); }
+    { $$ = AstOperator(K_REF_POSTDEC, $1, NULL); }
   | SP_REF_INC lhs
-    { $$ = AstOperator(K_REF_INCREMENT, NULL, $2); }
+    { $$ = AstOperator(K_REF_PREINC, NULL, $2); }
   | SP_REF_DEC lhs
-    { $$ = AstOperator(K_REF_DECREMENT, NULL, $2); }
+    { $$ = AstOperator(K_REF_PREDEC, NULL, $2); }
   ;
 
 lhsseq:

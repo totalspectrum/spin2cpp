@@ -81,8 +81,10 @@ enum OpToken {
     K_MULS16,
 
     /* reference pointer pre-inc/dec */
-    K_REF_INCREMENT,
-    K_REF_DECREMENT,
+    K_REF_PREINC,
+    K_REF_PREDEC,
+    K_REF_POSTINC,
+    K_REF_POSTDEC,
 };
 
 #endif
