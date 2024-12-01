@@ -28,6 +28,7 @@ fixReferences(AST **astptr, int incdecop)
     case AST_LOCAL_IDENTIFIER:
         typ = ExprType(ast);
         if (typ && IsRefType(typ)) {
+            if (incdecop == '@') return;
             AstReportAs(ast, &saveinfo);
             if (incdecop) {
                 switch (incdecop) {
@@ -66,6 +67,14 @@ fixReferences(AST **astptr, int incdecop)
                 fixReferences(&ast->right, op);
                 *astptr = (ast->left) ? ast->left : ast->right;
             }
+        }
+        break;
+    case AST_ADDROF:
+    case AST_ABSADDROF:
+        typ = ExprType(ast->left);
+        if (typ && IsRefType(typ)) {
+            fixReferences(&ast->left, '@');
+            *astptr = ast->left;
         }
         break;
     default:

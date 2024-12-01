@@ -5,7 +5,7 @@
  */
 
 %pure-parser
-%expect 36
+%expect 42
 
 %{
 #include <stdio.h>
@@ -2033,6 +2033,11 @@ lhs: identifier
         AST *idx = AstInteger(0);
         $$ = NewAST(AST_FIELDREF, ref, idx);
     }
+  | '[' lhs ']'
+    {
+        AST *refptr = $2;
+        $$ = NewAST(AST_ADDROF, refptr, NULL);
+    }  
   | SP_SPR '[' expr ']'
     { $$ = AstSprRef($3, 0x1f0); }
   | SP_COGREG '[' expr ']'

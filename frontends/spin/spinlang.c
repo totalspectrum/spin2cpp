@@ -1089,4 +1089,3 @@ SpinTransform(Function *func)
         func->localarray_len += func->numlocals;
     }
 }
-

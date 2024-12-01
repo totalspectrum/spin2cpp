@@ -1,0 +1,10 @@
+{$Spin2_v46}
+
+VAR
+  byte c
+
+PUB zb(^byte b)
+  b[++] := 1
+  b := 0
+  [b] := @c
+  b := 99
