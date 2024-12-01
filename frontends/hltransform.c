@@ -53,7 +53,7 @@ fixReferences(AST **astptr, int incdecop)
     case AST_ASSIGN_INIT:
         /* leave the LHS alone, if it's a reference we are assigning it */
         fixReferences(&ast->right, incdecop);
-        break;
+        return;
     case AST_OPERATOR:
         if (ast->d.ival == K_REF_PREINC || ast->d.ival == K_REF_PREDEC
             || ast->d.ival == K_REF_POSTINC || ast->d.ival == K_REF_POSTDEC) {
@@ -66,6 +66,7 @@ fixReferences(AST **astptr, int incdecop)
                 fixReferences(&ast->left, op);
                 fixReferences(&ast->right, op);
                 *astptr = (ast->left) ? ast->left : ast->right;
+                return;
             }
         }
         break;
@@ -75,13 +76,14 @@ fixReferences(AST **astptr, int incdecop)
         if (typ && IsRefType(typ)) {
             fixReferences(&ast->left, '@');
             *astptr = ast->left;
+            return;
         }
         break;
     default:
-        fixReferences(&ast->left, incdecop);
-        fixReferences(&ast->right, incdecop);
         break;
     }
+    fixReferences(&ast->left, incdecop);
+    fixReferences(&ast->right, incdecop);
 }
 
 /*
