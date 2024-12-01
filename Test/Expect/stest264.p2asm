@@ -25,6 +25,7 @@ LR__0002
 	long	0
 LR__0003
 	long	1
+	fit	128
 LR__0004
 	mov	result1, _var01
 _foo_ret

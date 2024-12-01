@@ -20,6 +20,7 @@ _main
 	jmp	#LR__0002
 LR__0001
 	long	1
+	fit	128
 LR__0002
 _main_ret
 	ret
