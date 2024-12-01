@@ -23,7 +23,7 @@
 
 #define VT '\013'
 
-#define MAX_PNUT_VERSION 45 /* maximum PNut version we understand */
+#define MAX_PNUT_VERSION 46 /* maximum PNut version we understand */
 
 int allow_type_names = 1;
 
