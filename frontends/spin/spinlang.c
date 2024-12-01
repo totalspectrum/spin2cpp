@@ -939,6 +939,7 @@ doSpinTransform(AST **astptr, int level, AST *parent)
                 }
             }
         }
+#ifdef OLD_REFERENCES        
         if (typ && IsRefType(typ)) {
             AST *deref;
             AstReportAs(ast, &saveinfo);
@@ -947,6 +948,7 @@ doSpinTransform(AST **astptr, int level, AST *parent)
             *ast = *deref;
             AstReportDone(&saveinfo);
         }
+#endif        
         break;
     }
     case AST_PRINTDEBUG:
@@ -966,14 +968,6 @@ doSpinTransform(AST **astptr, int level, AST *parent)
         break;
     }
     case AST_OPERATOR:
-        if (ast->d.ival == K_REF_INCREMENT || ast->d.ival == K_REF_DECREMENT) {
-            bool onLeft = (ast->left != NULL);
-            AST *typ = onLeft ? ExprType(ast->left) : ExprType(ast->right);
-            if (!IsRefType(typ)) {
-                ERROR(ast, "Applying [++] or [--] to a non-pointer\n");
-            }
-            WARNING(ast, "Unfinished operator here");
-        }
         if (level == 1) {
             AST *lhsast;
             switch (ast->d.ival) {

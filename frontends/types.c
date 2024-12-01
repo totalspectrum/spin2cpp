@@ -2163,13 +2163,15 @@ static AST *doCheckTypes(AST *ast)
     {
         const char *thename = GetIdentifierName(ast->right);
         if (IsRefType(ltype)) {
-            AST *deref;
             AST *basetype = DerefType(BaseType(ltype));
+#ifdef OLD_REFERENCES        
+            AST *deref;
             deref = DupAST(ast->left);
             deref = NewAST(AST_MEMREF, basetype, deref);
             deref = NewAST(AST_ARRAYREF, deref, AstInteger(0));
             deref = NewAST(AST_METHODREF, deref, ast->right);
             *ast = *deref;
+#endif            
             ltype = basetype;
         }
         if (ltype && !IsClassType(ltype)) {
@@ -2202,12 +2204,14 @@ static AST *doCheckTypes(AST *ast)
         }
         // if this is a REFTYPE then dereference it
         if (ltype && IsRefType(ltype)) {
-            AST *deref;
             AST *basetype = DerefType(BaseType(ltype));
+#ifdef OLD_REFERENCES            
+            AST *deref;
             deref = DupAST(ast);
             deref = NewAST(AST_MEMREF, basetype, deref);
             deref = NewAST(AST_ARRAYREF, deref, AstInteger(0));
             *ast = *deref;
+#endif            
             ltype = basetype;
         }
         if (sym->kind == SYM_FUNCTION) {

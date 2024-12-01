@@ -12,6 +12,53 @@
 #include "spinc.h"
 
 /*
+ * fix up references
+ */
+static void
+fixReferences(AST **astptr)
+{
+    AST *ast = *astptr;
+    AST *typ;
+    AST *deref;
+    ASTReportInfo saveinfo;
+
+    if (!ast) return;
+    switch (ast->kind) {
+    case AST_IDENTIFIER:
+    case AST_LOCAL_IDENTIFIER:
+        typ = ExprType(ast);
+        if (typ && IsRefType(typ)) {
+            AstReportAs(ast, &saveinfo);
+            deref = NewAST(AST_MEMREF, typ->left, ast);
+            deref = NewAST(AST_ARRAYREF, deref, AstInteger(0));
+            *astptr = deref;
+            AstReportDone(&saveinfo);
+        }
+        return;
+    case AST_ASSIGN_INIT:
+        /* leave the LHS alone, if it's a reference we are assigning it */
+        fixReferences(&ast->right);
+        break;
+    case AST_OPERATOR:
+        fixReferences(&ast->left);
+        fixReferences(&ast->right);
+        if (ast->d.ival == K_REF_INCREMENT || ast->d.ival == K_REF_DECREMENT) {
+            bool onLeft = (ast->left != NULL);
+            AST *typ = onLeft ? ExprType(ast->left) : ExprType(ast->right);
+            if (!IsRefType(typ)) {
+                ERROR(ast, "Applying [++] or [--] to a non-pointer\n");
+            }
+            WARNING(ast, "Unfinished operator here");
+        }
+        break;
+    default:
+        fixReferences(&ast->left);
+        fixReferences(&ast->right);
+        break;
+    }
+}
+
+/*
  * if we see something like M ^= N
  * we want to transform to M := M ^ N
  * but we cannot do that if M has side effects
@@ -506,6 +553,8 @@ DoHLTransforms(Function *F)
             F->numresults = n;
         }
     }
+    // fix up references
+    fixReferences(&F->body);
     // simplify assignments within the function
     int insertCasts = !IsSpinLang(F->language);
     doSimplifyAssignments(&F->body, insertCasts, 1);
