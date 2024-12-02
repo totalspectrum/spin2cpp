@@ -791,9 +791,16 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
                     }
                 }
             }
-        } else if (ast->kind == AST_WORDLIST || ast->kind == AST_BYTELIST || ast->kind == AST_RES) {
-            ERROR(ast, "declaring variables inside inline assembly is not supported; use local variables instead");
+        } else if (ast->kind == AST_WORDLIST || ast->kind == AST_BYTELIST) {
+            ERROR(ast, "declaring non-long sized variables inside inline assembly is not supported");
             break;
+        } else if (ast->kind == AST_RES) {
+            Operand *op;
+            int val = EvalConstExpr(ast->left);
+            op = NewOperand(IMM_INT, "", val);
+            ir = EmitOp1(irl, OPC_RESERVE, op);
+            ir->flags |= FLAG_KEEP_INSTR;
+            relpc += val;
         } else if (ast->kind == AST_BRKDEBUG) {
             if (gl_output == OUTPUT_ASM) {
                 int brkCode = AsmDebug_CodeGen(ast, OutAsm_DebugEval, (void *)irl);
