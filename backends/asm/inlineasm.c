@@ -815,10 +815,12 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
         if (relpc > gl_fcache_size) {
             ERROR(origtop, "Inline assembly too large to fit in fcache");
         }
-        fitir = NewIR(OPC_FIT);
-        fitir->dst = NewImmediate(gl_fcache_size);
-        fitir->flags |= FLAG_USER_INSTR;
-        AppendIR(irl, fitir);
+        if (fcache) {
+            fitir = NewIR(OPC_FIT);
+            fitir->dst = NewImmediate(gl_fcache_size);
+            fitir->flags |= FLAG_USER_INSTR;
+            AppendIR(irl, fitir);
+        }
         AppendIR(irl, endlabel);
         if (fcache && gl_p2) {
             AppendIR(irl, orgh);
