@@ -104,6 +104,11 @@ int atoi(const char *str) __fromfile("libc/stdlib/atoi.c");
 void _Exit(int status) __fromfile("libc/stdlib/_Exit.c");
 void exit(int status) __fromfile("libc/stdlib/exit.c");
 
+/* libc/stdlib/errno.c */
+int _geterror() __fromfile("libc/stdlib/errno.c");
+int *_geterrnoptr() __fromfile("libc/stdlib/errno.c");
+int _seterror(int err) __fromfile("libc/stdlib/errno.c");
+
 /* libc/stdlib/malloc.c */
 void *malloc(size_t size) __fromfile("libc/stdlib/malloc.c");
 void *calloc(size_t n, size_t size) __fromfile("libc/stdlib/malloc.c");
