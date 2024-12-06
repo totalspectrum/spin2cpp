@@ -9,6 +9,9 @@
 #define DIRENT struct dirent
 
 /* filesys/fatfs/fatfs_vfs.c */
+FILE *_sdmm_open(int pclk, int pss, int pdi, pint pdo) __fromfile_("filesys/fatfs/fatfs_vfs.c");
+struct vfs *_vfs_open_fat_handle(FILE *fhandle) __fromfile("filesys/fatfs/fatfs_vfs.c");
+struct vfs *_vfs_open_fat_file(const char *name) __fromfile("filesys/fatfs/fatfs_vfs.c");
 struct vfs *_vfs_open_sdcard(void) __fromfile("filesys/fatfs/fatfs_vfs.c");
 struct vfs *_vfs_open_sdcardx(int pclk, int pss, int pdi, int pdo) __fromfile("filesys/fatfs/fatfs_vfs.c");
 
