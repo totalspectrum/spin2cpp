@@ -43,8 +43,8 @@ _blah2
  if_ae	jmp	#LR__0011
 	mov	_var02, #8
 LR__0010
-	rdbyte	result1, arg02
-	wrbyte	result1, arg01
+	rdbyte	arg03, arg02
+	wrbyte	arg03, arg01
 	add	arg01, #1
 	add	arg02, #1
 	djnz	_var02, #LR__0010

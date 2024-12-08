@@ -6,19 +6,18 @@ entry
 
 _fibolp
 	mov	_var01, #1
-	mov	_var02, #1
-	mov	_var03, #0
+	mov	result1, #1
+	mov	_var02, #0
 	sub	arg01, #1 wz
  if_e	jmp	#LR__0002
 LR__0001
-	add	_var03, _var01
+	add	_var02, _var01
+	mov	_var03, _var02
+	mov	_var02, _var01
+	mov	_var01, result1
 	mov	result1, _var03
-	mov	_var03, _var01
-	mov	_var01, _var02
-	mov	_var02, result1
 	djnz	arg01, #LR__0001
 LR__0002
-	mov	result1, _var02
 _fibolp_ret
 	ret
 

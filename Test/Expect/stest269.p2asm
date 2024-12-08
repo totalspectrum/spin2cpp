@@ -15,11 +15,10 @@ dat
 entry
 
 _xoro_test
-	rdlong	result1, arg01
-	xoro32	result1
-	mov	_var01, 0 - 0
-	wrlong	result1, arg01
-	mov	result1, _var01
+	rdlong	_var01, arg01
+	xoro32	_var01
+	mov	result1, 0 - 0
+	wrlong	_var01, arg01
 _xoro_test_ret
 	ret
 builtin_bytefill_

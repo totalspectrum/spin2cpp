@@ -15,12 +15,11 @@ dat
 entry
 
 _main
-	mov	_var01, #1
+	mov	result1, #1
 	mov	LR__0001 + 1, #0
 LR__0001
 	nop
-	mov	_var01, #2
-	mov	result1, _var01
+	mov	result1, #2
 _main_ret
 	ret
 builtin_bytefill_
@@ -46,6 +45,4 @@ COG_BSS_START
 	fit	480
 	orgh
 	org	COG_BSS_START
-_var01
-	res	1
 	fit	480

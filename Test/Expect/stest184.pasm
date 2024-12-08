@@ -20,13 +20,13 @@ _fetchv
  if_ne	mov	result1, arg02
 	mov	arg01, result1
 	mov	arg03, #20
-	mov	arg02, arg01
+	mov	result1, arg01
 	cmps	arg01, fetchv_tmp002_ wc
  if_ae	jmp	#LR__0002
 	mov	_inline__inline___system____builtin_memmove__idx__0000, #20
 LR__0001
-	rdbyte	result1, fetchv_tmp002_
-	wrbyte	result1, arg01
+	rdbyte	arg03, fetchv_tmp002_
+	wrbyte	arg03, arg01
 	add	arg01, #1
 	add	fetchv_tmp002_, #1
 	djnz	_inline__inline___system____builtin_memmove__idx__0000, #LR__0001
@@ -44,8 +44,8 @@ LR__0003
 	djnz	_inline__inline___system____builtin_memmove__idx__0001, #LR__0003
 LR__0004
 LR__0005
-	add	arg02, #12
-	rdlong	result1, arg02
+	add	result1, #12
+	rdlong	result1, result1
 _fetchv_ret
 	ret
 

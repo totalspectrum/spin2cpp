@@ -15,34 +15,32 @@ dat
 entry
 
 _demo
-	mov	_inline__func1_b, #0
+	mov	result1, #0
 	rep	@LR__0001, #8
 	testp	#15 wc
-	rcl	_inline__func1_b, #1
+	rcl	result1, #1
 LR__0001
-	mov	outb, _inline__func1_b
+	mov	outb, result1
 	call	#_func2
 	mov	outb, result1
 _demo_ret
 	ret
 
 _func1
-	mov	_var01, #0
+	mov	result1, #0
 	rep	@LR__0010, #8
 	testp	#15 wc
-	rcl	_var01, #1
+	rcl	result1, #1
 LR__0010
-	mov	result1, _var01
 _func1_ret
 	ret
 
 _func2
-	mov	_var01, #0
+	mov	result1, #0
 	rep	#2, #8
 	testp	#15 wc
-	rcl	_var01, #1
+	rcl	result1, #1
 LR__0020
-	mov	result1, _var01
 _func2_ret
 	ret
 builtin_bytefill_
@@ -68,8 +66,4 @@ COG_BSS_START
 	fit	480
 	orgh
 	org	COG_BSS_START
-_inline__func1_b
-	res	1
-_var01
-	res	1
 	fit	480

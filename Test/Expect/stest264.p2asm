@@ -15,18 +15,17 @@ dat
 entry
 
 _foo
-	mov	_var01, arg01
+	mov	result1, arg01
 	mov	LR__0002, LR__0003
 LR__0001
-	add	_var01, LR__0002
-	djnz	_var01, #LR__0001
+	add	result1, LR__0002
+	djnz	result1, #LR__0001
 	jmp	#LR__0004
 LR__0002
 	long	0
 LR__0003
 	long	1
 LR__0004
-	mov	result1, _var01
 _foo_ret
 	ret
 builtin_bytefill_
@@ -52,8 +51,6 @@ COG_BSS_START
 	fit	480
 	orgh
 	org	COG_BSS_START
-_var01
-	res	1
 arg01
 	res	1
 	fit	480

@@ -10,11 +10,10 @@ _demo
 	mov	_var02, arg03
 	mov	_var04, arg01
 	add	_var04, #_var01
-	'.live	_var05
+	'.live	result1
 	movs	wrcog, _var04
-	movd	wrcog, #_var05
+	movd	wrcog, #result1
 	call	#wrcog
-	mov	result1, _var05
 _demo_ret
 	ret
 wrcog
@@ -34,8 +33,6 @@ _var02
 _var03
 	res	1
 _var04
-	res	1
-_var05
 	res	1
 arg01
 	res	1

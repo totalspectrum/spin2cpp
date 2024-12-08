@@ -152,44 +152,45 @@ __system___float_mul_ret
 	ret
 
 __system___float_tointeger
-	mov	_var01, arg01
-	shr	_var01, #31
-	mov	_var02, arg01
-	shl	_var02, #1
-	shr	_var02, #24 wz
+	mov	_var01, arg02
+	mov	result1, arg01
+	shr	result1, #31
+	mov	result2, arg01
+	shl	result2, #1
+	shr	result2, #24 wz
 	and	arg01, imm_8388607_
  if_ne	shl	arg01, #6
  if_ne	or	arg01, imm_536870912_
  if_ne	jmp	#LR__0021
-	mov	_var03, arg01
-	mov	_var04, #32
+	mov	_var02, arg01
+	mov	_var03, #32
 LR__0020
-	shl	_var03, #1 wc
- if_ae	djnz	_var04, #LR__0020
-	sub	_var04, #23
-	mov	_var02, _var04
-	mov	_var03, #7
-	sub	_var03, _var04
-	shl	arg01, _var03
+	shl	_var02, #1 wc
+ if_ae	djnz	_var03, #LR__0020
+	sub	_var03, #23
+	mov	result2, _var03
+	mov	_var02, #7
+	sub	_var02, _var03
+	shl	arg01, _var02
 LR__0021
-	sub	_var02, #127
+	sub	result2, #127
 	mov	result3, arg01
-	mov	result2, _var02
+	mov	arg02, result1
 	cmps	result2, #31 wc
- if_ae	cmp	_var01, #0 wz
- if_a	mov	_var05, imm_2147483648_
- if_nc_and_z	mov	_var05, imm_2147483647_
- if_ae	mov	result3, _var05
+ if_ae	cmp	arg02, #0 wz
+ if_a	mov	_var04, imm_2147483648_
+ if_nc_and_z	mov	_var04, imm_2147483647_
+ if_ae	mov	result3, _var04
  if_ae	jmp	#LR__0022
 	cmps	result2, imm_4294967295_ wc
  if_b	mov	result3, #0
  if_ae	shl	result3, #2
- if_ae	mov	_var06, #30
- if_ae	sub	_var06, result2
- if_ae	shr	result3, _var06
- if_ae	add	result3, arg02
+ if_ae	mov	_var05, #30
+ if_ae	sub	_var05, result2
+ if_ae	shr	result3, _var05
+ if_ae	add	result3, _var01
  if_ae	shr	result3, #1
- if_ae	cmp	_var01, #0 wz
+ if_ae	cmp	arg02, #0 wz
  if_a	neg	result3, result3
 LR__0022
 	mov	result1, result3
@@ -381,8 +382,6 @@ _var03
 _var04
 	res	1
 _var05
-	res	1
-_var06
 	res	1
 arg01
 	res	1

@@ -5,9 +5,8 @@ dat
 entry
 
 _blah1
-	mov	_var01, #1
-	mov	_var01, #2
-	mov	result1, _var01
+	mov	result1, #1
+	mov	result1, #2
 _blah1_ret
 	ret
 
@@ -21,6 +20,4 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_var01
-	res	1
 	fit	496
