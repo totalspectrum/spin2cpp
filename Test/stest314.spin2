@@ -1,0 +1,8 @@
+{$Spin2_v46}
+
+CON
+  ARR_SIZ = 12
+  STRUCT st( byte a[ARR_SIZ] )
+
+PUB zb(^st b, i) : r
+  r := b.a[i] + sizeof(b)

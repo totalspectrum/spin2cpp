@@ -250,8 +250,11 @@ SpinDeclareStruct(AST *ident, AST *defs)
         current->subclasses = P;
         P->superclass = current;
         P->fullname = current->fullname; // for finding "class using"
-        newobj->d.ptr = (void *)P;
+         newobj->d.ptr = (void *)P;
         P->isPacked = 1;
+
+        /* import parent's symbols into P */
+        P->objsyms.next = &current->objsyms;
     }
 
     PushCurrentModule();
