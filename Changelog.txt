@@ -7,6 +7,7 @@ Version 7.0.0
 - Cleaned up the Spin parser to enable direct access to struct/obj members
 - Fixed long relative branches (tjz, djnz, etc.)
 - Fixed incorrect handling of simple for loops with unsigned variables
+- Fixed return values from fwrite and fread
 - Improved some debug error messages
 - Only use the stack for variables whose address is actually taken (thanks to Ada for this!)
 - Modified _BlockDevice data structure (used for littlefs, but someday may be used for fatfs too)

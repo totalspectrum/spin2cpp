@@ -1,20 +1,30 @@
 #include <stdio.h>
 #include <unistd.h>
 
-size_t fwrite(const void *ptr, size_t size, size_t n, FILE *f)
+size_t fwrite(const void *ptr, size_t elemSize, size_t n, FILE *f)
 {
-    size *= n;
+    size_t size = elemSize;
+
+    if (elemSize != 1)
+        size *= n;
     if (f->state & (_BUF_FLAGS_READING|_BUF_FLAGS_WRITING)) {
         fflush(f); /* buffer in use, re-sync */
         f->state &= ~(_BUF_FLAGS_READING|_BUF_FLAGS_WRITING);
     }
-    return _vfswrite(f, ptr, size);
+    size = _vfswrite(f, ptr, size);
+    if ((int) size <= 0)
+        return 0;
+    if (elemSize != 1)
+        size /= elemSize;
+    return size;
 }
 
-size_t fread(void *ptr, size_t size, size_t n, FILE *f)
+size_t fread(void *ptr, size_t elemSize, size_t n, FILE *f)
 {
     int r = 0;
-    size *= n;
+    size_t size = elemSize;
+    if (elemSize != 1)
+        size *= n;
     /*
      * we have to handle any already-buffered data
      * on a terminal this could be tricky
@@ -46,6 +56,10 @@ size_t fread(void *ptr, size_t size, size_t n, FILE *f)
     r += _vfsread(f, ptr, size);
 #ifdef _DEBUG
     __builtin_printf("vfsread returned %d\n", r);
-#endif    
+#endif
+    if (r <= 0)
+        return 0;
+    if (elemSize != 1)
+        r /= elemSize;
     return r;
 }
