@@ -1050,12 +1050,13 @@ CheckSimpleIncrementLoop(AST *stmt)
     }
     
     /* check that the update is i++, and the variable is not used anywhere else */
-    while (update->kind == AST_SEQUENCE) {
+    while (update && update->kind == AST_SEQUENCE) {
         if (AstUsesName(update->right, updateVar)) {
             return;
         }
         update = update->left;
     }
+    if (!update) return;
     if (update->kind != AST_OPERATOR || update->d.ival != K_INCREMENT) {
         return;
     }
