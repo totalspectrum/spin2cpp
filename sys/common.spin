@@ -342,8 +342,9 @@ pri __lpoke(addr = long, val = long)
   long[addr] := val
 
 ' @@@ means a reference to any type of variable
+' we want to return a pointer to it
 pri __addr(x = @@@)
-  return x
+  return @x
 
 '' get some random bits 0-$FFFFFF
 pri file "libsys/random.c" _randbits : r=long
