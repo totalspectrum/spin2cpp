@@ -8,7 +8,10 @@
 
 #ifdef __FLEXC__
 # ifndef abs
-#define abs(x) __builtin_abs(x)
+#  define abs(x) __builtin_abs(x)
+# endif
+# ifndef labs
+#  define labs(x) __builtin_abs(x)
 # endif
 #endif
 
