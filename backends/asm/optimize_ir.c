@@ -3012,7 +3012,9 @@ int OptimizeBranchCommonOps(IRList *irl) {
                             && !IsPrefixOpcode(next_stay) // TODO: pull entire prefix sequence
                             && !(InstrIsVolatile(next_stay)||InstrIsVolatile(next_jump))
                             && !InstrSetsFlags(next_stay,FlagsUsedByCond(ir->cond)) // Can't reorder flag-setting op if it changes the branch outcome
-                            && next_stay->opc != OPC_CALL) // Calls can also set flags
+                            && next_stay->opc != OPC_CALL // Calls can also set flags
+                            && !IsCordicCommand(next_stay)&&!IsCordicGet(next_stay) // punt due to stupidity in FixupLoneCordic
+                            )
                     {
 
                         //printf("Top delete %s\n",next_jump->instr->name);
@@ -3039,7 +3041,10 @@ int OptimizeBranchCommonOps(IRList *irl) {
 
                     if (SameIR(prev_stay,prev_jump) && prev_stay->cond == prev_jump->cond
                             && !(IsPrefixOpcode(prev_stay->prev)||IsPrefixOpcode(prev_jump->prev))
-                            && !(InstrIsVolatile(prev_stay)||InstrIsVolatile(prev_jump))) {
+                            && !(InstrIsVolatile(prev_stay)||InstrIsVolatile(prev_jump))
+                            && !IsCordicCommand(prev_stay)&&!IsCordicGet(prev_stay) // punt due to stupidity in FixupLoneCordic
+                            )
+                    {
 
                         //printf("Bottom delete %s\n",prev_jump->instr->name);
                         DeleteIR(irl,prev_jump);
