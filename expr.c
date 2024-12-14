@@ -3374,6 +3374,12 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         left = ExprTypeRelative(table, sub->left, P);
         right = ExprTypeRelative(table, sub->right, P);
         if (CompatibleTypes(left, right)) {
+            if (IsFloatType(left) || IsFloatType(right)) {
+                return ast_type_float;
+            }
+            // return the bigger of the two
+            if (TypeSize(right) > TypeSize(left))
+                return right;
             return left;
         }
         return NULL;
