@@ -304,6 +304,13 @@ TransformAssignChainWithCasts(AST **astptr)
     return tmp;
 }
 
+static AST *
+AstTypedAssignStmt(AST *var, AST *val, AST *typ)
+{
+    AST *assign = AstAssign(var, NewAST(AST_CAST, typ, val));
+    return NewAST(AST_STMTLIST, assign, NULL);
+}
+
 void
 doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
 {
@@ -361,10 +368,34 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
     case AST_COMMENTEDNODE:
         // no change to level status
         break;
+    case AST_CONDRESULT: {
+        AST *typ = ExprType(ast);
+        if (typ && TypeSize(typ) > LONG_SIZE) {
+            AstReportAs(ast, &saveinfo);
+            AST *cond = ast->left;
+            AST *ifcond = ast->right->left;
+            AST *elsecond = ast->right->right;
+            AST *tempvar = AstTempLocalVariable("_temp_", typ);
+            AST *newif =
+                NewAST(AST_IF, cond,
+                       NewAST(AST_THENELSE,
+                              AstTypedAssignStmt(tempvar, ifcond, typ),
+                              AstTypedAssignStmt(tempvar, elsecond, typ)));
+
+            AST *stmt = NewAST(AST_SEQUENCE,
+                               newif,
+                               tempvar);
+            *astptr = ast = stmt;
+            AstReportDone(&saveinfo);
+        }
+        lhsTopLevel = rhsTopLevel = 1;
+        break;
+    }
     default:
         lhsTopLevel = rhsTopLevel = 0;
         break;
     }
+
     doSimplifyAssignments(&ast->left, insertCasts, lhsTopLevel);
     doSimplifyAssignments(&ast->right, insertCasts, rhsTopLevel);
 
