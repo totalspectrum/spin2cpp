@@ -3,10 +3,10 @@
 
 size_t fwrite(const void *ptr, size_t elemSize, size_t n, FILE *f)
 {
-    size_t size = elemSize;
+    size_t size = n;
 
     if (elemSize != 1)
-        size *= n;
+        size *= elemSize;
     if (f->state & (_BUF_FLAGS_READING|_BUF_FLAGS_WRITING)) {
         fflush(f); /* buffer in use, re-sync */
         f->state &= ~(_BUF_FLAGS_READING|_BUF_FLAGS_WRITING);
@@ -22,9 +22,9 @@ size_t fwrite(const void *ptr, size_t elemSize, size_t n, FILE *f)
 size_t fread(void *ptr, size_t elemSize, size_t n, FILE *f)
 {
     int r = 0;
-    size_t size = elemSize;
+    size_t size = n;
     if (elemSize != 1)
-        size *= n;
+        size *= elemSize;
     /*
      * we have to handle any already-buffered data
      * on a terminal this could be tricky
