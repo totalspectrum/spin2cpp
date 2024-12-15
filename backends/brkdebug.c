@@ -174,7 +174,14 @@ int AsmDebug_CodeGen(AST *ast, BackendDebugEval evalFunc, void *evalArg) {
         return 0;
     }
     ASSERT_AST_KIND(ast->left,AST_EXPRLIST,return -1;);
-
+    if (ast->right) {
+        uint32_t dbgmask = const_or_default(current, "DEBUG_MASK", -1);
+        uint32_t select = EvalConstExpr(ast->right);
+        if (!(dbgmask & (1U << select))) {
+            /* this particular debug is disabled */
+            return -1;
+        }
+    }
     unsigned brkCode = brkAssigned++;
     AST *exprbase;
     int regNum = 0;

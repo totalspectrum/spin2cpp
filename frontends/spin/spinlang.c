@@ -953,7 +953,7 @@ doSpinTransform(AST **astptr, int level, AST *parent)
     }
     case AST_PRINTDEBUG:
     {
-        AST *debugprint = CreatePrintfDebug(ast->left);
+        AST *debugprint = CreatePrintfDebug(ast->left, ast->right);
         *astptr = ast = debugprint;
         if (debugprint) {
             doSpinTransform(&debugprint->left, 0, ast);

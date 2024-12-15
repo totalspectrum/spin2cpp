@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2021 Total Spectrum Software Inc.
+ * Copyright 2011-2024 Total Spectrum Software Inc.
  * main header file
  */
 
@@ -64,9 +64,9 @@ Function *GetMainFunction(Module *P);
 
 // construct an AST corresponding to a DEBUG() statement
 // see (frontends/printdebug.c)
-AST *BuildDebugList(AST *exprlist);
+AST *BuildDebugList(AST *exprlist, AST *dbgmask);
 
 // convert AST debug list into printf
-AST *CreatePrintfDebug(AST *exprlist);
+AST *CreatePrintfDebug(AST *exprlist, AST *dbgmask);
 
 #endif

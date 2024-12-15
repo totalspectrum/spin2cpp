@@ -731,34 +731,36 @@ basicstmt:
     { $$ = NewCommentedAST(AST_QUITLOOP, NULL, NULL, $1); }
   | SP_NEXT SP_EOLN
     { $$ = NewCommentedAST(AST_CONTINUE, NULL, NULL, $1); }
-  | SP_DEBUG SP_EOLN
+  | debug_prefix SP_EOLN
     {
         AST *ast = NULL;
         if (gl_brkdebug) ast = NewAST(AST_BRKDEBUG, NULL, NULL);
-        AST *comment = $1;
-        if (comment) {
-            ast = NewAST(AST_COMMENTEDNODE, ast, comment);
-        }
         $$ = ast;
     }
-  | SP_DEBUG '(' ')' SP_EOLN
+  | debug_prefix '(' ')' SP_EOLN
     {
         AST *ast = NULL;
-        AST *comment = $1;
-        if (comment) {
-            ast = NewAST(AST_COMMENTEDNODE, ast, comment);
-        }
         $$ = ast;
     }
-  | SP_DEBUG '(' debug_exprlist ')' SP_EOLN
+  | debug_prefix '(' debug_exprlist ')' SP_EOLN
     {
-        AST *ast = BuildDebugList($3);
-        AST *comment = $1;
-        if (comment) {
-            ast = NewAST(AST_COMMENTEDNODE, ast, comment);
-        }
+        AST *ast = BuildDebugList($3, $1);
         $$ = ast;
     }
+;
+
+debug_prefix:
+  SP_DEBUG optdebugmask
+  {
+      $$ = $2;
+  }
+;
+
+optdebugmask:
+  '[' expr ']'
+    { $$ = $2; }
+  | /* nothing */
+    { $$ = NULL; }
 ;
 
 debug_exprlist:

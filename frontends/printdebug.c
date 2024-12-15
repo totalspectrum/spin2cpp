@@ -109,20 +109,20 @@ static AST *GetFormatForDebug(struct flexbuf *fb, const char *itemname_orig, AST
 }
 
 AST *
-BuildDebugList(AST *exprlist)
+BuildDebugList(AST *exprlist, AST *dbgmask)
 {
     if (!gl_debug) {
         return NULL;
     }
     if (gl_brkdebug) {
-        AST *debug = NewAST(AST_BRKDEBUG, exprlist, NULL);
+        AST *debug = NewAST(AST_BRKDEBUG, exprlist, dbgmask);
         return debug;
     }
-    return NewAST(AST_PRINTDEBUG, exprlist, NULL);
+    return NewAST(AST_PRINTDEBUG, exprlist, dbgmask);
 }
 
 AST *
-CreatePrintfDebug(AST *exprlist)
+CreatePrintfDebug(AST *exprlist, AST *dbgmask)
 {
     AST *outlist = NULL;
     AST *item;
@@ -131,9 +131,16 @@ CreatePrintfDebug(AST *exprlist)
     struct flexbuf fb;
     const char *fmtstr;
     int needcomma = 0;
-
+    
     if (0 != const_or_default(current, "DEBUG_DISABLE", 0)) {
         return NULL;
+    }
+    if (dbgmask) {
+        uint32_t mask = const_or_default(current, "DEBUG_MASK", -1);
+        uint32_t select = (uint32_t)EvalConstExpr(dbgmask);
+        if (!(mask & (1u<<select))) {
+            return NULL;
+        }
     }
     flexbuf_init(&fb, 1024);
 

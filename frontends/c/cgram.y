@@ -1,6 +1,6 @@
 /*
  * C compiler parser
- * Copyright (c) 2011-2023 Total Spectrum Software Inc.
+ * Copyright (c) 2011-2024 Total Spectrum Software Inc.
  * See the file COPYING for terms of use.
  */
 
@@ -14,7 +14,7 @@
 #include "frontends/common.h"
 #include "frontends/lexer.h"
 
-    extern AST *BuildDebugList(AST *); /* in spin.y */
+    extern AST *BuildDebugList(AST *, AST *); /* in frontends/printdebug.c */
     
 #define CGRAMYYSTYPE AST*
 #undef  YYSTYPE
@@ -2427,7 +2427,7 @@ asm_baseline:
     }
   | C_DEBUG '(' asm_debug_exprlist ')' asm_eoln
     {
-        AST *ast = BuildDebugList($3);
+        AST *ast = BuildDebugList($3, NULL);
         AST *comment = $1;
         if (comment) {
             ast = NewAST(AST_COMMENTEDNODE, ast, comment);
@@ -2932,7 +2932,7 @@ pasm_baseline:
     }
   | C_DEBUG '(' pasm_debug_exprlist ')' asm_eoln
     {
-        AST *ast = BuildDebugList($3);
+        AST *ast = BuildDebugList($3, NULL);
         AST *comment = $1;
         if (comment) {
             ast = NewAST(AST_COMMENTEDNODE, ast, comment);
