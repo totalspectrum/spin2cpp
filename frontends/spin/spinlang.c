@@ -955,8 +955,10 @@ doSpinTransform(AST **astptr, int level, AST *parent)
     {
         AST *debugprint = CreatePrintfDebug(ast->left);
         *astptr = ast = debugprint;
-        doSpinTransform(&debugprint->left, 0, ast);
-        doSpinTransform(&debugprint->right, 0, ast);
+        if (debugprint) {
+            doSpinTransform(&debugprint->left, 0, ast);
+            doSpinTransform(&debugprint->right, 0, ast);
+        }
         break;
     }
     case AST_SIZEOF:
