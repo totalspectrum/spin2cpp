@@ -352,14 +352,19 @@ DeclareTypedFunction(Module *P, AST *ftype, AST *name, int is_public, AST *fbody
 {
     AST *funcvars, *funcdef;
     AST *funcdecl = NewAST(AST_FUNCDECL, name, NULL);
-    AST *type;
+    AST *type, *bodytype;
 
     if (ftype->kind == AST_STATIC) {
         is_public = 0;
         ftype = ftype->left;
     }
-    type = ftype->left;
-    funcvars = NewAST(AST_FUNCVARS, ftype->right, NULL);
+    if (ftype) {
+        type = ftype->left;
+        bodytype = ftype->right;
+    } else {
+        type = bodytype = NULL;
+    }
+    funcvars = NewAST(AST_FUNCVARS, bodytype, NULL);
     funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
 
     return DeclareFunction(P, type, is_public, funcdef, fbody, annotations, comment);
