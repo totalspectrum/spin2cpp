@@ -2157,6 +2157,8 @@ PrintDataBlock(Flexbuf *f, AST *list, DataBlockOutFuncs *funcs, Flexbuf *relocs)
             }
             break;
         case AST_RES:
+            /* don't need to emit anything */
+            break;
         case AST_FIT:
             // emit a debug entry
             SendOneComment(relocs, ast, flexbuf_curlen(f));
