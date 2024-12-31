@@ -86,7 +86,7 @@ Operand *stackptr;
 
 static Operand *stacklabel;
 static Operand *stacktop;  // indirect reference through stackptr
-static Operand *frameptr;
+Operand *frameptr;
 static Operand *linkreg;
 
 static Operand *method_table_base;
@@ -364,7 +364,7 @@ ValidateStackptr(void)
         }
     }
 }
-static void
+void
 ValidateFrameptr(void)
 {
     if (!frameptr) {
