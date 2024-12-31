@@ -165,7 +165,7 @@ Some inline assembly blocks may also be marked to be copied to fcache before exe
 
 ### What loops will be placed in fcache
 
-Loops will be placed in fcache only if (a) they will fit, and (b) they contain no branches to outside the loop (including subroutine calls). The size of the fcache may be set by the `--fcache` flag, but is generally 1024 bytes on P2 and 128 bytes on P1.
+Loops will be placed in fcache only if (a) they will fit, and (b) they contain no branches to outside the loop (including subroutine calls). The size of the fcache may be set by the `--fcache` flag, but is generally 256 longs on P2 and 32 longs on P1.
 
 ## Interrupt Service Routines
 
