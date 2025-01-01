@@ -375,6 +375,16 @@ pri {++complexio} file "libc/unix/exec.c" _execve(name=string, argv=0, envp=0)
 pri {++complexio} file "libc/unix/exec.c" _fexecve(h, argv=0, envp=0)
 pri {++complexio} file "libc/unix/execl.c" _execl(name=string, %varargs)
 
+'' Task functions
+pri {++task} file "libsys/task.c" __builtin_tasknext()
+pri file "libsys/task.c" __builtin_taskstop(task)
+pri file "libsys/task.c" __builtin_taskhalt(task)
+pri file "libsys/task.c" __builtin_taskcont(task)
+pri file "libsys/task.c" __builtin_taskchk(task) : r
+pri file "libsys/task.c" __builtin_taskid() : r
+pri {++task} file "libsys/task.c" __builtin_taskstartv(task, stack, func, argc, argv)
+pri {++task} file "libsys/task.c" __builtin_taskstartl(task, stack, func, argc, %varargs)
+
 '' I/O functions
 pri file "libsys/fmt.c" __lockio(h=long) : r
 pri file "libsys/fmt.c" __unlockio(h=long) : r

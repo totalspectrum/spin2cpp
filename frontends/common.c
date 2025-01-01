@@ -238,6 +238,14 @@ Aliases spin2alias[] = {
     { "wxpin_", "__builtin_propeller_wxpin" },
     { "wypin_", "__builtin_propeller_wypin" },
 
+    /* new spin2 task functions */
+    { "tasknext", "__builtin_tasknext" },
+    { "taskstop", "__builtin_taskstop" },
+    { "taskhalt", "__builtin_taskhalt" },
+    { "taskcont", "__builtin_taskcont" },
+    { "taskchk", "__builtin_taskchk" },
+    { "taskid", "__builtin_taskid" },
+    
     { NULL, NULL },
 };
 Aliases basicalias[] = {
