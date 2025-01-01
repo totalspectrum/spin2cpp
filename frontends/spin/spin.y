@@ -343,6 +343,7 @@ SpinDeclareStruct(AST *ident, AST *defs)
 %token SP_LOOKUPZ    "LOOKUPZ"
 %token SP_COGINIT    "COGINIT"
 %token SP_COGNEW     "COGNEW"
+%token SP_TASKINIT   "TASKSPIN"
 %token SP_PINR       "PINREAD"
 %token SP_PINT       "PINTOGGLE"
 %token SP_PINW       "PINWRITE"
@@ -400,6 +401,10 @@ SpinDeclareStruct(AST *ident, AST *defs)
 %token SP_STRUCT     "STRUCT"
 %token SP_SIZEOF     "SIZEOF"
 %token SP_SWAP_OP    ":=:"
+
+/* v47 additions */
+%token SP_NEWTASK    "NEWTASK"
+%token SP_THISTASK   "THISTASK"
 
 /* operators */
 %token SP_ASSIGN     ":="
@@ -2244,6 +2249,10 @@ funccall:
         AST *src = $3;
         $$ = NewAST(AST_SIZEOF, src, NULL);
     }
+  | SP_TASKINIT '(' exprlist ')'
+    {
+        $$ = NewAST(AST_TASKINIT, FixupList($3), NULL);
+    }
   | SP_COPY '(' expr ',' expr ')'
     {
         AST *dst = $3;
@@ -2455,6 +2464,10 @@ range:
 
 integer:
   SP_NUM
+  | SP_NEWTASK
+    { $$ = AstInteger(-1); }
+  | SP_THISTASK
+    { $$ = AstInteger(-1); }
 ;
 
 float:
@@ -2549,6 +2562,10 @@ spinyyerror(const char *msg)
         else if (!strncmp(msg, "$undefined", strlen("$undefined")) && yychar >= ' ' && yychar < 127) {
             fprintf(stderr, "%c", yychar);
             msg += strlen("$undefined");
+        }
+        else if (!strncmp(msg, "invalid token", strlen("invalid token")) && yychar >= ' ' && yychar < 127) {
+            fprintf(stderr, "%c", yychar);
+            msg += strlen("invalid token");
         }
         else {
             fprintf(stderr, "%c", *msg);

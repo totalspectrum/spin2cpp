@@ -23,7 +23,7 @@
 
 #define VT '\013'
 
-#define MAX_PNUT_VERSION 46 /* maximum PNut version we understand */
+#define MAX_PNUT_VERSION 47 /* maximum PNut version we understand */
 
 int allow_type_names = 1;
 
@@ -1786,10 +1786,10 @@ again:
             // check for various special directives
             c = lexgetc(L); /* eat the $ */
             directive = 1;
-        } else if (c == 'S') {
+        } else if (c == 's' || c == 'S') {
             // check for PNut style version number Spin2_
             int c2 = lexgetc(L);
-            if (c2 == 'p') {
+            if (c2 == 'p' || c2 == 'P') {
                 directive = 1;
             }
             lexungetc(L, c2);
@@ -1860,7 +1860,7 @@ again:
                 if (version > 0) {
                     SetLanguageVersion(L, version);
                 }
-            } else if (!strncmp(dir, "Spin2_v", 7)) {
+            } else if (!strncasecmp(dir, "spin2_v", 7)) {
                 char *ptr = dir+7;
                 int version = strtol(ptr, &ptr, 10);
                 if (version > 0) {
@@ -2471,7 +2471,11 @@ struct reservedword_soft {
     /* new v45 keywords */
     { "sizeof", SP_SIZEOF, 45, 0 },
     { "struct", SP_STRUCT, 45, 0 },
-    
+
+    /* v47 keywords */
+    { "newtask", SP_NEWTASK, 47, 0 },
+    { "thistask", SP_THISTASK, 47, 0 },
+    { "taskspin", SP_TASKINIT, 47, 0 },
 };
 
 struct reservedword basic_keywords[] = {

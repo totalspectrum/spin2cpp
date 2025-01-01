@@ -249,6 +249,7 @@ enum astkind {
     AST_BYTEPTR = 179,
     AST_STATIC_ASSERT = 180,
 
+    AST_TASKINIT = 181,
 };
 
 /* forward reference */

@@ -388,7 +388,10 @@ IsSpinCoginit(AST *params, Function **methodptr)
     if (methodptr) {
         *methodptr = NULL;
     }
-    if (!params || !params->left || params->kind != AST_COGINIT) {
+    if (!params || !params->left) {
+        return false;
+    }
+    if (params->kind != AST_COGINIT && params->kind != AST_TASKINIT) {
         return false;
     }
     exprlist = params->left;

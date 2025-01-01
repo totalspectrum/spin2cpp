@@ -886,6 +886,8 @@ static const char *astnames[] = {
     "unsigned_booltype",
     "byteptr",
     "static_assert",
+
+    "taskinit",
 };
 
 //

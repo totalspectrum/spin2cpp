@@ -629,6 +629,49 @@ doSpinTransform(AST **astptr, int level, AST *parent)
         doSpinTransform(&ast->left, 2, ast);
         doSpinTransform(&ast->right, 2, ast);
         return;
+    case AST_TASKINIT:
+        if (IsSpinCoginit(ast, &func) && func) {
+            func->force_static = 1;
+        } else {
+            ERROR(ast, "TASKSPIN requires a function");
+        }
+        doSpinTransform(&ast->left, 2, ast);
+        doSpinTransform(&ast->right, 2, ast);
+        /* convert TASKSPIN(t, func(a, b), stack)
+           into __builtin_taskstartl(t, stack, @func, 2, a, b) */
+        {
+            ASTReportInfo saveinfo;
+            AST *taskid, *funccall, *args, *stack;
+            AST *funcname, *funcptr;
+            int nargs;
+            AstReportAs(ast, &saveinfo);
+            funcname = AstIdentifier("__builtin_taskstartl");
+            args = ast->left;
+            if (!args) { ERROR(ast, "bad TASKSPIN command"); goto taskdone; }
+            taskid = args->left; args = args->right;
+            if (!args) { ERROR(ast, "bad TASKSPIN command"); goto taskdone; }
+            funccall = args->left; args = args->right;
+            if (!args) { ERROR(ast, "bad TASKSPIN command"); goto taskdone; }
+            stack = args->left; args = args->right;
+            if (args) { ERROR(ast, "bad TASKSPIN command"); goto taskdone; }
+            if (!funccall || funccall->kind != AST_FUNCCALL) {
+                ERROR(ast, "expected method call in TASKSPIN");
+                goto taskdone;
+            }
+            funcptr = NewAST(AST_ADDROF, funccall->left, NULL);
+            args = funccall->right;
+            nargs = AstListLen(args);
+            args = NewAST(AST_EXPRLIST, taskid,
+                          NewAST(AST_EXPRLIST, stack,
+                                 NewAST(AST_EXPRLIST, funcptr,
+                                        NewAST(AST_EXPRLIST, AstInteger(nargs),
+                                               args))));
+            funccall = NewAST(AST_FUNCCALL, funcname, args);
+            *ast = *funccall;
+        taskdone:
+            AstReportDone(&saveinfo);
+        }
+        return;
     case AST_FUNCCALL:
         if (level == 0) {
             /* check for void functions here; if one is called,
