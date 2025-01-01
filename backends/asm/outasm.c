@@ -20,7 +20,7 @@
 #define MAX_ARG_REGISTER 32
 #define MAX_LOCAL_REGISTER 256
 
-#define SETJMP_BUF_SIZE (8*LONG_SIZE)
+#define SETJMP_BUF_SIZE ( (gl_features_used & FEATURE_TASKS_USED) ? (24*LONG_SIZE) : (6*LONG_SIZE))
 
 #define ENTRYNAME "entry"
 #define COG_CODE (gl_outputflags & OUTFLAG_COG_CODE)
@@ -6433,6 +6433,53 @@ static const char *builtin_abortcode_p2 =
     "    jmp #__longjmp_ret\n"
     ;
 
+/*
+ * version of the abort code for use with tasks
+ */
+static const char *builtin_abortcode_p2_tasks =
+    "__pc long 0\n"
+    "__setjmp\n"
+    "    pop __pc\n"
+    "    mov result1, #0\n"
+    "    mov result2, #0\n"
+    "    mov abortchain, arg01\n"
+    "    wrlong fp, arg01\n"
+    "    add arg01, #4\n"
+    "    wrlong ptra, arg01\n"
+    "    add arg01, #4\n"
+    "    wrlong objptr, arg01\n"
+    "    add arg01, #4\n"
+    "    wrlong __pc, arg01\n"
+    "    add arg01, #4\n"
+    "    setq #19\n"
+    "    wrlong local01, arg01\n"
+    "    jmp __pc\n"
+
+    // __longjmp(buf, n) should jump to buf and return n
+    "__longjmp\n"
+    "    pop __pc\n"
+    "    cmp    arg01, #0 wz\n"
+    " if_z jmp #nocatch\n"
+    "    mov result1, arg02\n"
+    "    mov result2, #1\n"
+    "    rdlong fp, arg01\n"  // new target for fp
+    "    add arg01, #4\n"
+    "    rdlong ptra, arg01\n"
+    "    add arg01, #4\n"
+    "    rdlong objptr, arg01\n"
+    "    add arg01, #4\n"
+    "    rdlong __pc, arg01\n"
+    "    add arg01, #4\n"
+    "    setq #19\n"
+    "    rdlong local01, arg01\n"
+    "__longjmp_ret\n"
+    "    jmp  __pc\n"
+    "nocatch\n"
+    "    cmp arg03, #0 wz\n"
+    " if_z jmp #cogexit\n"
+    "    jmp #__longjmp_ret\n"
+    ;
+
 const char *builtin_wrcog =
     "wrcog\n"
     "    mov    0-0, 0-0\n"
@@ -6531,7 +6578,9 @@ EmitBuiltins(IRList *irl)
         Operand *loop;
 
         if (gl_p2) {
-            loop = NewOperand(IMM_STRING, builtin_abortcode_p2, 0);
+            loop = (gl_features_used & FEATURE_TASKS_USED) ?
+                NewOperand(IMM_STRING, builtin_abortcode_p2_tasks, 0) :
+                NewOperand(IMM_STRING, builtin_abortcode_p2, 0) ;
         } else {
             loop = NewOperand(IMM_STRING, builtin_abortcode_p1, 0);
         }

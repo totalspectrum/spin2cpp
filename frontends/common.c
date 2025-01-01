@@ -2713,6 +2713,7 @@ static struct FeatureDef {
     { FEATURE_COMPLEXIO, "__FEATURE_COMPLEXIO__" },
     { FEATURE_FLOAT_USED, "__FEATURE_FLOATS__" },
     { FEATURE_MULTICOG_USED, "__FEATURE_MULTICOG__" },
+    { FEATURE_TASKS_USED, "__FEATURE_TASKS__" },
     { 0, NULL }
 };
 

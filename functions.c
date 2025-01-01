@@ -940,6 +940,7 @@ doDeclareFunction(AST *funcblock)
     if (FindAnnotation(annotation, "destructor"))  fdef->attributes |= FUNC_ATTR_DESTRUCTOR;
     if (FindAnnotation(annotation, "needsinit"))   fdef->attributes |= FUNC_ATTR_NEEDSINIT;
     if (FindAnnotation(annotation, "complexio"))   fdef->attributes |= FUNC_ATTR_COMPLEXIO;
+    if (FindAnnotation(annotation, "task"))   fdef->attributes |= FUNC_ATTR_SPINTASK;
 
     if (FindAnnotation(annotation, "inline")) fdef->prefer_inline = 1;
     
@@ -3032,6 +3033,9 @@ MarkUsed(Function *f, const char *caller)
     }
     if (f->attributes & FUNC_ATTR_COMPLEXIO) {
         ActivateFeature(FEATURE_COMPLEXIO);
+    }
+    if (f->attributes & FUNC_ATTR_SPINTASK) {
+        ActivateFeature(FEATURE_TASKS_USED);
     }
     f->callSites++;
     if (f->callSites == 1) {
