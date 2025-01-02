@@ -353,7 +353,7 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
 #define MAX_OPERANDS 4
 
 static IR *
-CompileInlineInstr_only(IRList *irl, AST *ast)
+CompileInlineInstr_only(IRList *irl, AST *ast, bool isInFcache)
 {
     Instruction *instr;
     IR *ir;
@@ -688,7 +688,7 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
         } else if (!state[asmNest].is_active) {
             /* do nothing, if'd out */
         } else if (ast->kind == AST_INSTRHOLDER) {
-            IR *ir = CompileInlineInstr_only(irl, ast->left);
+            IR *ir = CompileInlineInstr_only(irl, ast->left, isInFcache);
             if (!ir) break;
 
             IR *extrair = ir->next;
@@ -708,7 +708,7 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
                 isConst = true;
                 ir->flags |= FLAG_KEEP_INSTR;
             }
-            if (ir->opc == OPC_RET) {
+            if (ir->opc == OPC_RET && !isInFcache) {
                 //WARNING(ast, "ret instruction in inline asm converted to jump to end of asm");
                 ReplaceOpcode(ir, OPC_JUMP);
                 ir->dst = enddst;
@@ -718,7 +718,7 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
                 }
             }
             if (extrair) {
-                if (extrair->opc == OPC_RET) {
+                if (extrair->opc == OPC_RET && !isInFcache) {
                     ReplaceOpcode(extrair, OPC_JUMP);
                     extrair->dst = enddst;
                     if (!endlabel) {
