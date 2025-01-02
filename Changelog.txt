@@ -1,10 +1,12 @@
 Version 7.0.0
 - Added Spin2 structures (basically small objects)
+- Added Spin2 TASK functions
 - Added BOOL debug modifier for -g
 - Added some of the v44 Spin2 builtin methods like byteswap
 - Added warning for rep without @
 - Added %QUAD keyword for 64 bit variables in Spin2
 - Added some experimental optimizations (thanks to Ada)
+- Allowed RET in fcache'd inline assembly
 - Cleaned up the Spin parser to enable direct access to struct/obj members
 - Fixed long relative branches (tjz, djnz, etc.)
 - Fixed incorrect handling of simple for loops with unsigned variables

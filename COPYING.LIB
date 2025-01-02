@@ -9,7 +9,7 @@ has agreed to have distributed under the same terms. Nicolas Benezan's
 SpiFlash object is used for low level flash accesses, and is also MIT
 licensed, as are Roger Loh's PSRAM and HyperRam/HyperFlash drivers.
 
-Copyright (c) 2011-2024 Total Spectrum Software Inc.
+Copyright (c) 2011-2025 Total Spectrum Software Inc.
 Copyright (c) 2006-2023 Parallax, Inc.
 Copyright (c) 2020 Jeff Roark
 Copyright (c) 2020 Nicolas Benezan
@@ -69,6 +69,8 @@ The FatFs file system code used in _vfs_open_sdcardx has a BSD style license:
 / The copyright owner or contributors be NOT LIABLE for any damages caused
 / by use of this software.
 /----------------------------------------------------------------------------*/
+
+Evan Hillas contributed the fast P2 SPI routines.
 
 ----
 The littlefs file system code used in _vfs_open_littlefs_flash is:
