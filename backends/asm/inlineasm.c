@@ -391,6 +391,8 @@ CompileInlineInstr_only(IRList *irl, AST *ast, bool isInFcache)
     }
     ir->flags = effectFlags;
     ir->flags |= FLAG_USER_INSTR;
+    if (isInFcache)
+        ir->flags |= FLAG_USER_FCACHE;
     // check for conditional execution
     if (gl_p2) {
         condbits = ival >> 28;

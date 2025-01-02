@@ -1,7 +1,7 @@
 //
 // IR optimizer
 //
-// Copyright 2016-2024 Total Spectrum Software Inc.
+// Copyright 2016-2025 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -1215,7 +1215,7 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
                 return true;
             }
         }
-        if (ir->opc == OPC_RET && ir->cond == COND_TRUE) {
+        if (ir->opc == OPC_RET && ir->cond == COND_TRUE && !(ir->flags & FLAG_USER_FCACHE)) {
             goto done;
         } else if (ir->opc == OPC_CALL && !IsDummy(ir)) {
 
@@ -1439,7 +1439,7 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace, IRCond sette
         if (ir->opc == OPC_LIVE && !strcmp(replace->name, ir->dst->name)) {
             return NULL;
         }
-        if (ir->opc == OPC_RET) {
+        if (ir->opc == OPC_RET && !(ir->flags & FLAG_USER_FCACHE)) {
             return (IsLocalOrArg(orig) && !isCond) ? ir : NULL;
         } else if (ir->opc == OPC_CALL) {
             // it's OK to replace forward over a call as long

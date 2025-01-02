@@ -1,6 +1,6 @@
 /*
  * Spin to Pasm converter
- * Copyright 2016-2023 Total Spectrum Software Inc.
+ * Copyright 2016-2025 Total Spectrum Software Inc.
  * Intermediate representation definitions
  */
 
@@ -289,6 +289,9 @@ enum flags {
 
     // error if there are no wc, wz markers on instruction
     FLAG_ERR_WCZ_NOTUSED = 0x10000,
+
+    // instruction is in volatile inline assembly (copied to fcache)
+    FLAG_USER_FCACHE     = 0x20000,
     
     // rest of the bits are used by the optimizer
     FLAG_LABEL_USED = 0x100000,
