@@ -65,6 +65,8 @@ extern "C" {
     
   int _execve(const char *path, char **args, char **env) _COMPLEXIO _IMPL("libc/unix/exec.c");
   int _execl(const char *path, const char *arg0, ...) _COMPLEXIO _IMPL("libc/unix/execl.c");
+  int _fexecve(int fd, char **args, char **env) _COMPLEXIO _IMPL("libc/unix/exec.c");
+  int _fexecl(int fd, const char *arg0, ...) _COMPLEXIO _IMPL("libc/unix/execl.c");
     
 #if defined(__cplusplus)
 }
