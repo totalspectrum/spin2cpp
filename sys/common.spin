@@ -373,8 +373,8 @@ pri {++complexio} file "libc/unix/_mount.c" __getfilebuffer() : r=@byte
 pri {++complexio} file "libc/unix/_mount.c" __getvfsforfile(name, orig_name, full_path)
 pri {++complexio} file "libc/unix/exec.c" _execve(name=string, argv=0, envp=0)
 pri {++complexio} file "libc/unix/exec.c" _fexecve(h, argv=0, envp=0)
-pri {++complexio} file "libc/unix/execl.c" _execl(name=string, %varargs)
-pri {++complexio} file "libc/unix/execl.c" _fexecl(h=long, %varargs)
+pri {++complexio} file "libc/unix/execl.c" _execl(name=string, arg0=string, %varargs)
+pri {++complexio} file "libc/unix/execl.c" _fexecl(h=long, arg0=string, %varargs)
 
 '' Task functions
 pri {++task} file "libsys/task.c" __builtin_tasknext()
