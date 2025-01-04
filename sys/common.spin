@@ -374,6 +374,7 @@ pri {++complexio} file "libc/unix/_mount.c" __getvfsforfile(name, orig_name, ful
 pri {++complexio} file "libc/unix/exec.c" _execve(name=string, argv=0, envp=0)
 pri {++complexio} file "libc/unix/exec.c" _fexecve(h, argv=0, envp=0)
 pri {++complexio} file "libc/unix/execl.c" _execl(name=string, %varargs)
+pri {++complexio} file "libc/unix/execl.c" _fexecl(h=long, %varargs)
 
 '' Task functions
 pri {++task} file "libsys/task.c" __builtin_tasknext()
