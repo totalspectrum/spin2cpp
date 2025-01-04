@@ -11,6 +11,52 @@
 #include <propeller.h>
 #include <errno.h>
 
+#ifdef __OUTPUT_BYTECODE__
+// this function must run in internal memory, because
+// it trashes HUB memory
+// however, __attribute__((cog)) is ignored in bytecode,
+// so we use fcache'd assembly instead
+void __run(long *src, int size, void *arg)
+{
+    long *dst = (long *)0;
+    long clkmode;
+    long temp;
+    long origSize = (size + 3)>>2;
+#ifdef __P2__
+    long clearSize = (480*1024)/4 - origSize;
+#else
+    long clearSize = (30*1024)/4 - origSize;
+#endif
+    __asm volatile {
+copyloop
+    rdlong temp, src
+    add src, #4
+    wrlong temp, dst
+    add dst, #4
+    djnz origSize, #copyloop
+    mov temp, #0
+clearloop
+    wrlong temp, dst
+    add dst, #4
+    djnz clearSize, #clearloop
+#ifdef __P2__
+    /* hubset */
+    rdlong temp, #24
+    andn temp, #3 wz
+if_ne hubset temp
+if_ne waitx ##200000
+
+    /* and coginit */
+    cogid temp
+    mov src, #0
+    setq arg
+    coginit temp, src wc
+#else
+#error exec not supported in P1 bytecode
+#endif
+    }
+}
+#else
 // this function must be located in internal memory
 // because it trashes HUB memory
 void __run(long *src, int size, void *arg) __attribute__((cog))
@@ -18,19 +64,21 @@ void __run(long *src, int size, void *arg) __attribute__((cog))
     long *dst = (long *)0;
     long clkmode;
     long origSize = (size + 3)>>2;
-    size = origSize;
+#ifdef __P2__    
+    long clearSize = (480*1024)/4 - origSize;
+#else
+    long clearSize = (30*1024)/4 - origSize;
+#endif    
     do {
         *dst++ = *src++;
-        --size;
-    } while (size != 0);
-#ifdef __P2__
-    size = (480*1024)/4-origSize;
-    if (size > 0) {
-        do {
-            *dst++ = 0;
-            --size;
-        } while (size != 0);
+        --origSize;
+    } while (origSize != 0);
+
+    while (clearSize > 0) {
+        *dst++ = 0;
+        --clearSize;
     }
+#ifdef __P2__    
     // set the clock back to RCFAST
     clkmode = __clkmode_var & ~3;
     if (clkmode) {
@@ -39,17 +87,10 @@ void __run(long *src, int size, void *arg) __attribute__((cog))
             waitx  ##20_000_000/100
         }
     }
-#else    
-    size = (30*1024)/4-origSize;
-    if (size > 0) {
-        do {
-            *dst++ = 0;
-            --size;
-        } while (size != 0);
-    }
 #endif    
     _coginit(_cogid(), (void *)0, arg);
 }
+#endif
 
 //
 // for now the arguments and environment are ignored
@@ -61,7 +102,7 @@ int _execve(const char *filename, char **argv, char **envp)
     int fd;
     int r;
     vfs_file_t *f;
-    
+
     // find an empty slot... actually this
     // probably doesn't matter since we're
     // replacing the current program, but
@@ -70,11 +111,17 @@ int _execve(const char *filename, char **argv, char **envp)
         if (tab[fd].state == 0) break;
     }
     if (fd == _MAX_FILES) {
+#ifdef _DEBUG        
+        __builtin_printf("_execve failed, EMFILE\n");
+#endif        
         return _seterror(EMFILE);
     }
     f = &tab[fd];
     r = _openraw(f, filename, O_RDONLY, 0644);
     if (r != 0) {
+#ifdef _DEBUG        
+        __builtin_printf("_execve failed, error %d\n", r);
+#endif        
         return r;
     }
     return _vfsexecve(f, argv, envp);
@@ -97,8 +144,8 @@ int _vfsexecve(vfs_file_t *f, char **argv, char **envp)
 
     // OK, now read the file contents into memory
     // we need to find unused RAM, which basically means after our stack
-    // the stack pointer is obtained via
-    buf = (char *)__topofstack(0) + 1024;
+    // the stack pointer is obtained via the builtin __topofstack
+    buf = (char *)__topofstack(0) + 2048;
 #ifdef __P2__
     topmem = (char *)0x7c000;
 #else
@@ -115,6 +162,10 @@ int _vfsexecve(vfs_file_t *f, char **argv, char **envp)
         ptr += r;
         sizeleft -= r;
     }
+
+#ifdef _DEBUG    
+    __builtin_printf("vfsexecve read done\n");
+#endif
     if (sizeleft <= 0) {
         // not enough RAM
         return _seterror(ENOMEM);
