@@ -1,6 +1,6 @@
 /*
  * C compiler parser
- * Copyright (c) 2011-2024 Total Spectrum Software Inc.
+ * Copyright (c) 2011-2025 Total Spectrum Software Inc.
  * See the file COPYING for terms of use.
  */
 
@@ -2319,9 +2319,9 @@ opt_asm_volatile:
   /* nothing */
     { $$ = 0; }
   | C_VOLATILE
-    { $$ = AstInteger(3); }
+    { $$ = AstInteger(INLINE_ASM_FLAG_VOLATILE); }
   | C_CONST
-    { $$ = AstInteger(1); }
+    { $$ = AstInteger(INLINE_ASM_FLAG_CONST); }
 ;
 
 top_asm:

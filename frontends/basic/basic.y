@@ -1,6 +1,6 @@
 /*
  * BASIC compiler parser
- * Copyright (c) 2011-2023 Total Spectrum Software Inc.
+ * Copyright (c) 2011-2025 Total Spectrum Software Inc.
  * See the file COPYING for terms of use.
  */
 
@@ -2653,13 +2653,11 @@ asmstmt:
       }
   | BAS_CONST BAS_ASM eoln asmlist BAS_END BAS_ASM
       {
-          // integer 1 means const asm
-          $$ = NewCommentedAST(AST_INLINEASM, $4, AstInteger(1), $1);
+          $$ = NewCommentedAST(AST_INLINEASM, $4, AstInteger(INLINE_ASM_FLAG_CONST), $1);
       }
   | BAS_CPU BAS_ASM eoln asmlist BAS_END BAS_ASM
       {
-          // integer 3 means const asm execute from FCACHE
-          $$ = NewCommentedAST(AST_INLINEASM, $4, AstInteger(3), $1);
+          $$ = NewCommentedAST(AST_INLINEASM, $4, AstInteger(INLINE_ASM_FLAG_VOLATILE), $1);
       }
   | BAS_SHARED BAS_ASM eoln asmlist BAS_END BAS_ASM
       { current->datblock = AddToListEx(current->datblock, $4, &current->datblock_tail); $$ = 0;}

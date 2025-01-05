@@ -171,10 +171,6 @@ typedef struct asmmoddata {
 // find a PASM instruction description for a generic optimizer instruction
 Instruction *FindInstrForOpc(IROpcode kind);
 
-// compile inline assembly
-#define INLINE_ASM_FLAG_CONST  0x01
-#define INLINE_ASM_FLAG_FCACHE 0x02
-
 void CompileInlineAsm(IRList *irl, AST *ast, unsigned asmFlags);
 Operand *CompileIdentifier(IRList *irl, AST *expr);
 

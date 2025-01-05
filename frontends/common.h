@@ -294,6 +294,11 @@ extern int gl_interp_kind;
 #define IndexedMethodPtrs() (gl_p2 != 0 && gl_output != OUTPUT_BYTECODE)
 #define ComplexMethodPtrs() (!IndexedMethodPtrs() && !AbsoluteMethodPtrs())
 
+/* flags for inline assembly */
+#define INLINE_ASM_FLAG_CONST  0x01
+#define INLINE_ASM_FLAG_FCACHE 0x02
+#define INLINE_ASM_FLAG_VOLATILE (INLINE_ASM_FLAG_CONST|INLINE_ASM_FLAG_FCACHE)
+
 /* flags for output */
 #define OUTFLAG_COG_CODE 0x01
 #define OUTFLAG_COG_DATA 0x02
