@@ -867,7 +867,6 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                 //EstablishIndent(L, 1);
                 L->indent_saw_tabs = L->indent_saw_spaces = 0;
                 break;
-            case SP_ORGH:
             case SP_RES:
             case SP_FIT:
                 L->sawInstruction = 1;
@@ -875,10 +874,11 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             case SP_ASM:
             case SP_ASM_CONST:
             case SP_ORG:
+            case SP_ORGH:
                 if (L->block_type == BLOCK_ASM && (c == SP_ASM || c == SP_ASM_CONST)) {
                     WARNING(DummyLineAst(L->lineCounter), "ignoring nested asm near line %d\n", L->lineCounter);
                 } else if (InDatBlock(L)) {
-                    /* for ORG, nothing special to do */
+                    /* for ORG or ORGH, nothing special to do */
                     /* for ASM, check for identifier */
                     if ( (c == SP_ASM || c == SP_ASM_CONST)) {
                         goto is_identifier;
