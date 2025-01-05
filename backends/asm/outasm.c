@@ -145,17 +145,7 @@ static struct flexbuf hubGlobalVars;
 
 static int sym_offset(Function *func, Symbol *s)
 {
-    int offset = -1;
-    if (s->kind == SYM_RESULT) {
-        offset = s->offset;
-    } else if (s->kind == SYM_PARAMETER) {
-        offset = LONG_SIZE*func->numresults + s->offset;
-    } else if (s->kind == SYM_LOCALVAR || s->kind == SYM_TEMPVAR) {
-        int realparams = func->numparams;
-        if (realparams < 0) realparams = -realparams; /* varargs function */
-        offset = LONG_SIZE*(func->numresults + realparams) + s->offset;
-    }
-    return offset;
+    return s->offset;
 }
 
 static char *cleanname(const char *name)
@@ -4796,7 +4786,7 @@ static IR *EmitCogwrite(IRList *irl, Operand *src, Operand *dst)
 
 #define MAX_TMP_REGS 16
 
-static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc, AST *linenum)
+IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc, AST *linenum)
 {
     Operand *temps[MAX_TMP_REGS] = { 0 };
     unsigned i;
@@ -5884,6 +5874,7 @@ CompileFunc_internal(void *vptr, Module *P)
         if (ShouldSkipFunction(f))
             continue;
         curfunc = f;
+        NormalizeVarOffsets(f);
         CompileFunctionBody(f);
         AnalyzeInlineEligibility(f);
     }

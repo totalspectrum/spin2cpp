@@ -80,7 +80,7 @@ int gl_fixedreal = 0;
 unsigned int gl_hub_base = 0x400;
 int gl_no_coginit = 0;
 int gl_lmm_kind = LMM_KIND_ORIG;
-int gl_interp_kind = INTERP_KIND_P1ROM;
+int gl_interp_kind = INTERP_KIND_NONE;
 int gl_relocatable = 0;
 int gl_nostdlib = 0;
 

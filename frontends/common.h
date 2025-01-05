@@ -268,9 +268,10 @@ extern int gl_lmm_kind;
 
 /* Bytecode kind selected */
 extern int gl_interp_kind;
-#define INTERP_KIND_P1ROM  0
-#define INTERP_KIND_P2SPIN 1
-#define INTERP_KIND_NUCODE 2
+#define INTERP_KIND_NONE   0
+#define INTERP_KIND_P1ROM  1
+#define INTERP_KIND_P2SPIN 2
+#define INTERP_KIND_NUCODE 3
 // No other values yet
 
 
@@ -435,7 +436,7 @@ typedef struct funcdef {
        _pinwrite to _pinw this string would read "pinw"
     */
     const char *specialfunc;
-    
+
     /* various flags */
     int optimize_flags;   // optimizations to be applied
     int warn_flags;       // warnings enabled for this function

@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2024 Total Spectrum Software Inc.
+ * Copyright 2011-2025 Total Spectrum Software Inc.
  * Copyright 2021-2024 Ada Gottensträter
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -29,6 +29,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <assert.h>
 #include "common.h"
 #include "becommon.h"
 
@@ -120,6 +121,11 @@ static int BCGetNumParams(Function *F) {
     return n >= 0 ? n : (-n)+1;
 }
 
+static int DefaultGetNumParams(Function *F) {
+    int n = F->numparams;
+    return n >= 0 ? n : (-n);
+}
+
 // find base for result variables
 static int resultOffset(Function *F, int offset) {
     switch(gl_interp_kind) {
@@ -165,7 +171,7 @@ static int localOffset(Function *F, int offset) {
     case INTERP_KIND_NUCODE:
         return offset + (DefaultGetNumResults(F)+BCGetNumParams(F)+4)*4;
     default:
-        return offset + (DefaultGetNumResults(F) + BCGetNumParams(F))*4;
+        return offset + (DefaultGetNumResults(F) + DefaultGetNumParams(F))*4;
     }
 }
 
@@ -193,7 +199,7 @@ static int resetOffsets(Symbol *sym, void *arg)
         break;
     default:
         /* nothing to do */
-        break;
+        return 1;
     }
     return 1;
 }
