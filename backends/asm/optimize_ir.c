@@ -5810,7 +5810,7 @@ HashOperand(SHA256_CTX *ctx, Operand *op, Function *f)
         int kind = (int) sym->kind;
         sha256_update(ctx, (unsigned char *)&kind, sizeof(kind));
         sha256_update(ctx, (unsigned char *)&offset, sizeof(offset));
-    } else {
+    } else if (op->name) {
         sha256_update(ctx, (unsigned char *)op->name, strlen(op->name));
     }
 }

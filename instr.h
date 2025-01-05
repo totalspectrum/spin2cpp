@@ -203,7 +203,8 @@ typedef enum IROpcode {
     OPC_WORD,
     OPC_LONG,
     OPC_STRING,
-    OPC_LABELED_BLOB, // binary blob
+    OPC_LABELED_BLOB, // binary blob with a label
+    OPC_BINARY_BLOB,  // binary blob without a label
     OPC_RESERVE,   // reserve space in cog
     OPC_RESERVEH,  // reserve space in hub
     OPC_ALIGNL,    // align to long boundary

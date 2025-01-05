@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2016-2023 Total Spectrum Software Inc.
+ * Copyright 2016-2025 Total Spectrum Software Inc.
  *
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -685,7 +685,11 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op, Module *P)
         ERROR(NULL, "Internal: bad binary blob");
         return;
     }
-    baseLabel = RemappedName(label->name);
+    if (label) {
+        baseLabel = RemappedName(label->name);
+    } else {
+        baseLabel = NULL;
+    }
     databuf = (Flexbuf *)op->name;
     relocbuf = (Flexbuf *)op->val;
     OutputDataBlob(fb, databuf, relocbuf, baseLabel);
@@ -1441,9 +1445,10 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         }
         break;
     case OPC_LABELED_BLOB:
+    case OPC_BINARY_BLOB:
         // output a binary blob
-        // dst has a label
-        // data is in a string in src
+        // dst has a label (or is NULL for no label)
+        // src has the data in a string
         // src2 is re-used as a pointer to the module
         OutputBlob(fb, ir->dst, ir->src, (Module *)ir->src2);
         break;
