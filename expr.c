@@ -1866,7 +1866,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
                     // we must be in inline assembly
                     offset = (sym->offset + 3) / 4;
                     if (offset > PASM_MAX_ASM_VAR_OFFSET) {
-                        ERROR(expr, "Only the first 16 variables in a function may be accessed in inline assembly");
+                        ERROR(expr, "Only the first %d variables in a function may be accessed in inline assembly", PASM_MAX_ASM_VAR_OFFSET);
                     }
                     offset += PASM_INLINE_ASM_VAR_BASE;
                     return intExpr(offset);
