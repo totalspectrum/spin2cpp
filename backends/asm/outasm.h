@@ -173,6 +173,7 @@ Instruction *FindInstrForOpc(IROpcode kind);
 
 void CompileInlineAsm(IRList *irl, AST *ast, unsigned asmFlags);
 Operand *CompileIdentifier(IRList *irl, AST *expr);
+Operand *CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func, AST *ast);
 
 /* assign variable space in COG memory */
 Operand *GetSizedGlobal(Operandkind kind, const char *name, intptr_t value, int count);

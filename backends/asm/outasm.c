@@ -1,7 +1,7 @@
 //
 // Pasm data output for spin2cpp
 //
-// Copyright 2016-2024 Total Spectrum Software Inc.
+// Copyright 2016-2025 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -1293,7 +1293,7 @@ LabelRef(IRList *irl, Symbol *sym)
     return temp;
 }
 
-static Operand *
+Operand *
 CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func, AST *ast)
 {
     int stype;

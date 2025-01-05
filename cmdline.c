@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2024 Total Spectrum Software Inc.
+ * Copyright 2011-2025 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -539,6 +539,7 @@ static FlagTable optflag[] = {
     { "aggressive-mem", OPT_AGGRESSIVE_MEM},
     { "cold-code", OPT_COLD_CODE},
     { "spin-relax-memory", OPT_SPIN_RELAXMEM},
+    { "fast-inline-asm", OPT_FASTASM },
     { "experimental", OPT_EXPERIMENTAL },
     { "all", OPT_FLAGS_ALL },
 };

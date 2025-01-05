@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2024 Total Spectrum Software Inc.
+ * Copyright 2011-2025 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling expressions
@@ -1867,6 +1867,8 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
                     offset = (sym->offset + 3) / 4;
                     if (offset > PASM_MAX_ASM_VAR_OFFSET) {
                         ERROR(expr, "Only the first %d variables in a function may be accessed in inline assembly", PASM_MAX_ASM_VAR_OFFSET);
+                    } else {
+                        curfunc->localsUsedInAsm |= (1ULL << offset);
                     }
                     offset += PASM_INLINE_ASM_VAR_BASE;
                     return intExpr(offset);

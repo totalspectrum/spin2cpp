@@ -194,11 +194,11 @@ extern int gl_optimize_flags; /* flags for optimization */
 #define OPT_COLD_CODE           0x00400000  /* move cold code to end of function */
 #define OPT_MERGE_DUPLICATES    0x00800000  /* merge duplicate functions */
 #define OPT_SPIN_RELAXMEM       0x01000000  /* relax strict memory semantics for Spin */
-
+#define OPT_FASTASM             0x02000000  /* optimize inline assembly invocation */
 #define OPT_EXPERIMENTAL        0x80000000  /* gate new or experimental optimizations */
 #define OPT_FLAGS_ALL           0xffffffff
 
-#define OPT_ASM_BASIC  (OPT_BASIC_REGS|OPT_BRANCHES|OPT_PEEPHOLE|OPT_CONST_PROPAGATE|OPT_REMOVE_FEATURES|OPT_MAKE_MACROS)
+#define OPT_ASM_BASIC  (OPT_BASIC_REGS|OPT_BRANCHES|OPT_PEEPHOLE|OPT_CONST_PROPAGATE|OPT_REMOVE_FEATURES|OPT_MAKE_MACROS|OPT_FASTASM)
 
 // minimal optimization (-O0)
 // in practice much of the compiler assumes unused functions are removed
@@ -441,6 +441,9 @@ typedef struct funcdef {
        _pinwrite to _pinw this string would read "pinw"
     */
     const char *specialfunc;
+
+    /* bitmask of locals used in inline assembly */
+    uint64_t localsUsedInAsm;
 
     /* various flags */
     int optimize_flags;   // optimizations to be applied

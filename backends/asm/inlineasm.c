@@ -1,9 +1,10 @@
 //
 // Inline assembly code
 //
-// Copyright 2016-2024 Total Spectrum Software Inc.
+// Copyright 2016-2025 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
+#include <stdlib.h>
 #include "spinc.h"
 #include "outasm.h"
 #include "backends/becommon.h"
@@ -508,8 +509,8 @@ FixupHereLabel(IRList *irl, IR *firstir, int addr, Operand *dst)
     return NewImmediate(0);;
 }
 
-void
-CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
+static void
+CompileTraditionalInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
 {
     AST *ast;
     AST *top = origtop;
@@ -839,3 +840,140 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
         }
     }
 }
+
+struct CopyLocalData {
+    bool copyTo;
+    IRList *irl;
+    AST *line;
+};
+
+static int copyLocal(Symbol *sym, void *arg)
+{
+    struct CopyLocalData *info = (struct CopyLocalData *)arg;
+    IRList *irl = info->irl;
+    unsigned offset = (sym->offset + 3U) / 4U;
+    uint64_t usedMask = curfunc->localsUsedInAsm;
+    AST *linesrc = info->line;
+    
+    if (usedMask & (1ULL<<offset)) {
+        Operand *cogtmp;
+        Operand *hubtmp;
+        Operand *dst, *src;
+        unsigned size;
+        IR *ir;
+        switch (sym->kind) {
+        case SYM_LOCALVAR:
+        case SYM_PARAMETER:
+        case SYM_RESULT:
+            size = TypeSize((AST *)sym->v.ptr);
+            break;
+        default:
+            size = LONG_SIZE;
+            break;
+        }
+
+        hubtmp = CompileSymbolForFunc(irl, sym, curfunc, linesrc); 
+        cogtmp = NewOperand(REG_HW, "0", offset + PASM_INLINE_ASM_VAR_BASE);
+        cogtmp->size = hubtmp->size = size;
+        if (info->copyTo) {
+            dst = cogtmp; src = hubtmp;
+        } else {
+            dst = hubtmp; src = cogtmp;
+        }
+        ir = EmitMove(irl, dst, src, linesrc);
+        ir->flags |= FLAG_KEEP_INSTR;
+    }
+    return 1;
+}
+
+static void
+CompileMiniDatBlock(IRList *irl, AST *origtop, unsigned asmFlags)
+{
+    AST *top = origtop;
+    IR *fcache;
+    IR *startlabel, *endlabel;
+    IR *ir, *fitir;
+    Operand *enddst, *startdst;
+    Flexbuf *fb = (Flexbuf *)malloc(sizeof(Flexbuf));
+    struct CopyLocalData copyInfo;
+    
+    flexbuf_init(fb, 1024);
+
+    startdst = NewHubLabel();
+    enddst = NewHubLabel();
+    fcache = NewIR(OPC_FCACHE);
+    fcache->src = startdst;
+    fcache->dst = enddst;
+    fcache->flags |= FLAG_KEEP_INSTR;
+    startlabel = NewIR(OPC_LABEL);
+    startlabel->dst = startdst;
+    startlabel->flags |= FLAG_LABEL_NOJUMP;
+    endlabel = NewIR(OPC_LABEL);
+    endlabel->dst = enddst;
+    endlabel->flags |= FLAG_LABEL_NOJUMP;
+
+    /* compile the inline assembly as a DAT block */
+    curfunc->localsUsedInAsm = 0;
+    AssignAddresses(&curfunc->localsyms, top, 0);
+    PrintDataBlock(fb, top, NULL, NULL);
+
+    /* copy the locals used in the inline assembly */
+    copyInfo.irl = irl;
+    copyInfo.copyTo = true;
+    copyInfo.line = origtop;
+    IterateOverSymbols(&curfunc->localsyms, copyLocal, (void *)&copyInfo);
+
+    /* start the assembly block */
+    AppendIR(irl, fcache);
+    AppendIR(irl, startlabel);
+    if (gl_p2) {
+        IR *org0 = NewIR(OPC_ORG);
+        org0->dst = NewImmediate(0);
+        AppendIR(irl, org0);
+    }
+    Operand *op = NewOperand(IMM_BINARY, (const char *)fb, 0);
+    ir = EmitOp2(irl, OPC_BINARY_BLOB, NULL, op);
+    ir->src2 = (Operand *)current;
+    
+    /* finish off the block */
+    fitir = NewIR(OPC_FIT);
+    fitir->dst = NewImmediate(gl_fcache_size);
+    fitir->flags |= FLAG_USER_INSTR;
+    AppendIR(irl, fitir);
+    AppendIR(irl, endlabel);
+    if (gl_p2) {
+        IR *orgh = NewIR(OPC_HUBMODE);
+        AppendIR(irl, orgh);
+    }
+    
+    /* copy back the locals */
+    copyInfo.copyTo = false;
+    IterateOverSymbols(&curfunc->localsyms, copyLocal, (void *)&copyInfo);
+}
+
+void
+CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
+{
+    bool useMiniDat = true;
+    
+    if (curfunc->code_placement != CODE_PLACE_HUB) {
+        // never generate fcache stuff!
+        asmFlags &= ~INLINE_ASM_FLAG_FCACHE;
+    }
+    if (!(asmFlags & INLINE_ASM_FLAG_FCACHE)) {
+        useMiniDat = false;
+    } else if (curfunc->force_locals_to_stack) {
+        useMiniDat = true;
+    } else if (curfunc->optimize_flags & OPT_FASTASM) {
+        useMiniDat = false;
+    }
+    if ( useMiniDat ) {
+        if (gl_fcache_size <= 0) {
+            WARNING(origtop, "FCACHE is disabled, asm will be in HUB");
+        } else {
+            CompileMiniDatBlock(irl, origtop, asmFlags);
+            return;
+        }
+    }
+    CompileTraditionalInlineAsm(irl, origtop, asmFlags);
+ }
