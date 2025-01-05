@@ -58,6 +58,7 @@ void IRCompress(IRList *list, IRList *kernel);
 bool CompileToIR(IRList *list, Module *P);
 
 IR *EmitLabel(IRList *list, Operand *op);
+IR *EmitMove(IRList *irl, Operand *dst, Operand *src, AST *linenum);
 
 // optimization functions
 void OptimizeIRLocal(IRList *irl, Function *f);

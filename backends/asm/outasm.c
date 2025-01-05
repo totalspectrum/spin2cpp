@@ -111,7 +111,6 @@ static void CompileStatement(IRList *irl, IRList *cold_irl, AST *ast); /* forwar
 
 static Operand *GetAddressOf(IRList *irl, AST *expr);
 static Operand *GetFieldAddressOf(IRList *irl, AST *expr);
-static IR *EmitMove(IRList *irl, Operand *dst, Operand *src, AST *linenum);
 static void EmitBuiltins(IRList *irl);
 static void CompileConsts(IRList *irl, Module *P);
 static Operand *EmitAddSub(IRList *irl, Operand *dst, int off);
