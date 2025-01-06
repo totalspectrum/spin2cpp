@@ -130,14 +130,14 @@ end function
 
 ### C/C++
 
-Place `__attribute__((cog))` after the function declaration but before its body:
+Place `__attribute__(cog)` after the function declaration but before its body:
 ```
-int add(int x, int y) __attribute__((cog))
+int add(int x, int y) __attribute__(cog)
 {
   return x+y;
 }
 ```
-Similarly use `__attribute__((lut))` to place the function into LUT memory.
+Similarly use `__attribute__(lut)` to place the function into LUT memory.
 
 ## Functions expanded inline
 
