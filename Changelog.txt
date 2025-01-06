@@ -6,6 +6,7 @@ Version 7.0.0
 - Added warning for rep without @
 - Added %QUAD keyword for 64 bit variables in Spin2
 - Added some experimental optimizations (thanks to Ada)
+- Added ability to fall back to more compatible inline assembly (-Ono-fast-inline-asm)
 - Allowed RET in fcache'd inline assembly
 - Cleaned up the Spin parser to enable direct access to struct/obj members
 - Fixed long relative branches (tjz, djnz, etc.)

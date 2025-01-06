@@ -377,6 +377,15 @@ Short branch sequences are converted to conditional execution where possible.
 
 If a register is known to contain a constant, arithmetic on that register can often be replaced with move of another constant.
 
+### Inline assembly speedup (-O1, -Ofast-inline-asm)
+
+Improve the startup time of fcached inline assembly by generating it with
+the compiler's internal representation so that registers can be accessed
+directly. Without this the local variables must be copied to predefined
+locations in COG memory and back at each invocation. However, this method
+is not as compatible, so you may need to turn it off for maximum compatibility
+with Spin2. Not applicable to bytecode, which must always do this copying.
+
 ### Peephole optimization (-O1, -Opeephole)
 
 In generated assembly code, various shorter combinations of instructions can sometimes be substituted for longer combinations.
