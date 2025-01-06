@@ -766,11 +766,8 @@ CompileTraditionalInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
                 list = list->right;
                 if (item && item->kind == AST_ARRAYREF) {
                     // long x[y] kind of thing
-                    val = EvalConstExpr(item->left);
+                    val = EvalPasmExpr(item->left);
                     count = EvalConstExpr(item->right);
-                } else if (!IsConstExpr(item)) {
-                    ERROR(item, "data item is not constant");
-                    val = 0;
                 } else {
                     val = EvalPasmExpr(item);
                 }
