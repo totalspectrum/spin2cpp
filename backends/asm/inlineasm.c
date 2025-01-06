@@ -868,8 +868,7 @@ static int copyLocal(Symbol *sym, void *arg)
             size = TypeSize((AST *)sym->v.ptr);
             break;
         default:
-            size = LONG_SIZE;
-            break;
+            return 1;
         }
 
         hubtmp = CompileSymbolForFunc(irl, sym, curfunc, linesrc); 
@@ -895,9 +894,11 @@ CompileMiniDatBlock(IRList *irl, AST *origtop, unsigned asmFlags)
     IR *ir, *fitir;
     Operand *enddst, *startdst;
     Flexbuf *fb = (Flexbuf *)malloc(sizeof(Flexbuf));
+    Flexbuf *relocs = (Flexbuf *)malloc(sizeof(Flexbuf));
     struct CopyLocalData copyInfo;
     
     flexbuf_init(fb, 1024);
+    flexbuf_init(relocs, 1024);
 
     startdst = NewHubLabel();
     enddst = NewHubLabel();
@@ -915,7 +916,7 @@ CompileMiniDatBlock(IRList *irl, AST *origtop, unsigned asmFlags)
     /* compile the inline assembly as a DAT block */
     curfunc->localsUsedInAsm = 0;
     AssignAddresses(&curfunc->localsyms, top, 0);
-    PrintDataBlock(fb, top, NULL, NULL);
+    PrintDataBlock(fb, top, NULL, relocs);
 
     /* copy the locals used in the inline assembly */
     copyInfo.irl = irl;
@@ -931,7 +932,7 @@ CompileMiniDatBlock(IRList *irl, AST *origtop, unsigned asmFlags)
         org0->dst = NewImmediate(0);
         AppendIR(irl, org0);
     }
-    Operand *op = NewOperand(IMM_BINARY, (const char *)fb, 0);
+    Operand *op = NewOperand(IMM_BINARY, (const char *)fb, (intptr_t)relocs);
     ir = EmitOp2(irl, OPC_BINARY_BLOB, NULL, op);
     ir->src2 = (Operand *)current;
     

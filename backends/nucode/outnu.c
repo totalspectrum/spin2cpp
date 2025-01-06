@@ -1,7 +1,7 @@
 //
 // Bytecode (nucode) compiler for spin2cpp
 //
-// Copyright 2021-2024 Total Spectrum Software Inc.
+// Copyright 2021-2025 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include "outnu.h"
@@ -1673,6 +1673,7 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         if (!fdata->dataLabel) {
             fdata->dataLabel = NuCreateLabel();
             flexbuf_init(&fdata->dataBuf, 256);
+            flexbuf_init(&fdata->dataBufRelocs, 256);
         }
         tmpLabel = NuIrOffsetLabel(fdata->dataLabel, flexbuf_curlen(&fdata->dataBuf));
         StringBuildBuffer(&fdata->dataBuf, node->left, node->d.ival);
@@ -1924,7 +1925,7 @@ static void NuCompileInlineAsm(NuIrList *irl, AST *ast) {
     startPos = flexbuf_curlen(&fdata->dataBuf);
     startLabel = NuIrOffsetLabel(fdata->dataLabel, startPos);
     AssignAddresses(&curfunc->localsyms, list, 0);
-    PrintDataBlock(&fdata->dataBuf,list,NULL,NULL);
+    PrintDataBlock(&fdata->dataBuf,list,NULL,&fdata->dataBufRelocs);
     // append a RET instruction
     // which is $FD64002D
     flexbuf_addchar(&fdata->dataBuf, 0x2d);
@@ -2469,7 +2470,7 @@ static int NuCompileObject(void *vptr, Module *P) {
         NuOutputIrList(fb, &FunData(pf)->irl);
         if (FunData(pf)->dataLabel) {
             NuOutputLabelNL(fb, FunData(pf)->dataLabel);
-            OutputDataBlob(fb, &FunData(pf)->dataBuf, NULL, NULL);
+            OutputDataBlob(fb, &FunData(pf)->dataBuf, &FunData(pf)->dataBufRelocs, NULL);
         }
     }
     return 1;

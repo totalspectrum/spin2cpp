@@ -20,6 +20,7 @@ typedef struct {
     NuIrLabel *entryLabel;
     NuIrLabel *dataLabel;
     Flexbuf dataBuf;         // inline data for the function
+    Flexbuf dataBufRelocs;   // relocations for same
     FunctionList *funcdups;  // functions that are aliases to this one
     bool isRemoved;          // flag, if set function is a duplicate of something else
     unsigned char hash[SHA256_BLOCK_SIZE];
