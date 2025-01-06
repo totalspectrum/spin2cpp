@@ -318,7 +318,7 @@ Thus, a Spin function with `{++opt(0,peephole)}` will always be compiled with no
 
 ### Optimization control on the command line
 
-Multiple `-O` options may be given, or combined separated by commas. So for example to compile with no optimizations except basic register and peephole, one would give `-O0,regs,peephole`. To compile with `-O2` but with peepholes turned off, one would give `-O2,!peephole`.
+Multiple `-O` options may be given, or combined separated by commas. So for example to compile with no optimizations except basic register and peephole, one would give `-O0,regs,peephole`. To compile with `-O2` but with peepholes turned off, one would give `-O2,!peephole` or `-O2,no-peephole`.
 
 ### Optimizing for size
 
