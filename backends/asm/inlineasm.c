@@ -240,7 +240,7 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
         }
         return r;
     } else if (expr->kind == AST_CATCH) {
-        r = CompileInlineOperand(irl, expr->left, effects, 0);
+        r = CompileInlineOperand(irl, expr->left, effects, immflag);
         if (r && effects) {
             *effects |= OPEFFECT_FORCEABS;
         }
@@ -343,7 +343,7 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
         }
     }
 
-    ERROR(expr, "Operand too complex for inline assembly");
+    ERROR(expr, "Operand too complex for fast inline assembly");
     return NULL;
 }
 
