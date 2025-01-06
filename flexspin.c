@@ -476,8 +476,17 @@ main(int argc, const char **argv)
             // -O1 means default optimization
             // -O2 means extra optimization
             const char *flagstr = &argv[0][2];
+            if (optimizeDefault) {
+                /* start from a base of the default optimizations */
+                if (cmd->outputBytecode) {
+                    gl_optimize_flags = DEFAULT_BYTECODE_OPTS;
+                } else {
+                    gl_optimize_flags = DEFAULT_ASM_OPTS;
+                }
+                optimizeDefault = false;
+            }
             ParseOptimizeString(NULL, flagstr, &gl_optimize_flags);
-            optimizeDefault = false;
+
             argv++; --argc;
         } else if (!strncmp(argv[0], "-z", 2)) {
             // -z0 means no compression (default)
