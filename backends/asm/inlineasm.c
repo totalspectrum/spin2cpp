@@ -930,7 +930,7 @@ CompileMiniDatBlock(IRList *irl, AST *origtop, unsigned asmFlags)
         AppendIR(irl, org0);
     }
     Operand *op = NewOperand(IMM_BINARY, (const char *)fb, (intptr_t)relocs);
-    ir = EmitOp2(irl, OPC_BINARY_BLOB, NULL, op);
+    ir = EmitOp2(irl, OPC_BINARY_BLOB, ModData(current)->datlabel, op);
     ir->src2 = (Operand *)current;
     
     /* finish off the block */

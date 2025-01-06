@@ -2453,7 +2453,7 @@ static int NuCompileObject(void *vptr, Module *P) {
         PrintDataBlock(&datBuf,P->datblock,NULL,&datRelocs);
         OutputAlignLong(&datBuf);
         //NuOutputLabelNL(fb, ModData(P)->datLabel); // actually done by OutputDataBlob
-        OutputDataBlob(fb, &datBuf, &datRelocs, NuLabelName(ModData(P)->datLabel));
+        OutputDataBlob(fb, &datBuf, &datRelocs, NuLabelName(ModData(P)->datLabel), true);
 
         flexbuf_delete(&datRelocs);
         flexbuf_delete(&datBuf);
@@ -2470,7 +2470,7 @@ static int NuCompileObject(void *vptr, Module *P) {
         NuOutputIrList(fb, &FunData(pf)->irl);
         if (FunData(pf)->dataLabel) {
             NuOutputLabelNL(fb, FunData(pf)->dataLabel);
-            OutputDataBlob(fb, &FunData(pf)->dataBuf, &FunData(pf)->dataBufRelocs, NULL);
+            OutputDataBlob(fb, &FunData(pf)->dataBuf, &FunData(pf)->dataBufRelocs, NuLabelName(ModData(P)->datLabel), false);
         }
     }
     return 1;

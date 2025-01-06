@@ -462,7 +462,7 @@ OutputAlignLong(Flexbuf *fb)
 }
 
 void
-OutputDataBlob(Flexbuf *fb, Flexbuf *databuf, Flexbuf *relocbuf, const char *startLabel)
+OutputDataBlob(Flexbuf *fb, Flexbuf *databuf, Flexbuf *relocbuf, const char *startLabel, bool outLabel)
 {
     uint8_t *data;
     int len;
@@ -472,7 +472,7 @@ OutputDataBlob(Flexbuf *fb, Flexbuf *databuf, Flexbuf *relocbuf, const char *sta
     uint32_t runlen;
     int lastdata;
 
-    if (startLabel) {
+    if (outLabel && startLabel) {
         OutputAlignLong(fb);
         flexbuf_printf(fb, startLabel);
         flexbuf_printf(fb, "\n");
@@ -675,7 +675,7 @@ again:
 }
 
 static void
-OutputBlob(Flexbuf *fb, Operand *label, Operand *op, Module *P)
+OutputBlob(Flexbuf *fb, Operand *label, Operand *op, Module *P, bool initLabel)
 {
     Flexbuf *databuf;
     Flexbuf *relocbuf;
@@ -692,7 +692,7 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op, Module *P)
     }
     databuf = (Flexbuf *)op->name;
     relocbuf = (Flexbuf *)op->val;
-    OutputDataBlob(fb, databuf, relocbuf, baseLabel);
+    OutputDataBlob(fb, databuf, relocbuf, baseLabel, initLabel);
 }
 
 /* find string for opcode */
@@ -1450,7 +1450,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         // dst has a label (or is NULL for no label)
         // src has the data in a string
         // src2 is re-used as a pointer to the module
-        OutputBlob(fb, ir->dst, ir->src, (Module *)ir->src2);
+        OutputBlob(fb, ir->dst, ir->src, (Module *)ir->src2, ir->opc == OPC_LABELED_BLOB);
         break;
     case OPC_FIT:
         flexbuf_printf(fb, "\tfit\t");

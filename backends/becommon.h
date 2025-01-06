@@ -7,7 +7,7 @@
 
 AST *BuildMethodPointer(AST *ast);
 void OutputAlignLong(Flexbuf *fb);
-void OutputDataBlob(Flexbuf *fb, Flexbuf *databuf, Flexbuf *relocbuf, const char *startLabel);
+void OutputDataBlob(Flexbuf *fb, Flexbuf *databuf, Flexbuf *relocbuf, const char *startLabel, bool emitLabel);
 
 void NormalizeVarOffsets(Function *f);
 
