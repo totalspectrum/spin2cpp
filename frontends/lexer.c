@@ -2,7 +2,7 @@
 // Simple lexical analyzer for a language where indentation
 // may be significant (Spin); also contains lexers for BASIC and C
 //
-// Copyright (c) 2011-2024 Total Spectrum Software Inc.
+// Copyright (c) 2011-2025 Total Spectrum Software Inc.
 //
 #include <stdio.h>
 #include <string.h>
@@ -23,7 +23,7 @@
 
 #define VT '\013'
 
-#define MAX_PNUT_VERSION 47 /* maximum PNut version we understand */
+#define MAX_PNUT_VERSION 48 /* maximum PNut version we understand */
 
 int allow_type_names = 1;
 
