@@ -7052,9 +7052,9 @@ GuessFcacheSize(IRList *irl)
     /* for now, just go by p2/p1 */
     if (gl_p2) {
         if (gl_optimize_flags & OPT_AUTO_FCACHE) {
-            return 128;
+            return 256;
         }
-        return 128; // keep a small fcache for inline ASM
+        return 256; // keep a small fcache for inline ASM
     } else {
         return 96; // default size for P1
     }
