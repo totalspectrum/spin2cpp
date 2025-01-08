@@ -672,8 +672,15 @@ bool IsSystemModule(Module *P);
 /* create a new AST describing a table lookup */
 AST *NewLookup(AST *expr, AST *table);
 
+typedef struct PASMAddresses {
+    unsigned dataSize;   /* total data size */
+    unsigned cogPc;      /* last cog PC */
+    unsigned hubPc;      /* last (relative) hub PC */
+} PASMAddresses;
+
 /* declare labels in PASM */
-unsigned AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags);
+/* fills out a struct giving the various maximum pc's and sizes */
+void AssignAddresses(PASMAddresses *addr, SymbolTable *symtab, AST *instrlist, int startFlags);
 void DeclareModuleLabels(Module *);
 #define ADDRESS_STARTFLAG_COG 0x0
 #define ADDRESS_STARTFLAG_HUB 0x1

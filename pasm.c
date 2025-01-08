@@ -1,6 +1,6 @@
 /*
  * PASM and data compilation
- * Copyright 2011-2023 Total Spectrum Software Inc.
+ * Copyright 2011-2025 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -657,8 +657,8 @@ IsJmpRetInstruction(AST *ast)
     return false;
 }
 
-unsigned
-AssignAddresses(SymbolTable *symtab, AST *instrlist, int startFlags)
+void
+AssignAddresses(PASMAddresses *addr, SymbolTable *symtab, AST *instrlist, int startFlags)
 {
     unsigned cogpc = 0;
     unsigned hubpc = 0;
@@ -1025,7 +1025,11 @@ again:
         orig_datoff = datoff;
         goto again;
     }
-    return datoff;
+    if (addr) {
+        addr->dataSize = datoff;
+        addr->hubPc = hubpc;
+        addr->cogPc = cogpc;
+    }
 }
 
 void
@@ -1033,12 +1037,14 @@ DeclareModuleLabels(Module *P)
 {
     Module *save = current;
     int startFlags = 0;
-
+    PASMAddresses paddr;
+    
     if (gl_no_coginit && gl_output == OUTPUT_DAT) {
         startFlags = ADDRESS_STARTFLAG_HUB;
     }
     current = P;
     P->gasPasm = gl_gas_dat;
-    P->datsize = AssignAddresses(&P->objsyms, P->datblock, startFlags);
+    AssignAddresses(&paddr, &P->objsyms, P->datblock, startFlags);
+    P->datsize = paddr.dataSize;
     current = save;
 }

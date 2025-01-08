@@ -1917,14 +1917,19 @@ static void NuCompileInlineAsm(NuIrList *irl, AST *ast) {
     NuIrLabel *startLabel;
     NuFunData *fdata = FunData(curfunc);
     unsigned startPos, endPos;
-
+    PASMAddresses paddr;
+    
     if (!fdata->dataLabel) {
         fdata->dataLabel = NuCreateLabel();
         flexbuf_init(&fdata->dataBuf, 1024);
     }
     startPos = flexbuf_curlen(&fdata->dataBuf);
     startLabel = NuIrOffsetLabel(fdata->dataLabel, startPos);
-    AssignAddresses(&curfunc->localsyms, list, 0);
+    AssignAddresses(&paddr, &curfunc->localsyms, list, 0);
+    if (paddr.cogPc > gl_fcache_size * LONG_SIZE) {
+        ERROR(ast, "Inline assembly is too large to fit in %d longs\n",
+              gl_fcache_size);
+    }
     PrintDataBlock(&fdata->dataBuf,list,NULL,&fdata->dataBufRelocs);
     // append a RET instruction
     // which is $FD64002D

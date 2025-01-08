@@ -888,12 +888,13 @@ CompileMiniDatBlock(IRList *irl, AST *origtop, unsigned asmFlags)
     AST *top = origtop;
     IR *fcache;
     IR *startlabel, *endlabel;
-    IR *ir, *fitir;
+    IR *ir;
     Operand *enddst, *startdst;
     Flexbuf *fb = (Flexbuf *)malloc(sizeof(Flexbuf));
     Flexbuf *relocs = (Flexbuf *)malloc(sizeof(Flexbuf));
     struct CopyLocalData copyInfo;
-    
+    PASMAddresses paddr;
+
     flexbuf_init(fb, 1024);
     flexbuf_init(relocs, 1024);
 
@@ -912,7 +913,11 @@ CompileMiniDatBlock(IRList *irl, AST *origtop, unsigned asmFlags)
 
     /* compile the inline assembly as a DAT block */
     curfunc->localsUsedInAsm = 0;
-    AssignAddresses(&curfunc->localsyms, top, 0);
+    AssignAddresses(&paddr, &curfunc->localsyms, top, 0);
+    if (paddr.cogPc > gl_fcache_size * LONG_SIZE) {
+        ERROR(origtop, "Inline assembly is too large to fit in %d longs\n",
+              gl_fcache_size);
+    }
     PrintDataBlock(fb, top, NULL, relocs);
 
     /* copy the locals used in the inline assembly */
@@ -934,10 +939,6 @@ CompileMiniDatBlock(IRList *irl, AST *origtop, unsigned asmFlags)
     ir->src2 = (Operand *)current;
     
     /* finish off the block */
-    fitir = NewIR(OPC_FIT);
-    fitir->dst = NewImmediate(gl_fcache_size);
-    fitir->flags |= FLAG_USER_INSTR;
-    AppendIR(irl, fitir);
     AppendIR(irl, endlabel);
     if (gl_p2) {
         IR *orgh = NewIR(OPC_HUBMODE);
