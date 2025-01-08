@@ -18,6 +18,7 @@ Version 7.0.0
 - Modified _BlockDevice data structure (used for littlefs, but someday may be used for fatfs too)
 - Made _float_tointeger() saturate when the result is too big/small
 - Made off_t be 64 bits, to allow for files > 2GB
+- Made the preprocessor case-insensitive by default (for Spin and BASIC)
 - Revised file systems to all read from devices; this makes it possible to do loopback file systems or to use non-standard devices for file systems
 - Suppress some asm warnings when building assembler output
 

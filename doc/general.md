@@ -721,6 +721,163 @@ To compile a program to start at address 65536 (at the 64K boundary), do:
 flexspin -2 -H 0x10000 -E fibo.bas
 ```
 
+## Preprocessor
+
+All of the languages have a preprocessor, which is (mostly) compatible with the standard C preprocessor. Internally flexspin has a different preprocessor for C (based on Kiyoshi Matsui's `mcpp`) and for the other languages. The Spin and BASIC preprocessors ignore the case of defines by default, although this may be changed with a `#pragma`.
+
+### Directives
+
+#### \#DEFINE
+```
+#define FOO hello
+```
+Defines a new macro `FOO` with the value `hello`. Whenever the symbol `FOO` appears in the text, the preprocessor will substitute `hello`.
+
+Note that unlike the C preprocessor, this one cannot accept arguments in macros. Only simple defines are permitted.
+
+If no value is given, e.g.
+```
+#define BAR
+```
+then the symbol is defined as the string `1`.
+
+#### \#IFDEF
+
+Introduces a conditional compilation section, which is only compiled if
+the symbol after the `#ifdef` is in fact defined. For example:
+```
+#ifdef __P2__
+'' propeller 2 code goes here
+#else
+'' propeller 1 code goes here
+#endif
+```
+
+#### \#IFNDEF
+
+Introduces a conditional compilation section, which is only compiled if
+the symbol after the `#ifndef` is *not* defined. For example:
+```
+#ifndef __P2__
+#error this code only works on Propeller 2
+#endif
+```
+
+#### \#ELSE
+
+Switches the meaning of conditional compilation.
+
+#### \#ELSEIFDEF
+
+A combination of `#else` and `#ifdef`.
+
+#### \#ELSEIFNDEF
+
+A combination of `#else` and `#ifndef`.
+
+#### \#ERROR
+
+Prints an error message. Mainly used in conditional compilation to report an unhandled condition. Everything after the `#error` directive is printed.
+
+#### \#INCLUDE
+
+Includes a file.
+
+#### \#WARN
+
+Prints a warning message.
+
+#### \#PRAGMA
+
+Control the preprocessor. At the moment, only a few pragmas are implemented, namely `ignore_case`, `keep_case`, and `exportdef`.
+
+```
+#pragma ignore_case
+```
+Makes the preprocessor, like the rest of the compiler, case insensitive. This is the default for Spin2 and BASIC. This pragma is ignored in C, which is always case sensitive.
+
+```
+#pragma keep_case
+```
+
+Forces the preprocessor to be case sensitive. This is the default for C, and cannot be changed there.
+
+```
+#define NAME whatever
+#pragma exportdef NAME
+```
+exports the definition of the macro `NAME` to other files. Normally a preprocessor macro only takes effect in the single source file in which it was defined. `#pragma exportdef` applied to the macro causes it to be exported to the global namespace, so that it will be in effect in all subsequent files, including objects.
+
+Note that macros exported to other files by `#pragma exportdef` have lower priority than macros defined on the command line, that is, `#pragma exportdef NAME` has lower priority than `-DNAME=x`.
+
+Example of `exportdef` use:
+
+Top level file main.spin2:
+```
+#define MEMDRIVER "driver2.spin2"
+#pragma exportdef MEMDRIVER
+
+' instantiate flash.spin2 with the
+' default memory driver overridden by
+' MEMDRIVER
+
+OBJ s: "flash.spin2"
+```
+
+Subobject obj.spin2:
+```
+#ifndef MEMDRIVER
+#define MEMDRIVER "default_driver"
+#endif
+
+OBJ d : MEMDRIVER
+```
+
+Note that if there are multiple uses of `#pragma exportdef` on the same symbol, only the first one will actually be used -- that is, a macro may be exported from a file only once.
+
+#### \#UNDEF
+
+Removes the definition of a symbol, e.g. to undefine `FOO` do:
+```
+#undef FOO
+```
+
+### Predefined Symbols
+
+There are several predefined symbols:
+
+Symbol           | When Defined
+-----------------|-------------
+`__propeller__`  | always defined to 1 (for P1) or 2 (for P2)
+`__P1__`         | if compiling for Propeller 1
+`__propeller2__` | if compiling for Propeller 2
+`__P2__`         | if compiling for Propeller 2
+`__FLEXSPIN__`   | if the `flexspin` front end is used
+`__FLEX_MAJOR__` | always defined to the flexspin/flexcc major version number (e.g. "5" in 5.9.26)
+`__FLEX_MINOR__` | always defined to the flexspin/flexcc minor version number (e.g. "9" in 5.9.26)
+`__FLEX_REV__`   | always defined to the flexspin/flexcc revision number      (e.g. "26" in 5.9.26)
+`__SPINCVT__`    | always defined
+`__SPIN2PASM__`  | if --asm is given (PASM output) (always defined by flexspin)
+`__SPIN2CPP__`   | if C++ or C is being output (never in flexspin)
+`__HAVE_FCACHE__`  | if the FCACHE optimization is enabled
+`__cplusplus`    | if C++ is being output (never in flexspin)
+`__DATE__`       | a string containing the date when compilation was begun
+`__FILE__`       | a string giving the current file being compiled
+`__LINE__`       | the current source line number
+`__TIME__`       | a string containing the time when compilation was begun
+`__VERSION__`    | a string containing the full version of flexspin in use
+`__DEBUG__`      | if debugging is enabled (-g or -gbrk given)
+
+A predefined symbol is also generated for type of output being created:
+
+Symbol                   | When Defined
+-------------------------|-------------
+`__OUTPUT_ASM__`         | if PASM code is being generated (the default)
+`__OUTPUT_BYTECODE__`    | if bytecode is being generated
+`__OUTPUT_C__`           | if C code is being generated
+`__OUTPUT_CPP__`         | if C++ code is being generated
+
+
 ## Special defines
 
 There are some special defines that may be made with `-DDEF=xxx`. The special features of these defines are only activated when given on the command line; that is, they do not have any special effects when defined with `#define`.
