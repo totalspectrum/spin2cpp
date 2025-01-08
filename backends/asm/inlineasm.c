@@ -402,8 +402,9 @@ CompileInlineInstr_only(IRList *irl, AST *ast, bool isInFcache)
     }
     if (condbits==0 && gl_p2) {
         IR *newir = NewIR(OPC_RET);
+        newir->next = ir->next;
         ir->next = newir;
-        //ERROR(ast, "Cannot handle _ret_ on instruction in inline asm; convert to regular ret for flexspin compatibility");
+        WARNING(ast, "Cannot handle _ret_ on instruction in fast inline asm; inserting RET");
     } else {
         ir->cond = (IRCond)(condbits^15);
     }
