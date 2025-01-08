@@ -3372,12 +3372,15 @@ void SetPreprocessorLanguage(int language)
         pp_setcomments(&gl_pp, "\'", "/'", "'/");
         //pp_setlinedirective(&gl_pp, "/'#line %d %s'/");
         //pp_setlinedirective(&gl_pp, "");
+        gl_pp.ignore_case = 1;
     } else if (IsCLang(language)) {
         pp_setcomments(&gl_pp, "//", "/*", "*/");
         //pp_setlinedirective(&gl_pp, "/*#line %d %s*/");
+        gl_pp.ignore_case = 0;
     } else {
         pp_setcomments(&gl_pp, "\'", "{", "}");
         //pp_setlinedirective(&gl_pp, "{#line %d %s}");
+        gl_pp.ignore_case = 1;
     }
 }
 
