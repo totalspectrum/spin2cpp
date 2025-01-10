@@ -2508,9 +2508,17 @@ CompileBasicBoolExpression(IRList *irl, AST *expr)
     /* note that lhs cannot be a constant */
     if (lhs && lhs->kind == IMM_INT) {
         Operand *tmp = lhs;
-        lhs = rhs;
-        rhs = tmp;
-        cond = FlipSides(cond);
+        if (rhs && rhs->kind == IMM_INT) {
+            // we have to put lhs into a temp register
+            tmp = NewFunctionTempRegister();
+            EmitMove(irl, tmp, lhs, expr);
+            lhs = tmp;
+        } else {
+            // flip left and right to save a move
+            lhs = rhs;
+            rhs = tmp;
+            cond = FlipSides(cond);
+        }
     }
     // If comparing with constant, try for a condition that only uses C
     // but only if it's correct and it won't horribly pessimize everything
