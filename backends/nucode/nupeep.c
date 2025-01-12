@@ -691,7 +691,7 @@ int NuConvertDjnz(NuIrList *irl)
     
     for (ir = irl->head; ir; ir = ir->next) {
         if (ir->op == NU_OP_DJNZ) {
-            if (ir->prev->op == NU_OP_ADD_DBASE && ir->prev->prev->op == NU_OP_PUSHI) {
+            if (ir->prev->op == NU_OP_ADD_DBASE && ir->prev->prev->op == NU_OP_PUSHI && ir->next) {
                 int offset = ir->prev->prev->val;
                 label = ir->label;
                 // look back to find the label
@@ -716,6 +716,17 @@ int NuConvertDjnz(NuIrList *irl)
                     NuIrInsertBefore(irl, labelir, newIr);
                     newIr = NuCreateIrOp(NU_OP_LDL);
                     NuIrInsertBefore(irl, labelir, newIr);
+
+                    // remember to store the final value back
+                    // into memory, too
+                    ir = ir->next;
+                    newIr = NuCreateIrOp(NU_OP_PUSHI);
+                    newIr->val = offset;
+                    NuIrInsertBefore(irl, ir, newIr);
+                    newIr = NuCreateIrOp(NU_OP_ADD_DBASE);
+                    NuIrInsertBefore(irl, ir, newIr);
+                    newIr = NuCreateIrOp(NU_OP_STL);
+                    NuIrInsertBefore(irl, ir, newIr);
                     changes++;
                 }
             }

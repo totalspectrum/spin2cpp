@@ -1168,7 +1168,7 @@ impl_DJNZ_FAST
 #endif	
 	sub	tos, #1 wz
  if_nz	jmp	#\do_relbranch
- 	jmp	#\impl_DROP
+ 	ret	' leave final value on stack so we can write it back
 
 '
 ' GOSUB:
