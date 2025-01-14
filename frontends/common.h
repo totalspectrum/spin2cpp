@@ -944,14 +944,11 @@ void initSpinLexer(int flags);
 #define LANG_CFAMILY_CPP   0x21
 #define IsCLang(lang) ((lang)>=LANG_CFAMILY_C && (lang)<=LANG_CFAMILY_CPP)
 
-#define LANG_PYTHON_CIRCUS 0x30
-#define IsPythonLang(lang) ((lang)==LANG_PYTHON_CIRCUS)
-
 #define LANG_DEFAULT LANG_SPIN_SPIN1
 #define LANG_ANY     (0xffff)
 
 // language features
-#define LangBoolIsOne(lang) (IsCLang(lang)||IsPythonLang(lang))
+#define LangBoolIsOne(lang) (IsCLang(lang))
 #define LangCaseSensitive(lang) (IsCLang(lang))
 #define LangCaseInSensitive(lang) (!LangCaseSensitive(lang))
 #define LangStructAutoTypedef(lang) (0 && (lang) == LANG_CFAMILY_CPP)

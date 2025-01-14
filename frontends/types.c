@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2024 Total Spectrum Software Inc.
+ * Copyright 2011-2025 Total Spectrum Software Inc.
  *
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -1416,7 +1416,7 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
         }
     }
     // similarly for classes in some languages
-    if (IsClassType(srctype) && (IsPointerType(desttype) || !desttype) && ( IsBasicLang(lang) || IsPythonLang(lang) ))
+    if (IsClassType(srctype) && (IsPointerType(desttype) || !desttype) && ( IsBasicLang(lang) ))
     {
         srctype = ClassToPointerType(srctype);
         if (!astptr) {

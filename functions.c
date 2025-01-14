@@ -828,7 +828,7 @@ AdjustParameterTypes(AST *paramlist, int lang)
         if (param->kind == AST_DECLARE_VAR) {
             type = param->left;
             if ( (IsArrayType(type) && (IsCLang(lang) || IsBasicLang(lang)))
-                    || (IsClassType(type) && (IsBasicLang(lang) || IsPythonLang(lang)) )
+                    || (IsClassType(type) && (IsBasicLang(lang)) )
                )
             {
                 type = BaseType(type);
