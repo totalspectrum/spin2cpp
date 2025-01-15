@@ -49,7 +49,7 @@ builtin_longfill_
 __methods__
 	long	@__methodtable__
 __recvreg
-	long	1024
+	long	0
 objptr
 	long	@objmem
 result1

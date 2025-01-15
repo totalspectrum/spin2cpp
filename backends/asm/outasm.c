@@ -1312,13 +1312,13 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func, AST *ast)
                 if (off == -1) {
                     // this is a special internal COG variable
                     if (!sendreg) {
-                        sendreg = GetOneGlobal(REG_REG, "__sendreg", P2_HUB_BASE);
+                        sendreg = GetOneGlobal(REG_REG, "__sendreg", 0);
                     }
                     return sendreg;
                 } else if (off == -2) {
                     // this is a special internal COG variable
                     if (!recvreg) {
-                        recvreg = GetOneGlobal(REG_REG, "__recvreg", P2_HUB_BASE);
+                        recvreg = GetOneGlobal(REG_REG, "__recvreg", 0);
                     }
                     return recvreg;
                 } else if (off == -3) {
