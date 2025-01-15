@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2024 Total Spectrum Software Inc.
+ * Copyright 2011-2025 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling functions
@@ -2330,7 +2330,7 @@ ProcessOneFunc(Function *pf)
         BasicTransform(pf);
     } else if (IsCLang(pf->language)) {
         CTransform(pf);
-    } else {
+    } else if (IsSpinLang(pf->language)) {
         SpinTransform(pf);
     }
 
