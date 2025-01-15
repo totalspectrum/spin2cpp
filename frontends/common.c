@@ -1090,7 +1090,14 @@ Init()
     ast_type_generic_funcptr = GenericFunctionPtr(1);
 
     // a generic function for Spin2 SEND type functionality
-    ast_type_sendptr = NewAST(AST_MODIFIER_SEND_ARGS, GenericFunctionPtr(0), NULL);
+    ast_type_sendptr = NewAST(AST_MODIFIER_SEND_ARGS,
+                              NewAST(AST_PTRTYPE,
+                                     NewAST(AST_FUNCTYPE,
+                                            ast_type_void,
+                                            NewAST(AST_EXPRLIST,
+                                                   ast_type_long, NULL)),
+                                     NULL),
+                              NULL);
     ast_type_recvptr = GenericFunctionPtr(1);
 
     initSpinLexer(gl_p2);
