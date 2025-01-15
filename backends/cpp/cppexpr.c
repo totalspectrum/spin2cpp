@@ -1607,6 +1607,10 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
             (*b->printit)(f, b, expr->right);
         } else if (sym->kind == SYM_FUNCTION) {
             PrintFuncCall(f, sym, expr->right, objtype, objref);
+        } else if (sym->kind == SYM_VARIABLE) {
+            flexbuf_printf(f, "(*%s)(", sym->user_name);
+            PrintExprList(f, expr->right, PRINTEXPR_DEFAULT, NULL);
+            flexbuf_printf(f, ")");
         } else {
             ERROR(expr, "%s is not a function", sym->user_name);
         }
