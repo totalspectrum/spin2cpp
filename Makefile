@@ -123,7 +123,7 @@ CFLAGS = $(OPT) -Wall -fwrapv -Wc++-compat $(INC) $(DEFS)
 LIBS = -lm
 RM = rm -rf
 
-VPATH=.:util:frontends:frontends/basic:frontends/spin:frontends/c:backends:backends/asm:backends/cpp:backends/bytecode:backends/dat:backends/nucode:backends/objfile:backends/zip:backends/compress:backends/compress/lz4:mcpp
+VPATH=.:util:frontends:frontends/basic:frontends/spin:frontends/c:backends:frontends/bf:backends/asm:backends/cpp:backends/bytecode:backends/dat:backends/nucode:backends/objfile:backends/zip:backends/compress:backends/compress/lz4:mcpp
 
 LEXHEADERS = $(BUILD)/spin.tab.h $(BUILD)/basic.tab.h $(BUILD)/cgram.tab.h ast.h frontends/common.h
 
@@ -140,7 +140,7 @@ NUBACK = outnu.c nuir.c nupeep.c
 CPPBACK = outcpp.c cppfunc.c outgas.c cppexpr.c cppbuiltin.c
 COMPBACK = compress.c lz4.c lz4hc.c
 ZIPBACK = outzip.c zip.c
-SPINSRCS = common.c case.c spinc.c $(LEXSRCS) functions.c cse.c loops.c hloptimize.c hltransform.c types.c pasm.c outdat.c outlst.c outobj.c spinlang.c basiclang.c clang.c $(PASMBACK) $(BCBACK) $(NUBACK) $(CPPBACK) $(COMPBACK) $(ZIPBACK) $(MCPP) version.c becommon.c brkdebug.c printdebug.c
+SPINSRCS = common.c case.c spinc.c $(LEXSRCS) functions.c cse.c loops.c hloptimize.c hltransform.c types.c pasm.c outdat.c outlst.c outobj.c spinlang.c basiclang.c clang.c bflang.c $(PASMBACK) $(BCBACK) $(NUBACK) $(CPPBACK) $(COMPBACK) $(ZIPBACK) $(MCPP) version.c becommon.c brkdebug.c printdebug.c
 
 LEXOBJS = $(LEXSRCS:%.c=$(BUILD)/%.o)
 SPINOBJS = $(SPINSRCS:%.c=$(BUILD)/%.o)

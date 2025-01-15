@@ -36,6 +36,9 @@ void BasicTransform(Function *f);
 /* and C */
 void CTransform(Function *f);
 
+/* and BF */
+void BFTransform(Function *f);
+
 /* check and possibly convert types */
 AST *CheckTypes(AST *);
 

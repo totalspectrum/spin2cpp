@@ -944,6 +944,9 @@ void initSpinLexer(int flags);
 #define LANG_CFAMILY_CPP   0x21
 #define IsCLang(lang) ((lang)>=LANG_CFAMILY_C && (lang)<=LANG_CFAMILY_CPP)
 
+#define LANG_BF            0x30
+#define IsBFLang(lang) ((lang) == LANG_BF)
+
 #define LANG_DEFAULT LANG_SPIN_SPIN1
 #define LANG_ANY     (0xffff)
 

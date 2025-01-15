@@ -2332,6 +2332,8 @@ ProcessOneFunc(Function *pf)
         CTransform(pf);
     } else if (IsSpinLang(pf->language)) {
         SpinTransform(pf);
+    } else if (IsBFLang(pf->language)) {
+        BFTransform(pf);
     }
 
     if (last_errors != gl_errors && gl_errors >= gl_max_errors) return;

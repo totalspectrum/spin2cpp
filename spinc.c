@@ -41,6 +41,7 @@
 extern int spinyyparse(void);
 extern int basicyyparse(void);
 extern int cgramyyparse(void);
+extern int bfparse(void);
 
 extern int spinyydebug;
 extern int basicyydebug;
@@ -469,6 +470,8 @@ doparse(int language)
     } else if (IsCLang(language)) {
         cgramyydebug = spinyydebug;
         cgramyyparse();
+    } else if (IsBFLang(language)) {
+        bfparse();
     } else {
         spinyyparse();
     }
@@ -559,6 +562,11 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
                   )
         {
             language = LANG_CFAMILY_CPP;
+        }
+        else if (!strcmp(langptr, ".b")
+                 || !strcmp(langptr, ".bf"))
+        {
+            language = LANG_BF;
         }
         else if (!strcmp(langptr, ".spin2"))
         {
