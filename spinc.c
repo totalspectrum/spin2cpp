@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2023 Total Spectrum Software Inc.
+ * Copyright 2011-2025 Total Spectrum Software Inc.
  *
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -757,7 +757,7 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
             } else if (errString && strlen(errString)) {
                 WARNING(NULL, "Preprocessor warnings:\n%s", errString);
             }
-        } else {
+        } else if (IsBasicLang(language) || IsSpinLang(language)) {
             SetPreprocessorLanguage(language);
             pp_push_file(&gl_pp, fname);
             defineState = pp_get_define_state(&gl_pp);
@@ -773,6 +773,9 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
             parseString = pp_finish(&gl_pp);
             pp_restore_define_state(&gl_pp, defineState);
         }
+    }
+
+    if (parseString) {
         strToLex(NULL, parseString, strlen(parseString), fname, language);
         doparse(language);
         free(parseString);
