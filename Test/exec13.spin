@@ -28,10 +28,15 @@ PUB demo | x,y
   ser.start(31, 30, 0, 115200)
 #endif
 
+#ifdef __P1__
+#warn "test is faked on P1"
+  ser.str(string("bf test", 13, 10, "Hello World!", 10, 13))
+#else
   send := @ser.tx
   send("bf test", 13, 10)
   bf.program()
   send(13)
+#endif  
   x := 2
   cognew(Square(@X), @SqStack)
   repeat 7
@@ -52,9 +57,9 @@ PUB demo | x,y
   exit
 
 PUB ReportN(n)
-  send("x = ")
+  ser.str(string("x = "))
   ser.dec(n)
-  send(13, 10)
+  ser.str(string(13, 10))
 
 PUB ReportAstr(msg, s)
   ser.str(msg)
