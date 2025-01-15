@@ -1142,4 +1142,9 @@ extern AST *varargs_ident;
 // kind of hacky, this should be elsewhere, but for now it's in basic.y
 extern void DeclareBASICMemberVariables(AST *ast);
 
+// useful lexer functions in frontends/lexer.c
+int lexgetc(LexStream *L);
+void lexungetc(LexStream *L, int c);
+int lexpeekc(LexStream *L);
+
 #endif
