@@ -18,6 +18,7 @@ OBJ
 #else
   ser: "spin/FullDuplexSerial"
 #endif
+  bf: "bftest01.b"
 
 PUB demo | x,y
 
@@ -27,6 +28,10 @@ PUB demo | x,y
   ser.start(31, 30, 0, 115200)
 #endif
 
+  send := @ser.tx
+  send("bf test", 13, 10)
+  bf.program()
+  send(13)
   x := 2
   cognew(Square(@X), @SqStack)
   repeat 7
@@ -42,13 +47,14 @@ PUB demo | x,y
   bytemove(@astr+1, @astr, 9)
   astr[0] := "b"
   ReportAstr(@"Inserted: ", @astr)
+
   PauseABit
   exit
 
 PUB ReportN(n)
-  ser.str(string("x = "))
+  send("x = ")
   ser.dec(n)
-  ser.str(string(13, 10))
+  send(13, 10)
 
 PUB ReportAstr(msg, s)
   ser.str(msg)
