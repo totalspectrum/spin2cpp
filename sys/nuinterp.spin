@@ -66,9 +66,13 @@ continue_startup
 #ifdef ENABLE_DEBUG
 	DEBUG("Nucode interpreter running")
 #endif
+	' start with __sendptr == __recvptr == 0
+	mov	__sendptr, #0
+	mov	__recvptr, #0
+
 	' set up tos and nos
-	rdlong	 tos, --ptra
-	rdlong	 nos, --ptra
+	rdlong	tos, --ptra
+	rdlong	nos, --ptra
 
 	' user LUT code (various impl_XXX)
 	loc	pa, #@IMPL_LUT
@@ -543,7 +547,10 @@ __super
 	res	1	' $1e6
 __reserved
 	res	1	' $1e7
-
+__sendptr
+	res	1	' $1e8
+__recvptr
+	res	1	' $1e9
 	' reserved:
 	' $1e8 = __sendptr
 	' $1e9 = __recvptr
