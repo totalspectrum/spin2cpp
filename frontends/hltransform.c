@@ -372,6 +372,9 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
         AST *typ = ExprType(ast);
         if (typ && TypeSize(typ) > LONG_SIZE) {
             AstReportAs(ast, &saveinfo);
+            if (IsArrayType(typ)) {
+                typ = ArrayToPointerType(typ);
+            }
             AST *cond = ast->left;
             AST *ifcond = ast->right->left;
             AST *elsecond = ast->right->right;
@@ -382,7 +385,7 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
                               AstTypedAssignStmt(tempvar, ifcond, typ),
                               AstTypedAssignStmt(tempvar, elsecond, typ)));
 
-            AST *stmt = NewAST(AST_SEQUENCE,
+            AST *stmt = NewAST(AST_STMTLIST,
                                newif,
                                tempvar);
             *astptr = ast = stmt;

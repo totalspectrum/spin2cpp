@@ -1,3 +1,6 @@
+Version 7.0.1
+- Fixed incorrect casts of arrays
+
 Version 7.0.0
 - Added Spin2 structures (basically small objects)
 - Added Spin2 TASK functions
