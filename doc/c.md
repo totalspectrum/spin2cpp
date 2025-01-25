@@ -474,6 +474,20 @@ x = __builtin_muluh(a, b)
 ```
 Calculates the upper 32 bits of the 64 bit product of (unsigned) integers `a` and `b`.
 
+### MULDIV64
+
+```
+x = _muldiv64(a, b, d)
+```
+Takes three 32 bit unsigned values. Calculates the 64 bit result `a * b`, then divides by `d`.
+
+### ONES
+
+```
+x = _ones(y)
+```
+Counts the number of bits set in the 32 bit integer `y`.
+
 ### PARITY
 
 ```

@@ -142,6 +142,8 @@ uint32_t  _rnd(void);
 int       _clz(uint32_t val);   /* count leading zeros */
 int       _encod(uint32_t val); /* Spin encode operator */
 uint32_t  _isqrt(uint32_t val); /* Spin integer square root */
+uint32_t  _muldiv64(uint32_t m1, uint32_t m2, uint32_t d); /* calculate m1*m2 / d */
+uint32_t  _ones(uint32_t n);    /* count one bits set */
 
 /* counter related functions */
 uint32_t  _cnt(void);
