@@ -70,7 +70,7 @@ BuildMethodPointer(AST *ast)
     }
     // save off the current @ node
     if (IndexedMethodPtrs()) {
-        funcaddr = AstInteger(func->method_index-1);
+        funcaddr = AstInteger(func->method_index);
     } else {
         funcaddr = NewAST(AST_ADDROF, ast->left, ast->right);
     }

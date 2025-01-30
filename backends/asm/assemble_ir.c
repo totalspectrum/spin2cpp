@@ -561,7 +561,7 @@ again:
                 } else if (indexedFunc) {
                     if (sym->kind == SYM_FUNCTION) {
                         Function *F = (Function *)sym->v.ptr;
-                        indexForFunc = F->method_index - 1;
+                        indexForFunc = F->method_index;
                     } else {
                         indexForFunc = -1;
                     }

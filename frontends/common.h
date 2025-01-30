@@ -512,7 +512,7 @@ typedef struct funcdef {
     
     /* linked list of functions whose addresses are taken */
     /* used for building a jump table */
-    int method_index;            // index into jump table, +1
+    int method_index;            // index into jump table
     struct funcdef *next_method; // next in jump table
 } Function;
 

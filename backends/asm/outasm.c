@@ -7293,6 +7293,8 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         Function *LastG = NULL;
         Function *G;
         EmitLabel(&hubdata, method_table_label);
+        if (F)
+            EmitLong(&hubdata, 0); // dummy NULL entry
         while (F != LastG) {
             for (G = F; G->next_method != LastG; G = G->next_method) {
             }
