@@ -93,7 +93,8 @@ _vfs_open_fat_handle(vfs_file_t *fhandle)
     unsigned long long pmask;
 
     if (!fhandle) {
-        return _seterror(EBADF);
+        _seterror(EBADF);
+        return 0;
     }
     
     FFS = _gc_alloc_managed(sizeof(*FFS));
