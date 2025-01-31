@@ -11,6 +11,8 @@
 #ifndef _FCNTL_H
 #define _FCNTL_H
 
+#include <sys/types.h>
+
 /** Set open file status to read only */
 #define O_RDONLY 0
 
