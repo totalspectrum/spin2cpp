@@ -22,7 +22,7 @@ jobs:
       - name: Rename ZIP
         run: |
            mv flexptools.zip "flexptools-win32-`git describe --tags --always`.zip"
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: release_zips_win32
           path: "./*.zip"
@@ -38,7 +38,7 @@ jobs:
       - name: Rename ZIP
         run: |
            mv flexptools.zip "flexptools-linux-amd64-`git describe --tags --always`.zip"
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: release_zips_linux_amd64
           path: "./*.zip"
