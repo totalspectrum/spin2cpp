@@ -411,7 +411,9 @@ Some bytecode backends (e.g. the nucode one) are able to combine bytecodes to cr
 Optimizes some specialized function calls for common cases. For example, in the general case pinwrite() has to handle being able to set ranges of bits, but in a special case where just one bit is being written it can be optimized to a _drvw(). Functions processed with this include:
 
 pinread:  Optimized if just one pin is read
+
 pinwrite: Optimized if just one pin or one bit are being written
+
 memset:   Optimized if fill length is constant and a multiple of 4 bytes (P2 only)
 
 
