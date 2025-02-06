@@ -211,18 +211,26 @@ AddSymbol(SymbolTable *table, const char *name, int type, void *val, const char 
             sym = sym->next;
         }
     }
-    if (!sym) {
-        sym = NewSymbol();
-        sym->next = table->hash[hash];
-        table->hash[hash] = sym;
-        // now link into global list
-        if (table->i_last) {
-            table->i_last->i_next = sym;
-            table->i_last = sym;
-        } else {
-            table->i_last = table->i_first = sym;
+
+    if (sym) {
+        // it's OK for us to override a weak alias
+        if (sym->kind != SYM_WEAK_ALIAS) {
+            fprintf(stderr, "Duplicate definition for symbol `%s'\n", user_name);
         }
-    } 
+    }
+    
+    sym = NewSymbol();
+    sym->next = table->hash[hash];
+    table->hash[hash] = sym;
+    // now link into global list
+    if (table->i_last) {
+        table->i_last->i_next = sym;
+        table->i_last = sym;
+    } else {
+        table->i_last = table->i_first = sym;
+    }
+    sym->i_next = 0;
+
     sym->our_name = name;
     sym->user_name = user_name ? user_name : name;
     sym->kind = (Symtype)type;
