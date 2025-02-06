@@ -1,6 +1,8 @@
 Version 7.0.1
 - Fixed incorrect casts of arrays
+- Fixed incorrect handling of weak symbol aliases
 - Put a dummy entry at the beginning of the method table, to represent NULL
+- Removed unnecessary definition of PINMODE
 
 Version 7.0.0
 - Added Spin2 structures (basically small objects)
