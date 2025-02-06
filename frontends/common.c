@@ -185,7 +185,6 @@ Aliases spin2alias[] = {
     { "pintoggle", "_drvnot" },
     { "pinread", "_pinread" },
     { "pinfloat", "_fltl" },
-    { "pinmode", "_pinmode" },
 
     { "getct", "_getcnt" },
     { "getms", "_getms" },
