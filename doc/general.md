@@ -14,10 +14,12 @@ file1.c
 file1.h
 file2.c
 file2.h
+>-I../include
 >-DDEF1=10
 >-DDEF2=20
 ```
-Basically they are a list of all files in the project. Lines beginning with `#` are ignored. Lines beginning with `>` indicate compiler configuration or defines; the only such lines flexspin understand are definitions like `-DNAME=value`, which define macros.
+Basically they are a list of all files in the project. Lines beginning with `#` are ignored. Lines beginning with `>` indicate compiler configuration or defines. Flexspin understands definitions like `-DNAME=value`, which define macros,
+and `-Idirectory` to add an include directory.
 
 When the compiler sees a file with an extension of `.fpide` or `.side` it assumes the file is a project file, and parses it accordingly. Projects may include sub-projects.
 
