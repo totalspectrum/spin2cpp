@@ -163,8 +163,11 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
         ERROR(NULL, "internal error, pcrelative operand found");
         break;
     case IMM_INT:
-        if (reg->val >= 0 && reg->val <= maximm) {
+        if (useabsaddr || (reg->val >= 0 && reg->val <= maximm)) {
             flexbuf_addstr(fb, "#");
+            if (useabsaddr) {
+                flexbuf_addstr(fb, "\\");
+            }
             if (reg->name && reg->name[0]) {
                 flexbuf_addstr(fb, RemappedName(reg->name));
             } else {

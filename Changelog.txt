@@ -1,5 +1,6 @@
 Version 7.0.2
 - Avoid a crash if a .fpide file is not found
+- Fixed a problem with `loc #\imm` in inline asm
 
 Version 7.0.1
 - Fixed incorrect casts of arrays
