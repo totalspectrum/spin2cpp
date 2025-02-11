@@ -88,6 +88,8 @@ jobs:
             /*
             !*.RAW
             !*.VU
+            !*.gif
+            !*.png
       - name: Compile Spin Hexagon
         run: rake
         working-directory: hexagon_p1
