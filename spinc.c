@@ -398,6 +398,8 @@ ProcessModule(Module *P)
 {
     Module *lastcurrent = current;
 
+    if (!P) return;
+    
     current = P;
     P->botcomment = GetComments();
 
@@ -1617,7 +1619,8 @@ ParseTopFiles(const char *argv[], int argc, int outputBin)
         if (IsIdeFileName(name)) {
             P = ParseIdeFile(P, name, &is_dup);
             if (needName) {
-                P->fullname = name;
+                if (P)
+                    P->fullname = name;
                 needName = false;
             }
         } else {
