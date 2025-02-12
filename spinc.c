@@ -1540,13 +1540,13 @@ ProcessOneIdeInc(char *def) {
 #define MAX_IDE_FILES 256
 
 static Module *
-ParseIdeFile(Module *P, const char *name, int *is_dup_ptr)
+ParseIdeFile(Module *P, const char *fpidename, int *is_dup_ptr)
 {
     FILE *F = NULL;
     const char *ide_files[MAX_IDE_FILES] = { 0 };
     int num_ide_files = 0;
     
-    if ( 0 != (F = OpenIdeFile(name)) ) {
+    if ( 0 != (F = OpenIdeFile(fpidename)) ) {
         char fileBuf[256] = {0};
         num_ide_files = 0;
         while (fgets(fileBuf, sizeof(fileBuf)-1, F)) {
@@ -1582,10 +1582,15 @@ ParseIdeFile(Module *P, const char *name, int *is_dup_ptr)
                 // ignore, simple IDE includes header files in the .side file
             } else {
                 if (num_ide_files == MAX_IDE_FILES) {
-                    ERROR(NULL, "too many files in project file %s", name);
+                    ERROR(NULL, "too many files in project file %s", fpidename);
                 } else {
 //                        printf("File: [%s]\n", ptr);
-                    ide_files[num_ide_files++] = strdup(ptr);
+                    char *fullname = find_file_on_path(&gl_pp, ptr, NULL, fpidename);
+                    if (fullname)
+                        ptr = fullname;
+                    else
+                        ptr = strdup(ptr);
+                    ide_files[num_ide_files++] = fullname;
                 }
             }
         }
@@ -1599,7 +1604,7 @@ ParseIdeFile(Module *P, const char *name, int *is_dup_ptr)
             }
         }
     } else {
-        ERROR(NULL, "Unable to open file %s", name);
+        ERROR(NULL, "Unable to open file %s", fpidename);
     }
     return P;
 }

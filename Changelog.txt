@@ -1,3 +1,6 @@
+Version 7.0.3
+- Fixed .fpide search so file names are relative to the .fpide file
+
 Version 7.0.2
 - Avoid a crash if a .fpide file is not found
 - Fixed a problem with `loc #\imm` in inline asm
