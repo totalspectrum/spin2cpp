@@ -5594,7 +5594,7 @@ ExpandInlines(IRList *irl)
                 change = 1;
             } else {
                 non_inline_calls++;
-                if (f && FuncData(f)->actual_callsites == 0) {
+                if (f && FuncData(f)->actual_callsites <= 0) {
                     FuncData(f)->actual_callsites = 1;
                 }
             }
