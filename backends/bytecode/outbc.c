@@ -2318,7 +2318,7 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
             case AST_STATIC_ASSERT: {
                 int32_t val = EvalConstExpr(node->left);
                 if (val == 0) {
-                    ERROR(node, GetStringFromAst(node->right));
+                    ERROR(node, "%s", GetStringFromAst(node->right));
                 }
                 popResults = 0;
             } break;        

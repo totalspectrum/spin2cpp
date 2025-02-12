@@ -4671,7 +4671,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
         if (x == 0) {
             AST *astmsg = expr->right;
             const char *msg = GetStringFromAst(astmsg);
-            ERROR(expr, msg);
+            ERROR(expr, "%s", msg);
         }
         return NewImmediate(x);
     }
