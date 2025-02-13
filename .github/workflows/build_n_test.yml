@@ -11,7 +11,7 @@ on:
 
 jobs:
   build_win32:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Install MinGW
         run: "sudo apt-get install gcc-mingw-w64-i686"
@@ -26,8 +26,9 @@ jobs:
         with:
           name: release_zips_win32
           path: "./*.zip"
+  
   build_linux_amd64:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Install musl-gcc
         run: "sudo apt-get install musl-tools"
@@ -42,16 +43,18 @@ jobs:
         with:
           name: release_zips_linux_amd64
           path: "./*.zip"
+  
   test_offline:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: make
         run: make
       - name: test
         run: make test_offline
+  
   test_spinsim:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -61,4 +64,56 @@ jobs:
         run: make
       - name: test
         run: make test_spinsim
+  
+  test_3rdparty:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Grab utilities
+        run: "sudo apt-get install rake"
+      - name: Fetch spin2cpp
+        uses: actions/checkout@v4
+        with:
+          path: spin2cpp
+      - name: Build flexspin
+        run: make -j "OPT=-O2 -march=native"
+        working-directory: spin2cpp
+
+      - name: Fetch Spin Hexagon
+        uses: actions/checkout@v4
+        with:
+          repository: IRQsome/Spin-Hexagon
+          path: hexagon_p1
+          sparse-checkout-cone-mode: false
+          sparse-checkout: | # Avoid grabbing large audio files
+            /*
+            !*.RAW
+            !*.VU
+            !*.gif
+            !*.png
+      - name: Compile Spin Hexagon
+        run: rake
+        working-directory: hexagon_p1
+        env:
+          FASTSPIN_NAME: ${{github.workspace}}/spin2cpp/build/flexspin
+
+      - name: Fetch MegaYume
+        uses: actions/checkout@v4
+        with:
+          repository: IRQsome/MegaYume
+          path: megayume
+      - name: Compile MegaYume
+        run: ./build_comptest.sh
+        working-directory: megayume
+
+      - name: Fetch NeoYume
+        uses: actions/checkout@v4
+        with:
+          repository: IRQsome/NeoYume
+          path: neoyume
+      - name: Compile NeoYume
+        run: ./build_comptest.sh
+        working-directory: neoyume
+
+
+
 
