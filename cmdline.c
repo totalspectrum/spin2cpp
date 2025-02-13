@@ -433,6 +433,8 @@ int ProcessCommandLine(CmdLineOptions *cmd)
                 CompileAsmToBinary(binname, asmname);
                 if (gl_errors == 0) {
                     DoPropellerPostprocess(binname, cmd->useEeprom ? cmd->eepromSize : 0);
+                } else {
+                    remove(binname);
                 }
                 if (!cmd->quiet) {
                     printf("Done.\n");

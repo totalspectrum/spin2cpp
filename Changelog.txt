@@ -2,6 +2,7 @@ Version 7.0.3
 - Fixed .fpide search so file names are relative to the .fpide file
 - Improved listing file tracking of COG pc (still buggy, but better)
 - Made inline function expansion more robust
+- Remove binary output when errors are detected in final compilation
 
 Version 7.0.2
 - Avoid a crash if a .fpide file is not found
