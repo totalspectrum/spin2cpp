@@ -1,5 +1,6 @@
 Version 7.0.3
 - Fixed .fpide search so file names are relative to the .fpide file
+- Improved listing file tracking of COG pc
 - Made inline function expansion more robust
 
 Version 7.0.2

@@ -102,17 +102,6 @@ static const char *RemappedName(const char *name)
     return buf;
 }
 
-// return \n if the string does not already end in it
-static const char *
-NeedLineEnd(const char *str) {
-    const char *r = "\n";
-    while (*str && str[1]) {
-        str++;
-    }
-    if (*str == '\n') r = "";
-    return r;
-}
-
 // helper function for printing operands
 static void
 doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect effect_orig, int maximm)
@@ -464,6 +453,25 @@ OutputAlignLong(Flexbuf *fb)
     }
 }
 
+static void
+OutputDebugReloc(Flexbuf *fb, Reloc *nextreloc)
+{
+    LineInfo *info = (LineInfo *)nextreloc->sym;
+
+    if (info && info->linedata) {
+        flexbuf_printf(fb, "'-' ");
+        // print the line, up to but not including the line end
+        for (const char *p = info->linedata; *p && *p != '\n'; p++) {
+            flexbuf_addchar(fb, *p);
+        }
+        if (nextreloc->symoff) {
+            // feed some data through
+            flexbuf_printf(fb, " {#pragma cogval $%08x}", nextreloc->symoff);
+        }
+        flexbuf_addchar(fb, '\n');
+    }
+}
+
 void
 OutputDataBlob(Flexbuf *fb, Flexbuf *databuf, Flexbuf *relocbuf, const char *startLabel, bool outLabel)
 {
@@ -514,11 +522,7 @@ again:
                 
                 // we have to output a relocation or debug entry now
                 if (nextreloc->kind == RELOC_KIND_DEBUG) {
-                    LineInfo *info = (LineInfo *)nextreloc->sym;
-                    if (info && info->linedata) {
-                        const char *lineend = NeedLineEnd(info->linedata);
-                        flexbuf_printf(fb, "'-' %s%s", info->linedata, lineend);
-                    }
+                    OutputDebugReloc(fb, nextreloc);
                     nextreloc++;
                     --relocs;
                     goto again;
@@ -666,11 +670,7 @@ again:
     }
     while (relocs > 0 && nextreloc) {
         if (nextreloc->kind == RELOC_KIND_DEBUG) {
-            LineInfo *info = (LineInfo *)nextreloc->sym;
-            if (info && info->linedata) {
-                const char *lineend = NeedLineEnd(info->linedata);
-                flexbuf_printf(fb, "'-' %s%s", info->linedata, lineend);
-            }
+            OutputDebugReloc(fb, nextreloc);
         }
         nextreloc++;
         --relocs;

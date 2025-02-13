@@ -1,7 +1,7 @@
 //
 // listing file output for spin2cpp
 //
-// Copyright 2012-2023 Total Spectrum Software Inc.
+// Copyright 2012-2025 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -80,6 +80,12 @@ static void AddRestOfLine(Flexbuf *f, const char *s) {
     flexbuf_printf(f, "| ");
     while (*s) {
         c = *s++;
+        if (c == '{' && *s == '#') {
+            if (!strncmp(s, "#pragma cogval ", strlen("#pragma cogval "))) {
+                // just abort now
+                break;
+            }
+        }
         if (c == '\n') {
             break;
         }
@@ -87,14 +93,63 @@ static void AddRestOfLine(Flexbuf *f, const char *s) {
     }
 }
 
+static bool isFirstLabelChar(int c) {
+    if (c == '_' || c == ':') return true;
+    return isalpha(c);
+}
+static bool isLabelChar(int c) {
+    if (c == '_' || c == ':') return true;
+    return isalnum(c);
+}
+
+static unsigned fetchOrgValue(const char *s) {
+    int base = 0;
+    unsigned val = 0;
+    const char *p;
+    
+    // scan ahead to see if there is a {#pragma cogval}
+    // to give us the true (calculated) value
+    p = strstr(s, "{#pragma cogval ");
+    if (p) {
+        s = p + strlen("{#pragma cogval ");
+    }
+    if (*s == '$') {
+        base = 16;
+        s++;
+    }
+    if (*s) {
+        if (isFirstLabelChar(*s)) {
+            char *sdup = strdup(s);
+            char *p = sdup;
+            Symbol *sym;
+            while (isLabelChar(*p)) p++;
+            *p = 0;
+            sym = LookupSymbol(sdup);
+            if (sym && sym->kind == SYM_CONSTANT) {
+                val = EvalConstExpr((AST *)sym->v.ptr);
+            }
+            free(sdup);
+        } else {
+            val = strtoul(s, NULL, base);
+        }
+    }
+    return val;
+}
+            
 // check for Org in DAT output
 // DAT sections get compiled to binary blobs with '-' comments giving the
 // original code; but in listings we want COG addresses to show up, so we
-// need to look for ORG / ORGH
+// need to look for special directives. The reloc info may append
+// additional data in {#pragma cogval} comments to help us
+//
 static void CheckForOrg(const char *theline)
 {
     const char *s = theline;
     
+    //printf("CheckForOrg: [%s]\n", theline);
+
+    // skip over leading label, if any
+    while (*s && isLabelChar(*s)) s++;
     while (*s && isspace(*s)) s++;
     if (*s == '\'' || *s == '{') return;
     if (!strncasecmp(s, "org", 3)) {
@@ -103,19 +158,13 @@ static void CheckForOrg(const char *theline)
         } else if (!s[3] || isspace(s[3])) {
             s += 3;
             if (isspace(*s)) s++;
-            // Aargh, need to find the actual COG PC
-            while (*s && *s != '$') s++;
-            if (*s == '$') {
-                s++;
-                if (*s) {
-                    cogPc = strtoul(s, NULL, 16)*4;
-                    inCog = 1;
-                }
-            } else if (!*s) {
-                cogPc = 0;
-                inCog = 1;
-            }
+            // find the actual COG PC
+            cogPc = fetchOrgValue(s) * 4;
+            inCog = 1;
         }
+    } else if (!strncasecmp(s, "res", 3) && isspace(s[3])) {
+        s += 4;
+        cogPc += fetchOrgValue(s) * 4;
     }
 }
 

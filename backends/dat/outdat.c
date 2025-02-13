@@ -1365,20 +1365,40 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
     return numoperands;
 }
 
+/*
+ * put a single commented source line in relocs
+ */
+static void
+SendOneComment(Flexbuf *relocs, AST *ast, uint32_t addr, uint32_t info)
+{
+    Reloc r;
+    Reloc *oldr;
+    if (relocs) {
+        // see if this is just adding some info to a previous line
+        if (!ast) {
+            if (flexbuf_curlen(relocs) > sizeof(Reloc) && info) {
+                oldr = (Reloc *)(flexbuf_peek(relocs) + flexbuf_curlen(relocs) - sizeof(Reloc));
+                if (oldr->kind == RELOC_KIND_DEBUG && oldr->sym && !oldr->symoff) {
+                    oldr->symoff = info;
+                    return;
+                }
+            }
+        }
+        r.kind = RELOC_KIND_DEBUG;
+        r.addr = addr;
+        r.sym = ast ? (Symbol *)GetLineInfo(ast) : 0;
+        r.symoff = info;
+        flexbuf_addmem(relocs, (const char *)&r, sizeof(r));
+    }
+}
+
 // assemble comments
 // returns first non-comment thing seen
 static AST* AssembleComments(Flexbuf *f, Flexbuf *relocs, AST *ast)
 {
-    Reloc r;
     while (ast) {
         if (ast->kind == AST_SRCCOMMENT && gl_srccomments) {
-            if (relocs) {
-                r.kind = RELOC_KIND_DEBUG;
-                r.addr = flexbuf_curlen(f);
-                r.sym = (Symbol *)GetLineInfo(ast);
-                r.symoff = 0;
-                flexbuf_addmem(relocs, (const char *)&r, sizeof(r));
-            }
+            SendOneComment(relocs, ast, flexbuf_curlen(f), 0);
         } else if (ast->kind == AST_COMMENT) {
             /* do nothing */
         } else {
@@ -1978,22 +1998,6 @@ padBytes(Flexbuf *f, AST *ast, int bytes)
 }
 
 /*
- * put a single commented source line in relocs
- */
-static void
-SendOneComment(Flexbuf *relocs, AST *ast, uint32_t addr)
-{
-    Reloc r;
-    if (relocs && ast) {
-        r.kind = RELOC_KIND_DEBUG;
-        r.addr = addr;
-        r.sym = (Symbol *)GetLineInfo(ast);
-        r.symoff = 0;
-        flexbuf_addmem(relocs, (const char *)&r, sizeof(r));
-    }
-}
-        
-/*
  * send out all comments pending, and return the next non-comment node
  */
 AST *
@@ -2005,7 +2009,7 @@ SendComments(Flexbuf *f, AST *ast, Flexbuf *relocs)
             /* ignore, for now */
             break;
         case AST_SRCCOMMENT:
-            SendOneComment(relocs, ast, flexbuf_curlen(f));
+            SendOneComment(relocs, ast, flexbuf_curlen(f), 0);
             break;
         default:
             return ast;
@@ -2140,6 +2144,7 @@ PrintDataBlock(Flexbuf *f, AST *list, DataBlockOutFuncs *funcs, Flexbuf *relocs)
             if (!gl_nospin && ast->d.ival > 3 && gl_output != OUTPUT_DAT) {
                 WARNING(ast, "orgh with explicit origin does not work if Spin methods are present");
             }
+            SendOneComment(relocs, NULL, flexbuf_curlen(f), EvalPasmExpr(ast->left));
             /* skip ahead to PC */
             padBytes(f, ast, ast->d.ival);
             inHub = 1;
@@ -2149,19 +2154,26 @@ PrintDataBlock(Flexbuf *f, AST *list, DataBlockOutFuncs *funcs, Flexbuf *relocs)
             /* need to skip ahead to PC */
             padBytes(f, ast, ast->d.ival);
             inHub = 0;
+//            SendOneComment(relocs, NULL, flexbuf_curlen(f), EvalPasmExpr(ast->left));
             break;
-        case AST_ORG:
+        case AST_ORG: {
+            int cog_data = EvalPasmExpr(ast->left);
             inHub = 0;
             if (NEED_ALIGNMENT) {
                 AlignPc(f, 4);
             }
+            SendOneComment(relocs, NULL, flexbuf_curlen(f), cog_data);
             break;
-        case AST_RES:
-            /* don't need to emit anything */
+        }
+        case AST_RES: {
+            int cog_data = EvalPasmExpr(ast->left);
+            /* don't need to emit anything, but send a debug comment */
+            SendOneComment(relocs, NULL, flexbuf_curlen(f), cog_data);
             break;
+        }
         case AST_FIT:
             // emit a debug entry
-            SendOneComment(relocs, ast, flexbuf_curlen(f));
+            SendOneComment(relocs, ast, flexbuf_curlen(f), EvalPasmExpr(ast->left));
             break;
         case AST_LINEBREAK:
             break;
@@ -2169,7 +2181,7 @@ PrintDataBlock(Flexbuf *f, AST *list, DataBlockOutFuncs *funcs, Flexbuf *relocs)
             break;
         case AST_SRCCOMMENT:
             // emit a debug entry
-            SendOneComment(relocs, ast, flexbuf_curlen(f));
+            SendOneComment(relocs, ast, flexbuf_curlen(f), 0);
             break;
         default:
             ERROR(ast, "unknown element in data block");
