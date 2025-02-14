@@ -1,6 +1,6 @@
-'**************************************
-'*  Spin2/PASM Debugger - 2022.11.19  *
-'**************************************
+'********************************************
+'*  Spin2/PASM Debugger - v49 - 2025.02.02  *
+'********************************************
 '
 ' Sets up debugger and then launches appended applicaion
 '
@@ -576,6 +576,8 @@ debug_byte      callpa  #z,#getdeb              'get DEBUG bytecode
                 byte    .dly                    '7 = DLY(ms)
                 byte    .pc                     '8 = PC_KEY(ptr)
                 byte    .pc                     '9 = PC_MOUSE(ptr)
+                byte    .c_z_pre                'A = C_Z_pre
+                byte    .c_z                    'B = C_Z
 
 .asm            ijnz    asm,#debug_byte         'set asm mode
 
@@ -624,6 +626,14 @@ debug_byte      callpa  #z,#getdeb              'get DEBUG bytecode
         if_z    add     ptrb,#1
         if_z    jmp     #rwreg                  'z=1 for write
         _ret_   wrlong  y,ptrb++                'write to hub
+
+.c_z_pre        callpb  #_com,#rstrout          'output ", "
+.c_z            testb   iret,#31        wc      'set C value
+                bitc    _c_z+0,#16
+                testb   iret,#30        wc      'set Z value
+                bitc    _c_z+1,#16
+                callpb  #_c_z,#rstrout          'output "C=? Z=?"
+                jmp     #debug_byte
 '
 '
 ' Output "CogN  " with possible timestamp
@@ -669,22 +679,34 @@ arg_cmd         testb   z,#0            wz      'if %x0, output ", "
                 call    #getval                 'get ptr/val argument
                 mov     ptrb,x
 
-                testb   z,#4            wz      'get len argument?
-  if_z          call    #getval
-  if_z          mov     y,x
+                testb   z,#4            wc      'get dual-argument flag in c
 
-                mov     pa,z                    'ZSTR/LSTR command?
-                and     pa,#$EC
-                cmp     pa,#$24         wz
-                testb   z,#4            wc      'value or array command?
-  if_nz_and_nc  jmp     #value_cmd
+  if_c          call    #getval                 'get len argument?
+  if_c          mov     y,x
+
+                mov     pa,z                    'branch to handler
+                and     pa,#$FC
+                cmp     pa,#$24         wz      'ZSTR/LSTR command?
+  if_nz         cmp     pa,#$34         wz
+  if_z          jmp     #str_cmd
+                cmp     pa,#$20         wz      'BOOL command?
+  if_nz_and_nc  jmp     #value_cmd              'value or array command?
   if_nz_and_c   jmp     #array_cmd
+'
+'
+' BOOL(val)
+'
+bool_cmd        cmp     x,#0            wz      'output "TRUE" or "FALSE"
+  if_ne         callpb  #_tru,#rstrout
+  if_e          callpb  #_fal,#rstrout
+
+                jmp     #debug_byte
 '
 '
 ' ZSTR(ptr)
 ' LSTR(ptr,len)
 '
-                testb   z,#1            wc      'if %0x, output quote
+str_cmd         testb   z,#1            wc      'if %0x, output quote
   if_nc         callpa  #$22,#txbyte
 
                 testb   z,#4            wc      'c=0 if ZSTR, c=1 if LSTR
@@ -700,7 +722,7 @@ arg_cmd         testb   z,#0            wz      'if %x0, output ", "
                 jmp     #debug_byte
 '
 '
-' Value command
+' Value command (val)
 '
 value_cmd       testb   z,#3            wc      'determine msb
                 testb   z,#2            wz
@@ -730,7 +752,7 @@ value_cmd       testb   z,#3            wc      'determine msb
   if_nz         jmp     #debug_byte             '(followed by array_loop)
 '
 '
-' Array command
+' Array command (ptr, len)
 '
 array_loop      djz     y,#debug_byte           'done?
 
@@ -786,7 +808,7 @@ getasm          rdword  x,ptr                   'get initial word
         if_c    sub     ptr,#1
         if_c    rdlong  x,ptr
         if_c    add     ptr,#4
-                ret                     wcz
+                ret                     wcz     'restore flags
 '
 '
 ' Debug string output
@@ -966,11 +988,14 @@ _lod            byte    " load",13,10,0
 _jmp            byte    " jump",13,10,0
 _com            byte    ", ",0,0
 _equ            byte    " = ",0
+_tru            byte    "TRUE",0,0,0,0
+_fal            byte    "FALSE",0,0,0
 _nil            byte    "nil",0
 _nan            byte    "NaN",0
 _key            byte    "PC_KEY",13,10,0,0,0,0
-_mou            byte    "PC_MOUSE"
+_mou            byte    "PC_MOUSE"              '(must be followed by _lin)
 _lin            byte    13,10,0,0
+_c_z            byte    "C=0 Z=0",0
 
                 fit     overlay_end+1
 '
@@ -1164,20 +1189,22 @@ debugger_end
 '       00000111        DLY(ms)                         delay for ms
 '       00001000        PC_KEY(ptr)                     get PC keyboard
 '       00001001        PC_MOUSE(ptr)                   get PC mouse
+'       00001010        C_Z_pre                         ouput ", C=? Z=?"
+'       00001011        C_Z                             ouput "C=? Z=?"
 '
-'       ______00        ', ' + zstr + ' = ' + data      specifiers for ZSTR..SBIN_LONG_ARRAY
+'       ______00        ', ' + zstr + ' = ' + data      specifiers for BOOL..SBIN_LONG_ARRAY
 '       ______01               zstr + ' = ' + data
 '       ______10                       ', ' + data
 '       ______11                              data
 '
-'       001000__        <empty>
+'       001000__        BOOL(val)                       boolean
 '       001001__        ZSTR(ptr)                       z-string
 '       001010__        <empty>
-'       001011__        FDEC(val)                       floating point
-'       001100__        FDEC_REG_ARRAY(ptr,len)         floating point
+'       001011__        FDEC(val)                       floating-point
+'       001100__        FDEC_REG_ARRAY(ptr,len)         floating-point
 '       001101__        LSTR(ptr,len)                   length-string
 '       001110__        <empty>
-'       001111__        FDEC_ARRAY(ptr,len)             floating point
+'       001111__        FDEC_ARRAY(ptr,len)             floating-point
 '
 '       010000__        UDEC(val)                       unsigned decimal
 '       010001__        UDEC_BYTE(val)

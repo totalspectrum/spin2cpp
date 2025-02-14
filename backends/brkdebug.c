@@ -24,6 +24,7 @@ enum DebugBytecode {
     DBC_DELAY = 7,
     DBC_PC_KEY = 8,
     DBC_PC_MOUSE = 9,
+    DBC_CZ = 10, // this one is special because DBC_FLAG_NOCOMMA applies to it
 
     // Flags
     DBC_FLAG_NOCOMMA = 0x01,
@@ -37,6 +38,7 @@ enum DebugBytecode {
     // Output type
     DBC_TYPE_STR = 0x20 | DBC_SIZE_BYTE, 
     DBC_TYPE_FLP = 0x20, // Note the overlap with the signed flag and the string type
+    DBC_TYPE_BOL = 0x20, // etc, etc
     DBC_TYPE_DEC = 0x40,
     DBC_TYPE_HEX = 0x80,
     DBC_TYPE_BIN = 0xC0,
@@ -55,6 +57,9 @@ static struct DebugFunc debug_func_table[] = {
     {"dly"              ,DBC_DELAY},
     {"pc_key"           ,DBC_PC_KEY},
     {"pc_mouse"         ,DBC_PC_MOUSE},
+    {"c_z"              ,DBC_CZ},
+
+    {"bool"             ,DBC_TYPE_BOL},
     
     {"zstr"             ,DBC_TYPE_STR},
     {"lstr"             ,DBC_TYPE_STR|DBC_FLAG_ARRAY},
@@ -256,79 +261,86 @@ int AsmDebug_CodeGen(AST *ast, BackendDebugEval evalFunc, void *evalArg) {
             if (simple && noExpr) {
                 ERROR(item,"Cannot use underscore on simple functions");
             }
-            if (!simple && !needcomma) opcode |= DBC_FLAG_NOCOMMA;
+            if ((!simple || opcode == DBC_CZ) && !needcomma) opcode |= DBC_FLAG_NOCOMMA;
             if (!simple && noExpr) opcode |= DBC_FLAG_NOEXPR;
 
-            int expectedArgs = (func->opcode & DBC_FLAG_ARRAY) ? 2 : 1;
-            int gotArgs = 0;
-            ASSERT_AST_KIND(item->right,AST_EXPRLIST,break;);
-            for (AST *arglist=item->right;arglist;arglist=arglist->right) {
-                if (gotArgs == 0) {
-                    flexbuf_putc(opcode,f);
-                    DEBUG(item,"Emitting DEBUG opcode %02X",opcode);
-                }
-                gotArgs++;
-                AST *arg = arglist->left;
-                int addrKind, addr;
-                
-                if (gotArgs==1 && !simple && !noExpr) {
-                    // TOOD: Yoink expression string from source buffer
-                    AST *exprAst = arg;
-                    if (exprAst->kind==AST_IMMHOLDER) {
-                        flexbuf_putc('#',f);
-                        exprAst = exprAst->left;
+            if ((opcode & ~DBC_FLAG_NOCOMMA) == DBC_CZ) {
+                // Special no-argument function C_Z (I hate what I have brought upon myself)
+                if (item->right && item->right->left) ERROR(item,"C_Z takes no arguments");
+                flexbuf_putc(opcode,f);
+                DEBUG(item,"Emitting DEBUG opcode %02X",opcode);
+            } else {
+                int expectedArgs = (func->opcode & DBC_FLAG_ARRAY) ? 2 : 1;
+                int gotArgs = 0;
+                ASSERT_AST_KIND(item->right,AST_EXPRLIST,break;);
+                for (AST *arglist=item->right;arglist;arglist=arglist->right) {
+                    if (gotArgs == 0) {
+                        flexbuf_putc(opcode,f);
+                        DEBUG(item,"Emitting DEBUG opcode %02X",opcode);
                     }
-                    if (IsIdentifier(exprAst)) {
-                        const char *expr = GetUserIdentifierName(exprAst);
-                        flexbuf_addstr(f,expr);
-                    } else {
-                        PrintExpr(f, exprAst, PRINTEXPR_DEBUG);
-                    }
-                    flexbuf_putc(0,f);
-                }
-
-                addrKind = (*evalFunc)(arg, regNum, &addr, evalArg);
-                switch (addrKind) {
-                case PASM_EVAL_ISCONST:
-                    emitAsmConstant(f, addr);
-                    break;
-                case PASM_EVAL_ISREG:
-                    emitAsmRegref(f, addr);
-                    regNum++;
-                    break;
-                case PASM_EVAL_ISREG_2:
-                case PASM_EVAL_ISREG_3:
-                case PASM_EVAL_ISREG_4:
-                    emitAsmRegref(f, addr);
-                    regNum++;
-                    addr++;
-                    for (int n = PASM_EVAL_ISREG; n < addrKind; n++) {
-                        if (gotArgs == expectedArgs) {
-                            opcode &= ~DBC_FLAG_NOCOMMA;
-                            flexbuf_putc(opcode|DBC_FLAG_NOEXPR, f);
-                            DEBUG(item,"Emitting DEBUG opcode %02X",opcode|DBC_FLAG_NOEXPR);
-                            gotArgs = 1;
-                        } else {
-                            gotArgs++;
+                    gotArgs++;
+                    AST *arg = arglist->left;
+                    int addrKind, addr;
+                    
+                    if (gotArgs==1 && !simple && !noExpr) {
+                        // TOOD: Yoink expression string from source buffer
+                        AST *exprAst = arg;
+                        if (exprAst->kind==AST_IMMHOLDER) {
+                            flexbuf_putc('#',f);
+                            exprAst = exprAst->left;
                         }
-                        emitAsmRegref(f, addr);
-                        addr++; regNum++;
+                        if (IsIdentifier(exprAst)) {
+                            const char *expr = GetUserIdentifierName(exprAst);
+                            flexbuf_addstr(f,expr);
+                        } else {
+                            PrintExpr(f, exprAst, PRINTEXPR_DEBUG);
+                        }
+                        flexbuf_putc(0,f);
                     }
-                    needcomma = true;
-                    break;
-                default:
-                    ERROR(arg, "Unknown address kind returned by back end");
-                    break;
+
+                    addrKind = (*evalFunc)(arg, regNum, &addr, evalArg);
+                    switch (addrKind) {
+                    case PASM_EVAL_ISCONST:
+                        emitAsmConstant(f, addr);
+                        break;
+                    case PASM_EVAL_ISREG:
+                        emitAsmRegref(f, addr);
+                        regNum++;
+                        break;
+                    case PASM_EVAL_ISREG_2:
+                    case PASM_EVAL_ISREG_3:
+                    case PASM_EVAL_ISREG_4:
+                        emitAsmRegref(f, addr);
+                        regNum++;
+                        addr++;
+                        for (int n = PASM_EVAL_ISREG; n < addrKind; n++) {
+                            if (gotArgs == expectedArgs) {
+                                opcode &= ~DBC_FLAG_NOCOMMA;
+                                flexbuf_putc(opcode|DBC_FLAG_NOEXPR, f);
+                                DEBUG(item,"Emitting DEBUG opcode %02X",opcode|DBC_FLAG_NOEXPR);
+                                gotArgs = 1;
+                            } else {
+                                gotArgs++;
+                            }
+                            emitAsmRegref(f, addr);
+                            addr++; regNum++;
+                        }
+                        needcomma = true;
+                        break;
+                    default:
+                        ERROR(arg, "Unknown address kind returned by back end");
+                        break;
+                    }
+                    if (gotArgs == expectedArgs) {
+                        // consumed them all
+                        gotArgs = 0;
+                        needcomma = true;
+                        opcode &= ~DBC_FLAG_NOCOMMA;
+                    }
                 }
-                if (gotArgs == expectedArgs) {
-                    // consumed them all
-                    gotArgs = 0;
-                    needcomma = true;
-                    opcode &= ~DBC_FLAG_NOCOMMA;
+                if (gotArgs) {
+                    ERROR(item,"%s expects %d args, got %d",name,expectedArgs,gotArgs);
                 }
-            }
-            if (gotArgs) {
-                ERROR(item,"%s expects %d args, got %d",name,expectedArgs,gotArgs);
             }
             needcomma = true;
         } break;
