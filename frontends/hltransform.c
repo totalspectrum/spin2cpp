@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2024 Total Spectrum Software Inc.
+ * Copyright 2011-2025 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * various high level transformations that should take
@@ -387,7 +387,7 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
 
             AST *stmt = NewAST(AST_STMTLIST,
                                newif,
-                               tempvar);
+                               NewAST(AST_STMTLIST, tempvar, NULL));
             *astptr = ast = stmt;
             AstReportDone(&saveinfo);
         }
