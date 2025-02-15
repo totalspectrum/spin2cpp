@@ -393,11 +393,11 @@ off_t lseek(int fd, off_t offset, int whence)
     off_t r;
     
     if ((unsigned)fd >= (unsigned)_MAX_FILES) {
-        return _seterror(EBADF);
+        return (off_t)_seterror(EBADF);
     }
     f = &__filetab[fd];
     if (!f->lseek) {
-        return _seterror(ENOSYS);
+        return (off_t)_seterror(ENOSYS);
     }
     if (f->state & _VFS_STATE_APPEND) {
         // if we want to write again, make sure to seek to end of file
@@ -405,7 +405,7 @@ off_t lseek(int fd, off_t offset, int whence)
     }
     r = (*f->lseek)(f, offset, whence);
     if (r < 0) {
-        return _seterror(-(int)r);
+        return (off_t)_seterror(-(int)r);
     }
     return r;
 }
