@@ -1,5 +1,6 @@
 Version 7.0.4
 - Fixed lseek() return mismatch
+- Fixed an issue with casting to different size in nucode
 
 Version 7.0.3
 - Fixed .fpide search so file names are relative to the .fpide file

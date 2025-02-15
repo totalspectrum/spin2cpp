@@ -1684,10 +1684,45 @@ NuCompileExpression(NuIrList *irl, AST *node) {
     case AST_CAST:
     {
         int n = NuCompileExpression(irl, node->right);
-        if (IsVoidType(node->left) && n) {
-            // ignoring the results, so pop them
-            NuCompileDrop(irl, n);
-            n = 0;
+        if (IsVoidType(node->left)) {
+            if (n > 0) {
+                // ignoring the results, so pop them
+                NuCompileDrop(irl, n);
+                n = 0;
+            }
+        } else {
+            // may have to widen or narrow
+            // (We require here that any int <-> float conversions
+            // happened in type analysis)
+            int expectN = (TypeSize(node->left) + LONG_SIZE - 1) / LONG_SIZE;
+            if (expectN != n) {
+                if (!IsIntType(node->left)) {
+                    ERROR(node, "Internal error, expected integer type");
+                }
+                if (expectN < n) {
+                    // narrowing, just drop words
+                    NuCompileDrop(irl, n - expectN);
+                    n = expectN;
+                } else {
+                    int needDups = (expectN - n) - 1;
+                    // do we need to sign extend?
+                    if (IsUnsignedType(node->left)) {
+                        // no, just pad with 0's
+                        NuEmitConst(irl, 0);
+                        n++;
+                    } else {
+                        // yes, dup the top and sign extend it
+                        NuEmitOp(irl, NU_OP_DUP);
+                        NuEmitConst(irl, 31);
+                        NuEmitOp(irl, NU_OP_SAR);
+                        n++;
+                    }
+                    while (needDups-- > 0) {
+                        NuEmitOp(irl, NU_OP_DUP);
+                        n++;
+                    }
+                }
+            }
         }
         return n;
     }
