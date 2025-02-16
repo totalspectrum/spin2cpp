@@ -980,7 +980,7 @@ static bool FuncUsesArgEx(Operand *func, Operand *arg, bool actually)
         return !actually;
     } else if (func && func->val) {
         Function *funcObj = (Function *)func->val;
-        if ((/*func->kind == IMM_COG_LABEL ||*/ func->kind == IMM_HUB_LABEL) && (actually || funcObj->is_leaf || FuncData(funcObj)->effectivelyLeaf)) {
+        if ((/*func->kind == IMM_COG_LABEL ||*/ func->kind == IMM_HUB_LABEL) && (actually || funcObj->is_leaf || FuncData(funcObj)->effectivelyLeaf) && !funcObj->has_throw) {
             if (arg->kind != REG_ARG) return true; // subreg or smth
             if (arg->val < funcObj->numparams) return true; // Arg used;
             if (!actually && arg->val < FuncData(funcObj)->maxInlineArg) return true; // Arg clobbered
@@ -2915,6 +2915,7 @@ int OptimizeShortBranches(IRList *irl)
 // Special case of remapping a local to resultN for when general ReplaceBack fails to do the job
 int OptimizeReturnValues(IRList *irl) {
     if (!curfunc->is_leaf) return 0; // Leaf functions only for now
+    if (curfunc->has_throw) return 0; // THROW make it non-leaf
     int change = 0;
 
     
@@ -5602,7 +5603,7 @@ ExpandInlines(IRList *irl)
         ir = ir_next;
     }
     // If inlining (or previous dead-code optimization...) removed all external calls, mark as leaf.
-    if (non_inline_calls==0 && !curfunc->is_leaf && !FuncData(curfunc)->effectivelyLeaf) {
+    if (non_inline_calls==0 && !curfunc->is_leaf && !FuncData(curfunc)->effectivelyLeaf && !curfunc->has_throw) {
         FuncData(curfunc)->effectivelyLeaf = true;
         change = true;
     }

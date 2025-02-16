@@ -1,6 +1,7 @@
 Version 7.0.4
 - Fixed an issue with casting to different size in nucode
 - Fixed incorrect line info in some DEBUG statements
+- Fixed incorrect re-use of parameter registers near functions that have an ABORT or THROW
 
 Version 7.0.3
 - Fixed .fpide search so file names are relative to the .fpide file
