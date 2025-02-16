@@ -142,6 +142,10 @@ CreatePrintfDebug(AST *exprlist, AST *dbgmask)
             return NULL;
         }
     }
+
+    ASTReportInfo save;
+    AstReportAs(exprlist, &save);
+    
     flexbuf_init(&fb, 1024);
 
     if (exprlist && exprlist->left && exprlist->left->kind == AST_LABEL) {   
@@ -186,5 +190,8 @@ CreatePrintfDebug(AST *exprlist, AST *dbgmask)
     outlist = AddToList(sub, outlist);
     printf_call = NewAST(AST_PRINT, NULL, NULL);
     printf_call = NewAST(AST_FUNCCALL, printf_call, outlist);
+
+    AstReportDone(&save);
+
     return genPrintf(printf_call);
 }
