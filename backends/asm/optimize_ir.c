@@ -974,11 +974,13 @@ static bool isMulDivFunc(Operand *func) {
 // Set "actually" if you only care about the call actually using the current value
 static bool FuncUsesArgEx(Operand *func, Operand *arg, bool actually)
 {
+    bool peek_into_func = curfunc ? (curfunc->optimize_flags & OPT_PEEK_ARGS)
+        : (gl_optimize_flags & OPT_PEEK_ARGS);
     if (isMulDivFunc(func)) {
         return (arg == muldiva || arg == muldivb);
     } else if (arg == muldiva || arg == muldivb) {
         return !actually;
-    } else if (func && func->val) {
+    } else if (func && func->val && peek_into_func) {
         Function *funcObj = (Function *)func->val;
         if ((/*func->kind == IMM_COG_LABEL ||*/ func->kind == IMM_HUB_LABEL) && (actually || funcObj->is_leaf || FuncData(funcObj)->effectivelyLeaf) && !funcObj->has_throw) {
             if (arg->kind != REG_ARG) return true; // subreg or smth

@@ -1,4 +1,5 @@
 Version 7.0.4
+- Added `-Opeek-args` optimization flag (the optimization was always there, this provides a way to disable it)
 - Fixed an issue with casting to different size in nucode
 - Fixed incorrect line info in some DEBUG statements
 - Fixed incorrect re-use of parameter registers near functions that have an ABORT or THROW

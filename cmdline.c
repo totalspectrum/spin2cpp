@@ -542,6 +542,7 @@ static FlagTable optflag[] = {
     { "cold-code", OPT_COLD_CODE},
     { "spin-relax-memory", OPT_SPIN_RELAXMEM},
     { "fast-inline-asm", OPT_FASTASM },
+    { "peek-args", OPT_PEEK_ARGS },
     { "experimental", OPT_EXPERIMENTAL },
     { "all", OPT_FLAGS_ALL },
 };

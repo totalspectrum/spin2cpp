@@ -439,6 +439,13 @@ If a method is called only once in a whole program, it is expanded inline at the
 
 If two functions have identical code, output only one copy of the function. Currently only checked in the assembly backend, bytecode is still to come.
 
+### Peek into function calls to see which registers are used (-O2, -Opeek-args)
+
+Looks into function definitions to determine whether an argument register is
+used there. By default it is assumed that all argument registers may be
+changed within a function, but with this optimization we check for some special
+cases to save having to copy arguments to other registers.
+
 ### Common Subexpression Elimination (-O2, -Ocse)
 
 Code like:
