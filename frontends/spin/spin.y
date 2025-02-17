@@ -402,6 +402,9 @@ SpinDeclareStruct(AST *ident, AST *defs)
 %token SP_SIZEOF     "SIZEOF"
 %token SP_SWAP_OP    ":=:"
 
+/* v46 additions */
+%token SP_C_Z        "C_Z"
+
 /* v47 additions */
 %token SP_NEWTASK    "NEWTASK"
 %token SP_THISTASK   "THISTASK"
@@ -807,6 +810,8 @@ asmdebug_func:
     { $$ = MakeFunccall($1,$3,NULL);}
   | identifier '(' ')'
     { $$ = MakeFunccall($1,NULL,NULL);}
+  | SP_C_Z
+    { $$ = MakeFunccall(AstIdentifier("c_z"),NULL,NULL);}
   | SP_IF '(' operandlist ')'
     { $$ = MakeFunccall(AstIdentifier("if"),$3,NULL);}
   | SP_IFNOT '(' operandlist ')'

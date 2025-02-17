@@ -2472,6 +2472,9 @@ struct reservedword_soft {
     { "sizeof", SP_SIZEOF, 45, 0 },
     { "struct", SP_STRUCT, 45, 0 },
 
+    /* new v46 keywords */
+    { "c_z", SP_C_Z, 46, 0 },
+    
     /* v47 keywords */
     { "newtask", SP_NEWTASK, 47, 0 },
     { "thistask", SP_THISTASK, 47, 0 },
