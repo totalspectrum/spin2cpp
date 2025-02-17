@@ -805,6 +805,8 @@ debug_expritem:
 asmdebug_func:
   identifier '(' operandlist ')'
     { $$ = MakeFunccall($1,$3,NULL);}
+  | identifier '(' ')'
+    { $$ = MakeFunccall($1,NULL,NULL);}
   | SP_IF '(' operandlist ')'
     { $$ = MakeFunccall(AstIdentifier("if"),$3,NULL);}
   | SP_IFNOT '(' operandlist ')'
