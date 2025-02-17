@@ -1903,7 +1903,7 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         if (x == 0) {
             AST *astmsg = node->right;
             const char *msg = GetStringFromAst(astmsg);
-            ERROR(node, msg);
+            ERROR(node, "%s", msg);
         }
         return 0;
     }
