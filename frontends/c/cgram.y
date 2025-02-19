@@ -2340,18 +2340,25 @@ asmlist:
 
 asmline:
   asm_baseline
+  {
+      $$ = NewAST(AST_LISTHOLDER, $1, NULL);
+  }
   | C_IDENTIFIER asm_baseline
     {   AST *linebreak;
         AST *comment = GetComments();
-        AST *ast;
-        ast = $1;
-        if (comment && (comment->d.string || comment->kind == AST_SRCCOMMENT)) {
-            linebreak = NewCommentedAST(AST_LINEBREAK, NULL, NULL, comment);
-        } else {
-            linebreak = NewAST(AST_LINEBREAK, NULL, NULL);
+        AST *datitem = $2;
+        AST *changetype = NULL;
+        if (datitem) {
+            changetype = ExtractPasmType(datitem);
+            datitem = NewAST(AST_LISTHOLDER, $2, NULL);
         }
-        ast = AddToList(ast, $2);
-        ast = AddToList(linebreak, ast);
+        AST *ast = NewAST(AST_LISTHOLDER, $1, datitem);
+        if (comment && (comment->d.string || comment->kind == AST_SRCCOMMENT)) {
+            linebreak = NewCommentedAST(AST_LINEBREAK, changetype, NULL, comment);
+        } else {
+            linebreak = NewAST(AST_LINEBREAK, changetype, NULL);
+        }
+        ast = NewAST(AST_LISTHOLDER, linebreak, ast);
         $$ = ast;
     }
   ;
@@ -2858,18 +2865,26 @@ pasmlist:
 
 pasmline:
   pasm_baseline
+  {
+      $$ = NewAST(AST_LISTHOLDER, $1, NULL);
+  }
   | C_IDENTIFIER pasm_baseline
     {   AST *linebreak;
         AST *comment = GetComments();
-        AST *ast;
-        ast = $1;
-        if (comment && (comment->d.string || comment->kind == AST_SRCCOMMENT)) {
-            linebreak = NewCommentedAST(AST_LINEBREAK, NULL, NULL, comment);
-        } else {
-            linebreak = NewAST(AST_LINEBREAK, NULL, NULL);
+        AST *changetypes = NULL;
+        AST *datitem = $2;
+
+        if (datitem) {
+            changetypes = ExtractPasmType(datitem);
+            datitem = NewAST(AST_LISTHOLDER, datitem, NULL);
         }
-        ast = AddToList(ast, $2);
-        ast = AddToList(linebreak, ast);
+        AST *ast = NewAST(AST_LISTHOLDER, $1, datitem);
+        if (comment && (comment->d.string || comment->kind == AST_SRCCOMMENT)) {
+            linebreak = NewCommentedAST(AST_LINEBREAK, changetypes, NULL, comment);
+        } else {
+            linebreak = NewAST(AST_LINEBREAK, changetypes, NULL);
+        }
+        ast = NewAST(AST_LISTHOLDER, linebreak, ast);
         $$ = ast;
     }
   ;

@@ -571,7 +571,7 @@ CompileTraditionalInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
     asmNest = 0;
     state[asmNest].is_active = true;
     while (top) {
-        ast = top;
+        ast = top->left;
         top = top->right;
         while (ast && ast->kind == AST_COMMENTEDNODE) {
             ast = ast->left;
@@ -638,9 +638,9 @@ CompileTraditionalInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
     }
     firstir = NULL;
     while(top) {
-        ast = top;
+        ast = top->left;
         top = top->right;
-        if (ast->kind == AST_LINEBREAK) {
+        if (ast && ast->kind == AST_LINEBREAK) {
             continue;
         }
         while (ast && ast->kind == AST_COMMENTEDNODE) {

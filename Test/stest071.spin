@@ -4,8 +4,7 @@ pub blink(pin, n)
     return entry
     
 dat
-entry
-  long $11223344
+entry long $11223344
 foo
   long @@@foo
   

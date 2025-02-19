@@ -50,11 +50,11 @@ SpinAddDatList(AST *datlist)
 {
     AST *label = AstTempIdentifier("_byteptr_");
     AST *ptr = NewAST(AST_ABSADDROF, DupAST(label), NULL);
-    AST *linebreak = NewAST(AST_LINEBREAK, NULL, NULL);
     AST *ast = label;
 
-    ast = AddToList(ast, datlist);
-    ast = AddToList(linebreak, ast);
+    if (datlist && datlist->kind != AST_LISTHOLDER)
+        datlist = NewAST(AST_LISTHOLDER, datlist, NULL);
+    ast = NewAST(AST_LISTHOLDER, ast, datlist);
 
     // add this entry to the DAT section
     current->datblock = AddToListEx(current->datblock, ast, &current->datblock_tail);
@@ -1188,30 +1188,42 @@ datblock:
   datline
     {
         AST *dat = $1;
-        $$ = dat; //NewAST(AST_LISTHOLDER, dat, NULL);
+        $$ = dat; // NewAST(AST_LISTHOLDER, dat, NULL);
         current->parse_tail = NULL;
     }
   | datblock datline
-    { $$ = AddToListEx($1, $2, &current->parse_tail); }
+    {
+        AST *dat = $2; // NewAST(AST_LISTHOLDER, $2, NULL);
+        $$ = AddToListEx($1, dat, &current->parse_tail);
+    }
   ;
 
 datline:
   basedatline
+  {
+      $$ = NewAST(AST_LISTHOLDER, $1, NULL);
+  }
   | identifier basedatline
-    {   AST *linebreak;
+    {
         AST *comment = GetComments();
-        AST *ast;
-        AST *label = DupAST($1);
-        ast = $1;
+        AST *idast = $1;
+        AST *datast = $2;
+        AST *label = DupAST(idast);
+        AST *linebreak = NULL;
+        AST *changetype = NULL;
+        if (datast) {
+            changetype = ExtractPasmType(datast);
+            datast = NewAST(AST_LISTHOLDER, datast, NULL);
+        }
         SpinAddLocalSymbol(label, SYM_NAME);
         if (comment && (comment->d.string || comment->kind == AST_SRCCOMMENT)) {
-            linebreak = NewCommentedAST(AST_LINEBREAK, NULL, NULL, comment);
+            linebreak = NewCommentedAST(AST_LINEBREAK, changetype, NULL, comment);
         } else {
-            linebreak = NewAST(AST_LINEBREAK, NULL, NULL);
+            linebreak = NewAST(AST_LINEBREAK, changetype, NULL);
         }
-        ast = AddToList(ast, $2);
-        ast = AddToList(linebreak, ast);
-        $$ = ast;
+        idast = NewAST(AST_LISTHOLDER, idast, datast);
+        idast = NewAST(AST_LISTHOLDER, linebreak, idast);
+        $$ = idast;
     }
   ;
 

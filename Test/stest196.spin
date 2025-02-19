@@ -3,8 +3,7 @@ CON
   __ = 2
 
 DAT
-myarray
-  byte 1
+myarray byte 1
   byte long 2, 3
 dummy1
   byte 4

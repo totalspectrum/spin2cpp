@@ -2676,18 +2676,25 @@ asmlist:
 
 asmline:
   basedatline
+  {
+      $$ = NewAST(AST_LISTHOLDER, $1, NULL);
+  }
   | BAS_IDENTIFIER basedatline
-    {   AST *linebreak;
+    {   AST *linebreak = NULL;
         AST *comment = GetComments();
-        AST *ast;
-        ast = $1;
-        if (comment && (comment->d.string || comment->kind == AST_SRCCOMMENT)) {
-            linebreak = NewCommentedAST(AST_LINEBREAK, NULL, NULL, comment);
-        } else {
-            linebreak = NewAST(AST_LINEBREAK, NULL, NULL);
+        AST *datitem = $2;
+        AST *changetype = NULL;
+        if (datitem) {
+            changetype = ExtractPasmType(datitem);
+            datitem = NewAST(AST_LISTHOLDER, $2, NULL);
         }
-        ast = AddToList(ast, $2);
-        ast = AddToList(linebreak, ast);
+        AST *ast = NewAST(AST_LISTHOLDER, $1, datitem);
+        if (comment && (comment->d.string || comment->kind == AST_SRCCOMMENT)) {
+            linebreak = NewCommentedAST(AST_LINEBREAK, changetype, NULL, comment);
+        } else {
+            linebreak = NewAST(AST_LINEBREAK, changetype, NULL);
+        }
+        ast = NewAST(AST_LISTHOLDER, linebreak, ast);
         $$ = ast;
     }
   ;

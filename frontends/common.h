@@ -222,7 +222,9 @@ extern int gl_warn_flags;     /* flags for warnings */
 #define WARN_ARRAY_INDEX        0x000020
 #define WARN_LANG_VERSION       0x000040
 #define WARN_DEPRECATED         0x000080
-#define WARN_ASM_FIRST_PASS     0x800000      
+#define WARN_ASM_LABEL_TYPES    0x400000
+#define WARN_ASM_FIRST_PASS     0x800000
+
 #define WARN_ALL                0xFFFFFF
 
 #define DEFAULT_WARN_FLAGS (WARN_ASM_USAGE | WARN_UNINIT_VARS | WARN_ASM_FIRST_PASS | WARN_ARRAY_INDEX | WARN_DEPRECATED)
@@ -1077,6 +1079,9 @@ Module *GetTopLevelModule(void);
 
 // returns non-zero if a variable of type typ must go on the stack
 int TypeGoesOnStack(AST *typ);
+
+// extract type of a PASM node
+AST *ExtractPasmType(AST *node);
 
 // declare a symbol together with a location of its definition
 Symbol *AddSymbolPlaced(SymbolTable *table, const char *name, int type, void *val, const char *user_name, AST *def);

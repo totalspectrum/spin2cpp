@@ -5,7 +5,6 @@ PUB get
   return @stuff
 
 DAT
-stuff
-  long foo
+stuff long foo
   long bar
   long baz

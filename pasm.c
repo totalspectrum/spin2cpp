@@ -672,13 +672,14 @@ AssignAddresses(PASMAddresses *addr, SymbolTable *symtab, AST *instrlist, int st
     AST *top = NULL;
     AST *ast = NULL;
     AST *pendingLabels = NULL;
-    AST *lasttype = ast_type_long;
+    AST *lasttype = ast_type_byte;
     Symbol *lastOrg = NULL;
     const char *tmpName;
     unsigned label_flags = 0;
     unsigned pass = 0;
     unsigned orig_datoff = 0;
-    
+    bool warnAsmTypes = (gl_warn_flags & WARN_ASM_LABEL_TYPES);
+
     expect_undefined_labels = 1;
     unsigned asm_nest;
     AsmState state[MAX_ASM_NEST] = { 0 };
@@ -703,7 +704,7 @@ again:
         MARK_HUB(label_flags);
     }
     for (top = instrlist; top; top = top->right) {
-        ast = top;
+        ast = top->left;
         while (ast && ast->kind == AST_COMMENTEDNODE) {
             ast = ast->left;
         }
@@ -770,7 +771,10 @@ again:
         case AST_BYTELIST:
         case AST_BYTEFITLIST:
             MARK_DATA(label_flags);
-            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_byte, lastOrg, inHub, label_flags, pass);
+            if (pendingLabels && lasttype != ast_type_byte && warnAsmTypes) {
+                WARNING(ast, "pending labels may use wrong type");
+            }
+            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, lasttype, lastOrg, inHub, label_flags, pass);
             replaceHereDataList(ast->left, inHub, inHub ? hubpc : cogpc, 1, lastOrg);
             INCPC(dataListLen(ast->left, 1));
             lasttype = ast_type_byte;
@@ -779,7 +783,10 @@ again:
         case AST_WORDFITLIST:
             MARK_DATA(label_flags);
             MAYBEALIGNPC(2);
-            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_word, lastOrg, inHub, label_flags, pass);
+            if (pendingLabels && lasttype != ast_type_word && warnAsmTypes) {
+                WARNING(ast, "pending labels may use wrong type");
+            }
+            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, lasttype, lastOrg, inHub, label_flags, pass);
             replaceHereDataList(ast->left, inHub, inHub ? hubpc : cogpc, 2, lastOrg);
             INCPC(dataListLen(ast->left, 2));
             lasttype = ast_type_word;
@@ -787,7 +794,10 @@ again:
         case AST_LONGLIST:
             MARK_DATA(label_flags);
             MAYBEALIGNPC(4);
-            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub, label_flags, pass);
+            if (pendingLabels && lasttype != ast_type_long && warnAsmTypes) {
+                WARNING(ast, "pending labels may use wrong type");
+            }
+            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, lasttype, lastOrg, inHub, label_flags, pass);
             replaceHereDataList(ast->left, inHub, inHub ? hubpc : cogpc, 4, lastOrg);
             INCPC(dataListLen(ast->left, 4));
             lasttype = ast_type_long;
@@ -946,6 +956,9 @@ again:
             break;
         case AST_LINEBREAK:
             pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, lasttype, lastOrg, inHub, label_flags, pass);
+            if (ast->left) {
+                lasttype = ast->left;
+            }
             break;
         case AST_COMMENT:
         case AST_SRCCOMMENT:
@@ -1047,4 +1060,28 @@ DeclareModuleLabels(Module *P)
     AssignAddresses(&paddr, &P->objsyms, P->datblock, startFlags);
     P->datsize = paddr.dataSize;
     current = save;
+}
+
+/*
+ * find the type of a PASM AST node
+ */
+AST *
+ExtractPasmType(AST *node)
+{
+    while (node && node->kind == AST_COMMENTEDNODE) {
+        node = node->left;
+    }
+    if (!node) return NULL;
+    switch (node->kind) {
+    case AST_BYTELIST:
+    case AST_BYTEFITLIST:
+        return ast_type_byte;
+    case AST_WORDLIST:
+    case AST_WORDFITLIST:
+        return ast_type_word;
+    case AST_LONGLIST:
+        return ast_type_long;
+    default:
+        return NULL;
+    }
 }

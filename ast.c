@@ -1087,6 +1087,14 @@ static void doASTDump(AST *ast, int indent)
     case AST_THROW:
         sprintf(buf, "<throw %" PRId64 ">", ast->d.ival);
         break;
+    case AST_LINEBREAK:
+        if (ast->left) {
+            sprintf(buf, "<linebreak>");
+        } else {
+            sprintf(buf, "<linebreak/>");
+            leaf = 1;
+        }
+        break;
     default:
         idx = (unsigned int)ast->kind;
         if (idx < sizeof(astnames) / sizeof(astnames[0])) {

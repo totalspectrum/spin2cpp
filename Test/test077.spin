@@ -8,7 +8,7 @@ PUB dummy
   return @arr[0]
 
 DAT
-
+  long
 arr
   long onef
   long twof

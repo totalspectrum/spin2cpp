@@ -1826,9 +1826,9 @@ FindDeclaration(AST *datlist, const char *name)
 {
     AST *ident;
     AST *declare;
-
+    
     while (datlist) {
-        if (datlist->kind == AST_COMMENTEDNODE
+        if (datlist->kind == AST_LISTHOLDER
                 && datlist->left
                 && datlist->left->kind == AST_DECLARE_VAR)
         {
@@ -1987,7 +1987,7 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
             ident = AstAssign(ident, initializer);
         }
         declare = NewAST(AST_DECLARE_VAR, type, ident);
-        ast = NewAST(AST_COMMENTEDNODE, declare, NULL);
+        ast = NewAST(AST_LISTHOLDER, declare, NULL);
         P->datblock = AddToList(P->datblock, ast);
     }
     return;

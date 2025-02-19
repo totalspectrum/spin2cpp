@@ -1,7 +1,7 @@
 //
 // binary data output for spin2cpp
 //
-// Copyright 2012-2024 Total Spectrum Software Inc.
+// Copyright 2012-2025 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -2068,11 +2068,10 @@ PrintDataBlock(Flexbuf *f, AST *list, DataBlockOutFuncs *funcs, Flexbuf *relocs)
         return;
     top = list;
     while (top) {
-        ast = top;
-        if (top->kind == AST_COMMENTEDNODE) {
-            top = SendComments(f, top->right, relocs);
-        } else {
-            top = top->right;
+        ast = top->left;
+        top = top->right;
+        if (ast && ast->kind == AST_COMMENTEDNODE) {
+            SendComments(f, ast, relocs);
         }
         while (ast && ast->kind == AST_COMMENTEDNODE) {
             if (startAst) {

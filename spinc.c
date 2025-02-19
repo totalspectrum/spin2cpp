@@ -371,13 +371,16 @@ InitBasicData(Module *P)
     AST *datinfo;
     AST *init;
     AST *zero;
-
+    AST *orgh;
+    
+    labeldef = NewAST(AST_LISTHOLDER, labeldef, NULL);
     zero = NewAST(AST_BYTELIST, NewAST(AST_EXPRLIST, AstInteger(0), NULL),
                   NULL);
     datinfo = NewAST(AST_BYTELIST, P->bas_data, zero);
+    datinfo = NewAST(AST_LISTHOLDER, datinfo, NULL);
     datinfo = AddToList(labeldef, datinfo);
-    datinfo = AddToList(NewAST(AST_LINEBREAK, NULL, NULL), datinfo);
-    datinfo = AddToList(NewAST(AST_ORGH, NULL, NULL), datinfo);
+    orgh = NewAST(AST_LISTHOLDER, NewAST(AST_ORGH, NULL, NULL), NULL);
+    datinfo = AddToList(orgh, datinfo);
     P->datblock = AddToList(datinfo, P->datblock);
 
     // Add a definition for __basic_data_ptr
@@ -1227,6 +1230,7 @@ FixupFuncData(Module *P)
                         astpad = NewAST(AST_ARRAYDECL, AstInteger(0), AstInteger(padding));
                         astpad = NewAST(AST_EXPRLIST, astpad, NULL);
                         astpad = NewAST(AST_BYTELIST, astpad, NULL);
+                        astpad = NewAST(AST_LISTHOLDER, astpad, NULL);
                         P->datblock = AddToList(P->datblock, astpad);
                     }
                     P->datsize = newsize;
@@ -1238,6 +1242,7 @@ FixupFuncData(Module *P)
                 sym->kind = SYM_LABEL;
                 sym->v.ptr = (void *)label;
                 table = NewAST(AST_LONGLIST, table, NULL);
+                table = NewAST(AST_LISTHOLDER, table, NULL);
                 P->datblock = AddToList(P->datblock, table);
                 P->datsize += tablelen * LONG_SIZE;
                 ast = ast->right;
