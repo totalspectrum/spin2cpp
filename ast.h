@@ -250,6 +250,10 @@ enum astkind {
     AST_STATIC_ASSERT = 180,
 
     AST_TASKINIT = 181,
+    AST_DITTO_START = 182,
+    AST_DITTO_END = 183,
+    AST_DITTO_COUNT = 184,
+
 };
 
 /* forward reference */

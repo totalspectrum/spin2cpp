@@ -23,7 +23,7 @@
 
 #define VT '\013'
 
-#define MAX_PNUT_VERSION 48 /* maximum PNut version we understand */
+#define MAX_PNUT_VERSION 50 /* maximum PNut version we understand */
 
 int allow_type_names = 1;
 
@@ -720,7 +720,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     char *idstr;
     int gatherComments = 1;
     bool forceLower = 0; // !gl_caseSensitive;
-
+    
     flexbuf_init(&fb, INCSTR);
     if (prefix) {
         flexbuf_addmem(&fb, prefix, strlen(prefix));
@@ -891,13 +891,17 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                 break;
             case SP_END:
                 if ( (!InDatBlock(L)) || L->colCounter - L->firstNonBlank > 4) {
-                    goto is_identifier;
-                }
-                if (L->if_nest > 0) {
-                    --L->if_nest;
-                    c = SP_ASM_ENDIF;
+                    // in older Spin2 we only recognize END as the first thing
+                    // on a line; after v44 or so just accept it always
+                    if (L->language_version < 44)
+                        goto is_identifier;
                 } else {
-                    L->block_type = L->save_block;
+                    if (L->if_nest > 0) {
+                        --L->if_nest;
+                        c = SP_ASM_ENDIF;
+                    } else {
+                        L->block_type = L->save_block;
+                    }
                 }
                 break;
             case SP_ENDASM:
@@ -2043,6 +2047,12 @@ getSpinToken(LexStream *L, AST **ast_ptr)
         if (c == SP_FLOATNUM)
             ast->kind = AST_FLOAT;
     } else if (c == '$') {
+        c = lexgetc(L);
+        if (c == '$') {
+            return SP_DOUBLE_DOLLAR;
+        } else {
+            lexungetc(L, c);
+        }
         ast = NewAST(AST_INTEGER, NULL, NULL);
         c = parseNumber(L, 16, &ast->d.ival);
     } else if (c == '%') {
@@ -2244,7 +2254,8 @@ struct reservedword {
 
     { "dat", SP_DAT },
     { "%debug", SP_DEBUG },
-
+    { "%ditto", SP_DITTO },
+        
     { "%else", SP_ASM_ELSE },
     { "else", SP_ELSE },
     { "%elseif", SP_ASM_ELSEIF },
@@ -2269,6 +2280,7 @@ struct reservedword {
     { "lookup", SP_LOOKUP },
     { "lookupz", SP_LOOKUPZ },
 
+    { "%namesp", SP_NAMESP },
     { "next", SP_NEXT },
     { "not", SP_NOT },
 
@@ -2455,7 +2467,7 @@ struct reservedword_soft {
     { "field", SP_FIELD, 0, 0 },
     { "lstring", SP_LSTRING, 42, 0 },
 
-    /* These one are weird: Chip put them
+    /* These ones are weird: Chip put them
        in Spin v42 then took them out again,
        so they're only valid in v42
     */
@@ -2479,6 +2491,10 @@ struct reservedword_soft {
     { "newtask", SP_NEWTASK, 47, 0 },
     { "thistask", SP_THISTASK, 47, 0 },
     { "taskspin", SP_TASKINIT, 47, 0 },
+
+    /* v50 keywords */
+    { "ditto", SP_DITTO, 50, 0 },
+    
 };
 
 struct reservedword basic_keywords[] = {

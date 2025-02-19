@@ -888,6 +888,9 @@ static const char *astnames[] = {
     "static_assert",
 
     "taskinit",
+    "ditto_start",
+    "ditto_end",
+    "ditto_count",
 };
 
 //

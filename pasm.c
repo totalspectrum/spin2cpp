@@ -657,6 +657,85 @@ IsJmpRetInstruction(AST *ast)
     return false;
 }
 
+/* duplicate a ditto chain, replacing $$ with the ditto count */
+static AST *
+DupDittoChain(AST *chain, unsigned count) {
+    static AST *ditto_count = NULL;
+    AST *first;
+    if (!ditto_count) {
+        ditto_count = NewAST(AST_DITTO_COUNT, NULL, NULL);
+    }
+    first = DupASTWithReplace(chain, ditto_count, AstInteger(count));
+    return first;
+}
+
+/* first is the original holder of the DITTO node */
+/* last is the original holder of the DITTO END node */
+
+void
+DupDitto(AST *first, AST *last, AST *count) {
+    unsigned max_count = EvalPasmExpr(count);
+    unsigned cur_count = 1;
+    
+    AST *cur_copy;
+    AST *chain_first = first->right;
+    AST *chain_last = last->right;
+    
+    /* snip the chain out */
+    first->right = last->right;
+    first->left = NULL;
+    last->right = NULL;
+    
+    while (cur_count <= max_count) {
+        cur_copy = DupDittoChain(chain_first, cur_count);
+        first->right = cur_copy;
+        while (first->right) first = first->right;
+        first->right = chain_last; // last->right;
+        first->left = NULL;
+        cur_count++;
+    }
+    
+}
+
+void
+ExpandDittos(AST *instrlist)
+{
+    AST *top, *ast;
+    AST *ditto_start = NULL;
+    AST *ditto_count = NULL;
+    AST *oldtop;
+    top = instrlist;
+    while (top) {
+        ast = top->left;
+        oldtop = top;
+        top = top->right;
+        while (ast && ast->kind == AST_COMMENTEDNODE) {
+            ast = ast->left;
+        }
+        if (!ast) continue;
+        if (ast->kind == AST_DITTO_START) {
+            if (ditto_start) {
+                ERROR(ast, "DITTO cannot be nested");
+            }
+            if (ast->right) {
+                ERROR(ast, "Internal error parsing DITTO");
+            }
+            ditto_start = oldtop;
+            ditto_count = ast->left;
+        } else if (ast->kind == AST_DITTO_END) {
+            if (!ditto_start) {
+                ERROR(ast, "DITTO END without DITTO");
+                continue;
+            }
+            if (ast->right) {
+                ERROR(ast, "Internal error parsing DITTO END");
+            }
+            DupDitto(ditto_start, oldtop, ditto_count);
+            ditto_start = ditto_count = NULL;
+        }
+    }
+}
+
 void
 AssignAddresses(PASMAddresses *addr, SymbolTable *symtab, AST *instrlist, int startFlags)
 {
@@ -683,7 +762,9 @@ AssignAddresses(PASMAddresses *addr, SymbolTable *symtab, AST *instrlist, int st
     expect_undefined_labels = 1;
     unsigned asm_nest;
     AsmState state[MAX_ASM_NEST] = { 0 };
-    
+
+    ExpandDittos(instrlist);
+
 again:
     labels_changed = 0;
     

@@ -5,7 +5,7 @@
  */
 
 %pure-parser
-%expect 42
+%expect 43
 
 %{
 #include <stdio.h>
@@ -291,15 +291,7 @@ SpinDeclareStruct(AST *ident, AST *defs)
 %token SP_PUB        "PUB"
 %token SP_PRI        "PRI"
 %token SP_OBJ        "OBJ"
-%token SP_INTERFACE  "%INTERFACE"
-%token SP_ASM        "ASM"
-%token SP_ASM_CONST  "ASM_CONST"
-%token SP_ENDASM     "ENDASM"
 %token SP_END        "END"
-%token SP_ASM_IF     "%IF"
-%token SP_ASM_ELSEIF "%ELSEIF"
-%token SP_ASM_ELSE   "%ELSE"
-%token SP_ASM_ENDIF  "%END"
 %token SP_INLINECCODE "CCODE"
 %token SP_BYTE       "BYTE"
 %token SP_WORD       "WORD"
@@ -374,7 +366,18 @@ SpinDeclareStruct(AST *ident, AST *defs)
 %token SP_STRINGPTR  "STRING"
 %token SP_FILE       "FILE"
 
+/* flexspin extensions */
 %token SP_ANNOTATION
+%token SP_ASM        "ASM"
+%token SP_ASM_CONST  "ASM_CONST"
+%token SP_ENDASM     "ENDASM"
+/* the lexer can generate ASM_IF family from regular IF */
+%token SP_ASM_IF     "%IF"
+%token SP_ASM_ELSEIF "%ELSEIF"
+%token SP_ASM_ELSE   "%ELSE"
+%token SP_ASM_ENDIF  "%END"
+%token SP_INTERFACE  "%INTERFACE"
+%token SP_NAMESP     "%NAMESP"
 %token SP_VARARGS    "%VARARGS"
 
 /* Spin2 additions */
@@ -408,6 +411,9 @@ SpinDeclareStruct(AST *ident, AST *defs)
 /* v47 additions */
 %token SP_NEWTASK    "NEWTASK"
 %token SP_THISTASK   "THISTASK"
+
+/* v50 additions */
+%token SP_DITTO      "DITTO"
 
 /* operators */
 %token SP_ASSIGN     ":="
@@ -494,6 +500,8 @@ SpinDeclareStruct(AST *ident, AST *defs)
 
 %token SP_DAT_LBRACK "[ in DAT"
 %token SP_DAT_RBRACK "] in DAT"
+
+%token SP_DOUBLE_DOLLAR "$$"
 
 /* operator precedence */
 %right SP_ASSIGN SP_SWAP_OP
@@ -1349,6 +1357,18 @@ basedatline:
   {
       SYNTAX_ERROR("ASMCLK instruction is not supported");
   }
+  | SP_DITTO SP_END
+  {
+      AST *ast = NewAST(AST_DITTO_END, NULL, NULL);
+      ast = NewAST(AST_COMMENTEDNODE, ast, $1);
+      $$ = ast;
+  }
+  | SP_DITTO expr
+  {
+      AST *ast = NewAST(AST_DITTO_START, $2, NULL);
+      ast = NewAST(AST_COMMENTEDNODE, ast, $1);
+      $$ = ast;
+  }
   ;
 
 objblock:
@@ -1956,6 +1976,8 @@ expr:
     }
   | SP_HERE
     { $$ = NewAST(AST_HERE, NULL, NULL); }
+  | SP_DOUBLE_DOLLAR
+    { $$ = NewAST(AST_DITTO_COUNT, NULL, NULL); }
   | lhs SP_INCREMENT
     { $$ = AstOperator(K_INCREMENT, $1, NULL); }
   | lhs SP_DECREMENT
