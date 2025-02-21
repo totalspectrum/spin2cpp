@@ -666,7 +666,10 @@ void ReplaceIRWithInline(IRList *irl, IR *origir, Function *func)
     IR *ir;
     IRCond cond = origir->cond;
     Operand *condlbl = NULL;
-    static char *prefix = "_inline_";
+
+    static unsigned inlineNum = 0;
+    char prefix[64];
+    snprintf(prefix,64-1,"_inline%d_",++inlineNum);
 
     DeleteIR(irl, origir);
     if (cond != COND_TRUE) {
