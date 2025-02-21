@@ -982,7 +982,7 @@ static bool FuncUsesArgEx(Operand *func, Operand *arg, bool actually)
         return !actually;
     } else if (func && func->val && peek_into_func) {
         Function *funcObj = (Function *)func->val;
-        if ((/*func->kind == IMM_COG_LABEL ||*/ func->kind == IMM_HUB_LABEL) && (actually || funcObj->is_leaf || FuncData(funcObj)->effectivelyLeaf) && !funcObj->has_throw) {
+        if ((/*func->kind == IMM_COG_LABEL ||*/ func->kind == IMM_HUB_LABEL) && (actually || funcObj->is_leaf || FuncData(funcObj)->effectivelyLeaf)) {
             if (arg->kind != REG_ARG) return true; // subreg or smth
             if (arg->val < funcObj->numparams) return true; // Arg used;
             if (!actually && arg->val < FuncData(funcObj)->maxInlineArg) return true; // Arg clobbered
@@ -5605,7 +5605,7 @@ ExpandInlines(IRList *irl)
         ir = ir_next;
     }
     // If inlining (or previous dead-code optimization...) removed all external calls, mark as leaf.
-    if (non_inline_calls==0 && !curfunc->is_leaf && !FuncData(curfunc)->effectivelyLeaf && !curfunc->has_throw) {
+    if (non_inline_calls==0 && !curfunc->is_leaf && !FuncData(curfunc)->effectivelyLeaf) {
         FuncData(curfunc)->effectivelyLeaf = true;
         change = true;
     }
