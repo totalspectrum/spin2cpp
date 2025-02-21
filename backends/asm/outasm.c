@@ -669,7 +669,11 @@ void ReplaceIRWithInline(IRList *irl, IR *origir, Function *func)
 
     static unsigned inlineNum = 0;
     char prefix[64];
-    snprintf(prefix,64-1,"_inline%d_",++inlineNum);
+    if (curfunc->optimize_flags & OPT_LOCAL_REUSE) {
+        snprintf(prefix,64-1,"_inline%d_",++inlineNum);
+    } else {
+        strcpy(prefix,"_inline_");
+    }
 
     DeleteIR(irl, origir);
     if (cond != COND_TRUE) {
