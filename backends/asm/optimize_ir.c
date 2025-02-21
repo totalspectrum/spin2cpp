@@ -5550,10 +5550,6 @@ AnalyzeInlineEligibility(Function *f)
     return FuncData(f)->inliningFlags & ~prev_flags;
 }
 
-static inline void updateMax(int *dst, int src) {
-    if (*dst < src) *dst = src;
-}
-
 static bool
 ShouldExpandPureFunction(IR *ir) {
     Function *f = (Function *)ir->aux;
