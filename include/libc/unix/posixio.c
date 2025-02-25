@@ -126,7 +126,7 @@ _openraw(void *fil_ptr, const char *orig_name, int flags, mode_t mode)
 #ifdef _DEBUG
     {
         unsigned *ptr = (unsigned *)v->open;
-        __builtin_printf("_openraw: calling %x : %x\n", ptr[0], ptr[1]);
+        __builtin_printf("_openraw: calling %x (%x : %x)\n", (unsigned)ptr, ptr[0], ptr[1]);
     }
 #endif        
     r = (*v->open)(fil, name, flags);
@@ -215,6 +215,9 @@ int _closeraw(void *f_ptr)
     if (!f->state) {
         return _seterror(EBADF);
     }
+#ifdef _DEBUG
+    __builtin_printf("$$$ _closeraw(%x)\n", (unsigned)f_ptr);
+#endif    
     if (f->flush) {
         (*f->flush)(f);
     }
@@ -272,6 +275,9 @@ int creat(const char *name, mode_t mode)
 int close(int fd)
 {
     vfs_file_t *f;
+#ifdef _DEBUG
+    __builtin_printf("close(%d)\n", fd);
+#endif    
     if ((unsigned)fd >= (unsigned)_MAX_FILES) {
         return _seterror(EBADF);
     }

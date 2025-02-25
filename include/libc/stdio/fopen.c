@@ -90,6 +90,9 @@ FILE *_fopenraw(const char *pathname, const char *mode, vfs_file_t *ftab) _COMPL
 
 int fclose(FILE *f) _COMPLEXIO
 {
+#ifdef _DEBUG
+    __builtin_printf("fclose(%x)\n", (unsigned)f);
+#endif    
     return _closeraw(f);
 }
 
