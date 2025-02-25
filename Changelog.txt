@@ -1,5 +1,6 @@
 Version 7.0.5
 - Fixed internal handle usage to avoid conflicts with BASIC hard-coded handles
+- Fixed potential inline register re-use bug (thanks to Ada)
 
 Version 7.0.4
 - Added `-Opeek-args` optimization flag (the optimization was always there, this provides a way to disable it)
