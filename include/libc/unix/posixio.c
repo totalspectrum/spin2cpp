@@ -243,10 +243,17 @@ int _find_free_file()
 }
 
 /* get a new vfs file handle */
+/* only used internally, and prefers bigger handles
+   so as not to conflict with BASIC hardcoded integers
+*/
+
 vfs_file_t *
 _get_vfs_file_handle()
 {
-    int fd = _find_free_file();
+    int fd;
+    for (fd = _MAX_FILES-1; fd >= 0; --fd) {
+        if (__filetab[fd].state == 0) break;
+    }
     if (fd < 0) return 0;
     return &__filetab[fd];
 }
