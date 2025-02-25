@@ -208,7 +208,8 @@ int _mount(char *user_name, struct vfs *v)
 #endif        
         return -1;
     }
-    if (user_name[0] != '/' || strlen(user_name) > MAX_MOUNT_CHARS) {
+    if ( !(user_name[0] == '/' && user_name[1] != 0)
+         || strlen(user_name) > MAX_MOUNT_CHARS) {
 #ifdef _DEBUG
         __builtin_printf("mount %s: EINVAL\n", user_name);
 #endif        
