@@ -5266,7 +5266,7 @@ static void CompileStatement(IRList *irl, IRList *cold_irl, AST *ast)
         EmitMove(irl, GetArgReg(1), op, ast);
         EmitMove(irl, GetArgReg(2), NewImmediate(ast->d.ival), ast);
         EmitOp1(irl, OPC_CALL, longjmpfunc);
-        updateMax(&FuncData(curfunc)->maxInlineArg,3);
+        updateMax(&FuncData(curfunc)->maxClobberArg,3);
         break;
     case AST_LABEL:
         EmitDebugComment(irl, ast);
