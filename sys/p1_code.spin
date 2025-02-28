@@ -175,6 +175,25 @@ pri _rxraw(timeout = 0) | val, waitcycles, i, bitcycles
   _waitcnt(waitcycles + bitcycles)
   return val
 
+' like _rxraw, but no timeout and returns -1 immediately if no data
+pri _rxpoll() | val, i, bitcycles, pin
+  bitcycles := _bitcycles
+  if (bitcycles == 0)
+    bitcycles := _setbaud(__default_baud__)
+  pin := _rxpin
+  dira[pin] := 0
+
+  if ina[pin] <> 0
+     return -1
+    
+  waitcycles := cnt + (bitcycles>>1)
+  val := 0
+  repeat 8
+    _waitcnt(waitcycles += bitcycles)
+    val := (ina[pin] << 7) | (val>>1)
+  _waitcnt(waitcycles + bitcycles)
+  return val
+
 pri _setbaud(rate) : r
   _bitcycles := r := __clkfreq_var / rate
   

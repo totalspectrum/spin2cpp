@@ -561,7 +561,7 @@ All languages have a `_setbaud(N)` function to set the baud rate to `N`.
 ### Sending and receiving characters
 
 All languages support some functions for doing basic serial I/O.
-`_tx(ch)` sends a character to the serial port, with appropriate carriage return mapping (see below for how this is changed). `_txraw(ch)` sends the character with no interpretation. `_rx()` reads a character from the serial port, waiting until one is available. `_rxraw(tim)` attempts to read a character, waiting for up to `tim` milliseconds (actually 1/1024ths of a second) for one to be available; if no character is received before the timeout, returns -1.
+`_tx(ch)` sends a character to the serial port, with appropriate carriage return mapping (see below for how this is changed). `_txraw(ch)` sends the character with no interpretation. `_rx()` reads a character from the serial port, waiting until one is available. `_rxraw(tim)` attempts to read a character, waiting for up to `tim` milliseconds (actually 1/1024ths of a second) for one to be available; if no character is received before the timeout, returns -1. `_rxpoll()` is like `_rxraw()` but returns -1 immediately if no character is available.
 
 ### Changing echo and CR/LF interpretation
 
@@ -925,7 +925,14 @@ sends character `c` out the default serial port. Always returns 1.
 ```
 int _rxraw(int n=0)
 ```
-Receives a character on the default serial port. `n` is a timeout in milliseconds. If the timeout elapses with no character received, `_rxraw` returns -1, otherwise it returns the received character. The default timeout (0) signifies "forever"; that is, if `n` is 0 the `_rxraw` function will wait as long as necessary until a character is received.
+Receives a character on the default serial port. `n` is a timeout in milliseconds. If the timeout elapses with no character received, `_rxraw` returns -1, otherwise it returns the received character. The default timeout (0) signifies "forever"; that is, if `n` is 0 the `_rxraw` function will wait as long as necessary until a character is received. If you would rather check for a character and have the function return immediately if none is available, use `_rxpoll()` instead of `_rxraw()`.
+
+#### _rxpoll
+
+```
+int _rxpoll()
+```
+Checks for a character on the default serial port. If no character is available, returns -1 immediately. Otherwise it returns the next character.
 
 #### _setbaud
 

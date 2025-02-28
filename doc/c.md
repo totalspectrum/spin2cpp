@@ -1066,7 +1066,11 @@ These ioctls get and set flags controlling the operation of terminals (e.g. the 
 
 ### _rxraw
 
-Reads a single character from the default serial port, with no processing (no echoing and no CR/LF conversion). Takes a single parameter giving a timeout in milliseconds (with 0 meaning "no timeout, wait forever"). If a timeout occurs before the character is read, returns -1, otherwise returns the ASCII character read.
+Reads a single character from the default serial port, with no processing (no echoing and no CR/LF conversion). Takes a single parameter giving a timeout in milliseconds (with 0 meaning "no timeout, wait forever"). If a timeout occurs before the character is read, returns -1, otherwise returns the ASCII character read. See also `_rxpoll()`.
+
+### _rxpoll
+
+Attempts to read a single character from the default serial port. If no character is available, returns -1 immediately, otherwise returns the character. If you would prefer to wait for a character, use `_rxraw` instead.
 
 ### _txraw
 

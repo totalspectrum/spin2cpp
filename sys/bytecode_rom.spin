@@ -308,6 +308,11 @@ pri _rxraw(timeout = 0)
   _remotecall(3, timeout)
   return __helper_arg[0]
 
+pri _rxpoll() | timeout
+  timeout := 1  ' wait minimal number of cycles
+  _remotecall(3, timeout)
+  return __helper_arg[0]
+
 ''
 '' divide (n, nlo) by d, producing qlo and rlo (used in FRAC operation)
 ''

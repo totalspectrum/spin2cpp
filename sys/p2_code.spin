@@ -217,6 +217,34 @@ pri _rxraw(timeout = 0) : rxbyte = long | z, endtime, temp2, rxpin
     rxbyte := temp2 & $ff
   _rx_temp := temp2
   
+' like _rxraw, but no timeout and returns -1 at once if no pending
+' character
+pri _rxpoll() : rxbyte = long | z, temp2, rxpin
+  if _bitcycles == 0
+    _setbaud(__default_baud__)
+  rxbyte := -1
+  rxpin := _rxpin
+  z := 0
+  temp2 := _rx_temp
+  '' slightly tricky code for pulling out the bytes from the 28 bits
+  '' of data presented by the smartpin
+  '' Courtesy of evanh
+  asm
+          testb  temp2, #8 wc     ' check framing of prior character for valid character   
+          testbn temp2, #9 andc   ' more framing check (1 then 0)
+          shr    temp2, #10       ' shift down next character, if any
+  if_c    mov    z, #1
+  if_c    jmp    #.breakone
+          testp  rxpin wz
+  if_z    mov    z, #1
+  if_z    rdpin  temp2, rxpin
+  if_z    shr    temp2, #32 - 28
+.breakone
+  endasm
+  if z
+    rxbyte := temp2 & $ff
+  _rx_temp := temp2
+  
 pri _dirl(pin = long)
   asm
     dirl pin

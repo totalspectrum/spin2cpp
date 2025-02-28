@@ -150,6 +150,14 @@ pri _rxraw(timeout = 0) : rxbyte = long | z, endtime, temp2, rxpin
       if endtime - _getcnt() < 0
         quit
 
+' returns -1 immediately if no pending character
+pri _rxpoll() : rxbyte = long | z, rxpin
+  rxbyte := -1
+  rxpin := _rxpin
+  z := _pinr(rxpin)
+  if z
+    rxbyte := _rdpin(rxpin)>>24
+
 ''
 '' memset/memmove are here (in processor specific code)
 '' because on P2 we can optimize them (long operations do

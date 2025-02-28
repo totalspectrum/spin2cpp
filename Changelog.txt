@@ -1,4 +1,5 @@
 Version 7.1.0
+- Added _rxpoll() to check for character without a timeout
 - Updated -gbrk debug code (thanks Ada)
 
 Version 7.0.5
