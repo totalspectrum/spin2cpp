@@ -151,7 +151,7 @@ _openraw(void *fil_ptr, const char *orig_name, int flags, mode_t mode)
             state |= (_VFS_STATE_APPEND|_VFS_STATE_NEEDSEEK);
         }
 #ifdef _DEBUG
-        __builtin_printf("openraw rdwr=%d state=%d\n", rdwr, state);
+        __builtin_printf("openraw rdwr=%d state=0x%x\n", rdwr, state);
 #endif    
         fil->state = state;
 
@@ -346,7 +346,7 @@ ssize_t _vfsread(vfs_file_t *f, void *vbuf, size_t count)
     
     if (! (f->state & _VFS_STATE_RDOK) ) {
 #ifdef _DEBUG
-        __builtin_printf("not OK to read\n");
+        __builtin_printf("file %x not OK to read: state=0x%x\n", (unsigned)f, f->state);
 #endif        
         return _seterror(EACCES);
     }
