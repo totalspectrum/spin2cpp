@@ -11,15 +11,7 @@
 
 static struct __using("filesys/fs9p/fs9p_internal.cc") FS;
 
-// receive 1 byte
-static unsigned int zdoGet1()
-{
-    int c;
-    do {
-        c = _rxraw();
-    } while (c < 0);
-    return c;
-}
+#define zdoGet1() _rxraw(0)
 
 // receive an unsigned long
 static unsigned int zdoGet4()
@@ -48,6 +40,10 @@ static int plain_sendrecv(uint8_t *startbuf, uint8_t *endbuf, int maxlen)
     int left;
     unsigned flags;
 
+    if (len <= 4) {
+        return -1; // not a valid message
+    }
+
     __lockio(0);
     
     flags = _getrxtxflags();
@@ -61,9 +57,6 @@ static int plain_sendrecv(uint8_t *startbuf, uint8_t *endbuf, int maxlen)
     startbuf[3] = (len>>24) & 0xff;
 #endif
 
-    if (len <= 4) {
-        return -1; // not a valid message
-    }
     // loadp2's server looks for magic start sequence of $FF, $01
     _txraw(0xff);
     _txraw(0x01);
