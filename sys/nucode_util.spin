@@ -152,6 +152,8 @@ pri _rxraw(timeout = 0) : rxbyte = long | z, endtime, temp2, rxpin
 
 ' returns -1 immediately if no pending character
 pri _rxpoll() : rxbyte = long | z, rxpin
+  if _bitcycles == 0
+    _setbaud(__default_baud__)
   rxbyte := -1
   rxpin := _rxpin
   z := _pinr(rxpin)
