@@ -806,7 +806,7 @@ static off_t v_lseek(vfs_file_t *fil, off_t offset, int whence)
     fs9_file *f = fil->vfsdata;
     long long tmp;
     if (!f) {
-        return _seterror(EBADF);
+        return (long long)_seterror(EBADF);
     }
 #ifdef _DEBUG_9P
     __builtin_printf("v_lseek(%d, %d) start=%d ", (long)offset, whence, f->offlo);
@@ -824,7 +824,7 @@ static off_t v_lseek(vfs_file_t *fil, off_t offset, int whence)
         struct stat stbuf;
 	int r = fs_fstat(f, &stbuf);
 	if (r < 0) {
-	    return _seterror(EINVAL);
+	    return (long long)_seterror(EINVAL);
 	}
         tmp = stbuf.st_size - offset;
 	f->offlo = tmp;
