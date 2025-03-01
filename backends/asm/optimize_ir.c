@@ -1834,7 +1834,7 @@ ApplyConditionAfter(IRList *irl, IR *instr, int cval, int zval, int *changeout)
         default:
             if (InstrUsesFlags(ir,setc|setz)) {
                 invalid_instr = 1;
-                WARNING(NULL,"Internal warning. Couldn't ApplyConditionAfter");
+                //WARNING(NULL,"Internal warning. Couldn't ApplyConditionAfter");
             }
             break;
         }
