@@ -137,16 +137,10 @@ pri _cogchk(id = long) : r
 '' serial send/receive code
 '' this code uses smarpins, so doesn't require a COG. The down side is that
 '' the smartpin has only a single character buffer.
-'' Following a suggestion from forum user evanh, we improve this for receive
-'' by putting the smartpin into 28 bit mode rather than 8 bit, and then manually
-'' checking for start/stop bits in the bottom 20 bits. This effectively
-'' creates a 6 character buffer: 3 characters in the Z register, and 3 characters
-'' internally to the smartpin
 ''
 dat
     orgh
 _bitcycles long 0
-_rx_temp   long 0
 
 con
  _rxpin = 63
@@ -171,7 +165,7 @@ pri _setbaud(baudrate) | bitperiod, bit_mode
   _wrpin(_txpin, _txmode)
   _wxpin(_txpin, bit_mode)
   _wrpin(_rxpin, _rxmode)
-  _wxpin(_rxpin, bit_mode + 20)  ' async using 28 bits instead of 8
+  _wxpin(_rxpin, bit_mode)
   _dirh(_txpin)
   _dirh(_rxpin)
 
@@ -191,60 +185,29 @@ pri _rxraw(timeout = 0) : rxbyte = long | z, endtime, temp2, rxpin
   if timeout
     endtime := _getcnt() + timeout * (__clkfreq_var >> 10)
   else
-    endtime := 0 ' just gets rid of a compiler warning
+    endtime := 0  ' just to make compiler happy
   rxbyte := -1
   rxpin := _rxpin
   z := 0
-  temp2 := _rx_temp
-  '' slightly tricky code for pulling out the bytes from the 28 bits
-  '' of data presented by the smartpin
-  '' Courtesy of evanh
   repeat
-    asm
-          testb  temp2, #8 wc     ' check framing of prior character for valid character   
-          testbn temp2, #9 andc   ' more framing check (1 then 0)
-          shr    temp2, #10       ' shift down next character, if any
-  if_c    mov    z, #1
-  if_c    jmp    #.breakone
-          testp  rxpin wz
-  if_z    mov    z, #1
-  if_z    rdpin  temp2, rxpin
-  if_z    shr    temp2, #32 - 28
-.breakone
-    endasm
-  until z or (timeout and (endtime - _getcnt() < 0))
-  if z
-    rxbyte := temp2 & $ff
-  _rx_temp := temp2
-  
-' like _rxraw, but no timeout and returns -1 at once if no pending
-' character
-pri _rxpoll() : rxbyte = long | z, temp2, rxpin
+    z := _pinr(rxpin)
+    if z
+      rxbyte := _rdpin(rxpin)>>24
+      quit
+    if timeout
+      if endtime - _getcnt() < 0
+        quit
+
+' returns -1 immediately if no pending character
+pri _rxpoll() : rxbyte = long | z, rxpin
   if _bitcycles == 0
     _setbaud(__default_baud__)
   rxbyte := -1
   rxpin := _rxpin
-  z := 0
-  temp2 := _rx_temp
-  '' slightly tricky code for pulling out the bytes from the 28 bits
-  '' of data presented by the smartpin
-  '' Courtesy of evanh
-  asm
-          testb  temp2, #8 wc     ' check framing of prior character for valid character   
-          testbn temp2, #9 andc   ' more framing check (1 then 0)
-          shr    temp2, #10       ' shift down next character, if any
-  if_c    mov    z, #1
-  if_c    jmp    #.breakone
-          testp  rxpin wz
-  if_z    mov    z, #1
-  if_z    rdpin  temp2, rxpin
-  if_z    shr    temp2, #32 - 28
-.breakone
-  endasm
+  z := _pinr(rxpin)
   if z
-    rxbyte := temp2 & $ff
-  _rx_temp := temp2
-  
+    rxbyte := _rdpin(rxpin)>>24
+
 pri _dirl(pin = long)
   asm
     dirl pin
