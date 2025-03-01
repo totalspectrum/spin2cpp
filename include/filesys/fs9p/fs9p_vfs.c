@@ -32,7 +32,7 @@ static unsigned int zdoGet4()
 // startbuf is that start of the buffer (used for both send and
 // receive); endbuf is the end of data to send; maxlen is maximum
 // size
-static int plain_sendrecv(uint8_t *startbuf, uint8_t *endbuf, int maxlen)
+static int plain_sendrecv(uint8_t *startbuf, uint8_t *endbuf, int maxlen) __attribute__(opt(no-fast-inline-asm))
 {
     int len = endbuf - startbuf;
     uint8_t *buf = startbuf;
@@ -64,21 +64,52 @@ static int plain_sendrecv(uint8_t *startbuf, uint8_t *endbuf, int maxlen)
         _txraw(*buf++);
         --len;
     }
-    len = zdoGet4();
 #ifdef __P2__
-    *(int*)startbuf = len;
-#else  
+    int c;
+    __asm volatile {
+        mov  buf, startbuf
+        call #.zdoGet1
+        mov  len, c
+        call #.zdoGet1
+        shl  c, #8
+        or   len, c
+        call #.zdoGet1
+        shl  c, #16
+        or   len, c
+        call #.zdoGet1
+        shl  c, #24
+        or   len, c
+        wrlong len, buf
+        add  buf, #4
+        mov  left, len
+        sub  left, #4 wcz
+ if_be  jmp  #.endit
+.rdloop
+        call #.zdoGet1
+        wrbyte c, buf
+        add  buf, #1
+        djnz left, #.rdloop
+        jmp  #.endit
+.zdoGet1
+        testp #63 wc
+ if_nc  jmp   #.zdoGet1
+        rdpin c, #63
+  _ret_ shr   c, #24
+.endit
+    }
+#else    
+    len = zdoGet4();
     startbuf[0] = len & 0xff;
     startbuf[1] = (len>>8) & 0xff;
     startbuf[2] = (len>>16) & 0xff;
     startbuf[3] = (len>>24) & 0xff;
-#endif
     buf = startbuf+4;
     left = len - 4;
     while (left > 0 && i < maxlen) {
         buf[i++] = zdoGet1();
         --left;
     }
+#endif    
     _setrxtxflags(flags);
 
     __unlockio(0);
