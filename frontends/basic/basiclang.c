@@ -1015,7 +1015,9 @@ doBasicTransform(AST **astptr, bool transformFuncall)
             AST *seq = NULL;
             AST *lineptr = NULL;
             AST *read_lineptr;
+            ASTReportInfo saveinfo;
 
+            AstReportAs(ast, &saveinfo);
             if (handle) {
                 lineptr = AstTempLocalVariable("_tmp_", ast_type_string);
                 read_lineptr = AstAssign(lineptr,
@@ -1045,6 +1047,7 @@ doBasicTransform(AST **astptr, bool transformFuncall)
                 }
             }
             *astptr = ast = seq;
+            AstReportDone(&saveinfo);
         }
         break;
     case AST_PRINT:
