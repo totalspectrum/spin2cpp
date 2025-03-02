@@ -905,6 +905,19 @@ static void doASTDump(AST *ast, int indent)
         return;
     }
     switch (ast->kind) {
+    case AST_LISTHOLDER:
+        printf("%*c<listholder>\n", indent, ' ');
+        while (ast && ast->kind == AST_LISTHOLDER) {
+            doASTDump(ast->left, indent+2);
+            ast = ast->right;
+        }
+        if (ast) {
+            printf("%*c<MALFORMED>\n", indent, ' ');
+            doASTDump(ast, indent+2);
+            printf("%*c</MALFORMED>\n", indent, ' ');
+        }
+        printf("%*c</listholder>\n", indent, ' ');
+        return;
     case AST_STMTLIST:
         printf("%*c<stmtlist>\n", indent, ' ');
         while (ast && ast->kind == AST_STMTLIST) {
