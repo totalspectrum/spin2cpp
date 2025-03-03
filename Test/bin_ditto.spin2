@@ -1,0 +1,14 @@
+{Spin2_v50}
+CON pin_base = 40
+
+DAT
+	orgh $400
+x0
+	long 0
+	ditto 3
+	long $$ + @@@arr
+	ditto end
+
+arr	ditto 2
+	long $$ + $AB0000
+	ditto end
