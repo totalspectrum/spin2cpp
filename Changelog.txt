@@ -1,5 +1,8 @@
 Version 7.1.0
 - Added _rxpoll() to check for character without a timeout
+- Reverted _rx* functions to no longer use 28 bit internal buffer; this is less resilient to P2 side timing changes, but better if PC timing is uncertain
+- Added DITTO to duplicate code/data in Spin2 assembly
+- Many internal changes to support DITTO and future assembly work
 - Updated -gbrk debug code (thanks Ada)
 
 Version 7.0.5
