@@ -982,10 +982,10 @@ static bool FuncUsesArgEx(Operand *func, Operand *arg, bool actually)
         return !actually;
     } else if (func && func->val && peek_into_func) {
         Function *funcObj = (Function *)func->val;
-        if ((/*func->kind == IMM_COG_LABEL ||*/ func->kind == IMM_HUB_LABEL) && (actually || funcObj->is_leaf || FuncData(funcObj)->effectivelyLeaf) && !funcObj->has_throw) {
+        if ((/*func->kind == IMM_COG_LABEL ||*/ func->kind == IMM_HUB_LABEL) && (actually || funcObj->is_leaf || FuncData(funcObj)->effectivelyLeaf)) {
             if (arg->kind != REG_ARG) return true; // subreg or smth
             if (arg->val < funcObj->numparams) return true; // Arg used;
-            if (!actually && arg->val < FuncData(funcObj)->maxInlineArg) return true; // Arg clobbered
+            if (!actually && arg->val < FuncData(funcObj)->maxClobberArg) return true; // Arg clobbered
             if ( ((Function *)func->val)->numparams < 0 ) return true; // varargs
             return false; // Arg not used
         }
@@ -5550,10 +5550,6 @@ AnalyzeInlineEligibility(Function *f)
     return FuncData(f)->inliningFlags & ~prev_flags;
 }
 
-static inline void updateMax(int *dst, int src) {
-    if (*dst < src) *dst = src;
-}
-
 static bool
 ShouldExpandPureFunction(IR *ir) {
     Function *f = (Function *)ir->aux;
@@ -5571,6 +5567,18 @@ ShouldExpandPureFunction(IR *ir) {
     return true;
 }
 
+static int getArgClobberVal(Operand *op) {
+    int offset = 0;
+    if (!op) return 0;
+    if (op->kind == REG_SUBREG) {
+        offset = op->val;
+        op = (Operand *)op->name;
+    }
+    if (op->kind != REG_ARG) return 0;
+
+    return op->val + offset + 1;
+}
+
 //
 // expand function calls inline if appropriate
 // returns 1 if anything was expanded
@@ -5585,14 +5593,16 @@ ExpandInlines(IRList *irl)
     ir = irl->head;
     while (ir) {
         ir_next = ir->next;
+        updateMax(&FuncData(curfunc)->maxClobberArg, getArgClobberVal(ir->dst));
+        updateMax(&FuncData(curfunc)->maxClobberArg, getArgClobberVal(ir->src));
         if (ir->opc == OPC_CALL) {
             f = (Function *)ir->aux;
             if (f && ((FuncData(f)->inliningFlags & (ASM_INLINE_SMALL_FLAG|ASM_INLINE_SINGLE_FLAG)) || ShouldExpandPureFunction(ir))) {
                 ReplaceIRWithInline(irl, ir, f);
                 FuncData(f)->actual_callsites--;
                 FuncData(f)->got_inlined = true;
-                updateMax(&FuncData(curfunc)->maxInlineArg,f->numparams);
-                updateMax(&FuncData(curfunc)->maxInlineArg,FuncData(f)->maxInlineArg);
+                updateMax(&FuncData(curfunc)->maxClobberArg,f->numparams);
+                updateMax(&FuncData(curfunc)->maxClobberArg,FuncData(f)->maxClobberArg);
                 if (!f->is_leaf && !FuncData(f)->effectivelyLeaf) non_inline_calls++; // Non-leaf inline may contain call
                 change = 1;
             } else {
@@ -5605,7 +5615,7 @@ ExpandInlines(IRList *irl)
         ir = ir_next;
     }
     // If inlining (or previous dead-code optimization...) removed all external calls, mark as leaf.
-    if (non_inline_calls==0 && !curfunc->is_leaf && !FuncData(curfunc)->effectivelyLeaf && !curfunc->has_throw) {
+    if (non_inline_calls==0 && !curfunc->is_leaf && !FuncData(curfunc)->effectivelyLeaf) {
         FuncData(curfunc)->effectivelyLeaf = true;
         change = true;
     }
