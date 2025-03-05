@@ -232,6 +232,7 @@ int v_stat(const char *name, struct stat *buf)
     memset(buf, 0, sizeof(*buf));
     if (name[0] == 0 || (name[0] == '.' && name[1] == 0)) {
         /* root directory */
+        memset(&finfo, 0, sizeof(finfo));
         finfo.fattrib = AM_DIR;
         r = 0;
     } else {
