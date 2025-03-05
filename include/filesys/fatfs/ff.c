@@ -4754,6 +4754,7 @@ FRESULT f_stat (
 		FREE_NAMBUF();
 	}
 
+        if (fno) fno->fclust = (DWORD)dj.obj.fs->csize * SS(dj.obj.fs);
 	LEAVE_FF(dj.obj.fs, res);
 }
 

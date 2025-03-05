@@ -4,6 +4,7 @@ Version 7.1.0
 - Added DITTO to duplicate code/data in Spin2 assembly
 - Many internal changes to support DITTO and future assembly work
 - Updated -gbrk debug code (thanks Ada)
+- Use cluster size for stat() st_blksize on FAT32
 
 Version 7.0.5
 - Fixed internal handle usage to avoid conflicts with BASIC hard-coded handles

@@ -224,6 +224,7 @@ int v_stat(const char *name, struct stat *buf)
     int r;
     FILINFO finfo;
     unsigned mode;
+    unsigned clustersize = 4096;
 #ifdef _DEBUG_FATFS
     __builtin_printf("v_stat(%s)\n", name);
 #endif
@@ -234,6 +235,7 @@ int v_stat(const char *name, struct stat *buf)
         r = 0;
     } else {
         r = f_stat(name, &finfo);
+        clustersize = finfo.fclust;
     }
     if (r != 0) {
         return _set_dos_error(r);
@@ -248,8 +250,8 @@ int v_stat(const char *name, struct stat *buf)
     buf->st_mode = mode;
     buf->st_nlink = 1;
     buf->st_size = finfo.fsize;
-    buf->st_blksize = 512;
-    buf->st_blocks = (finfo.fsize + 511) / 512;
+    buf->st_blksize = clustersize;
+    buf->st_blocks = (finfo.fsize + clustersize - 1) / clustersize;
     buf->st_atime = buf->st_mtime = buf->st_ctime = unixtime(finfo.fdate, finfo.ftime);
 #ifdef _DEBUG_FATFS
     __builtin_printf("v_stat returning %d mode=0x%x\n", r, buf->st_mode);

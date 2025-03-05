@@ -249,6 +249,7 @@ typedef struct {
 	WORD	fdate;			/* Modified date */
 	WORD	ftime;			/* Modified time */
 	BYTE	fattrib;		/* File attribute */
+	DWORD	fclust;			/* File cluster size in bytes */
 #if FF_USE_LFN
 	TCHAR	altname[FF_SFN_BUF + 1];/* Altenative file name */
 	TCHAR	fname[FF_LFN_BUF + 1];	/* Primary file name */
