@@ -22,13 +22,6 @@ int stat(const char *orig_name, struct stat *buf)
         return _seterror(ENOSYS);
     }
     memset(buf, 0, sizeof(*buf));
-    if (name[0] == 0) {
-#ifdef _DEBUG
-        __builtin_printf("stat on root directory\n");
-#endif        
-        buf->st_mode = S_IFDIR | 0777;
-        return 0;
-    }
 #ifdef _DEBUG
     {
         unsigned *ptr = (unsigned *)v->stat;
