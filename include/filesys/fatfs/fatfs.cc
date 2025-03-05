@@ -223,8 +223,9 @@ int v_stat(const char *name, struct stat *buf)
 {
     int r;
     FILINFO finfo;
+    VOLINFO vinfo;
     unsigned mode;
-    unsigned clustersize = 4096;
+    unsigned clustersize = 32768; /* default */
 #ifdef _DEBUG_FATFS
     __builtin_printf("v_stat(%s)\n", name);
 #endif
@@ -235,10 +236,15 @@ int v_stat(const char *name, struct stat *buf)
         r = 0;
     } else {
         r = f_stat(name, &finfo);
-        clustersize = finfo.fclust;
     }
     if (r != 0) {
         return _set_dos_error(r);
+    }
+    if (f_getvolinfo(name, &vinfo) == FR_OK) {
+#ifdef _DEBUG_FATFS
+        __builtin_printf("f_getvolinfo: ssize=%u csize=%u\n", vinfo.ssize, vinfo.csize);
+#endif        
+        clustersize = vinfo.csize * vinfo.ssize;
     }
     mode = S_IRUSR | S_IRGRP | S_IROTH;
     if (!(finfo.fattrib & AM_RDO)) {

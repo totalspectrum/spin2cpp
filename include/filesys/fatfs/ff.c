@@ -4722,6 +4722,26 @@ FRESULT f_findfirst (
 
 #endif	/* FF_USE_FIND */
 
+#if FF_FS_MINIMIZE == 0
+FRESULT f_getvolinfo (
+    const TCHAR* path,
+    VOLINFO *info
+    )
+{
+	FRESULT res;
+	DIR dj;
+	DEF_NAMBUF
+
+	/* Get logical drive */
+	res = mount_volume(&path, &dj.obj.fs, 0);
+        if (res == FR_OK) {
+            info->csize = dj.obj.fs->csize;
+            info->ssize = SS(dj.obj.fs);
+        }
+        LEAVE_FF(dj.obj.fs, res);
+            
+}
+#endif
 
 
 #if FF_FS_MINIMIZE == 0
@@ -4754,7 +4774,6 @@ FRESULT f_stat (
 		FREE_NAMBUF();
 	}
 
-        if (fno) fno->fclust = (DWORD)dj.obj.fs->csize * SS(dj.obj.fs);
 	LEAVE_FF(dj.obj.fs, res);
 }
 
@@ -5378,8 +5397,6 @@ FRESULT f_getlabel (
 
 	LEAVE_FF(fs, res);
 }
-
-
 
 #if !FF_FS_READONLY
 /*-----------------------------------------------------------------------*/
