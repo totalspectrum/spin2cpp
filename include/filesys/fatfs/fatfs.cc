@@ -225,7 +225,7 @@ int v_stat(const char *name, struct stat *buf)
     FILINFO finfo;
     VOLINFO vinfo;
     unsigned mode;
-    unsigned clustersize = 32768; /* default */
+    unsigned clustersize = 512; /* default; this is bogus but should be overridden */
 #ifdef _DEBUG_FATFS
     __builtin_printf("v_stat(%s)\n", name);
 #endif
