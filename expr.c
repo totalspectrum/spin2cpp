@@ -334,6 +334,22 @@ LookupMemberSymbol(AST *expr, AST *objtype, const char *name, Module **Ptr, int 
 }
 
 /*
+ * get a namespace symbol table, or NULL if the
+ * name is not a namespace
+ */
+SymbolTable *
+LookupNamespace(AST *expr)
+{
+    Symbol *sym;
+    if (!IsIdentifier(expr))
+        return NULL;
+    sym = LookupSymbol(GetUserIdentifierName(expr));
+    if (!sym || sym->kind != SYM_NAMESPACE)
+        return NULL;
+    return (SymbolTable *)sym->v.ptr;
+}
+
+/*
  * look up a symbol from a method reference
  * "expr" is the pointer to the method ref
  * if "Ptr" is nonzero it is used to return the
@@ -347,6 +363,12 @@ LookupMethodRef(AST *expr, Module **Ptr, int *valid)
     const char *name;
 
     name = GetUserIdentifierName(ident);
+    if (!type) {
+        SymbolTable *nametable = LookupNamespace(expr->left);
+        if (nametable) {
+            return LookupSymbolInTable(nametable, name);
+        }
+    }
     return LookupMemberSymbol(expr, type, name, Ptr, valid);
 
 }
@@ -1803,22 +1825,35 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
     case AST_CONSTREF:
     case AST_METHODREF:
     {
-        Module *P;
+        Module *P = current;
 
         sym = LookupMethodRef(expr, &P, valid);
         if (!sym) {
             return intExpr(0);
         }
-#if 0
-        if ((sym->kind != SYM_CONSTANT && sym->kind != SYM_FLOAT_CONSTANT)) {
-            if (valid) {
-                *valid = 0;
-            } else {
-                ERROR(expr, "%s is not a constant of %s", GetIdentifierName(expr->right), P->classname);
+        switch (sym->kind) {
+        case SYM_LABEL:
+            /* got a label in a namespace */
+            if (flags & PASM_FLAG) {
+                Label *lref = (Label *)sym->v.ptr;
+                if (lref->flags & LABEL_IN_HUB) {
+                    return intExpr(lref->hubval);
+                }
+                if (lref->cogval & 0x03) {
+                    if (reportError) {
+                        ERROR(expr, "label %s in COG memory not on longword boundary", sym->user_name);
+                    } else {
+                        *valid = 0;
+                    }
+                    return intExpr(0);
+                }
+                return intExpr(lref->cogval >> 2);
             }
-            return intExpr(0);
+            break;
+        default:
+            break;
         }
-#endif
+
         /* while we're evaluating, use the object context */
         ret = EvalExprInState(P, expr->right, flags, valid, depth+1);
         return ret;
