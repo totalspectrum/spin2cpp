@@ -126,6 +126,77 @@ SpinDeclareObjectSymbols(AST *objlist)
     }
 }
 
+// expand C escapes (like \n) in a string
+// return an exprlist of strings and characters
+AST *ExpandCEscapes(AST *str) {
+    AST *elist = NULL;
+    const char *inpstr;
+    int c;
+    
+    if (str->kind != AST_STRING) {
+        ERROR(str, "Internal error, expected AST_STRING");
+        return NULL;
+    }
+    inpstr = str->d.string;
+    c = *inpstr++;
+    while (c) {
+        int digit = -1;
+        int d2 = 0;
+        AST *elem = NULL;
+        if (c == '\\') {
+            c = *inpstr++;
+            switch (c) {
+            case 'a': digit =  7; break;
+            case 'b': digit =  8; break;
+            case 't': digit =  9; break;
+            case 'n': digit = 10; break;
+            case 'f': digit = 12; break;
+            case 'r': digit = 13; break;
+            case '\\': digit = 92; break;
+            case 'x':
+                if (!isxdigit(inpstr[0]) || !isxdigit(inpstr[1])) {
+                    ERROR(str, "illegal escape (should have 2 hex digits after \\x)");
+                } else {
+                    digit = toupper(inpstr[0]);
+                    if (digit >= 'A' && digit <= 'F')
+                        digit = (digit - 'A') + 10;
+                    else
+                        digit = (digit - '0');
+                    d2 = toupper(inpstr[0]);
+                    if (d2 >= 'A' && d2 <= 'F')
+                        d2 = (d2 - 'A') + 10;
+                    else
+                        d2 = (d2 - '0');
+                    digit = (digit << 4) + d2;
+                    inpstr += 2;
+                }
+                break;
+            default:
+                break;
+            }
+            if (digit != -1) {
+                elem = NewAST(AST_EXPRLIST, AstInteger(digit), NULL);
+            } else {
+                elem = NewAST(AST_EXPRLIST, AstInteger('\\'),
+                              NewAST(AST_EXPRLIST, AstInteger(c), NULL));
+            }
+        } else if (c) {
+            char *dummy = strdup(inpstr-1);
+            char *ptr = dummy;
+            while (*ptr && *ptr != '\\')
+                ptr++;
+            *ptr = 0;
+            inpstr += (ptr-dummy)-1;
+            elem = NewAST(AST_STRING, NULL, NULL);
+            elem->d.string = dummy;
+            elem = NewAST(AST_EXPRLIST, elem, NULL);
+        }
+        elist = AddToList(elist, elem);
+        c = *inpstr++;
+    }
+    return elist;
+}
+
 // in common.c
 extern AST *GenericFunctionPtr(int numresults);
 
@@ -1658,13 +1729,21 @@ expr:
   | '@' expr
     {
         AST *e = $2;
-        if (e && e->kind == AST_STRING) {
-            LANGUAGE_WARNING(LANG_SPIN_SPIN1, NULL, "@\"string\" is a flexspin extension to Spin1");
-            $$ = NewAST(AST_STRINGPTR,
-                        NewAST(AST_EXPRLIST, e, NULL),
-                        NULL);
+        if (e) {
+            if (e->kind == AST_CATCH && e->left && e->left->kind == AST_STRING) {
+                LANGUAGE_WARNING(LANG_SPIN_SPIN1, NULL, "@\\\"string\" is a flexspin extension to Spin1");
+                AST *str = ExpandCEscapes(e->left);
+                $$ = NewAST(AST_STRINGPTR, str, NULL);
+            } else if (e->kind == AST_STRING) {
+                LANGUAGE_WARNING(LANG_SPIN_SPIN1, NULL, "@\"string\" is a flexspin extension to Spin1");
+                $$ = NewAST(AST_STRINGPTR,
+                            NewAST(AST_EXPRLIST, e, NULL),
+                            NULL);
+            } else {
+                $$ = NewAST(AST_ADDROF, e, NULL);
+            }
         } else {
-            $$ = NewAST(AST_ADDROF, e, NULL);
+            SYNTAX_ERROR("@ must be followed by an expression");
         }
     }
   | SP_DOUBLEAT expr
