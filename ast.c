@@ -891,6 +891,8 @@ static const char *astnames[] = {
     "ditto_start",
     "ditto_end",
     "ditto_count",
+
+    "namespace",
 };
 
 //

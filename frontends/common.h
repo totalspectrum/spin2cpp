@@ -576,8 +576,11 @@ struct modulestate {
     /* lexer state during input */
     LexStream *Lptr;
 
-    /* the symbol table */
+    /* the main symbol table */
     SymbolTable objsyms;
+
+    /* the currently open namespace in a DAT section (or NULL if none) */
+    SymbolTable *name_space;
 
     /* size of variables & objects used */
     int varsize;

@@ -732,7 +732,7 @@ outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs, int checkSize)
     int32_t relocOff = 0;
     int origsize = size;
     int checkThis = 0;
-    
+
     origval = 0;
     while (ast) {
         sub = ast->left;
@@ -2066,6 +2066,7 @@ PrintDataBlock(Flexbuf *f, AST *list, DataBlockOutFuncs *funcs, Flexbuf *relocs)
     
     if (gl_errors != 0)
         return;
+    current->name_space = NULL;
     top = list;
     while (top) {
         ast = top->left;
@@ -2182,6 +2183,18 @@ PrintDataBlock(Flexbuf *f, AST *list, DataBlockOutFuncs *funcs, Flexbuf *relocs)
             // emit a debug entry
             SendOneComment(relocs, ast, flexbuf_curlen(f), 0);
             break;
+        case AST_NAMESPACE: {
+            const char *name = NULL;
+            if (ast->left) {
+                name = GetIdentifierName(ast->left);
+            }
+            if (name) {
+                current->name_space = GetNamespace(&current->objsyms, name);
+            } else {
+                current->name_space = NULL;
+            }
+            break;
+        }
         default:
             ERROR(ast, "unknown element in data block");
             break;

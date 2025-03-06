@@ -30,6 +30,7 @@ typedef enum symtype {
     SYM_REDEF,           /* name redefinition, used for implementing static */
     SYM_ALIAS,           /* makes a name an alias for an expression */
     SYM_TEMPLATE,        /* points to a function or class template */
+    SYM_NAMESPACE,       /* points to a symbol namespace */
 } Symtype;
 
 #define IsAlias(sym) ((sym)->kind == SYM_WEAK_ALIAS)
@@ -116,5 +117,11 @@ int SetTempVariableBase(int base, int max);
  */
 typedef int (*SymbolFunc)(Symbol *sym, void *arg);
 
-void  IterateOverSymbols(SymbolTable *table, SymbolFunc func, void *arg);    
+void  IterateOverSymbols(SymbolTable *table, SymbolFunc func, void *arg);
+
+/*
+ * fetch or create a namespace as a child of "orig"
+ */
+SymbolTable *GetNamespace(SymbolTable *orig, const char *name);
+
 #endif

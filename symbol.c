@@ -320,3 +320,21 @@ DumpSymbolTable(SymbolTable *table)
 {
     IterateOverSymbols(table, PrintSymbol, NULL);
 }
+
+SymbolTable *
+GetNamespace(SymbolTable *orig, const char *name)
+{
+    SymbolTable *p;
+    Symbol *sym;
+
+    sym = LookupSymbolInTable(orig, name);
+    if (sym && sym->kind == SYM_NAMESPACE) {
+        p = (SymbolTable *)sym->v.ptr;
+    } else {
+        p = (SymbolTable *)calloc(1, sizeof(SymbolTable));
+        p->flags = orig->flags;
+        p->next = NULL;
+        sym = AddSymbol(orig, name, SYM_NAMESPACE, p, name);
+    }
+    return p;
+}

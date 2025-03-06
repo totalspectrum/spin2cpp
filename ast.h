@@ -254,6 +254,7 @@ enum astkind {
     AST_DITTO_END = 183,
     AST_DITTO_COUNT = 184,
 
+    AST_NAMESPACE = 185,
 };
 
 /* forward reference */

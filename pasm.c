@@ -737,7 +737,7 @@ ExpandDittos(AST *instrlist)
 }
 
 void
-AssignAddresses(PASMAddresses *addr, SymbolTable *symtab, AST *instrlist, int startFlags)
+AssignAddresses(PASMAddresses *addr, SymbolTable *orig_symtab, AST *instrlist, int startFlags)
 {
     unsigned cogpc = 0;
     unsigned hubpc = 0;
@@ -762,10 +762,12 @@ AssignAddresses(PASMAddresses *addr, SymbolTable *symtab, AST *instrlist, int st
     expect_undefined_labels = 1;
     unsigned asm_nest;
     AsmState state[MAX_ASM_NEST] = { 0 };
-
+    SymbolTable *symtab;
+    
     ExpandDittos(instrlist);
 
 again:
+    symtab = orig_symtab;
     labels_changed = 0;
     
     cogpc = coglimit = hublimit = 0;
@@ -1041,6 +1043,17 @@ again:
                 lasttype = ast->left;
             }
             break;
+        case AST_NAMESPACE: {
+            const char *name;
+            pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, lasttype, lastOrg, inHub, label_flags, pass);
+            if (!ast->left) {
+                symtab = orig_symtab;
+            } else {
+                name = GetIdentifierName(ast->left);
+                symtab = GetNamespace(orig_symtab, name);
+            }
+            break;
+        }
         case AST_COMMENT:
         case AST_SRCCOMMENT:
             break;

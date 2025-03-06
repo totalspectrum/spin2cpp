@@ -5,7 +5,7 @@
  */
 
 %pure-parser
-%expect 43
+%expect 44
 
 %{
 #include <stdio.h>
@@ -1447,7 +1447,22 @@ basedatline:
       ast = NewAST(AST_COMMENTEDNODE, ast, $1);
       $$ = ast;
   }
+  | SP_NAMESP optidentifier
+  {
+      $$ = NewAST(AST_NAMESPACE, $2, NULL);
+  }
   ;
+
+optidentifier:
+  /* empty */
+  {
+      $$ = NULL;
+  }
+  | SP_IDENTIFIER
+  {
+      $$ = $1;
+  }
+;
 
 objblock:
   objline

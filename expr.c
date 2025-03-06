@@ -147,7 +147,9 @@ LookupGlobalSymbol(const char *name)
     if (!IsSpinLang(lang)) {
         Module *top = GetTopLevelModule();
         if (top) {
-            Symbol *s = LookupSymbolInTable(&top->objsyms, name);
+            SymbolTable *tab = top->name_space;
+            if (!tab) tab = &top->objsyms;
+            Symbol *s = LookupSymbolInTable(tab, name);
             if (s) {
                 return s;
             }
@@ -163,6 +165,8 @@ LookupSymbolInFunc(Function *func, const char *name)
 
     if (func) {
         sym = LookupSymbolInTable(&func->localsyms, name);
+    } else if (current->name_space) {
+        sym = LookupSymbolInTable(current->name_space, name);
     } else {
         sym = LookupSymbolInTable(&current->objsyms, name);
     }
