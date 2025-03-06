@@ -311,6 +311,11 @@ float __builtin_expf(float x)
     return __builtin_powf(CONST_E, x);
 }
 
+float __builtin_exp10f(float x)
+{
+    return __builtin_powf(10.0, x);
+}
+
 float __builtin_logf(float x)
 {
     return __builtin_logbase(CONST_E, x);
@@ -320,3 +325,4 @@ float __builtin_log10f(float x)
 {
     return __builtin_logbase(10.0, x);
 }
+

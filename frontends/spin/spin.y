@@ -557,6 +557,13 @@ SpinDeclareStruct(AST *ident, AST *defs)
 %token SP_CONDITIONAL_SEP ": after ?"
 %token SP_REPEAT_SEP ": after repeat"
 
+%token SP_LOG2   "LOG2"
+%token SP_EXP2   "EXP2"
+%token SP_LOG10  "LOG10"
+%token SP_EXP10  "EXP10"
+%token SP_LOG    "LN"
+%token SP_EXP    "EXP"
+
 %token SP_FADD   "+."
 %token SP_FSUB   "-."
 %token SP_FMUL   "*."
@@ -2457,6 +2464,48 @@ funccall:
                            params);
         $$ = call;
     }  
+  | SP_LOG2 '(' expr ')'
+    {
+        AST *arg1 = $3;
+        AST *ident = AstIdentifier("__builtin_log2f");
+        
+        $$ = MakeFunccall(ident, arg1, NULL);
+    }
+  | SP_EXP2 '(' expr ')'
+    {
+        AST *arg1 = $3;
+        AST *ident = AstIdentifier("__builtin_exp2f");
+        
+        $$ = MakeFunccall(ident, arg1, NULL);
+    }
+  | SP_LOG10 '(' expr ')'
+    {
+        AST *arg1 = $3;
+        AST *ident = AstIdentifier("__builtin_log10f");
+        
+        $$ = MakeFunccall(ident, arg1, NULL);
+    }
+  | SP_EXP10 '(' expr ')'
+    {
+        AST *arg1 = $3;
+        AST *ident = AstIdentifier("__builtin_exp10f");
+        
+        $$ = MakeFunccall(ident, arg1, NULL);
+    }
+  | SP_LOG '(' expr ')'
+    {
+        AST *arg1 = $3;
+        AST *ident = AstIdentifier("__builtin_logf");
+        
+        $$ = MakeFunccall(ident, arg1, NULL);
+    }
+  | SP_EXP '(' expr ')'
+    {
+        AST *arg1 = $3;
+        AST *ident = AstIdentifier("__builtin_expf");
+        
+        $$ = MakeFunccall(ident, arg1, NULL);
+    }
 ;
 
 

@@ -23,7 +23,7 @@
 
 #define VT '\013'
 
-#define MAX_PNUT_VERSION 50 /* maximum PNut version we understand */
+#define MAX_PNUT_VERSION 51 /* maximum PNut version we understand */
 
 int allow_type_names = 1;
 
@@ -2494,7 +2494,14 @@ struct reservedword_soft {
 
     /* v50 keywords */
     { "ditto", SP_DITTO, 50, 0 },
-    
+
+    /* v51 keywords */
+    { "log2", SP_LOG2, 51, 0 },
+    { "exp2", SP_EXP2, 51, 0 },
+    { "log10", SP_LOG10, 51, 0 },
+    { "exp10", SP_EXP10, 51, 0 },
+    { "ln",    SP_LOG, 51, 0 },
+    { "exp",   SP_EXP, 51, 0 },
 };
 
 struct reservedword basic_keywords[] = {
