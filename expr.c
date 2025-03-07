@@ -2030,23 +2030,24 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             offset = rval.val;
             typ = rval.type;
         }
-        if (expr->kind != AST_IDENTIFIER && expr->kind != AST_SYMBOL && expr->kind != AST_LOCAL_IDENTIFIER) {
-            if (reportError)
-                ERROR(expr, "Only addresses of identifiers allowed");
-            else
-                *valid = 0;
-            return intExpr(0);
-        }
         if (expr->kind == AST_SYMBOL) {
             sym = (Symbol *)expr->d.ptr;
             name = sym->user_name;
         } else if (expr->kind == AST_LOCAL_IDENTIFIER) {
             sym = LookupSymbol(expr->left->d.string);
             name = expr->right->d.string;
-        } else {
+        } else if (IsIdentifier(expr)) {
             name = expr->d.string;
             sym = LookupSymbol(name);
-        }
+        } else if (expr->kind == AST_CONSTREF || expr->kind == AST_METHODREF) {
+            sym = LookupMethodRef(expr, NULL, valid);
+        } else {
+            if (reportError)
+                ERROR(expr, "Only addresses of identifiers allowed");
+            else
+                *valid = 0;
+            return intExpr(0);
+        }            
         if (sym && sym->kind == SYM_LABEL) {
             Label *lref = (Label *)sym->v.ptr;
             if (0 == (lref->flags & LABEL_IN_HUB)) {
