@@ -1,0 +1,23 @@
+{Spin2_v50}
+CON pin_base = 40
+
+DAT
+	org
+a
+	jmp  #\foo.a
+	long 0
+b
+	long @@@a
+
+	%namesp foo
+a
+	jmp  #\a
+b
+	long $100 + pin_base
+	long @@@a
+	
+	%namesp
+c
+	long @@@foo.b
+	long $FFFF
+

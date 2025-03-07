@@ -167,7 +167,8 @@ LookupSymbolInFunc(Function *func, const char *name)
         sym = LookupSymbolInTable(&func->localsyms, name);
     } else if (current->name_space) {
         sym = LookupSymbolInTable(current->name_space, name);
-    } else {
+    }
+    if (!sym) {
         sym = LookupSymbolInTable(&current->objsyms, name);
     }
     if (!sym) {
