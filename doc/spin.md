@@ -688,16 +688,6 @@ c
    long @@@a  ' refers to a in global namespace
    long @@@x.a ' refers to a in namespace x
 ```
-   DAT
-   orgh
-a  long $100  ' declares a in default (global) namespace
-   %namesp x  ' switch to new namespace
-a  long $200  ' new label a inside namespace x; does not conflict with global
-   %namesp    ' return to default namespace
-c
-   long @@@a  ' refers to a in global namespace
-   long @@@x.a ' refers to a in namespace x
-```
 
 ## New intrinsics for both P1 and P2
 
