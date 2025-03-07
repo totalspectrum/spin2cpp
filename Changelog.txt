@@ -4,6 +4,7 @@ Version 7.1.0
 - Added new Spin2 @\"string" for strings with embedded C-style escapes
 - Added DITTO to duplicate code/data in Spin2 assembly
 - Added some of the upcoming Spin2 v51 float functions
+- Added %namesp feature for DAT namespaces
 - Many internal changes to support DITTO and future assembly work
 - Updated -gbrk debug code (thanks Ada)
 - Use cluster size for stat() st_blksize on FAT32

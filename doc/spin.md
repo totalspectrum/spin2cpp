@@ -672,6 +672,33 @@ end
 ```
 Available conditional compilation directives are: `if`, `elseif`, `else`, and `end`. These may also be prefixed with `%` (so `%if`. `%elseif`, `%else`, and `%end`) to remove any ambiguity with future Spin syntax.
 
+### DAT Namespaces
+
+Within a DAT section it is possible to declare a "namespace" within which
+labels can be declared with the same name as labels in other namespaces.
+For example:
+```
+   DAT
+   orgh
+a  long $100  ' declares a in default (global) namespace
+   %namesp x  ' switch to new namespace
+a  long $200  ' new label a inside namespace x; does not conflict with global
+   %namesp    ' return to default namespace
+c
+   long @@@a  ' refers to a in global namespace
+   long @@@x.a ' refers to a in namespace x
+```
+   DAT
+   orgh
+a  long $100  ' declares a in default (global) namespace
+   %namesp x  ' switch to new namespace
+a  long $200  ' new label a inside namespace x; does not conflict with global
+   %namesp    ' return to default namespace
+c
+   long @@@a  ' refers to a in global namespace
+   long @@@x.a ' refers to a in namespace x
+```
+
 ## New intrinsics for both P1 and P2
 
 Flexspin supports some new builtin functions. These typically start with an underscore to avoid confusion with existing variable names. Note that in Spin2 mode many of these are available without the leading underscore, and in fact it's better to use the non-underscore versions since those are also supported in the official Parallax compiler.
