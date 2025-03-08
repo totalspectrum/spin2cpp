@@ -558,6 +558,7 @@ SpinDeclareStruct(AST *ident, AST *defs)
 %token SP_EXP10  "EXP10"
 %token SP_LOG    "LN"
 %token SP_EXP    "EXP"
+%token SP_POW    "POW"
 
 %token SP_FADD   "+."
 %token SP_FSUB   "-."
@@ -592,7 +593,7 @@ SpinDeclareStruct(AST *ident, AST *defs)
 %left '-' '+' SP_FADD SP_FSUB /* priority 8 */
 %left '*' '/' SP_FMUL SP_FDIV SP_REMAINDER SP_HIGHMULT SP_UNSHIGHMULT SP_SCAS SP_UNSDIV SP_UNSMOD SP_FRAC /* priority 7 */
 %left '|' /* priority 6 */
-%left '^' /* priority 5 */
+%left '^' SP_POW /* priority 5 */
 %left '&' /* priority 4 */
 %left SP_ROTL SP_ROTR SP_SHL SP_SHR SP_SAR SP_REV SP_REV2 SP_SIGNX SP_ZEROX /* priority 3 */
 %left SP_NEGATE SP_FNEGATE SP_BIT_NOT SP_ABS SP_FABS SP_SQRT SP_FSQRT SP_DECODE SP_ENCODE SP_ENCODE2 SP_ALLOCA SP_ONES SP_BMASK SP_QLOG SP_QEXP /* priority 2 in Spin2 */
@@ -1887,6 +1888,8 @@ expr:
     { $$ = AstOperator(K_FMUL, $1, $3); }
   | expr SP_FDIV expr
     { $$ = AstOperator(K_FDIV, $1, $3); }
+  | expr SP_POW expr
+    { $$ = AstOperator(K_POWER, $1, $3); }
   | expr '+' '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign('+', $1, $4); }
   | expr '-' '=' expr %prec SP_ASSIGN

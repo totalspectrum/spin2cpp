@@ -2502,6 +2502,7 @@ struct reservedword_soft {
     { "exp10", SP_EXP10, 51, 0 },
     { "ln",    SP_LOG, 51, 0 },
     { "exp",   SP_EXP, 51, 0 },
+    { "pow",   SP_POW, 51, 0 },
 };
 
 struct reservedword basic_keywords[] = {
