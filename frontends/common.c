@@ -1029,22 +1029,26 @@ ERROR_UNKNOWN_SYMBOL(AST *ast)
 }
 
 AST *
-GenericFunctionPtr(int numresults)
+GenericFunctionPtr(AST *result_type)
 {
     AST *fptr = NULL;
-    AST *exprlist = NULL;
 
-    if (numresults == 0) {
-        exprlist = ast_type_void;
-    } else if (numresults == 1) {
-        exprlist = NULL;
-    } else {
-        while (numresults > 0) {
-            exprlist = NewAST(AST_TUPLE_TYPE, NULL, exprlist);
-            --numresults;
+    if (result_type && result_type->kind == AST_INTEGER) {
+        int numresults = result_type->d.ival;
+        AST *exprlist;
+        if (numresults == 0) {
+            exprlist = ast_type_void;
+        } else if (numresults == 1) {
+            exprlist = NULL;
+        } else {
+            while (numresults > 0) {
+                exprlist = NewAST(AST_TUPLE_TYPE, NULL, exprlist);
+                --numresults;
+            }
         }
+        result_type = exprlist;
     }
-    fptr = NewAST(AST_FUNCTYPE, exprlist, NULL);
+    fptr = NewAST(AST_FUNCTYPE, result_type, NULL);
     fptr = NewAST(AST_PTRTYPE, fptr, NULL);
     return fptr;
 }
@@ -1086,7 +1090,7 @@ Init()
     ast_type_string = NewAST(AST_PTRTYPE, NewAST(AST_MODIFIER_CONST, ast_type_byte, NULL), NULL);
 
     // a generic function returning a single (unknown) value
-    ast_type_generic_funcptr = GenericFunctionPtr(1);
+    ast_type_generic_funcptr = GenericFunctionPtr(AstInteger(1));
 
     // a generic function for Spin2 SEND type functionality
     ast_type_sendptr = NewAST(AST_MODIFIER_SEND_ARGS,
@@ -1097,7 +1101,7 @@ Init()
                                                    ast_type_long, NULL)),
                                      NULL),
                               NULL);
-    ast_type_recvptr = GenericFunctionPtr(1);
+    ast_type_recvptr = GenericFunctionPtr(AstInteger(1));
 
     initSpinLexer(gl_p2);
 

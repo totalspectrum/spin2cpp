@@ -197,16 +197,11 @@ AST *ExpandCEscapes(AST *str) {
     return elist;
 }
 
-// in common.c
-extern AST *GenericFunctionPtr(int numresults);
-
 static AST *
 MakeFunccall(AST *func, AST *params, AST *numresults)
 {
-    if (numresults && numresults->kind == AST_INTEGER) {
-        int paramcount;
-        paramcount = numresults->d.ival;
-        func = NewAST(AST_CAST, GenericFunctionPtr(paramcount), func);
+    if (numresults) {
+        func = NewAST(AST_CAST, GenericFunctionPtr(numresults), func);
     }
     return NewAST(AST_FUNCCALL, func, params);
 }
@@ -2310,6 +2305,11 @@ opt_numrets:
     { $$ = NULL; }
   | ':' SP_NUM
     { $$ = $2; }
+  | ':' SP_TYPENAME
+    {
+        AST *typ = $2;
+        $$ = typ;
+    }
 ;
 
 funccall:

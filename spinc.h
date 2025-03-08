@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2024 Total Spectrum Software Inc.
+ * Copyright 2011-2025 Total Spectrum Software Inc.
  * main header file
  */
 
@@ -71,5 +71,8 @@ AST *BuildDebugList(AST *exprlist, AST *dbgmask);
 
 // convert AST debug list into printf
 AST *CreatePrintfDebug(AST *exprlist, AST *dbgmask);
+
+// in common.c
+AST *GenericFunctionPtr(AST *result_type);
 
 #endif
