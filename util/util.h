@@ -83,4 +83,9 @@ size_t to_utf8(char *s, wchar_t wcorig);
 // convert utf-8 sequence to wide character; n is max size of cptr
 size_t from_utf8(wchar_t *wcptr, const char *cptr, size_t n);
 
+
+static inline void updateMax(int *dst, int src) {
+    if (*dst < src) *dst = src;
+}
+
 #endif
