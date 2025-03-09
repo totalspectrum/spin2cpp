@@ -135,8 +135,9 @@ typedef struct ir_bedata {
 
     /* set after inlining if the function has no external calls left */
     bool effectivelyLeaf;
-    /* Highest arg count of all inlined functions */
-    int maxInlineArg;
+    /* Highest arg count clobbered */
+    /* (beware of off-by-one errors) */
+    int maxClobberArg;
     
     /* type of calling convention */
     CallConvention convention;
