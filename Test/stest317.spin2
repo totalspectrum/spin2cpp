@@ -1,0 +1,11 @@
+{Spin2_v51}
+
+CON
+  struct sABC(Method, Time)
+
+VAR sABC abc, y
+
+PUB foo(^sABC x) : r | sABC y
+  y := x.Method(abc.Time) : sABC
+  return y.Time + x.Time
+

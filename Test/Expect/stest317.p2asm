@@ -1,0 +1,87 @@
+con
+	_clkfreq = 20000000
+	_clkmode = 16779595
+dat
+	nop
+	cogid	pa
+	coginit	pa,##$404
+	orgh	$10
+	long	0	'reserved
+	long	0 ' clock frequency: will default to 20000000
+	long	0 ' clock mode: will default to $100094b
+	orgh	$400
+ _ret_	mov	result1, #0
+	org	0
+entry
+
+_foo
+	mov	_foo_x, arg01
+	rdlong	foo_tmp002_, _foo_x
+	mov	foo_tmp003_, foo_tmp002_
+	zerox	foo_tmp002_, #19
+	shr	foo_tmp003_, #20
+	shl	foo_tmp003_, #2
+	add	foo_tmp003_, __methods__
+	rdlong	foo_tmp003_, foo_tmp003_
+	add	objptr, #4
+	rdlong	arg01, objptr
+	sub	objptr, #4
+	mov	foo_tmp005_, objptr
+	mov	objptr, foo_tmp002_
+	call	foo_tmp003_
+	mov	objptr, foo_tmp005_
+	mov	_foo_y, result1
+	mov	_foo_y_01, result2
+	mov	result1, _foo_y_01
+	add	_foo_x, #4
+	rdlong	result2, _foo_x
+	add	result1, result2
+_foo_ret
+	ret
+builtin_bytefill_
+        shr	arg03, #1 wc
+ if_c   wrbyte	arg02, arg01
+ if_c   add	arg01, #1
+        movbyts	arg02, #0
+builtin_wordfill_
+        shr	arg03, #1 wc
+ if_c   wrword	arg02, arg01
+ if_c   add	arg01, #2
+        setword	arg02, arg02, #1
+builtin_longfill_
+        wrfast	#0,arg01
+        cmp	arg03, #0 wz
+ if_nz  rep	#1, arg03
+ if_nz  wflong	arg02
+        ret
+
+__methods__
+	long	@__methodtable__
+objptr
+	long	@objmem
+result1
+	long	0
+result2
+	long	1
+COG_BSS_START
+	fit	480
+	orgh
+__methodtable__
+objmem
+	long	0[4]
+	org	COG_BSS_START
+_foo_x
+	res	1
+_foo_y
+	res	1
+_foo_y_01
+	res	1
+arg01
+	res	1
+foo_tmp002_
+	res	1
+foo_tmp003_
+	res	1
+foo_tmp005_
+	res	1
+	fit	480
