@@ -3326,7 +3326,7 @@ AssignTemporaryAddresses(IRList *irl, Operand *retlabel)
     /* on P1, flag short branches to the return */
     if (retlabel && !gl_p2) {
         for (ir = irl->head; ir; ir = ir->next) {
-            if (IsJump(ir) && ir->dst == retlabel
+            if (IsJump(ir) && JumpDest(ir) == retlabel
                 && (addr - ir->addr < MAX_REL_JUMP_OFFSET_LMM))
             {
                 ir->flags |= FLAG_RET_BRANCH;
