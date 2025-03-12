@@ -1095,11 +1095,11 @@ doDeclareFunction(AST *funcblock)
     } else {
         AST *resultexpr = src->right;
         AST *type = NULL;
-        fdef->resultexpr = resultexpr;
         if (resultexpr->kind == AST_DECLARE_VAR) {
             fdef->overalltype->left = type = resultexpr->left;
             resultexpr = resultexpr->right;
         }
+        fdef->resultexpr = resultexpr;
         if (resultexpr->kind == AST_IDENTIFIER) {
             AddSymbolPlaced(&fdef->localsyms, resultexpr->d.string, SYM_RESULT, type, NULL, resultexpr);
         } else if (resultexpr->kind == AST_LISTHOLDER) {
