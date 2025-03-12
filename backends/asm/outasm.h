@@ -1,6 +1,6 @@
 /*
  * Spin to Pasm converter
- * Copyright 2016-2024 Total Spectrum Software Inc.
+ * Copyright 2016-2025 Total Spectrum Software Inc.
  * PASM output routines
  */
 
@@ -10,6 +10,13 @@
 #include "instr.h"
 #include "becommon.h"
 #include "util/sha256.h"
+
+// LMM jumps +- this amount are turned into add/sub of the pc
+// pick a conservative value
+// 127 would be the absolute maximum here
+#define MAX_REL_JUMP_OFFSET_LMM 100
+// On P2 conditional jumps have a range +/- 256
+#define MAX_REL_JUMP_OFFSET_P2 200
 
 // functions for producing local identifiers
 const char *IdentifierLocalName(Function *func, const char *name);

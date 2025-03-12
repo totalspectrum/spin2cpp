@@ -295,8 +295,9 @@ enum flags {
     FLAG_USER_FCACHE     = 0x20000,
     
     // rest of the bits are used by the optimizer
-    FLAG_LABEL_USED = 0x100000,
-    FLAG_INSTR_NEW  = 0x200000,
+    FLAG_LABEL_USED =  0x100000,
+    FLAG_INSTR_NEW  =  0x200000,
+    FLAG_RET_BRANCH =  0x400000,  /* for a short forward branch to return */
     FLAG_OPTIMIZER = 0xFFF00000,
 };
 

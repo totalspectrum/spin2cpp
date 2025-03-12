@@ -945,13 +945,6 @@ PrintCompressCondJump(struct flexbuf *fb, int cond, Operand *dst)
     flexbuf_addstr(fb, "\n");
 }
 
-// LMM jumps +- this amount are turned into add/sub of the pc
-// pick a conservative value
-// 127 would be the absolute maximum here
-#define MAX_REL_JUMP_OFFSET_LMM 100
-// On P2 conditional jumps have a range +/- 256
-#define MAX_REL_JUMP_OFFSET_P2 200
-
 /* convert IR list into assembly language */
 static int didPub = 0;
 
@@ -1230,10 +1223,14 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                 PrintCond(fb, ir->cond);
                 // if we know the destination we may be able to optimize
                 // the branch
-                if (ir->aux && gl_lmm_kind == LMM_KIND_ORIG && !(ir->flags & (FLAG_KEEP_INSTR|FLAG_JMPTABLE_INSTR))) {
+                if ((ir->flags & FLAG_RET_BRANCH) || (ir->aux && gl_lmm_kind == LMM_KIND_ORIG && !(ir->flags & (FLAG_KEEP_INSTR|FLAG_JMPTABLE_INSTR))) ) {
                     int offset;
-                    dest = (IR *)ir->aux;
-                    offset = dest->addr - ir->addr;
+                    if (ir->aux) {
+                        dest = (IR *)ir->aux;
+                        offset = dest->addr - ir->addr;
+                    } else {
+                        offset = 1; /* fake, but we know it's a short forward branch */
+                    }
                     if ( offset > 0 && offset < MAX_REL_JUMP_OFFSET_LMM) {
                         flexbuf_printf(fb, "add\t__pc, #4*(");
                         PrintOperand(fb, ir->dst);

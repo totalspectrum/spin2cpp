@@ -3307,7 +3307,7 @@ OptimizeAddSub(IRList *irl)
 // forward or backward
 //
 static void
-AssignTemporaryAddresses(IRList *irl)
+AssignTemporaryAddresses(IRList *irl, Operand *retlabel)
 {
     IR *ir;
     unsigned addr = 0;
@@ -3321,6 +3321,16 @@ AssignTemporaryAddresses(IRList *irl)
         }
         if (IsJump(ir) || IsLabel(ir)) {
             ir->aux = NULL;
+        }
+    }
+    /* on P1, flag short branches to the return */
+    if (retlabel && !gl_p2) {
+        for (ir = irl->head; ir; ir = ir->next) {
+            if (IsJump(ir) && ir->dst == retlabel
+                && (addr - ir->addr < MAX_REL_JUMP_OFFSET_LMM))
+            {
+                ir->flags |= FLAG_RET_BRANCH;
+            }
         }
     }
 }
@@ -5348,7 +5358,7 @@ OptimizeIRLocal(IRList *irl, Function *f)
 again:
     do {
         change = 0;
-        AssignTemporaryAddresses(irl);
+        AssignTemporaryAddresses(irl, FuncData(f)->asmreturnlabel);
         if (flags & OPT_BASIC_REGS) {
             OPT_PASS(CheckLabelUsage(irl));
             OPT_PASS(OptimizeReadWrite(irl));
