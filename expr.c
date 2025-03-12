@@ -3085,6 +3085,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         case SYM_PARAMETER:
         case SYM_CLOSURE:
         case SYM_TYPEDEF:
+        case SYM_RESULT:
             return (AST *)sym->v.ptr;
         case SYM_FUNCTION:
             return ((Function *)sym->v.ptr)->overalltype;
