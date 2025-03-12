@@ -1620,6 +1620,13 @@ paramidentdecl:
       LANGUAGE_WARNING(LANG_ANY, $1, "default parameter values are a flexspin extension");
       $$ = AstAssign($1, $3);
   }
+  | general_type identifier
+  {
+      AST *typ = $1;
+      AST *ident = $2;
+
+      $$ = NewAST(AST_DECLARE_VAR, typ, ident);
+  }
   | '^' general_type identifier
   {
       AST *typ = $2;
