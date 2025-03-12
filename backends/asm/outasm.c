@@ -5539,7 +5539,20 @@ CompileFunctionBody(Function *f)
         if (init) {
             AST *zero = AstInteger(0);
             if (IsIdentifier(init) || init->kind == AST_RESULT) {
-                AST *resinit = AstAssign(init, zero);
+                AST *typ = ExprType(init);
+                int n = TypeSize(typ);
+                AST *resinit;
+                if (n <= LONG_SIZE) {
+                    resinit = AstAssign(init, zero);
+                } else {
+                    /* do a multiple assignment */
+                    AST *initlist = NULL;
+                    n = (n + LONG_SIZE - 1) / LONG_SIZE;
+                    for (int i = 0; i < n; i++) {
+                        initlist = AddToList(initlist, NewAST(AST_EXPRLIST, zero, NULL));
+                    }
+                    resinit = AstAssign(init, initlist);
+                }
                 CompileStatement(irl, cold_irl_ptr, resinit);
             } else if (init->kind == AST_EXPRLIST) {
                 AST *var;
