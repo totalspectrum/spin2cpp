@@ -2015,7 +2015,6 @@ DeclareMemberVariablesOfSizeFlag(Module *P, int sizeRequest, int offset)
     int curSizeFlag = 0;
     int isUnion = P->isUnion;
     AST *varblocklist;
-    int oldoffset = offset;
     unsigned sym_flags = 0;
     bool sawSmall = false;
     
@@ -2149,7 +2148,7 @@ DeclareMemberVariablesOfSizeFlag(Module *P, int sizeRequest, int offset)
             offset = EnterVars(SYM_VARIABLE, &P->objsyms, curtype, idlist, offset, P->isUnion, sym_flags);
         }
     }
-    if (sawSmall || (curtypesize != LONG_SIZE && offset != oldoffset)) {
+    if (sawSmall) {
         P->longOnly = 0;
     }
     return offset;
