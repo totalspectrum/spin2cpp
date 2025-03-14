@@ -1772,7 +1772,7 @@ GetTopLevelModule(void)
 //
 // check for whether a variable of type T must go on the stack
 //
-#define LARGE_SIZE_THRESHOLD 12
+#define LARGE_SIZE_THRESHOLD 16
 
 int TypeGoesOnStack(AST *typ)
 {
