@@ -1,4 +1,6 @@
 Version 7.1.1
+- Fixed using struct names for return values and parameters in Spin2
+- Improved code generation for small structs containing arrays
 - Improved some forward branches in P1 LMM mode
 
 Version 7.1.0

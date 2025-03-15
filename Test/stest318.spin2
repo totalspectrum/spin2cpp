@@ -1,0 +1,12 @@
+{Spin2_v50}
+
+'*************************
+'*  64-bit Integer Math  *
+'*************************
+
+CON
+    struct qint64(n[2])
+ 
+PUB foo2(qint64 a) : qint64 r
+   r.n[0] := a.n[1]
+   r.n[1] := $FF
