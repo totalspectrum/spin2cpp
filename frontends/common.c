@@ -1035,7 +1035,7 @@ GenericFunctionPtr(AST *result_type)
 
     if (result_type && result_type->kind == AST_INTEGER) {
         int numresults = result_type->d.ival;
-        AST *exprlist;
+        AST *exprlist = NULL;
         if (numresults == 0) {
             exprlist = ast_type_void;
         } else if (numresults == 1) {

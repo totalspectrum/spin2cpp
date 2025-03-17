@@ -2041,6 +2041,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             name = expr->d.string;
             sym = LookupSymbol(name);
         } else if (expr->kind == AST_CONSTREF || expr->kind == AST_METHODREF) {
+            name = "method";
             sym = LookupMethodRef(expr, NULL, valid);
         } else {
             if (reportError)
