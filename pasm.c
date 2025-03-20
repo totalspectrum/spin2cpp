@@ -768,6 +768,8 @@ AssignAddresses(PASMAddresses *addr, SymbolTable *orig_symtab, AST *instrlist, i
 
 again:
     symtab = orig_symtab;
+    if (current)
+        current->name_space = NULL;
     labels_changed = 0;
     
     cogpc = coglimit = hublimit = 0;
@@ -1048,9 +1050,11 @@ again:
             pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, lasttype, lastOrg, inHub, label_flags, pass);
             if (!ast->left) {
                 symtab = orig_symtab;
+                if (current) current->name_space = NULL;
             } else {
                 name = GetIdentifierName(ast->left);
                 symtab = GetNamespace(orig_symtab, name);
+                if (current) current->name_space = symtab;
             }
             break;
         }
@@ -1136,6 +1140,9 @@ again:
         addr->dataSize = datoff;
         addr->hubPc = hubpc;
         addr->cogPc = cogpc;
+    }
+    if (current) {
+        current->name_space = NULL;
     }
 }
 
