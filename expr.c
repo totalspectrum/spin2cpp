@@ -3271,8 +3271,9 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
                 if (ltype) {
                     //if (IsIntOrGenericType(ltype)) return ltype;
                     if (IsPointerType(ltype)) {
-                        if (PointerTypeIncrement(ltype) == 1) {
-                            return ltype;
+                        AST *subtype = BaseType(ltype->left);
+                        if (TypeSize(subtype) == 1) {
+                            return NewAST(AST_PTRTYPE, subtype, NULL);
                         }
                         return ast_type_generic;
                     }
