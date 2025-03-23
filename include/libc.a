@@ -95,6 +95,8 @@ void perror(const char *) __fromfile("libc/stdio/perror.c");
 /* libc/stdio/sprintf.c */
 int sprintf(char *str, const char *format, ...) __fromfile("libc/stdio/sprintf.c");
 int vsprintf(char *str, const char *format, unsigned long ap) __fromfile("libc/stdio/sprintf.c");
+int snprintf(char *str, size_t size, const char *format, ...) __fromfile("libc/stdio/sprintf.c");
+int vsnprintf(char *str, size_t size, const char *format, unsigned long ap) __fromfile("libc/stdio/sprintf.c");
 
 /* libc/stdlib/abort.c */
 void abort(void) __fromfile("libc/stdlib/abort.c");
