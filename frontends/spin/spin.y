@@ -1193,6 +1193,15 @@ conline:
         AddSymbol(currentTypes, GetUserIdentifierName(ident), SYM_TYPEDEF, typ, NULL);
         $$ = NULL;
     }
+  | SP_STRUCT SP_IDENTIFIER '=' structname SP_EOLN
+    {
+        /* basically a type alias*/
+        AST *oldtype = $4;
+        AST *ident = $2;
+        const char *name = GetUserIdentifierName(ident);
+        AddSymbol(currentTypes, name, SYM_TYPEDEF, oldtype, NULL);
+        $$ = NULL;
+    }
   | SP_EOLN
     { $$ = NULL; }
   | error SP_EOLN
@@ -1234,7 +1243,7 @@ structitem:
     {
         $$ = NewAST(AST_DECLARE_VAR, MaybeArrayType(ast_type_long64, $3), $2);
     }
-  | SP_TYPENAME SP_IDENTIFIER optarray
+  | structname SP_IDENTIFIER optarray
   {
       AST *name = $2;
       AST *typname = $1;
@@ -1306,6 +1315,15 @@ datline:
         idast = NewAST(AST_LISTHOLDER, idast, datast);
         idast = NewAST(AST_LISTHOLDER, linebreak, idast);
         $$ = idast;
+    }
+  | identifier structname
+    {
+        AST *ident = $1;
+        AST *typ = $2;
+        AST *var;
+
+        var = NewAST(AST_DECLARE_VAR, typ, ident);
+        $$ = NewAST(AST_LISTHOLDER, var, NULL);
     }
   ;
 
@@ -1536,7 +1554,7 @@ varline:
     { $$ = NewAST(AST_WORDLIST, $2, NULL); }
   | SP_LONG identlist SP_EOLN
     { $$ = NewAST(AST_LONGLIST, $2, NULL); }
-  | SP_TYPENAME identlist SP_EOLN
+  | structname identlist SP_EOLN
     {
         AST *typ = $1;
         AST *decllist = $2;
@@ -1586,7 +1604,7 @@ vardecl:
     { $$ = NewAST(AST_DECLARE_VAR, NULL, $2); }
   | SP_QUAD identdecl
     { $$ = NewAST(AST_DECLARE_VAR, ast_type_long64, $2); }
-  | SP_TYPENAME identdecl
+  | structname identdecl
     { $$ = NewAST(AST_DECLARE_VAR, $1, $2); }
 ;
 
@@ -2727,6 +2745,13 @@ modifierlist:
     { $$ = AddToList($1, $3); }
   ;
 
+structname:
+  SP_TYPENAME
+    { $$ = $1; }
+  | structname '.' identifier
+    {
+        SYNTAX_ERROR("module types not supported yet");
+    }
 %%
 
 void
