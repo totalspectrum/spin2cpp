@@ -2026,9 +2026,10 @@ outputVarDeclare(Flexbuf *f, AST *ast, Flexbuf *relocs)
     AST *type = ast->left;
     int siz;
     int typsiz;
-    
-    ast = ast->right;
-    if (ast->kind == AST_ASSIGN) {
+
+    if (ast)
+        ast = ast->right;
+    if (ast && ast->kind == AST_ASSIGN) {
         initval = ast->right;
         ast = ast->left;
     }

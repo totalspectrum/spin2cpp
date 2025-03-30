@@ -1078,8 +1078,8 @@ again:
                 // initializers always go in HUB memory
                 inHub = 1;
                 MARK_DATA(label_flags);
-                AstReportAs(ident, &saveinfo);
-                if (ident->kind == AST_ASSIGN) {
+                AstReportAs(ast, &saveinfo);
+                if (ident && ident->kind == AST_ASSIGN) {
                     initptr = &ident->right;
                     initializer = ident->right;
                     ident = ident->left;
@@ -1090,6 +1090,7 @@ again:
                 }
                 typalign = TypeAlign(type);
                 typsize = TypeSize(type);
+                lasttype = type;
                 if (typsize == 0 && IsClassType(type)) {
                     // empty object; this is OK if it has methods
                     Module *Q = GetClassPtr(type);
@@ -1102,13 +1103,15 @@ again:
                     *initptr = initializer;
                 }
                 ALIGNPC(typalign);
-                if (ident->kind == AST_LOCAL_IDENTIFIER) {
-                    ident = ident->left;
-                }
-                if (ident->kind != AST_IDENTIFIER) {
-                    ERROR(ast, "Internal error in DECLARE_VAR: expected identifier");
-                } else {
-                    pendingLabels = AddToList(pendingLabels, NewAST(AST_LISTHOLDER, ident, NULL));
+                if (ident) {
+                    if (ident->kind == AST_LOCAL_IDENTIFIER) {
+                        ident = ident->left;
+                    }
+                    if (ident->kind != AST_IDENTIFIER) {
+                        ERROR(ast, "Internal error in DECLARE_VAR: expected identifier");
+                    } else {
+                        pendingLabels = AddToList(pendingLabels, NewAST(AST_LISTHOLDER, ident, NULL));
+                    }
                 }
                 pendingLabels = emitPendingLabels(symtab, pendingLabels, hubpc, cogpc, type, lastOrg, inHub, label_flags, pass);
                 INCPC(typsize);

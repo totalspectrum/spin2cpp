@@ -1316,15 +1316,6 @@ datline:
         idast = NewAST(AST_LISTHOLDER, linebreak, idast);
         $$ = idast;
     }
-  | identifier structname
-    {
-        AST *ident = $1;
-        AST *typ = $2;
-        AST *var;
-
-        var = NewAST(AST_DECLARE_VAR, typ, ident);
-        $$ = NewAST(AST_LISTHOLDER, var, NULL);
-    }
   ;
 
 basedatline:
@@ -1465,6 +1456,15 @@ basedatline:
   {
       $$ = NewAST(AST_NAMESPACE, $2, NULL);
   }
+  | structname
+    {
+        AST *ident = NULL;
+        AST *typ = $1;
+        AST *var;
+
+        var = NewAST(AST_DECLARE_VAR, typ, ident);
+        $$ = var;
+    }
   ;
 
 optidentifier:
