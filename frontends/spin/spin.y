@@ -66,7 +66,7 @@ SpinAddDatList(AST *datlist)
 
 // add symbol definitions to currentTypes
 static void
-SpinAddLocalSymbol(AST *ident, int kind)
+SpinAddLocalSymbol(AST *ident, int kind, void *val)
 {
     const char *name;
     if (!currentTypes) return;
@@ -78,7 +78,7 @@ SpinAddLocalSymbol(AST *ident, int kind)
         ident = ident->left;
     }
     name = GetIdentifierName(ident);
-    AddSymbol(currentTypes, name, kind, NULL, NULL);
+    AddSymbol(currentTypes, name, kind, val, NULL);
 }
 
 void
@@ -86,14 +86,14 @@ SpinDeclareFuncSymbols(AST *paramlist, AST *resultname, AST *varlist)
 {
     AST *list;
     AST *item;
-    SpinAddLocalSymbol(resultname, SYM_LOCALVAR);
+    SpinAddLocalSymbol(resultname, SYM_LOCALVAR, NULL);
     for (list = paramlist; list; list = list->right) {
         item = list->left;
-        SpinAddLocalSymbol(item, SYM_LOCALVAR);
+        SpinAddLocalSymbol(item, SYM_LOCALVAR, NULL);
     }
     for (list = varlist; list; list = list->right) {
         item = list->left;
-        SpinAddLocalSymbol(item, SYM_LOCALVAR);
+        SpinAddLocalSymbol(item, SYM_LOCALVAR, NULL);
     }
     
 }
@@ -106,7 +106,7 @@ SpinDeclareVarSymbols(AST *varlist)
 
     for (list = varlist; list; list = list->right) {
         item = list->left;
-        SpinAddLocalSymbol(item, SYM_LOCALVAR);
+        SpinAddLocalSymbol(item, SYM_LOCALVAR, NULL);
     }
 }
 
@@ -114,6 +114,7 @@ void
 SpinDeclareObjectSymbols(AST *objlist)
 {
     AST *item;
+    AST *typ;
     // this is a list of OBJECTs
     while (objlist != NULL) {
         item = objlist->left;
@@ -122,7 +123,8 @@ SpinDeclareObjectSymbols(AST *objlist)
         if (item->kind == AST_OBJECT) {
             item = item->left;
         }
-        SpinAddLocalSymbol(item, SYM_NAME);
+        typ = ExprType(item);
+        SpinAddLocalSymbol(item, SYM_VARIABLE, typ);
     }
 }
 
@@ -308,8 +310,9 @@ SpinDeclareStruct(AST *ident, AST *defs)
     const char *classname = GetUserIdentifierName(ident);
     Module *P = NewModule(classname, current->curLanguage);
     AST *newobj = NewAbstractObject(ident, NULL, 0);
+    newobj->d.ptr = P;
     AddSymbol(currentTypes, classname, SYM_TYPEDEF, newobj, NULL);
-
+    
     if (P != current) {
         P->Lptr = current->Lptr;
         P->subclasses = current->subclasses;
@@ -321,6 +324,7 @@ SpinDeclareStruct(AST *ident, AST *defs)
 
         /* import parent's symbols into P */
         P->objsyms.next = &current->objsyms;
+        AddSymbol(&current->objsyms, classname, SYM_TYPEDEF, newobj, NULL);
     }
 
     PushCurrentModule();
@@ -690,7 +694,7 @@ funcdef:
       AST *vars = $4;
       AST *funcdecl = NewAST(AST_FUNCDECL, funcname, resultname);
       AST *funcvars = NewAST(AST_FUNCVARS, paramlist, vars);
-      SpinAddLocalSymbol(funcname, SYM_FUNCTION);
+      SpinAddLocalSymbol(funcname, SYM_FUNCTION, NULL);
       PushCurrentTypes();
       SpinDeclareFuncSymbols(paramlist, resultname, vars);
       $$ = NewAST(AST_FUNCDEF, funcdecl, funcvars);
@@ -1306,7 +1310,7 @@ datline:
             changetype = ExtractPasmType(datast);
             datast = NewAST(AST_LISTHOLDER, datast, NULL);
         }
-        SpinAddLocalSymbol(label, SYM_NAME);
+        SpinAddLocalSymbol(label, SYM_NAME, NULL);
         if (comment && (comment->d.string || comment->kind == AST_SRCCOMMENT)) {
             linebreak = NewCommentedAST(AST_LINEBREAK, changetype, NULL, comment);
         } else {
@@ -1624,7 +1628,7 @@ general_type:
     { $$ = ast_type_long; }
   | SP_QUAD
     { $$ = ast_type_long64; }
-  | SP_TYPENAME
+  | structname
     { $$ = $1; }
   ;
 
@@ -2748,10 +2752,15 @@ modifierlist:
 structname:
   SP_TYPENAME
     { $$ = $1; }
-  | structname '.' identifier
+  | SP_TYPENAME '.' SP_TYPENAME
     {
-        SYNTAX_ERROR("module types not supported yet");
+        $$ = $3;
     }
+  | SP_IDENTIFIER '.' SP_TYPENAME
+    {
+        $$ = $3;
+    }
+;
 %%
 
 void

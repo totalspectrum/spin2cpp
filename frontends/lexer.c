@@ -708,6 +708,8 @@ getTranslatedString(struct flexbuf *fb)
     return flexbuf_get(fb);
 }
 
+static Module *open_obj = NULL;
+
 /* parse an identifier */
 static int
 parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
@@ -1018,13 +1020,43 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     }
 
     if (current) {
-        sym = LookupSymbolInTable(currentTypes, idstr);
-        if (sym && sym->kind == SYM_TYPEDEF) {
-            ast = (AST *)sym->v.ptr;
-            *ast_ptr = ast;
-            last_ast = AstIdentifier(idstr);
-            return SP_TYPENAME;
+        if (open_obj) {
+            sym = LookupSymbolInTable(&open_obj->objsyms, idstr);
+        } else {
+            sym = NULL;
         }
+        if (!sym)
+            sym = LookupSymbolInTable(currentTypes, idstr);
+        if (sym) {
+            if (sym->kind == SYM_TYPEDEF) {
+                ast = (AST *)sym->v.ptr;
+                *ast_ptr = ast;
+                last_ast = AstIdentifier(idstr);
+                return SP_TYPENAME;
+            }
+            if (sym->kind == SYM_VARIABLE) {
+                AST *typ = (AST *)sym->v.ptr;
+                if (typ && (typ->kind == AST_OBJECT || typ->kind == AST_TYPEDEF)) {
+                    // peek ahead; if not a '.' then return
+                    // a typedef
+                    if (lexpeekc(L) == '.') {
+                        open_obj = GetClassPtr(typ);
+                    } else {
+                        open_obj = NULL;
+                        if (typ->kind == AST_TYPEDEF) {
+                            *ast_ptr = typ;
+                            last_ast = AstIdentifier(idstr);
+                            return SP_TYPENAME;
+                        }
+                    }
+                }
+            } else {
+                open_obj = NULL;
+            }
+        } else {
+            open_obj = NULL;
+        }
+
     }
     
 is_identifier:
@@ -2224,6 +2256,8 @@ getSpinToken(LexStream *L, AST **ast_ptr)
     }
     *ast_ptr = last_ast = ast;
 
+    if (c != SP_TYPENAME && c != SP_IDENTIFIER && c != '.')
+        open_obj = NULL;
     return c;
 }
 
@@ -4505,7 +4539,9 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
     }
     // check for a defined class or similar type
     if (current) {
-        sym = LookupSymbolInTable(currentTypes, idstr);
+        sym = LookupSymbolInTable(&current->objsyms, idstr);
+        if (!sym)
+            sym = LookupSymbolInTable(currentTypes, idstr);
         if (sym) {
             if (sym->kind == SYM_VARIABLE) {
                 ast = (AST *)sym->v.ptr;
