@@ -1,0 +1,8 @@
+{Spin2_v50}
+
+CON
+    struct bar(long a, long b)
+
+PUB foo1(x, y) : bar r
+  r.a := x
+  r.b := y

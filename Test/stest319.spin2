@@ -1,0 +1,14 @@
+{Spin2_v50}
+
+OBJ foo: "substest02"
+CON
+   struct baz(long q, long r)
+   struct foobar = foo.bar
+
+DAT
+x  foobar
+   long 1, 2, 3
+
+PUB main()
+  x := foo.foo1(1, 2)
+  outa := x.a + x.b

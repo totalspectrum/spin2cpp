@@ -1,0 +1,74 @@
+con
+	_clkfreq = 20000000
+	_clkmode = 16779595
+dat
+	nop
+	cogid	pa
+	coginit	pa,##$404
+	orgh	$10
+	long	0	'reserved
+	long	0 ' clock frequency: will default to 20000000
+	long	0 ' clock mode: will default to $100094b
+	orgh	$400
+ _ret_	mov	result1, #0
+	org	0
+entry
+
+_main
+	wrlong	#1, ptr__dat__
+	add	ptr__dat__, #4
+	wrlong	#2, ptr__dat__
+	sub	ptr__dat__, #4
+	mov	outa, #3
+_main_ret
+	ret
+
+_substest02_foo1
+	mov	result1, arg01
+	mov	result2, arg02
+_substest02_foo1_ret
+	ret
+builtin_bytefill_
+        shr	arg03, #1 wc
+ if_c   wrbyte	arg02, arg01
+ if_c   add	arg01, #1
+        movbyts	arg02, #0
+builtin_wordfill_
+        shr	arg03, #1 wc
+ if_c   wrword	arg02, arg01
+ if_c   add	arg01, #2
+        setword	arg02, arg02, #1
+builtin_longfill_
+        wrfast	#0,arg01
+        cmp	arg03, #0 wz
+ if_nz  rep	#1, arg03
+ if_nz  wflong	arg02
+        ret
+
+objptr
+	long	@objmem
+ptr__dat__
+	long	@_dat_
+result1
+	long	0
+result2
+	long	1
+COG_BSS_START
+	fit	480
+	orgh
+	alignl
+_dat_
+	byte	$00[8]
+	byte	$01, $00, $00, $00, $02, $00, $00, $00, $03, $00, $00, $00
+objmem
+	long	0[0]
+	org	COG_BSS_START
+_var01
+	res	1
+_var02
+	res	1
+arg01
+	res	1
+arg02
+	res	1
+	fit	480
