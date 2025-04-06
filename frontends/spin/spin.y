@@ -2752,11 +2752,11 @@ modifierlist:
 structname:
   SP_TYPENAME
     { $$ = $1; }
-  | SP_TYPENAME '.' SP_TYPENAME
+  | SP_IDENTIFIER '.' SP_TYPENAME
     {
         $$ = $3;
     }
-  | SP_IDENTIFIER '.' SP_TYPENAME
+  | structname '.' SP_TYPENAME
     {
         $$ = $3;
     }
