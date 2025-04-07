@@ -311,6 +311,21 @@ AstTypedAssignStmt(AST *var, AST *val, AST *typ)
     return NewAST(AST_STMTLIST, assign, NULL);
 }
 
+static AST *ExpandLhsSingle(AST *item) {
+    AST *list = NULL;
+    if (item && item->kind == AST_EMPTY && item->left) {
+        AST *empty = NewAST(AST_EMPTY, NULL, NULL);
+        int count = EvalConstExpr(item->left);
+        while (count > 0) {
+            list = NewAST(AST_EXPRLIST, empty, list);
+            --count;
+        }
+        return list;
+    } else {
+        return NewAST(AST_EXPRLIST, item, NULL);
+    }
+}
+
 void
 doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
 {
@@ -435,6 +450,16 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
                 ERROR(ast, "Multiple assignment with modification not permitted");
                 return;
             }
+            // simplify any AST_EMPTY items with counts (e.g. _[n])
+            AST *list, *item;
+            list = NULL;
+            while (lhs) {
+                ASSERT_AST_KIND(lhs, AST_EXPRLIST, return;);
+                item = lhs->left;
+                lhs = lhs->right;
+                list = AddToList(list, ExpandLhsSingle(item));
+            }
+            ast->left = lhs = list;
         }
         else if (op && (op != K_ASSIGN || size > LONG_SIZE) )
         {

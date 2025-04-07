@@ -342,20 +342,6 @@ SpinDeclareStruct(AST *ident, AST *defs)
     PopCurrentModule();
 }
 
-static AST *ExpandLhsSingle(AST *item, AST *list) {
-    if (item && item->kind == AST_EMPTY && item->left) {
-        AST *empty = NewAST(AST_EMPTY, NULL, NULL);
-        int count = EvalConstExpr(item->left);
-        while (count > 0) {
-            list = NewAST(AST_EXPRLIST, empty, list);
-            --count;
-        }
-        return list;
-    } else {
-        return NewAST(AST_EXPRLIST, item, list);
-    }
-}
-
 #define YYERROR_VERBOSE 1
 %}
 
@@ -2329,27 +2315,27 @@ lhsseq:
   '(' lhssingle ',' lhsseqcont ')'
     {
         AST *list = $4;
-        AST *item = ExpandLhsSingle($2, list);
-        $$ = item;
+        AST *item = $2;
+        $$ = NewAST(AST_EXPRLIST, item, list);
     }
   | lhssingle ',' lhsseqcont
     {
         AST *list = $3;
-        AST *item = ExpandLhsSingle($1, list);
-        $$ = item;
+        AST *item = $1;
+        $$ = NewAST(AST_EXPRLIST, item, list);
     }
   ;
 
 lhsseqcont:
   lhssingle
     {
-        AST *item = ExpandLhsSingle($1, NULL);
+        AST *item = NewAST(AST_EXPRLIST, $1, NULL);
         $$ = item;
     }
   | lhsseqcont ',' lhssingle
     {
         AST *list = $1;
-        AST *item = ExpandLhsSingle($3, NULL);
+        AST *item = NewAST(AST_EXPRLIST, $3, NULL);
         $$ = AddToList(list, item);
     }
 ;
