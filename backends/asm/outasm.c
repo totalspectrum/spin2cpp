@@ -6651,6 +6651,10 @@ CompileConstant(IRList *irl, AST *ast, bool skip_clkfreq, bool skip_clkmode)
     }
     expr = (AST *)sym->v.ptr;
     if (!expr) return;
+    if (gl_p2 && !strcasecmp(name,"_")) {
+        // This causes assembly to break, so just omit it
+        return;
+    }
     if (skip_clkfreq && !strcasecmp(name, "_clkfreq")) {
         return;
     }
