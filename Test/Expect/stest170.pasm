@@ -6,9 +6,9 @@ entry
 
 _setptr2
 	mov	setptr2_tmp004_, arg01
+	mov	setptr2_tmp001_, #44
 	call	#_nextidx
 	shl	result1, #2
-	mov	setptr2_tmp001_, #44
 	add	setptr2_tmp001_, result1
 	mov	arg01, setptr2_tmp004_
 	add	objptr, setptr2_tmp001_

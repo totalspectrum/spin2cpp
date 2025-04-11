@@ -19,8 +19,8 @@ _sendchar2_ret
 	ret
 
 _sendchar_index
-	shl	arg01, #2
 	mov	sendchar_index_tmp001_, #8
+	shl	arg01, #2
 	add	sendchar_index_tmp001_, arg01
 	mov	arg01, arg02
 	add	objptr, sendchar_index_tmp001_

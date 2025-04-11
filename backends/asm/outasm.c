@@ -2804,8 +2804,8 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
         // there might be something different we could do about
         // commutative operations, but for now handle them the same
         left = CompileExpression(irl, lhs, temp);
-        right = CompileExpression(irl, rhs, NULL);
         EmitMove(irl, temp, left, expr);
+        right = CompileExpression(irl, rhs, NULL);
         right = Dereference(irl, right);
         EmitOp2(irl, OpcFromOp(op), temp, right);
         return temp;
