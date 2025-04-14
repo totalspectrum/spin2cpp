@@ -1558,7 +1558,7 @@ varline:
     { $$ = NewAST(AST_WORDLIST, $2, NULL); }
   | SP_LONG identlist SP_EOLN
     { $$ = NewAST(AST_LONGLIST, $2, NULL); }
-  | structname identlist SP_EOLN
+  | ptrstructname identlist SP_EOLN
     {
         AST *typ = $1;
         AST *decllist = $2;
@@ -1608,7 +1608,7 @@ vardecl:
     { $$ = NewAST(AST_DECLARE_VAR, NULL, $2); }
   | SP_QUAD identdecl
     { $$ = NewAST(AST_DECLARE_VAR, ast_type_long64, $2); }
-  | structname identdecl
+  | ptrstructname identdecl
     { $$ = NewAST(AST_DECLARE_VAR, $1, $2); }
 ;
 
@@ -2791,6 +2791,16 @@ structname:
   | structname '.' SP_TYPENAME
     {
         $$ = $3;
+    }
+;
+ptrstructname:
+  '^' structname
+    {
+        $$ = NewAST(AST_REFTYPE, $2, NULL);
+    }
+  | structname
+    {
+        $$ = $1;
     }
 ;
 %%
