@@ -1,7 +1,8 @@
 Version 7.1.3
 - Add _[n] syntax for skipping assignments in Spin2
-- Fix usage of sub-objects in Spin2
-- Fixed compilation of files containing a `_` constant (thanks, Ada!)
+- Added TASKHLT pseudo-variable
+- Fixed usage of sub-objects in Spin2
+- Fixed compilation of Spin1 files containing a `_` constant (thanks, Ada!)
 - Fixed a long standing memory evaluation order bug
 
 Version 7.1.2
