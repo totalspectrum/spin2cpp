@@ -66,6 +66,10 @@ void __builtin_taskhalt(int task) {
     __builtin_tasknext();
 }
 
+unsigned __builtin_gethalted() {
+    return halted_tasks;
+}
+
 int __builtin_taskchk(int task) {
     unsigned mask = (1<<task);
     if (0 == (active_tasks & mask)) {

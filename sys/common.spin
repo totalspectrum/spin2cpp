@@ -383,6 +383,7 @@ pri file "libsys/task.c" __builtin_taskhalt(task)
 pri file "libsys/task.c" __builtin_taskcont(task)
 pri file "libsys/task.c" __builtin_taskchk(task) : r
 pri file "libsys/task.c" __builtin_taskid() : r
+pri file "libsys/task.c" __builtin_gethalted() : r
 pri {++task} file "libsys/task.c" __builtin_taskstartv(task, stack, func, argc, argv)
 pri {++task} file "libsys/task.c" __builtin_taskstartl(task, stack, func, argc, %varargs)
 

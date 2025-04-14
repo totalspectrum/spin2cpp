@@ -2525,7 +2525,8 @@ struct reservedword_soft {
     { "newtask", SP_NEWTASK, 47, 0 },
     { "thistask", SP_THISTASK, 47, 0 },
     { "taskspin", SP_TASKINIT, 47, 0 },
-
+    { "taskhlt", SP_TASKHLT, 47, 0 },
+    
     /* v50 keywords */
     { "ditto", SP_DITTO, 50, 0 },
 

@@ -406,6 +406,7 @@ SpinDeclareStruct(AST *ident, AST *defs)
 %token SP_COGINIT    "COGINIT"
 %token SP_COGNEW     "COGNEW"
 %token SP_TASKINIT   "TASKSPIN"
+%token SP_TASKHLT    "TASKHLT"
 %token SP_PINR       "PINREAD"
 %token SP_PINT       "PINTOGGLE"
 %token SP_PINW       "PINWRITE"
@@ -2456,6 +2457,12 @@ funccall:
   | SP_TASKINIT '(' exprlist ')'
     {
         $$ = NewAST(AST_TASKINIT, FixupList($3), NULL);
+    }
+  | SP_TASKHLT
+    {
+        AST *ident = AstIdentifier("__builtin_gethalted");
+        
+        $$ = MakeFunccall(ident, NULL, NULL);
     }
   | SP_COPY '(' expr ',' expr ')'
     {
