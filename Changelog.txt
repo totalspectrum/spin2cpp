@@ -1,4 +1,4 @@
-Version 7.1.3
+Version 7.2.0
 - Add _[n] syntax for skipping assignments in Spin2
 - Added TASKHLT pseudo-variable
 - Fixed usage of sub-objects in Spin2
