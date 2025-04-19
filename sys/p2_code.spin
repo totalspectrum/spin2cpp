@@ -1,6 +1,10 @@
 ''
 '' P2 specific system calls
 ''
+con
+ _rxpin = 63
+ _txpin = 62
+
 pri _getcnt : r = +long
   asm
     getct r
@@ -93,6 +97,11 @@ pri _clkset(mode, freq) | oldmode, xsel
   __clkmode_var := mode
   mode := mode & !3
   asm
+    wrpin   #%00_00001_0,#_rxpin
+    dirh    #_rxpin
+    wxpin   freq,#_rxpin
+    fltl    #_rxpin
+    
     hubset oldmode      ' go to RCFAST using known prior mode
     hubset mode         ' setup for new mode, still RCFAST
     waitx ##20_000_000/100 ' wait ~10ms
@@ -143,9 +152,6 @@ dat
 _bitcycles long 0
 
 con
- _rxpin = 63
- _txpin = 62
-
   _txmode       = %0000_0000_000_0000000000000_01_11110_0 'async tx mode, output enabled for smart output
   _rxmode       = %0000_0000_000_0000000000000_00_11111_0 'async rx mode, input  enabled for smart input
 
