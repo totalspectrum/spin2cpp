@@ -1,5 +1,6 @@
 Version 7.2.1
 - Use _rxpin as repository to hold frequency for gbrk debug
+- Fixed "short unsigned" declarations in C
 
 Version 7.2.0
 - Add _[n] syntax for skipping assignments in Spin2

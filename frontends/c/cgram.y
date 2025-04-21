@@ -285,6 +285,12 @@ CombineTypes(AST *first, AST *second, AST **identifier, Module **module)
         second->left = first;
         return second;
     default:
+        if (first && second && first == ast_type_signed_word) {
+            if (TypeSize(second) == 4 && IsUnsignedType(second)) {
+                second = DupAST(ast_type_word);
+                first = NULL;
+            }
+        }
         if (!first) {
             return MergePrefix(prefix, second);
         }
