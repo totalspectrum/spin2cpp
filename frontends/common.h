@@ -369,6 +369,9 @@ extern AST *ast_type_generic_funcptr;
 extern AST *ast_type_sendptr;
 extern AST *ast_type_recvptr;
 
+/* function for checking attributes (in functions.c) */
+const char *FindAnnotation(AST *attribute, const char *key);
+
 /* structure used for conditional assembly */
 #define MAX_ASM_NEST 16
 typedef struct asmstate {

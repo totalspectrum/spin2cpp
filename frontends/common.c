@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2024 Total Spectrum Software Inc.
+ * Copyright 2011-2025 Total Spectrum Software Inc.
  *
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -2136,7 +2136,7 @@ DeclareMemberVariablesOfSizeFlag(Module *P, int sizeRequest, int offset)
                 // round offset up to necessary alignment
                 // If you change this, be sure to change code for aligning
                 // initializers, too!
-                if (1 /*!gl_p2*/) { /* FIXME: what about PACKED structs */
+                if (!(P->isPacked && gl_p2)) { /* FIXME: what about PACKED structs */
                     if (curtypesize == 2) {
                         offset = (offset + 1) & ~1;
                     } else if (curtypesize >= 4) {
@@ -2297,7 +2297,7 @@ DeclareMemberVariables(Module *P)
 {
     int offset;
     bool isPacked = P->isPacked;
-    
+
     if (P->isUnion) {
         offset = 0;
     } else {
@@ -2319,7 +2319,7 @@ DeclareMemberVariables(Module *P)
         offset = DeclareMemberVariablesOfSizeFlag(P, SIZEFLAG_ALL, offset);
     }
     if (!P->isUnion) {
-        // round up to next LONG boundary
+        // round the whole struct up to next LONG boundary
         offset = (offset + 3) & ~3;
         P->varsize = offset;
     }
@@ -2845,6 +2845,7 @@ typedef struct OffsetStruct {
     int curOffset;
     int maxOffset;
     bool isUnion;
+    bool isPacked;
 } OffsetStruct;
 
 // fixup all variable offsets (used for BASIC and C)
@@ -2855,7 +2856,7 @@ static int fixupVarOffset(Symbol *sym, void *arg)
     if (sym->kind == SYM_VARIABLE && !(sym->flags & (SYMF_GLOBAL|SYMF_NOALLOC))) {
         AST *typ = (AST *)sym->v.ptr;
         int siz = TypeSize(typ);
-        int align = PaddedTypeAlign(typ);
+        int align = A->isPacked ? 1 : PaddedTypeAlign(typ);
         if ((A->curOffset & (align-1)) != 0) {
             A->curOffset = (A->curOffset + (align-1)) & ~(align-1);
         }
@@ -2959,6 +2960,7 @@ void FixupOffsets(Module *P) {
     A.curOffset = 0;
     A.maxOffset = 0;
     A.isUnion = P->isUnion;
+    A.isPacked = P->isPacked && gl_p2;
 
 #ifdef DEBUG_OFFSETS
     printf("%s\n", P->classname);

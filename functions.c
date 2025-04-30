@@ -70,7 +70,7 @@ static void ReinitFunction(Function *f, int language)
     f->optimize_flags = gl_optimize_flags;
     f->warn_flags = gl_warn_flags;
 }
-static const char *
+const char *
 FindAnnotation(AST *annotations, const char *key)
 {
     const char *ptr;

@@ -739,12 +739,14 @@ MakeNewStruct(Module *Parent, AST *skind, AST *identifier, AST *body, AST *optio
 {
     int is_union;
     int is_class;
+    int is_packed;
     const char *name;
     const char *classname;
     char *typname;
     Module *C;
     Symbol *sym;
     AST *class_type;
+    AST *attributes = skind->left;
     
     if (identifier && identifier->kind == AST_LOCAL_IDENTIFIER) {
         identifier = identifier->right;
@@ -772,6 +774,11 @@ MakeNewStruct(Module *Parent, AST *skind, AST *identifier, AST *body, AST *optio
     } else {
         ERROR(skind, "Internal error, not struct or union");
         return NULL;
+    }
+    if (attributes) {
+        if (FindAnnotation(attributes, "packed")) {
+            is_packed = 1;
+        }
     }
     if (!identifier) {
         // use file name and line number
@@ -809,7 +816,7 @@ MakeNewStruct(Module *Parent, AST *skind, AST *identifier, AST *body, AST *optio
             SYNTAX_ERROR("Inconsistent use of union/struct for %s", typname);
         }
         if (options) {
-            SYNTAX_ERROR("typdef use with options not supported yet");
+            SYNTAX_ERROR("typedef use with options not supported yet");
         } else {
             C->Lptr = current->Lptr;
         }
@@ -824,6 +831,7 @@ MakeNewStruct(Module *Parent, AST *skind, AST *identifier, AST *body, AST *optio
             C->defaultPrivate = is_class;
             C->Lptr = current->Lptr;
             C->isUnion = is_union;
+            C->isPacked = is_packed;
             class_type = NewAbstractObjectWithParams(AstIdentifier(typname), NULL, 0, options);
             class_type->d.ptr = C;
             AddSymbol(currentTypes, typname, SYM_TYPEDEF, class_type, NULL);
@@ -1708,20 +1716,20 @@ any_identifier
             { $$ = $1; }
 ;
 struct_or_union
-	: C_STRUCT
+	: C_STRUCT attribute_decl
             {
-                AST *c = NewAST(AST_STRUCT, NULL, NULL);
+                AST *c = NewAST(AST_STRUCT, $2, NULL);
                 c->d.ival = 0;  // public by default
                 $$ = c;
             }
-	| C_CLASS
+	| C_CLASS attribute_decl
             {
-                AST *c = NewAST(AST_STRUCT, NULL, NULL);
+                AST *c = NewAST(AST_STRUCT, $2, NULL);
                 c->d.ival = 1;  // private by default
                 $$ = c;
             }
-	| C_UNION
-            { $$ = NewAST(AST_UNION, NULL, NULL); }
+	| C_UNION attribute_decl
+            { $$ = NewAST(AST_UNION, $2, NULL); }
 	;
 
 using_clause
