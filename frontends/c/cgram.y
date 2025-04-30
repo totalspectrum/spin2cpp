@@ -284,6 +284,20 @@ CombineTypes(AST *first, AST *second, AST **identifier, Module **module)
         }
         second->left = first;
         return second;
+    case AST_ANNOTATION: {
+        Module *P = GetClassPtr(first);
+        if (!P) {
+            WARNING(second, "Ignoring attributes on non aggregate type");
+            return first;
+        }
+        if (FindAnnotation(second, "packed")) {
+            P->isPacked = true;
+            if (!gl_p2) {
+                WARNING(second, "on P1, member alignment is forced even for packed structs");
+            }
+        }
+        return first;
+    }
     default:
         if (first && second && first == ast_type_signed_word) {
             if (TypeSize(second) == 4 && IsUnsignedType(second)) {
@@ -778,6 +792,9 @@ MakeNewStruct(Module *Parent, AST *skind, AST *identifier, AST *body, AST *optio
     if (attributes) {
         if (FindAnnotation(attributes, "packed")) {
             is_packed = 1;
+            if (!gl_p2) {
+                WARNING(skind, "on P1 variables must be aligned even in packed structures");
+            }
         }
     }
     if (!identifier) {
