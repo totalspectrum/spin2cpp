@@ -1,3 +1,7 @@
+Version 7.3.0
+- Allow `__attribute__((packed))` on C structs
+- Make Spin2 structs actually packed
+
 Version 7.2.1
 - Use _rxpin as repository to hold frequency for gbrk debug
 - Fixed "short unsigned" declarations in C
