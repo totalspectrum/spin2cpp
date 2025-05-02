@@ -5,7 +5,7 @@
  */
 
 %pure-parser
-%expect 44
+%expect 40
 
 %{
 #include <stdio.h>
@@ -2187,6 +2187,14 @@ expr:
   ;
 
 lhs: identifier
+  | SP_REF_INC identifier
+    {
+        $$ = AstOperator(K_REF_PREINC, NULL, $2);
+    }
+  | SP_REF_DEC identifier
+    {
+        $$ = AstOperator(K_REF_PREDEC, NULL, $2);
+    }
   | hwreg
   | hwreg '[' range ']'
     { $$ = NewAST(AST_RANGEREF, $1, $3);
@@ -2306,10 +2314,6 @@ lhs: identifier
     { $$ = AstOperator(K_REF_POSTINC, $1, NULL); }
   | lhs SP_REF_DEC
     { $$ = AstOperator(K_REF_POSTDEC, $1, NULL); }
-  | SP_REF_INC lhs
-    { $$ = AstOperator(K_REF_PREINC, NULL, $2); }
-  | SP_REF_DEC lhs
-    { $$ = AstOperator(K_REF_PREDEC, NULL, $2); }
   ;
 
 lhsseq:
