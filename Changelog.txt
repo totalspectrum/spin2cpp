@@ -1,9 +1,8 @@
-Version 7.3.1
-- Fix parsing of `[++]` and `[--]` as pre operators
-
 Version 7.3.0
 - Allow `__attribute__((packed))` on C structs
 - Make Spin2 structs actually packed
+- Fix parsing of `[++]` and `[--]` as pre operators
+
 
 Version 7.2.1
 - Use _rxpin as repository to hold frequency for gbrk debug
