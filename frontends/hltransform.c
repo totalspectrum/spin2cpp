@@ -61,7 +61,7 @@ fixReferences(AST **astptr, int incdecop)
             int op = ast->d.ival;
             AST *typ = onLeft ? ExprType(ast->left) : ExprType(ast->right);
             if (!IsRefType(typ)) {
-                ERROR(ast, "Applying [++] or [--] to a non-pointer\n");
+                ERROR(ast, "Applying [++] or [--] to a non-pointer");
             } else {
                 fixReferences(&ast->left, op);
                 fixReferences(&ast->right, op);
