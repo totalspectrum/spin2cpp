@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2023 Total Spectrum Software Inc.
+ * Copyright 2011-2025 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for BASIC specific features
@@ -482,6 +482,7 @@ genPrintf(AST *ast)
                     justify = FMTPARAM_LEFTJUSTIFY;
                     c = *fmtstring++;
                     if (!c) {
+                        AstReportDone(&saveinfo);
                         return NULL;
                     }
                 }
@@ -554,6 +555,7 @@ genPrintf(AST *ast)
                     break;
                 default:
                     //ERROR(ast, "unknown printf format character `%c'", c);
+                    AstReportDone(&saveinfo);
                     return NULL;
                 }
 done_arg:
