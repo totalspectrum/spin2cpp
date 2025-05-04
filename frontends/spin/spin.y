@@ -342,6 +342,50 @@ SpinDeclareStruct(AST *ident, AST *defs)
     PopCurrentModule();
 }
 
+// declare a Spin structure
+static void
+SpinDeclareInterface(AST *ident, AST *defs)
+{
+    const char *classname = GetUserIdentifierName(ident);
+    Module *P = NewModule(classname, current->curLanguage);
+    AST *newobj = NewAbstractObject(ident, NULL, 0);
+    newobj->d.ptr = P;
+    P->isInterface = 1;
+    
+    AddSymbol(currentTypes, classname, SYM_TYPEDEF, newobj, NULL);
+    
+    if (P != current) {
+        P->Lptr = current->Lptr;
+        P->subclasses = current->subclasses;
+        current->subclasses = P;
+        P->superclass = current;
+        P->fullname = current->fullname; // for finding "class using"
+         newobj->d.ptr = (void *)P;
+        P->isPacked = 1;
+
+        /* import parent's symbols into P */
+        P->objsyms.next = &current->objsyms;
+        AddSymbol(&current->objsyms, classname, SYM_TYPEDEF, newobj, NULL);
+    }
+
+    PushCurrentModule();
+    current = P;
+    AST *item;
+    /* declare abstract methods */
+    while (defs) {
+        AST *rettype;
+        AST *body = NULL;
+        item = defs->left;
+        defs = defs->right;
+        while (item && item->kind == AST_COMMENTEDNODE) {
+            item = item->left;
+        }
+        rettype = SpinRetType(item);
+        DeclareFunction(current, rettype, 1, item, body, NULL, NULL);
+    }
+    PopCurrentModule();
+}
+
 #define YYERROR_VERBOSE 1
 %}
 
@@ -1180,6 +1224,14 @@ conline:
         SpinDeclareStruct(name, defs);
         $$ = NULL;
     }
+  | SP_INTERFACE SP_IDENTIFIER '(' ifacelist ')' SP_EOLN
+    {
+        /* basically an inline object definition */
+        AST *defs = $4;
+        AST *name = $2;
+        SpinDeclareInterface(name, defs);
+        $$ = NULL;
+    }
   | SP_STRUCT SP_IDENTIFIER '(' structlist ')' SP_EOLN
     {
         /* basically an inline object definition */
@@ -1254,6 +1306,20 @@ structitem:
       AST *typname = $1;
       $$ = NewAST(AST_DECLARE_VAR, MaybeArrayType(typname, $3), name);
   }
+;
+
+ifacelist:
+  ifaceitem
+    { $$ = CommentedListHolder($1); }
+  | ifacelist ifaceitem
+    { $$ = AddToList($1, CommentedListHolder($2)); }
+;
+
+ifaceitem:
+  SP_EOLN /* empty */
+    { $$ = NULL; }
+  | SP_PUB funcdef funcdef_end
+    { $$ = $2; }
 ;
 
 enumlist:

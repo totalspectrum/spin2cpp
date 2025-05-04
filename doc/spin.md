@@ -394,7 +394,7 @@ waits until CNT reaches "newcnt", and returns "newcnt + incr".
 
 Note that unlike most Spin blocks, the `asm` block has to end with `endasm`. This is because indentation is not significant inside the assembly code. For example, labels typically start at the leftmost margin.
 
-### Spin2 style inline assembly (org/end)
+#### Spin2 style inline assembly (org/end)
 
 flexspin also accepts Spin2 style inline assembly, marked with `org` and `end` instead of `asm` and `endasm`. So the above example could be written as:
 ```
@@ -421,6 +421,28 @@ Unlike the "official" Spin2 compiler, flexspin does not accept an address for th
 (3) The area set aside for inline assembly is smaller by default in flexspin than in Parallax's Spin2. This may be changed with the --fcache parameter to flexspin.
 
 (4) In PNut/PropTool only the first 16 local variables may be accessed in inline assembly; flexspin has this restriction only for bytecode output. For assembly output other locals may be accessed as well.
+
+### Interfaces
+
+Flexspin supports pointers to interfaces. An interface is like a struct, but instead of having only member variables it has only public functions (no variables are allowed). Any object which implements all of the methods declared in the interface may be passed to an interface pointer.
+
+Interfaces are declared with the `%interface` keyword.
+
+For example, if an object has a declaration like:
+```
+con
+  %interface MyIface (
+    pub getval(): r
+    pub incr()
+  )
+
+pub myfunc(^MyIface i): ret
+  i.incr()
+  ret := i.getval()
+```
+Then any object having `incr` and `getval` methods may be passed
+as the parameter to `myfunc`, and it will first call the `incr`
+method for that object and then return the result of `getval`.
 
 ### Method pointers
 
