@@ -222,6 +222,7 @@ extern int gl_warn_flags;     /* flags for warnings */
 #define WARN_ARRAY_INDEX        0x000020
 #define WARN_LANG_VERSION       0x000040
 #define WARN_DEPRECATED         0x000080
+#define WARN_BUILTIN_FALLBACK   0x000100
 #define WARN_ASM_LABEL_TYPES    0x400000
 #define WARN_ASM_FIRST_PASS     0x800000
 

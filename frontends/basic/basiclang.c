@@ -198,6 +198,7 @@ addPrintDec(AST *seq, AST *handle, AST *func, AST *expr, AST *fmtAst)
 #define FMTPARAM_SIGNPLUS  (1<<SIGNCHAR_BIT)
 #define FMTPARAM_SIGNSPACE (2<<SIGNCHAR_BIT)
 #define FMTPARAM_UNSIGNED  (3<<SIGNCHAR_BIT)
+#define FMTPARAM_UPCASE    (1<<UPCASE_BIT)
 
 static AST *
 AddExprToList(AST *list, AST *x)
@@ -413,6 +414,7 @@ genPrintf(AST *ast)
     int justify;
     int longflag;
     int signchar;
+    bool warnFallback = curfunc && (curfunc->warn_flags & WARN_BUILTIN_FALLBACK);
     ASTReportInfo saveinfo;
 
     if (gl_output == OUTPUT_CPP || gl_output == OUTPUT_C) {
@@ -439,7 +441,9 @@ genPrintf(AST *ast)
         fmtstring = str->d.string;
     }
     if (!fmtstring) {
-        //ERROR(ast, "__builtin_printf only works with a constant string");
+        if (warnFallback) {
+            WARNING(ast, "builtin printf only works with a constant string, using library");
+        }
         return NULL;
     }
     AstReportAs(ast, &saveinfo);
@@ -453,7 +457,9 @@ genPrintf(AST *ast)
         if (c == '%') {
             c = *fmtstring++;
             if (!c) {
-                //ERROR(ast, "bad format in __builtin_printf");
+                if (warnFallback) {
+                    WARNING(ast, "unexpected end of string in builtin printf, using library printf");
+                }
                 AstReportDone(&saveinfo);
                 return NULL;
             }
@@ -482,6 +488,9 @@ genPrintf(AST *ast)
                     justify = FMTPARAM_LEFTJUSTIFY;
                     c = *fmtstring++;
                     if (!c) {
+                        if (warnFallback) {
+                            WARNING(ast, "unexpected end of string in builtin printf, using library printf");
+                        }
                         AstReportDone(&saveinfo);
                         return NULL;
                     }
@@ -535,6 +544,13 @@ genPrintf(AST *ast)
                         seq = addPrintHex(seq, Handle, basic_print_unsigned, thisarg, AstInteger(fmt));
                     }
                     break;
+                case 'X':
+                    if (longflag > 1) {
+                        seq = addPrintHex(seq, Handle, basic_print_longunsigned, thisarg, AstInteger(fmt|FMTPARAM_UPCASE));
+                    } else {
+                        seq = addPrintHex(seq, Handle, basic_print_unsigned, thisarg, AstInteger(fmt|FMTPARAM_UPCASE));
+                    }
+                    break;
                 case 'b':
                     if (longflag > 1) {
                         seq = addPrintBinary(seq, Handle, basic_print_longunsigned, thisarg, AstInteger(fmt));
@@ -554,7 +570,9 @@ genPrintf(AST *ast)
                     seq = addFloatPrintCall(seq, Handle, basic_print_float, thisarg, AstInteger(fmt), c);
                     break;
                 default:
-                    //ERROR(ast, "unknown printf format character `%c'", c);
+                    if (warnFallback) {
+                        WARNING(ast, "printf format character `%c' not handled by builtin, using library function", c);
+                    }
                     AstReportDone(&saveinfo);
                     return NULL;
                 }

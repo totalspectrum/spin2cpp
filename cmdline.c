@@ -628,6 +628,7 @@ static FlagTable warnflag[] = {
     { "language-version", WARN_LANG_VERSION },
     { "array-index", WARN_ARRAY_INDEX },
     { "deprecated", WARN_DEPRECATED },
+    { "builtin-fallback", WARN_BUILTIN_FALLBACK },
     { "all", WARN_ALL },
 };
 

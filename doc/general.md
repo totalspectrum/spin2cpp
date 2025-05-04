@@ -294,6 +294,10 @@ Warns about possible conflicts between user variable names and Spin2 language ke
 
 Issues a warning about attempts to use uninitialized variables. Note that FlexProp isn't completely able to see all ways a variable could be initialized, so this warning may sometimes be spurious.
 
+### Builtin function fallback (-Wbuiltin-fallback)
+
+Warn when a builtin function must fall back to the library function; this generally means that the code will be larger and/or slower. Mainly useful for knowing when `__builtin_printf` will drag in the whole standard library printf.
+
 ## Optimizations
 
 Listed below are optimizations which may be enabled on the command line or on a per-function basis. The general optimization level may be specified by a number: 0 for no optimizations, 1 for basic (reliable) optimizations, and 2 for additional optimizations. `-Os` is generally equivalent to `-O1`, but favors size over speed (and may enable a few additional space optimizations).
