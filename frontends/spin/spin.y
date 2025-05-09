@@ -2296,7 +2296,9 @@ lhs: identifier
     { $$ = AstSprRef($3, 0x0); }
   | SP_TYPENAME '[' expr ']'
     {
-        AST *base = NewAST(AST_MEMREF, $1, $3);
+        AST *typ = $1;
+        AST *expr = $3;
+        AST *base = NewAST(AST_MEMREF, typ, expr);
         $$ = base;
     }
   | SP_TYPENAME '.' identifier
