@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2024 Total Spectrum Software Inc.
+ * Copyright 2011-2025 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for Spin specific features
@@ -888,17 +888,24 @@ doSpinTransform(AST **astptr, int level, AST *parent)
         doSpinTransform(&ast->left, 0, ast);
         doSpinTransform(&ast->right, 0, ast);
         if (parent->kind != AST_ARRAYREF) {
+            AST *dsttyp = ast->left;
+            AST *srctyp = ExprType(ast->right);            
+            if (IsInterfaceType(dsttyp) && !IsInterfaceType(srctyp)) {
+                CoerceAssignTypes(ast, AST_CAST, &ast->right, dsttyp, srctyp, "interface conversion");
+                ast->kind = AST_CAST;
+                break;
+            }
             AstReportAs(ast, &saveinfo);
             AST *dup = NewAST(AST_MEMREF, ast->left, ast->right);
             AST *deref = NewAST(AST_ARRAYREF, dup, AstInteger(0));
             AstReportDone(&saveinfo);
             *ast = *deref;
-            break;
         }
         break;
     case AST_ARRAYREF:
         // array references like T[x] may actually
         // be a memory lookup if T is a typename
+        // (this code is probably obsolete due to parser changes...)
         if (ast->left && ast->left->kind == AST_IDENTIFIER) {
             Symbol *sym = LookupSymbol(ast->left->d.string);
             AST *typ;

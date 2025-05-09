@@ -1451,7 +1451,7 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
         }
         // check for interface conversion
         if (IsInterfaceType(BaseType(desttype))) {
-            if (!IsPointerType(desttype)) {
+            if (!IsPointerType(desttype) && kind != AST_CAST) {
                 ERROR(expr, "interfaces are accessible only as pointers or references");
                 AstReportDone(&saveinfo);
                 return desttype;
