@@ -2064,6 +2064,9 @@ DeclareMemberVariablesOfSizeFlag(Module *P, int sizeRequest, int offset)
                 Module *Q = GetClassPtr(curtype);
                 curSizeFlag = SIZEFLAG_OBJ;
                 if (Q) {
+                    if (Q->isInterface) {
+                        ERROR(ast, "Only pointers to interfaces are valid types for variables");
+                    }
                     if (Q->varsize_used_valid) {
                         if (Q->varsize_used != curtypesize) {
                             ERROR(ast, "mismatched sizes for object %s: used %d before, but %d now", Q->classname, Q->varsize_used, curtypesize);
