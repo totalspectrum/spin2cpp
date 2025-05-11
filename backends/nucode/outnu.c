@@ -1694,9 +1694,18 @@ NuCompileExpression(NuIrList *irl, AST *node) {
             // may have to widen or narrow
             // (We require here that any int <-> float conversions
             // happened in type analysis)
-            int expectN = (TypeSize(node->left) + LONG_SIZE - 1) / LONG_SIZE;
+            // EXCEPTION: casts to interface types get inserted by the
+            // Spin2 analysis, treat those as single words
+            AST *dsttyp = node->left;
+            int expectN;
+
+            if (IsInterfaceType(dsttyp))
+                expectN = 1;
+            else
+                expectN = (TypeSize(dsttyp) + LONG_SIZE - 1) / LONG_SIZE;
+
             if (expectN != n) {
-                if (!IsIntType(node->left)) {
+                if (!IsIntType(dsttyp)) {
                     ERROR(node, "Internal error, expected integer type");
                 }
                 if (expectN < n) {
