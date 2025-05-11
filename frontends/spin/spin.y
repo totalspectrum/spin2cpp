@@ -1259,6 +1259,20 @@ conline:
         AddSymbol(currentTypes, name, SYM_TYPEDEF, oldtype, NULL);
         $$ = NULL;
     }
+  | SP_INTERFACE SP_IDENTIFIER '=' structname SP_EOLN
+    {
+        /* basically a type alias*/
+        AST *oldtype = $4;
+        AST *ident = $2;
+        Module *P = GetClassPtr(oldtype);
+        const char *name = GetUserIdentifierName(ident);
+        AddSymbol(currentTypes, name, SYM_TYPEDEF, oldtype, NULL);
+        $$ = NULL;
+        if (!P->isInterface) {
+            ERROR(ident, "item assigned to `%s' is not an interface",
+                  name);
+        }
+    }
   | SP_EOLN
     { $$ = NULL; }
   | error SP_EOLN
