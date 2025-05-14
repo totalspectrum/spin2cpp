@@ -3210,6 +3210,8 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
         // now get object pointer into temp1 and function pointer into temp2
         if (ComplexMethodPtrs()) {
             // using indirect function pointers
+            // this is obsolete now, we always use indirect for
+            // assembly language
             EmitMove(irl, tempbase, base, expr);
             ptr1 = SizedHubMemRef(LONG_SIZE, tempbase, 0);
             ptr2 = SizedHubMemRef(LONG_SIZE, tempbase, 4);
@@ -7314,17 +7316,17 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
 
     // add the function table (if any)
     if (method_table_base) {
-        Function *F = (Function *)gl_indirect_functions;
-        Function *LastG = NULL;
-        Function *G;
+        Function **Fptr = (Function **)flexbuf_peek(&indirectFuncTable);
+        int count = flexbuf_curlen(&indirectFuncTable) / sizeof(Function *);
+        Function *F;
         EmitLabel(&hubdata, method_table_label);
-        if (F)
+        int i;
+
+        if (count)
             EmitLong(&hubdata, 0); // dummy NULL entry
-        while (F != LastG) {
-            for (G = F; G->next_method != LastG; G = G->next_method) {
-            }
-            EmitOp1(&hubdata, OPC_LONG, FuncData(G)->asmname);
-            LastG = G;
+        for (i = 0; i < count; i++) {
+            F = Fptr[i];
+            EmitOp1(&hubdata, OPC_LONG, FuncData(F)->asmname);
         }
     }
 

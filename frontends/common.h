@@ -238,8 +238,7 @@ extern int gl_fcache_size;   /* size of fcache for LMM mode */
 extern const char *gl_cc; /* C compiler to use; NULL means default (PropGCC) */
 extern const char *gl_intstring; /* int string to use */
 
-extern int gl_indirect_function_count; /* count of indirect functions */
-extern void *gl_indirect_functions;    /* linked list of indirect funcs */
+extern Flexbuf indirectFuncTable;  /* table of indirect functions */
 
 extern int gl_dat_offset; /* offset for @@@ operator */
 #define DEFAULT_P1_DAT_OFFSET 24
@@ -517,10 +516,9 @@ typedef struct funcdef {
     /* pointer to indirect symbol for interfaces */
     void *sym_funcptr;
     
-    /* linked list of functions whose addresses are taken */
-    /* used for building a jump table */
+    /* assistance for indirect function table */
     int method_index;            // index into jump table
-    struct funcdef *next_method; // next in jump table
+
 } Function;
 
 /* structure describing an entry in a list of functions */
@@ -725,7 +723,8 @@ void DeclareFunctionTemplate(Module *P, AST *templ);
 AST *InstantiateTemplateFunction(Module *P, AST *templ, AST *call);
 
 /* add a function to the global method pointer table */
-void AddIndirectFunctionCall(Function *F);
+/* returns the index of the added function */
+int AddIndirectFunctionCall(Function *F);
 
 /* declare C++ style annotations? */
 void DeclareToplevelAnnotation(AST *annotation);

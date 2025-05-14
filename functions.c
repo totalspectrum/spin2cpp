@@ -3495,15 +3495,18 @@ int FuncLocalSize(Function *func)
 /*
  * add a function to the indirect function jump table
  */
-int gl_indirect_function_count;
-void *gl_indirect_functions;
+int gl_indirect_function_count = 0;
+Flexbuf indirectFuncTable;
 
-void AddIndirectFunctionCall(Function *F)
+int AddIndirectFunctionCall(Function *F)
 {
+    if (!indirectFuncTable.growsize)
+        flexbuf_init(&indirectFuncTable, 1024);
+    
     F->used_as_ptr = 1;
     if (F->method_index == 0) {
         F->method_index = ++gl_indirect_function_count;
-        F->next_method = (Function *)gl_indirect_functions;
-        gl_indirect_functions = (void *)F;
+        flexbuf_addmem(&indirectFuncTable, (const char *)&F, sizeof(F));
     }
+    return F->method_index;
 }
