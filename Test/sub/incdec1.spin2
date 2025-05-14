@@ -1,0 +1,19 @@
+con
+  INCRVAL = 1
+  INITVAL = 1
+  
+var
+  long val
+
+pub init()
+  val := INITVAL
+
+pub incr()
+  val += INCRVAL
+
+pub decr()
+  val -= INCRVAL
+
+pub getval(): r
+  r := val
+

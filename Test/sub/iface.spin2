@@ -1,0 +1,19 @@
+'
+' test of how interfaces work
+'
+con
+  %interface incdec(
+    pub getval(): r
+    pub incr()
+    pub decr()
+  )
+
+obj
+  fmt: "spin/ers_fmt"
+
+pub testit(m, ^incdec z) | origval
+  origval := z.getval()
+  send("message: ", fmt.str(m), fmt.nl())
+  z.incr()
+  send("init: ", fmt.dec(origval), " ")
+  send("incr: ", fmt.dec(z.getval()), fmt.nl())

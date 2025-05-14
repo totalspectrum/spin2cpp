@@ -1,0 +1,33 @@
+{Spin2_v51}
+
+#ifndef _BAUD
+#define _BAUD 230_400
+#endif
+
+con
+  _clkfreq = 180_000_000
+
+obj
+  t: "sub/iface.spin2"
+  a: "sub/incdec1"
+  ser: "spin/SimpleSerial"
+
+con
+  %interface ii = t.incdec
+  foobar = $20
+
+var
+  ^ii x
+
+pub main()
+  ser.start(_BAUD)
+  send := @ser.tx
+  send("start", 13, 10)
+  a.init()
+  [x] := ii[a]
+  t.testit(@"testing a direct", a)
+  t.testit(@"testing a indirect", x)
+  send("done", 13, 10)
+
+  ' send magic exit sequence
+  send(255, 0, 0)

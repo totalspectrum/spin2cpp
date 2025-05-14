@@ -88,6 +88,26 @@ do
   fi  
 done
 
+#
+# Spin2 tests: these are P2 only
+#
+for i in exec*.spin2
+do
+  j=`basename $i .spin2`
+  # now compile with asm
+  if $PROG_ASM -o $j.binary $i; then
+    $LOADP2 $j.binary -t -q > $j.txt
+  fi
+  if diff -ub Expect/$j.txt $j.txt
+  then
+    echo $j passed for ASM
+    rm -f $j.out $j.txt $j.binary $j.p2asm
+  else
+    echo $j failed
+    endmsg="TEST FAILURES"
+  fi  
+done
+
 # clean up
 rm -f FullDuplexSerial.cpp FullDuplexSerial.h
 echo $endmsg
