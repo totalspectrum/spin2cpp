@@ -64,7 +64,7 @@ BuildMethodPointer(AST *ast)
         objast = NewAST(AST_ADDROF, objast, NULL);
     }
     funcptrtype = NewAST(AST_PTRTYPE, func->overalltype, NULL);
-    AddIndirectFunctionCall(func);
+    AddIndirectFunctionCall(func, false);
     if (func->callSites == 0) {
         MarkUsed(func, "func pointer");
     }

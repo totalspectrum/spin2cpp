@@ -396,7 +396,7 @@ MarkSystemFuncUsed(const char *name)
     }
     if (sym->kind == SYM_FUNCTION) {
         calledf = (Function *)sym->v.ptr;
-        AddIndirectFunctionCall(calledf);
+        AddIndirectFunctionCall(calledf, false);
     }
 }
 
@@ -3498,15 +3498,19 @@ int FuncLocalSize(Function *func)
 int gl_indirect_function_count = 0;
 Flexbuf indirectFuncTable;
 
-int AddIndirectFunctionCall(Function *F)
+int AddIndirectFunctionCall(Function *F, bool used_in_interface)
 {
+    bool need_add = used_in_interface;
     if (!indirectFuncTable.growsize)
         flexbuf_init(&indirectFuncTable, 1024);
     
     F->used_as_ptr = 1;
-    if (F->method_index == 0) {
+    if (F->method_index == 0 && !used_in_interface) {
         F->method_index = ++gl_indirect_function_count;
+        need_add = true;
+    }
+    if (need_add) {
         flexbuf_addmem(&indirectFuncTable, (const char *)&F, sizeof(F));
     }
-    return F->method_index;
+    return gl_indirect_function_count;
 }

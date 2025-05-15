@@ -969,7 +969,7 @@ MarkStaticFunctionPointers(AST *list)
                     return;
                 }
                 f = (Function *)sym->v.ptr;
-                AddIndirectFunctionCall(f);
+                AddIndirectFunctionCall(f, false);
                 MarkUsed(f, "static func");
                 MarkSystemFuncUsed("__call_methodptr");
             }

@@ -724,7 +724,7 @@ AST *InstantiateTemplateFunction(Module *P, AST *templ, AST *call);
 
 /* add a function to the global method pointer table */
 /* returns the index of the added function */
-int AddIndirectFunctionCall(Function *F);
+int AddIndirectFunctionCall(Function *F, bool used_in_interface);
 
 /* declare C++ style annotations? */
 void DeclareToplevelAnnotation(AST *annotation);
