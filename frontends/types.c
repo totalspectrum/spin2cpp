@@ -2516,6 +2516,7 @@ AST *ConvertInterface(AST *ifaceType, AST *classType, AST *expr)
         return NULL;
     }
     // see if we've already built an interface skeleton
+    // for module P as interface I
     // if not, build it
     skelSym = GetInterfaceSkeleton(P, I, &n, expr);
     if (!skelSym) {
