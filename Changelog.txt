@@ -4,6 +4,7 @@ Version 7.3.0
 - Make Spin2 structs actually packed
 - Fix parsing of `[++]` and `[--]` as pre operators
 - Fixed error reporting around __builtin_printf
+- Fixed callpa #x, ##longx (keep 20 bits for addresses, not 18)
 - Implemented `%interface` for Spin2
 - Updated __builtin_printf to handle %X
 

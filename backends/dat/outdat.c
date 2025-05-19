@@ -1699,7 +1699,7 @@ decode_instr:
             if (immmask & BIG_IMM_SRC) {
                 uint32_t augval = val & 0xf0000000; // preserve condition
                 isrc--;
-                augval |= (isrc >> 9) & 0x1ff;  // relative jumps only get 9 bits in AUG
+                augval |= (isrc >> 9) & 0x0007ff; // 11 bits + 9 to make 20 bits
                 augval |= 0x0f000000; // AUGS
                 outputInstrLong(f, augval);
                 isrc = isrc & 0x1ff;
