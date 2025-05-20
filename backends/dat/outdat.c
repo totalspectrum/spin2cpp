@@ -1920,7 +1920,7 @@ decode_instr:
         }
     }
     if (dst > 511) {
-        if (immmask & P2_IMM_DST) {
+        if ((immmask & P2_IMM_DST) || instr->ops == P2_DST_CONST_OK) {
             ERROR(line, "Destination operand too big for %s", instr->name);
         } else {
             ERROR(line, "Destination operand of %s does not appear to be a register", instr->name);

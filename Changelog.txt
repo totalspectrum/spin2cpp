@@ -5,6 +5,7 @@ Version 7.3.0
 - Fix parsing of `[++]` and `[--]` as pre operators
 - Fixed error reporting around __builtin_printf
 - Fixed callpa #x, ##longx (keep 20 bits for addresses, not 18)
+- Fixed error reporting for P2_DST_CONST_OK instructions
 - Implemented `%interface` for Spin2
 - Updated __builtin_printf to handle %X
 
