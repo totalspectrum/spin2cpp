@@ -1476,8 +1476,8 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
         if (IsPointerType(desttype) && IsPointerType(srctype)) {
             if (curfunc && IsBasicLang(curfunc->language) && IsRefType(desttype) && IsArrayType(desttype->left) && TypeSize(desttype->left) == 0) {
                 /* OK, parameter declared as foo() so can accept any array */
-            } else if (curfunc && IsSpinLang(curfunc->language) && IsRefType(desttype) && IsRefType(srctype)
-                       && IsArrayType(srctype->left)
+            } else if (curfunc && IsSpinLang(curfunc->language) && IsRefType(desttype)
+                       && (IsArrayType(srctype->left) || !IsRefType(srctype))
                        && CompatibleTypes(BaseType(srctype->left), BaseType(desttype))
                 )
             {
