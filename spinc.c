@@ -546,39 +546,39 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
                 langptr = ".c";
             }
         }
-        if (!strcmp(langptr, ".bas")
-                || !strcmp(langptr, ".basic")
-                || !strcmp(langptr, ".bi")
+        if (!strcasecmp(langptr, ".bas")
+                || !strcasecmp(langptr, ".basic")
+                || !strcasecmp(langptr, ".bi")
            )
         {
             language = LANG_BASIC_FBASIC;
-        } else if (!strcmp(langptr, ".c")
-                   || !strcmp(langptr, ".h")
-                   || !strcmp(langptr, ".a")
+        } else if (!strcasecmp(langptr, ".c")
+                   || !strcasecmp(langptr, ".h")
+                   || !strcasecmp(langptr, ".a")
                   )
         {
             language = LANG_CFAMILY_C;
-        } else if (!strcmp(langptr, ".cpp")
-                   || !strcmp(langptr, ".cc")
-                   || !strcmp(langptr, ".cxx")
-                   || !strcmp(langptr, ".c++")
-                   || !strcmp(langptr, ".hpp")
-                   || !strcmp(langptr, ".hh")
+        } else if (!strcasecmp(langptr, ".cpp")
+                   || !strcasecmp(langptr, ".cc")
+                   || !strcasecmp(langptr, ".cxx")
+                   || !strcasecmp(langptr, ".c++")
+                   || !strcasecmp(langptr, ".hpp")
+                   || !strcasecmp(langptr, ".hh")
                   )
         {
             language = LANG_CFAMILY_CPP;
         }
-        else if (!strcmp(langptr, ".b")
-                 || !strcmp(langptr, ".bf"))
+        else if (!strcasecmp(langptr, ".b")
+                 || !strcasecmp(langptr, ".bf"))
         {
             language = LANG_BF;
         }
-        else if (!strcmp(langptr, ".spin2"))
+        else if (!strcasecmp(langptr, ".spin2"))
         {
             language = LANG_SPIN_SPIN2;
             langptr = ".spin2";
         }
-        else if (!strcmp(langptr, ".spin"))
+        else if (!strcasecmp(langptr, ".spin"))
         {
             language = LANG_SPIN_SPIN1;
             langptr = ".spin";
@@ -617,13 +617,13 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
     if (current) {
         fname = find_file_on_path(&gl_pp, name, langptr, current->fullname);
         if (!fname) {
-            if (!strcmp(langptr, ".spin2")) {
+            if (!strcasecmp(langptr, ".spin2")) {
                 fname = find_file_on_path(&gl_pp, name, ".spin", current->fullname);
                 if (fname) {
                     language = LANG_SPIN_SPIN1;
                     langptr = ".spin";
                 }
-            } else if (!strcmp(langptr, ".spin")) {
+            } else if (!strcasecmp(langptr, ".spin")) {
                 fname = find_file_on_path(&gl_pp, name, ".spin2", current->fullname);
                 if (fname) {
                     language = LANG_SPIN_SPIN2;
@@ -634,7 +634,7 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
         if (fname) {
             fname = NormalizePath(fname);
         }
-    } else if (!strcmp(langptr, ".a")) {
+    } else if (!strcasecmp(langptr, ".a")) {
         fname = find_file_on_path(&gl_pp, name, langptr, NULL);
     }
     if (!fname) {
