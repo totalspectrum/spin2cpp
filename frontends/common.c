@@ -2081,6 +2081,8 @@ DeclareMemberVariablesOfSizeFlag(Module *P, int sizeRequest, int offset)
                 if (IsArrayType(curtype)) {
                     int size = TypeSize(BaseType(curtype));
                     sawSmall = size < LONG_SIZE;
+                } else if (curtypesize && curtypesize < LONG_SIZE) {
+                    sawSmall = true;
                 }
             }
             if (ast->d.ival) {
