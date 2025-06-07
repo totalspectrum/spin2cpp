@@ -2016,7 +2016,7 @@ DeclareMemberVariablesOfSizeFlag(Module *P, int sizeRequest, int offset)
     int isUnion = P->isUnion;
     AST *varblocklist;
     unsigned sym_flags = 0;
-    bool sawSmall = false;
+    bool longOnly = true;
     
     if (P->defaultPrivate) {
         sym_flags = SYMF_PRIVATE;
@@ -2039,14 +2039,14 @@ DeclareMemberVariablesOfSizeFlag(Module *P, int sizeRequest, int offset)
             curtype = ast_type_byte;
             curtypesize = 1;
             curSizeFlag = SIZEFLAG_BYTE;
-            sawSmall = true;
+            longOnly = false;
             idlist = ast->left;
             break;
         case AST_WORDLIST:
             curtype = ast_type_word;
             curtypesize = 2;
             curSizeFlag = SIZEFLAG_WORD;
-            sawSmall = true;
+            longOnly = false;
             idlist = ast->left;
             break;
         case AST_LONGLIST:
@@ -2075,14 +2075,14 @@ DeclareMemberVariablesOfSizeFlag(Module *P, int sizeRequest, int offset)
                     Q->varsize_used = curtypesize;
                     Q->varsize_used_valid = true;
                 }
-                sawSmall = !Q->longOnly;
+                longOnly &= (Q->longOnly && curtypesize == LONG_SIZE);
             } else {
                 curSizeFlag = (curtypesize == 0) ? SIZEFLAG_OBJ : SIZEFLAG_VAR;
                 if (IsArrayType(curtype)) {
                     int size = TypeSize(BaseType(curtype));
-                    sawSmall = size < LONG_SIZE;
-                } else if (curtypesize && curtypesize < LONG_SIZE) {
-                    sawSmall = true;
+                    longOnly &= size == LONG_SIZE;
+                } else if (curtypesize && curtypesize != LONG_SIZE) {
+                    longOnly = false;
                 }
             }
             if (ast->d.ival) {
@@ -2153,7 +2153,7 @@ DeclareMemberVariablesOfSizeFlag(Module *P, int sizeRequest, int offset)
             offset = EnterVars(SYM_VARIABLE, &P->objsyms, curtype, idlist, offset, P->isUnion, sym_flags);
         }
     }
-    if (sawSmall) {
+    if (!longOnly) {
         P->longOnly = 0;
     }
     return offset;
