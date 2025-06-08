@@ -1688,7 +1688,7 @@ Predefined function. `cos(x)` returns the cosine of `x`, which is a floating poi
 
 ### COUNTSTR
 
-Predefined function. `countstr(x$, s$)` counts the number of occurences of substring s$ in the string x$. If `x$` is an empty string, returns 0. If `s$` is an empty string returns the length of `x$`.
+Predefined function. `countstr(x$, s$)` counts the number of occurences of substring `s$` in the string `x$`. If `x$` is an empty string, returns 0. If `s$` is an empty string returns the length of `x$`.
 
 ### CPU
 
