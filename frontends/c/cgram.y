@@ -27,7 +27,7 @@
     
 /* Yacc functions */
     void cgramyyerror(const char *);
-    int cgramyylex();
+    int cgramyylex(CGRAMYYSTYPE *);
 
     extern int gl_errors;
 

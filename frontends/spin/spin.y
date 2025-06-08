@@ -19,7 +19,7 @@
     
 /* Yacc functions */
     void spinyyerror(const char *);
-    int spinyylex();
+    int spinyylex(SPINYYSTYPE *);
 
     extern int gl_errors;
 

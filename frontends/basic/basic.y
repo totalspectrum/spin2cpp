@@ -21,7 +21,7 @@
     
 /* Yacc functions */
     void basicyyerror(const char *);
-    int basicyylex();
+    int basicyylex(BASICYYSTYPE *);
 
     extern int gl_errors;
 
