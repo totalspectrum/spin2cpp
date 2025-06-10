@@ -1,5 +1,6 @@
 Version 7.3.1
 - Fixed some errors in C __pasm parsing
+- Fixed compile time calculations of QLOG and QEXP (thanks to Ada)
 
 Version 7.3.0
 - Allow `__attribute__((packed))` on C structs
