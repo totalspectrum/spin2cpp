@@ -9,6 +9,7 @@
 #include "spinc.h"
 #include "backends/bytecode/bc_bedata.h"
 #include "becommon.h" // for PrintExpr
+#include "util/softcordic.h"
 #include <ctype.h>
 #include <string.h>
 #include <math.h>
@@ -1533,17 +1534,25 @@ EvalIntOperator(int op, ExprInt lval, ExprInt rval, int *valid, bool truncMath)
         return popcount(rval);
     case K_QLOG:
     {
+        #if 1
+        return qlog((uint32_t)rval);
+        #else
         double e = log2((double)(uint32_t)rval);
         uint32_t i = (int)e;
         return (i << 27) | (uint32_t)round((e - (double)i)*(1<<27));
+        #endif
     }
     break;
     case K_QEXP:
     {
+        #if 1
+        return qexp((uint32_t)rval);
+        #else
         double e = ((uint32_t)rval) >> 27;
         double f = ((double)(rval & ((1<<27)-1))) / (1<<27);
         e = pow(2.0, e+f);
         return (uint32_t)round(e);
+        #endif
     }
     break;
     case K_POWER:
