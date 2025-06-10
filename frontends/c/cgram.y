@@ -3021,8 +3021,8 @@ pasm_operand:
    { $$ = NewAST(AST_EXPRLIST, NewAST(AST_IMMHOLDER, $2, NULL), NULL); }
  | '#' '#' pasmexpr
    { $$ = NewAST(AST_EXPRLIST, NewAST(AST_BIGIMMHOLDER, $3, NULL), NULL); }
-/* | pasmexpr '[' pasmexpr ']'
-   { $$ = NewAST(AST_EXPRLIST, NewAST(AST_ARRAYREF, $1, $3), NULL); } */
+ | pasmexpr '[' pasmexpr ']'
+   { $$ = NewAST(AST_EXPRLIST, NewAST(AST_ARRAYREF, $1, $3), NULL); }
 ;
 
 pasm_operandlist:
@@ -3089,6 +3089,10 @@ pasmunary
           { $$ = AstOperator(K_NEGATE, NULL, $2); }
       | '!' pasmunary
           { $$ = AstOperator(K_BIT_NOT, NULL, $2); }
+      | C_INC_OP pasmunary
+            { $$ = AstOperator(K_INCREMENT, NULL, $2); }
+      | C_DEC_OP pasmunary
+            { $$ = AstOperator(K_DECREMENT, NULL, $2); }
 ;
 
 pasm_e1
