@@ -49,6 +49,7 @@
 #define exp2f(x) __builtin_exp2f(x)
 #define log(x) __builtin_logf(x)
 #define logf(x) __builtin_logf(x)
+#define log2(x) __builtin_log2f(x)
 #define log2f(x) __builtin_log2f(x)
 #define log10(x) __builtin_log10f(x)
 #define log10f(x) __builtin_log10f(x)
