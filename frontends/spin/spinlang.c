@@ -213,8 +213,9 @@ TransformLongMove(AST **astptr, AST *ast)
 
 //
 // fix up any parameters passed by reference
-// this applies both to calls into BASIC/C++ functions, but
-// also ^Struct parameters in Spin2
+// this applies both to calls into BASIC/C++ functions
+// but not to ^Struct parameters, which are more like
+// pointer types
 //
 static void
 FixupSpinParameterTypes(AST **astptr, AST *ast)

@@ -1324,7 +1324,8 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
         }
     }
     AstReportAs(expr, &saveinfo);
-    if (IsRefType(desttype) && (kind == AST_FUNCCALL || kind == AST_RETURN)) {
+    if (IsRefType(desttype) && (kind == AST_FUNCCALL || kind == AST_RETURN)
+        && !IsSpinLang(lang)) {
         // passing or returning reference parameter
         if (!astptr) {
             ERROR(line, "Unable to pass or return multiple function result to reference parameter");

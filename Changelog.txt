@@ -1,6 +1,7 @@
 Version 7.3.1
 - Fixed some errors in C __pasm parsing
 - Fixed compile time calculations of QLOG and QEXP (thanks to Ada)
+- Fixed many incorrect address calculations for Spin2 ^x variables
 
 Version 7.3.0
 - Allow `__attribute__((packed))` on C structs
