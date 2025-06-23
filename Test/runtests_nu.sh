@@ -139,7 +139,7 @@ do
   fi
   if diff -ub Expect/$j.txt $j.txt
   then
-    echo $j passed for ASM
+    echo $j passed for bytecode
     rm -f $j.out $j.txt $j.binary $j.p2asm
   else
     echo $j failed
