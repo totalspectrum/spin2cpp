@@ -7,7 +7,7 @@ var
 pub foo(a, b)
   q.x := a
   q.y := b
-  sendx(q)
+  sendx(@q)
 
 pub {++noinline} sendx(^point p)
   outa := p.y

@@ -25,8 +25,8 @@ pub main()
   send("start", 13, 10)
   a.init()
   [x] := ii[a]
-  t.testit(@"testing a direct", a)
-  t.testit(@"testing a indirect", x)
+  t.testit(@"testing a direct", @a)
+  t.testit(@"testing a indirect", @x)
   send("done", 13, 10)
 
   ' send magic exit sequence
