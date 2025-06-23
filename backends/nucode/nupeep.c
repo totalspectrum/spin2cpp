@@ -1,7 +1,7 @@
 //
 // Bytecode (nucode) compiler for spin2cpp
 //
-// Copyright 2021-2024 Total Spectrum Software Inc.
+// Copyright 2021-2025 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include "outnu.h"
@@ -202,6 +202,26 @@ static NuPeepholePattern pat_ldbss[] = {
 
     /* just do the LDBS */
     { NU_OP_LDBS,      PEEP_ARG_ANY, PEEP_FLAGS_REPLACE },
+    { NU_OP_ILLEGAL,   0,            PEEP_FLAGS_DONE },
+};
+// change LDB / AND #255 into LDB
+static NuPeepholePattern pat_ldband[] = { 
+    { NU_OP_LDB,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_PUSHI,     255,           PEEP_FLAGS_MATCH_IMM },
+    { NU_OP_AND,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+
+    /* just do the LDB */
+    { NU_OP_LDB,       PEEP_ARG_ANY, PEEP_FLAGS_REPLACE },
+    { NU_OP_ILLEGAL,   0,            PEEP_FLAGS_DONE },
+};
+// change LDW / AND #$FFFF into LDW
+static NuPeepholePattern pat_ldwand[] = { 
+    { NU_OP_LDW,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+    { NU_OP_PUSHI,     0xffff,       PEEP_FLAGS_MATCH_IMM },
+    { NU_OP_AND,       PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+
+    /* just do the LDB */
+    { NU_OP_LDW,       PEEP_ARG_ANY, PEEP_FLAGS_REPLACE },
     { NU_OP_ILLEGAL,   0,            PEEP_FLAGS_DONE },
 };
 
@@ -492,7 +512,9 @@ struct nupeeps {
     { pat_ldws, 0, NULL },
     { pat_ldbs, 0, NULL },
     { pat_ldwss, 0, NULL },
+    { pat_ldwand, 0, NULL },
     { pat_ldbss, 0, NULL },
+    { pat_ldband, 0, NULL },
     { pat_cbxx, 0, NuReplaceCBxx },
     { pat_swap_cbxx, 0, NuReplaceSwapCBxx },
     { pat_cbnz, NU_OP_BNZ, NuReplaceSecond },
@@ -513,6 +535,35 @@ struct nupeeps {
 };
 
 //
+// Analyze various conditions that the peephole analyzer may care about
+// e.g. whether a branch has a single source
+//
+static void NuScanIr(NuIrList *irl) {
+    NuIr *ir;
+    NuIrLabel *lab;
+    unsigned seqno = 1;
+
+    for(ir = irl->head; ir; ir = ir->next) {
+        ir->seqno = seqno++;
+        if (ir->op == NU_OP_LABEL && ir->label) {
+            ir->label->seqno = ir->seqno;
+        }
+        else if (ir->op == NU_OP_PUSHA ||
+            (ir->op >= NU_OP_BRA && ir->op <= NU_OP_DJNZ)) {
+            lab = ir->label;
+            if (lab) {
+                if (lab->comefrom_valid && lab->comefrom != ir) {
+                    lab->comefrom = NULL; // multiple sources
+                } else {
+                    lab->comefrom = ir;
+                    lab->comefrom_valid = true;
+                }
+            }
+        }
+    }
+}
+
+//
 // Nu optimize peephole
 // returns 0 if no changes
 //
@@ -521,6 +572,7 @@ int NuOptimizePeephole(NuIrList *irl) {
     int match, i;
     int change = 0;
 
+    NuScanIr(irl); /* analyze various conditions */
     ir = irl->head;
     for(;;) {
         while (ir && NuIsDummy(ir)) {
@@ -643,6 +695,18 @@ int NuRemoveDeadCode(NuIrList *irl)
     return changes;
 }
 
+// check for branch target inside loop
+static bool
+NuLabelInsideLoop(NuIrLabel *dest, NuIr *start, NuIr *finish) {
+    if (!dest) return false;
+    return dest->seqno && dest->seqno >= start->seqno && dest->seqno <= finish->seqno;
+}
+static bool
+NuIrInsideLoop(NuIr *dest, NuIr *start, NuIr *finish) {
+    if (!dest) return false;
+    return dest->seqno && dest->seqno >= start->seqno && dest->seqno <= finish->seqno;
+}
+
 // utility function: check for DJNZ variable used within loop
 static bool
 NoDjnzConflict(NuIrList *irl, NuIr *labelir, NuIr *djnzir, int varOffset)
@@ -665,14 +729,23 @@ NoDjnzConflict(NuIrList *irl, NuIr *labelir, NuIr *djnzir, int varOffset)
         if (ir->op == NU_OP_CALLA || ir->op == NU_OP_CALLM || ir->op == NU_OP_CALL) {
             return false;
         }
-        // hmmm, how about labels where someone could jump into the loop? bail for now
+        // hmmm, how about labels where someone could jump into the loop?
+        // if we know there's a single comefrom and it's inside the loop,
+        // it's OK, otherwise bail
         if (ir->op == NU_OP_LABEL) {
-            return false;
+            NuIrLabel *lab = ir->label;
+            if (lab && lab->comefrom_valid && lab->comefrom) {
+                /* single source jump; may be OK */
+                if (!NuIrInsideLoop(lab->comefrom, labelir, djnzir))
+                    return false; /* not in the loop */
+            } else {
+                return false;
+            }
         }
         // relative branches should be checked for being within the loop
-        // for now, punt
         if (ir->op >= NU_OP_CBEQ && ir->op <= NU_OP_CBGEU) {
-            return false;
+            if (!NuLabelInsideLoop(ir->label, labelir, djnzir))
+                return false;
         }
     }
     // shouldn't get here, but bail if we do

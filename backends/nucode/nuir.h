@@ -189,6 +189,8 @@
 
 #define NuIsDummy(ir) ((ir)->op == NU_OP_DUMMY || ((ir)->op == NU_OP_ALIGN))
 
+typedef struct nuir NuIr; /* forward declaration */
+
 typedef enum NuIrOpcode {
     #define X(m) NU_OP_ ## m,
     NU_OP_XMACRO
@@ -199,6 +201,9 @@ typedef struct {
     int offset;
     int num;
     char name[16];
+    bool comefrom_valid;
+    NuIr *comefrom;
+    unsigned seqno;
 } NuIrLabel;
 
 #define NuLabelName(L) ((L)->name)
@@ -225,9 +230,10 @@ typedef struct NuBytecode {
     unsigned no_call:1;
 } NuBytecode;
 
-typedef struct nuir {
+struct nuir {
     struct nuir *next;
     struct nuir *prev;
+    unsigned seqno;
     NuIrOpcode op;
     union {
         intptr_t   val;
@@ -236,7 +242,7 @@ typedef struct nuir {
     };
     const char *comment;
     NuBytecode *bytecode;
-} NuIr;
+};
 
 typedef struct NuIrList {
     NuIr *head;
