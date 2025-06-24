@@ -223,11 +223,8 @@ pri _gc_doalloc(size, reserveflag) : ptr | zptr
     
   if ptr
     ' zero the returned memory
-    size := ((size << pagesizeshift) - headersize)/4
-    zptr := ptr ' skip the header
-    repeat size
-      long[zptr] := 0
-      zptr += 4
+    size := ((size << pagesizeshift) - headersize)+/4
+    longfill(ptr,0,size)
   return ptr
 
 '
