@@ -5360,9 +5360,7 @@ OptimizeIRLocal(IRList *irl, Function *f)
 
     // multiply divide optimization need only be performed once,
     // and should be done before other optimizations confuse things
-    OptimizeMulDiv(irl);
-    // Similarily for longfill (opt can only become available from inlining)
-    OptimizeLongfill(irl);
+    OPT_PASS(OptimizeMulDiv(irl));
 again:
     do {
         change = 0;
@@ -5404,6 +5402,7 @@ again:
             OPT_PASS(OptimizeP2(irl));
         }
         if (gl_p2) {
+            OPT_PASS(OptimizeLongfill(irl));
             OPT_PASS(FixupLoneCORDIC(irl));
             if (flags & OPT_CONST_PROPAGATE) {
                 OPT_PASS(CORDICconstPropagate(irl));
