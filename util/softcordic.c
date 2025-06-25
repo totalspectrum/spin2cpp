@@ -96,7 +96,7 @@ uint32_t qlog(uint32_t d) {
     QLOG_SEC(31);
 
     int64_t tmp = ((z>>2)&~0x7Fll)+0x80+((int64_t)(mag^31)<<35);
-    if (mag == 0 && tmp&(1ll<<39) == 0){
+    if (mag == 0 && (tmp&(1ll<<39)) == 0){
         tmp = -1;
     }
     return tmp >> 8;
