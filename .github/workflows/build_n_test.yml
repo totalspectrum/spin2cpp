@@ -44,6 +44,13 @@ jobs:
           name: release_zips_linux_amd64
           path: "./*.zip"
   
+  no_warnings:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: make
+        run: make "OPT=-Werror"
+  
   test_offline:
     runs-on: ubuntu-24.04
     steps:
