@@ -198,7 +198,7 @@ pri _gc_alloc_managed(size) : r
     return _gc_errmsg(string(" !!! out of heap memory !!! "))
   return r
 
-pri _gc_doalloc(size, reserveflag) : ptr | zptr
+pri _gc_doalloc(size, reserveflag) : ptr
   if (size == 0)
     return ptr  ' defaults to 0
 
@@ -224,10 +224,7 @@ pri _gc_doalloc(size, reserveflag) : ptr | zptr
   if ptr
     ' zero the returned memory
     size := ((size << pagesizeshift) - headersize)/4
-    zptr := ptr ' skip the header
-    repeat size
-      long[zptr] := 0
-      zptr += 4
+    longfill(ptr, 0, size)
   return ptr
 
 '
