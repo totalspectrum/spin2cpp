@@ -2353,6 +2353,12 @@ FindPrevSetterForReplace(IR *irorig, Operand *dst)
 #endif
     if (SrcOnlyHwReg(dst))
         return NULL;
+
+    unsigned check_flags = FlagsUsedByCond(irorig->cond);
+    // Currently flags_safe makes some functions worse
+    // Because dead sets can't be eliminated correctly in conditional sequences
+    bool flags_safe = curfunc->optimize_flags & OPT_EXPERIMENTAL;
+
     for (ir = irorig->prev; ir; ir = ir->prev) {
         if (IsDummy(ir)) {
             continue;
@@ -2368,8 +2374,13 @@ FindPrevSetterForReplace(IR *irorig, Operand *dst)
         if (IsCallThatUsesReg(ir,dst)) {
             return NULL;
         }
+        if (InstrSetsFlags(ir, check_flags)) {
+            // This needs to go first, since the set IR also setting flags is unsafe
+            flags_safe = false;
+        }
         if (ir->dst == dst && (InstrSetsDst(ir) || ir->opc == OPC_TEST || ir->opc == OPC_TESTBN)) {
-            if (ir->cond != COND_TRUE) {
+            if (flags_safe ? !CondIsSubset(ir->cond, irorig->cond)
+                           : (ir->cond != COND_TRUE) ) {
                 // cannot be sure that we set the value here,
                 // since the set is conditional
                 return NULL;
