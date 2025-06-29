@@ -5287,9 +5287,20 @@ OptimizeLongfill(IRList *irl) {
         IR *prevset;
         int32_t setval;
         if (IsDummy(ir)) continue;
-        if (ir->opc == OPC_CALL && !CondIsSubset(COND_C,ir->cond) && !strcmp(ir->dst->name,"builtin_longfill_")
+        if (ir->opc == OPC_CALL && !strcmp(ir->dst->name,"builtin_longfill_")
+                && CondIsSubset(ir->cond, (IRCond)((ir->cond>>2)|COND_NC))
                 && (prevset = FindPrevSetterForReplace(ir,GetArgReg(1)))
                 && isConstMove(prevset,&setval)) {
+            //
+            // The CondIsSubset(ir->cond, (ir->cond>>2)|COND_NC)
+            // bit above requires explanation:
+            // Some conditions can't be combined with COND_NC
+            // These are ones where there are some condition states (of the 4
+            // possible) that execute the original condition, but after clearing
+            // C do not necessarily execute the combined condition.
+            // The bitwise operation is somewhat mindbboggling but Ada
+            // tested it with a script.
+            //
             int addr = ir->addr; // Some opts require addresses to be sorta-correct;
             // Since we replace a funccall, we can clobber flags and args
             IR *sub = NewIR(OPC_SUB);
@@ -5299,7 +5310,6 @@ OptimizeLongfill(IRList *irl) {
             sub->addr = addr;
             sub->cond = ir->cond;
             IR *setq = NewIR(OPC_SETQ);
-            setq->cond = COND_NC;
             setq->dst = GetArgReg(2);
             setq->cond = (IRCond)(COND_NC | ir->cond);
             setq->addr = addr;

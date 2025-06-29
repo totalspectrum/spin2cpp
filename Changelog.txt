@@ -3,6 +3,7 @@ Version 7.4.0
 - Fixed compile time calculations of QLOG and QEXP (thanks to Ada)
 - Fixed many incorrect address calculations for Spin2 ^x variables
 - Improved some nucode peephole optimizations
+- Some longfill optimizations and bug fixes (thanks to Ada)
 
 Version 7.3.0
 - Allow `__attribute__((packed))` on C structs
