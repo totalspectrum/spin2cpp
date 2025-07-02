@@ -152,7 +152,7 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
         ERROR(NULL, "internal error, pcrelative operand found");
         break;
     case IMM_INT:
-        if (useabsaddr || (reg->val >= 0 && reg->val <= maximm)) {
+        if (useabsaddr || (maximm < 0) || (reg->val >= 0 && reg->val <= maximm)) {
             flexbuf_addstr(fb, "#");
             if (useabsaddr) {
                 flexbuf_addstr(fb, "\\");
@@ -272,6 +272,12 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
         }
         break;
     }
+}
+
+static void
+PrintOperandJmpSrc(struct flexbuf *fb, Operand *reg, enum OperandEffect effect)
+{
+    doPrintOperand(fb, reg, 1, effect, -1);
 }
 
 static void
@@ -1302,11 +1308,14 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         switch (ir->instr->ops) {
         case NO_OPERANDS:
             break;
+        case P2_JUMP:
+            flexbuf_addstr(fb, "\t");
+            PrintOperandJmpSrc(fb, ir->dst, ir->dsteffect);
+            break;
         case JMP_OPERAND:
         case SRC_OPERAND_ONLY:
         case DST_OPERAND_ONLY:
         case CALL_OPERAND:
-        case P2_JUMP:
         case P2_JINT_OPERANDS:
         case P2_DST_CONST_OK:
             flexbuf_addstr(fb, "\t");

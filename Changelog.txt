@@ -2,6 +2,7 @@ Version 7.4.0
 - Fixed some errors in C __pasm parsing
 - Fixed compile time calculations of QLOG and QEXP (thanks to Ada)
 - Fixed many incorrect address calculations for Spin2 ^x variables
+- Fixed parsing of large immediate addresses for inline asm call/jmp
 - Improved some nucode peephole optimizations
 - Some longfill optimizations and bug fixes (thanks to Ada)
 
