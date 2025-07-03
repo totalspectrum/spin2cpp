@@ -713,6 +713,9 @@ doLoopStrengthReduction(LoopValueSet *initial, AST *body, AST *condition, AST *u
             if (!initEntry || (initEntry->flags & LVFLAG_CONDITIONAL) ) {
                 continue;
             }
+            if (ExprHasSideEffects(initEntry->value)) {
+                continue;
+            }
             lastAssign = FindName(&lv, entry->basename);
             if (!lastAssign) {
                 continue;
