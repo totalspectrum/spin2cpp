@@ -895,6 +895,18 @@ void AddSourceFile(const char *shortName, const char *fullName)
     sourceData[numSourceFiles].shortName = shortName;
     sourceData[numSourceFiles].fullName = fullName;
     sourceData[numSourceFiles].isSysFile = IsSysFile(fullName);
+    sourceData[numSourceFiles].whereFrom = NULL;  /* default to unknown */
+    if (current) {
+        int lineNum = 0;
+
+        if (current->Lptr) {
+            lineNum = current->Lptr->lineCounter;
+        } else if (gl_pp.fil) {
+            lineNum = gl_pp.fil->lineno;
+        }
+        if (lineNum > 0)
+            sourceData[numSourceFiles].whereFrom = DummyLineAst(lineNum);
+    }
     numSourceFiles++;
 }
 

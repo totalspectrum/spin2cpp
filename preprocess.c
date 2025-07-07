@@ -1123,9 +1123,9 @@ handle_include(struct preprocess *pp, ParseState *P)
     name = find_file_on_path(pp, orig_name, NULL, NULL);
     if (!name)
       name = strdup(orig_name);
+    AddSourceFile(strdup(orig_name), name);
     pp_push_file(pp, name);
     pp->fil->lineno = 0;  /* hack to correct for \n in buffer?? */
-    AddSourceFile(strdup(orig_name), name);
 }
 
 /*

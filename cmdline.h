@@ -39,6 +39,7 @@ void check_special_define(const char *name, const char *val);
 typedef struct SourceFile {
     const char *shortName;
     const char *fullName;
+    AST *whereFrom;
     unsigned isSysFile:1;
 } SourceFile;
 extern SourceFile *sourceData;
