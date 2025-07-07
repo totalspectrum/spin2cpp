@@ -2981,6 +2981,11 @@ Builtin builtinfuncs[] = {
     { "_wxpin",    2, defaultBuiltin, "_wxpin", "_wxpin", NULL, 0, NULL },
     { "_wypin",    2, defaultBuiltin, "_wypin", "_wypin", NULL, 0, NULL },
 
+    /* builtin serial functions */
+    { "_tx",       1, defaultBuiltin, "getchar", "getchar", NULL, 0, NULL },
+    { "_rx",       0, defaultBuiltin, "putchar", "putchar", NULL, 0, NULL },
+    { "_setbaud",  1, defaultBuiltin, "_setbaud", "_setbaud", NULL, 0, NULL },
+    
     /* some useful C functions */
     { "printf",    -1, defaultBuiltin, "printf", "printf", NULL, 0, NULL },
 };
