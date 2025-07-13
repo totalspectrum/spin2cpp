@@ -87,10 +87,8 @@ __system___gc_ptrs
 	mov	_var03, #1
 	wrword	_var03, result1
 	add	_var01, #16
-	abs	_var03, result2 wc
-	shr	_var03, #4
-	negc	_var03, _var03
-	wrword	_var03, _var01
+	shr	result2, #4
+	wrword	result2, _var01
 	mov	result2, _var01
 	add	result2, #2
 	mov	_var03, imm_27791_
@@ -267,23 +265,21 @@ LR__0030
 	call	#__system___gc_tryalloc
 	mov	_inline8___system___lockmem_r, result1
 LR__0031
-	mov	arg01, __system___gc_doalloc__cse__0004
 	mov	__system___gc_doalloc_reserveflag, #0
-	wrlong	__system___gc_doalloc_reserveflag, arg01
+	wrlong	__system___gc_doalloc_reserveflag, __system___gc_doalloc__cse__0004
 	cmp	_inline8___system___lockmem_r, #0 wz
  if_ne	shl	__system___gc_doalloc_size, #4
  if_ne	sub	__system___gc_doalloc_size, #8
- if_ne	abs	__system___gc_doalloc__cse__0004, __system___gc_doalloc_size wc
- if_ne	shr	__system___gc_doalloc__cse__0004, #2
- if_ne	negc	arg03, __system___gc_doalloc__cse__0004
- if_ne	mov	arg01, _inline8___system___lockmem_r
+ if_ne	shr	__system___gc_doalloc_size, #2
+ if_ne	mov	__system___gc_doalloc__cse__0004, _inline8___system___lockmem_r
  if_ne	mov	arg02, #0
+ if_ne	mov	arg03, __system___gc_doalloc_size
  if_e	jmp	#LR__0034
 	cmp	arg03, #0 wz
  if_e	jmp	#LR__0033
 LR__0032
-	wrlong	arg02, arg01
-	add	arg01, #4
+	wrlong	arg02, __system___gc_doalloc__cse__0004
+	add	__system___gc_doalloc__cse__0004, #4
 	djnz	arg03, #LR__0032
 LR__0033
 LR__0034
