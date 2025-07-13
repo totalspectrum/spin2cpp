@@ -105,7 +105,7 @@ pri _gc_ptrs : base, end | size
     word[base + OFF_PREV] := 0
     word[base + OFF_LINK] := 1
     base += pagesize
-    word[base + OFF_SIZE] := (size / pagesize)
+    word[base + OFF_SIZE] := (size >> pagesizeshift)
     word[base + OFF_FLAGS] := GC_MAGIC | GC_FLAG_FREE
     word[base + OFF_PREV] := 0
     word[base + OFF_LINK] := 0
@@ -223,7 +223,7 @@ pri _gc_doalloc(size, reserveflag) : ptr
     
   if ptr
     ' zero the returned memory
-    size := ((size << pagesizeshift) - headersize)/4
+    size := ((size << pagesizeshift) - headersize)>>2
     longfill(ptr, 0, size)
   return ptr
 
