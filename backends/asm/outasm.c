@@ -117,7 +117,7 @@ static Operand *EmitAddSub(IRList *irl, Operand *dst, int off);
 static Operand *SizedHubMemRef(int size, Operand *addr, int offset);
 Operand *CogMemRef(Operand *addr, int offset);
 static Operand *ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset, int size);
-static Operand *OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type);
+static Operand *OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type, AST *from);
 
 static void AssignOneFuncName(Function *f);
 static void ValidatePushregs(void);
@@ -3054,7 +3054,7 @@ CompileExprList(IRList *irl, AST *fromlist)
             for (i = 0; i < siz; i += LONG_SIZE) {
                 Operand *tmpfrom;
                 if (off) {
-                    tmpfrom = OffsetMemory(irl, opfrom, NewImmediate(off), NULL);
+                    tmpfrom = OffsetMemory(irl, opfrom, NewImmediate(off), NULL, from);
                 } else {
                     tmpfrom = opfrom;
                 }
@@ -3505,7 +3505,7 @@ CompileMemref(IRList *irl, AST *expr)
 }
 
 static Operand *
-OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type)
+OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type, AST *linenum)
 {
     Operand *basereg;
     Operand *newbase;
@@ -3513,8 +3513,7 @@ OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type)
     int idx;
     int shift;
     int siz;
-    AST *linenum = NULL;
-
+ 
     // check for COG memory references
     if (!IsMemRef(base) && IsCogMem(base)) {
         Operand *addr;
@@ -3522,7 +3521,7 @@ OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type)
 
         if (base->kind == REG_SUBREG) {
             offval += base->val * LONG_SIZE;
-            base = (Operand *)base;
+            base = (Operand *)base->name;
         }
         switch(base->kind) {
         case REG_REG:
@@ -3555,7 +3554,7 @@ OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type)
         }
     }
     if (!IsMemRef(base)) {
-        ERROR(NULL, "Pointer does not reference memory");
+        ERROR(linenum, "internal error: pointer does not reference memory");
         return base;
     }
     if (base->kind == COGMEM_REF) {
@@ -4129,7 +4128,7 @@ doGetAddress(IRList *irl, AST *expr, bool isField)
                 Operand *tmp;
                 AST *type = ExprType(expr);
                 off = sym->offset;
-                tmp = OffsetMemory(irl, base, NewImmediate(off), type);
+                tmp = OffsetMemory(irl, base, NewImmediate(off), type, expr);
                 res = GetLea(irl, tmp);
             } else if (sym->kind == SYM_FUNCTION) {
                 CompileGetFunctionInfo(irl, expr, NULL, NULL, &res, NULL);
@@ -4623,7 +4622,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
         if (off == 0 && IsCogMem(base)) {
             r = base;
         } else {
-            r = OffsetMemory(irl, base, NewImmediate(off), finaltype);
+            r = OffsetMemory(irl, base, NewImmediate(off), finaltype, expr);
         }
         return r;
     }
@@ -4664,7 +4663,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
             r = NewImmediate(val);
         } else {
             base = CompileExpression(irl, expr->left, NULL);
-            r = OffsetMemory(irl, base, NewImmediate(off), ast_type_long);
+            r = OffsetMemory(irl, base, NewImmediate(off), ast_type_long, expr);
             if (dest) {
                 EmitMove(irl, dest, r, expr);
                 r = dest;
@@ -4855,7 +4854,7 @@ IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc, AST *linenum)
             for (i = 0; i < num_tmp_regs; i++) {
                 ir = EmitCogread(irl, temps[i], src);
                 if (i+1 != num_tmp_regs) {
-                    src = OffsetMemory(irl, src, NewImmediate(4), NULL);
+                    src = OffsetMemory(irl, src, NewImmediate(4), NULL, linenum);
                 }
             }
         } else if (origsrc->kind == HUBMEM_REF) {
