@@ -5,7 +5,7 @@
 #include "symbol.h"
 #include "expr.h"
 
-AST *BuildMethodPointer(AST *ast);
+AST *BuildMethodPointer(AST *ast, bool is_abs);
 void OutputAlignLong(Flexbuf *fb);
 void OutputDataBlob(Flexbuf *fb, Flexbuf *databuf, Flexbuf *relocbuf, const char *startLabel, bool emitLabel);
 

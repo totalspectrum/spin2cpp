@@ -34,9 +34,10 @@
 #include "becommon.h"
 
 static AST *make_methodptr;
+static AST *get_rawfuncaddr;
 
 AST *
-BuildMethodPointer(AST *ast)
+BuildMethodPointer(AST *ast, bool is_abs)
 {
     Symbol *sym;
     AST *objast;
@@ -78,9 +79,16 @@ BuildMethodPointer(AST *ast)
     if (!make_methodptr) {
         make_methodptr = AstIdentifier("_make_methodptr");
     }
+    if (!get_rawfuncaddr) {
+        get_rawfuncaddr = AstIdentifier("_get_rawfuncaddr");
+    }
     call = NewAST(AST_EXPRLIST, funcaddr, NULL);
     call = NewAST(AST_EXPRLIST, objast, call);
-    result = NewAST(AST_FUNCCALL, make_methodptr, call);
+    if (is_abs) {
+        result = NewAST(AST_FUNCCALL, get_rawfuncaddr, call);
+    } else {
+        result = NewAST(AST_FUNCCALL, make_methodptr, call);
+    }
     // cast the result to the correct function pointer type
     result = NewAST(AST_CAST, funcptrtype, result);
     return result;

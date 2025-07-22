@@ -1028,6 +1028,7 @@ ConstructDefaultValue(AST *decl, AST *val)
 
 %token C_LIMITMIN_OP "#<"
 %token C_LIMITMAX_OP "#>"
+%token C_ABSADDR_OP  "@@@"
 
 %token C_TYPEDEF "typedef"
 %token C_EXTERN "extern"
@@ -1395,7 +1396,9 @@ unary_expression
 	| unary_operator cast_expression
             {
                 $$ = $1;
-                if ($$->kind == AST_ADDROF || $$->kind == AST_ARRAYREF)
+                if ($$->kind == AST_ADDROF ||
+                    $$->kind == AST_ABSADDROF ||
+                    $$->kind == AST_ARRAYREF)
                     $$->left = $2;
                 else
                     $$->right = $2;
@@ -1411,6 +1414,8 @@ unary_operator
             { $$ = NewAST(AST_ADDROF, NULL, NULL); }
 	| '@'
             { $$ = NewAST(AST_ADDROF, NULL, NULL); }
+	| C_ABSADDR_OP
+            { $$ = NewAST(AST_ABSADDROF, NULL, NULL); }
 	| '*'
             { $$ = NewAST(AST_ARRAYREF, NULL, AstInteger(0)); }
 	| '+'

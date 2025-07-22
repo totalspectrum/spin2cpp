@@ -670,6 +670,16 @@ pri _make_methodptr(o, func) : ptr
   ptr := o | (func << 20)
   return ptr
 
+'' look up an absolute function address
+pri _get_rawfuncaddr(o, func) : ptr
+  asm
+    mov ptr, func
+    shl ptr, #2
+    add ptr, __methods__
+    rdlong ptr, ptr
+  endasm
+  return ptr
+
 '
 ' create a class interface from a definite object o and
 ' a skeleton list of functions skel containing n entries

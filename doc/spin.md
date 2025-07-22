@@ -477,6 +477,14 @@ The `:2` indicates that fptr is a pointer to a function which returns 2 results.
 
 It is the programmer's responsibility to make sure that the number of results and arguments passed to a method called via a pointer are correct. No type checking is done.
 
+#### Internal representation
+
+In order to call a method, both the function address and the address of the object's data are required. This means that method pointers must somehow encode both of these. Different compiler targets do this in different ways, so it does mean that, in general, an expression like `@foo` is *not* the address of the function `foo` in memory.
+
+This should usually be transparent to the programmer, but in some cases (e.g. for interacting with assembly language) it may be desireable to obtain the address of the function directly. This may be done with the absolute address operator, that is, `@@@foo` will be the location in memory of the first instruction of function `foo`.
+
+Note that calling `foo` directly (e.g. with `CALL(foo)`) will produce undefined results if `foo` accesses any member specific data, either directly or indirectly. So getting the absolute address of a function is *not* something you would normally want to do!
+
 ### Multiple return values and assignments
 
 flexspin allows multiple return values and assignments. For example, to swap two variables `a` and `b` you can write:

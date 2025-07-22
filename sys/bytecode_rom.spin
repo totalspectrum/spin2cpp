@@ -504,6 +504,10 @@ pri _make_methodptr(o, func) | ptr
     long[ptr+4] := func
   return ptr
 
+pri _get_rawfuncaddr(o, func) | ptr
+  ptr := func
+  return ptr
+
 '
 ' create a class interface from a definite object o and
 ' a skeleton list of functions skel containing n entries

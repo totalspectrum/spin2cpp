@@ -48,6 +48,9 @@ extern void ValidateObjbase(void);
 extern Operand *objbase;
 extern void ValidateHeapptr(void);
 extern Operand *heapptr;
+extern void ValidateMethodTable(void);
+extern Operand *method_table_base;
+
 extern Operand *resultreg[];
 extern Operand *arg1, *arg2;
 
@@ -134,6 +137,11 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
             else if (!strcmp(name, "fp")) {
                 ValidateFrameptr();
                 r = frameptr;
+                r_address = immflag;
+            }
+            else if (!strcmp(name, "__methods__")) {
+                ValidateMethodTable();
+                r = method_table_base;
                 r_address = immflag;
             }
             else if (!strcmp(name, "__heap_ptr")) {

@@ -531,6 +531,7 @@ AdjustParamForByVal(AST *param)
 %token BAS_NE         "<>"
 %token BAS_SHL        "shl"
 %token BAS_SHR        "shr"
+%token BAS_ABSADDR    "@@@"
 
 %token BAS_ADD_ASSIGN "+="
 %token BAS_SUB_ASSIGN "-="
@@ -550,7 +551,7 @@ AdjustParamForByVal(AST *param)
 %left '*' '/' BAS_MOD
 %left BAS_SHL BAS_SHR
 %left BAS_NOT
-%left '@'
+%left '@' BAS_ABSADDR
 %left BAS_NEW
 %left '.'
 %left '('
@@ -1693,6 +1694,8 @@ pseudofunc_expr:
     }
   | '@' unary_expr
     { $$ = NewAST(AST_ADDROF, $2, NULL); }
+  | BAS_ABSADDR unary_expr
+    { $$ = NewAST(AST_ABSADDROF, $2, NULL); }
 ;
 
 unary_expr:

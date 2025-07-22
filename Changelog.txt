@@ -1,4 +1,6 @@
 Version 7.4.1
+- Made `@@@func` return the address of the first instruction of the
+function func, in both Spin2 and C.
 - Fixed an internal error computing offsets in structures stored in registers
 
 Version 7.4.0

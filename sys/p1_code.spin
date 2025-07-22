@@ -371,6 +371,9 @@ pri bytefill(ptr, val, count)
 pri _make_methodptr(o, func) : ptr
   ptr := o | (func << 16)
 
+pri _get_rawfuncaddr(o, func) : ptr
+  ptr := func
+
 '
 ' create a class interface from a definite object o and
 ' a skeleton list of functions skel containing n entries

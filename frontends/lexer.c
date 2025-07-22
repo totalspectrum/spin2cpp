@@ -4728,6 +4728,13 @@ again:
         } else {
             lexungetc(L, c2);
         }
+    } else if (c == '@') {
+        int c2 = lexgetc(L);
+        if (c2 == '@' && lexpeekc(L) == '@') {
+            c = BAS_ABSADDR;
+        } else {
+            lexungetc(L, c2);
+        }
     } else if (lexpeekc(L) == '=' && strchr("+-*/", c) != 0) {
         (void)lexgetc(L); // get the =
         switch (c) {
@@ -5148,6 +5155,14 @@ done_number:
             c = C_AND_ASSIGN;
         } else if (c2 == '&') {
             c = C_AND_OP;
+        } else {
+            lexungetc(L, c2);
+        }
+    } else if (c == '@') {
+        c2 = lexgetc(L);
+        if (c2 == '@' && lexpeekc(L) == '@') {
+            c2 = lexgetc(L);
+            c = C_ABSADDR_OP;
         } else {
             lexungetc(L, c2);
         }

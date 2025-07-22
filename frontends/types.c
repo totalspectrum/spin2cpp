@@ -938,18 +938,18 @@ AST *StructAddress(AST *expr)
 }
 
 // return the address of a function
-AST *FunctionAddress(AST *expr)
+AST *FunctionAddress(AST *expr, bool is_abs)
 {
     if (expr && expr->kind == AST_METHODREF) {
         if (IsSymbol(expr->right)) {
             expr = NewAST(AST_ABSADDROF, expr, NULL);
-            expr = BuildMethodPointer(expr);
+            expr = BuildMethodPointer(expr, is_abs);
             return expr;
         }
     }
     if (IsSymbol(expr)) {
         expr = NewAST(AST_ABSADDROF, expr, NULL);
-        expr = BuildMethodPointer(expr);
+        expr = BuildMethodPointer(expr, is_abs);
     }
     return expr;
 }
@@ -994,11 +994,11 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
         righttype = ArrayToPointerType(righttype);
     }
     if (IsFunctionType(lefttype) && !IsPointerType(lefttype)) {
-        ast->left = FunctionAddress(ast->left);
+        ast->left = FunctionAddress(ast->left, false);
         lefttype = FunctionPointerType(lefttype);
     }
     if (IsFunctionType(righttype) && !IsPointerType(righttype)) {
-        ast->right = FunctionAddress(ast->right);
+        ast->right = FunctionAddress(ast->right, false);
         righttype = FunctionPointerType(righttype);
     }
     if (IsBoolType(rettype)) {
@@ -1431,7 +1431,7 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
     if (IsFunctionType(srctype) && IsPointerType(desttype) && !IsPointerType(srctype)) {
         srctype = FunctionPointerType(srctype);
         if (astptr) {
-            expr = FunctionAddress(expr);
+            expr = FunctionAddress(expr, false);
             *astptr = expr;
         } else {
             ERROR(line, "Unable to convert function result to pointer");
@@ -1580,7 +1580,7 @@ doCast(AST *desttype, AST *srctype, AST *src)
         srctype = ast_type_ptr_void;
     } else if (IsFunctionType(srctype) && !IsPointerType(srctype)) {
         // need to create a handle for it
-        src = FunctionAddress(src);
+        src = FunctionAddress(src, false);
         srctype = FunctionPointerType(srctype);
     }
     if (IsFunctionType(desttype) && !IsPointerType(desttype)) {
@@ -2024,7 +2024,7 @@ static AST *doCheckTypes(AST *ast)
     case AST_ADDROF:
     case AST_ABSADDROF:
         if (IsFunctionType(ltype) && !IsPointerType(ltype)) {
-            *ast = *BuildMethodPointer(ast);
+            *ast = *BuildMethodPointer(ast, ast->kind == AST_ABSADDROF);
             return ltype;
         }
         return NewAST(AST_PTRTYPE, ltype, NULL);

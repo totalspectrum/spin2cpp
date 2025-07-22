@@ -262,8 +262,8 @@ SetLocalArray(Function *fdef, Symbol *sym, AST *body)
  * scan a function body for various special conditions
  * "expectType" marks a parameter type that is expected
  */
-extern AST *FunctionAddress(AST *); // in types.c
-extern AST *BuildMethodPointer(AST *); // in becommon.c
+extern AST *FunctionAddress(AST *, bool is_abs); // in types.c
+extern AST *BuildMethodPointer(AST *, bool is_abs); // in becommon.c
 
 static void
 ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
@@ -329,7 +329,7 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
                     }
                 } else if (sym && sym->kind == SYM_FUNCTION) {
                     // insert an explicit function address
-                    AST *getaddr = FunctionAddress(body->left);
+                    AST *getaddr = FunctionAddress(body->left, body->kind == AST_ABSADDROF);
                     fdef->is_leaf = 0;
                     if (upper->right == body) {
                         upper->right = getaddr;
@@ -360,7 +360,7 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
             // fix up @foo.bar
             AST *typ = ExprType(ast);
             if (IsFunctionType(typ)) {
-                AST *getaddr = BuildMethodPointer(body);
+                AST *getaddr = BuildMethodPointer(body, body->kind == AST_ABSADDROF);
                 fdef->is_leaf = 0;
                 if (upper->right == body) {
                     upper->right = getaddr;

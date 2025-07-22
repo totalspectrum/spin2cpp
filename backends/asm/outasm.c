@@ -89,8 +89,8 @@ static Operand *stacktop;  // indirect reference through stackptr
 Operand *frameptr;
 static Operand *linkreg;
 
-static Operand *method_table_base;
-static Operand *method_table_label;
+Operand *method_table_base;
+Operand *method_table_label;
 
 Operand *heapptr;
 static Operand *heaplabel;
@@ -294,7 +294,7 @@ PutVarOnStack(Function *func, Symbol *sym, int size)
     return false;
 }
 
-static void ValidateMethodTable()
+void ValidateMethodTable()
 {
     if (!method_table_base) {
         method_table_label = NewOperand(IMM_HUB_LABEL, "__methodtable__", 0);

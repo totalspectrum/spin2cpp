@@ -330,6 +330,10 @@ switch (x) {
 }
 ```
 
+### Absolute address of functions
+
+As discussed in the general documentation, function pointers are complicated objects which are not necessarily the address of the first instruction of the function. In the rare cases where some inline assembly requires access to this information, use the absolute address operator (`@@@`, as in Spin2) to obtain it; that is, `@@@foo` is the address of the first instruction of `foo`. Note that trying to call this directly may produce undefined behavior if the function accesses any member variables, including global variables. See the discussion in the general (language independent) documentation for more details.
+
 ### Statement expressions
 
 A compound statement enclosed in parentheses may appear as an expression. This is a GCC extension which allows loops, switches, and similar features to appear within an expression.
