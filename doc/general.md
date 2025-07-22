@@ -155,6 +155,10 @@ Pure functions (roughly considered as functions that only contain a certain subs
 
 If a function should be inlined more aggressively, add the `inline` attribute to it (via a `{++inline}` comment after the `PUB` in Spin/Spin2, a `for "inline"` specifier after `function` in BASIC, or with `inline` or `__attribute__(inline)` in C. This will raise the threshold for when it is inlined from just a few instructions to fewer than 100. Note that the `-Oinline-small` option still must be enabled, although this is the default unless optimization is turned off.
 
+### Forcing a function to NOT be inlined
+
+Conversely, if a function should never be inlined, add the `noinline` attribute to it.
+
 ### Inline functions in bytecode
 
 At the present time neither of the bytecode compilers (P1 ROM or P2 nucode) supports inlining of functions.
