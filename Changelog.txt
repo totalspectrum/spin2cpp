@@ -1,3 +1,6 @@
+Version 7.4.2
+- Added missing __builtin_frac keyword for C
+
 Version 7.4.1
 - Made `@@@func` return the address of the first instruction of the
 function func, in both Spin2 and C.

@@ -2678,6 +2678,7 @@ struct reservedword c_keywords[] = {
     { "__builtin_cogstart", C_BUILTIN_COGSTART },
     { "__builtin_cogstart_cog", C_BUILTIN_COGSTART_COG },
     { "__builtin_expect", C_BUILTIN_EXPECT },
+    { "__builtin_frac", C_BUILTIN_FRAC },
     { "__builtin_longjmp", C_BUILTIN_LONGJMP },
     { "__builtin_mulh",  C_BUILTIN_MULH },
     { "__builtin_muluh", C_BUILTIN_MULUH },
