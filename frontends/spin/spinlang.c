@@ -990,16 +990,6 @@ doSpinTransform(AST **astptr, int level, AST *parent)
                 }
             }
         }
-#ifdef OLD_REFERENCES        
-        if (typ && IsRefType(typ)) {
-            AST *deref;
-            AstReportAs(ast, &saveinfo);
-            deref = NewAST(AST_MEMREF, typ->left, DupAST(ast));
-            deref = NewAST(AST_ARRAYREF, deref, AstInteger(0));
-            *ast = *deref;
-            AstReportDone(&saveinfo);
-        }
-#endif        
         break;
     }
     case AST_PRINTDEBUG:

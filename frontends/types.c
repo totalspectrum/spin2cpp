@@ -1341,14 +1341,7 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
             *astptr = copy;
         } else {
             Symbol *sym;
-            /* in Spin if we already have an @ then don't @ it again */
-            if ( (expr->kind == AST_ADDROF || expr->kind == AST_ABSADDROF)
-                 && IsSpinLang(lang) ) {
-                /* skip @ */
-                makeref = false;
-            } else {
-                *astptr = NewAST(AST_ADDROF, expr, NULL);
-            }
+            *astptr = NewAST(AST_ADDROF, expr, NULL);
             if (curfunc && IsLocalVariableEx(expr, &sym)) {
                 curfunc->local_address_taken = 1;
                 if (sym) {
