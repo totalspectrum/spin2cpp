@@ -111,7 +111,7 @@ static int      mbstart;
 static size_t   mb_read_utf8( int c1, char ** in_pp, char ** out_pp);
                 /* For UTF8 mbchar encoding         */
 
-void    mb_init()
+void    mb_init(void)
 /*
  * Initialize multi-byte character settings.
  * First called prior to setting the 'mcpp_mode'.

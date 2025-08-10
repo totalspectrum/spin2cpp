@@ -416,7 +416,7 @@ extern DEFBUF * is_macro( char ** cp);
 /* mbchar.c     */
 extern size_t   (* mb_read)( int c1, char ** in_pp, char ** out_pp);
                 /* Read mbchar sequence         */
-extern void     mb_init();
+extern void     mb_init( void );
                 /* Initialize mbchar variables  */
 extern uexpr_t  mb_eval( char ** seq_pp);
                 /* Evaluate mbchar in #if       */
