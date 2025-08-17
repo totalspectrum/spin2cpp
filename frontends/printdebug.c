@@ -1,6 +1,6 @@
 /*
  * Printf based debug code
- * Copyright (c) 2011-2023 Total Spectrum Software Inc.
+ * Copyright (c) 2011-2025 Total Spectrum Software Inc. and contributors
  * See the file COPYING for terms of use.
  */
 #include <stdio.h>
@@ -151,7 +151,7 @@ CreatePrintfDebug(AST *exprlist, AST *dbgmask)
     if (exprlist && exprlist->left && exprlist->left->kind == AST_LABEL) {   
         flexbuf_addstr(&fb, "Cog%d  ");
         outlist = NewAST(AST_FUNCCALL,
-                         AstIdentifier("cogid"),
+                         AstIdentifier("_cogid"),
                          NULL);
         outlist = NewAST(AST_EXPRLIST, outlist, NULL);
         exprlist = exprlist->right;
