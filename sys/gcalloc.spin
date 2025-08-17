@@ -130,7 +130,8 @@ pri _gc_isFree(ptr)
 pri _gc_nextBlockPtr(ptr) | t
   t := word[ptr + OFF_SIZE]
   if t == 0
-    return _gc_errmsg(string(" !!! corrupted heap??? !!! "))
+    %DEBUG(" !!! corrupted heap??? !!! ")
+    return 0
   return ptr + (t << pagesizeshift)
   
 pri _gc_tryalloc(size, reserveflag) : ptr | availsize, lastptr, nextptr, heap_base, heap_end, saveptr, linkindex
@@ -178,16 +179,6 @@ pri _gc_tryalloc(size, reserveflag) : ptr | availsize, lastptr, nextptr, heap_ba
   
   '' and return
   return (ptr + headersize)
-
-pri _gc_errmsg(s) | c
-  if (__DEBUG__)
-    repeat while ((c:=byte[s++]) <> 0)
-      _tx(c)
-  return 0   ' necessary for nucode stack
-  
-pri _gc_errhex(h)
-  if (__DEBUG__)
-    _txhex(h)
   
 pri _gc_alloc(size)
   return _gc_doalloc(size, GC_FLAG_RESERVED)
@@ -195,7 +186,8 @@ pri _gc_alloc(size)
 pri _gc_alloc_managed(size) : r
   r := _gc_doalloc(size, 0)
   if (r == 0 and size > 0)
-    return _gc_errmsg(string(" !!! out of heap memory !!! "))
+    %DEBUG(" !!! out of heap memory !!! ")
+    return 0
   return r
 
 pri _gc_doalloc(size, reserveflag) : ptr
@@ -366,7 +358,7 @@ pri _gc_docollect | ptr, nextptr, startheap, endheap, flags, ourid, size
   ' so nextptr will be valid at first
   nextptr := _gc_nextBlockPtr(startheap)
   if nextptr == 0
-    _gc_errmsg(string(" !!! corrupted heap !!! "))
+    %DEBUG(" !!! corrupted heap !!! ")
     return
     
   repeat
