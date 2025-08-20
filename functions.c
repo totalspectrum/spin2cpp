@@ -3489,6 +3489,7 @@ int FuncLocalSize(Function *func)
     int size = LONG_SIZE * (func->numresults);
     // iterate over local variables, incrementing the size
     IterateOverSymbols(&func->localsyms, AddSize, (void *)&size);
+    size += func->tempStackSize;
     return size;
 }
 
@@ -3513,4 +3514,23 @@ int AddIndirectFunctionCall(Function *F, bool used_in_interface)
         flexbuf_addmem(&indirectFuncTable, (const char *)&F, sizeof(F));
     }
     return gl_indirect_function_count;
+}
+
+AST *
+AstFuncTempMemory(unsigned siz)
+{
+    AST *ptr;
+    AST *val;
+
+    if (!curfunc) {
+        ERROR(NULL, "internal error, not in function");
+        return NULL;
+    }
+    val = NewAST(AST_ALLOCA, ast_type_ptr_void, AstInteger(siz));
+    ptr = AstTempLocalVariable("_tempptr_", NULL);
+    val = AstAssign(ptr, val);
+    val = NewAST(AST_STMTLIST, val, curfunc->body);
+    curfunc->body = val;
+    
+    return ptr;
 }

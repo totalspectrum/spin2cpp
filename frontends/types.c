@@ -1334,8 +1334,16 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
         }
         if (desttype->kind == AST_COPYREFTYPE) {
             // need to create a temporary duplicate
-            AST *sizeExpr = AstInteger(TypeSize(srctype));
-            AST *lptr = MakeOperatorCall(gc_alloc_managed, sizeExpr, NULL, NULL);;
+            unsigned size_val = TypeSize(srctype);
+            AST *sizeExpr = AstInteger(size_val);
+            AST *lptr;
+
+            if (kind == AST_RETURN) {
+                /* needs to persist beyond this function */
+                lptr = MakeOperatorCall(gc_alloc_managed, sizeExpr, NULL, NULL);
+            } else {
+                lptr = AstFuncTempMemory(size_val);
+            }
             AST *rptr = StructAddress(expr);
             AST *copy = MakeOperatorCall(struct_copy, lptr, rptr, sizeExpr);
             *astptr = copy;

@@ -493,6 +493,9 @@ typedef struct funcdef {
     /* for walking through functions and avoiding visiting the same one multiple times */
     unsigned visitFlag;
 
+    /* size of temporary stack area (not used yet) */
+    unsigned tempStackSize;
+
     /* back-end specific data */
     void *bedata;
     
@@ -1126,6 +1129,9 @@ AST *FindDeclaration(AST *datlist, const char *name);
 
 // generate code to convert a class type into an interface type
 AST *ConvertInterface(AST *ifaceType, AST *classType, AST *expr);
+
+// allocate local memory on stack
+AST *AstFuncTempMemory(unsigned siz);
 
 // external vars
 extern AST *basic_get_float;

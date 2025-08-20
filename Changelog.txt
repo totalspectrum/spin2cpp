@@ -1,5 +1,6 @@
 Version 7.4.3
 - Remove some unused debug strings when debugging is not enabled
+- Use stack allocation for passing struct arguments
 
 Version 7.4.2
 - Added missing __builtin_frac keyword for C
