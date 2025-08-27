@@ -144,6 +144,9 @@ void *memmove(void *dest_p, const void *src_p, size_t n) __fromfile("libc/string
 /* libc/string/memset.c */
 void *memset(void *dest_p, int c, size_t n) __fromfile("libc/string/memset.c");
 
+/* libc/string/strcat.c */
+char *strcat(char *dest, const char *src) __fromfile("libc/string/strcat.c");
+
 /* libc/string/strchr.c */
 char *strchr(const char *s, int charwanted) __fromfile("libc/string/strchr.c");
 
@@ -239,6 +242,10 @@ int write(int fd, const void *buf, int count) __fromfile("libc/unix/posixio.c");
 int read(int fd, void *buf, int count) __fromfile("libc/unix/posixio.c");
 int close(int fd) __fromfile("libc/unix/posixio.c");
 off_t lseek(int fd, off_t offset, int whence) __fromfile("libc/unix/posixio.c");
+int rmdir(const char *path) __fromfile("libc/unix/posixio.c");
+int mkdir(const char *path, int mode) __fromfile("libc/unix/posixio.c");
+
+/* libc/unix/access.c */
 int access(const char *path, int mode) __fromfile("libc/unix/access.c");
 
 /* libc/wchar/btowc.c */
