@@ -1106,6 +1106,10 @@ int ParseWarnString(AST *lineNum, const char *str, int *flags);
 /* declare constants */
 void DeclareConstants(Module *P, AST **conlist);
 
+/* simplify a list of parameters to objects (replacing names with
+   constants where possible */
+AST *SimplifyObjParams(AST *params);
+
 /* process constants to set clock frequency and such */
 void ProcessConstantOverrides(Module *P);
 

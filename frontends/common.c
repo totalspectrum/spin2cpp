@@ -684,6 +684,61 @@ DeclareConstants(Module *P, AST **conlist_ptr)
     *conlist_ptr = completed_declarations;
 }
 
+static AST *
+ReplaceIdentifierFrom(AST *id, AST *varlist)
+{
+    const char *name = GetIdentifierName(id);
+    AST *item, *val;
+    while (varlist) {
+        item = varlist->left;
+        varlist = varlist->right;
+        while (item && item->kind == AST_COMMENTEDNODE)
+            item = item->left;
+        if (item && item->kind == AST_ASSIGN) {
+            const char *itemname;
+            val = item->right;
+            item = item->left;
+            itemname = GetIdentifierName(item);
+            if (itemname && !strcasecmp(itemname, name)) {
+                return DupAST(val);
+            }
+        }
+    }
+    return id;
+}
+static AST *
+SimplifyOneObjParam(AST *param)
+{
+    if (!param)
+        return param;
+    switch(param->kind) {
+    case AST_IDENTIFIER:
+        return ReplaceIdentifierFrom(param, current->objparams);
+    default:
+        break;
+    }
+    if (param->left)
+        param->left = SimplifyOneObjParam(param->left);
+    if (param->right)
+        param->right = SimplifyOneObjParam(param->right);
+    return param;
+}
+
+AST *
+SimplifyObjParams(AST *params)
+{
+    AST *orig_params = params;
+    while (params) {
+        AST *node = params->left;
+        while (node && node->kind == AST_COMMENTEDNODE)
+            node = node->left;
+        if (node && node->kind == AST_ASSIGN)
+            node->right = SimplifyOneObjParam(node->right);
+        params = params->right;
+    }
+    return orig_params;
+}
+
 void
 ProcessConstantOverrides(Module *P)
 {
@@ -709,8 +764,10 @@ ProcessConstantOverrides(Module *P)
                 if (ident->kind == AST_IDENTIFIER) {
                     const char *name = ident->d.string;
                     Symbol *sym = LookupSymbolInTable(&P->objsyms, name);
-                    if (!sym || sym->kind != SYM_CONSTANT) {
-                        ERROR(ident, "object parameter %s not found or not a constant", name);
+                    if (!sym) {
+                        ERROR(ident, "object parameter %s not found", name);
+                    } else if (sym->kind != SYM_CONSTANT) {
+                        ERROR(ident, "object parameter %s is not a constant", name);
                     } else if (!IsConstExpr(valast)) {
                         ERROR(ident, "new value for %s is not constant", name);
                     } else {

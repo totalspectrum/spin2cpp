@@ -1,5 +1,6 @@
 Version 7.4.4
 - Added some missing libc.a files (thanks to Ada)
+- Improved module constant overrides
 
 Version 7.4.3
 - Remove some unused debug strings when debugging is not enabled

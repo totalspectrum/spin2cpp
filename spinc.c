@@ -684,7 +684,7 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
         if (paramlist) {
             P->basename = NewTemporaryVariable(P->basename, NULL);
             P->classname = NewTemporaryVariable(P->classname, NULL);
-            P->objparams = paramlist;
+            P->objparams = SimplifyObjParams(paramlist);
         }
     }
     P->curLanguage = language;
