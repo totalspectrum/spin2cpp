@@ -2025,15 +2025,19 @@ ExpandArguments(AST *sendptr, AST *args)
  * count number of (actual) parameters passed to a function
  * (e.g. 64 bit parameters count as two parameters)
  */
-int
-CountParameters(AST *list)
+static int
+CountParameters(AST *list, int *is_varargs)
 {
     AST *param;
     int n = 0;
     while (list) {
         param = list->left;
         list = list->right;
-        n += NumExprItemsOnStack(param);
+        if (param && param->kind == AST_VARARGS) {
+            *is_varargs = 1;
+        } else {
+            n += NumExprItemsOnStack(param);
+        }
     }
     return n;
 }
@@ -2103,7 +2107,7 @@ CheckFunctionCalls(AST *ast)
                     }
                 }
                 if (ftype) {
-                    expectArgs = CountParameters(ftype->right);
+                    expectArgs = CountParameters(ftype->right, &is_varargs);
                 } else {
                     expectArgs = 0;
                     is_varargs = 1;
