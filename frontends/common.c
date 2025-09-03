@@ -475,13 +475,43 @@ NewModule(const char *fullname, int language)
 }
 
 /*
+ * look for a constant symbol override in a list
+ */
+static AST *
+FindIdInList(const char *name, AST *varlist)
+{
+    AST *item, *val;
+    while (varlist) {
+        item = varlist->left;
+        varlist = varlist->right;
+        while (item && item->kind == AST_COMMENTEDNODE)
+            item = item->left;
+        if (item && item->kind == AST_ASSIGN) {
+            const char *itemname;
+            val = item->right;
+            item = item->left;
+            itemname = GetIdentifierName(item);
+            if (itemname && !strcasecmp(itemname, name)) {
+                return DupAST(val);
+            }
+        }
+    }
+    return NULL;
+}
+
+/*
  * declare constant symbols
  */
-static Symbol *
+Symbol *
 EnterConstant(Module *P, const char *name, AST *expr)
 {
     Symbol *sym;
+    AST *override;
 
+    override = FindIdInList(name, current->objparams);
+    if (override) {
+        expr = override;
+    }
     // check to see if the symbol already has a definition
     sym = FindSymbol(&P->objsyms, name);
     if (sym) {
@@ -543,6 +573,9 @@ DeclareConstants(Module *P, AST **conlist_ptr)
                 if (ast->kind == AST_COMMENTEDNODE)
                     ast = ast->left;
 
+                if (ast->kind == AST_ASSIGN && ast->d.ival == K_NOP) {
+                    goto skip_item;
+                }
                 switch (ast->kind) {
                 case AST_ASSIGN:
                 {
@@ -635,6 +668,7 @@ DeclareConstants(Module *P, AST **conlist_ptr)
                     break;
                 }
             }
+        skip_item:        
             upper = next;
         }
     } while (n > 0);
@@ -684,46 +718,6 @@ DeclareConstants(Module *P, AST **conlist_ptr)
     *conlist_ptr = completed_declarations;
 }
 
-static AST *
-ReplaceIdentifierFrom(AST *id, AST *varlist)
-{
-    const char *name = GetIdentifierName(id);
-    AST *item, *val;
-    while (varlist) {
-        item = varlist->left;
-        varlist = varlist->right;
-        while (item && item->kind == AST_COMMENTEDNODE)
-            item = item->left;
-        if (item && item->kind == AST_ASSIGN) {
-            const char *itemname;
-            val = item->right;
-            item = item->left;
-            itemname = GetIdentifierName(item);
-            if (itemname && !strcasecmp(itemname, name)) {
-                return DupAST(val);
-            }
-        }
-    }
-    return id;
-}
-static AST *
-SimplifyOneObjParam(AST *param)
-{
-    if (!param)
-        return param;
-    switch(param->kind) {
-    case AST_IDENTIFIER:
-        return ReplaceIdentifierFrom(param, current->objparams);
-    default:
-        break;
-    }
-    if (param->left)
-        param->left = SimplifyOneObjParam(param->left);
-    if (param->right)
-        param->right = SimplifyOneObjParam(param->right);
-    return param;
-}
-
 AST *
 SimplifyObjParams(AST *params)
 {
@@ -732,8 +726,11 @@ SimplifyObjParams(AST *params)
         AST *node = params->left;
         while (node && node->kind == AST_COMMENTEDNODE)
             node = node->left;
-        if (node && node->kind == AST_ASSIGN)
-            node->right = SimplifyOneObjParam(node->right);
+        if (node && node->kind == AST_ASSIGN) {
+            AST *val = node->right;
+            int32_t cval = EvalConstExpr(val);
+            node->right = AstInteger(cval);
+        }
         params = params->right;
     }
     return orig_params;

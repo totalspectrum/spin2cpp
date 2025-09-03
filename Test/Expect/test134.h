@@ -5,11 +5,11 @@
 
 class test134 {
 public:
-  static const int Test_row_results = 5;
   static const int Test_electrical = 0;
   static const int Test_light = 1;
   static const int Test_led = 2;
   static const int Test_row_button = (Test_row_results + Test_led);
+  static const int Test_row_results = 5;
   static unsigned char dat[];
 private:
 };

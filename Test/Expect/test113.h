@@ -6,9 +6,9 @@
 
 class test113 {
 public:
+  static const int Z = (subtest113::B + Y);
   static const int X = 1;
   static const int Y = (X + 1);
-  static const int Z = (subtest113::B + Y);
   static int32_t 	Foo(int32_t Aa);
 private:
   subtest113 	V;

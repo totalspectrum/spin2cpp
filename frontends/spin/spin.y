@@ -64,6 +64,23 @@ SpinAddDatList(AST *datlist)
     
 }
 
+// add a constant definition immediately (if we know the
+// values) or later (if we do not)
+static AST *
+SpinAddConstant(AST *id, AST *val)
+{
+    int op = K_ASSIGN;
+    if (IsConstExpr(val)) {
+        const char *name = GetIdentifierName(id);
+        if (!LookupSymbolInTable(&current->objsyms, name)) {
+            EnterConstant(current, GetIdentifierName(id),
+                          val);
+            op = K_NOP;
+        }
+    }
+    return AstOpAssign(op, id, val);
+}
+
 // add symbol definitions to currentTypes
 static void
 SpinAddLocalSymbol(AST *ident, int kind, void *val)
@@ -1340,16 +1357,26 @@ enumlist:
   enumitem
     { $$ = CommentedListHolder($1); }
   | enumlist ',' enumitem
-    { $$ = AddToList($1, CommentedListHolder($3)); }
+    {
+        AST *item = $3;
+        if (item) {
+            $$ = AddToList($1, CommentedListHolder($3));
+        }
+    }
   ;
 
 enumitem:
   identifier '=' expr
-  {   AST *decl = NewAST(AST_ASSIGN, $1, $3);
+  {
+      AST *id = $1;
+      AST *val = $3;
+      AST *decl = SpinAddConstant(id, val); //NewAST(AST_ASSIGN, $1, $3);
       $$ = decl;
   }
   | identifier
-  { $$ = $1; }
+  {
+      $$ = $1;
+  }
   | identifier '[' expr ']'
     {
         $$ = NewAST(AST_ENUMSKIP, $1, $3);
@@ -1621,10 +1648,25 @@ objline:
 optobjparams:
     /* empty */
       { $$ = NULL; }
-  | '|' conline
+  | '|' objparams
       { $$ = $2; }
 ;
 
+objparams:
+  objparamitem
+    { $$ = CommentedListHolder($1); }
+  | objparams ',' objparamitem
+    { $$ = AddToList($1, CommentedListHolder($3)); }
+;
+objparamitem:
+  identifier '=' expr
+  {
+      AST *id = $1;
+      AST *val = $3;
+      AST *decl = NewAST(AST_ASSIGN, id, val);
+      $$ = decl;
+  }
+;
 varblock:
     varline
     { $$ = CommentedListHolder($1); }
