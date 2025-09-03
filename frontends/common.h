@@ -1104,6 +1104,7 @@ int ParseOptimizeString(AST *lineNum, const char *str, int *flags);
 int ParseWarnString(AST *lineNum, const char *str, int *flags);
 
 /* declare constants */
+Symbol *EnterConstant(Module *P, const char *name, AST *expr);
 void DeclareConstants(Module *P, AST **conlist);
 
 /* simplify a list of parameters to objects (replacing names with

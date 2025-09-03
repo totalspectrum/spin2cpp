@@ -5,9 +5,9 @@
 
 class test114 {
 public:
-  static const int X = 4;
   static const int Theta = (X + 1);
-  static int32_t	Get(void);
+  static const int X = 4;
+  static int32_t 	Get(void);
 private:
 };
 

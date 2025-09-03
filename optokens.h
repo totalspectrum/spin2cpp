@@ -5,6 +5,7 @@
 #define BINOP_H
 
 enum OpToken {
+    K_NOP    = 0x001,
     K_ASSIGN = 0x100,
     K_BOOL_OR,
     K_BOOL_AND,    
