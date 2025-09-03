@@ -1,4 +1,5 @@
 Version 7.5.0
+- Fixed CMP with src-only registers like PHSA
 - Overhauled constant definition code to better support module
 parameters. This should largely be invisible to users, but bugs may
 have crept in.

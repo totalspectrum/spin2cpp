@@ -8,7 +8,8 @@ _waitcycles
 	mov	_var01, cnt
 	add	_var01, arg01
 LR__0001
-	cmps	cnt, _var01 wc
+	mov	arg01, cnt
+	cmps	arg01, _var01 wc
  if_b	jmp	#LR__0001
 _waitcycles_ret
 	ret

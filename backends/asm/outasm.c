@@ -104,6 +104,7 @@ static Operand *CompileExpression(IRList *irl, AST *expr, Operand *dest);
 static Operand* CompileMul(IRList *irl, AST *expr, int gethi, Operand *dest);
 static Operand* CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest);
 static Operand *Dereference(IRList *irl, Operand *op);
+static Operand *DereferenceDest(IRList *irl, Operand *op);
 static Operand *CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func);
 static Operand *CompileFunccallFirstResult(IRList *irl, AST *expr);
 static OperandList *CompileFunccall(IRList *irl, AST *expr);
@@ -2136,14 +2137,14 @@ doCompileMul(IRList *irl, Operand *lhs, Operand *rhs, int gethi, Operand *dest)
     }
     if (gl_p2) {
         if (gethi == 0) {
-            lhs = Dereference(irl, lhs);
+            lhs = DereferenceDest(irl, lhs);
             rhs = Dereference(irl, rhs);
             EmitOp2(irl, OPC_QMUL, lhs, rhs);
             EmitOp1(irl, OPC_GETQX, temp);
             return temp;
         }
         if (isUnsigned) {
-            lhs = Dereference(irl, lhs);
+            lhs = DereferenceDest(irl, lhs);
             rhs = Dereference(irl, rhs);
             EmitOp2(irl, OPC_QMUL, lhs, rhs);
             EmitOp1(irl, OPC_GETQY, temp);
@@ -2151,7 +2152,7 @@ doCompileMul(IRList *irl, Operand *lhs, Operand *rhs, int gethi, Operand *dest)
         } else {
             IR *ir;
             Operand *temp2 = NewFunctionTempRegister();
-            lhs = Dereference(irl, lhs);
+            lhs = DereferenceDest(irl, lhs);
             rhs = Dereference(irl, rhs);
             EmitOp2(irl, OPC_QMUL, lhs, rhs);
             EmitMove(irl, temp2, NewImmediate(0), linenum);
@@ -2549,7 +2550,7 @@ CompileBasicBoolExpression(IRList *irl, AST *expr)
         flags = FLAG_WZ|FLAG_WC;
         break;
     }
-    lhs = Dereference(irl, lhs);
+    lhs = DereferenceDest(irl, lhs);
     rhs = Dereference(irl, rhs);
     if (isUnsigned || flags == FLAG_WZ) {
         ir = EmitOp2(irl, OPC_CMP, lhs, rhs);
@@ -2703,6 +2704,20 @@ static Operand *
 Dereference(IRList *irl, Operand *op)
 {
     if (IsMemRef(op)) {
+        Operand *temp = NewFunctionTempRegister();
+        EmitMove(irl, temp, op, NULL);
+        if (op->size > 4) {
+            ERROR(NULL, "internal error, Dereference called on large object");
+        }
+        return temp;
+    }
+    return op;
+}
+
+static Operand *
+DereferenceDest(IRList *irl, Operand *op)
+{
+    if (IsMemRef(op) || SrcOnlyHwReg(op)) {
         Operand *temp = NewFunctionTempRegister();
         EmitMove(irl, temp, op, NULL);
         if (op->size > 4) {
