@@ -46,7 +46,7 @@ int snprintf(char *buf, size_t size, const char *fmt, ...)
         S.ptr--;
     }
     S.sputc(0);
-    return r+1;
+    return r;
 }
 
 int vsprintf(char *buf, const char *fmt, va_list ap)
@@ -74,5 +74,5 @@ int vsnprintf(char *buf, size_t size, const char *fmt, va_list ap)
         S.ptr--;
     }
     S.sputc(0);
-    return r+1;
+    return r;
 }
