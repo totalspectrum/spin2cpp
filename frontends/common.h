@@ -692,6 +692,7 @@ typedef struct PASMAddresses {
 /* declare labels in PASM */
 /* fills out a struct giving the various maximum pc's and sizes */
 void AssignAddresses(PASMAddresses *addr, SymbolTable *symtab, AST *instrlist, int startFlags);
+void ResolveTempIdentifiers(AST *instrlist);
 void DeclareModuleLabels(Module *);
 #define ADDRESS_STARTFLAG_COG 0x0
 #define ADDRESS_STARTFLAG_HUB 0x1

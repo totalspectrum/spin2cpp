@@ -725,7 +725,6 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     
     flexbuf_init(&fb, INCSTR);
     if (prefix) {
-        flexbuf_addmem(&fb, prefix, strlen(prefix));
         if (gl_gas_dat) {
             flexbuf_addchar(&fb, '.');
         } else {
@@ -1060,8 +1059,11 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     }
     
 is_identifier:
-    ast = NewAST(AST_IDENTIFIER, NULL, NULL);
-
+    if (prefix) {
+        ast = NewAST(AST_TEMP_IDENTIFIER, NULL, NULL);
+    } else {
+        ast = NewAST(AST_IDENTIFIER, NULL, NULL);
+    }
     if (gl_normalizeIdents) {
         NormalizeIdentifier(idstr);
     }

@@ -963,7 +963,8 @@ void
 CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
 {
     bool useMiniDat = true;
-    
+
+    ResolveTempIdentifiers(origtop);
     if (curfunc->code_placement != CODE_PLACE_HUB) {
         // never generate fcache stuff!
         asmFlags &= ~INLINE_ASM_FLAG_FCACHE;

@@ -893,6 +893,7 @@ static const char *astnames[] = {
     "ditto_count",
 
     "namespace",
+    "temp_identifier",
 };
 
 //

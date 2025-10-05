@@ -672,7 +672,7 @@ DupDittoChain(AST *chain, unsigned count) {
 /* first is the original holder of the DITTO node */
 /* last is the original holder of the DITTO END node */
 
-void
+static void
 DupDitto(AST *first, AST *last, AST *count) {
     unsigned max_count = EvalPasmExpr(count);
     unsigned cur_count = 1;
@@ -736,6 +736,107 @@ ExpandDittos(AST *instrlist)
     }
 }
 
+static void
+ReplaceTempIdentifiers(AST *ast, const char *prefix) {
+    if (!ast) return;
+    if (ast->kind == AST_TEMP_IDENTIFIER) {
+        ast->kind = AST_IDENTIFIER;
+        ast->d.string = strdupcat(prefix, ast->d.string);
+    } else {
+        ReplaceTempIdentifiers(ast->left, prefix);
+        ReplaceTempIdentifiers(ast->right, prefix);
+    }
+}
+
+void
+ResolveTempIdentifiers(AST *instrlist)
+{
+    AST *top, *ast;
+    const char *prefix = "";
+    unsigned asm_nest;
+    AsmState state[MAX_ASM_NEST] = { 0 };
+
+    asm_nest = 0;
+    state[asm_nest].is_active = true;
+
+    top = instrlist;
+    while (top) {
+        ast = top->left;
+        top = top->right;
+        while (ast && ast->kind == AST_COMMENTEDNODE) {
+            ast = ast->left;
+        }
+        if (!ast) continue;
+        switch(ast->kind) {
+        case AST_IDENTIFIER:
+            if (state[asm_nest].is_active) {
+                prefix = ast->d.string;
+            }
+            break;
+        case AST_ASM_IF:
+        {
+            bool was_active = state[asm_nest].is_active;
+            int val = 0;
+            asm_nest++;
+            if (asm_nest == MAX_ASM_NEST) {
+                ERROR(ast, "conditional assembly nested too deep");
+                --asm_nest;
+            }
+            if (!IsConstExpr(ast->left)) {
+                ERROR(ast, "expression in conditional assembly must be constant");
+                val = 0;
+            } else {
+                val = EvalConstExpr(ast->left);
+            }
+            if (val && was_active) {
+                state[asm_nest].is_active = true;
+                state[asm_nest].needs_else = false;
+                ast->d.ival = 1;
+            } else {
+                state[asm_nest].is_active = false;
+                state[asm_nest].needs_else = was_active;
+                ast->d.ival = 0;
+            }
+            break;
+        }
+        case AST_ASM_ELSEIF:
+        {
+            int val = 0;
+            if (!IsConstExpr(ast->left)) {
+                ERROR(ast, "expression in conditional assembly must be constant");
+                val = 0;
+            } else {
+                val = EvalConstExpr(ast->left);
+            }
+            if (state[asm_nest].needs_else && val) {
+                state[asm_nest].needs_else = false;
+                state[asm_nest].is_active = true;
+                ast->d.ival = 1;
+            } else {
+                state[asm_nest].is_active = false;
+                ast->d.ival = 0;
+            }
+            break;
+        }
+        case AST_ASM_ENDIF:
+        {
+            if (asm_nest == 0) {
+                ERROR(ast, "conditional assembly endif without if");
+            } else {
+                --asm_nest;
+            }
+            ast->d.ival = state[asm_nest].is_active ? 1 : 0;
+            break;
+        }
+        default:
+            if (state[asm_nest].is_active) {
+                ReplaceTempIdentifiers(ast, prefix);
+            }
+            break;
+        }
+    }
+}
+
 void
 AssignAddresses(PASMAddresses *addr, SymbolTable *orig_symtab, AST *instrlist, int startFlags)
 {
@@ -763,7 +864,8 @@ AssignAddresses(PASMAddresses *addr, SymbolTable *orig_symtab, AST *instrlist, i
     unsigned asm_nest;
     AsmState state[MAX_ASM_NEST] = { 0 };
     SymbolTable *symtab;
-    
+
+    ResolveTempIdentifiers(instrlist);
     ExpandDittos(instrlist);
 
 again:
