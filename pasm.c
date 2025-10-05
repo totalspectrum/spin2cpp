@@ -753,6 +753,11 @@ ResolveTempIdentifiers(AST *instrlist)
 {
     AST *top, *ast;
     const char *prefix = "";
+    unsigned asm_nest;
+    AsmState state[MAX_ASM_NEST] = { 0 };
+
+    asm_nest = 0;
+    state[asm_nest].is_active = true;
 
     top = instrlist;
     while (top) {
@@ -762,10 +767,72 @@ ResolveTempIdentifiers(AST *instrlist)
             ast = ast->left;
         }
         if (!ast) continue;
-        if (ast->kind == AST_IDENTIFIER) {
-            prefix = ast->d.string;
-        } else {
-            ReplaceTempIdentifiers(ast, prefix);
+        switch(ast->kind) {
+        case AST_IDENTIFIER:
+            if (state[asm_nest].is_active) {
+                prefix = ast->d.string;
+            }
+            break;
+        case AST_ASM_IF:
+        {
+            bool was_active = state[asm_nest].is_active;
+            int val = 0;
+            asm_nest++;
+            if (asm_nest == MAX_ASM_NEST) {
+                ERROR(ast, "conditional assembly nested too deep");
+                --asm_nest;
+            }
+            if (!IsConstExpr(ast->left)) {
+                ERROR(ast, "expression in conditional assembly must be constant");
+                val = 0;
+            } else {
+                val = EvalConstExpr(ast->left);
+            }
+            if (val && was_active) {
+                state[asm_nest].is_active = true;
+                state[asm_nest].needs_else = false;
+                ast->d.ival = 1;
+            } else {
+                state[asm_nest].is_active = false;
+                state[asm_nest].needs_else = was_active;
+                ast->d.ival = 0;
+            }
+            break;
+        }
+        case AST_ASM_ELSEIF:
+        {
+            int val = 0;
+            if (!IsConstExpr(ast->left)) {
+                ERROR(ast, "expression in conditional assembly must be constant");
+                val = 0;
+            } else {
+                val = EvalConstExpr(ast->left);
+            }
+            if (state[asm_nest].needs_else && val) {
+                state[asm_nest].needs_else = false;
+                state[asm_nest].is_active = true;
+                ast->d.ival = 1;
+            } else {
+                state[asm_nest].is_active = false;
+                ast->d.ival = 0;
+            }
+            break;
+        }
+        case AST_ASM_ENDIF:
+        {
+            if (asm_nest == 0) {
+                ERROR(ast, "conditional assembly endif without if");
+            } else {
+                --asm_nest;
+            }
+            ast->d.ival = state[asm_nest].is_active ? 1 : 0;
+            break;
+        }
+        default:
+            if (state[asm_nest].is_active) {
+                ReplaceTempIdentifiers(ast, prefix);
+            }
+            break;
         }
     }
 }
