@@ -1,3 +1,6 @@
+Version 7.5.1
+- Fixed snprintf return values
+
 Version 7.5.0
 - Fixed CMP with src-only registers like PHSA
 - Overhauled constant definition code to better support module
