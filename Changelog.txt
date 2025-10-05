@@ -1,5 +1,7 @@
 Version 7.5.1
+- Added ioctl function to libc.a
 - Fixed snprintf return values
+- Improved interaction of conditional assembly and temporary labels
 
 Version 7.5.0
 - Fixed CMP with src-only registers like PHSA
