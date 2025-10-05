@@ -672,7 +672,7 @@ DupDittoChain(AST *chain, unsigned count) {
 /* first is the original holder of the DITTO node */
 /* last is the original holder of the DITTO END node */
 
-void
+static void
 DupDitto(AST *first, AST *last, AST *count) {
     unsigned max_count = EvalPasmExpr(count);
     unsigned cur_count = 1;
@@ -736,6 +736,40 @@ ExpandDittos(AST *instrlist)
     }
 }
 
+static void
+ReplaceTempIdentifiers(AST *ast, const char *prefix) {
+    if (!ast) return;
+    if (ast->kind == AST_TEMP_IDENTIFIER) {
+        ast->kind = AST_IDENTIFIER;
+        ast->d.string = strdupcat(prefix, ast->d.string);
+    } else {
+        ReplaceTempIdentifiers(ast->left, prefix);
+        ReplaceTempIdentifiers(ast->right, prefix);
+    }
+}
+
+void
+ResolveTempIdentifiers(AST *instrlist)
+{
+    AST *top, *ast;
+    const char *prefix = "";
+
+    top = instrlist;
+    while (top) {
+        ast = top->left;
+        top = top->right;
+        while (ast && ast->kind == AST_COMMENTEDNODE) {
+            ast = ast->left;
+        }
+        if (!ast) continue;
+        if (ast->kind == AST_IDENTIFIER) {
+            prefix = ast->d.string;
+        } else {
+            ReplaceTempIdentifiers(ast, prefix);
+        }
+    }
+}
+
 void
 AssignAddresses(PASMAddresses *addr, SymbolTable *orig_symtab, AST *instrlist, int startFlags)
 {
@@ -763,7 +797,8 @@ AssignAddresses(PASMAddresses *addr, SymbolTable *orig_symtab, AST *instrlist, i
     unsigned asm_nest;
     AsmState state[MAX_ASM_NEST] = { 0 };
     SymbolTable *symtab;
-    
+
+    ResolveTempIdentifiers(instrlist);
     ExpandDittos(instrlist);
 
 again:
