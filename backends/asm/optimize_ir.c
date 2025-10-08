@@ -4553,6 +4553,23 @@ static bool IsMemoryOrderSafe(Operand *op) {
 }
 
 //
+// returns TRUE if the instruction waits; in this case, we must assume
+// other COGs may be changing memory
+//
+static bool IsWait(IR *ir)
+{
+    switch(ir->opc) {
+    case OPC_GENERIC_NR:
+    case OPC_GENERIC_NOFLAGS:
+    case OPC_WAITCNT:
+    case OPC_WAITX:
+        return true;
+    default:
+        return false;
+    }
+}
+
+//
 // find the next rdlong that uses src
 // returns NULL if we spot anything that changes src, dest,
 // memory, or a branch
@@ -4590,6 +4607,9 @@ static IR* FindNextRead(IR *irorig, Operand *dest, Operand *src, bool branch_ok)
                 return NULL;
             }
         } else if (InstrModifies(ir, dest) || InstrModifies(ir, src)) {
+            return NULL;
+        }
+        if (IsWait(ir)) {
             return NULL;
         }
         if (IsWrite(ir)) {

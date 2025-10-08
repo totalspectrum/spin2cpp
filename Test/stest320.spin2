@@ -1,0 +1,10 @@
+{Spin2_v50}
+
+VAR
+  long tmp
+  
+PUB main() | x, y
+   x := tmp
+   _waitx(1)
+   y := tmp
+   OUTA := x + y
