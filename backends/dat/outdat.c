@@ -546,7 +546,7 @@ outputInitList(Flexbuf *f, int elemsize, AST *initval, int numelems, Flexbuf *re
 }
 
 int
-outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
+outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs, int is_packed)
 {
     int elemsize;
     int typealign, typesize;
@@ -557,7 +557,7 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
     int siz = 0;
     
     type = RemoveTypeModifiers(type);
-    typealign = TypeAlign(type);
+    typealign = is_packed ? 1 : TypeAlign(type);
     elemsize = typesize = TypeSize(type);
     numelems  = 1;
 
@@ -598,7 +598,7 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
         }
         while (numelems > 0 && initval) {
             --numelems;
-            siz += outputInitializer(f, type, initval->left, relocs);
+            siz += outputInitializer(f, type, initval->left, relocs, is_packed);
             initval = initval->right;
         }
         if (numelems > 0) {
@@ -612,6 +612,7 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
     case AST_OBJECT: {
         P = GetClassPtr(type);
         is_union = P->isUnion;
+        is_packed = P->isPacked;
         varlist = P->finalvarblock;
         if (initval->kind != AST_EXPRLIST) {
             initval = NewAST(AST_EXPRLIST, initval, NULL);
@@ -645,7 +646,7 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
             if (subsiz >= LONG_SIZE) {
                 subsiz = (subsiz + LONG_SIZE - 1) & ~(LONG_SIZE-1);
             }
-            r = outputInitializer(f, subtype, subinit, relocs);
+            r = outputInitializer(f, subtype, subinit, relocs, is_packed);
             while (r < subsiz) {
                 outputByte(f, 0);
                 r++;
@@ -2039,7 +2040,7 @@ outputVarDeclare(Flexbuf *f, AST *ast, Flexbuf *relocs)
     }
     typsiz = TypeSize(type);
     AlignPc(f, TypeAlign(type));
-    siz = outputInitializer(f, type, initval, relocs);
+    siz = outputInitializer(f, type, initval, relocs, 0);
     if (siz != typsiz) {
         ERROR(initval, "Bad initialization size: expected %d got %d", typsiz, siz);
     }
