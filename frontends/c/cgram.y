@@ -751,9 +751,9 @@ AddStructBody(Module *C, AST *body)
 static AST *
 MakeNewStruct(Module *Parent, AST *skind, AST *identifier, AST *body, AST *options)
 {
-    int is_union;
-    int is_class;
-    int is_packed;
+    int is_union = 0;
+    int is_class = 0;
+    int is_packed = 0;
     const char *name;
     const char *classname;
     char *typname;
