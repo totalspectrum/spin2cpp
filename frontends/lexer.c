@@ -23,7 +23,7 @@
 
 #define VT '\013'
 
-#define MAX_PNUT_VERSION 51 /* maximum PNut version we understand */
+#define MAX_PNUT_VERSION 52 /* maximum PNut version we understand */
 
 int allow_type_names = 1;
 
@@ -2540,6 +2540,12 @@ struct reservedword_soft {
     { "ln",    SP_LOG, 51, 0 },
     { "exp",   SP_EXP, 51, 0 },
     { "pow",   SP_POW, 51, 0 },
+
+    /* v52 keywords */
+    { "movbyts", SP_MOVBYTS, 52, 0 },
+    { "endianl", SP_ENDIANL, 52, 0 },
+    { "endianw", SP_ENDIANW, 52, 0 },
+    { "debug_end_session", SP_DEBUG_END_SESSION, 52, 0 },
 };
 
 struct reservedword basic_keywords[] = {

@@ -225,6 +225,13 @@ MakeFunccall(AST *func, AST *params, AST *numresults)
     return NewAST(AST_FUNCCALL, func, params);
 }
 
+static AST *
+MakeFunccall1(AST *func, AST *arg1)
+{
+    AST *exprlist = NewAST(AST_EXPRLIST, arg1, NULL);
+    return MakeFunccall(func, exprlist, NULL);
+}
+
 // special handling for things like "abc" | x
 // in Spin this is the same as "ab", "c" | x
 
@@ -625,6 +632,11 @@ SpinDeclareInterface(AST *ident, AST *defs)
 %token SP_LOG    "LN"
 %token SP_EXP    "EXP"
 %token SP_POW    "POW"
+
+%token SP_MOVBYTS "MOVBYTS"
+%token SP_ENDIANL "ENDIANL"
+%token SP_ENDIANW "ENDIANW"
+%token SP_DEBUG_END_SESSION "DEBUG_END_SESSION"
 
 %token SP_FADD   "+."
 %token SP_FSUB   "-."
@@ -2683,42 +2695,63 @@ funccall:
         AST *arg1 = $3;
         AST *ident = AstIdentifier("__builtin_log2f");
         
-        $$ = MakeFunccall(ident, arg1, NULL);
+        $$ = MakeFunccall1(ident, arg1);
     }
   | SP_EXP2 '(' expr ')'
     {
         AST *arg1 = $3;
         AST *ident = AstIdentifier("__builtin_exp2f");
         
-        $$ = MakeFunccall(ident, arg1, NULL);
+        $$ = MakeFunccall1(ident, arg1);
     }
   | SP_LOG10 '(' expr ')'
     {
         AST *arg1 = $3;
         AST *ident = AstIdentifier("__builtin_log10f");
         
-        $$ = MakeFunccall(ident, arg1, NULL);
+        $$ = MakeFunccall1(ident, arg1);
     }
   | SP_EXP10 '(' expr ')'
     {
         AST *arg1 = $3;
         AST *ident = AstIdentifier("__builtin_exp10f");
         
-        $$ = MakeFunccall(ident, arg1, NULL);
+        $$ = MakeFunccall1(ident, arg1);
     }
   | SP_LOG '(' expr ')'
     {
         AST *arg1 = $3;
         AST *ident = AstIdentifier("__builtin_logf");
         
-        $$ = MakeFunccall(ident, arg1, NULL);
+        $$ = MakeFunccall1(ident, arg1);
     }
   | SP_EXP '(' expr ')'
     {
         AST *arg1 = $3;
         AST *ident = AstIdentifier("__builtin_expf");
         
-        $$ = MakeFunccall(ident, arg1, NULL);
+        $$ = MakeFunccall1(ident, arg1);
+    }
+  | SP_ENDIANL '(' expr ')'
+    {
+        AST *arg1 = $3;
+        AST *ident = AstIdentifier("__builtin_bswap32");
+        
+        $$ = MakeFunccall1(ident, arg1);
+    }
+  | SP_ENDIANW '(' expr ')'
+    {
+        AST *arg1 = $3;
+        AST *ident = AstIdentifier("__builtin_bswap16");
+        
+        $$ = MakeFunccall1(ident, arg1);
+    }
+  | SP_MOVBYTS '(' operandlist ')'
+    {
+        AST *args = $3;
+        AST *ident = AstIdentifier("__builtin_movbyts");
+        
+        $$ = MakeFunccall(ident, args, NULL);
     }
 ;
 
