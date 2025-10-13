@@ -1,3 +1,6 @@
+Version 7.6.0
+- Fixed spin2 \ interaction with ABORT
+
 Version 7.5.1
 - Added ioctl function to libc.a
 - Fixed snprintf return values

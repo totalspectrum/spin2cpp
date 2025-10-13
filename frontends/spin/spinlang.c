@@ -559,6 +559,8 @@ doSpinTransform(AST **astptr, int level, AST *parent)
         // in that you can only set up a catch on a call
         // and can't differentiate a normal return from an abort.
         if (gl_output != OUTPUT_BYTECODE /*|| gl_interp_kind == INTERP_KIND_NUCODE */ ) {
+            AST *defaultval = IsSpin2Lang(curfunc->language) ?
+                AstInteger(0) : ast->left;
             curfunc->force_locals_to_stack = 1; // if we do a catch we will want data on stack
             AstReportAs(ast, &saveinfo); // any newly created AST nodes should reflect debug info from this one
             *astptr = ast = NewAST(AST_TRYENV,
@@ -567,8 +569,8 @@ doSpinTransform(AST **astptr, int level, AST *parent)
                                                     NewAST(AST_SETJMP, NULL, NULL),
                                                     AstInteger(0)),
                                         NewAST(AST_THENELSE,
-                                                ast->left,
-                                                NewAST(AST_CATCHRESULT, NULL, NULL))),
+                                               defaultval,
+                                               NewAST(AST_CATCHRESULT, NULL, NULL))),
                                 NULL);
             AstReportDone(&saveinfo);
         }
