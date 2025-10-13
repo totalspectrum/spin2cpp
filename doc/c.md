@@ -255,6 +255,27 @@ Because Spin and BASIC are case insensitive languages, their identifiers may be 
 
 Class support for C/C++ is very much incomplete, and probably will not work in all cases. In particular, calling functions outside of the class may not work (so simple self contained classes should be fine, but classes which call into other classes may not work properly).
 
+### Packed structures
+
+Like GCC, FlexC supports packing of structures. Normally, variables within structures are aligned on natural boundaries, to improve the speed of access. So for example the structure:
+```
+struct mystruct {
+   unsigned char a;
+   long          b;
+} X;
+```
+has the field `a` at offset 0 and `b` at offset 4, with padding between the two.
+However, on the P2 it is possible to remove this padding by adding the tag `__attribute__((packed))` after the `struct` keyword:
+```
+struct __attribute__((packed)) mystruct {
+   unsigned char a;
+   long          b;
+} Y;
+```
+This time the offset of `b` is 1, and no extra padding is introduced. This will only work on P2, where the hardware supports unaligned accesses (with a small performance penalty).
+
+Note that while the `__attribute__` keyword may be accepted in other places in variable definitions, placing it immediately after the `struct` keyword is the only officially supported placement right now (other places may or may not work properly).
+
 ### Header file external function definitions
 
 There is no linker as yet, so in order to use standard library functions we use a FlexC specific construct, `__fromfile`. The declaration:
