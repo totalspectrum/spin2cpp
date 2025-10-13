@@ -1,5 +1,7 @@
 Version 7.6.0
+- Added new Spin2_v52 keywords
 - Fixed spin2 \ interaction with ABORT
+- Fixed initialization of packed structures
 
 Version 7.5.1
 - Added ioctl function to libc.a
