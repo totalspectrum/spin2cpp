@@ -14,6 +14,9 @@ ShortZipName(SourceFile *sf, const char *root, size_t rootlen)
     if (!strncmp(sf->fullName, root, rootlen)) {
         return sf->fullName + rootlen;
     }
+    if (!strcmp(sf->fullName, sf->shortName)) {
+        return sf->fullName;
+    }
     return strdupcat("library/", sf->shortName);
 }
 
