@@ -1737,12 +1737,32 @@ vardecl:
     { $$ = $1; }
   | SP_BYTE identdecl
     { $$ = NewAST(AST_DECLARE_VAR, ast_type_byte, $2); }
+  | '^' SP_BYTE identdecl
+    {
+        AST *typ = NewAST(AST_REFTYPE, ast_type_byte, NULL);
+        $$ = NewAST(AST_DECLARE_VAR, typ, $3);
+    }
   | SP_WORD identdecl
     { $$ = NewAST(AST_DECLARE_VAR, ast_type_word, $2); }
+  | '^' SP_WORD identdecl
+    {
+        AST *typ = NewAST(AST_REFTYPE, ast_type_word, NULL);
+        $$ = NewAST(AST_DECLARE_VAR, typ, $3);
+    }
   | SP_LONG identdecl
     { $$ = NewAST(AST_DECLARE_VAR, NULL, $2); }
+  | '^' SP_LONG identdecl
+    {
+        AST *typ = NewAST(AST_REFTYPE, ast_type_long, NULL);
+        $$ = NewAST(AST_DECLARE_VAR, typ, $3);
+    }
   | SP_QUAD identdecl
     { $$ = NewAST(AST_DECLARE_VAR, ast_type_long64, $2); }
+  | '^' SP_QUAD identdecl
+    {
+        AST *typ = NewAST(AST_REFTYPE, ast_type_long64, NULL);
+        $$ = NewAST(AST_DECLARE_VAR, typ, $3);
+    }
   | ptrstructname identdecl
     { $$ = NewAST(AST_DECLARE_VAR, $1, $2); }
 ;

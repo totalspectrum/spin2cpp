@@ -3,6 +3,7 @@ Version 7.6.0
 - Fixed spin2 \ interaction with ABORT
 - Fixed initialization of packed structures
 - Fixed some incorrect file names in zip files
+- Fixed a number of bugs in spin2 pointer operations
 
 Version 7.5.1
 - Added ioctl function to libc.a

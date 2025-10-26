@@ -15,7 +15,7 @@
  * fix up references
  */
 static void
-fixReferences(AST **astptr, int incdecop)
+fixReferences(AST **astptr, int incdecop, AST *memtype)
 {
     AST *ast = *astptr;
     AST *typ;
@@ -30,16 +30,23 @@ fixReferences(AST **astptr, int incdecop)
         if (typ && IsRefType(typ)) {
             if (incdecop == '@') return;
             AstReportAs(ast, &saveinfo);
+            if (memtype) {
+                deref = NewAST(AST_CAST,
+                               NewAST(AST_PTRTYPE, memtype, NULL),
+                               ast);
+            } else {
+                deref = ast;
+            }
             if (incdecop) {
                 switch (incdecop) {
                 case K_REF_POSTDEC:
-                    ast = AstOperator(K_DECREMENT, ast, NULL); break;
+                    ast = AstOperator(K_DECREMENT, deref, NULL); break;
                 case K_REF_POSTINC:
-                    ast = AstOperator(K_INCREMENT, ast, NULL); break;
+                    ast = AstOperator(K_INCREMENT, deref, NULL); break;
                 case K_REF_PREDEC:
-                    ast = AstOperator(K_DECREMENT, NULL, ast); break;
+                    ast = AstOperator(K_DECREMENT, NULL, deref); break;
                 case K_REF_PREINC:
-                    ast = AstOperator(K_INCREMENT, NULL, ast); break;
+                    ast = AstOperator(K_INCREMENT, NULL, deref); break;
                 default:
                     ERROR(ast, "Internal compiler error: unknown op\n"); break;
                 }
@@ -52,7 +59,7 @@ fixReferences(AST **astptr, int incdecop)
         return;
     case AST_ASSIGN_INIT:
         /* leave the LHS alone, if it's a reference we are assigning it */
-        fixReferences(&ast->right, incdecop);
+        fixReferences(&ast->right, incdecop, NULL);
         return;
     case AST_OPERATOR:
         if (ast->d.ival == K_REF_PREINC || ast->d.ival == K_REF_PREDEC
@@ -63,8 +70,8 @@ fixReferences(AST **astptr, int incdecop)
             if (!IsRefType(typ)) {
                 ERROR(ast, "Applying [++] or [--] to a non-pointer");
             } else {
-                fixReferences(&ast->left, op);
-                fixReferences(&ast->right, op);
+                fixReferences(&ast->left, op, memtype);
+                fixReferences(&ast->right, op, memtype);
                 *astptr = (ast->left) ? ast->left : ast->right;
                 return;
             }
@@ -74,16 +81,20 @@ fixReferences(AST **astptr, int incdecop)
     case AST_ABSADDROF:
         typ = ExprType(ast->left);
         if (typ && IsRefType(typ)) {
-            fixReferences(&ast->left, '@');
+            fixReferences(&ast->left, '@', NULL);
             *astptr = ast->left;
             return;
         }
         break;
+    case AST_MEMREF:
+        typ = ast->left;
+        fixReferences(&ast->right, incdecop, typ);
+        return;
     default:
         break;
     }
-    fixReferences(&ast->left, incdecop);
-    fixReferences(&ast->right, incdecop);
+    fixReferences(&ast->left, incdecop, memtype);
+    fixReferences(&ast->right, incdecop, memtype);
 }
 
 /*
@@ -641,7 +652,7 @@ DoHLTransforms(Function *F)
         }
     }
     // fix up references
-    fixReferences(&F->body, 0);
+    fixReferences(&F->body, 0, NULL);
     // simplify assignments within the function
     int insertCasts = !IsSpinLang(F->language);
     doSimplifyAssignments(&F->body, insertCasts, 1);
