@@ -15,46 +15,62 @@
  * fix up references
  */
 static void
+AdjustReference(AST **astptr, AST *ast, AST *typ, int incdecop, AST *memtype, AST *index)
+{
+    AST *deref;
+    ASTReportInfo saveinfo;
+
+    if (incdecop == '@') return;
+    AstReportAs(ast, &saveinfo);
+    if (!index) index = AstInteger(0);
+    if (memtype) {
+        deref = NewAST(AST_CAST,
+                       NewAST(AST_PTRTYPE, memtype, NULL),
+                       ast);
+    } else {
+        deref = ast;
+    }
+    if (incdecop) {
+        switch (incdecop) {
+        case K_REF_POSTDEC:
+            ast = AstOperator(K_DECREMENT, deref, NULL); break;
+        case K_REF_POSTINC:
+            ast = AstOperator(K_INCREMENT, deref, NULL); break;
+        case K_REF_PREDEC:
+            ast = AstOperator(K_DECREMENT, NULL, deref); break;
+        case K_REF_PREINC:
+            ast = AstOperator(K_INCREMENT, NULL, deref); break;
+        default:
+            ERROR(ast, "Internal compiler error: unknown op\n"); break;
+        }
+    }
+    deref = NewAST(AST_MEMREF, typ->left, ast);
+    deref = NewAST(AST_ARRAYREF, deref, index);
+    *astptr = deref;
+    AstReportDone(&saveinfo);
+}
+
+static void
 fixReferences(AST **astptr, int incdecop, AST *memtype)
 {
     AST *ast = *astptr;
     AST *typ;
-    AST *deref;
-    ASTReportInfo saveinfo;
 
     if (!ast) return;
     switch (ast->kind) {
+    case AST_ARRAYREF:
+        fixReferences(&ast->left, '@', memtype);
+        fixReferences(&ast->right, incdecop, memtype);
+        typ = ExprType(ast->left);
+        if (typ && IsRefType(typ)) {
+            AdjustReference(astptr, ast->left, typ, incdecop, memtype, ast->right);
+        }
+        return;
     case AST_IDENTIFIER:
     case AST_LOCAL_IDENTIFIER:
         typ = ExprType(ast);
         if (typ && IsRefType(typ)) {
-            if (incdecop == '@') return;
-            AstReportAs(ast, &saveinfo);
-            if (memtype) {
-                deref = NewAST(AST_CAST,
-                               NewAST(AST_PTRTYPE, memtype, NULL),
-                               ast);
-            } else {
-                deref = ast;
-            }
-            if (incdecop) {
-                switch (incdecop) {
-                case K_REF_POSTDEC:
-                    ast = AstOperator(K_DECREMENT, deref, NULL); break;
-                case K_REF_POSTINC:
-                    ast = AstOperator(K_INCREMENT, deref, NULL); break;
-                case K_REF_PREDEC:
-                    ast = AstOperator(K_DECREMENT, NULL, deref); break;
-                case K_REF_PREINC:
-                    ast = AstOperator(K_INCREMENT, NULL, deref); break;
-                default:
-                    ERROR(ast, "Internal compiler error: unknown op\n"); break;
-                }
-            }
-            deref = NewAST(AST_MEMREF, typ->left, ast);
-            deref = NewAST(AST_ARRAYREF, deref, AstInteger(0));
-            *astptr = deref;
-            AstReportDone(&saveinfo);
+            AdjustReference(astptr, ast, typ, incdecop, memtype, NULL);
         }
         return;
     case AST_ASSIGN_INIT:
