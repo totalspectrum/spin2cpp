@@ -59,13 +59,16 @@ fixReferences(AST **astptr, int incdecop, AST *memtype)
     if (!ast) return;
     switch (ast->kind) {
     case AST_ARRAYREF:
-        fixReferences(&ast->left, '@', memtype);
-        fixReferences(&ast->right, incdecop, memtype);
-        typ = ExprType(ast->left);
-        if (typ && IsRefType(typ)) {
-            AdjustReference(astptr, ast->left, typ, incdecop, memtype, ast->right);
+        if (IsIdentifier(ast->left)) {
+            // fixReferences(&ast->left, '@', memtype); // unnecessary
+            fixReferences(&ast->right, incdecop, memtype);
+            typ = ExprType(ast->left);
+            if (typ && IsRefType(typ)) {
+                AdjustReference(astptr, ast->left, typ, incdecop, memtype, ast->right);
+            }
+            return;
         }
-        return;
+        break;
     case AST_IDENTIFIER:
     case AST_LOCAL_IDENTIFIER:
         typ = ExprType(ast);
