@@ -8,12 +8,14 @@
 #define DIR struct _dir
 #define DIRENT struct dirent
 
+/* filesys/block/sdmm_vfs.c */
+_FILE *_sdmm_open(int pclk, int pss, int pdi, int pdo) __fromfile("filesys/block/sdmm_vfs.c");
+struct vfs *_vfs_open_sdcard(void) __fromfile("filesys/block/sdmm_vfs.c");
+struct vfs *_vfs_open_sdcardx(int pclk, int pss, int pdi, int pdo) __fromfile("filesys/block/sdmm_vfs.c");
+
 /* filesys/fatfs/fatfs_vfs.c */
-_FILE *_sdmm_open(int pclk, int pss, int pdi, int pdo) __fromfile("filesys/fatfs/fatfs_vfs.c");
 struct vfs *_vfs_open_fat_handle(_FILE *fhandle) __fromfile("filesys/fatfs/fatfs_vfs.c");
 struct vfs *_vfs_open_fat_file(const char *name) __fromfile("filesys/fatfs/fatfs_vfs.c");
-struct vfs *_vfs_open_sdcard(void) __fromfile("filesys/fatfs/fatfs_vfs.c");
-struct vfs *_vfs_open_sdcardx(int pclk, int pss, int pdi, int pdo) __fromfile("filesys/fatfs/fatfs_vfs.c");
 
 /* filesys/fs9p/fs9p_vfs.c */
 struct vfs *_vfs_open_host(void) __fromfile("filesys/fs9p/fs9p_vfs.c");
