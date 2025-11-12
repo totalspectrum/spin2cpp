@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2025 Total Spectrum Software Inc.
+ * Copyright 2011-2025 Total Spectrum Software Inc. and contributors
  * See the file COPYING for terms of use
  *
  * various high level transformations that should take
@@ -356,6 +356,24 @@ static AST *ExpandLhsSingle(AST *item) {
     }
 }
 
+static bool
+NeedIncDecTransform(AST *expr, AST *typ)
+{
+    if (typ) {
+        if (IsFloatType(typ) || IsInt64Type(typ) || IsBoolType(typ))
+            return true;
+    }
+    
+    /* keep inc/dec for traditional output, or at least be more
+       conservative about transforms
+    */
+    if (TraditionalBytecodeOutput())
+        return false;
+    if (IsIdentifier(expr) || expr->kind == AST_HWREG)
+        return false;
+    return true;
+}
+
 void
 doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
 {
@@ -620,30 +638,33 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
                ++i -> (i = i+1, i) */
             if (ast->left) {
                 /* i++ case */
+                /* for anything complicated (not just i++), do
+                   the transform, for safety
+                */
                 AST *typ = ExprType(ast->left);
-                if (typ) {
-                    if (IsFloatType(typ) || IsInt64Type(typ) || IsBoolType(typ)) {
-                        AstReportAs(ast, &saveinfo);
-                        AST *temp = AstTempLocalVariable("_temp_", typ);
-                        AST *save = AstAssign(temp, ast->left);
-                        AST *update = AstAssign(ast->left, AstOperator(newop, ast->left, AstInteger(1)));
+                bool needTransform = NeedIncDecTransform(ast->left, typ);
+                if (needTransform) {
+                    AstReportAs(ast, &saveinfo);
+                    AST *temp = AstTempLocalVariable("_temp_", typ);
+                    AST *save = AstAssign(temp, ast->left);
+                    AST *update = AstAssign(ast->left, AstOperator(newop, ast->left, AstInteger(1)));
 
-                        ast = *astptr = NewAST(AST_SEQUENCE,
-                                               NewAST(AST_SEQUENCE, save, update),
-                                               temp);
-                        AstReportDone(&saveinfo);
-                    }
+                    ast = *astptr = NewAST(AST_SEQUENCE,
+                                           NewAST(AST_SEQUENCE, save, update),
+                                           temp);
+                    AstReportDone(&saveinfo);
                 }
-            } else {
+            } else if (ast->right) {
                 AST *ident = ast->right;
                 AST *typ = ExprType(ident);
-                if (typ) {
-                    if (IsFloatType(typ) || IsInt64Type(typ) || IsBoolType(typ)) {
-                        ast->kind = AST_ASSIGN;
-                        ast->d.ival = K_ASSIGN;
-                        ast->left = ident;
-                        ast->right = AstOperator(newop, ident, AstInteger(1));
-                    }
+                bool needTransform = NeedIncDecTransform(ast->right, typ);
+                if (needTransform) {
+                    AstReportAs(ast, &saveinfo);
+                    ast->kind = AST_ASSIGN;
+                    ast->d.ival = K_ASSIGN;
+                    ast->left = ident;
+                    ast->right = AstOperator(newop, ident, AstInteger(1));
+                    AstReportDone(&saveinfo);
                 }
             }
         }

@@ -856,6 +856,8 @@ doSpinTransform(AST **astptr, int level, AST *parent)
     } break;
     case AST_RANGEREF:
         *astptr = ast = TransformRangeUse(ast);
+        doSpinTransform(&ast->left, 0, ast);
+        doSpinTransform(&ast->right, 0, ast);
         break;
     case AST_ALLOCA:
         doSpinTransform(&ast->right, 0, ast);
