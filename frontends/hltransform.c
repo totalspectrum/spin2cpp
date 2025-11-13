@@ -363,7 +363,10 @@ NeedIncDecTransform(AST *expr, AST *typ)
         if (IsFloatType(typ) || IsInt64Type(typ) || IsBoolType(typ))
             return true;
     }
-    
+
+    /* transform for explicit casts */
+    if (expr && expr->kind == AST_CAST)
+        return true;
     /* keep inc/dec for traditional output, or at least be more
        conservative about transforms
     */
@@ -643,11 +646,12 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
                 */
                 AST *typ = ExprType(ast->left);
                 bool needTransform = NeedIncDecTransform(ast->left, typ);
+                int size = typ ? TypeSize(BaseType(typ)) : 1;
                 if (needTransform) {
                     AstReportAs(ast, &saveinfo);
                     AST *temp = AstTempLocalVariable("_temp_", typ);
                     AST *save = AstAssign(temp, ast->left);
-                    AST *update = AstAssign(ast->left, AstOperator(newop, ast->left, AstInteger(1)));
+                    AST *update = AstAssign(ast->left, AstOperator(newop, ast->left, AstInteger(size)));
 
                     ast = *astptr = NewAST(AST_SEQUENCE,
                                            NewAST(AST_SEQUENCE, save, update),
@@ -657,13 +661,14 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
             } else if (ast->right) {
                 AST *ident = ast->right;
                 AST *typ = ExprType(ident);
+                int size = typ ? TypeSize(BaseType(typ)) : 1;
                 bool needTransform = NeedIncDecTransform(ast->right, typ);
                 if (needTransform) {
                     AstReportAs(ast, &saveinfo);
                     ast->kind = AST_ASSIGN;
                     ast->d.ival = K_ASSIGN;
                     ast->left = ident;
-                    ast->right = AstOperator(newop, ident, AstInteger(1));
+                    ast->right = AstOperator(newop, ident, AstInteger(size));
                     AstReportDone(&saveinfo);
                 }
             }
