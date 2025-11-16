@@ -377,6 +377,18 @@ NeedIncDecTransform(AST *expr, AST *typ)
     return true;
 }
 
+static int
+IncDecSize(AST *typ)
+{
+    if (!typ || !IsPointerType(typ))
+        return 1;
+    if (curfunc && !IsSpinLang(curfunc->language)) {
+        /* pointers are handled in type analysis code */
+        return 1;
+    }
+    return TypeSize(BaseType(typ));
+}
+
 void
 doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
 {
@@ -646,7 +658,7 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
                 */
                 AST *typ = ExprType(ast->left);
                 bool needTransform = NeedIncDecTransform(ast->left, typ);
-                int size = typ ? TypeSize(BaseType(typ)) : 1;
+                int size = IncDecSize(typ);
                 if (needTransform) {
                     AstReportAs(ast, &saveinfo);
                     AST *temp = AstTempLocalVariable("_temp_", typ);
@@ -661,8 +673,8 @@ doSimplifyAssignments(AST **astptr, int insertCasts, int atTopLevel)
             } else if (ast->right) {
                 AST *ident = ast->right;
                 AST *typ = ExprType(ident);
-                int size = typ ? TypeSize(BaseType(typ)) : 1;
                 bool needTransform = NeedIncDecTransform(ast->right, typ);
+                int size = IncDecSize(typ);
                 if (needTransform) {
                     AstReportAs(ast, &saveinfo);
                     ast->kind = AST_ASSIGN;
