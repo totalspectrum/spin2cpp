@@ -23,8 +23,9 @@
 
     extern int gl_errors;
 
-    extern AST *last_ast;
-    
+    extern AST *last_ast, *prev_last_ast;
+    extern bool Spin2NewKeyword(LexStream *L, const char *ident);
+
 AST *
 SpinRetType(AST *funcdef)
 {
@@ -2998,6 +2999,7 @@ spinyyerror(const char *msg)
 {
     extern int saved_spinyychar;
     int yychar = saved_spinyychar;
+    const char *new_keyword = NULL;
     
     SETCOLOR(PRINT_ERROR);
     ERRORHEADER(current->Lptr->fileName, current->Lptr->lineCounter, "error");
@@ -3012,6 +3014,9 @@ spinyyerror(const char *msg)
         if (!strncmp(msg, "unexpected identifier", strlen("unexpected identifier")) && last_ast && last_ast->kind == AST_IDENTIFIER) {
             fprintf(stderr, "unexpected identifier `%s'", last_ast->d.string);
             msg += strlen("unexpected identifier");
+            if (Spin2NewKeyword(current->Lptr, last_ast->d.string)) {
+                new_keyword = last_ast->d.string;
+            }
         }
         // if we get a stray character in source, sometimes bison tries to treat it as a token for
         // error purposes, resulting in $undefined as the token
@@ -3028,7 +3033,18 @@ spinyyerror(const char *msg)
             msg++;
         }
     }
-    fprintf(stderr, "\n");     
+    fprintf(stderr, "\n");
     gl_errors++;
     RESETCOLOR();
+    if (!new_keyword && prev_last_ast && prev_last_ast->kind == AST_IDENTIFIER) {
+        if (Spin2NewKeyword(current->Lptr, prev_last_ast->d.string)) {
+            new_keyword = prev_last_ast->d.string;
+        }
+    }
+    if (new_keyword) {
+        SETCOLOR(PRINT_WARNING);
+        ERRORHEADER(current->Lptr->fileName, current->Lptr->lineCounter, "note");
+        fprintf(stderr, "`%s' is a keyword in some Spin2 versions; did you forget a {Spin2_vXX} comment?\n", new_keyword);
+        RESETCOLOR();
+    }
 }

@@ -56,6 +56,7 @@ struct preprocess gl_pp;
 
 // used for error messages
 AST *last_ast;
+AST *prev_last_ast;
 
 // accumulated comments
 static AST *comment_chain;
@@ -1030,6 +1031,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             if (sym->kind == SYM_TYPEDEF) {
                 ast = (AST *)sym->v.ptr;
                 *ast_ptr = ast;
+                prev_last_ast = last_ast;
                 last_ast = AstIdentifier(idstr);
                 return SP_TYPENAME;
             }
@@ -1044,6 +1046,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                         open_obj = NULL;
                         if (typ->kind == AST_TYPEDEF) {
                             *ast_ptr = typ;
+                            prev_last_ast = last_ast;
                             last_ast = AstIdentifier(idstr);
                             return SP_TYPENAME;
                         }
@@ -1080,6 +1083,22 @@ is_identifier:
     ast->d.string = idstr;
     *ast_ptr = ast;
     return SP_IDENTIFIER;
+}
+
+/* helper function for syntax errors; see if a string might be
+   a reserved keyword in some version of Spin2
+*/
+bool Spin2NewKeyword(LexStream *L, const char *idstr) {
+    Symbol *sym;
+
+    if (L->language != LANG_SPIN_SPIN2)
+        return false;
+    sym = FindSymbol(&spin2SoftReservedWords, idstr);
+    if (!sym) {
+        return false;
+    }
+    /* could do a more sophisticated check here... */
+    return true;
 }
 
 /* parse the rest of the line as a string */
@@ -2012,6 +2031,7 @@ getSpinToken(LexStream *L, AST **ast_ptr)
         case BACKTICK_STATE_ESCAPE_PREFIX:
             lexungetc(L, c);
             L->backtick_state = BACKTICK_STATE_PREFIX_COMMA_DONE;
+            prev_last_ast = last_ast;
             *ast_ptr = last_ast = NULL;
             return ',';
         case BACKTICK_STATE_PREFIX_COMMA_DONE:
@@ -2020,6 +2040,7 @@ getSpinToken(LexStream *L, AST **ast_ptr)
             parseBacktickInBacktick(L, &ast);
             c = SP_IDENTIFIER;
             L->backtick_state = BACKTICK_STATE_ESCAPE_PARAMS;
+            prev_last_ast = last_ast;
             *ast_ptr = last_ast = ast;
             return c;
         case BACKTICK_STATE_ESCAPE_PARAMS:
@@ -2030,6 +2051,7 @@ getSpinToken(LexStream *L, AST **ast_ptr)
             if (c == ')') {
                 // done with the backtick escape
                 L->backtick_state = BACKTICK_STATE_INSERT_COMMA;
+                prev_last_ast = last_ast;
                 *ast_ptr = last_ast = NULL;
                 return c;
             }
@@ -2037,21 +2059,25 @@ getSpinToken(LexStream *L, AST **ast_ptr)
         case BACKTICK_STATE_INSERT_COMMA:
             if (c == ')') {
                 L->backtick_state = BACKTICK_STATE_NONE;
+                prev_last_ast = last_ast;
                 *ast_ptr = last_ast = NULL;
                 return c;
             }
             lexungetc(L, c);
+            prev_last_ast = last_ast;
             *ast_ptr = last_ast = NULL;
             L->backtick_state = BACKTICK_STATE_STRING;
             return ',';
         case BACKTICK_STATE_STRING:
             if (c == ')') {
                 L->backtick_state = BACKTICK_STATE_NONE;
+                prev_last_ast = last_ast;
                 *ast_ptr = last_ast = NULL;
                 return c;
             }
             lexungetc(L, c);
             c = parseBacktickString(L, &ast, 0);
+            prev_last_ast = last_ast;
             *ast_ptr = last_ast = ast;
             return c;
         case BACKTICK_STATE_NONE:
@@ -2072,6 +2098,7 @@ getSpinToken(LexStream *L, AST **ast_ptr)
 
 //    printf("L->linecounter=%d\n", L->lineCounter);
     if (c >= 127) {
+        prev_last_ast = last_ast;
         *ast_ptr = last_ast = ast;
         return c;
     } else if (safe_isdigit(c) || (c == '.' && safe_isdigit(lexpeekc(L)))) {
@@ -2256,6 +2283,7 @@ getSpinToken(LexStream *L, AST **ast_ptr)
     } else if (c == ')') {
         PopExprState(L);
     }
+    prev_last_ast = last_ast;
     *ast_ptr = last_ast = ast;
 
     if (c != SP_TYPENAME && c != SP_IDENTIFIER && c != '.')
@@ -5260,3 +5288,4 @@ cgramyylex(CGRAMYYSTYPE *yval)
         return 0;
     return c;
 }
+

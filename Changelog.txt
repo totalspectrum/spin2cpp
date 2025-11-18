@@ -1,5 +1,6 @@
 Version 7.6.0
 - Added new Spin2_v52 keywords
+- Added a warning for  missing {Spin2_vXX} comment (very incomplete)
 - Fixed spin2 \ interaction with ABORT
 - Fixed initialization of packed structures
 - Fixed some incorrect file names in zip files
