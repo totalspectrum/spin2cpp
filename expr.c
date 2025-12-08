@@ -113,6 +113,7 @@ GetVarNameForError(AST *expr)
 Module *
 GetClassPtr(AST *objtype)
 {
+    if (!objtype) return NULL;
     objtype = BaseType(objtype);
     if (objtype->kind != AST_OBJECT) {
         ERROR(objtype, "Internal error, not an object symbol");
