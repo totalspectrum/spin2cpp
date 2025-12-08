@@ -750,11 +750,15 @@ static NuIrOpcode NuCompileLhsAddress(NuIrList *irl, AST *lhs)
             return op;
         }
         const char *memberName = GetUserIdentifierName(methodname);
-        if ( !IsClassType(typ) || NULL == (P=GetClassPtr(typ)) ) {
-            ERROR(lhs, "Request for member %s in something not an object", memberName);
-            return op;
+        if (typ) {
+            if ( !IsClassType(typ) || NULL == (P=GetClassPtr(typ)) ) {
+                ERROR(lhs, "Request for member %s in something not an object", memberName);
+                return op;
+            }
+            sym = LookupSymbolInTable(&P->objsyms, memberName);
+        } else {
+            sym = LookupMethodRef(lhs, NULL, NULL);
         }
-        sym = LookupSymbolInTable(&P->objsyms, memberName);
         if (!sym) {
             ERROR(lhs, "unknown symbol %s", memberName);
             return op;

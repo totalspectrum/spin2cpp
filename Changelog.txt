@@ -1,3 +1,6 @@
+Version 7.6.1
+- Fixed looking up namespaced asm symbols from Spin code
+
 Version 7.6.0
 - Added new Spin2_v52 keywords
 - Added a warning for  missing {Spin2_vXX} comment (very incomplete)

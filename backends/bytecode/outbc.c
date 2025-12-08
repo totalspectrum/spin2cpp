@@ -1,7 +1,8 @@
 //
 // Bytecode compiler for spin2cpp
 //
-// Copyright 2021-2023 Ada Gottensträter and Total Spectrum Software Inc.
+// Copyright 2021-2025 Ada Gottensträter, Total Spectrum Software Inc.,
+//   and contributors
 // see the file COPYING for conditions of redistribution
 //
 
@@ -487,6 +488,12 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         AST *selector = node->right;
         Module *P = GetClassPtr(ExprType(node->left));
         if (!P) {
+            // check for a namespace reference
+            sym = LookupMethodRef(node, NULL, NULL);
+            if (sym) {
+                ident = node->right;
+                goto found_symbol;
+            }
             ERROR(node,"Unable to find object");
             return;
         }
@@ -640,6 +647,7 @@ BCCompileMemOpExEx(BCIRBuffer *irbuf,AST *node,BCContext context, enum MemOpKind
         goto after_typeinfer;
     }
 
+found_symbol:
     if (!sym) {
         if (node->kind == AST_ARRAYREF && indexExpr && !baseExpr) {
             memOp.attr.memop.base = MEMOP_BASE_POP;

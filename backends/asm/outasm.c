@@ -4131,12 +4131,10 @@ doGetAddress(IRList *irl, AST *expr, bool isField)
     {
         Symbol *sym;
         Operand *res = NULL;
-        const char *name;
         Module *P;
         int off;
 
-        name = GetUserIdentifierName(expr->right);
-        sym = LookupMemberSymbol(expr, ExprType(expr->left), name, &P, NULL);
+        sym = LookupMethodRef(expr, &P, NULL);
         if (sym) {
             if (sym->kind == SYM_VARIABLE) {
                 Operand *base = CompileExpression(irl, expr->left, NULL);
@@ -4153,6 +4151,7 @@ doGetAddress(IRList *irl, AST *expr, bool isField)
             }
         }
         if (!res) {
+            const char *name = GetUserIdentifierName(expr->right);
             ERROR(expr, "Internal error, cannot take address of %s", name);
             res = OPERAND_DUMMY;
         } else if (flags) {
@@ -4594,25 +4593,30 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
         int off = 0;
         Module *P;
         const char *name;
+
         objtype = ExprType(expr->left);
-        if (curfunc && IsSpinLang(curfunc->language) && IsRefType(objtype)) {
-            objtype = objtype->left;
+        if (objtype) {
+            if (curfunc && IsSpinLang(curfunc->language) && IsRefType(objtype)) {
+                objtype = objtype->left;
+            }
+            name = GetUserIdentifierName(expr->right);
+            if (!objtype) {
+                ERROR(expr, "%s is not accessible in this context", GetIdentifierName(expr->left));
+                return EmptyOperand();
+            } else if (!IsClassType(objtype)) {
+                ERROR(expr, "Request for member %s in something that is not a class", name);
+                return EmptyOperand();
+            }
+            if (expr->left && expr->left->kind == AST_OBJECT) {
+                // FIXME: we could potentially support calls of static class
+                // member functions, but for now, punt
+                ERROR(expr, "Use of class name in method references is not supported yet");
+                return EmptyOperand();
+            }
+            sym = LookupMemberSymbol(expr, objtype, name, &P, NULL);
+        } else {
+            sym = LookupMethodRef(expr, &P, NULL);
         }
-        name = GetUserIdentifierName(expr->right);
-        if (!objtype) {
-            ERROR(expr, "%s is not accessible in this context", GetIdentifierName(expr->left));
-            return EmptyOperand();
-        } else if (!IsClassType(objtype)) {
-            ERROR(expr, "Request for member %s in something that is not a class", name);
-            return EmptyOperand();
-        }
-        if (expr->left && expr->left->kind == AST_OBJECT) {
-            // FIXME: we could potentially support calls of static class
-            // member functions, but for now, punt
-            ERROR(expr, "Use of class name in method references is not supported yet");
-            return EmptyOperand();
-        }
-        sym = LookupMemberSymbol(expr, objtype, name, &P, NULL);
         if (sym && sym->kind == SYM_FUNCTION) {
             Function *pf = (Function *)sym->v.ptr;
             if (pf->sym_funcptr) {
@@ -4629,7 +4633,11 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
                 base = LabelRef(irl, sym);
                 break;
             default:
-                ERROR(expr, "Unable to dereference symbol %s in %s", name, P->classname);
+                if (P) {
+                    ERROR(expr, "Unable to dereference symbol %s in %s", name, P->classname);
+                } else {
+                    ERROR(expr, "Unable to dereference symbol %s", name);
+                }
                 return EmptyOperand();
             }
         }
