@@ -70,7 +70,7 @@ Usage(void)
     fprintf(stderr, "  --nopre:   do not run preprocessor on the .spin file\n");
     fprintf(stderr, "  --nofcache: disable FCACHE (same as --fcache=0)\n");
     fprintf(stderr, "  --normalize: normalize case of all identifiers\n"); 
-    fprintf(stderr, "  --p2:       use Propeller 2 instructions (experimental)\n");
+    fprintf(stderr, "  --p2:       use Propeller 2 instructions\n");
     fprintf(stderr, "  --require:  require a specific version (or later) of spin2cpp\n");
     fprintf(stderr, "  --side:     create a SimpleIDE file for the C/C++ outputs\n");
     fprintf(stderr, "  -Dname=val: define a preprocessor symbol\n");
