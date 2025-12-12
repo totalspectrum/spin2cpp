@@ -1413,21 +1413,33 @@ static AST* AssembleComments(Flexbuf *f, Flexbuf *relocs, AST *ast)
 bool
 IsRelativeHubAddress(AST *ast)
 {
+    if (!ast) return false;
     if (ast && ast->kind == AST_LOCAL_IDENTIFIER) {
         ast = ast->left;
     }
-    if (!ast) return 0;
     switch(ast->kind) {
+    case AST_HERE_IMM:
+        return ast->d.ival >= 0x400;
     case AST_INTEGER:
     case AST_HWREG:
-        return 0;
+        return false;
+    case AST_METHODREF:
+    case AST_CONSTREF:
+    {
+        Symbol *sym = LookupMethodRef(ast, NULL, NULL);
+        Label *lab;
+        if (!sym || sym->kind != SYM_LABEL)
+            return false;
+        lab = (Label *)sym->v.ptr;
+        return 0 != (lab->flags & LABEL_IN_HUB);
+    }
     case AST_IDENTIFIER:
     {
         Symbol *sym = LookupSymbol(ast->d.string);
         Label *lab;
-        if (!sym) return 0;
+        if (!sym) return false;
         if (sym->kind != SYM_LABEL) {
-            return 0;
+            return false;
         }
         lab = (Label *)sym->v.ptr;
         return 0 != (lab->flags & LABEL_IN_HUB);

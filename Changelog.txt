@@ -1,5 +1,6 @@
 Version 7.6.1
 - Fixed looking up namespaced asm symbols from Spin code
+- Made more jumps in hub be relative
 
 Version 7.6.0
 - Added new Spin2_v52 keywords
