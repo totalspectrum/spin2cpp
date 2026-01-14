@@ -56,8 +56,13 @@ void InitializeSystem(CmdLineOptions *cmd, const char **argv)
     cmd->eepromSize = 32768;
     InitPreprocessor(argv);
     gl_max_errors = 1;
+
     gl_colorize_output = isatty(fileno(stderr));
     current_print_color = PRINT_NORMAL;
+    char *no_color = getenv("NO_COLOR");
+    if (no_color != NULL && no_color[0] != '\0') {
+        gl_colorize_output = false;
+    }
 }
 
 int FindLabelValue(const char *name, int defaultval) {
