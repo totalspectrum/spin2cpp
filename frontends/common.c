@@ -2507,6 +2507,7 @@ CalcClkFreqP1(Module *P)
 {
     // look up in P->objsyms
     Symbol *clkmodesym = P ? FindSymbol(&P->objsyms, "_clkmode") : NULL;
+    Symbol *clkfreqsym = P ? FindSymbol(&P->objsyms, "_clkfreq") : NULL;
     Symbol *sym;
     AST *ast;
     int32_t clkmode, clkfreq, xinfreq;
@@ -2514,6 +2515,9 @@ CalcClkFreqP1(Module *P)
     uint8_t clkreg;
 
     if (!clkmodesym || clkmodesym->kind == SYM_ALIAS || clkmodesym->kind == SYM_WEAK_ALIAS) {
+        if (clkfreqsym) {
+            WARNING(NULL, "P1 program declares _clkfreq but not _clkmode; the _clkfreq will be ignored");
+        }
         return 0;  // nothing to do
     }
     ast = (AST *)clkmodesym->v.ptr;
@@ -2524,7 +2528,7 @@ CalcClkFreqP1(Module *P)
     clkmode = EvalConstExpr(ast);
     // now we need to figure out the frequency
     clkfreq = 0;
-    sym = FindSymbol(&P->objsyms, "_clkfreq");
+    sym = clkfreqsym;
     if (sym && sym->kind != SYM_WEAK_ALIAS) {
         if (sym->kind == SYM_CONSTANT) {
             clkfreq = EvalConstExpr((AST*)sym->v.ptr);
