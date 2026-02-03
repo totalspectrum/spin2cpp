@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2023 Total Spectrum Software Inc.
+ * Copyright 2011-2026 Total Spectrum Software Inc. and contributors
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License

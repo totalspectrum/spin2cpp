@@ -9,7 +9,7 @@ has agreed to have distributed under the same terms. Nicolas Benezan's
 SpiFlash object is used for low level flash accesses, and is also MIT
 licensed, as are Roger Loh's PSRAM and HyperRam/HyperFlash drivers.
 
-Copyright (c) 2011-2025 Total Spectrum Software Inc.
+Copyright (c) 2011-2026 Total Spectrum Software Inc.
 Copyright (c) 2006-2023 Parallax, Inc.
 Copyright (c) 2020 Jeff Roark
 Copyright (c) 2020 Nicolas Benezan
