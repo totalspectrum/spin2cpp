@@ -543,7 +543,8 @@ the value of `A#PIN_I2C` is the default for the mypins object, but the value of 
 The proposed Spin2 syntax for abstract object definitions and object pointers is accepted by flexspin, even in Spin1 mode. A declaration like:
 ```
 OBJ
-  fds = "FullDuplexSerial"
+  theser : "FullDuplexSerial" ' theser is a normal, concrete object
+  fds = "FullDuplexSerial"    ' fds is abstract
 ```
 declares `fds` as having the methods of a FullDuplexSerial object, but without any actual variable or storage being instantiated. Symbols declared this way may be used to cast parameters to an object type, for example:
 ```
@@ -551,7 +552,7 @@ PUB print(f, c)
   fds[f].dec(c)
 
 PUB doprint22
-  print(@aFullDuplexSerialObj, 22)
+  print(@theser, 22)
 ```
 
 ### Object structures
