@@ -2515,7 +2515,7 @@ CalcClkFreqP1(Module *P)
     uint8_t clkreg;
 
     if (!clkmodesym || clkmodesym->kind == SYM_ALIAS || clkmodesym->kind == SYM_WEAK_ALIAS) {
-        if (clkfreqsym) {
+        if (clkfreqsym && clkfreqsym->kind == SYM_CONSTANT) {
             WARNING(NULL, "P1 program declares _clkfreq but not _clkmode; the _clkfreq will be ignored");
         }
         return 0;  // nothing to do
