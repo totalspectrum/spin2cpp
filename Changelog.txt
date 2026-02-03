@@ -1,6 +1,7 @@
 Version 7.6.2
 - Added check for `NO_COLOR` environment variable (thanks to Ada)
 - Added a warning for P1 code with _clkfreq but no _clkmode
+- Removed spurious FIT command in P1 org/end inlines
 
 Version 7.6.1
 - Fixed looking up namespaced asm symbols from Spin code
