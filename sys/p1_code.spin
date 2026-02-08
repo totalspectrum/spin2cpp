@@ -402,7 +402,10 @@ pri _div64(n, nlo, dlo) : qlo, rlo | q, r, d
     qlo := -1
     rlo := -1
     return
-    
+  if n == 0
+    qlo := nlo +/ dlo
+    rlo := nlo +// dlo
+    return
   d := rlo := r := 0
   qlo := q := 0
   repeat 64
