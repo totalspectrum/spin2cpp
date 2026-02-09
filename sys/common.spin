@@ -285,21 +285,26 @@ pri _waitms(m=long) | freq, c
     m := _muldiv64(m, freq, 1000)
     waitcnt(m + c)
 
-'' pause for m microseconds
-pri _waitus(m=long) | freq, c, offset
+'' approximate a * q / 1000000
+'' we know 0 < a < 1000000
+'' and 0 < q < 352000000 is the clock frequency
+'' a good approximation of x / 1000000
+'' is (x>>20) + (x>>25) + (x>>26)
+'' or (x>>20) + (x>>24) - (x>>27)
+
+pri _waitus(m=long) | freq, c, c2, offset
   c := _getcnt
   freq := __clkfreq_var
   repeat while m => 1000000
     waitcnt(c += freq)
     m -= 1000000
   if m > 0
-    m := _muldiv64(m, freq, 1000000)
-    if (__propeller__ == 1)
-      ' watch out for wrapping around
-      if m > 20000
-        waitcnt( c + m )
-    else
-      waitcnt( c + m )
+    freq := (freq>>20) + (freq>>24) - (freq>>27)
+    m *= freq
+    c += m
+    c2 := _getcnt + 80
+    if c > c2
+      waitcnt( c )
 
 
 ' check to see if cnt > x
