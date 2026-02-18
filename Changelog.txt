@@ -1,3 +1,6 @@
+Version 7.6.3
+- Added implementations of getregs and setregs
+
 Version 7.6.2
 - Added check for `NO_COLOR` environment variable (thanks to Ada)
 - Added a warning for P1 code with _clkfreq but no _clkmode

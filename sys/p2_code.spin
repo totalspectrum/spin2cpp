@@ -664,6 +664,25 @@ pri longfill(ptr, val, count)
     call #\builtin_longfill_
   endasm
 
+'' copy count longs from cogptr to hubptr
+pri getregs(hubptr, cogptr, count)
+  if count==0
+    return
+  count--
+  asm
+    setq count
+    wrlong cogptr, hubptr
+  endasm
+
+'' copy count longs to cogptr from hubptr
+pri setregs(hubptr, cogptr, count)
+  if count==0
+    return
+  count--
+  asm
+    setq count
+    rdlong cogptr, hubptr
+  endasm
 
 '' create a method pointer
 pri _make_methodptr(o, func) : ptr
