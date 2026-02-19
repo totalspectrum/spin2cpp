@@ -2239,11 +2239,20 @@ BCCompileExpression(BCIRBuffer *irbuf,AST *node,BCContext context,bool asStateme
                             BCCompileExpression(irbuf,list->left->left,context,false);
                             BCCompileExpression(irbuf,list->left->right,context,false);
                             lookOp.kind = isLookdown ? BOK_LOOKDOWN_RANGE : BOK_LOOKUP_RANGE;
+                            BIRB_PushCopy(irbuf,&lookOp);
+                        } else if (list->left->kind == AST_STRING) {
+                            lookOp.kind = isLookdown ? BOK_LOOKDOWN : BOK_LOOKUP;
+                            const char *str = list->left->d.string;
+                            char chr;
+                            while ((chr = *str++)) {
+                                BCCompileInteger(irbuf, chr&0xff);
+                                BIRB_PushCopy(irbuf,&lookOp);
+                            }
                         } else {
                             BCCompileExpression(irbuf,list->left,context,false);
                             lookOp.kind = isLookdown ? BOK_LOOKDOWN : BOK_LOOKUP;
+                            BIRB_PushCopy(irbuf,&lookOp);
                         }
-                        BIRB_PushCopy(irbuf,&lookOp);
                     }
 
                     ByteOpIR lookEnd = {.kind = BOK_LOOKEND};
