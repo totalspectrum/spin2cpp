@@ -2369,6 +2369,7 @@ struct reservedword {
     { "ror", SP_ROTR },
     { "round", SP_ROUND },
     { "__reg__", SP_COGREG },
+    { "%reg", SP_COGREG },
 
     { "sar", SP_SAR },
     { "step", SP_STEP },
