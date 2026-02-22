@@ -362,28 +362,19 @@ pri wordfill(ptr, val, count)
 pri bytefill(ptr, val, count)
   __builtin_memset(ptr, val, count)
 
-'' copy count longs from cogptr to hubptr
 pri getregs(hubptr, cogptr, count)
-  if count==0
-    return
-  repeat count
-    asm
-        wrlong cogptr, hubptr
-	add cogptr, #1
-	add hubptr, #4
-    endasm
+  repeat while count > 0
+    long[hubptr] := %reg[cogptr]
+    hubptr += 4
+    cogptr++
+    --count
 
-'' copy count longs to cogptr from hubptr
 pri setregs(hubptr, cogptr, count)
-  if count==0
-    return
-  repeat count
-    asm
-        rdlong cogptr, hubptr
-	add cogptr, #1
-	add hubptr, #4
-    endasm
-
+  repeat while count > 0
+    %reg[cogptr] := long[hubptr]
+    hubptr += 4
+    cogptr++
+    --count
 
 '' create a method pointer
 '' for P1, addresses fit in 16 bits,

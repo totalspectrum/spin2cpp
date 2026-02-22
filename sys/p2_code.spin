@@ -671,7 +671,8 @@ pri getregs(hubptr, cogptr, count)
   count--
   asm
     setq count
-    wrlong cogptr, hubptr
+    altd cogptr
+    wrlong 0-0, hubptr
   endasm
 
 '' copy count longs to cogptr from hubptr
@@ -681,7 +682,8 @@ pri setregs(hubptr, cogptr, count)
   count--
   asm
     setq count
-    rdlong cogptr, hubptr
+    altd cogptr
+    rdlong 0-0, hubptr
   endasm
 
 '' create a method pointer

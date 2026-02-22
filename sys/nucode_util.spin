@@ -250,6 +250,20 @@ pri wordmove(dst, src, count) : origdst
 pri bytemove(dst, src, count)
   return __builtin_memmove(dst, src, count)
 
+pri getregs(hubptr, cogptr, count)
+  repeat while count > 0
+    long[hubptr] := %reg[cogptr]
+    hubptr += 4
+    cogptr++
+    --count
+
+pri setregs(hubptr, cogptr, count)
+  repeat while count > 0
+    %reg[cogptr] := long[hubptr]
+    hubptr += 4
+    cogptr++
+    --count
+
 pri __builtin_memcpy(dst, src, count)
   return __builtin_memmove(dst, src, count)
 
