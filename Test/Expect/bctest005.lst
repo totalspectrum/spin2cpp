@@ -1,0 +1,103 @@
+00 B4 C4 04                   ' CLKFREQ
+6F                            ' CLKMODE
+00                            ' Placeholder for checksum
+10 00                         ' PBASE
+8C 00                         ' VBASE
+94 00                         ' DBASE
+18 00                         ' PCURR
+A4 00                         ' DCURR
+'--- Object Header for bctest005
+7C 00                         ' Object size
+02                            ' Method count + 1
+00                            ' OBJ count
+08 00 08 00                   ' Function lookupdowns @0018 (local size 8)
+'--- Function lookupdowns
+36                            ' CONSTANT 1
+38 15                         ' FUNDATA_PUSHADDRESS +21
+64                            ' MEM_READ LONG DBASE+$0004 (short)
+36                            ' CONSTANT 1
+10                            ' LOOKUP
+38 02                         ' CONSTANT 2
+10                            ' LOOKUP
+38 03                         ' CONSTANT 3
+10                            ' LOOKUP
+0F                            ' LOOKEND
+'LABEL
+3F B4                         ' REG_WRITE 1F4(OUTA)
+36                            ' CONSTANT 1
+38 22                         ' FUNDATA_PUSHADDRESS +34
+64                            ' MEM_READ LONG DBASE+$0004 (short)
+3F 92                         ' REG_READ 1F2(INA)
+10                            ' LOOKUP
+3F 93                         ' REG_READ 1F3(INB)
+10                            ' LOOKUP
+0F                            ' LOOKEND
+'LABEL
+3F B4                         ' REG_WRITE 1F4(OUTA)
+36                            ' CONSTANT 1
+38 32                         ' FUNDATA_PUSHADDRESS +50
+64                            ' MEM_READ LONG DBASE+$0004 (short)
+38 61                         ' CONSTANT 97
+10                            ' LOOKUP
+38 62                         ' CONSTANT 98
+10                            ' LOOKUP
+38 63                         ' CONSTANT 99
+10                            ' LOOKUP
+0F                            ' LOOKEND
+'LABEL
+3F B4                         ' REG_WRITE 1F4(OUTA)
+36                            ' CONSTANT 1
+38 41                         ' FUNDATA_PUSHADDRESS +65
+64                            ' MEM_READ LONG DBASE+$0004 (short)
+36                            ' CONSTANT 1
+11                            ' LOOKDOWN
+38 02                         ' CONSTANT 2
+11                            ' LOOKDOWN
+38 03                         ' CONSTANT 3
+11                            ' LOOKDOWN
+0F                            ' LOOKEND
+'LABEL
+3F B4                         ' REG_WRITE 1F4(OUTA)
+36                            ' CONSTANT 1
+38 4E                         ' FUNDATA_PUSHADDRESS +78
+64                            ' MEM_READ LONG DBASE+$0004 (short)
+3F 92                         ' REG_READ 1F2(INA)
+11                            ' LOOKDOWN
+3F 93                         ' REG_READ 1F3(INB)
+11                            ' LOOKDOWN
+0F                            ' LOOKEND
+'LABEL
+3F B4                         ' REG_WRITE 1F4(OUTA)
+36                            ' CONSTANT 1
+38 5E                         ' FUNDATA_PUSHADDRESS +94
+64                            ' MEM_READ LONG DBASE+$0004 (short)
+38 61                         ' CONSTANT 97
+11                            ' LOOKDOWN
+38 62                         ' CONSTANT 98
+11                            ' LOOKDOWN
+38 63                         ' CONSTANT 99
+11                            ' LOOKDOWN
+0F                            ' LOOKEND
+'LABEL
+3F B4                         ' REG_WRITE 1F4(OUTA)
+35                            ' CONSTANT 0
+38 79                         ' FUNDATA_PUSHADDRESS +121
+64                            ' MEM_READ LONG DBASE+$0004 (short)
+38 61                         ' CONSTANT 97
+11                            ' LOOKDOWN
+38 62                         ' CONSTANT 98
+11                            ' LOOKDOWN
+38 63                         ' CONSTANT 99
+11                            ' LOOKDOWN
+36                            ' CONSTANT 1
+11                            ' LOOKDOWN
+38 02                         ' CONSTANT 2
+11                            ' LOOKDOWN
+38 03                         ' CONSTANT 3
+11                            ' LOOKDOWN
+3F 92                         ' REG_READ 1F2(INA)
+11                            ' LOOKDOWN
+0F                            ' LOOKEND
+'LABEL
+3F B4                         ' REG_WRITE 1F4(OUTA)
+32                            ' RETURN_PLAIN
