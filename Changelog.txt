@@ -2,6 +2,7 @@ Version 7.6.3
 - Added implementations of getregs and setregs
 - Added `%reg` as an alias for `__reg__` in Spin1
 - Fixed a bug in `reg[imm]` expressions
+- Fixed lookup/lookdown in P1 bytecode (thanks, Ada!)
 
 Version 7.6.2
 - Added check for `NO_COLOR` environment variable (thanks to Ada)
