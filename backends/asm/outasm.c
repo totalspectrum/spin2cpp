@@ -4592,7 +4592,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
         AST *objtype;
         int off = 0;
         Module *P;
-        const char *name;
+        const char *name = NULL;
 
         objtype = ExprType(expr->left);
         if (objtype) {
@@ -4624,6 +4624,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
             }
         }
         if (sym) {
+            if (!name) name = sym->user_name;
             switch (sym->kind) {
             case SYM_VARIABLE:
                 base = CompileExpression(irl, expr->left, NULL);
