@@ -4918,7 +4918,7 @@ IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc, AST *linenum)
         // we can deliberately refer to memory; but mem-mem moves
         // do not work out well
         if (src->kind == IMM_INT || src->kind == IMM_COG_LABEL || SrcOnlyHwReg(src) || (off && src == dst) || src->kind == STRING_DEF) {
-            num_tmp_regs = origdst->size;
+            num_tmp_regs = (origdst->size + 3)/4;
             if (num_tmp_regs > MAX_TMP_REGS) {
                 ERROR(linenum, "too many temporary registers needed");
                 return ir;
