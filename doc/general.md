@@ -217,11 +217,11 @@ These comments on register usage apply only to the default assembler output. Byt
 
 ### P1
 
-Pretty much all of COG RAM is used by the compiler. No specific hardware registers are used.
+On the P1, pretty much all of COG RAM is used by the compiler. No specific hardware registers are used.
 
 ### P2
 
-Most of COG RAM is used by the compiler, except that $1e0-$1ef are left free for application use. COG RAM from $00 to $ff is used for FCACHE, and so when you are sure no FCACHE is in use you may use this for scratch. 
+On the P2, most of COG RAM is used by the compiler. $1e0-$1ef are left free for application use. COG RAM from $00 to $ff is used for FCACHE, and so when you are sure no FCACHE is in use you may use this for scratch. 
 
 The first 16 registers of LUT memory ($200 to $20f) are always left free. The remainder of the first half of LUT ($210 to $2ff) are used for functions that the user explicitly asks to put in LUT. If no such functions exist they are free for user use.
 
@@ -239,11 +239,11 @@ Code starts at 0 in HUB (by default, there are command line options to change th
 
 ### COG
 
-Most of COG RAM is used by the compiler, except that $1e0-$1ef is left free for application use.
+See the documentation above about "Register usage" for details. Most of COG RAM is used by the compiler, except that on the P2 $1e0-$1ef is left free for application use.
 
 ### LUT
 
-The first 16 registers of LUT memory (from $200 to $20f) is left free for use by user PASM code, e.g. for the streamer. The remainder of the first half of LUT memory (from $210 to $300) is used for any functions explicitly placed into LUT. The LUT memory from $300 to $400 (the second half of LUT) is used for internal purposes.
+On the P2, the first 16 registers of LUT memory (from $200 to $20f) is left free for use by user PASM code, e.g. for the streamer. The remainder of the first half of LUT memory (from $210 to $300) is used for any functions explicitly placed into LUT. The LUT memory from $300 to $400 (the second half of LUT) is used for internal purposes.
 
 ## Warnings
 
