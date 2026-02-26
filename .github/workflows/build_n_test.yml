@@ -49,7 +49,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: make
-        run: make "OPT=-Werror"
+        run: make "OPT=-O2 -Werror"
   
   test_offline:
     runs-on: ubuntu-24.04
