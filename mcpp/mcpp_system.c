@@ -333,7 +333,9 @@ void    do_options(
     set_cplus_dir = TRUE;
 
     /* Get current directory for -I option and #pragma once */
-    (void)getcwd( cur_work_dir, PATHMAX);
+    if (!getcwd( cur_work_dir, PATHMAX)) {
+        cfatal("Bug: getcwd returned NULL. (%s)",strerror(errno),0,NULL);
+    }
 #if SYS_FAMILY == SYS_WIN
     bsl2sl( cur_work_dir);
 #endif
@@ -914,7 +916,9 @@ char *NormalizePath(const char *path)
     if (is_full_path(path)) {
         return strdup(path);
     }
-    (void)getcwd(curpath, PATHMAX);
+    if (!getcwd( curpath, PATHMAX)) {
+        cfatal("Bug: getcwd returned NULL. (%s)",strerror(errno),0,NULL);
+    }
     return norm_path(curpath, path, FALSE, FALSE);
 }
 
