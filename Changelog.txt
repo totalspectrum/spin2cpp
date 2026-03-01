@@ -1,4 +1,5 @@
 Version 7.6.4
+- Added QEXP and QLOG implementations for P1
 - Allow upper case #pragma names
 - Fixed checking of ... inside debug() statements
 - Made exportdef pragma create a definition if one does not exist
