@@ -1,6 +1,7 @@
 Version 7.6.4
 - Allow upper case #pragma names
-- Fixed checking of ... inside debug() strings
+- Fixed checking of ... inside debug() statements
+- Made exportdef pragma create a definition if one does not exist
 
 Version 7.6.3
 - Added implementations of getregs and setregs

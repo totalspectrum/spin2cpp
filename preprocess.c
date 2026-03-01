@@ -961,10 +961,17 @@ handle_export_def(struct preprocess *pp, ParseState *P)
             // do nothing
         } else if (isalpha(word[0]) || word[0] == '_') {
             const char *def = pp_getdef(pp, word);
+            if (!def) {
+                dowarning(pp, "exportdef: `%s' is undefined, using default definition", word);
+                pp_define_internal(pp, word, NULL, PREDEF_FLAG_FREEDEFS);
+                def = pp_getdef(pp, word);
+            }
+                
             if (def) {
                 pp_define_weak_global(pp, strdup(word), strdup(def));
             } else {
-                doerror(pp, "exportdef: request to export undefined macro `%s'", word);
+                doerror(pp, "exportdef: default definition for `%s' failed",
+                    word);
             }
         } else if (!word[0]) {
             more = false;
