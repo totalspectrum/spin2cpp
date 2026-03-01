@@ -2,7 +2,7 @@
 // Simple lexical analyzer for a language where indentation
 // may be significant (Spin); also contains lexers for BASIC and C
 //
-// Copyright (c) 2011-2025 Total Spectrum Software Inc.
+// Copyright (c) 2011-2026 Total Spectrum Software Inc.
 //
 #include <stdio.h>
 #include <string.h>
@@ -983,12 +983,27 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             case SP_DEBUG:
                 // if gl_debug is off, we want to ignore the whole debug statement
                 // do this by just skipping the rest of the line
+                // but note that we do have to look for line continuations
+                // (three dots)
                 if (!gl_debug) {
+                    int dots = 0;
+                    bool isEoln = false;
                     free(idstr);
                     do {
                         c = lexgetc(L);
-                    } while ( (c > 0) && (c != 10) && (c != 13) );
-                    if (c) {
+                        if (c <= 0) {
+                            isEoln = true;
+                        } else if (c == '.') {
+                            dots++;
+                        } else {
+                            if (c == 10 || c == 13) {
+                                if (dots != 3)
+                                    isEoln = true;
+                            }
+                            dots = 0;
+                        }
+                    } while ( !isEoln );
+                    if (c > 0) {
                         lexungetc(L, c);
                     }
                     lexungetc(L, ')');
