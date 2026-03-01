@@ -480,10 +480,10 @@ pri _sdiv64(ahi, alo, b) : q,r | shi, slo, sign
 pri _muldiv64(mult1, mult2, divisor) : r
   %bytecode("MULDIV64")
   
-pri _qexp(v) : r
+pri _qexp(v = +long) : r = +long
   %bytecode("QEXP")
 
-pri _qlog(v) : r
+pri _qlog(v = +long) : r = +long
   %bytecode("QLOG")
 
 pri _ones(v = +long) : r = +long

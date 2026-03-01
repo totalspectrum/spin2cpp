@@ -568,3 +568,5 @@ if_z  mov  r, #0
 if_nz negc r, #1
   endasm
 
+pri file "libsys/p1_utils.c"   _qexp(n=+long) : r=+long
+pri file "libsys/p1_utils.c"   _qlog(n=+long) : r=+long

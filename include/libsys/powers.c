@@ -1,7 +1,7 @@
 //
 // code for doing exponentials and logarithms
 // Copyright 2020 Total Spectrum Software Inc.
-// MIT licensed
+// SPDX-License-Identifier: MIT
 //
 
 #define CONST_E 2.71828182846f
@@ -17,83 +17,6 @@ typedef union ForU {
 
 static inline unsigned __asuint(float f) { ForU u; u.f = f; return u.u; }
 static inline float __asfloat(unsigned d) { ForU u; u.u = d; return u.f; }
-
-#ifdef __P2__
-
-// calculate log2(mant) as a 5.27 fixed point number
-unsigned __builtin_qlog(unsigned mant)
-{
-    unsigned r;
-    __asm {
-        qlog mant
-        getqx r
-    };
-    return r;
-}
-
-// calculate 2^mant, where mant is a 5.27  fixed point number
-unsigned __builtin_qexp(unsigned mant)
-{
-    unsigned r;
-    __asm {
-        qexp mant
-        getqx r
-    };
-    return r;
-}
-#else
-// calculate log base 2 of an unsigned num as a 5.27 fixed point number
-// uses the lookup table in ROM
-// algorithm comes from Propeller manual
-unsigned __builtin_qlog(unsigned num)
-{
-    unsigned exp;
-    unsigned r;
-    unsigned r2;
-    unsigned frac;
-    exp = __builtin_clz(num);
-    num = num << exp;  // left justify
-    // we will look up based on 11 bits, so the bottom 16 bits are the fraction
-    frac = num & 0xffff;
-    num = (num >> (30-11)) & 0xffe;  // 30 because we will multiply by 2 for word access
-    r = *((unsigned short *)(0xC000 + num));
-    r2 = *((unsigned short *)(0xC002 + num));
-    r = r + (((r2-r)*frac) >> 16);
-    exp = exp ^ 0x1f;
-    r = r | (exp << 16);
-
-    r = r << (27-16);
-    return r;
-}
-// calculate 2^num, where "num" is a 5.27 fixed point num
-// uses the lookup table in ROM
-// algorithm comes from Propeller manual
-unsigned __builtin_qexp(unsigned orig_num)
-{
-    unsigned exp;
-    unsigned r, r2;
-    unsigned frac;
-    unsigned num = orig_num;
-    
-    exp = (num >> 27);
-    // the  original value is 5.27
-    // we will look up based on 11 bits, so the bottom 16 bits are the fraction
-    frac = num & 0xffff;
-    num = (num >> (26-11)) & 0x0ffe;
-    //__builtin_printf("...num=0x%08x lookup=%08x exp=%d\n", orig_num, num, exp);
-    r = *((unsigned short *)(0xD000 + num));
-    r2 = *((unsigned short *)(0xD002 + num));
-    //__builtin_printf("...r1=0x%08x r2=%08x frac=%04x\n", r, r2, frac);
-    r = r + ((frac * (r2-r)) >> 16);
-    r = r << 15; // shift into 30..15
-    r |= 0x80000000;
-    //printf("...r=0x%08x\n", r);
-    exp ^= 0x1f;
-    r = r >> exp;
-    return r;
-}
-
-#endif
 
 //
 // floating point: calculate log base 2 of a float number
@@ -165,7 +88,7 @@ float __builtin_log2f(float x)
         }
     }
 #endif
-    r = __builtin_qlog(mant);
+    r = _qlog(mant);
     // at this point r is a 5.27 fixed point number giving log2(mant)
     // note that mant was 1.23 by construction, so the upper 5 bits
     // is "24", i.e. we have 0xbnnnnnn
@@ -213,7 +136,7 @@ float __builtin_exp2f(float x)
     //printf("... u=%08x\n", u);
     u = u<<11;       // 5.27
     u |= (16<<27);
-    r = __builtin_qexp(u); // as a 16.16 number
+    r = _qexp(u); // as a 16.16 number
     //printf("... r=%08x\n", r);
 
     if (n >= 0) {
@@ -259,7 +182,7 @@ float __builtin_exp2f(float x)
     }
     u |= (24<<27);
     //printf("..u=%x (input) ", u);
-    r = __builtin_qexp(u);
+    r = _qexp(u);
     //printf("..u=%x r=%x\n", u, r);
     // round:
     r = (r+1)>>1;

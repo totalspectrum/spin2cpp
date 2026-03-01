@@ -674,3 +674,5 @@ pri _int64_cmps(alo, ahi, blo, bhi) : r | s
     r |= 1
 
   
+pri file "libsys/p1_utils.c"   _qexp(n=+long) : r=+long
+pri file "libsys/p1_utils.c"   _qlog(n=+long) : r=+long

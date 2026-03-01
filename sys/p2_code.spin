@@ -559,13 +559,13 @@ pri __builtin_seussr(v = +long) : r = +long
     seussr r
   endasm
   
-pri _qexp(v) : r
+pri _qexp(v = +long) : r = +long
   asm
     qexp v
     getqx r
   endasm
 
-pri _qlog(v) : r
+pri _qlog(v = +long) : r = +long
   asm
     qlog v
     getqx r
