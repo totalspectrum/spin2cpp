@@ -1,4 +1,5 @@
 Version 7.6.4
+- Allow upper case #pragma names
 - Fixed checking of ... inside debug() strings
 
 Version 7.6.3

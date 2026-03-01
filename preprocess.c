@@ -1,6 +1,6 @@
 /*
  * Generic and very simple preprocessor
- * Copyright (c) 2012-2023 Total Spectrum Software Inc.
+ * Copyright (c) 2012-2026 Total Spectrum Software Inc.
  * MIT Licensed, see terms of use at end of file
  *
  * Reads UTF-16LE or UTF-8 encoded files, and returns a
@@ -64,6 +64,15 @@ extern void AddSourceFile(const char *shortName, const char *fullName);
 #define strdup _strdup
 # endif
 #endif
+
+// utility function: compare two strings according to the
+// case settings in `pp`
+int pp_strcmp(struct preprocess *pp, const char *s1, const char *s2)
+{
+    if (pp->ignore_case)
+        return strcasecmp(s1, s2);
+    return strcmp(s1, s2);
+}
 
 // utility function to open a regular file (only), ignoring directories
 FILE *
@@ -315,7 +324,7 @@ static void default_errfunc(void *dummy, const char *filename, int line, const c
     const char *level = (const char *)dummy;
     extern int gl_errors;
     
-    if (!strcmp(level, "error")) {
+    if (!strcasecmp(level, "error")) {
         gl_errors++;
     }
     fprintf(stderr, "%s:%d: %s: ", filename, line, level);
@@ -980,13 +989,13 @@ handle_pragma(struct preprocess *pp, ParseState *P)
         return true;
     }
     word = parse_getwordafterspaces(P);
-    if (!strcmp(word, "ignore_case")) {
+    if (!pp_strcmp(pp, word, "ignore_case")) {
         pp->ignore_case = 1;
         return true;
-    } else if (!strcmp(word, "keep_case")) {
+    } else if (!pp_strcmp(pp, word, "keep_case")) {
         pp->ignore_case = 0;
         return true;
-    } else if (!strcmp(word, "exportdef")) {
+    } else if (!pp_strcmp(pp, word, "exportdef")) {
         handle_export_def(pp, P);
         return true;
     }
@@ -1147,33 +1156,33 @@ do_line(struct preprocess *pp)
         parse_init(&P, data+1, pp);
         parse_skipspaces(&P);
         func = parse_getword(&P);
-        if (!strcasecmp(func, "ifdef")) {
+        if (!pp_strcmp(pp, func, "ifdef")) {
             handle_ifdef(pp, &P, 0);
-        } else if (!strcasecmp(func, "ifndef")) {
+        } else if (!pp_strcmp(pp, func, "ifndef")) {
             handle_ifdef(pp, &P, 1);
-        } else if (!strcasecmp(func, "else")) {
+        } else if (!pp_strcmp(pp, func, "else")) {
             handle_else(pp, &P);
-        } else if (!strcasecmp(func, "elseifdef")) {
+        } else if (!pp_strcmp(pp, func, "elseifdef")) {
             handle_elseifdef(pp, &P, 0);
-        } else if (!strcasecmp(func, "elseifndef")) {
+        } else if (!pp_strcmp(pp, func, "elseifndef")) {
             handle_elseifdef(pp, &P, 1);
-        } else if (!strcasecmp(func, "endif")) {
+        } else if (!pp_strcmp(pp, func, "endif")) {
             handle_endif(pp, &P);
-        } else if (!strcasecmp(func, "error")) {
+        } else if (!pp_strcmp(pp, func, "error")) {
             handle_error(pp, &P);
-        } else if (!strcasecmp(func, "warn")) {
+        } else if (!pp_strcmp(pp, func, "warn")) {
             handle_warn(pp, &P);
-        } else if (!strcasecmp(func, "warning")) {
+        } else if (!pp_strcmp(pp, func, "warning")) {
             // obsolete form of #warn
             handle_warn(pp, &P);
-        } else if (!strcasecmp(func, "define")) {
+        } else if (!pp_strcmp(pp, func, "define")) {
             handle_define(pp, &P, 1);
-        } else if (!strcasecmp(func, "undef")) {
+        } else if (!pp_strcmp(pp, func, "undef")) {
             handle_define(pp, &P, 0);
-        } else if (!strcasecmp(func, "include")) {
+        } else if (!pp_strcmp(pp, func, "include")) {
             handle_include(pp, &P);
             return -1;  // suppress newline handling
-        } else if (!strcasecmp(func, "pragma")) {
+        } else if (!pp_strcmp(pp, func, "pragma")) {
             if (!handle_pragma(pp, &P)) {
                 // pragma was not recognized, pass it through
                 if (P.save) {
@@ -1183,7 +1192,7 @@ do_line(struct preprocess *pp)
                 r = expand_macros(pp, &pp->line, data);
             }
         } else {
-            if (!strcasecmp(func, "line"))
+            if (!pp_strcmp(pp, func, "line"))
             {
                 /* no warning for these directives */
             } else if (isdigit(func[0]) || func[0] == '$' || func[0] == '%') {
