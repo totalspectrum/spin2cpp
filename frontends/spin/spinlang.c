@@ -928,7 +928,8 @@ doSpinTransform(AST **astptr, int level, AST *parent)
                     AstReportDone(&saveinfo);
                     *ast = *deref;
                     break;
-                }                
+                }
+                case SYM_RESULT:
                 case SYM_LOCALVAR:
                 case SYM_PARAMETER:
                     isLocal = 1;

@@ -1,3 +1,6 @@
+Version 7.6.5
+- Fixed assignment to members of a structure return value
+
 Version 7.6.4
 - Added QEXP and QLOG implementations for P1
 - Allow upper case #pragma names

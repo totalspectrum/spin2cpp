@@ -1,7 +1,7 @@
 //
 // Pasm data output for spin2cpp
 //
-// Copyright 2016-2025 Total Spectrum Software Inc.
+// Copyright 2016-2026 Total Spectrum Software Inc. and contributors
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -286,7 +286,7 @@ PutVarOnStack(Function *func, Symbol *sym, int size)
     if (!ANY_VARS_ON_STACK(func)) {
         return false;
     }
-    if (sym->kind == SYM_LOCALVAR && TypeGoesOnStack((AST *)sym->v.ptr)) {
+    if ( (sym->kind == SYM_LOCALVAR || sym->kind == SYM_RESULT) && TypeGoesOnStack((AST *)sym->v.ptr)) {
         return true;
     }
     if (sym->flags & SYMF_ADDRESSABLE) {
@@ -4643,7 +4643,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
             }
         }
         finaltype = ExprType(expr);
-        if (off == 0 && IsCogMem(base)) {
+        if (off == 0 && IsCogMem(base) && TypeSize(finaltype) >= LONG_SIZE) {
             r = base;
         } else {
             r = OffsetMemory(irl, base, NewImmediate(off), finaltype, expr);
