@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2025 Total Spectrum Software Inc.
+ * Copyright 2011-2026 Total Spectrum Software Inc. and contributors
  *
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -1542,7 +1542,7 @@ ProcessOneIdeInc(char *def) {
     }
 }
 
-#define MAX_IDE_FILES 256
+#define MAX_IDE_FILES 1024
 
 static Module *
 ParseIdeFile(Module *P, const char *fpidename, int *is_dup_ptr)
