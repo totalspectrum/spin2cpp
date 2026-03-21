@@ -1476,7 +1476,13 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
         desttype_name = TypeName(desttype);
         srctype_name = TypeName(srctype);
         if (IsPointerType(desttype) && IsPointerType(srctype)) {
-            if (curfunc && IsBasicLang(curfunc->language) && IsRefType(desttype) && IsArrayType(desttype->left) && TypeSize(desttype->left) == 0) {
+            /* if both point to same thing, probably one is a reference, and we
+               do not need to warn
+            */
+            if (CompatibleTypes(BaseType(desttype), BaseType(srctype))) {
+                /* no warning */
+            }
+            else if (curfunc && IsBasicLang(curfunc->language) && IsRefType(desttype) && IsArrayType(desttype->left) && TypeSize(desttype->left) == 0) {
                 /* OK, parameter declared as foo() so can accept any array */
             } else if (curfunc && IsSpinLang(curfunc->language) && IsRefType(desttype)
                        && (IsArrayType(srctype->left) || !IsRefType(srctype))
@@ -2204,18 +2210,18 @@ static AST *doCheckTypes(AST *ast)
         if (!ltype && sym->kind == SYM_HWREG) {
             ltype = ast_type_unsigned_long;
         }
+#ifdef OLD_REFERENCES            
         // if this is a REFTYPE then dereference it
         if (ltype && IsRefType(ltype)) {
             AST *basetype = DerefType(BaseType(ltype));
-#ifdef OLD_REFERENCES            
             AST *deref;
             deref = DupAST(ast);
             deref = NewAST(AST_MEMREF, basetype, deref);
             deref = NewAST(AST_ARRAYREF, deref, AstInteger(0));
             *ast = *deref;
-#endif            
             ltype = basetype;
         }
+#endif            
         if (sym->kind == SYM_FUNCTION) {
             Function *f = (Function *)sym->v.ptr;
             if (f->module == current || IsSystemModule(f->module)) {
