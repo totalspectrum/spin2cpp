@@ -1648,10 +1648,11 @@ storage_class_specifier
 	| C_AUTO
             { $$ = NULL; }
 	| C_INLINE
-            {
-                AST *attr = NewAST(AST_ANNOTATION, NULL, NULL);
-                attr->d.string = "inline";
-                $$ = attr;
+            {                
+                //AST *attr = NewAST(AST_ANNOTATION, NULL, NULL);
+                //attr->d.string = "inline";
+                //$$ = attr;
+                $$ = NULL; /* ignore for now */
             }
         | C_ATTRIBUTE
             { $$ = $1; }        

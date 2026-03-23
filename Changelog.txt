@@ -2,6 +2,7 @@ Version 7.6.6
 - Increase maximum number of files in a .side from 256 to 1024
 - Fix Spin2 ABORT (thanks to Ada)
 - Improve internal handling of anonymous structure names
+- Ignore INLINE keyword in C (we used to add it as an annotation, but this confused some type checks)
 
 Version 7.6.5
 - Fixed assignment to members of a structure return value
