@@ -3154,7 +3154,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
             case SYM_PARAMETER:
             case SYM_LOCALVAR:
             case SYM_TEMPVAR:
-                typexpr = (AST *)sym->v.ptr;
+                typexpr = RemoveTypeModifiers((AST *)sym->v.ptr);
                 AST *old_typexpr = typexpr;
                 if (typexpr && typexpr->kind == AST_MODIFIER_SEND_ARGS) {
                     typexpr = typexpr->left;
