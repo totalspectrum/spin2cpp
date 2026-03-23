@@ -3,6 +3,7 @@ Version 7.6.6
 - Fix Spin2 ABORT (thanks to Ada)
 - Improve internal handling of anonymous structure names
 - Ignore INLINE keyword in C (we used to add it as an annotation, but this confused some type checks)
+- Fix incorrect errors for casts that removed `const`
 
 Version 7.6.5
 - Fixed assignment to members of a structure return value

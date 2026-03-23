@@ -1576,6 +1576,14 @@ doCast(AST *desttype, AST *srctype, AST *src)
     if (!srctype || IsGenericType(srctype)) {
         return src;
     }
+    /* allow explicit casting away of const and volatile modifiers */
+    if (srctype &&
+        (srctype->kind == AST_MODIFIER_CONST || srctype->kind == AST_MODIFIER_VOLATILE))
+    {
+        srctype = RemoveTypeModifiers(srctype);
+        if (SameTypes(desttype, srctype))
+            return src;
+    }
     AstReportAs(src, &saveinfo);
     if (src && IsIdentifier(src)) {
         name = GetUserIdentifierName(src);
