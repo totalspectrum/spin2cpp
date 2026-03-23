@@ -2306,6 +2306,9 @@ FoldIfConst(AST *expr)
 AST *
 RemoveTypeModifiers(AST *ast)
 {
+    if (ast && ast->kind == AST_USING) {
+        return RemoveTypeModifiers(ExprType(ast->left));
+    }
     while(ast && (ast->kind == AST_MODIFIER_CONST || ast->kind == AST_MODIFIER_VOLATILE || ast->kind == AST_MODIFIER_SEND_ARGS || ast->kind == AST_TYPEDEF || ast->kind == AST_REGISTER || ast->kind == AST_ANNOTATION)) {
         ast = ast->left;
     }
@@ -2988,6 +2991,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
     }
     switch (expr->kind) {
     case AST_TYPEOF:
+    case AST_USING:
         return ExprTypeRelative(table, expr->left, P);
     case AST_UNS_BOOLTYPE:
         return ast_type_basic_boolean;
