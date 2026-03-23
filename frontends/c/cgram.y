@@ -797,12 +797,20 @@ MakeNewStruct(Module *Parent, AST *skind, AST *identifier, AST *body, AST *optio
             }
         }
     }
+    bool force_typedef = false;
     if (!identifier) {
         // use file name and line number
         char buf[128];
-        unsigned int hash = RawSymbolHash(current->Lptr->fileName);
-        sprintf(buf, "_anon_%08x%08x", hash, current->Lptr->lineCounter);
+        const char *stem_name = current->Lptr->fileName;
+        const char *root = strrchr(stem_name, '/');
+        if (root) stem_name = root+1;
+#ifdef WIN32
+        root = strrchr(root, '\\');
+        if (root) stem_name = root+1;
+#endif
+        sprintf(buf, "__anon_%s_%08d", stem_name, current->Lptr->lineCounter);
         identifier = AstIdentifier(strdup(buf));
+        force_typedef = true;
     }
     if (!IsIdentifier(identifier)) {
         ERROR(identifier, "Internal error, bad struct def");
@@ -810,7 +818,7 @@ MakeNewStruct(Module *Parent, AST *skind, AST *identifier, AST *body, AST *optio
     }
     name = GetIdentifierName(identifier);
     typname = (char *)malloc(strlen(name)+strlen(classname)+16);
-    if (LangStructAutoTypedef(current->curLanguage)) {
+    if (force_typedef || LangStructAutoTypedef(current->curLanguage)) {
         strcpy(typname, name);
     } else {
         strcpy(typname, classname);
