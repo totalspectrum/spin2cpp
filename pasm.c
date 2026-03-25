@@ -1201,7 +1201,7 @@ again:
                     }
                 }
                 if (initptr && (IsClassType(type) || IsArrayType(type)) ) {
-                    initializer = FixupInitList(type, initializer);
+                    initializer = FixupInitList(type, initializer, false);
                     *initptr = initializer;
                 }
                 ALIGNPC(typalign);

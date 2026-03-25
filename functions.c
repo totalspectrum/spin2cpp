@@ -541,7 +541,7 @@ AddInitializers(AST *seq, AST *ident, AST *expr, AST *basetype)
         AstReportDone(&saveinfo);
         return seq;
     } else if (expr->kind == AST_EXPRLIST) {
-        expr = FixupInitList(basetype, expr);
+        expr = FixupInitList(basetype, expr, true);
         if (IsArrayType(basetype)) {
             if (!IsConstExpr(basetype->right)) {
                 ERROR(ident, "Variable length arrays not supported yet");
@@ -569,13 +569,14 @@ AddInitializers(AST *seq, AST *ident, AST *expr, AST *basetype)
             AST *decl;
             AST *subident;
             AST *curexpr;
-            while (varlist && varlist->kind == AST_LISTHOLDER) {
+            bool moreVars = true;
+            while (varlist && varlist->kind == AST_LISTHOLDER && moreVars) {
                 decl = varlist->left;
                 varlist = varlist->right;
                 if (decl && decl->kind == AST_DECLARE_VAR) {
                     subtype = decl->left;
                     decl = decl->right;
-                    while (decl) {
+                    while (decl && moreVars) {
                         if (decl->kind == AST_LISTHOLDER) {
                             subident = decl->left;
                             decl = decl->right;
@@ -593,6 +594,14 @@ AddInitializers(AST *seq, AST *ident, AST *expr, AST *basetype)
                             }
                         } else {
                             curexpr = AstInteger(0);
+                        }
+                        if (curexpr && curexpr->kind == AST_ASSIGN_INIT) {
+                            subident = curexpr->left;
+                            curexpr = curexpr->right;
+                            if (curexpr && curexpr->kind == AST_CAST) {
+                                subtype = curexpr->left;
+                            }
+                            moreVars = false;
                         }
                         sub = NewAST(AST_METHODREF, ident, subident);
                         seq = AddInitializers(seq, sub, curexpr, subtype);
@@ -671,7 +680,7 @@ findLocalsAndDeclare(Function *func, AST *ast)
             if (ident->kind == AST_ASSIGN) {
                 // check for x[] = {a, b, c} type initializers here
                 if (IsArrayType(basetype) && basetype->right == NULL) {
-                    AST *tmp = FixupInitList(basetype, ident->right);
+                    AST *tmp = FixupInitList(basetype, ident->right, false);
                     ident->right = tmp;
                     //fixupInitializer(current, ident->right, basetype);
                     if (ident->right->kind == AST_EXPRLIST) {

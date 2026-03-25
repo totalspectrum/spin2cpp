@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2024 Total Spectrum Software Inc.
+ * Copyright 2011-2026 Total Spectrum Software Inc. and contributors
  * See the file COPYING for terms of use
  *
  * code for C specific features

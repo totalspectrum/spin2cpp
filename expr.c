@@ -4048,11 +4048,12 @@ AST *FindMethodInList(AST *list, AST *ident, int *curptr)
 /* fix up an initializer list of a given type */
 /* creates an array containing the initializer expressions;
  * each of these may in turn be an array of initializers
- * returns an EXPRLIST containing the items
+ * returns an EXPRLIST containing the items; if "unionInit"
+ * is true, it adds any explicit method names
  * returns NULL if list is empty
  */
 AST *
-FixupInitList(AST *type, AST *initval)
+FixupInitList(AST *type, AST *initval, bool unionInit)
 {
     int numelems;
     AST **astarr = 0;
@@ -4163,6 +4164,7 @@ FixupInitList(AST *type, AST *initval)
         curelem = 0;
         while (initval) {
             AST *val = initval;
+            AST *methodname = NULL;
             initval = initval->right;
             val->right = NULL;
             if (val->left->kind == AST_INITMODIFIER) {
@@ -4176,7 +4178,8 @@ FixupInitList(AST *type, AST *initval)
                     ERROR(fixup, "Internal error, cannot handle nested designators");
                     newval = AstInteger(0);
                 } else {
-                    varlist = FindMethodInList(P->finalvarblock, fixup->right, &curelem);
+                    methodname = fixup->right;
+                    varlist = FindMethodInList(P->finalvarblock, methodname, &curelem);
                     if (!varlist) {
                         ERROR(fixup, "%s not found in struct", GetUserIdentifierName(fixup->right));
                         break;
@@ -4190,6 +4193,11 @@ FixupInitList(AST *type, AST *initval)
             if (is_union && !(val->left && val->left->kind == AST_CAST)) {
                 AST *subtype = ExprType(varlist->left);
                 val->left = NewAST(AST_CAST, subtype, val->left);
+            }
+            if (is_union && unionInit && methodname) {
+                if (val->kind == AST_EXPRLIST && val->right == NULL)
+                    val = val->left;
+                val = NewAST(AST_ASSIGN_INIT, methodname, val);
             }
             if (curelem < numelems) {
                 astarr[curelem] = val;

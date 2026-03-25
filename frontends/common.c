@@ -2005,7 +2005,7 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
             return; // just ignore this declaration
         } else {
             if (initializer->kind == AST_EXPRLIST) {
-                initializer = FixupInitList(rawtype, initializer);
+                initializer = FixupInitList(rawtype, initializer, false);
                 *initptr = initializer;
                 rawtype->right = AstInteger(AstListLen(initializer));
             } else if (initializer->kind == AST_STRINGPTR) {

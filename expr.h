@@ -190,7 +190,7 @@ AST *BuildExprlistFromObject(AST *expr, AST *typ);
 
 // fix up an initializer list of type "type"
 // handles designators like .x = n, and adds any missing 0's
-AST *FixupInitList(AST *typ, AST *initval);
+AST *FixupInitList(AST *typ, AST *initval, bool unionInit);
 
 /* get a const value as either a constant or a default value */
 int32_t const_or_default(Module *M, const char *name, int32_t defaultval);
