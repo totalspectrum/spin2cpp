@@ -1581,9 +1581,14 @@ doCast(AST *desttype, AST *srctype, AST *src)
         (srctype->kind == AST_MODIFIER_CONST || srctype->kind == AST_MODIFIER_VOLATILE))
     {
         srctype = RemoveTypeModifiers(srctype);
-        if (SameTypes(desttype, srctype))
-            return src;
     }
+    if (desttype &&
+        (desttype->kind == AST_MODIFIER_CONST || desttype->kind == AST_MODIFIER_VOLATILE))
+    {
+        desttype = RemoveTypeModifiers(desttype);
+    }
+    if (SameTypes(desttype, srctype))
+        return src;
     AstReportAs(src, &saveinfo);
     if (src && IsIdentifier(src)) {
         name = GetUserIdentifierName(src);
