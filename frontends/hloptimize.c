@@ -241,6 +241,7 @@ again:
         // like memset(foo, 0, sizeof(foo)) work
         return doCheckLocalVar(sym, body->left, VAR_SET, where);
     case AST_SIZEOF:
+    case AST_OFFSETOF:
         /* these expressions do not actually evaluate their parameters */
         return VAR_UNUSED;
     case AST_ASSIGN:

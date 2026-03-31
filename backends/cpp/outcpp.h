@@ -33,6 +33,7 @@ typedef struct asmmoddata {
     char needsLockFuncs;
     char needsCogAccess;
     char needsCoginit;
+    char needsOffsetof;
 
     /* flags for whether tuples of size N are needed */
     /* if needsTuple & (1<<N) then we need a definition for TupleN__ */

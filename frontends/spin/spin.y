@@ -639,6 +639,9 @@ SpinDeclareInterface(AST *ident, AST *defs)
 %token SP_ENDIANW "ENDIANW"
 %token SP_DEBUG_END_SESSION "DEBUG_END_SESSION"
 
+/* v53 additions */
+%token SP_OFFSETOF   "OFFSETOF"
+
 %token SP_FADD   "+."
 %token SP_FSUB   "-."
 %token SP_FMUL   "*."
@@ -2614,6 +2617,10 @@ funccall:
     {
         AST *src = $3;
         $$ = NewAST(AST_SIZEOF, src, NULL);
+    }
+  | SP_OFFSETOF '(' SP_TYPENAME '.' identifier ')'
+    {
+        $$ = NewAST(AST_OFFSETOF, $3, $5);
     }
   | SP_TASKINIT '(' exprlist ')'
     {

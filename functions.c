@@ -1520,6 +1520,7 @@ NormalizeFunc(AST *ast, Function *func)
     case AST_HWREG:
     case AST_CONSTREF:
     case AST_SIZEOF:
+    case AST_OFFSETOF:
         return NULL;
     case AST_LOOKUP:
     case AST_LOOKDOWN:

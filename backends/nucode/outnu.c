@@ -2229,6 +2229,7 @@ static void NuCompileStatement(NuIrList *irl, AST *ast) {
     case AST_MEMREF:
     case AST_CONDRESULT:
     case AST_SIZEOF:
+    case AST_OFFSETOF:
         n = NuCompileExpression(irl, ast);
         NuCompileDrop(irl, n);
         break;

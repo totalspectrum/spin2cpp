@@ -256,6 +256,7 @@ enum astkind {
 
     AST_NAMESPACE = 185,
     AST_TEMP_IDENTIFIER = 186,
+    AST_OFFSETOF = 187,
 };
 
 /* forward reference */

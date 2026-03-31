@@ -1737,6 +1737,35 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
         }
         return intExpr(TypeSize(typ));
     }
+    case AST_OFFSETOF:
+    {
+        AST *typ = ExprType(expr->left);
+        Module *Q;
+        Symbol *sym;
+        const char *fieldname;
+        if (!typ) {
+            ERROR(expr, "Unknown type for offsetof");
+            return intExpr(0);
+        }
+        typ = RemoveTypeModifiers(typ);
+        if (!IsClassType(typ)) {
+            ERROR(expr, "offsetof requires a struct or union type");
+            return intExpr(0);
+        }
+        Q = GetClassPtr(typ);
+        if (!Q) {
+            ERROR(expr, "Internal error: unable to get class for offsetof");
+            return intExpr(0);
+        }
+        fieldname = GetUserIdentifierName(expr->right);
+        sym = LookupSymbolInTable(&Q->objsyms, fieldname);
+        if (!sym || sym->kind != SYM_VARIABLE) {
+            ERROR(expr, "Unknown field `%s' in offsetof", fieldname);
+            return intExpr(0);
+        }
+        /* For unions all members have offset 0 (already stored in sym->offset) */
+        return intExpr(sym->offset);
+    }
     case AST_FLOAT:
         if (gl_fixedreal) {
             return fixedExpr(expr->d.ival);
@@ -3411,6 +3440,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
     case AST_NEW:
         return expr->left;
     case AST_SIZEOF:
+    case AST_OFFSETOF:
         return ast_type_unsigned_long;
     case AST_CAST:
     case AST_VA_ARG:

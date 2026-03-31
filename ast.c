@@ -894,6 +894,7 @@ static const char *astnames[] = {
 
     "namespace",
     "temp_identifier",
+    "offsetof",
 };
 
 //

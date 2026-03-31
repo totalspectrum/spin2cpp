@@ -23,7 +23,7 @@
 
 #define VT '\013'
 
-#define MAX_PNUT_VERSION 52 /* maximum PNut version we understand */
+#define MAX_PNUT_VERSION 53 /* maximum PNut version we understand */
 
 int allow_type_names = 1;
 
@@ -2590,6 +2590,9 @@ struct reservedword_soft {
     { "endianl", SP_ENDIANL, 52, 0 },
     { "endianw", SP_ENDIANW, 52, 0 },
     { "debug_end_session", SP_DEBUG_END_SESSION, 52, 0 },
+
+    /* v53 keywords */
+    { "offsetof", SP_OFFSETOF, 53, 0 },
 };
 
 struct reservedword basic_keywords[] = {
@@ -2734,6 +2737,7 @@ struct reservedword c_keywords[] = {
     { "__builtin_longjmp", C_BUILTIN_LONGJMP },
     { "__builtin_mulh",  C_BUILTIN_MULH },
     { "__builtin_muluh", C_BUILTIN_MULUH },
+    { "__builtin_offsetof", C_BUILTIN_OFFSETOF },
     { "__builtin_printf", C_BUILTIN_PRINTF },
     { "__builtin_propeller_rev", C_BUILTIN_REV },
     { "__builtin_setjmp", C_BUILTIN_SETJMP },

@@ -1678,6 +1678,15 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
         PrintExpr(f, expr->left, flags);
         flexbuf_printf(f, ")");
         break;
+    case AST_OFFSETOF:
+        {
+            AST *typ = ExprType(expr->left);
+            const char *fieldname = GetIdentifierName(expr->right);
+            flexbuf_printf(f, "offsetof(");
+            PrintCastType(f, typ);
+            flexbuf_printf(f, ", %s)", fieldname);
+        }
+        break;
 #if 0        
     case AST_VA_START:
         PrintLHS(f, expr->left, flags | PRINTEXPR_ASSIGNMENT);

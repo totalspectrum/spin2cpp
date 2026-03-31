@@ -2026,6 +2026,7 @@ static AST *doCheckTypes(AST *ast)
     case AST_CONSTREF:
         return ast_type_long;
     case AST_SIZEOF:
+    case AST_OFFSETOF:
         return ast_type_unsigned_long;
     case AST_CATCHRESULT:
     case AST_BITVALUE:

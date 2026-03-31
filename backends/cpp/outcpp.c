@@ -832,6 +832,9 @@ PrintCppFile(Flexbuf *f, Module *parse)
     if (ModData(parse)->needsString) {
         flexbuf_printf(f, "#include <string.h>\n");
     }
+    if (ModData(parse)->needsOffsetof) {
+        flexbuf_printf(f, "#include <stddef.h>\n");
+    }
     IfdefPropeller(f);
     flexbuf_printf(f, "#define __SPIN2CPP__\n");
     if (gl_p2) {
@@ -952,6 +955,9 @@ SetCppFlags(CppModData *bedata, AST *ast)
         break;
     case AST_SPRREF:
         bedata->needsCogAccess = 1;
+        break;
+    case AST_OFFSETOF:
+        bedata->needsOffsetof = 1;
         break;
     case AST_OPERATOR:
         {

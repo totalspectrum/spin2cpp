@@ -1134,6 +1134,7 @@ ConstructDefaultValue(AST *decl, AST *val)
 %token C_BUILTIN_COGSTART "__builtin_cogstart"
 %token C_BUILTIN_COGSTART_COG "__builtin_cogstart_cog"
 %token C_BUILTIN_EXPECT "__builtin_expect"
+%token C_BUILTIN_OFFSETOF "__builtin_offsetof"
 %token C_BUILTIN_PRINTF "__builtin_printf"
 %token C_BUILTIN_REV    "__builtin_rev"
 %token C_BUILTIN_VA_START "__builtin_va_start"
@@ -1414,7 +1415,9 @@ unary_expression
 	| C_SIZEOF '(' type_name ')'
             { $$ = NewAST(AST_SIZEOF, $3, NULL); }           
 	| C_SIZEOF unary_expression
-            { $$ = NewAST(AST_SIZEOF, $2, NULL); }           
+            { $$ = NewAST(AST_SIZEOF, $2, NULL); }
+	| C_BUILTIN_OFFSETOF '(' type_name ',' C_IDENTIFIER ')'
+            { $$ = NewAST(AST_OFFSETOF, $3, $5); }
 	;
 
 unary_operator
