@@ -1,0 +1,17 @@
+{Spin2_v53}
+
+con
+
+    _clkfreq			= 180_000_000
+    _xtlfreq			= 20_000_000
+
+    struct teststruct(...
+        byte memb_a, ...
+        byte memb_b, ...
+        word memb_c)
+
+
+pub main() 
+   OUTA := offsetof(teststruct.memb_b)
+   OUTB := offsetof(teststruct.memb_c)
+   
