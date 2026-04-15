@@ -805,7 +805,7 @@ MakeNewStruct(Module *Parent, AST *skind, AST *identifier, AST *body, AST *optio
         const char *root = strrchr(stem_name, '/');
         if (root) stem_name = root+1;
 #ifdef WIN32
-        root = strrchr(root, '\\');
+        if (root) root = strrchr(root, '\\');
         if (root) stem_name = root+1;
 #endif
         sprintf(buf, "__anon_%s_%08d", stem_name, current->Lptr->lineCounter);
