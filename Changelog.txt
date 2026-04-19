@@ -1,5 +1,7 @@
 Version 7.6.7
 - Add OFFSETOF implementation
+- Fix a Windows crash
+- Allow manual definition of _SIMPLE_IO
 
 Version 7.6.6
 - Increase maximum number of files in a .side from 256 to 1024
