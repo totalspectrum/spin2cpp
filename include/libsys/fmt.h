@@ -9,7 +9,7 @@
 #include <errno.h>
 
 #define INCLUDE_FLOATS
-#undef _SIMPLE_IO
+//#undef _SIMPLE_IO
 
 #ifdef __FLEXC__
 
