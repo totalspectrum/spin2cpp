@@ -284,8 +284,8 @@ gosub
 goto
 _hasmethod
 if
-import
 implements
+import
 input
 integer
 interface
