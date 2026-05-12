@@ -1,3 +1,6 @@
+Version 7.6.8
+- Add OFFSETOF to BASIC
+
 Version 7.6.7
 - Add OFFSETOF implementation
 - Fix a Windows crash

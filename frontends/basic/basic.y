@@ -476,6 +476,7 @@ AdjustParamForByVal(AST *param)
 %token BAS_NEXT       "next"
 %token BAS_NIL        "nil"
 %token BAS_NOT        "not"
+%token BAS_OFFSETOF   "offsetof"
 %token BAS_ON         "on"
 %token BAS_OPEN       "open"
 %token BAS_OPTION     "option"
@@ -1680,6 +1681,10 @@ pseudofunc_expr:
         AST *typnam = $3;
         AST *ident = $5;
         $$ = NewAST(AST_HASMETHOD, typnam, ident);
+    }
+  | BAS_OFFSETOF '(' typename ',' BAS_IDENTIFIER ')'
+    {
+        $$ = NewAST(AST_OFFSETOF, $3, $5);
     }
   | BAS_SAMETYPES '(' typename ',' typename ')'
     {

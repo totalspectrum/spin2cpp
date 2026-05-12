@@ -301,6 +301,7 @@ next
 new
 nil
 not
+offsetof
 open
 option
 or
@@ -2899,6 +2900,24 @@ Convert `x` into a string with `d` digits in base `base`. If `x` is too big to f
   t = oct$(x)
 ```
 Returns a string representing the unsigned integer `x` in base 8. Only the lowest `n` digits of the representation are included. If `n` is omitted or is 0 then the returned string is the minimum length needed to represent the unsigned value.
+
+### OFFSETOF
+
+```
+n = offsetof(typename, fieldname)
+```
+Returns the byte offset of the field `fieldname` within the class, struct, or union type `typename`. `typename` must name a type (not a variable), and `fieldname` must be a plain identifier naming a member of that type. The result is a compile-time integer constant suitable for use anywhere an integer is expected.
+
+For example:
+```
+class point
+  dim as integer x
+  dim as integer y
+end class
+
+print offsetof(point, y)
+```
+will print 4.
 
 ### ON X GOTO
 
