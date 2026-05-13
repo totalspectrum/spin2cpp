@@ -2070,6 +2070,10 @@ Closes a subroutine definition.
 
 Closes a `try`/`catch` error handling block.
 
+#### END TYPE
+
+Closes any kind of type definition (`class`, `type`, or `union`).
+
 #### END WHILE
 
 Marks the end of a `while` loop; this may be used in place of `wend`.
@@ -3641,6 +3645,13 @@ Creates an alias for a type. For example,
   type uptr as ubyte ptr
 ```
 creates a new type name `uptr` which is a pointer to a `ubyte`. You may use the new type name anywhere a type is required.
+
+The `type` keyword may also be used instead of `class` for defining a class. For example:
+```
+  type mypoint
+    dim as integer x, y
+  end type
+```
 
 ### UBYTE
 

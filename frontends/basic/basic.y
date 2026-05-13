@@ -2207,6 +2207,25 @@ classheader:
       current = P;
       $$ = NULL;
     }
+  | BAS_TYPE BAS_IDENTIFIER eoln
+    {
+      AST *ident = $2;
+      const char *classname = ident->d.string;
+      Module *P = NewModule(classname, current->curLanguage);
+      AST *newobj = NewAbstractObject( ident, NULL, 0 );
+      newobj->d.ptr = P;
+      AddSymbol(currentTypes, classname, SYM_TYPEDEF, newobj, NULL);
+      if (P != current) {
+          P->Lptr = current->Lptr;
+          P->subclasses = current->subclasses;
+          current->subclasses = P;
+          P->superclass = current;
+          P->fullname = current->fullname; // for finding "class using"
+      }
+      PushCurrentModule();
+      current = P;
+      $$ = NULL;
+    }
   | BAS_UNION BAS_IDENTIFIER eoln
     {
       AST *ident = $2;
@@ -2278,6 +2297,10 @@ classend:
       } else {
           PopCurrentModule();
       }
+    }  
+  | BAS_END BAS_TYPE
+    {
+      PopCurrentModule();
     }  
 ;
 

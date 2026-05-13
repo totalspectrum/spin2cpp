@@ -86,7 +86,7 @@ interface floatable
   implements function asFloat() as single
 end interface
 
-class wrapFloat
+type wrapFloat
   dim f as single
   function asFloat() as single
     return f
@@ -94,8 +94,8 @@ class wrapFloat
   sub set(a as single)
     f = a
   end sub
-end class
-class wrapInt
+end type
+type wrapInt
   dim f as integer
   sub set(a as integer)
     f = a
@@ -103,7 +103,7 @@ class wrapInt
   function asFloat() as single
     return f
   end function
-end class
+end type
 
 sub testit(x as floatable)
   print x.asFloat() mod 2.1

@@ -1,5 +1,6 @@
 Version 7.6.8
 - Add OFFSETOF to BASIC
+- Accept FreeBasic style TYPE definitions for BASIC classes
 
 Version 7.6.7
 - Add OFFSETOF implementation
