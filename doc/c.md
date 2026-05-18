@@ -379,6 +379,8 @@ Calculates the absolute value of `y`. This is not like a normal C function in th
 ```
 Allocates `size` bytes of memory on the stack, and returns a pointer to that memory. When the enclosing function returns, the allocated memory will become invalid (so do not attempt to return the result from a function!)
 
+`__builtin_alloca()` (and its alias `alloca()`) cannot be used in an expression being passed as a parameter. A similar restriction exists on many other systems.
+
 ### BITREVERSE32
 
 ```
