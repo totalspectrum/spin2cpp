@@ -2,11 +2,11 @@
 
 ## Introduction
 
-Flexspin was designed to accept the language Spin as documented in the Parallax Propeller Manual. It should be able to compile most Spin programs, as long as there is space. The restriction is an important one; other Spin compilers produce Spin bytecode, a compact form that is interpreted by a program in the Propeller's ROM. Flexspin produces LMM code, which is basically a slightly modified Propeller machine code (slightly modified to run in HUB memory instead of COG). This is much larger than Spin bytecode, but also much, much faster.
+Flexspin was designed to accept the language Spin as documented in the Parallax Propeller Manual. It should be able to compile most Spin programs, as long as there is space. The restriction is an important one; other Spin compilers produce Spin bytecode, a compact form that is interpreted by a program in the Propeller's ROM. Flexspin by default produces LMM code, which is basically Propeller machine code (slightly modified to run in HUB memory instead of COG). This is much larger than Spin bytecode, but also much, much faster.
 
 Flexspin is able to produce binaries for both the P1 and P2 chips. Any assembly language written in DAT sections (or inside inline ASM blocks) must be for the appropriate chip; it will not be translated.
 
-Flexspin also supports many of the features of the Spin2 language as extensions to Spin 1. It can also accept Spin2 programs as input. Spin1 and Spin2 are not completely compatible. Spin2 features which are not compatible with Spin1 are enabled if the file extension is `.spin2`.
+Flexspin supports many of the features of the Spin2 language as extensions to Spin 1. It can also accept Spin2 programs as input. Spin1 and Spin2 are not completely compatible. Spin2 features which are not compatible with Spin1 are enabled if the file extension is `.spin2`.
 
 ### See also
 
@@ -97,7 +97,7 @@ Forces the preprocessor to be case sensitive.
 #define NAME whatever
 #pragma exportdef NAME
 ```
-exports the definition of the macro `NAME` to other files. Normally a preprocessor macro only takes effect in the single source file in which it was defined. `#pragma exportdef` applied to the macro causes it to be exported to the global namespace, so that it will be in effect in all subsequent files, including objects.
+exports the definition of the (previously defined) macro `NAME` to other files. Normally a preprocessor macro only takes effect in the single source file in which it was defined. `#pragma exportdef` applied to the macro causes it to be exported to the global namespace, so that it will be in effect in all subsequent files, including objects.
 
 Note that macros exported to other files by `#pragma exportdef` have lower priority than macros defined on the command line, that is, `#pragma exportdef NAME` has lower priority than `-DNAME=x`.
 
