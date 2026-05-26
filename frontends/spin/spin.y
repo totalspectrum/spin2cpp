@@ -678,7 +678,7 @@ SpinDeclareInterface(AST *ident, AST *defs)
 %left '^' SP_POW /* priority 5 */
 %left '&' /* priority 4 */
 %left SP_ROTL SP_ROTR SP_SHL SP_SHR SP_SAR SP_REV SP_REV2 SP_SIGNX SP_ZEROX /* priority 3 */
-%left SP_NEGATE SP_FNEGATE SP_BIT_NOT SP_ABS SP_FABS SP_SQRT SP_FSQRT SP_DECODE SP_ENCODE SP_ENCODE2 SP_ALLOCA SP_ONES SP_BMASK SP_QLOG SP_QEXP /* priority 2 in Spin2 */
+%left SP_NEGATE SP_FNEGATE SP_BIT_NOT SP_ABS SP_FABS SP_SQRT SP_FSQRT SP_DECODE SP_ENCODE SP_ENCODE2 SP_ALLOCA SP_ONES SP_BMASK SP_QLOG SP_QEXP SP_EXP2 SP_LOG2 SP_EXP10 SP_LOG10 SP_EXP SP_LOG /* priority 2 in Spin2 */
 %left '@' '~' '?' SP_RANDOM SP_DOUBLETILDE SP_INCREMENT SP_DECREMENT SP_DOUBLEAT SP_TRIPLEAT  SP_FIELDPTR /* priority 1 in Spin2 */
 %left SP_REF_INC SP_REF_DEC
 %left SP_CONSTANT SP_FLOAT SP_TRUNC SP_ROUND SP_NAN
@@ -2718,44 +2718,44 @@ funccall:
                            params);
         $$ = call;
     }  
-  | SP_LOG2 '(' expr ')'
+  | SP_LOG2 expr
     {
-        AST *arg1 = $3;
+        AST *arg1 = $2;
         AST *ident = AstIdentifier("__builtin_log2f");
         
         $$ = MakeFunccall1(ident, arg1);
     }
-  | SP_EXP2 '(' expr ')'
+  | SP_EXP2 expr
     {
-        AST *arg1 = $3;
+        AST *arg1 = $2;
         AST *ident = AstIdentifier("__builtin_exp2f");
         
         $$ = MakeFunccall1(ident, arg1);
     }
-  | SP_LOG10 '(' expr ')'
+  | SP_LOG10 expr
     {
-        AST *arg1 = $3;
+        AST *arg1 = $2;
         AST *ident = AstIdentifier("__builtin_log10f");
         
         $$ = MakeFunccall1(ident, arg1);
     }
-  | SP_EXP10 '(' expr ')'
+  | SP_EXP10 expr
     {
-        AST *arg1 = $3;
+        AST *arg1 = $2;
         AST *ident = AstIdentifier("__builtin_exp10f");
         
         $$ = MakeFunccall1(ident, arg1);
     }
-  | SP_LOG '(' expr ')'
+  | SP_LOG expr
     {
-        AST *arg1 = $3;
+        AST *arg1 = $2;
         AST *ident = AstIdentifier("__builtin_logf");
         
         $$ = MakeFunccall1(ident, arg1);
     }
-  | SP_EXP '(' expr ')'
+  | SP_EXP expr
     {
-        AST *arg1 = $3;
+        AST *arg1 = $2;
         AST *ident = AstIdentifier("__builtin_expf");
         
         $$ = MakeFunccall1(ident, arg1);
