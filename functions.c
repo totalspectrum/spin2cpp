@@ -3007,6 +3007,9 @@ MarkUsedBody(AST *body, const char *caller)
         case K_FDIV:
             *body = *ConvertInternal(body, "_float_div", body->left, body->right, NULL);
             break;
+        case K_POWER:
+            *body = *ConvertInternal(body, "__builtin_powf", body->left, body->right, NULL);
+            break;
         default:
             break;
         }
