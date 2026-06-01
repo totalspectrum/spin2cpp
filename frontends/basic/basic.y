@@ -1,11 +1,11 @@
 /*
  * BASIC compiler parser
- * Copyright (c) 2011-2025 Total Spectrum Software Inc.
+ * Copyright (c) 2011-2026 Total Spectrum Software Inc.
  * See the file COPYING for terms of use.
  */
 
 %pure-parser
-%expect 52
+%expect 53
 
 %{
 #include <stdio.h>
@@ -247,8 +247,13 @@ DeclareBASICMemberVariables(AST *ast)
     typ = ast->left;
     if (idlist->kind == AST_LISTHOLDER) {
         while (idlist) {
+            AST *bittyp = typ;
             ident = idlist->left;
-            MaybeDeclareMemberVar(current, ident, typ, is_private, NORMAL_VAR);
+            if (ident && ident->kind == AST_BITFIELD) {
+                bittyp = NewAST(AST_BITFIELD, typ, ident->right);
+                ident = ident->left;
+            }
+            MaybeDeclareMemberVar(current, ident, bittyp, is_private, NORMAL_VAR);
             idlist = idlist->right;
         }
     } else {
@@ -2310,6 +2315,11 @@ classdeclitem:
         AST *ast = NewAST(AST_DECLARE_VAR, $3, $1);
         DeclareBASICMemberVariables(ast);
     }
+| BAS_AS typename dimlist
+    {
+        AST *ast = NewAST(AST_DECLARE_VAR, $2, $3);
+        DeclareBASICMemberVariables(ast);
+    }
 | dimension
     {
         AST *ast = $1;
@@ -2601,6 +2611,11 @@ dimlist:
 dimitem:
   identdecl
     { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
+  | identdecl ':' BAS_INTEGER
+    {
+        AST *bitdecl = NewAST(AST_BITFIELD, $1, $3);
+        $$ = NewAST(AST_LISTHOLDER, bitdecl, NULL);
+    }
   | identdecl '=' expr
     { $$ = NewAST(AST_LISTHOLDER, AstAssign($1, $3), NULL); }
   | identdecl '=' '{' initexprlist '}'
