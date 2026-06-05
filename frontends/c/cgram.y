@@ -1,6 +1,6 @@
 /*
  * C compiler parser
- * Copyright (c) 2011-2025 Total Spectrum Software Inc.
+ * Copyright (c) 2011-2026 Total Spectrum Software Inc.
  * See the file COPYING for terms of use.
  */
 
@@ -611,13 +611,6 @@ AddEnumerators(AST *identifier, AST *enumlist)
     return ast_type_long;
 }
 
-typedef struct BitFieldState {
-    int offset;
-    int size;
-    int max_size;
-    AST *ident;
-} BitFieldState;
-
 static void
 DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
 {
@@ -681,8 +674,8 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
             while (idlist) {
                 ident = idlist->left;
                 // not in a bitfield
-                bitfield.max_size = bitfield.size = bitfield.offset = 0;
-                MaybeDeclareMemberVar(P, ident, typ, is_private, NORMAL_VAR);
+                bitfield.max_size = bitfield.offset = 0;
+                MaybeDeclareMemberVar(P, ident, typ, is_private, NORMAL_VAR, &bitfield);
                 idlist = idlist->right;
             }
         } else {
@@ -704,8 +697,8 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
                     // start a new bitfield
                     bitfield.max_size = tsize;
                     bitfield.offset = 0;
-                    bitfield.ident = AstTempIdentifier("__bitfield_");
-                    last_pos = MaybeDeclareMemberVar(P, bitfield.ident, bfield_typ, is_private, HIDDEN_VAR);
+                    bitfield.ident = AstTempIdentifier("^_bitfield_");
+                    last_pos = MaybeDeclareMemberVar(P, bitfield.ident, bfield_typ, is_private, HIDDEN_VAR, &bitfield);
                 }
                 if (bsize > bitfield.max_size) {
                     ERROR(bfield_ast, "bitfield size %d is greater than type size %d",
@@ -727,8 +720,8 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
                 ;
             } else {
                 // not in a bitfield
-                bitfield.max_size = bitfield.size = bitfield.offset = 0;
-                MaybeDeclareMemberVar(P, ident, typ, is_private, NORMAL_VAR);
+                bitfield.max_size = bitfield.offset = 0;
+                MaybeDeclareMemberVar(P, ident, typ, is_private, NORMAL_VAR, &bitfield);
             }
         }
     }

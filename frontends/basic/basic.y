@@ -253,11 +253,11 @@ DeclareBASICMemberVariables(AST *ast)
                 bittyp = NewAST(AST_BITFIELD, typ, ident->right);
                 ident = ident->left;
             }
-            MaybeDeclareMemberVar(current, ident, bittyp, is_private, NORMAL_VAR);
+            MaybeDeclareMemberVar(current, ident, bittyp, is_private, NORMAL_VAR, NULL);
             idlist = idlist->right;
         }
     } else {
-        MaybeDeclareMemberVar(current, idlist, typ, is_private, NORMAL_VAR);
+        MaybeDeclareMemberVar(current, idlist, typ, is_private, NORMAL_VAR, NULL);
     }
     return;
 }
@@ -821,7 +821,7 @@ assign_statement:
         int explicit_flag = EvalConstExpr((AST *)sym->v.ptr);
         if (0 == (explicit_flag & 0x1) ) {
             ident = assign->left;
-            MaybeDeclareMemberVar(current, ident, NULL, 0, IMPLICIT_VAR);
+            MaybeDeclareMemberVar(current, ident, NULL, 0, IMPLICIT_VAR, NULL);
         }
         $$ = assign;
     }
@@ -833,7 +833,7 @@ assign_statement:
         int explicit_flag = EvalConstExpr((AST *)sym->v.ptr);
         if (0 == (explicit_flag & 0x2) ) {
             ident = assign->left;
-            MaybeDeclareMemberVar(current, ident, NULL, 0, IMPLICIT_VAR);
+            MaybeDeclareMemberVar(current, ident, NULL, 0, IMPLICIT_VAR, NULL);
         }
         $$ = assign;
     }
@@ -1058,7 +1058,7 @@ inputitem:
         Symbol *sym = GetExplicitDeclares();
         int explicit_flag = EvalConstExpr((AST *)sym->v.ptr);
         if (0 == (explicit_flag & 0x4)) {
-            MaybeDeclareMemberVar(current, $1, NULL, 0, IMPLICIT_VAR);
+            MaybeDeclareMemberVar(current, $1, NULL, 0, IMPLICIT_VAR, NULL);
         }
         $$ = NewAST(AST_EXPRLIST, $1, NULL);
     }

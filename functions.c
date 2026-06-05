@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2025 Total Spectrum Software Inc.
+ * Copyright 2011-2026 Total Spectrum Software Inc. and contributors
  * See the file COPYING for terms of use
  *
  * code for handling functions
@@ -476,6 +476,17 @@ static bool AllZeros(AST *expr) {
     return false;
 }
 
+static bool
+IsHiddenIdent(AST *ident) {
+    if (ident && ident->kind == AST_IDENTIFIER &&
+        ident->d.string[0] == '^')
+    {
+        /* special bitfield holder identifier; skip */
+        return true;
+    }
+    return false;
+}
+
 //
 // add initializers of the form "ident = expr" to a given sequence "seq"
 // the type of ident is "basetype"
@@ -573,7 +584,9 @@ AddInitializers(AST *seq, AST *ident, AST *expr, AST *basetype)
             while (varlist && varlist->kind == AST_LISTHOLDER && moreVars) {
                 decl = varlist->left;
                 varlist = varlist->right;
-                if (decl && decl->kind == AST_DECLARE_VAR) {
+                if (decl &&
+                    (decl->kind == AST_DECLARE_VAR || decl->kind == AST_DECLARE_BITFIELD) )
+                {
                     subtype = decl->left;
                     decl = decl->right;
                     while (decl && moreVars) {
@@ -603,8 +616,10 @@ AddInitializers(AST *seq, AST *ident, AST *expr, AST *basetype)
                             }
                             moreVars = false;
                         }
-                        sub = NewAST(AST_METHODREF, ident, subident);
-                        seq = AddInitializers(seq, sub, curexpr, subtype);
+                        if (!IsHiddenIdent(subident)) {
+                            sub = NewAST(AST_METHODREF, ident, subident);
+                            seq = AddInitializers(seq, sub, curexpr, subtype);
+                        }
                     }
                 }
             }
@@ -823,7 +838,7 @@ AddClosureSymbol(Function *f, Module *P, AST *ident)
     if (!typ) {
         typ = ExprTypeRelative(&f->localsyms, ident, P);
     }
-    MaybeDeclareMemberVar(P, ident, typ, 0, NORMAL_VAR);
+    MaybeDeclareMemberVar(P, ident, typ, 0, NORMAL_VAR, NULL);
 }
 
 static void

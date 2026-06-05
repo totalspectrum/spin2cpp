@@ -991,7 +991,17 @@ void DeclareOneRegisterVar(Module *P, AST *ident, AST *typ);
 #define HIDDEN_VAR 1
 #define IMPLICIT_VAR 2
 
-AST *MaybeDeclareMemberVar(Module *P, AST *ident, AST *typ, int is_private, unsigned flags);
+/*
+ * current state for bitfields
+ */
+typedef struct BitFieldState {
+    AST *ident;    /* identifier for bitfield container (usually anonymous) */
+    int max_size;  /* maximum number of bits to hold */
+    int offset;    /* offset for next bitfield */
+} BitFieldState;
+
+
+AST *MaybeDeclareMemberVar(Module *P, AST *ident, AST *typ, int is_private, unsigned flags, BitFieldState *bitfield);
 
 /* declare a member alias of P */
 void DeclareMemberAlias(Module *P, AST *ident, AST *expr);

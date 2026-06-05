@@ -1,6 +1,6 @@
 /*
  * BF to C or PASM translater
- * Copyright 2025 Total Spectrum Software and Collabora, Ltd.
+ * Copyright 2025-2026 Total Spectrum Software and Collabora, Ltd.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -236,7 +236,7 @@ init_bf_parse(LexStream *L)
     array_decl->d.ptr = AstInteger(0);
 
     // we put the array in the module's DAT section
-    MaybeDeclareMemberVar(current, array_decl, ast_type_byte, 0, NORMAL_VAR);
+    MaybeDeclareMemberVar(current, array_decl, ast_type_byte, 0, NORMAL_VAR, NULL);
     
     // create a local variable declaration for the array_index
     array_index = AstIdentifier("bf_pos");

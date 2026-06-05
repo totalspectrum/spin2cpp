@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2025 Total Spectrum Software Inc.
+ * Copyright 2011-2026 Total Spectrum Software Inc. and contributors
  *
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -2277,7 +2277,7 @@ AlreadyDeclared(AST *pendinglist, AST *newIdentifier)
 }
 
 AST *
-MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ, int is_private, unsigned flags)
+MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ, int is_private, unsigned flags, BitFieldState *bitfield)
 {
     AST *ret = 0;
     AST *sub;
