@@ -10,3 +10,9 @@ check called x=000A y=000B
 check called x=0001 y=000B
 check called x=0001 y=0002
 overflow correctly detected
+checking bitfields:
+check called x=0008 y=0001
+check called x=0038 y=0007
+check called x=003C y=000F
+check called x=0123 y=0C48
+check called x=0123 y=0624

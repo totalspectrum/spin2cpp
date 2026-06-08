@@ -31,7 +31,18 @@ PUB demo | x,y
   if not m & $00ff
     fds.str(string("overflow correctly detected", 13, 10))
   else
-    fds.str(string("operator precedence problem", 13, 10))  
+    fds.str(string("operator precedence problem", 13, 10))
+
+  ' check bitfields
+  fds.str(string("checking bitfields:", 13, 10))
+  m := $12345678
+  check(m.[3..0], m.[0..3])
+  check(m.[5..0], m.[0..5])
+  check(m.[6..1], m.[1..6])
+  check(m.[31..20], m.[20..31])
+  x := 30
+  y := 20
+  check(m.[x..y], m.[y..x])
   exit
 
 PUB check(x = $a, y = $b)
