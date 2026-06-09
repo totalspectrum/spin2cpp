@@ -1,7 +1,7 @@
 //
 // Peephole optimizer for asm IR
 //
-// Copyright 2016-2024 Total Spectrum Software Inc.
+// Copyright 2016-2026 Total Spectrum Software Inc. and contributors
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -1249,6 +1249,13 @@ static PeepholePattern pat_signx_and[] = {
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
+static PeepholePattern pat_shr_and[] = {
+    { COND_ANY, OPC_SHR,   PEEP_OP_SET|0, PEEP_OP_SET_IMM|1, PEEP_FLAGS_NONE },
+    { COND_ANY, OPC_AND,   PEEP_OP_MATCH|0, PEEP_OP_SET_IMM|2, PEEP_FLAGS_NONE },
+
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
 /* AND x, #255; wrbyte x, y : we can delete the AND if x is dead after */
 static PeepholePattern pat_and_wrbyte[] = {
     { COND_ANY, OPC_AND,   PEEP_OP_SET|0, PEEP_OP_IMM|255, PEEP_FLAGS_NONE },
@@ -1271,6 +1278,24 @@ static int FixupShlShrAndImm(int arg, IRList *irl, IR *ir0)
         // we can delete the shl and shr
         DeleteIR(irl, ir1);
         DeleteIR(irl, ir0);
+        return 1;
+    }
+    return 0;
+}
+
+static int FixupShrAndImm(int arg, IRList *irl, IR *ir0)
+{
+    IR *ir1;
+    int signx_width;
+    unsigned and_pat, signx_pat;
+    
+    ir1 = NextIR(ir0);  // and this is the AND
+    signx_width = ir0->src->val & 0x1f;
+    and_pat = (unsigned)ir1->src->val;
+    signx_pat = (1U<<(31 - signx_width)) - 1;
+    if ( (and_pat & signx_pat) == signx_pat ) {
+        // we can delete the and
+        DeleteIR(irl, ir1);
         return 1;
     }
     return 0;
@@ -1339,7 +1364,7 @@ struct Peepholes {
 
     { pat_signx_and, 0, FixupSignxAndImm },
     { pat_shl_shr_and, 0, FixupShlShrAndImm },
-
+    { pat_shr_and, 0, FixupShrAndImm },
     { pat_and_wrbyte, 1, FixupDeleteInstr },
     
     { pat_drvc1, OPC_DRVC, ReplaceDrvc },
