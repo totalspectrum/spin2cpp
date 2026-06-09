@@ -1162,7 +1162,11 @@ TransformRangeUse(AST *src)
     }
 
     val = FoldIfConst(AstOperator(K_SHR, val, lo));
-    val = FoldIfConst(AstOperator(K_ZEROEXTEND, val, nbits));
+    if (IsSignedRange(range)) {
+        val = FoldIfConst(AstOperator(K_SIGNEXTEND, val, nbits));
+    } else {
+        val = FoldIfConst(AstOperator(K_ZEROEXTEND, val, nbits));
+    }
 
     AstReportDone(&saveinfo);
     return FixupInits(val, inits);

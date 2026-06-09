@@ -364,4 +364,6 @@ void AstNullify(AST *ptr);
 
 #define IsIdentifier(ast) ((ast)->kind == AST_IDENTIFIER || ((ast)->kind == AST_LOCAL_IDENTIFIER))
 
+#define IsSignedRange(ast) ((ast)->kind == AST_RANGE && ((ast)->d.ival == 1))
+
 #endif

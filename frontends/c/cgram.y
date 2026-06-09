@@ -709,6 +709,9 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
                     bsize = 1;
                 }
                 bfield_access = NewAST(AST_RANGE, AstInteger(bitfield.offset + bsize - 1), AstInteger(bitfield.offset));
+                if (!IsUnsignedType(bfield_typ)) {
+                    bfield_access->d.ival = 1;
+                }
                 bfield_access = NewAST(AST_RANGEREF, bitfield.ident, bfield_access);
                 bfield_access = NewAST(AST_CAST, bfield_typ, bfield_access);
                 DeclareMemberAlias(P, ident, bfield_access);
