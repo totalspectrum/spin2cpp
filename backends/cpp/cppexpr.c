@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2023 Total Spectrum Software Inc.
+ * Copyright 2011-2023,2026 Total Spectrum Software Inc. and contributors
  * See the file COPYING for terms of use
  *
  * code for handling expressions
@@ -608,7 +608,8 @@ PrintOperator(Flexbuf *f, int op, AST *left, AST *right, int flags)
     case K_REV:
         flexbuf_printf(f, "__builtin_propeller_rev(");
         PrintExpr(f, left, flags);
-        flexbuf_printf(f, ", 32 - ");
+        flexbuf_printf(f, ", ");
+        right = FoldIfConst(AstOperator('-', AstInteger(32), right));
         PrintExpr(f, right, flags);
         flexbuf_printf(f, ")");
         break;
@@ -689,13 +690,19 @@ PrintOperator(Flexbuf *f, int op, AST *left, AST *right, int flags)
         flexbuf_printf(f, ")");
         break;
     case K_ZEROEXTEND:
-        subexpr = SimpleOptimizeExpr(AstOperator('-', AstInteger(32), right));
-        flexbuf_printf(f, "((uint32_t)");
-        PrintExpr(f, left, flags);
-        flexbuf_printf(f, " << ");
-        PrintExpr(f, subexpr, flags);
-        flexbuf_printf(f, ") >> ");
-        PrintExpr(f, subexpr, flags);
+        if (IsConstExpr(right)) {
+            uint32_t val = EvalConstExpr(right);
+            val = (1<<val)-1;
+            PrintLogicOp(f, "&", left, AstInteger(val), flags);
+        } else {
+            subexpr = SimpleOptimizeExpr(AstOperator('-', AstInteger(32), right));
+            flexbuf_printf(f, "((uint32_t)");
+            PrintExpr(f, left, flags);
+            flexbuf_printf(f, " << ");
+            PrintExpr(f, subexpr, flags);
+            flexbuf_printf(f, ") >> ");
+            PrintExpr(f, subexpr, flags);
+        }
         break;
     case K_SIGNEXTEND:
         subexpr = SimpleOptimizeExpr(AstOperator('-', AstInteger(32), right));

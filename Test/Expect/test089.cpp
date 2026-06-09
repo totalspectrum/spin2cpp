@@ -9,6 +9,6 @@ void test089::Catchlong(int32_t Longvar)
   B0 = (Shr__(Longvar, 0)) & 0xff;
   B1 = (Shr__(Longvar, 8)) & 0xff;
   B2 = (Shr__(Longvar, 16)) & 0xff;
-  B3 = Shr__(Longvar, 24);
+  B3 = (Shr__(Longvar, 24)) & 0xff;
 }
 

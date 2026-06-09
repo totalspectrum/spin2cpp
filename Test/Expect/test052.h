@@ -5,7 +5,7 @@
 
 class test052 {
 public:
-  static int32_t	Func(void);
+  static uint32_t 	Func(void);
 private:
 };
 

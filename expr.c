@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2025 Total Spectrum Software Inc.
+ * Copyright 2011-2026 Total Spectrum Software Inc. and contributors
  * See the file COPYING for terms of use
  *
  * code for handling expressions
@@ -1056,9 +1056,8 @@ TransformRangeAssign(AST *dst, AST *src, int optoken, int toplevel)
 AST *
 TransformRangeUse(AST *src)
 {
-    AST *mask;
     AST *nbits;
-    AST *val, *revval;
+    AST *val;
     AST *test;
     AST *hi;
     AST *lo;
@@ -1075,6 +1074,7 @@ TransformRangeUse(AST *src)
         ERROR(src, "internal error in rangeref");
         return src;
     }
+    val = src->left;
     range = src->right;
     if (range->kind != AST_RANGE) {
         ERROR(src, "Internal error, expecting range");
@@ -1121,73 +1121,49 @@ TransformRangeUse(AST *src)
         nbits = AstInteger(1);
         test = AstInteger(0); // hi < lo is always false
     } else {
-        hi = src->right->left;
-        lo = src->right->right;
-        test = FoldIfConst(AstOperator('<', hi, lo));
-        /*
-        if (hi < lo) {
-            int tmp;
-            reverse = 1;
-            tmp = lo; lo = hi; hi = tmp;
+        AST *tmphi = src->right->left;
+        AST *tmplo = src->right->right;
+        test = FoldIfConst(AstOperator('<', tmphi, tmplo));
+        /* if hi < lo then reverse the original value, and
+         * set hi = 31 - lo
+         *     lo = 31 - hi
+         */
+        val = NewAST(AST_CONDRESULT,
+                     test,
+                     NewAST(AST_THENELSE,
+                            AstOperator(K_REV, val, AstInteger(32)),
+                            val));
+        val = FoldIfConst(val);
+        AST *c_31 = AstInteger(31);
+        lo = NewAST(AST_CONDRESULT,
+                    test,
+                    NewAST(AST_THENELSE,
+                           AstOperator('-', c_31, tmplo),
+                           tmplo));
+        hi = NewAST(AST_CONDRESULT,
+                    test,
+                    NewAST(AST_THENELSE,
+                           AstOperator('-', c_31, tmphi),
+                           tmphi));
+        hi = FoldIfConst(hi);
+        if (IsConstExpr(lo)) {
+            lo = AstInteger(EvalConstExpr(lo));
+        } else {
+            lo = ReplaceExprWithVariable("_lo_", FoldIfConst(lo), &inits);
         }
-        */
-        //nbits = (hi - lo + 1);
+        /* nbits = (hi - lo + 1); */
         nbits = AstOperator('+', AstInteger(1),
-                            AstOperator(K_ABS, NULL,
-                                        AstOperator('-', hi, lo)));
+                            AstOperator('-', hi, lo));
         if (IsConstExpr(nbits)) {
             nbits = FoldIfConst(nbits);
         } else {
             nbits = ReplaceExprWithVariable("_bits", nbits, &inits);
         }
-        lo = NewAST(AST_CONDRESULT,
-                    test,
-                    NewAST(AST_THENELSE, hi, lo));
-        if (IsConstExpr(lo)) {
-            lo = AstInteger(EvalConstExpr(lo));
-        } else {
-            lo = ReplaceExprWithVariable("_lo_", lo, &inits);
-        }
-    }
-    //mask = AstInteger((1U<<nbits) - 1);
-    mask = AstOperator(K_SHL, AstInteger(1), nbits);
-    mask = AstOperator('-', mask, AstInteger(1));
-    if (IsConstExpr(mask)) {
-        mask = FoldIfConst(mask);
-    } else {
-        mask = ReplaceExprWithVariable("_mask_", mask, &inits);
     }
 
-    /* we want to end up with:
-       ((src->left >> lo) & mask)
-    */
-    if (IsConstExpr(lo) && IsConstExpr(mask)) {
-        unsigned maskval = EvalConstExpr(mask);
-        unsigned loval = EvalConstExpr(lo);
-        // optimize a common case: if the shift leaves fewer
-        // bits than the mask will take out, then
-        // just do the shift
-        loval = 0xffffffffU >> loval;
-        if ( (loval & maskval) == loval ) {
-            mask = NULL; // no need for the mask at all
-        }
-    }
-    val = FoldIfConst(AstOperator(K_SHR, src->left, lo));
-    if (mask) {
-        val = FoldIfConst(AstOperator('&', val, mask));
-    }
-    revval = FoldIfConst(AstOperator(K_REV, val, nbits));
+    val = FoldIfConst(AstOperator(K_SHR, val, lo));
+    val = FoldIfConst(AstOperator(K_ZEROEXTEND, val, nbits));
 
-    if (IsConstExpr(test)) {
-        int tval = EvalConstExpr(test);
-        val = tval ? revval : val;
-    } else {
-        val = NewAST(AST_CONDRESULT,
-                     test,
-                     NewAST(AST_THENELSE,
-                            revval,
-                            val));
-    }
     AstReportDone(&saveinfo);
     return FixupInits(val, inits);
 }
@@ -2325,8 +2301,24 @@ IsArray(AST *expr)
 AST *
 FoldIfConst(AST *expr)
 {
-    if (IsConstExpr(expr)) {
-        expr = AstInteger(EvalConstExpr(expr));
+    if (!expr) return expr;
+    /* try to simplify some low hanging fruit */
+    switch (expr->kind) {
+    case AST_CONDRESULT:
+        expr->left = FoldIfConst(expr->left);
+        expr->right->left = FoldIfConst(expr->right->left);
+        expr->right->right = FoldIfConst(expr->right->right);
+        if (IsConstExpr(expr->left)) {
+            int val = EvalConstExpr(expr->left);
+            expr = expr->right;
+            return val ? expr->left : expr->right;
+        }
+        break;
+    default:
+        if (IsConstExpr(expr)) {
+            return AstInteger(EvalConstExpr(expr));
+        }
+        break;
     }
     return expr;
 }

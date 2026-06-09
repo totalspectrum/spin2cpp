@@ -5,7 +5,7 @@
 
 class test124 {
 public:
-  static int32_t	Getval(void);
+  static uint32_t 	Getval(void);
 private:
 };
 

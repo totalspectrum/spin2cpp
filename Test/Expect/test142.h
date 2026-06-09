@@ -5,7 +5,7 @@
 
 class test142 {
 public:
-  static int32_t 	Hibyte(int32_t X);
+  static uint32_t 	Hibyte(uint32_t X);
 private:
 };
 
