@@ -1,3 +1,6 @@
+Version 7.6.10
+- Fixed C signed bitfields
+
 Version 7.6.9
 - Fixed Spin2 POW and EXP* LOG* operators
 
