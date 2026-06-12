@@ -2276,8 +2276,8 @@ AlreadyDeclared(AST *pendinglist, AST *newIdentifier)
     return NULL;
 }
 
-AST *
-MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ, int is_private, unsigned flags, BitFieldState *bitfield)
+static AST *
+doMaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ, int is_private, unsigned flags, BitFieldState *bitfield)
 {
     AST *ret = 0;
     AST *sub;
@@ -2315,6 +2315,67 @@ MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ, int is_private, unsi
         if (!(flags & IMPLICIT_VAR) && !SameTypes(typ, oldtype)) {
             ERROR(sub, "Re-defining member %s", name);
         }
+    }
+    return ret;
+}
+
+AST *
+MaybeDeclareMemberVar(Module *P, AST *ident, AST *typ, int is_private, unsigned flags, BitFieldState *bitfield)
+{
+    AST *ret = NULL;
+    if (typ && typ->kind == AST_BITFIELD) {
+        AST *bfield_ast = typ->right;
+        AST *bfield_typ = typ->left;
+        AST *bfield_access;
+        AST *bfield_list = 0;
+        int tsize;
+        int bsize = EvalConstExpr(bfield_ast);
+        Symbol *sym = FindSymbol(&P->objsyms, GetIdentifierName(ident));
+
+        if (!bitfield) {
+            ERROR(ident, "Unexpected bitfield declaration");
+            return ret;
+        }
+        if (sym && sym->kind == SYM_ALIAS) {
+            goto skip_decl;
+        }
+        tsize = TypeSize(bfield_typ) * 8;
+        if (bitfield->max_size == 0 || bitfield->max_size != tsize || bitfield->offset + bsize > bitfield->max_size) {
+            // start a new bitfield
+            bitfield->max_size = tsize;
+            bitfield->offset = 0;
+            bitfield->ident = AstTempIdentifier("^_bitfield_");
+            ret = doMaybeDeclareMemberVar(P, bitfield->ident, bfield_typ, is_private, HIDDEN_VAR, NULL);
+            bitfield->last_bfield_pos = ret;
+        }
+        if (bsize > bitfield->max_size) {
+            ERROR(bfield_ast, "bitfield size %d is greater than type size %d",
+                  bsize, bitfield->max_size);
+            bsize = bitfield->max_size;
+        }
+        if (bsize < 0) {
+            bsize = 1;
+        }
+        bfield_access = NewAST(AST_RANGE, AstInteger(bitfield->offset + bsize - 1), AstInteger(bitfield->offset));
+        if (!IsUnsignedType(bfield_typ)) {
+            bfield_access->d.ival = 1;
+        }
+        bfield_access = NewAST(AST_RANGEREF, bitfield->ident, bfield_access);
+        bfield_access = NewAST(AST_CAST, bfield_typ, bfield_access);
+        DeclareMemberAlias(P, ident, bfield_access);
+        bfield_list = NewAST(AST_DECLARE_BITFIELD, bfield_access, ident);
+        bfield_list = NewAST(AST_LISTHOLDER, bfield_list, NULL);
+        P->pendingvarblock = ListInsertBefore(P->pendingvarblock,
+                                              bitfield->last_bfield_pos, bfield_list);
+        bitfield->offset += bsize;
+    skip_decl:
+        ;
+    } else {
+        // not in a bitfield
+        if (bitfield) {
+            bitfield->max_size = bitfield->offset = 0;
+        }
+        ret = doMaybeDeclareMemberVar(P, ident, typ, is_private, flags, bitfield);
     }
     return ret;
 }

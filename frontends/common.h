@@ -998,6 +998,7 @@ typedef struct BitFieldState {
     AST *ident;    /* identifier for bitfield container (usually anonymous) */
     int max_size;  /* maximum number of bits to hold */
     int offset;    /* offset for next bitfield */
+    AST *last_bfield_pos; /* last declared bitfield variable */
 } BitFieldState;
 
 
