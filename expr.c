@@ -3272,6 +3272,11 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
                 return typ;
             }
             return ExprTypeRelative(&subclass->objsyms, (AST *)sym->v.ptr, P);
+        case SYM_TEMPLATE:
+        {
+            /* HACK: we need to ignore this in some cases */
+            return NULL;
+        }
         case SYM_LABEL:
         {
             Label *lref = (Label *)sym->v.ptr;

@@ -221,6 +221,7 @@ DeclareBASICMemberVariables(AST *ast)
     AST *idlist, *typ;
     AST *ident;
     int is_private = 0;
+    BitFieldState bitfield = { 0 };
     
     if (!ast) return;
     if (ast->kind == AST_SEQUENCE) {
@@ -253,11 +254,11 @@ DeclareBASICMemberVariables(AST *ast)
                 bittyp = NewAST(AST_BITFIELD, typ, ident->right);
                 ident = ident->left;
             }
-            MaybeDeclareMemberVar(current, ident, bittyp, is_private, NORMAL_VAR, NULL);
+            MaybeDeclareMemberVar(current, ident, bittyp, is_private, NORMAL_VAR, &bitfield);
             idlist = idlist->right;
         }
     } else {
-        MaybeDeclareMemberVar(current, idlist, typ, is_private, NORMAL_VAR, NULL);
+        MaybeDeclareMemberVar(current, idlist, typ, is_private, NORMAL_VAR, &bitfield);
     }
     return;
 }

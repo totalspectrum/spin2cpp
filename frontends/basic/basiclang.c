@@ -905,6 +905,17 @@ doBasicTransform(AST **astptr, bool transformFuncall)
         }
         doBasicTransform(&ast->left, transformFuncall);
         doBasicTransform(&ast->right, transformFuncall);
+#if 1
+        // this seems pretty hacky but is needed to make new
+        // struct bitfields work; note that the similar test above
+        // is for older style bitfields like output(1) = ...
+        if (ast->left && ast->left->kind == AST_CAST && ast->left->right && ast->left->right->kind == AST_RANGEREF) {
+            ast->left = ast->left->right;
+        }
+        if (ast->left && ast->left->kind == AST_RANGEREF) {
+            *astptr = ast = TransformRangeAssign(ast->left, ast->right, ast->d.ival, 1);
+        }
+#endif        
         break;
     case AST_CASE:
     case AST_CASETABLE:
@@ -998,7 +1009,16 @@ doBasicTransform(AST **astptr, bool transformFuncall)
         doBasicTransform(&ast->left, transformFuncall);
         doBasicTransform(&ast->right, transformFuncall);
         {
-            AST *typ = ExprType(ast->left);
+            AST *typ = ExprType(ast);
+            if (typ && typ->kind == AST_USING) {
+                AST *replace = DupAST(typ->left);
+                if (replace && replace->right && replace->right->kind == AST_RANGEREF) {
+                    ast->right = replace->right->left;
+                    replace->right->left = DupAST(ast);
+                }
+                *ast = *replace;
+            }
+            typ = ExprType(ast->left);
             if (IsPointerType(typ) && !IsRefType(typ)) {
                 // WARNING(ast, "Needs a pointer dereference");
                 ast->left = NewAST(AST_ARRAYREF, ast->left, AstInteger(0));

@@ -1539,6 +1539,16 @@ Using Spin objects with `class using` is straightforward, but there are some thi
   * Spin does not have any notion of types, so most Spin functions will return type `any` and take parameters of type `any`. This can cause problems if you expect them to return something special like a pointer or float and want to use them in the middle of an expression. You can either use explicit `cast` operations, or assign the results of Spin methods to a typed variable, and then use that variable in the expression instead.
   * Spin treats strings differently than BASIC does. For example, in the Spin expression `ser.tx("A")`, `"A"` is an integer (a single element list). That would be written in BASIC as `ser.tx(asc("A"))`. Conversely, in Spin you have to write `ser.str(string("hello"))` where in BASIC you would write just `ser.str("hello")`.
 
+#### Bitfields in classes
+
+FlexBasic supports the FreeBasic syntax for declaring bitfields, which is similar to C syntax. For example, to declare a class with a 3 bit unsigned field `x` and a 4 bit signed field `y` do:
+```
+class bfield
+  x:3 as uinteger
+  y:4 as integer
+end class
+```
+
 #### Interoperation with C
 
 C files may be used as classes, but there are some restrictions. BASIC and Spin are both case insensitive languages, which means that the BASIC symbols `AVariable`, `avariable`, and `AVARIABLE` are all the same, and all are translated internally to `avariable`. In C the case of identifiers matters. This makes accessing C symbols from BASIC somewhat tricky: one must exactly match the case of the C identifier in order to access it.
