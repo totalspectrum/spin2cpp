@@ -3710,7 +3710,7 @@ OptimizePeepholes(IRList *irl)
                     if (test_is_z && InstrUsesFlags(testir, FLAG_WC)) {
                         changeok = false;
                     } else if (InstrSetsAnyFlags(testir)) {
-                        changeok = sawir;
+                        changeok = sawir && (test_is_c || !FlagsUsedAt(testir->prev,FLAG_WZ));
                         lastir = testir;
                         break;
                     }
@@ -3726,7 +3726,7 @@ OptimizePeepholes(IRList *irl)
                         {
                             ReplaceZWithNC(testir);
                         }
-                        if (IsBranch(lastir)) {
+                        if (lastir != NULL && IsBranch(lastir)) {
                             ReplaceZWithNC(lastir);
                         }
                     }
