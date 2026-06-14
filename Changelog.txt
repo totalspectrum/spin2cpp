@@ -1,5 +1,7 @@
 Version 7.6.10
+- Added bitfields for BASIC classes
 - Fixed C signed bitfields
+- Fixed a crash in the pasm optimizer (thanks, Ada!)
 
 Version 7.6.9
 - Fixed Spin2 POW and EXP* LOG* operators
