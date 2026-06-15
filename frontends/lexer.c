@@ -2158,7 +2158,8 @@ getSpinToken(LexStream *L, AST **ast_ptr)
             ast = NewAST(AST_INTEGER, NULL, NULL);
             ast->d.ival = val;
             c = SP_NUM;
-        } else if (isIdentifierStart(c)) {
+        } else if (isIdentifierStart(c) && c != '_') {
+            /* skip '_' because numbers might start with it */
             lexungetc(L, c);
             lexungetc(L, '%');
             c = parseSpinIdentifier(L, &ast, NULL);
