@@ -805,8 +805,13 @@ DRESULT disk_ioctl (
 	DRESULT res;
 	BYTE n, csd[16];
 	DWORD cs;
-
-	if (disk_status(drv) & STA_NOINIT) return RES_NOTRDY;	/* Check if card is in the socket */
+        DWORD status = disk_status(drv);
+        
+        if (ctrl == DISKIO_GET_STATUS) {
+            *(int *)buff = status;
+            return 0;
+        }
+	if (status & STA_NOINIT) return RES_NOTRDY;	/* Check if card is in the socket */
 
 	res = RES_ERROR;
 	switch (ctrl) {
@@ -828,6 +833,7 @@ DRESULT disk_ioctl (
 
 		default:
 			res = RES_PARERR;
+                        break;
 	}
 
 	deselect();

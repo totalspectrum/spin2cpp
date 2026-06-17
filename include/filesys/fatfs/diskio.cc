@@ -2,6 +2,7 @@
 #include "diskio.h"
 #include <stdio.h>
 #include <sys/vfs.h>
+#include <sys/ioctl.h>
 
 vfs_file_t *fh;
 
@@ -28,9 +29,18 @@ DRESULT disk_deinitialize(BYTE pdrv) {
 }
 
 DRESULT disk_status(BYTE pdrv) {
+    int r;
+    int val = 0;
     if (!fh) {
         return RES_NOTRDY;
     }
+    r = fh->ioctl(fh, DISKIO_GET_STATUS, &val);
+    if (r < 0) {
+        /* if ioctl not supported, just assume all is well */
+        return RES_OK;
+    }
+    if (val & (STA_NOINIT|STA_NODISK))
+        return RES_NOTRDY;
     return RES_OK;
 }
 
