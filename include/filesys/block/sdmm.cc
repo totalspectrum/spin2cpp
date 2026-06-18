@@ -32,6 +32,7 @@
 #include "../fatfs/diskio.h"
 #include <stdlib.h>
 #include <errno.h>
+#include <sys/ioctl.h>
 
 /*-------------------------------------------------------------------------*/
 /* Platform dependent macros and functions needed to be modified           */
@@ -809,7 +810,7 @@ DRESULT disk_ioctl (
         
         if (ctrl == DISKIO_GET_STATUS) {
             *(int *)buff = status;
-            return 0;
+            return RES_OK;
         }
 	if (status & STA_NOINIT) return RES_NOTRDY;	/* Check if card is in the socket */
 
