@@ -578,6 +578,7 @@ static PeepholePattern pat_shl16setword[] = {
 };
 
 // mov x, y; and x, #1; add z, x => test y, #1 wz; if_nz add z, #1
+// WARNING: this only works if the wz flag is available!
 static PeepholePattern pat_mov_and_add[] = {
     { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
     { COND_TRUE, OPC_AND, PEEP_OP_MATCH|0, PEEP_OP_IMM|1, PEEP_FLAGS_NONE },
@@ -1035,6 +1036,11 @@ static int FixupAndAdd(int arg, IRList *irl, IR *ir0)
     ir1 = NextIR(ir0);
     ir2 = NextIR(ir1);
 
+    // peek ahead and make sure no instruction uses the Z flag
+    // before it is set again
+    if (!CondIsDeadAfter(ir2, FLAG_WZ))
+        return 0;
+    
     ir1->dst = ir0->src;
     ReplaceOpcode(ir1, OPC_TEST);
     ir1->flags |= FLAG_WZ;

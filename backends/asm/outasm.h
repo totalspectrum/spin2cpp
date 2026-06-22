@@ -252,6 +252,7 @@ void ReplaceZWithNC(IR *ir);
 
 bool SameIROperand(Operand *, Operand *);
 bool IRIsDeadAfter(IR *instr, Operand *op);
+bool CondIsDeadAfter(IR *instr, unsigned flags);
 bool IRFlagsDeadAfter(IRList *irl, IR *ir, unsigned flags);
 int OptimizePeephole2(IRList *irl);
 

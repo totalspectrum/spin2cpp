@@ -1286,6 +1286,21 @@ IRIsDeadAfter(IR *instr, Operand *op)
     return doIsDeadAfter(instr, op, 1, stack);
 }
 
+bool
+CondIsDeadAfter(IR *ir, unsigned flags)
+{
+    while (ir) {
+        if (InstrUsesFlags(ir, flags))
+            return false;
+        if (IsJump(ir) && ir->cond == COND_TRUE)
+            return true;
+        if (InstrSetsFlags(ir, flags))
+            return true;
+        ir = NextInstruction(ir);
+    }
+    return true;
+}
+
 static IR*
 SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
 {
