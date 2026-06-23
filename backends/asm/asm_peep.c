@@ -723,7 +723,7 @@ static int ReplaceMaxMin(int arg, IRList *irl, IR *ir)
         return 0;
     }
     irnext = NextIR(ir);
-    if (!IRFlagsDeadAfter(irl, irnext, FLAG_WZ|FLAG_WC)) {
+    if (!IRFlagsDeadAfter(irnext, FLAG_WZ|FLAG_WC)) {
         return 0;
     }
     ReplaceOpcode(ir, (IROpcode)arg);
@@ -1038,7 +1038,7 @@ static int FixupAndAdd(int arg, IRList *irl, IR *ir0)
 
     // peek ahead and make sure no instruction uses the Z flag
     // before it is set again
-    if (!CondIsDeadAfter(ir2, FLAG_WZ))
+    if (!IRFlagsDeadAfter(ir2, FLAG_WZ))
         return 0;
     
     ir1->dst = ir0->src;
