@@ -14,7 +14,7 @@ Please see also the general compiler features documentation ("general.pdf" or "g
 
 ## Preprocessor
 
-flexspin has a pre-processor that understands basic directives like `#include`, `#define`, and`#ifdef / #ifndef / #else / #endif`.
+flexspin has a pre-processor that understands basic directives like `#include`, `#define`, and `#ifdef / #ifndef / #else / #endif`.
 
 ### Directives
 
@@ -340,8 +340,8 @@ PUB main
   inc(2) ' adds 2 to a
   inc(1) ' adds 1 to a
   inc    ' same as inc(1)
-  
 ```
+
 The default values must, for now, be constant. Perhaps in the future this restriction will be relaxed, but there are some slightly tricky issues involving variable scope that must be resolved first.
 
 #### Default string parameters
@@ -390,7 +390,7 @@ PUB waitcnt2(newcnt, incr)
   endasm
   return newcnt
 ```
-waits until CNT reaches "newcnt", and returns "newcnt + incr".
+waits until CNT reaches `newcnt`, and returns `newcnt + incr`.
 
 Note that unlike most Spin blocks, the `asm` block has to end with `endasm`. This is because indentation is not significant inside the assembly code. For example, labels typically start at the leftmost margin.
 
@@ -444,6 +444,21 @@ Then any object having `incr` and `getval` methods may be passed
 as the parameter to `myfunc`, and it will first call the `incr`
 method for that object and then return the result of `getval`.
 
+#### Assigning Interface variables
+
+Spin has a very weak type system, so in general in order to assign
+a value to a variable with an interface type you will have to explicitly
+cast it, something like:
+```
+var
+  ^MyIface xi
+...
+   [xi] := MyIface[@someObj]
+   xi.incr()
+```
+where `someObj` is an object with the appropriate methods for a `MyIface` interface. Also note the `[xi]` syntax, which is necessary to address the underlying value of the interface pointer (plain `xi` on its own automatically dereferences the pointer).
+
+
 ### Method pointers
 
 Pointers to methods may be created with `@` and called using the normal calling syntax. For example:
@@ -461,11 +476,11 @@ will set `y` to `a+a`.
 
 If no parameters are to be passed to the called function, it is still necessary to write `()` after it in order to force it to be interpreted as a call. That is,
 ```
-a = f()
+a := f()
 ```
 causes an indirect call of the function pointed to by `f`, whereas
 ```
-a = f
+a := f
 ```
 copies the pointer in `f` to `a`.
 
@@ -750,12 +765,9 @@ In Spin2 mode all of the above are available without the underscore.
 
 ## Limitations
 
-Most Spin language features are supported. There may be some features
-that do not work; if you find any, please report them so they can be
-fixed.
+Most Spin language features are supported. There may be some features that do not work; if you find any, please report them so they can be fixed.
 
-The lexer and parser are different from the Parallax ones, so they may
-well report errors on code the Parallax compiler accepts.
+The lexer and parser are different from the Parallax ones, so they may well report errors on code the Parallax compiler accepts.
 
 
 ## Known Differences
@@ -820,7 +832,7 @@ which will be the same as
 ```
     foo("A")
 ```
-The difference is rarely noticeable, because flexspin does convert string literals to lists in many places.
+The difference is rarely noticeable, because flexspin converts string literals to lists in many places.
 
 As a Spin1 extension, flexspin allows you to write:
 ```
@@ -830,7 +842,7 @@ instead of
 ```
    foo(string("ABC"))
 ```
-(The official Spin2 compiler has added this feature as well.)
+The official Spin2 compiler now has this feature as well.
 
 ## Known Bugs
 
@@ -913,7 +925,7 @@ With plain `-g` debugging `DEBUG` in flexspin is implemented differently than in
 
 `DEBUG` statements containing backticks are (partially) translated so as to output the correct strings, but FlexProp only interprets a limited subset of these strings so graphical debug capabiliites are restricted in FlexProp.
 
-Thanks to Ada Gottensträter, flexspin also now supports a `-gbrk` flag to enable `DEBUG` using the standard PNut method (using a BRK) instruction. This method will work inside PASM code, and is generally more compatible with the standard PNut Spin2 code, so it is recommended for P2 projects.
+Thanks to Ada Gottensträter, flexspin supports a `-gbrk` flag to enable `DEBUG` using the standard PNut method (using a BRK) instruction. This method will work inside PASM code, and is generally more compatible with the standard PNut Spin2 code, so it is recommended for P2 projects.
 
 ### ASMCLK instruction
 
