@@ -2537,6 +2537,14 @@ AST *ConvertInterface(AST *ifaceType, AST *classType, AST *expr)
         ERROR(expr, "Internal error, expected interface type");
         return NULL;
     }
+    if (P == I) {
+        // "expr" is an interface type
+        // if it was a reference it may have already been dereferenced
+        if (expr && expr->kind == AST_ARRAYREF) {
+            expr = NewAST(AST_ABSADDROF, expr, NULL);
+        }
+        return expr;
+    }
     // see if we've already built an interface skeleton
     // for module P as interface I
     // if not, build it

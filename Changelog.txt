@@ -1,6 +1,7 @@
 Version 7.6.12
 - Added some ioctls for diskio
 - Fixed a peephole optimization bug
+- Fixed passing an interface pointer to an interface pointer in Spin2
 
 Version 7.6.11
 - Made the parser recognize `%_` as starting a number rather than a Spin keyword
