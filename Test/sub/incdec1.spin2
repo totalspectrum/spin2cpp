@@ -17,3 +17,5 @@ pub decr()
 pub getval(): r
   r := val
 
+pub setval(r)
+  val := r
