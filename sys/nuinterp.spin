@@ -994,8 +994,8 @@ impl_DRVRND
 	jmp	#\impl_DROP
 
 impl_DRVWR
-	test	nos, #1 wc
-	drvc	tos
+	test	tos, #1 wc
+	drvc	nos
 	jmp	#\impl_DROP2
 
 impl_FLTL
