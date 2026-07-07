@@ -1,5 +1,5 @@
 //
-// simple test program for 9p access to host files
+// simple test program for access to flash files
 // Written by Eric R. Smith, Total Spectrum Software Inc.
 // Released into the public domain.
 //
