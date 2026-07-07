@@ -1,5 +1,6 @@
 Version 7.6.12
 - Added some ioctls for diskio
+- Accept '[]' for array declarations in BASIC
 - Fixed a peephole optimization bug
 - Fixed passing an interface pointer to an interface pointer in Spin2
 - Fixed the definition of _drvw in nucode

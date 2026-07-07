@@ -2690,6 +2690,66 @@ identdecl:
         decl->d.ptr = base1;
         $$ = decl;
     }
+  | BAS_IDENTIFIER '[' expr ']'
+    {
+        Symbol *sym = GetCurArrayBase();
+        AST *ident = $1;
+        AST *base = (AST *)sym->v.ptr;
+        AST *size = $3;
+        AST *decl;
+        size = AstOperator('-', size, AstOperator('-', base, AstInteger(1)));
+        decl = NewAST(AST_ARRAYDECL, ident, size);
+        decl->d.ptr = base;
+        $$ = decl;
+    }
+  | BAS_IDENTIFIER '[' expr BAS_TO expr ']'
+    {
+        AST *ident = $1;
+        AST *base = $3;
+        AST *size = $5;
+        AST *decl;
+        size = AstOperator('-', size, AstOperator('-', base, AstInteger(1)));
+        decl = NewAST(AST_ARRAYDECL, ident, size);
+        decl->d.ptr = base;
+        $$ = decl;
+    }
+  | BAS_IDENTIFIER '[' expr ',' expr ']'
+    {
+        Symbol *sym = GetCurArrayBase();
+        AST *ident = $1;
+        AST *base = (AST *)sym->v.ptr;
+        AST *size1 = $3;
+        AST *size2 = $5;
+        AST *sizelist;
+        AST *decl;
+        size1 = AstOperator('-', size1, AstOperator('-', base, AstInteger(1)));
+        size2 = AstOperator('-', size2, AstOperator('-', base, AstInteger(1)));
+        sizelist = NewAST(AST_EXPRLIST, size1,
+                          NewAST(AST_EXPRLIST, size2, NULL));
+        decl = NewAST(AST_ARRAYDECL, ident, sizelist);
+        decl->d.ptr = base;
+        $$ = decl;
+    }
+  | BAS_IDENTIFIER '[' expr BAS_TO expr ',' expr BAS_TO expr ']'
+    {
+        AST *ident = $1;
+        AST *base1 = $3;
+        AST *size1 = $5;
+        AST *base2 = $7;
+        AST *size2 = $9;
+        AST *sizelist;
+        AST *decl;
+        size1 = AstOperator('-', size1, AstOperator('-', base1, AstInteger(1)));
+        size2 = AstOperator('-', size2, AstOperator('-', base2, AstInteger(1)));
+        sizelist = NewAST(AST_EXPRLIST, size1,
+                          NewAST(AST_EXPRLIST, size2, NULL));
+        decl = NewAST(AST_ARRAYDECL, ident, sizelist);
+        if (!AstMatch(base1, base2)) {
+            SYNTAX_ERROR("Base values for multi-dimensional array indices must match");
+        }
+        decl->d.ptr = base1;
+        $$ = decl;
+    }
 ;
 
 asmstmt:
