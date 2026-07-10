@@ -4,6 +4,7 @@ Version 7.6.12
 - Fixed a peephole optimization bug
 - Fixed passing an interface pointer to an interface pointer in Spin2
 - Fixed the definition of _drvw in nucode
+- Fixed nucode sequences like the one generated for `val.[b]`
 
 Version 7.6.11
 - Made the parser recognize `%_` as starting a number rather than a Spin keyword

@@ -1743,8 +1743,12 @@ NuCompileExpression(NuIrList *irl, AST *node) {
         return NuCompileExpression(irl, node->right);
     case AST_SEQUENCE: {
         int n = NuCompileExpression(irl, node->left);
-        NuCompileDrop(irl, n);
-        return NuCompileExpression(irl, node->right);
+        if (node->right) {
+            NuCompileDrop(irl, n);
+            return NuCompileExpression(irl, node->right);
+        } else {
+            return n;
+        }
     }
     case AST_STMTLIST: {
         while (node->right) {
