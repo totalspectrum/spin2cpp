@@ -1028,7 +1028,8 @@ impl_WYPIN
 	jmp	#\impl_DROP2
 
 impl_RQPIN
-  _ret_	rqpin	tos, tos
+	rqpin	tos, tos wc
+  _ret_ bitc	tos, #31
 
 impl_AKPIN
 	akpin	tos
@@ -1046,6 +1047,10 @@ impl_XYPOL
 	qvector	nos, tos
 	getqx	nos
   _ret_	getqy	tos
+
+impl_RDPIN_SPIN
+	rdpin	tos, tos wc
+  _ret_	bitc	tos, #31
 
 impl_RDPINX
 	call	#\impl_DUP

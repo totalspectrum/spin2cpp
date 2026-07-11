@@ -1,5 +1,6 @@
-Version 7.6.12
+Version 7.7.0
 - Added some ioctls for diskio
+- Made Spin2 rdpin and rqpin functions put C in bit 31
 - Accept '[]' for array declarations in BASIC
 - Fixed a peephole optimization bug
 - Fixed passing an interface pointer to an interface pointer in Spin2

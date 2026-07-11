@@ -197,7 +197,7 @@ Aliases spin2alias[] = {
     { "wypin", "_wypin" },
 
     { "akpin", "_akpin" },
-    { "rdpin", "_rdpin" },
+    { "rdpin", "_rdpin_spin" },
     { "rqpin", "_rqpin" },
 
     { "polxy", "_polxy" },

@@ -335,6 +335,7 @@ pri _rdpin(pin = long) : r
   asm
     rdpin r, pin
   endasm
+
 pri _rdpinx(pin = long) : r, c
   c := 0
   asm
@@ -342,9 +343,15 @@ pri _rdpinx(pin = long) : r, c
 if_c neg c, #1
   endasm
   
+pri _rdpin_spin(pin = long) : r
+  asm
+    rdpin r, pin wc
+    bitc r, #31
+  endasm
 pri _rqpin(pin = long) : r
   asm
-    rqpin r, pin
+    rqpin r, pin wc
+    bitc r, #31
   endasm
 pri _akpin(pin = long)
   asm

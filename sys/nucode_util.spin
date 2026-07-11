@@ -60,6 +60,8 @@ pri _wypin(pin = long, val = long)
   %bytecode("WYPIN")
 pri _rdpinx(pin = long) : r, c
   %bytecode("RDPINX")
+pri _rdpin_spin(pin = long) : r, c
+  %bytecode("RDPINC")
 pri _rqpin(pin = long) : r
   %bytecode("RQPIN")
 pri _akpin(pin = long)

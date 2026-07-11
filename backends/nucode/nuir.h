@@ -116,6 +116,7 @@
     X(WXPIN)     /* smart pin write */ \
     X(WYPIN)     /* smart pin write */ \
     X(RDPINX)    /* smart pin read: returns value and c */ \
+    X(RDPINC)    /* smart pin read: returns value with c in bit 31 */ \
     X(RQPIN)     /* smart pin read (quiet) */ \
     X(AKPIN)     /* smart pin acknowledge */ \
     \
