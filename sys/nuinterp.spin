@@ -1048,7 +1048,7 @@ impl_XYPOL
 	getqx	nos
   _ret_	getqy	tos
 
-impl_RDPIN_SPIN
+impl_RDPINC
 	rdpin	tos, tos wc
   _ret_	bitc	tos, #31
 
