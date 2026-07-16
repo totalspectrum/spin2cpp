@@ -1065,14 +1065,17 @@ void NuOutputFinish(Flexbuf *fb, NuContext *ctxt)
     int c;
     // find tail of interpreter
     const char *ptr = (char *)sys_nuinterp_spin;
+    const char *end_ptr;
     ptr += sys_nuinterp_spin_len-1;
+    end_ptr = ptr;
+
     // go back to last ^L
     while (ptr && *ptr != '\014') {
         --ptr;
     }
     // output tail
     ptr++;
-    for(;;) {
+    while (ptr <= end_ptr) {
         c = *ptr++;
         if (c == 0) break;
         if (c == '\001') {
