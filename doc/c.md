@@ -798,33 +798,53 @@ Waits for an ATN signal to be sent by `_cogatn`. Doesn't really return any usefu
 
 ### Locks
 
+There are two kinds of locks: the P1/P2 hardware locks (accessed via `_locknew`, `_locktry`, and so on) and memory based locks (`_lockmem`/`_unlockmem`). The memory based locks are somewhat more flexible, as the number of locks is limited only by the amount of memory available.
+
+To initialize a memory based lock, set it to 0. A non-zero value indicates that it is held by a COG.
+
 #### _locknew
 
 ```
 int _locknew(void);
 ```
-Allocate a new lock and return its value. Returns -1 if no locks are avilable.
+Allocate a new hardware lock and return its value. Returns -1 if no locks are avilable.
 
 #### _lockret
 
 ```
 void _lockret(int lockid);
 ```
-Frees a lock previously allocated by `_locknew`.
+Frees a hardware lock previously allocated by `_locknew`.
 
 #### _locktry
 
 ```
 int _locktry(int lockid);
 ```
-Attempts to lock the lock with id `lockid`. Returns 0 on failure, non-zero on success.
+Attempts to lock the hardware lock with id `lockid`. Returns 0 on failure, non-zero on success.
 
 #### _lockrel
 
 ```
 int _lockrel(int lockid);
 ```
-Releases a lock held due to a successful call to `_locktry`.
+Releases a hardware lock held due to a successful call to `_locktry`.
+
+#### _lockmem
+
+```
+void _lockmem(unsigned *addr);
+```
+Attempt to acquire the memory based lock at `addr`. This is a 32 bit value which is 0 if the lock is free. Blocks until the lock is acquired.
+
+#### _unlockmem
+
+```
+void _unlockmem(unsigned *addr);
+```
+Unconditionally frees the memory based lock at `addr`. It is a very bad idea to call `_unlockmem` on a lock which you do not hold.
+
+
 
 ### Math Functions
 
@@ -1006,6 +1026,71 @@ Activate a smart pin. `mode` is the smart pin mode (written with `_wrpin`), and 
 void _pinclear(int pin);
 ```
 Turn off a smart pin (writes 0 to mode).
+
+### Task functions
+
+On the P2, there are some limited "task" functions for doing cooperative multitasking on the same COG. These are similar to the Spin2 task functions. Up to 32 tasks may run on each COG.
+
+#### __builtin_taskstartv
+
+```
+int __builtin_taskstartv(int task, void *stack, void (*func)(). int argc, void **argv);
+```
+
+Starts a task. `task` is the task number to choose; if it is -1 then the first free task number is chosen by the system. If the old task is running it will be destroyed and replaced by a new task (with possible data loss, if the old task was busy).
+
+The new task will start with `stack` as the base of its stack (growing upwards). It will execute the function `func`, which is started with parameters `argv[0], argv[1], ..., argv[argc-1]`.
+
+Returns the task number, or `-1` if no new tasks are available and `task` was passed as `-1`.
+
+#### __builtin_taskstartl
+
+```
+int __builtin_taskstartl(int task, void *stack, void (*func)(), int argc, ...);
+```
+Similar to `__builtin_taskstartv` but the parameters for the function are passed inline using the C stdarg mechanism.
+
+#### __builtin_tasknext
+
+```
+void __builtin_tasknext();
+```
+Switch to the next active and not halted task, if any are available. This is how cooperative multitasking is achieved; tasks must periodically give up control with `__builtin_tasknext`.
+
+#### __builtin_taskhalt
+
+```
+void __builtin_taskhalt(int task);
+```
+Temporarily pause the given task (or the current task if `task == -1`). While a task is halted it will not be given time by `__builtin_tasknext()`, but it is still considered active and may be resumed with `__builtin_taskcont`.
+
+#### __builtin_taskcont
+
+```
+void __builtin_taskcont(int task);
+```
+Allow `task` to resume execution after a `__builtin_taskhalt(task)`.
+
+#### __builtin_taskchk
+
+```
+int __builtin_taskchk(int task);
+```
+Returns the status of the given task: 0 if it is not active at all, 1 if it is active and able to run, and 2 if it is active but temporarily halted.
+
+#### __builtin_taskstop
+
+```
+void __builtin_taskstop(int task);
+```
+End the given task (or the current task if `task == -1`) and remove it from the task system. Unlike `__builtin_taskhalt`, which is temporary, `__builtin_taskstop` is permanent.
+
+#### __builtin_taskid
+
+```
+int __builtin_taskid();
+```
+Returns the number of the current task.
 
 ## Disk I/O routines (P2 Only)
 
