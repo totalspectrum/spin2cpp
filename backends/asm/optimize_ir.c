@@ -1,7 +1,7 @@
 //
 // IR optimizer
 //
-// Copyright 2016-2025 Total Spectrum Software Inc.
+// Copyright 2016-2026 Total Spectrum Software Inc. and contributors
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -2772,10 +2772,12 @@ int EliminateDeadCode(IRList *irl)
                     x = ir_next;
                 }
             }
-        } else if (ir->cond == COND_FALSE) {
+        } else if (ir->cond == COND_FALSE && !IsLabel(ir)) {
             DeleteIR(irl, ir);
             change = 1;
-        } else if (!IsDummy(ir) && ir->dst && !HasSideEffectsOtherThanReg(ir) && IsDeadAfter(ir, ir->dst)) {
+        } else if (!IsDummy(ir) &&
+                   ir->dst &&
+                   !HasSideEffectsOtherThanReg(ir) && IsDeadAfter(ir, ir->dst)) {
             DeleteIR(irl, ir);
             change = 1;
         } else if (MeaninglessMath(ir)) {
