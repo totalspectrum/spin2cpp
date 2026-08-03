@@ -515,47 +515,25 @@ getObjFileExtension(const char *fname)
     return ext;
 }
 
-static Module *
-doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
+int
+LanguageFromExtension(const char *langptr, bool *needExtPtr)
 {
-    FILE *f = NULL;
-    Module *save, *Q, *LastQ;
-    char *fname = NULL;
-    char *parseString = NULL;
-    char *langptr;
     int language = LANG_SPIN_SPIN1;
-    SymbolTable *saveCurrentTypes = NULL;
-    int new_module = 0;
-    const char *fullName = NULL;
-    char *shortName = NULL;
     bool needExtension = false;
-
-    // check language to process
-    langptr = strrchr(name, '.');
+    
+    if (langptr && langptr[0] != '.')
+        langptr = strrchr(langptr, '.');
     if (langptr) {
-        if (!strcmp(langptr, ".o")) {
-            // try to figure out language based on contents of file
-            fname = find_file_on_path(&gl_pp, name, langptr, NULL);
-            if (fname) {
-                langptr = getObjFileExtension(fname);
-            } else {
-                langptr = NULL;
-            }
-            if (!langptr) {
-                WARNING(NULL, "Unable to find file type for %s, assuming C", name);
-                langptr = ".c";
-            }
-        }
         if (!strcasecmp(langptr, ".bas")
-                || !strcasecmp(langptr, ".basic")
-                || !strcasecmp(langptr, ".bi")
-           )
+            || !strcasecmp(langptr, ".basic")
+            || !strcasecmp(langptr, ".bi")
+            )
         {
             language = LANG_BASIC_FBASIC;
         } else if (!strcasecmp(langptr, ".c")
                    || !strcasecmp(langptr, ".h")
                    || !strcasecmp(langptr, ".a")
-                  )
+            )
         {
             language = LANG_CFAMILY_C;
         } else if (!strcasecmp(langptr, ".cpp")
@@ -564,7 +542,7 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
                    || !strcasecmp(langptr, ".c++")
                    || !strcasecmp(langptr, ".hpp")
                    || !strcasecmp(langptr, ".hh")
-                  )
+            )
         {
             language = LANG_CFAMILY_CPP;
         }
@@ -600,6 +578,59 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
         // if currently compiling a Spin1 program assume Spin1
         // as the default
         needExtension = true;
+        if (current && current->mainLanguage == LANG_SPIN_SPIN1) {
+            langptr = ".spin";
+            language = LANG_SPIN_SPIN1;
+        } else if (current && current->mainLanguage == LANG_SPIN_SPIN2) {
+            langptr = ".spin2";
+            language = LANG_SPIN_SPIN2;
+        } else if (gl_p2) {
+            langptr = ".spin2";
+            language = LANG_SPIN_SPIN2;
+        } else {
+            langptr = ".spin";
+            language = LANG_SPIN_SPIN1;
+        }
+    }
+    if (needExtPtr) {
+        *needExtPtr = needExtension;
+    }
+    return language;
+}
+
+static Module *
+doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
+{
+    FILE *f = NULL;
+    Module *save, *Q, *LastQ;
+    char *fname = NULL;
+    char *parseString = NULL;
+    char *langptr;
+    int language = LANG_SPIN_SPIN1;
+    SymbolTable *saveCurrentTypes = NULL;
+    int new_module = 0;
+    const char *fullName = NULL;
+    char *shortName = NULL;
+    bool needExtension = false;
+
+    // check language to process
+    langptr = strrchr(name, '.');
+    if (langptr) {
+        if (!strcmp(langptr, ".o")) {
+            // try to figure out language based on contents of file
+            fname = find_file_on_path(&gl_pp, name, langptr, NULL);
+            if (fname) {
+                langptr = getObjFileExtension(fname);
+            } else {
+                langptr = NULL;
+            }
+            if (!langptr) {
+                WARNING(NULL, "Unable to find file type for %s, assuming C", name);
+                langptr = ".c";
+            }
+        }
+        language = LanguageFromExtension(langptr, &needExtension);
+    } else {
         if (current && current->mainLanguage == LANG_SPIN_SPIN1) {
             langptr = ".spin";
             language = LANG_SPIN_SPIN1;

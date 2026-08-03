@@ -384,10 +384,29 @@ addAliases(SymbolTable *tab, Aliases *A)
     }
 }
 
+void
+InitLangAliases(SymbolTable *tab, int language)
+{
+    Aliases *A;
+    
+    if (IsBasicLang(language)) {
+        A = basicalias;
+    } else if (IsCLang(language)) {
+        A = calias;
+    } else {
+        A = spinalias;
+    }
+    addAliases(tab, A);
+    if (gl_p2 && (IsBasicLang(language)||IsSpinLang(language))) {
+        addAliases(tab, spin2alias);
+    } else if (language == LANG_SPIN_SPIN2) {
+        addAliases(tab, spin2alias);
+    }
+}
+
 static void
 initSymbols(Module *P, int language)
 {
-    Aliases *A;
 
     /* NOTE: we do not want the Spin aliases polluting the
      * C namespace, so do not add the aliases to the
@@ -396,19 +415,7 @@ initSymbols(Module *P, int language)
     if (!systemModule || P == systemModule) {
         return;
     }
-    if (IsBasicLang(language)) {
-        A = basicalias;
-    } else if (IsCLang(language)) {
-        A = calias;
-    } else {
-        A = spinalias;
-    }
-    addAliases(&P->objsyms, A);
-    if (gl_p2 && (IsBasicLang(language)||IsSpinLang(language))) {
-        addAliases(&P->objsyms, spin2alias);
-    } else if (language == LANG_SPIN_SPIN2) {
-        addAliases(&P->objsyms, spin2alias);
-    }
+    InitLangAliases(&P->objsyms, language);
 }
 
 /*

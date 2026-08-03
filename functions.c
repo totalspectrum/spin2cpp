@@ -69,6 +69,10 @@ static void ReinitFunction(Function *f, int language)
     }
     f->optimize_flags = gl_optimize_flags;
     f->warn_flags = gl_warn_flags;
+
+    if (language != current->mainLanguage) {
+        InitLangAliases(&f->localsyms, language);
+    }
 }
 const char *
 FindAnnotation(AST *annotations, const char *key)
@@ -981,7 +985,7 @@ doDeclareFunction(AST *funcblock)
         } else {
             if (body && body->kind == AST_STRING) {
                 /* providing a __fromfile() declaration after we saw
-                   a real declaration; just ignore it */
+                   a real declaration; we can (mostly) just ignore it */
                 return fdef;
             } else if (!AstMatch(fdef->decl, funcdef) || !AstBodyMatch(fdef->body, body)) {
                 ERROR(funcdef, "redefining function or subroutine %s", funcname_user);
@@ -1242,6 +1246,11 @@ doDeclareFunction(AST *funcblock)
         }
     }
     fdef->body = body;
+    if (body && body->kind == AST_STRING) {
+        // __fromfile declaration
+        // set the language based on the file name
+        fdef->language = LanguageFromExtension(fdef->body->d.string, NULL);
+    }
 
     /* declare any local variables in the function */
     findLocalsAndDeclare(fdef, body);

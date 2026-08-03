@@ -1,5 +1,6 @@
 Version 7.7.1
 - Fixed a bug where labels were incorrectly deleted sometimes
+- Made sure the language was set correctly for __fromfile functions
 - Worked around a CORDIC optimization bug with sub-registers
 
 Version 7.7.0

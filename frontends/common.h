@@ -1126,6 +1126,9 @@ AST *SimplifyObjParams(AST *params);
 /* process constants to set clock frequency and such */
 void ProcessConstantOverrides(Module *P);
 
+/* initialize symbol aliases for a language */
+void InitLangAliases(SymbolTable *tab, int language);
+
 /* declare all functions */
 void DeclareFunctions(Module *);
 
@@ -1140,6 +1143,10 @@ void DeclareAnonymousAliases(Module *Parent, Module *sub, AST *prefix);
 
 // add a source file to our internal list
 void AddSourceFile(const char *shortName, const char *fullName);
+
+// set source language from file extension
+// needExtPtr is used internally, usually pass NULL for this
+int LanguageFromExtension(const char *langptr, bool *needExtPtr);
 
 // find a constant or other declaration in a list
 AST *FindDeclaration(AST *datlist, const char *name);
