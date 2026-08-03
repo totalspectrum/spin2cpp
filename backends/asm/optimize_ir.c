@@ -4996,6 +4996,7 @@ FindBlockForReorderingDownward(IR *after) {
             if (IsWrite(top) && ReadWriteInRange(bottom->next,after)) break;
             if (IsRead(top) && WriteInRange(bottom->next,after)) break;
 
+            if(IsSubReg(top->dst)) break;
             if (InstrSetsDst(top)) {
                 // Can't reorder over dependent code
                 if (UsedInRange(bottom->next,after,top->dst)) break;
@@ -5082,6 +5083,7 @@ FindBlockForReorderingUpward(IR *before) {
             if (IsRead(bottom) && WriteInRange(before,bottom->prev)) break;
             // Can't reorder over code depending on another value for dst
             if (InstrSetsDst(bottom) && UsedInRange(before,top->prev,bottom->dst)) break;
+            if(IsSubReg(bottom->dst)) break;
             // Can't reorder over code this depends on
             if (ModifiedInRange(before,top->prev,bottom->src) && UsedInRange(top,bottom,bottom->src)) break;
             if (InstrReadsDst(bottom)&&ModifiedInRange(before,top->prev,bottom->dst) && UsedInRange(top,bottom,bottom->dst)) break;
