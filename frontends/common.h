@@ -478,6 +478,7 @@ typedef struct funcdef {
     unsigned toplevel:1;     // 1 if function is top level
     unsigned sets_send:1;    // 1 if function sets SEND function
     unsigned sets_recv:1;    // 1 if function sets RECV function
+    unsigned fromfile:1;     // 1 if function was declared with __fromfile or equivalent
 
     unsigned attributes;     // various other attributes
 #define FUNC_ATTR_CONSTRUCTOR 0x0001  /* does not actually work yet */

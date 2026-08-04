@@ -1713,7 +1713,7 @@ GetMainFunction(Module *P)
 
     /* for Spin, return first public function */
     for (pf = P->functions; pf; pf = pf->next) {
-        if (pf->is_public) {
+        if (pf->is_public && !pf->fromfile) {
             break;
         }
     }

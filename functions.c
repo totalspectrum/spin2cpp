@@ -1250,6 +1250,8 @@ doDeclareFunction(AST *funcblock)
         // __fromfile declaration
         // set the language based on the file name
         fdef->language = LanguageFromExtension(fdef->body->d.string, NULL);
+        // flag as a fromfile
+        fdef->fromfile = 1;
     }
 
     /* declare any local variables in the function */
