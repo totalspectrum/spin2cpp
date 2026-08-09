@@ -72,6 +72,7 @@
     X(INC)       /* tos := tos+1 */ \
     X(DEC)       /* tos := tos-1 */ \
     X(DOUBLE)    /* tos := tos*2 */ \
+    X(X4)        /* tos := tos*4 */ \
     X(ONES)      /* count one bits of tos */ \
     X(MERGEW)    /* merge words (pit permute) */ \
     X(SPLITW)    /* split words (pit permute) */ \

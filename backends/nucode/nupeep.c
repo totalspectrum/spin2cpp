@@ -1,7 +1,7 @@
 //
 // Bytecode (nucode) compiler for spin2cpp
 //
-// Copyright 2021-2025 Total Spectrum Software Inc.
+// Copyright 2021-2026 Total Spectrum Software Inc. and contributors
 // see the file COPYING for conditions of redistribution
 //
 #include "outnu.h"
@@ -250,6 +250,15 @@ static NuPeepholePattern pat_shl_1[] = {
 
     // replace with
     { NU_OP_DOUBLE,     PEEP_ARG_ANY, PEEP_FLAGS_REPLACE },
+    { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
+};
+// pattern for SHL -> X4
+static NuPeepholePattern pat_shl_2[] = {
+    { NU_OP_PUSHI,      2,            PEEP_FLAGS_MATCH_IMM },
+    { NU_OP_SHL,        PEEP_ARG_ANY, PEEP_FLAGS_NONE },
+
+    // replace with
+    { NU_OP_X4,         PEEP_ARG_ANY, PEEP_FLAGS_REPLACE },
     { NU_OP_ILLEGAL, 0, PEEP_FLAGS_DONE }
 };
 
@@ -523,6 +532,7 @@ struct nupeeps {
     { pat_dec,  0,         NULL },
     { pat_djnz,  0, NULL },
     { pat_shl_1, 0, NULL },
+    { pat_shl_2, 0, NULL },
     { pat_dup_add, 0, NULL },
     { pat_swap_add, 0, NULL },
     { pat_swap_and, 0, NULL },
