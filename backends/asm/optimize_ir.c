@@ -1015,7 +1015,10 @@ static bool UsedInRange(IR *start,IR *end,Operand *reg) {
             if (IsArg(reg)||isResult(reg)) return false; // Becomes dead
             if (!IsLocal(reg)) return true;
         }
-        if (InstrModifies(ir,reg) && ir->cond==COND_TRUE) return false; // Has become dead
+        if (InstrModifies(ir,reg) && ir->cond==COND_TRUE) {
+            if (!IsSubReg(reg) && !IsSubReg(ir->dst))
+                return false; // Has become dead
+        }
     }
     return false;
 }
