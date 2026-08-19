@@ -20,6 +20,10 @@ struct vfs *_vfs_open_fat_file(const char *name) __fromfile("filesys/fatfs/fatfs
 /* filesys/fs9p/fs9p_vfs.c */
 struct vfs *_vfs_open_host(void) __fromfile("filesys/fs9p/fs9p_vfs.c");
 
+/* filesys/littlefs/lfs_spi_vfs.c */
+struct vfs *_vfs_open_littlefs_flash(int do_format = 1, struct littlefs_flash_config *cfg = 0) __fromfile("filesys/littlefs/lfs_spi_vfs.c");
+int _mkfs_littlefs_flash(struct littlefs_flash_config *cfg = 0) __fromfile("filesys/littlefs/lfs_spi_vfs.c");
+
 /* filesys/parallax/parallaxfs_vfs.c */
 struct vfs *_vfs_open_parallaxfs(void) __fromfile("filesys/parallax/parallaxfs_vfs.c");
 int _mkfs_parallaxfs(void) __fromfile("filesys/parallax/parallaxfs_vfs.c");
