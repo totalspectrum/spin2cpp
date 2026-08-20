@@ -3028,6 +3028,7 @@ int OptimizeBranchCommonOps(IRList *irl) {
                     while (next_jump && IsDummy(next_jump)) next_jump = next_jump->next;
 
                     if (SameIR(next_stay,next_jump) && next_stay->cond == next_jump->cond // SameIR doesn't check condition code
+                            && next_stay->cond == COND_TRUE // dead code detection doesn't look at conditions across branchs
                             && !IsPrefixOpcode(next_stay) // TODO: pull entire prefix sequence
                             && !(InstrIsVolatile(next_stay)||InstrIsVolatile(next_jump))
                             && !InstrSetsFlags(next_stay,FlagsUsedByCond(ir->cond)) // Can't reorder flag-setting op if it changes the branch outcome
@@ -3059,6 +3060,7 @@ int OptimizeBranchCommonOps(IRList *irl) {
                     if (prev_jump == ir || prev_jump == jump || prev_stay == ir || prev_stay == jump) break;
 
                     if (SameIR(prev_stay,prev_jump) && prev_stay->cond == prev_jump->cond
+                            && prev_stay->cond == COND_TRUE
                             && !(IsPrefixOpcode(prev_stay->prev)||IsPrefixOpcode(prev_jump->prev))
                             && !(InstrIsVolatile(prev_stay)||InstrIsVolatile(prev_jump))
                             && !IsCordicCommand(prev_stay)&&!IsCordicGet(prev_stay) // punt due to stupidity in FixupLoneCordic
