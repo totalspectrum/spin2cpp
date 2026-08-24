@@ -515,6 +515,20 @@ getObjFileExtension(const char *fname)
     return ext;
 }
 
+static const char *
+GetExtension(const char *name)
+{
+    const char *ext;
+    if (!name) return name;
+    ext = strrchr(name, '/');
+    name = ext ? ext : name;
+#ifdef WINDOWS
+    ext = strrchr(name, '\\');
+    name = ext ? ext : name;
+#endif
+    return strrchr(name, '.');
+}
+
 int
 LanguageFromExtension(const char *langptr, bool *needExtPtr)
 {
@@ -522,7 +536,7 @@ LanguageFromExtension(const char *langptr, bool *needExtPtr)
     bool needExtension = false;
     
     if (langptr && langptr[0] != '.')
-        langptr = strrchr(langptr, '.');
+        langptr = GetExtension(langptr);
     if (langptr) {
         if (!strcasecmp(langptr, ".bas")
             || !strcasecmp(langptr, ".basic")
@@ -605,7 +619,7 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
     Module *save, *Q, *LastQ;
     char *fname = NULL;
     char *parseString = NULL;
-    char *langptr;
+    const char *langptr;
     int language = LANG_SPIN_SPIN1;
     SymbolTable *saveCurrentTypes = NULL;
     int new_module = 0;
@@ -614,7 +628,7 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
     bool needExtension = false;
 
     // check language to process
-    langptr = strrchr(name, '.');
+    langptr = GetExtension(name);
     if (langptr) {
         if (!strcmp(langptr, ".o")) {
             // try to figure out language based on contents of file
