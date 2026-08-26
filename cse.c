@@ -336,15 +336,20 @@ AddToCSESet(AST *name, CSESet *cse, AST *expr, unsigned exprHash, AST **replacep
     unsigned idx = exprHash & (CSE_HASH_SIZE-1);
     ASTReportInfo saveinfo;
     
-    if (expr->kind == AST_ARRAYREF && !ArrayBaseType(expr->left)) {
-        // cannot figure out type of array
-        return NULL;
-    }
-    // do not add entries for some simple expressions
-    if (expr->kind == AST_ARRAYREF &&
-        IsConstExpr(expr->right))
-    {
-        return NULL;
+    if (expr->kind == AST_ARRAYREF) {
+        if (!ArrayBaseType(expr->left)) {
+            // cannot figure out type of array
+            return NULL;
+        }
+        if (IsFunctionType(ExprType(expr))) {
+            // HACK: skip CSE for function arrays (these are mis-handled)
+            return NULL;
+        }
+        // do not add entries for some simple expressions
+        if (IsConstExpr(expr->right))
+        {
+            return NULL;
+        }
     }
     // do not CSE 64 bit quantities
     if (TypeSize(ExprType(expr)) > LONG_SIZE) {
