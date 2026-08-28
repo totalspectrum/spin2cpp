@@ -662,13 +662,14 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
     if (current) {
         fname = find_file_on_path(&gl_pp, name, langptr, current->fullname);
         if (!fname) {
-            if (!strcasecmp(langptr, ".spin2")) {
+            if (language == LANG_SPIN_SPIN2) {
+                /* look for a Spin1 file */
                 fname = find_file_on_path(&gl_pp, name, ".spin", current->fullname);
                 if (fname) {
                     language = LANG_SPIN_SPIN1;
                     langptr = ".spin";
                 }
-            } else if (!strcasecmp(langptr, ".spin")) {
+            } else if (language == LANG_SPIN_SPIN1) {
                 fname = find_file_on_path(&gl_pp, name, ".spin2", current->fullname);
                 if (fname) {
                     language = LANG_SPIN_SPIN2;
