@@ -116,6 +116,18 @@ fixReferences(AST **astptr, int incdecop, AST *memtype)
     fixReferences(&ast->right, incdecop, memtype);
 }
 
+static bool
+NeedTempArrayPtr(AST *expr)
+{
+    if (!expr || !ExprHasSideEffects(expr))
+        return false;
+    if (expr->kind == AST_MEMREF)
+        return false;
+    if (expr->kind == AST_METHODREF)
+        return false;
+    return true;
+}
+
 /*
  * if we see something like M ^= N
  * we want to transform to M := M ^ N
@@ -156,7 +168,7 @@ ExtractSideEffects(AST *expr, AST **preseq)
             }
             AstReportDone(&saveinfo);
         }
-        if (ExprHasSideEffects(expr->left) && expr->kind == AST_ARRAYREF && expr->left->kind != AST_MEMREF) {
+        if (expr->kind == AST_ARRAYREF && NeedTempArrayPtr(expr->left)) {
             AstReportAs(expr, &saveinfo);
             AST *typ = ExprType(expr->left);
             temp = AstTempLocalVariable("_arr_", typ);
