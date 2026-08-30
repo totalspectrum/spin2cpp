@@ -313,7 +313,6 @@ struct Double __log__D(double);
 #define nextafter nextafterl
 #define remquo remquol
 #define rint rintl
-#define round roundl
 #define scalbn scalbnl
 #define sin sinl
 #define tan tanl

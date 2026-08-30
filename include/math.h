@@ -35,8 +35,11 @@
 
 #define scalbnf(x) __builtin_scalbnf(x)
 
-#define round(x)  __builtin_round(x)
-#define roundf(x) __builtin_round(x)
+#define lround(x)  __builtin_lroundf(x)
+#define lroundf(x) __builtin_lroundf(x)
+#define round(x)   ((double)__builtin_lroundf(x))
+#define roundf(x)  ((float)__builtin_lroundf(x))
+
 #define floor(x)  __builtin_floorf(x)
 #define floorf(x) __builtin_floorf(x)
 #define ceil(x)   __builtin_ceilf(x)

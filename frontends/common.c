@@ -353,7 +353,8 @@ Aliases calias[] = {
 
     /* some math functions */
     { "__builtin_popcount", "_ones" },
-    { "__builtin_round", "_float_round" },
+    { "__builtin_round", "_float_round" }, /* FIXME misnamed */
+    { "__builtin_lroundf", "_float_round" },
 
     { NULL, NULL },
 };
