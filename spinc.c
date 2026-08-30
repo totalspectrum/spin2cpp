@@ -530,7 +530,7 @@ GetExtension(const char *name)
 }
 
 int
-LanguageFromExtension(const char *langptr, bool *needExtPtr)
+LanguageFromExtension(const char *langptr, bool *needExtPtr, const char **ext_p)
 {
     int language = LANG_SPIN_SPIN1;
     bool needExtension = false;
@@ -609,6 +609,9 @@ LanguageFromExtension(const char *langptr, bool *needExtPtr)
     if (needExtPtr) {
         *needExtPtr = needExtension;
     }
+    if (ext_p) {
+        *ext_p = langptr;
+    }
     return language;
 }
 
@@ -643,7 +646,7 @@ doParseFile(const char *name, Module *P, int *is_dup, AST *paramlist)
                 langptr = ".c";
             }
         }
-        language = LanguageFromExtension(langptr, &needExtension);
+        language = LanguageFromExtension(langptr, &needExtension, &langptr);
     } else {
         if (current && current->mainLanguage == LANG_SPIN_SPIN1) {
             langptr = ".spin";

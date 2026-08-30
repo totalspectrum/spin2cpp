@@ -1249,7 +1249,7 @@ doDeclareFunction(AST *funcblock)
     if (body && body->kind == AST_STRING) {
         // __fromfile declaration
         // set the language based on the file name
-        fdef->language = LanguageFromExtension(fdef->body->d.string, NULL);
+        fdef->language = LanguageFromExtension(fdef->body->d.string, NULL, NULL);
         // flag as a fromfile
         fdef->fromfile = 1;
     }

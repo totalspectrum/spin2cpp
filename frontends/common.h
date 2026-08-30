@@ -1147,7 +1147,7 @@ void AddSourceFile(const char *shortName, const char *fullName);
 
 // set source language from file extension
 // needExtPtr is used internally, usually pass NULL for this
-int LanguageFromExtension(const char *langptr, bool *needExtPtr);
+int LanguageFromExtension(const char *langptr, bool *needExtPtr, const char **ext_p);
 
 // find a constant or other declaration in a list
 AST *FindDeclaration(AST *datlist, const char *name);
