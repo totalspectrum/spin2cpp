@@ -1311,7 +1311,6 @@ postfix_expression
             { $$ = AstOperator(K_DECREMENT, $1, NULL); }
         | '(' type_name ')' '{' initializer_list '}'
             {
-                /* FIXME: treat this like ({ type_name t = initializer_list; t; }) */
                 AST *typ = $2;
                 AST *initlist = $5;
                 AST *id = AstTempIdentifier("_initval_");
@@ -1326,16 +1325,16 @@ postfix_expression
             }
         | '(' type_name ')' '{' initializer_list ',' '}'
             {
-                /* treat this like ({ type_name t = initializer_list; t; }) */
                 AST *typ = $2;
                 AST *initlist = $5;
                 AST *id = AstTempIdentifier("_initval_");
 
-                AST *decl = AstAssign(id, initlist);
+                AST *decl;
                 AST *stmt;
 
-                DeclareOneGlobalVar(current, decl, typ, IN_DAT);
-                stmt = NewAST(AST_STMTLIST, id, NULL);
+                decl = SingleDeclareInitedVar(typ, id, initlist);
+                stmt = NewAST(AST_STMTLIST, decl, NULL);                
+                stmt = AddToList(stmt, NewAST(AST_STMTLIST, id, NULL));
                 $$ = stmt;
             }
 	;
