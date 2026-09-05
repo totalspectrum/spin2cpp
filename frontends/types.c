@@ -639,13 +639,17 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
     if (isfloat) {
         switch (op) {
         case '+':
-            if (!gl_fixedreal) {
+            if (!gl_fixedreal && ast->left) {
                 *ast = *MakeOperatorCall( isfloat64 ? double_add : float_add, ast->left, ast->right, NULL);
             }
             break;
         case '-':
             if (!gl_fixedreal) {
-                *ast = *MakeOperatorCall( isfloat64 ? double_sub : float_sub, ast->left, ast->right, NULL);
+                if (ast->left) {
+                    *ast = *MakeOperatorCall( isfloat64 ? double_sub : float_sub, ast->left, ast->right, NULL);
+                } else {
+                    *ast = *MakeOperatorCall( isfloat64 ? double_neg : float_neg, ast->right, NULL, NULL );
+                }
             }
             break;
         case '*':
