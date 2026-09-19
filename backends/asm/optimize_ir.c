@@ -3246,6 +3246,11 @@ OptimizeImmediates(IRList *irl)
         if (InstrIsVolatile(ir)) {
             continue;
         }
+        if (InstrSetsFlags(ir, FLAG_WC)) {
+            /* don't change instruction type, it may change how the C flag
+               is set */
+            continue;
+        }
         src = ir->src;
         if (! (src && src->kind == IMM_INT) ) {
             continue;
