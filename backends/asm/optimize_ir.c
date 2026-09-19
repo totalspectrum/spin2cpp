@@ -3299,9 +3299,14 @@ OptimizeAddSub(IRList *irl)
             ir_next = ir_next->next;
         }
         if (!ir_next) break;
-        if ((ir->opc == OPC_ADD || ir->opc == OPC_SUB) && !InstrIsVolatile(ir)) {
+        if ((ir->opc == OPC_ADD || ir->opc == OPC_SUB)
+            && !InstrIsVolatile(ir)
+            && !InstrSetsAnyFlags(ir)
+            ) {
             prev = FindPrevSetterForReplace(ir, ir->dst);
-            if (prev && (prev->opc == OPC_ADD || prev->opc == OPC_SUB) ) {
+            if (prev && (prev->opc == OPC_ADD || prev->opc == OPC_SUB)
+                && !InstrSetsAnyFlags(prev)
+                ) {
                 if (ir->src->kind == IMM_INT && prev->src->kind == IMM_INT
                         && ir->cond == prev->cond)
                 {
