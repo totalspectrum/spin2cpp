@@ -1999,12 +1999,18 @@ TransformConstDst(IRList *irl, IR *ir, Operand *imm)
         val1 = ((int32_t)val1<<val2)>>val2;
         break;
     case OPC_CMPS:
+        if (val1 < val2)
+            cval = -1;
+        else if (val1 == val2)
+            cval = 0;
+        else
+            cval = 1;
         val1 -= val2;
-        cval = val1;
         setsResult = 0;
         break;
     case OPC_CMP:
         setsResult = 0;
+        /* fall through */
     case OPC_SUB:
         if ((uint32_t)val1 < (uint32_t)val2) {
             cval = -1;
