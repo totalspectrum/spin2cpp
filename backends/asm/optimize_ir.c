@@ -4729,7 +4729,10 @@ restart_check:
             if (!write && ir->src == ir->dst) goto get_next;
             nextread = FindNextRead(ir, dst1, base, (curfunc->optimize_flags & OPT_EXPERIMENTAL) && IsMemoryOrderSafe(ir->src));
             int nextsize = MemoryOpSize(nextread);
-            if (nextread && CondIsSubset(ir->cond,nextread->cond)) {
+            if (nextread && CondIsSubset(ir->cond,nextread->cond)
+                && !FlagsChangeInRange(ir->next, nextread->prev,
+                                       FlagsUsedByCond(nextread->cond))
+                ) {
                 // wrlong a, b ... rdlong c, b  -> mov c, a
                 // rdlong a, b ... rdlong c, b  -> mov c, a
                 if(size == nextsize && (!write || size==4 || gl_p2) 

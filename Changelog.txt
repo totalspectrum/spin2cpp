@@ -1,6 +1,8 @@
 Version 7.7.3
 - Fixed passing compound expressions as parameters when the struct list has a trailing comma
 - Fixed some float unary operators
+- Fixed some ADD/SUB optimization issues
+- Fixed an incorrect flag check in read/write optimizations
 
 Version 7.7.2
 - Added littlefs defines to libc.a
