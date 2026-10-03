@@ -2045,6 +2045,11 @@ TransformConstDst(IRList *irl, IR *ir, Operand *imm)
     }
     if (InstrSetsAnyFlags(ir)) {
         int condchange = 0;
+        if (ir->cond != COND_TRUE) {
+            // a conditional instruction sets the flags only where it runs,
+            // so what they are after it is not known
+            return 0;
+        }
         if (!ApplyConditionAfter(irl,ir, cval, val1, &condchange)) {
             return condchange; // Couldn't apply condition :(
         }
