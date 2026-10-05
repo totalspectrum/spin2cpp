@@ -1,4 +1,5 @@
-Version 7.7.4
+Version 7.8.0
+- Fix signed/unsigned promotion rules to match C standard.
 - Restrict C octal sequences to at most 3 characters.
 
 Version 7.7.3

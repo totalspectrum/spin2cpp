@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2025 Total Spectrum Software Inc.
+ * Copyright 2011-2026 Total Spectrum Software Inc. and contributors
  *
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -387,6 +387,16 @@ AST *MatchIntegerTypes(AST *ast, AST *lefttype, AST *righttype, int force) {
         rettype = lefttype;
     }
     if (leftunsigned || rightunsigned) {
+        if (IsCLang(GetCurrentLang())) {
+            // C converts both operands to unsigned when one of them is an
+            // unsigned type of the full size, whichever side it is on
+            // (the result of a comparison is an int there)
+            if ( (leftunsigned && lsize == finalsize && !IsBoolType(lefttype))
+                    || (rightunsigned && rsize == finalsize && !IsBoolType(righttype)) )
+            {
+                return ulong_type;
+            }
+        }
         return rettype;
     } else {
         return long_type;
@@ -852,7 +862,10 @@ void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
     //
 
     if (isint64) {
-        if (leftUnsigned || rightUnsigned) {
+        bool cmpUnsigned = (leftUnsigned && TypeSize(lefttype) == LONG64_SIZE)
+            || (rightUnsigned && TypeSize(righttype) == LONG64_SIZE);
+
+        if (cmpUnsigned) {
             ast->left = MakeOperatorCall(int64_cmpu, ast->left, ast->right, NULL);
         } else {
             ast->left = MakeOperatorCall(int64_cmps, ast->left, ast->right, NULL);
@@ -860,7 +873,16 @@ void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
         ast->right = AstInteger(0);
     }
     else if (leftUnsigned || rightUnsigned) {
-        if ( (leftUnsigned && (rightUnsigned || IsUnsignedConst(ast->right)))
+        bool cmpUnsigned = false;
+        if (1 || IsCLang(GetCurrentLang())) {
+            // in C the comparison is unsigned when either operand is an
+            // unsigned int after the integer promotions, which leave
+            // anything narrower, and the result of a comparison, a signed int
+            cmpUnsigned = (leftUnsigned && TypeSize(lefttype) == LONG_SIZE && !IsBoolType(lefttype))
+                || (rightUnsigned && TypeSize(righttype) == LONG_SIZE && !IsBoolType(righttype));
+        }
+        if ( cmpUnsigned
+                || (leftUnsigned && (rightUnsigned || IsUnsignedConst(ast->right)))
                 || (rightUnsigned && IsUnsignedConst(ast->left)) )
         {
             switch (op) {
