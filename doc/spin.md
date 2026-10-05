@@ -609,6 +609,10 @@ pub test
 
 Beware that functions declared with `file` are treated the same as other functions; in particular, note that the first function in the top level object will be used as the starting point for the program, even if that function was declared with `pub file` or `pri file`. So unlike in C, the declaration of external functions should be placed at the end of the file rather than the beginning (unless for some reason you want the main program to come from another file).
 
+### Self (this) pointer
+
+The within a method, the keyword `%self` refers to the data storage of the object that is executing the method. This is rarely needed, but may be useful for some rare edge cases.
+
 ### Typed parameters and return values
 
 The "expression" in a default parameter may also be a type name, for example `long`, `float`, a flag indicating an unsigned type `+long`, (or one of the pointer types `@long` (pointer to long), `@word` (pointer to word), `@byte`, or `@float`. These do not provide a default value, but do provide a hint to the compiler about what type of value is expected. This isn't terribly useful for Spin, but does make it possible for the compiler to check types and/or convert them if necessary for Spin functions called from C or BASIC.

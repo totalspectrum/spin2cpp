@@ -1,4 +1,5 @@
 Version 7.8.0
+- Added Spin `%self` keyword
 - Fix signed/unsigned promotion rules to match C standard.
 - Restrict C octal sequences to at most 3 characters.
 

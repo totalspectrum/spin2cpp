@@ -518,6 +518,7 @@ SpinDeclareInterface(AST *ident, AST *defs)
 %token SP_ASM_ENDIF  "%END"
 %token SP_INTERFACE  "%INTERFACE"
 %token SP_NAMESP     "%NAMESP"
+%token SP_SELF       "%SELF"
 %token SP_VARARGS    "%VARARGS"
 
 /* Spin2 additions */
@@ -2313,6 +2314,8 @@ expr:
     { $$ = NewAST(AST_ROUND, $3, NULL); }
   | SP_TRUNC '(' expr ')'
     { $$ = NewAST(AST_TRUNC, $3, NULL); }
+  | SP_SELF
+    { $$ = NewAST(AST_SELF, NULL, NULL); }
   | lookupexpr
     { $$ = $1; }
   | lookdownexpr
