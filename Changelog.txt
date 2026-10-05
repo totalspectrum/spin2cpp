@@ -1,3 +1,6 @@
+Version 7.7.4
+- Restrict C octal sequences to at most 3 characters.
+
 Version 7.7.3
 - Fixed passing compound expressions as parameters when the struct list has a trailing comma
 - Fixed some float unary operators

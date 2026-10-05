@@ -1334,6 +1334,8 @@ getEscapedChar(LexStream *L)
 {
     int c = lexgetc(L);
     int g;
+    int count = 0;
+
     if (c < 0) {
         SYNTAX_ERROR("end of file inside string");
         return c;
@@ -1349,9 +1351,11 @@ getEscapedChar(LexStream *L)
     case '7':
         g = c;
         c = 0;
-        while (g >= '0' && g <= '7') {
+        count = 0;
+        while (g >= '0' && g <= '7' && count < 3) {
             c = c*8 + (g-'0');
             g = lexgetc(L);
+            count++;
         }
         lexungetc(L, g);
         break;
