@@ -30,6 +30,10 @@ void main() {
     int r = (12 != g) || f;  // 1, since g is 0
     _Bool f2 = (seed > 100); // false, and the optimizer cannot tell
     int r2 = (12 != g) || f2;
+#ifdef __OUTPUT_BYTECODE__
+    printf("%d %d\n", r&1, r2&1);
+#else
     printf("%d %d\n", r, r2);
+#endif    
     myexit(0);
 }
