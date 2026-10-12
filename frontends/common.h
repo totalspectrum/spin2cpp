@@ -196,6 +196,7 @@ extern int gl_optimize_flags; /* flags for optimization */
 #define OPT_SPIN_RELAXMEM       0x01000000  /* relax strict memory semantics for Spin */
 #define OPT_FASTASM             0x02000000  /* optimize inline assembly invocation */
 #define OPT_PEEK_ARGS           0x04000000  /* peek into functions to see if arg registers can be reused */
+#define OPT_INLINE_PUSHREGS     0x08000000  /* save/restore registers inline in hub functions (P2) */
 #define OPT_EXPERIMENTAL        0x80000000  /* gate new or experimental optimizations */
 #define OPT_FLAGS_ALL           0xffffffff
 
@@ -208,7 +209,7 @@ extern int gl_optimize_flags; /* flags for optimization */
 // default optimization (-O1) for ASM output
 #define DEFAULT_ASM_OPTS        (OPT_ASM_BASIC|OPT_DEADCODE|OPT_REMOVE_UNUSED_FUNCS|OPT_INLINE_SMALLFUNCS|OPT_AUTO_FCACHE|OPT_LOOP_BASIC|OPT_TAIL_CALLS|OPT_SPECIAL_FUNCS|OPT_CORDIC_REORDER|OPT_LOCAL_REUSE|OPT_LOOP_BASIC)
 // extras added with -O2
-#define EXTRA_ASM_OPTS          (OPT_INLINE_SINGLEUSE|OPT_PERFORM_CSE|OPT_PERFORM_LOOPREDUCE|OPT_REMOVE_HUB_BSS|OPT_EXPERIMENTAL|OPT_AGGRESSIVE_MEM|OPT_MERGE_DUPLICATES|OPT_PEEK_ARGS)
+#define EXTRA_ASM_OPTS          (OPT_INLINE_SINGLEUSE|OPT_PERFORM_CSE|OPT_PERFORM_LOOPREDUCE|OPT_REMOVE_HUB_BSS|OPT_EXPERIMENTAL|OPT_AGGRESSIVE_MEM|OPT_MERGE_DUPLICATES|OPT_PEEK_ARGS|OPT_INLINE_PUSHREGS)
 
 // default optimization (-O1) for bytecode output; defaults to much less optimization than asm
 #define DEFAULT_BYTECODE_OPTS   (OPT_REMOVE_UNUSED_FUNCS|OPT_REMOVE_FEATURES|OPT_DEADCODE|OPT_MAKE_MACROS|OPT_SPECIAL_FUNCS|OPT_PEEPHOLE|OPT_LOOP_BASIC)

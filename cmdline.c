@@ -548,6 +548,7 @@ static FlagTable optflag[] = {
     { "spin-relax-memory", OPT_SPIN_RELAXMEM},
     { "fast-inline-asm", OPT_FASTASM },
     { "peek-args", OPT_PEEK_ARGS },
+    { "inline-pushregs", OPT_INLINE_PUSHREGS },
     { "experimental", OPT_EXPERIMENTAL },
     { "all", OPT_FLAGS_ALL },
 };

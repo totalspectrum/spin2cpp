@@ -462,6 +462,17 @@ used there. By default it is assumed that all argument registers may be
 changed within a function, but with this optimization we check for some special
 cases to save having to copy arguments to other registers.
 
+### Inline register save and restore (-O2, -Oinline-pushregs)
+
+On the P2, a function in hub memory that needs a stack frame normally calls the
+`pushregs_` and `popregs_` routines in COG memory to save and restore its
+registers. With this optimization the same `setq`/`wrlong` and `setq`/`rdlong`
+sequences are generated inline in the function's entry and exit code instead,
+building the same stack frame. This saves about 32 cycles per call, mostly the
+two trips into COG memory and back, at a cost of 5 to 9 more instructions in
+each function that has a frame. Functions placed in COG or LUT memory are not
+affected.
+
 ### Common Subexpression Elimination (-O2, -Ocse)
 
 Code like:
