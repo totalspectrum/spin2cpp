@@ -874,7 +874,8 @@ void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
     }
     else if (leftUnsigned || rightUnsigned) {
         bool cmpUnsigned = false;
-        if (1 || IsCLang(GetCurrentLang())) {
+	int lang = GetCurrentLang();
+        if (IsCLang(lang)) {
             // in C the comparison is unsigned when either operand is an
             // unsigned int after the integer promotions, which leave
             // anything narrower, and the result of a comparison, a signed int
@@ -907,10 +908,59 @@ void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
             // if both are 32 bits, we need to do something else
             int lsize = TypeSize(lefttype);
             int rsize = TypeSize(righttype);
-            if (lsize == 4 && rsize == 4 && op != K_EQ && op != K_NE) {
+            if (lsize == 4 && rsize == 4) {
+#if 1	      
+	        // canonicalize to < or <=
+	        AST *left = ast->left;
+		AST *right = ast->right;
+		AST *comp;
+		AST *condlt;
+		int temp;
+		if (op == '>' || op == K_GTU) {
+  		    left = ast->right;
+		    right = ast->left;
+		    op = K_LTU;
+		    temp = leftUnsigned; leftUnsigned = rightUnsigned; rightUnsigned = temp;
+		} else if (op == K_GE || op == K_GEU) {
+  		    left = ast->right;
+		    right = ast->left;
+		    op = K_LEU;
+		    temp = leftUnsigned; leftUnsigned = rightUnsigned; rightUnsigned = temp;
+		} else if (op == '<' ) {
+		    op = K_LTU;
+		} else if (op == K_LE) {
+		    op = K_LEU;
+                } else {
+                    /* nothing to do */
+		}
+		comp = AstOperator(op, left, right);
+		// if left is signed and op is < or <=, compile to:
+		// left < 0 ? TRUE : left < right
+                // for !=, compile to
+                //  left < 0 ? TRUE : left != right
+                // for ==, compile to
+                //  left < 0 ? FALSE : left == right
+		if (rightUnsigned) {
+                    int def_value = (op == K_EQ) ? 0 : -1;
+                    condlt = NewAST(AST_CONDRESULT,
+                                    AstOperator('<', left, AstInteger(0)),
+                                    NewAST(AST_THENELSE,
+                                           AstInteger(def_value),
+                                           comp));
+		} else {
+                    int def_value = (op == K_NE) ? -1 : 0;
+                    condlt = NewAST(AST_CONDRESULT,
+                                    AstOperator('<', right, AstInteger(0)),
+                                    NewAST(AST_THENELSE,
+                                           AstInteger(def_value),
+                                           comp));
+		}
+		*ast = *condlt;
+#else		
                 if (!IsBoolType(lefttype) && !IsBoolType(righttype)) {
                     WARNING(ast, "signed/unsigned comparison may not work properly");
                 }
+#endif		
             }
         }
     }

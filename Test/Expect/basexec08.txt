@@ -1,0 +1,25 @@
+i = 1 ui = 1
+  i <= ui
+  i == ui
+  i >= ui
+i = 1 ui = 2
+  i < ui
+  i <= ui
+  i <> ui
+i = 32768 ui = 7
+  i <> ui
+  i > ui
+  i >= ui
+i = -1 ui = 1
+  i < ui
+  i <= ui
+  i <> ui
+i = 1 ui = 4294967295
+  i < ui
+  i <= ui
+  i <> ui
+i = -1 ui = 4294967295
+  i < ui
+  i <= ui
+  i <> ui
+** done ** 
