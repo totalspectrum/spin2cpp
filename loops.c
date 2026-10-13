@@ -957,6 +957,39 @@ doHasBranch(AST *body, bool inCase)
 static bool HasBranch(AST *body) { return doHasBranch(body, false); }
 
 //
+// true if the limit of a loop is the same on every pass: a constant, or a local
+// whose address is not taken and which the body does not modify. The loop below
+// is rewritten to count down from the limit read once, before the loop; a
+// variable in memory may be changed by any function the body calls, or by
+// another cog.
+//
+static bool
+IsLoopInvariantLimit(AST *limit, AST *body)
+{
+    Symbol *sym;
+
+    if (!limit) return false;
+    if (IsConstExpr(limit)) return true;
+    if (limit->kind == AST_OPERATOR && (limit->d.ival == '+' || limit->d.ival == '-')) {
+        return IsLoopInvariantLimit(limit->left, body) && IsLoopInvariantLimit(limit->right, body);
+    }
+    if (!IsIdentifier(limit)) return false;
+    sym = LookupAstSymbol(limit, NULL);
+    if (!sym) return false;
+    switch (sym->kind) {
+    case SYM_PARAMETER:
+    case SYM_RESULT:
+    case SYM_LOCALVAR:
+    case SYM_TEMPVAR:
+        if (curfunc->local_address_taken) return false;
+        if (limit->kind == AST_LOCAL_IDENTIFIER) limit = limit->left;
+        return !AstModifiesIdentifier(body, limit);
+    default:
+        return false;
+    }
+}
+
+//
 // check for "simple" loops using increments (like "repeat i from 0 to 9") these may be further
 // optimized into "repeat 10" if we discover that the loop index is not
 // used inside the body -- but beware that if the variable is used after
@@ -1052,6 +1085,10 @@ CheckSimpleIncrementLoop(AST *stmt)
         }
     }
     
+    /* in C the limit is read on every pass; the rewritten loop reads it once */
+    if (IsCLang(curfunc->language) && !IsLoopInvariantLimit(updateLimit, body)) {
+        return;
+    }
     /* check that the update is i++, and the variable is not used anywhere else */
     while (update && update->kind == AST_SEQUENCE) {
         if (AstUsesName(update->right, updateVar)) {
