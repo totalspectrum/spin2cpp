@@ -4722,7 +4722,18 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
             uint32_t val = (off == 0) ? bigval : (bigval >> 32);
             r = NewImmediate(val);
         } else {
-            base = CompileExpression(irl, expr->left, NULL);
+            AST *left = expr->left;
+            if (left && left->kind == AST_EXPRLIST) {
+                if (off == 0) {
+                    return CompileExpression(irl, left->left, NULL);
+                } else {
+                    left = left->right;
+                    if (left && left->kind == AST_EXPRLIST) {
+                        return CompileExpression(irl, left->left, NULL);
+                    }
+                }
+            }
+            base = CompileExpression(irl, left, NULL);
             r = OffsetMemory(irl, base, NewImmediate(off), ast_type_long, expr);
             if (dest) {
                 EmitMove(irl, dest, r, expr);
