@@ -385,7 +385,7 @@ ValidateAbortFuncs(void)
     }
 }
 
-static Operand *pushregs_, *popregs_, *count_, *gosub_;
+static Operand *pushregs_, *popregs_, *count_, *retaddr_, *gosub_;
 
 static void
 ValidatePushregs(void)
@@ -397,6 +397,7 @@ ValidatePushregs(void)
         pushregs_ = NewOperand(IMM_COG_LABEL, "pushregs_", 0);
         popregs_ = NewOperand(IMM_COG_LABEL, "popregs_", 0);
         count_ = NewOperand(REG_REG, "COUNT_", 0);
+        retaddr_ = NewOperand(REG_REG, "RETADDR_", 0);
         if (gl_p2) {
             frameptr = NewOperand(REG_REG, "fp", 0);
         }
@@ -1967,7 +1968,27 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     FuncData(func)->numsavedregs = n;
     if (needFrame) {
         ValidateFrameptr();
-        if (HUB_CODE) {
+        if (HUB_CODE && gl_p2 && !InCog(func) && (func->optimize_flags & OPT_INLINE_PUSHREGS)) {
+            // inline copy of pushregs_, building the same frame, so that
+            // a function in hub memory does not leave it for cog memory
+            // and come back, which reloads the instruction FIFO
+            IR *ir;
+            ValidatePushregs();
+            EmitMove(irl, count_, NewImmediate(n), linenum);
+            EmitOp1(irl, OPC_POP, retaddr_);
+            if (n > 0) {
+                if (n > 1) {
+                    EmitOp1(irl, OPC_SETQ, NewImmediate(n-1));
+                }
+                ir = EmitOp2(irl, OPC_WRLONG, GetLocalReg(0, 0), stackptr);
+                ir->srceffect = OPEFFECT_POSTINC;
+            }
+            // COUNT_, RETADDR_ and fp are consecutive registers
+            EmitOp1(irl, OPC_SETQ, NewImmediate(2));
+            ir = EmitOp2(irl, OPC_WRLONG, count_, stackptr);
+            ir->srceffect = OPEFFECT_POSTINC;
+            EmitMove(irl, frameptr, stackptr, linenum);
+        } else if (HUB_CODE) {
             ValidatePushregs();
             EmitMove(irl, count_, NewImmediate(n), linenum);
             EmitOp1(irl, OPC_CALL, pushregs_);
@@ -2014,7 +2035,22 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
         if (!func->closure) {
             EmitMove(irl, stackptr, frameptr, linenum);
         }
-        if (HUB_CODE) {
+        if (HUB_CODE && gl_p2 && !InCog(func) && (func->optimize_flags & OPT_INLINE_PUSHREGS)) {
+            // inline copy of popregs_ (see EmitFunctionHeader)
+            IR *ir;
+            ValidatePushregs();
+            EmitOp1(irl, OPC_SETQ, NewImmediate(2));
+            ir = EmitOp2(irl, OPC_RDLONG, count_, stackptr);
+            ir->srceffect = OPEFFECT_PREDEC;
+            if (n > 0) {
+                if (n > 1) {
+                    EmitOp1(irl, OPC_SETQ, NewImmediate(n-1));
+                }
+                ir = EmitOp2(irl, OPC_RDLONG, GetLocalReg(0, 0), stackptr);
+                ir->srceffect = OPEFFECT_PREDEC;
+            }
+            EmitOp1(irl, OPC_PUSH, retaddr_);
+        } else if (HUB_CODE) {
             // pop registers off stack
             ValidatePushregs();
             EmitOp1(irl, OPC_CALL, popregs_);
