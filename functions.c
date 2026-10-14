@@ -2079,6 +2079,45 @@ CountParameters(AST *list, int *is_varargs)
 }
 
 /*
+ * pull the side effects of what an argument of several longs reads through --
+ * an index, a pointer an element or a member is read through -- into
+ * temporaries of one long, evaluated in "seq" ahead of the call, so the split
+ * of the argument into longs reads storage that is already there
+ */
+static AST *
+ExtractArgSideEffects(AST *expr, AST **seq)
+{
+    AST *temp, *assign;
+
+    if (!expr) return expr;
+    switch (expr->kind) {
+    case AST_ARRAYREF:
+        expr->left = ExtractArgSideEffects(expr->left, seq);
+        if (ExprHasSideEffects(expr->right)) {
+            temp = AstTempLocalVariable("_temp_", NULL);
+            assign = AstAssign(temp, expr->right);
+            *seq = *seq ? NewAST(AST_SEQUENCE, *seq, assign) : NewAST(AST_SEQUENCE, assign, NULL);
+            expr->right = temp;
+        }
+        break;
+    case AST_MEMREF:
+        if (ExprHasSideEffects(expr->right)) {
+            temp = AstTempLocalVariable("_temp_", NULL);
+            assign = AstAssign(temp, expr->right);
+            *seq = *seq ? NewAST(AST_SEQUENCE, *seq, assign) : NewAST(AST_SEQUENCE, assign, NULL);
+            expr->right = temp;
+        }
+        break;
+    case AST_METHODREF:
+        expr->left = ExtractArgSideEffects(expr->left, seq);
+        break;
+    default:
+        break;
+    }
+    return expr;
+}
+
+/*
  * check function calls for correct number of arguments
  * also does expansion for multiple returns used as parameters
  * and does default parameter substitution
@@ -2203,6 +2242,15 @@ CheckFunctionCalls(AST *ast)
                 exprlist = a->left;
                 typ = ExprType(a->left);
 
+                // the assignment below splits an expression that is not an
+                // identifier into one reference per long, each evaluating the
+                // whole expression again, so the side effects of what it reads
+                // through (*f(), a[f()], f()->s) are evaluated once first
+                if (!IsIdentifier(exprlist) && exprlist->kind != AST_FUNCCALL
+                    && typ && ExprHasSideEffects(exprlist))
+                {
+                    exprlist = ExtractArgSideEffects(exprlist, &initseq);
+                }
                 if (IsIdentifier(exprlist)) {
                     AST *temp;
                     AST *id = exprlist;
