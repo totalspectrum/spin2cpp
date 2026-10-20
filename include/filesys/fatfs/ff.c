@@ -1140,11 +1140,11 @@ static FRESULT sync_fs (	/* Returns FR_OK or FR_DISK_ERR */
 			if (fs->fs_type == FS_FAT32) {	/* FAT32: Update FSInfo sector */
 				/* Create FSInfo structure */
 				memset(fs->win, 0, sizeof fs->win);
+				st_16(fs->win + BS_55AA, 0xAA55);				/* Boot signature */
 				st_32(fs->win + FSI_LeadSig, 0x41615252);		/* Leading signature */
 				st_32(fs->win + FSI_StrucSig, 0x61417272);		/* Structure signature */
 				st_32(fs->win + FSI_Free_Count, fs->free_clst);	/* Number of free clusters */
 				st_32(fs->win + FSI_Nxt_Free, fs->last_clst);	/* Last allocated culuster */
-				st_32(fs->win + FSI_TrailSig, 0xAA550000);		/* Trailing signature */
 				disk_write(fs->pdrv, fs->win, fs->winsect = fs->volbase + 1, 1);	/* Write it into the FSInfo sector (Next to VBR) */
 			}
 #if FF_FS_EXFAT
@@ -1639,7 +1639,7 @@ static DWORD create_chain (	/* 0:No free cluster, 1:Internal error, 0xFFFFFFFF:D
 
 	if (res == FR_OK) {			/* Update allocation information if the function succeeded */
 		fs->last_clst = ncl;
-		if (fs->free_clst > 0 && fs->free_clst <= fs->n_fatent - 2) {
+		if (fs->free_clst != 0 && fs->free_clst <= fs->n_fatent - 2) {
 			fs->free_clst--;
 			fs->fsi_flag |= 1;
 		}
