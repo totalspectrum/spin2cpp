@@ -650,6 +650,9 @@ static DWORD ld_32 (const BYTE* ptr)	/* Load a 4-byte little-endian word */
 #if FF_FS_EXFAT
 static QWORD ld_64 (const BYTE* ptr)	/* Load an 8-byte little-endian word */
 {
+	#ifdef __propeller2__
+	return (QWORD)((DWORD*)ptr)[0] | ((QWORD)((DWORD*)ptr)[1] << 32);
+	#else
 	QWORD rv;
 
 	rv = ptr[7];
@@ -661,6 +664,7 @@ static QWORD ld_64 (const BYTE* ptr)	/* Load an 8-byte little-endian word */
 	rv = rv << 8 | ptr[1];
 	rv = rv << 8 | ptr[0];
 	return rv;
+	#endif
 }
 #endif
 
@@ -690,6 +694,10 @@ static void st_32 (BYTE* ptr, DWORD val)	/* Store a 4-byte word in little-endian
 #if FF_FS_EXFAT
 static void st_64 (BYTE* ptr, QWORD val)	/* Store an 8-byte word in little-endian */
 {
+	#ifdef __propeller2__
+	((DWORD*)ptr)[0] = val;
+	((DWORD*)ptr)[1] = val>>32;
+	#else
 	*ptr++ = (BYTE)val; val >>= 8;
 	*ptr++ = (BYTE)val; val >>= 8;
 	*ptr++ = (BYTE)val; val >>= 8;
@@ -698,6 +706,7 @@ static void st_64 (BYTE* ptr, QWORD val)	/* Store an 8-byte word in little-endia
 	*ptr++ = (BYTE)val; val >>= 8;
 	*ptr++ = (BYTE)val; val >>= 8;
 	*ptr++ = (BYTE)val;
+	#endif
 }
 #endif
 #endif	/* !FF_FS_READONLY */
