@@ -1085,8 +1085,8 @@ CheckSimpleIncrementLoop(AST *stmt)
         }
     }
     
-    /* in C the limit is read on every pass; the rewritten loop reads it once */
-    if (IsCLang(curfunc->language) && !IsLoopInvariantLimit(updateLimit, body)) {
+    /* if the limit could change within the loop, do not modify it */
+    if (!IsLoopInvariantLimit(updateLimit, body)) {
         return;
     }
     /* check that the update is i++, and the variable is not used anywhere else */
