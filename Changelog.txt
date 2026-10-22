@@ -6,6 +6,7 @@ Version 7.8.0
 - Fixed (z<<32)>>32 for 64 bit integers 
 - Modified signed/unsigned comparison in BASIC so that negative signed numbers always compare less than unsigned numbers
 - Restricted C octal sequences to at most 3 characters.
+- Updated FatFs to R0.16 (thanks Ada)
 
 Version 7.7.3
 - Fixed passing compound expressions as parameters when the struct list has a trailing comma
