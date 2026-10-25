@@ -1704,6 +1704,116 @@ static void EmitFunctionEpilog(IRList *irl, Function *func)
 }
 
 /*
+ * A local struct (or 64 bit value) held in registers is a base register with a
+ * subregister for each long past the first, and RenameSubregs keeps its longs in
+ * consecutive registers; ReuseLocalRegisters gives no subregister back, so such a
+ * local holds all its registers for the whole function. A function passing many
+ * struct values to calls, each a temporary of its own, runs out of them. Where
+ * nothing reads the longs as a block -- the register's address taken for an
+ * indexed access, inline assembly, a SETQ burst -- the local is split into one
+ * local a long, which the optimizer treats as it treats any other.
+ */
+static bool
+RefersToBase(Operand *op, Operand *base)
+{
+    return op && (op == base || (op->kind == REG_SUBREG && (Operand *)op->name == base));
+}
+
+static bool
+AddressesBase(Operand *op, Operand *base)
+{
+    return op && op->kind == IMM_COG_LABEL && op->name && !strcmp(op->name, base->name);
+}
+
+static bool
+CanSplitLocal(IRList *irl, Operand *base)
+{
+    IR *ir, *prev = NULL;
+
+    for (ir = irl->head; ir; prev = ir, ir = ir->next) {
+        if (AddressesBase(ir->dst, base) || AddressesBase(ir->src, base)) {
+            return false;
+        }
+        if (RefersToBase(ir->dst, base) || RefersToBase(ir->src, base)) {
+            if (ir->flags & FLAG_USER_INSTR) {
+                return false;
+            }
+            if (prev && (prev->opc == OPC_SETQ || prev->opc == OPC_SETQ2)) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+static void
+SplitLocalStructs(IRList *irl)
+{
+    struct flexbuf bases;
+    Operand **list;
+    size_t nbases, i;
+    IR *ir;
+
+    flexbuf_init(&bases, 64);
+    for (ir = irl->head; ir; ir = ir->next) {
+        Operand *ops[2] = { ir->dst, ir->src };
+        for (int k = 0; k < 2; k++) {
+            Operand *op = ops[k];
+            Operand *base;
+            bool seen = false;
+            if (!op || op->kind != REG_SUBREG || !IsLocal(op)) {
+                continue;
+            }
+            base = (Operand *)op->name;
+            list = (Operand **)flexbuf_peek(&bases);
+            nbases = flexbuf_curlen(&bases) / sizeof(Operand *);
+            for (i = 0; i < nbases; i++) {
+                if (list[i] == base) seen = true;
+            }
+            if (!seen) {
+                flexbuf_addmem(&bases, (const char *)&base, sizeof(base));
+            }
+        }
+    }
+    list = (Operand **)flexbuf_peek(&bases);
+    nbases = flexbuf_curlen(&bases) / sizeof(Operand *);
+    for (i = 0; i < nbases; i++) {
+        Operand *base = list[i];
+        Operand **parts;
+        int nparts = 1;
+        if (!CanSplitLocal(irl, base)) {
+            continue;
+        }
+        for (ir = irl->head; ir; ir = ir->next) {
+            if (ir->dst && ir->dst->kind == REG_SUBREG && (Operand *)ir->dst->name == base && ir->dst->val >= nparts) {
+                nparts = ir->dst->val + 1;
+            }
+            if (ir->src && ir->src->kind == REG_SUBREG && (Operand *)ir->src->name == base && ir->src->val >= nparts) {
+                nparts = ir->src->val + 1;
+            }
+        }
+        parts = (Operand **)calloc(nparts, sizeof(*parts));
+        parts[0] = base;
+        for (int k = 1; k < nparts; k++) {
+            char *name = (char *)calloc(1, strlen(base->name) + 16);
+            sprintf(name, "%s__long%d", base->name, k);
+            parts[k] = GetOneGlobal(base->kind, name, 0);
+            parts[k]->used = 1;
+        }
+        for (ir = irl->head; ir; ir = ir->next) {
+            if (ir->dst && ir->dst->kind == REG_SUBREG && (Operand *)ir->dst->name == base) {
+                ir->dst = parts[ir->dst->val];
+            }
+            if (ir->src && ir->src->kind == REG_SUBREG && (Operand *)ir->src->name == base) {
+                ir->src = parts[ir->src->val];
+            }
+        }
+        free(parts);
+    }
+    flexbuf_delete(&bases);
+}
+
+/*
  * rename one operand locally
  */
 static void
@@ -5665,6 +5775,7 @@ CompileFunctionBody(Function *f)
         EmitLabel(irl,jumpover);
     }
     EmitFunctionEpilog(irl, f);
+    SplitLocalStructs(irl);
     OptimizeIRLocal(irl, f);
     HashFuncIRL(f);
 }

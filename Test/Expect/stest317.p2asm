@@ -30,12 +30,10 @@ _foo
 	mov	objptr, foo_tmp002_
 	call	foo_tmp003_
 	mov	objptr, foo_tmp005_
-	mov	_foo_y, result1
-	mov	_foo_y_01, result2
-	mov	result1, _foo_y_01
 	add	_foo_x, #4
-	rdlong	result2, _foo_x
-	add	result1, result2
+	rdlong	foo_tmp002_, _foo_x
+	add	result2, foo_tmp002_
+	mov	result1, result2
 _foo_ret
 	ret
 builtin_bytefill_
@@ -71,10 +69,6 @@ objmem
 	long	0[4]
 	org	COG_BSS_START
 _foo_x
-	res	1
-_foo_y
-	res	1
-_foo_y_01
 	res	1
 arg01
 	res	1
