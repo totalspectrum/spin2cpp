@@ -4663,6 +4663,24 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
             if (!name) name = sym->user_name;
             switch (sym->kind) {
             case SYM_VARIABLE:
+                if (expr->left && expr->left->kind == AST_FUNCCALL && objtype
+                    && !TypeGoesOnStack(objtype) && TypeSize(objtype) > LONG_SIZE
+                    && (sym->offset % LONG_SIZE) == 0)
+                {
+                    // a struct returned in registers: the member is one of the
+                    // call's results, not memory at an offset from the first
+                    OperandList *results = CompileFunccall(irl, expr->left);
+                    int idx = sym->offset / LONG_SIZE;
+                    while (results && idx > 0) {
+                        results = results->next;
+                        --idx;
+                    }
+                    if (results) {
+                        return results->op;
+                    }
+                    ERROR(expr, "Internal error, member %s not found in function results", name);
+                    return EmptyOperand();
+                }
                 base = CompileExpression(irl, expr->left, NULL);
                 off = sym->offset;
                 break;
