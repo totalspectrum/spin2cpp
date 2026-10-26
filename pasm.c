@@ -739,12 +739,22 @@ ExpandDittos(AST *instrlist)
 static void
 ReplaceTempIdentifiers(AST *ast, const char *prefix) {
     if (!ast) return;
-    if (ast->kind == AST_TEMP_IDENTIFIER) {
+    switch (ast->kind) {
+    case AST_TEMP_IDENTIFIER:
         ast->kind = AST_IDENTIFIER;
         ast->d.string = strdupcat(prefix, ast->d.string);
-    } else {
+        break;
+    case AST_EXPRLIST:
+    case AST_LISTHOLDER:
+        while (ast) {
+            ReplaceTempIdentifiers(ast->left, prefix);
+            ast = ast->right;
+        }
+        break;
+    default:
         ReplaceTempIdentifiers(ast->left, prefix);
         ReplaceTempIdentifiers(ast->right, prefix);
+        break;
     }
 }
 
