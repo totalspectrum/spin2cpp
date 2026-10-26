@@ -27,10 +27,21 @@ COG_BSS_START
 	fit	496
 	long
 _dat_
+'-'    org 0
+'-' entry
 	byte	$f0, $19, $bc, $a0, $04, $18, $fc, $28, $01, $1a, $fc, $a0, $0c, $1a, $bc, $2c
 	byte	$0d, $ec, $bf, $a0, $0d, $e8, $bf, $a0, $00, $1c, $fc, $08, $0e, $1e, $bc, $a0
-	byte	$f1, $1f, $bc, $80, $0e, $1e, $bc, $f8, $0d, $e8, $bf, $6c, $09, $00, $7c, $5c
-	byte	$00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+	byte	$f1, $1f, $bc, $80
+'-' loop
+	byte	$0e, $1e, $bc, $f8, $0d, $e8, $bf, $6c, $09, $00, $7c, $5c
+'-' pin
+	byte	$00, $00, $00, $00
+'-' mask
+	byte	$00, $00, $00, $00
+'-' pause
+	byte	$00, $00, $00, $00
+'-' nextcnt
+	byte	$00, $00, $00, $00
 	org	COG_BSS_START
 arg01
 	res	1

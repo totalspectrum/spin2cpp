@@ -26,7 +26,10 @@ COG_BSS_START
 	fit	496
 	long
 _dat_
-	byte	$00[764]
+'-' filler
+	byte	$00[760]
+'-' modus_name
+	byte	$00, $00, $00, $00
 	org	COG_BSS_START
 _var01
 	res	1

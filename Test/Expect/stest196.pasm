@@ -24,7 +24,12 @@ COG_BSS_START
 	fit	496
 	long
 _dat_
-	byte	$01, $02, $00, $00, $00, $03, $04, $00, $06, $00, $00, $00
+'-' myarray byte 1
+	byte	$01, $02, $00, $00, $00, $03
+'-' dummy1
+	byte	$04
+'-' someval
+	byte	$00, $06, $00, $00, $00
 	org	COG_BSS_START
 _var01
 	res	1

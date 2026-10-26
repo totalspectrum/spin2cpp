@@ -2146,7 +2146,8 @@ PrintDataBlock(Flexbuf *f, AST *list, DataBlockOutFuncs *funcs, Flexbuf *relocs)
 
             break;
         case AST_IDENTIFIER:
-            /* just skip labels */
+            /* labels */
+            SendOneComment(relocs, ast, flexbuf_curlen(f), 0);
             break;
         case AST_DECLARE_VAR:
             outputVarDeclare(f, ast, relocs);
@@ -2158,7 +2159,7 @@ PrintDataBlock(Flexbuf *f, AST *list, DataBlockOutFuncs *funcs, Flexbuf *relocs)
             if (!gl_nospin && ast->d.ival > 3 && gl_output != OUTPUT_DAT) {
                 WARNING(ast, "orgh with explicit origin does not work if Spin methods are present");
             }
-            SendOneComment(relocs, NULL, flexbuf_curlen(f), EvalPasmExpr(ast->left));
+            SendOneComment(relocs, ast, flexbuf_curlen(f), EvalPasmExpr(ast->left));
             /* skip ahead to PC */
             padBytes(f, ast, ast->d.ival);
             inHub = 1;
@@ -2168,7 +2169,7 @@ PrintDataBlock(Flexbuf *f, AST *list, DataBlockOutFuncs *funcs, Flexbuf *relocs)
             /* need to skip ahead to PC */
             padBytes(f, ast, ast->d.ival);
             inHub = 0;
-//            SendOneComment(relocs, NULL, flexbuf_curlen(f), EvalPasmExpr(ast->left));
+            SendOneComment(relocs, ast, flexbuf_curlen(f), EvalPasmExpr(ast->left));
             break;
         case AST_ORG: {
             int cog_data = EvalPasmExpr(ast->left);
@@ -2176,13 +2177,13 @@ PrintDataBlock(Flexbuf *f, AST *list, DataBlockOutFuncs *funcs, Flexbuf *relocs)
             if (NEED_ALIGNMENT) {
                 AlignPc(f, 4);
             }
-            SendOneComment(relocs, NULL, flexbuf_curlen(f), cog_data);
+            SendOneComment(relocs, ast, flexbuf_curlen(f), cog_data);
             break;
         }
         case AST_RES: {
             int cog_data = EvalPasmExpr(ast->left);
             /* don't need to emit anything, but send a debug comment */
-            SendOneComment(relocs, NULL, flexbuf_curlen(f), cog_data);
+            SendOneComment(relocs, ast, flexbuf_curlen(f), cog_data);
             break;
         }
         case AST_FIT:

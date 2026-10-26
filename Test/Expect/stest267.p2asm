@@ -50,6 +50,7 @@ COG_BSS_START
 	orgh
 	alignl
 _dat_
+'-'   sclpin long 0[2]
 	byte	$00, $00, $00, $00, $00, $00, $00, $00
 	org	COG_BSS_START
 _var01

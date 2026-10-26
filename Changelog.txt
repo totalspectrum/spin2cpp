@@ -3,7 +3,8 @@ Version 7.8.0
 - Fixed constant transforms in the presence of conditional flags (thanks to Jan Mercl for this and many other fixes)
 - Fixed converting loops to count down if loop condition is variable
 - Fixed signed/unsigned promotion rules to match C standard.
-- Fixed (z<<32)>>32 for 64 bit integers 
+- Fixed (z<<32)>>32 for 64 bit integers
+- Improved listing file output for sub-objects
 - Modified signed/unsigned comparison in BASIC so that negative signed numbers always compare less than unsigned numbers
 - Restricted C octal sequences to at most 3 characters.
 - Updated FatFs to R0.16 (thanks Ada)

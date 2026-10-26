@@ -18,7 +18,10 @@ COG_BSS_START
 	fit	496
 	long
 _dat_
-	byte	$01, $00, $00, $00, $2a, $00, $00, $00
+'-' something1
+	byte	$01, $00, $00, $00
+'-' something2
+	byte	$2a, $00, $00, $00
 	org	COG_BSS_START
 _var01
 	res	1

@@ -58,6 +58,7 @@ COG_BSS_START
 	orgh
 	alignl
 _dat_
+'-' x  foobar
 	byte	$00[8]
 	byte	$01, $00, $00, $00, $02, $00, $00, $00, $03, $00, $00, $00
 objmem

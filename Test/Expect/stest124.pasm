@@ -62,6 +62,7 @@ COG_BSS_START
 	fit	496
 	long
 _dat_
+'-' bas_tx_handles
 	byte	$00[32]
 objmem
 	long	0[0]

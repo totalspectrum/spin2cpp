@@ -19,6 +19,11 @@ COG_BSS_START
 	fit	496
 	long
 _dat_
-	byte	$44, $33, $22, $11, $88, $77, $66, $55, $cc, $bb, $aa, $99
+'-' labela
+	byte	$44, $33, $22, $11
+'-' labelx
+	byte	$88, $77, $66, $55
+'-' labely
+	byte	$cc, $bb, $aa, $99
 	org	COG_BSS_START
 	fit	496
