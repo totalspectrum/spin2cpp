@@ -21,13 +21,13 @@ _getit2_ret
 
 
 _getitA
-	rdlong	_var05, arg01
-	rdlong	result1, _var05
-	add	_var05, #4
-	rdlong	result2, _var05
-	rdlong	_var06, arg01
-	add	_var06, #8
-	wrlong	_var06, arg01
+	rdlong	result2, arg01
+	rdlong	result1, result2
+	add	result2, #4
+	rdlong	result2, result2
+	rdlong	_var01, arg01
+	add	_var01, #8
+	wrlong	_var01, arg01
 _getitA_ret
 	ret
 
@@ -39,16 +39,6 @@ COG_BSS_START
 	fit	496
 	org	COG_BSS_START
 _var01
-	res	1
-_var02
-	res	1
-_var03
-	res	1
-_var04
-	res	1
-_var05
-	res	1
-_var06
 	res	1
 arg01
 	res	1

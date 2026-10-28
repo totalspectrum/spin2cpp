@@ -1703,6 +1703,151 @@ static void EmitFunctionEpilog(IRList *irl, Function *func)
     FreeTempRegisters(irl, 0);
 }
 
+// is op the base register of a local larger than a long, or one of its
+// subregisters?
+static bool
+RefersToBase(Operand *op, Operand *base)
+{
+    return op && (op == base || (op->kind == REG_SUBREG && (Operand *)op->name == base));
+}
+
+// is op the address of the base register, or of one of its longs? GetLea
+// names the address of a subregister as OffsetName does ("base_01")
+static bool
+AddressesBase(Operand *op, Operand *base)
+{
+    size_t n;
+    const char *s;
+
+    if (!op || op->kind != IMM_COG_LABEL || !op->name) {
+        return false;
+    }
+    n = strlen(base->name);
+    if (strncmp(op->name, base->name, n) != 0) {
+        return false;
+    }
+    if (op->name[n] == 0) {
+        return true;
+    }
+    if (op->name[n] != '_' || !op->name[n+1]) {
+        return false;
+    }
+    for (s = op->name + n + 1; *s; s++) {
+        if (!isdigit((unsigned char)*s)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// may the longs of the local "base" be kept in registers that are not
+// consecutive? not if anything uses them as a block
+static bool
+CanSplitLocal(IRList *irl, Operand *base)
+{
+    IR *ir, *prev = NULL;
+
+    for (ir = irl->head; ir; prev = ir, ir = ir->next) {
+        // its address is taken, as for an index that is not a constant
+        if (AddressesBase(ir->dst, base) || AddressesBase(ir->src, base)) {
+            return false;
+        }
+        if (RefersToBase(ir->dst, base) || RefersToBase(ir->src, base)) {
+            // inline assembly may use the longs as a block (s+1, #s)
+            if (ir->flags & FLAG_USER_INSTR) {
+                return false;
+            }
+            // a SETQ burst reads or writes consecutive registers
+            if (prev && (prev->opc == OPC_SETQ || prev->opc == OPC_SETQ2)) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+//
+// A local larger than a long (a struct, or a 64 bit value) held in registers
+// is a base register with a subregister for each further long, and
+// RenameSubregs keeps its longs in consecutive registers. ReuseLocalRegisters
+// does not reuse subregisters, so such a local holds all of its registers
+// until the end of the function, and a function passing many struct values to
+// calls runs out of registers. Each such local that CanSplitLocal allows is
+// split here into one local per long, which the optimizer then treats like any
+// other local.
+//
+static void
+SplitLocalStructs(IRList *irl)
+{
+    struct flexbuf bases;
+    Operand **list;
+    size_t nbases, i;
+    IR *ir;
+
+    // collect the base registers of the locals that have subregisters
+    flexbuf_init(&bases, 64);
+    for (ir = irl->head; ir; ir = ir->next) {
+        Operand *ops[2] = { ir->dst, ir->src };
+        for (int k = 0; k < 2; k++) {
+            Operand *op = ops[k];
+            Operand *base;
+            bool seen = false;
+            if (!op || op->kind != REG_SUBREG || !IsLocal(op)) {
+                continue;
+            }
+            base = (Operand *)op->name;
+            list = (Operand **)flexbuf_peek(&bases);
+            nbases = flexbuf_curlen(&bases) / sizeof(Operand *);
+            for (i = 0; i < nbases; i++) {
+                if (list[i] == base) seen = true;
+            }
+            if (!seen) {
+                flexbuf_addmem(&bases, (const char *)&base, sizeof(base));
+            }
+        }
+    }
+    list = (Operand **)flexbuf_peek(&bases);
+    nbases = flexbuf_curlen(&bases) / sizeof(Operand *);
+    for (i = 0; i < nbases; i++) {
+        Operand *base = list[i];
+        Operand **parts;
+        int nparts = 1;
+        if (!CanSplitLocal(irl, base)) {
+            continue;
+        }
+        // count the longs in use
+        for (ir = irl->head; ir; ir = ir->next) {
+            if (ir->dst && ir->dst->kind == REG_SUBREG && (Operand *)ir->dst->name == base && ir->dst->val >= nparts) {
+                nparts = ir->dst->val + 1;
+            }
+            if (ir->src && ir->src->kind == REG_SUBREG && (Operand *)ir->src->name == base && ir->src->val >= nparts) {
+                nparts = ir->src->val + 1;
+            }
+        }
+        // the base register keeps the first long, and each further long gets
+        // a local of its own
+        parts = (Operand **)calloc(nparts, sizeof(*parts));
+        parts[0] = base;
+        for (int k = 1; k < nparts; k++) {
+            char *name = (char *)calloc(1, strlen(base->name) + 16);
+            sprintf(name, "%s__long%d", base->name, k);
+            parts[k] = GetOneGlobal(base->kind, name, 0);
+            parts[k]->used = 1;
+        }
+        // replace each subregister by the local of its long
+        for (ir = irl->head; ir; ir = ir->next) {
+            if (ir->dst && ir->dst->kind == REG_SUBREG && (Operand *)ir->dst->name == base) {
+                ir->dst = parts[ir->dst->val];
+            }
+            if (ir->src && ir->src->kind == REG_SUBREG && (Operand *)ir->src->name == base) {
+                ir->src = parts[ir->src->val];
+            }
+        }
+        free(parts);
+    }
+    flexbuf_delete(&bases);
+}
+
 /*
  * rename one operand locally
  */
@@ -5665,6 +5810,9 @@ CompileFunctionBody(Function *f)
         EmitLabel(irl,jumpover);
     }
     EmitFunctionEpilog(irl, f);
+    if (f->optimize_flags & OPT_EXPERIMENTAL) {
+        SplitLocalStructs(irl);
+    }
     OptimizeIRLocal(irl, f);
     HashFuncIRL(f);
 }
