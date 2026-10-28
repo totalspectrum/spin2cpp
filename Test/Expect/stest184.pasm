@@ -11,6 +11,9 @@ _fetch_ret
 	ret
 
 _fetchv
+	wrlong	fp, sp
+	add	sp, #4
+	mov	fp, sp
 	mov	arg01, sp
 	add	sp, #20
 	mov	arg02, ptr__dat__
@@ -41,9 +44,14 @@ LR__0004
 LR__0005
 	add	result1, #12
 	rdlong	result1, result1
+	mov	sp, fp
+	sub	sp, #4
+	rdlong	fp, sp
 _fetchv_ret
 	ret
 
+fp
+	long	0
 ptr__dat__
 	long	@@@_dat_
 result1
