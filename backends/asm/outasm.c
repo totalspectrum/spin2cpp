@@ -1709,9 +1709,9 @@ static void EmitFunctionEpilog(IRList *irl, Function *func)
  * consecutive registers; ReuseLocalRegisters gives no subregister back, so such a
  * local holds all its registers for the whole function. A function passing many
  * struct values to calls, each a temporary of its own, runs out of them. Where
- * nothing reads the longs as a block -- the register's address taken for an
- * indexed access, inline assembly, a SETQ burst -- the local is split into one
- * local a long, which the optimizer treats as it treats any other.
+ * nothing reads the longs as a block -- the address of the register or of one
+ * of its longs taken, inline assembly, a SETQ burst -- the local is split into
+ * one local a long, which the optimizer treats as it treats any other.
  */
 static bool
 RefersToBase(Operand *op, Operand *base)
@@ -1719,10 +1719,35 @@ RefersToBase(Operand *op, Operand *base)
     return op && (op == base || (op->kind == REG_SUBREG && (Operand *)op->name == base));
 }
 
+/*
+ * the address of the base register, or of one of its longs, which GetLea names
+ * as OffsetName does ("base_01")
+ */
 static bool
 AddressesBase(Operand *op, Operand *base)
 {
-    return op && op->kind == IMM_COG_LABEL && op->name && !strcmp(op->name, base->name);
+    size_t n;
+    const char *s;
+
+    if (!op || op->kind != IMM_COG_LABEL || !op->name) {
+        return false;
+    }
+    n = strlen(base->name);
+    if (strncmp(op->name, base->name, n) != 0) {
+        return false;
+    }
+    if (op->name[n] == 0) {
+        return true;
+    }
+    if (op->name[n] != '_' || !op->name[n+1]) {
+        return false;
+    }
+    for (s = op->name + n + 1; *s; s++) {
+        if (!isdigit((unsigned char)*s)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 static bool
