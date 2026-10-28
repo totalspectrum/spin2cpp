@@ -372,6 +372,10 @@ The `PUB add = _add` line says that `add` is an alias for `_add`.
 
 Aliases defined this way are "weak"; that is, they may be overridden by later definitions. They are mostly intended for use in libraries where for some reason (e.g. C standard compatibility) we wish to allow the program to use the same name as a library function without a conflict occuring.
 
+### Hex floats
+
+Similar to C, floating point constants may be specified in hex with a power of two exponent prefixed by `p', e.g. `$1.aP-01` is the same as the decimal number `0.8125` and has the bit pattern `$3f500000`.
+
 ### Inline assembly with asm/end
 
 flexspin accepts inline assembly in `PUB` and `PRI` sections. Inline assembly starts with `asm` and ends with `endasm`. The inline assembly is somewhat limited; the only operands permitted are immediate values, hardware registers like `OUTA`, local variables (including parameters and result values) of the containing function, or labels of that function. (Spin doesn't support goto and labels, but you can define labels in `asm` blocks and jump to them from other `asm` blocks that are in the same function. Some other languages supported by flexspin do have labels.) Member variables (declared in the `VAR` block) may not be used directly in inline assembly.

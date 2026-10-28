@@ -1,5 +1,6 @@
 Version 7.8.0
 - Added Spin `%self` keyword
+- Added hexadecimal floating point constants to Spin
 - Fixed constant transforms in the presence of conditional flags (thanks to Jan Mercl for this and many other fixes)
 - Fixed converting loops to count down if loop condition is variable
 - Fixed signed/unsigned promotion rules to match C standard.

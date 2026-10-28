@@ -531,7 +531,7 @@ parseNumber(LexStream *L, unsigned int base, uint64_t *num)
 
         if (c == '.') {
             c = lexgetc(L);
-            if ( IsSpinLang(lang) && c != 'e' && c != 'E' && (c < '0' || c > '9')) {
+            if ( IsSpinLang(lang) && c != 'p' && c != 'P' && !safe_isxdigit(c) ) {
                 lexungetc(L, c);
                 c = '.';
                 goto donefloat;
