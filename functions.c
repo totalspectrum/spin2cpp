@@ -3618,6 +3618,9 @@ AstFuncTempMemory(unsigned siz)
         return NULL;
     }
     val = NewAST(AST_ALLOCA, ast_type_ptr_void, AstInteger(siz));
+    // the memory is given back where the function returns, which a function
+    // without a frame does not do
+    curfunc->uses_alloca = 1;
     ptr = AstTempLocalVariable("_tempptr_", NULL);
     val = AstAssign(ptr, val);
     val = NewAST(AST_STMTLIST, val, curfunc->body);
