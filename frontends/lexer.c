@@ -515,7 +515,6 @@ parseNumber(LexStream *L, unsigned int base, uint64_t *num)
     {
         /* potential floating point number */
         double f = (base == 16) ? (double)uval : (double)tenval;
-        double ff = 0.0;
         static double divby[45] = {
             1e-1, 1e-2, 1e-3, 1e-4, 1e-5,
             1e-6, 1e-7, 1e-8, 1e-9, 1e-10,
@@ -539,7 +538,6 @@ parseNumber(LexStream *L, unsigned int base, uint64_t *num)
             }
         }
         if (base == 16) {
-            double hexplace = 1.0/16.0;
             for(;;) {
                 if (c == '_' || (IsCLang(lang) && c == '\'') ) {
                     /* just skip */
@@ -553,9 +551,9 @@ parseNumber(LexStream *L, unsigned int base, uint64_t *num)
                     break;
                 }
                 if ( ((int)c >= 0) && (c < 16) ) {
-                    ff = ff + hexplace * c;
-                    hexplace /= 16.0f;
+                    f = 16.0 * f + c;
                     sawdigit = 1;
+                    exponent-=4;
                 }
                 c = lexgetc(L);
             }
@@ -565,8 +563,9 @@ parseNumber(LexStream *L, unsigned int base, uint64_t *num)
         } else {
             while ( (c >= '0' && c <= '9') || (c == '_') || (IsCLang(lang) && c == '\'') ) {
                 if (c >= '0' && c <= '9') {
-                    ff = ff + divby[counter]*(double)(c-'0');
+                    f = 10.0 * f + (double)(c-'0');
                     counter++;
+                    exponent--;
                 }
                 sawdigit = 1;
                 c = lexgetc(L);
@@ -590,7 +589,6 @@ parseNumber(LexStream *L, unsigned int base, uint64_t *num)
                 expval = -expval;
             exponent += expval;
         }
-        f = f + ff;
         if (base == 10 && exponent < 0 && exponent >= -45) {
             f *= divby[-(exponent+1)];
         } else if (exponent != 0) {

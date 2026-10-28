@@ -5,6 +5,7 @@ Version 7.8.0
 - Fixed signed/unsigned promotion rules to match C standard.
 - Fixed (z<<32)>>32 for 64 bit integers
 - Improved listing file output for sub-objects
+- Improved accuracy of float constant parsing
 - Modified signed/unsigned comparison in BASIC so that negative signed numbers always compare less than unsigned numbers
 - Restricted C octal sequences to at most 3 characters.
 - Updated FatFs to R0.16 (thanks Ada)
