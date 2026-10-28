@@ -1703,26 +1703,16 @@ static void EmitFunctionEpilog(IRList *irl, Function *func)
     FreeTempRegisters(irl, 0);
 }
 
-/*
- * A local struct (or 64 bit value) held in registers is a base register with a
- * subregister for each long past the first, and RenameSubregs keeps its longs in
- * consecutive registers; ReuseLocalRegisters gives no subregister back, so such a
- * local holds all its registers for the whole function. A function passing many
- * struct values to calls, each a temporary of its own, runs out of them. Where
- * nothing reads the longs as a block -- the address of the register or of one
- * of its longs taken, inline assembly, a SETQ burst -- the local is split into
- * one local a long, which the optimizer treats as it treats any other.
- */
+// is op the base register of a local larger than a long, or one of its
+// subregisters?
 static bool
 RefersToBase(Operand *op, Operand *base)
 {
     return op && (op == base || (op->kind == REG_SUBREG && (Operand *)op->name == base));
 }
 
-/*
- * the address of the base register, or of one of its longs, which GetLea names
- * as OffsetName does ("base_01")
- */
+// is op the address of the base register, or of one of its longs? GetLea
+// names the address of a subregister as OffsetName does ("base_01")
 static bool
 AddressesBase(Operand *op, Operand *base)
 {
@@ -1750,19 +1740,24 @@ AddressesBase(Operand *op, Operand *base)
     return true;
 }
 
+// may the longs of the local "base" be kept in registers that are not
+// consecutive? not if anything uses them as a block
 static bool
 CanSplitLocal(IRList *irl, Operand *base)
 {
     IR *ir, *prev = NULL;
 
     for (ir = irl->head; ir; prev = ir, ir = ir->next) {
+        // its address is taken, as for an index that is not a constant
         if (AddressesBase(ir->dst, base) || AddressesBase(ir->src, base)) {
             return false;
         }
         if (RefersToBase(ir->dst, base) || RefersToBase(ir->src, base)) {
+            // inline assembly may use the longs as a block (s+1, #s)
             if (ir->flags & FLAG_USER_INSTR) {
                 return false;
             }
+            // a SETQ burst reads or writes consecutive registers
             if (prev && (prev->opc == OPC_SETQ || prev->opc == OPC_SETQ2)) {
                 return false;
             }
@@ -1771,6 +1766,16 @@ CanSplitLocal(IRList *irl, Operand *base)
     return true;
 }
 
+//
+// A local larger than a long (a struct, or a 64 bit value) held in registers
+// is a base register with a subregister for each further long, and
+// RenameSubregs keeps its longs in consecutive registers. ReuseLocalRegisters
+// does not reuse subregisters, so such a local holds all of its registers
+// until the end of the function, and a function passing many struct values to
+// calls runs out of registers. Each such local that CanSplitLocal allows is
+// split here into one local per long, which the optimizer then treats like any
+// other local.
+//
 static void
 SplitLocalStructs(IRList *irl)
 {
@@ -1779,6 +1784,7 @@ SplitLocalStructs(IRList *irl)
     size_t nbases, i;
     IR *ir;
 
+    // collect the base registers of the locals that have subregisters
     flexbuf_init(&bases, 64);
     for (ir = irl->head; ir; ir = ir->next) {
         Operand *ops[2] = { ir->dst, ir->src };
@@ -1809,6 +1815,7 @@ SplitLocalStructs(IRList *irl)
         if (!CanSplitLocal(irl, base)) {
             continue;
         }
+        // count the longs in use
         for (ir = irl->head; ir; ir = ir->next) {
             if (ir->dst && ir->dst->kind == REG_SUBREG && (Operand *)ir->dst->name == base && ir->dst->val >= nparts) {
                 nparts = ir->dst->val + 1;
@@ -1817,6 +1824,8 @@ SplitLocalStructs(IRList *irl)
                 nparts = ir->src->val + 1;
             }
         }
+        // the base register keeps the first long, and each further long gets
+        // a local of its own
         parts = (Operand **)calloc(nparts, sizeof(*parts));
         parts[0] = base;
         for (int k = 1; k < nparts; k++) {
@@ -1825,6 +1834,7 @@ SplitLocalStructs(IRList *irl)
             parts[k] = GetOneGlobal(base->kind, name, 0);
             parts[k]->used = 1;
         }
+        // replace each subregister by the local of its long
         for (ir = irl->head; ir; ir = ir->next) {
             if (ir->dst && ir->dst->kind == REG_SUBREG && (Operand *)ir->dst->name == base) {
                 ir->dst = parts[ir->dst->val];
@@ -5800,7 +5810,9 @@ CompileFunctionBody(Function *f)
         EmitLabel(irl,jumpover);
     }
     EmitFunctionEpilog(irl, f);
-    SplitLocalStructs(irl);
+    if (f->optimize_flags & OPT_EXPERIMENTAL) {
+        SplitLocalStructs(irl);
+    }
     OptimizeIRLocal(irl, f);
     HashFuncIRL(f);
 }
