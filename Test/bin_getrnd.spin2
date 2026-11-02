@@ -1,0 +1,7 @@
+dat
+
+	GETRND $100
+	GETRND $100 wc
+	GETRND wc
+	GETRND wz
+	GETRND wcz

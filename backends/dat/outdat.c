@@ -1308,7 +1308,7 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
         }
     } else if (instr->opc == OPC_GETRND && numoperands == 0) {
         operand[0] = AstInteger(0);
-        opimm[0] = 1;
+        opimm[0] = P2_IMM_SRC;
         numoperands = 1;
     }
     if (expectops == 3 && numoperands == 1) {
