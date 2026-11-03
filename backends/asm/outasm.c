@@ -3253,11 +3253,16 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
         Operand *ptr1, *ptr2;
 
         // fully evaluate the function pointer into base
+#ifdef OLD
+        // why was this expressed this way?
         if (sym && !objref) {
             base = CompileSymbolForFunc(irl, sym, curfunc, expr);
         } else {
             base = CompileExpression(irl, expr->left, tempbase);
         }
+#else
+        base = CompileExpression(irl, expr->left, tempbase);
+#endif       
         // now get object pointer into temp1 and function pointer into temp2
         if (ComplexMethodPtrs()) {
             // using indirect function pointers

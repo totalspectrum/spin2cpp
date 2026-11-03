@@ -217,10 +217,16 @@ static int NuCompileFunCall(NuIrList *irl, AST *node) {
             NuEmitConst(irl, sym->offset);
             NuCompileLhsAddress(irl, objref);
             NuEmitCommentedOp(irl, NU_OP_ADD, "offset into class");
-        } else {
+            NuEmitCommentedOp(irl, ldop, "load methodptr");
+        } else if (node->left && node->left->kind == AST_IDENTIFIER) {
             ldop = NuCompileSymbolAddress(irl, sym, true, node);
+            NuEmitCommentedOp(irl, ldop, "load methodptr");
+        } else {
+            int n = NuCompileExpression(irl, node->left);
+            if (n != 1) {
+                ERROR(node, "Expected address for function call, got %d words instead", n);
+            }
         }
-        NuEmitCommentedOp(irl, ldop, "load methodptr");
         NuEmitCommentedOp(irl, NU_OP_LDD, "fetch pc and objptr");
         NuEmitCommentedOp(irl, NU_OP_CALLM, "indirect call");
         functype = ExprType(node->left);

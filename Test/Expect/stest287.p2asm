@@ -15,7 +15,9 @@ dat
 entry
 
 _callit
-	rdlong	callit_tmp002_, objptr
+	shl	arg01, #2
+	add	arg01, objptr
+	rdlong	callit_tmp002_, arg01
 	mov	callit_tmp003_, callit_tmp002_
 	zerox	callit_tmp002_, #19
 	shr	callit_tmp003_, #20
@@ -23,10 +25,10 @@ _callit
 	add	callit_tmp003_, __methods__
 	rdlong	callit_tmp003_, callit_tmp003_
 	mov	arg01, arg02
-	mov	callit_tmp005_, objptr
+	mov	callit_tmp007_, objptr
 	mov	objptr, callit_tmp002_
 	call	callit_tmp003_
-	mov	objptr, callit_tmp005_
+	mov	objptr, callit_tmp007_
 _callit_ret
 	ret
 builtin_bytefill_
@@ -67,6 +69,6 @@ callit_tmp002_
 	res	1
 callit_tmp003_
 	res	1
-callit_tmp005_
+callit_tmp007_
 	res	1
 	fit	480

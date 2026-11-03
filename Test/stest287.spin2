@@ -2,4 +2,4 @@ var
   long classptr[4]
 
 pub callit(i, x)
-  long[classptr][i](x)
+  classptr[i](x)
