@@ -48,10 +48,6 @@ _var01
 	res	1
 _var02
 	res	1
-_var03
-	res	1
-_var04
-	res	1
 arg01
 	res	1
 arg02

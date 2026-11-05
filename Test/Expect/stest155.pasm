@@ -32,10 +32,6 @@ COG_BSS_START
 _dat_
 	byte	$00, $00, $00, $00, $00, $00, $00, $00
 	org	COG_BSS_START
-_var01
-	res	1
-_var02
-	res	1
 arg01
 	res	1
 arg02
