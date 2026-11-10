@@ -258,7 +258,6 @@ enum astkind {
     AST_TEMP_IDENTIFIER = 186,
     AST_OFFSETOF = 187,
 
-    AST_PRINT_SPEC = 188,
 };
 
 /* forward reference */

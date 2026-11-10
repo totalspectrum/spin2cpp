@@ -895,7 +895,6 @@ static const char *astnames[] = {
     "temp_identifier",
     "offsetof",
     
-    "print_spec",
 };
 
 //
