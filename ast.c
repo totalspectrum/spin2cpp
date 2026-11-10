@@ -861,40 +861,41 @@ static const char *astnames[] = {
     "_sametypes",
 
     "_hasmethod",
-
     "brk_debug",
     "bytefit",
     "wordfit",
+    
     "register",
-
     "global_registers",
     "typeof",
     "assign_init",
+    
     "here_imm",
-
     "^@",
-    "field",
+    "fieldref",
     "asm_if",
+    
     "asm_elseif",
-
     "asm_endif",
     "expect",
     "print_debug",
-    "error_holder",
 
+    "error_holder",
     "signed_booltype",
     "unsigned_booltype",
     "byteptr",
-    "static_assert",
 
+    "static_assert",
     "taskinit",
     "ditto_start",
     "ditto_end",
-    "ditto_count",
 
+    "ditto_count",
     "namespace",
     "temp_identifier",
     "offsetof",
+    
+    "print_spec",
 };
 
 //

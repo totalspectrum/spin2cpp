@@ -222,41 +222,43 @@ enum astkind {
     AST_CASEEXPR = 157, // Represents the hidden variable in a bytecode CASE. Very terrible hack.
     AST_BYTECODE = 158, // a raw bytecode opcode, used in sys/
     AST_SAMETYPES = 159, // BASIC compile time type checking _sametypes(T, long)
-    AST_HASMETHOD = 160, // BASIC compile time checking, _hasmethod(T, identifier)
 
+    AST_HASMETHOD = 160, // BASIC compile time checking, _hasmethod(T, identifier)
     AST_BRKDEBUG = 161, // Opaque debug break.
     AST_BYTEFITLIST = 162,
     AST_WORDFITLIST = 163,
+    
     AST_REGISTER = 164,
-
     AST_REGISTERVARS = 165,
     AST_TYPEOF = 166,
     AST_ASSIGN_INIT = 167,
+    
     AST_HERE_IMM = 168,
-
     AST_FIELDADDR = 169,
     AST_FIELDREF =  170,
     AST_ASM_IF    =  171,
-    AST_ASM_ELSEIF = 172,
     
+    AST_ASM_ELSEIF = 172,
     AST_ASM_ENDIF  = 173,
     AST_EXPECT = 174,
     AST_PRINTDEBUG = 175,
+    
     AST_ERRHOLDER = 176,
-
     AST_SIGNED_BOOLTYPE = 177,
     AST_UNS_BOOLTYPE = 178,
     AST_BYTEPTR = 179,
+    
     AST_STATIC_ASSERT = 180,
-
     AST_TASKINIT = 181,
     AST_DITTO_START = 182,
     AST_DITTO_END = 183,
+    
     AST_DITTO_COUNT = 184,
-
     AST_NAMESPACE = 185,
     AST_TEMP_IDENTIFIER = 186,
     AST_OFFSETOF = 187,
+
+    AST_PRINT_SPEC = 188,
 };
 
 /* forward reference */

@@ -1077,6 +1077,15 @@ inputlist:
 printitem:
   expr
     { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+  | expr '#' expr
+    {
+        AST *val = NewAST(AST_EXPRLIST, $1, NULL);
+        AST *width = $3;
+        AST *spec = NewAST(AST_USING,
+                           NewAST(AST_RANGE, width, AstInteger(0)),
+                           val);
+        $$ = spec;
+    }
   | '\\' expr
     { $$ = NewAST(AST_EXPRLIST, NewAST(AST_CHAR, $2, NULL), NULL); }
 ;

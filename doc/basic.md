@@ -3169,6 +3169,8 @@ If the print statement ends in a comma, a tab is printed at the end. If it ends 
 
 As a special case, if a backslash character `\` appears in front of an expression, the value of that expression is printed as a single byte character.
 
+After each element in the print, one may optionally insert a `# N`, where `N` is a constant, to print the item in a field with width `N` characters. For more detailed formatting see `PRINT USING`.
+
 Examples
 ```
    ' basic one item print
@@ -3181,6 +3183,8 @@ Examples
    print 1;
    ' a string and then an integer, nothing between them
    print "then "; 2
+   ' print a number in a field 5 characters wide
+   print "2^6="; 64 # 5
 ```
 prints
 ```
@@ -3188,6 +3192,7 @@ hello, world!
 hello  world
 helloworld
 1then 2
+tenpi=   64
 ```
 
 `print` may be redirected. For example,

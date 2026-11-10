@@ -1033,6 +1033,23 @@ doBasicTransform(AST **astptr, bool transformFuncall)
             if (x) {
                 *ast = *x;
             }
+        } else if (ast->left && ast->left->kind == AST_RANGE) {
+            AST *width = ast->left->left;
+            AST *prec = ast->left->right;
+            AST *x;
+            if (IsConstExpr(width) && IsConstExpr(prec)) {
+                unsigned uwidth = EvalConstExpr(width);
+                unsigned uprec = EvalConstExpr(prec);
+                unsigned fmtparam =
+                    FMTPARAM_ALLWIDTH(uwidth) |
+                    FMTPARAM_MINDIGITS(uprec) |
+                    FMTPARAM_RIGHTJUSTIFY;
+                x = NewAST(AST_USING, AstInteger(fmtparam), ast->right->left);
+                x = NewAST(AST_EXPRLIST, x, ast->right->right);
+                *ast = *x;
+            } else {
+                WARNING(ast, "PRINT expr # size modifier must be constant");
+            }
         } else {
             WARNING(ast, "Unexpected using method");
         }
