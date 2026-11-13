@@ -1410,6 +1410,11 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
         }
         if (desttype->kind == AST_COPYREFTYPE) {
             // need to create a temporary duplicate
+            if (IsRefType(srctype)) {
+                // source is already a reference type, so
+                // dereference it
+                srctype = BaseType(srctype);
+            }
             unsigned size_val = TypeSize(srctype);
             AST *sizeExpr = AstInteger(size_val);
             AST *lptr;

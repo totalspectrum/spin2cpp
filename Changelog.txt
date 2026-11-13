@@ -8,6 +8,7 @@ Version 7.8.0
 - Fixed (z<<32)>>32 for 64 bit integers
 - Fixed encoding for GETRND without operands
 - Fixed using function pointers in arrays for Spin2
+- Fixed copying types that are AST_COPYREF already
 - Improved listing file output for sub-objects
 - Improved accuracy of float constant parsing
 - Modified signed/unsigned comparison in BASIC so that negative signed numbers always compare less than unsigned numbers
