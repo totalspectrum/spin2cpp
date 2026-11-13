@@ -171,8 +171,16 @@ ExtractSideEffects(AST *expr, AST **preseq)
         if (expr->kind == AST_ARRAYREF && NeedTempArrayPtr(expr->left)) {
             AstReportAs(expr, &saveinfo);
             AST *typ = ExprType(expr->left);
+            AST *val = expr->left;
+            // an array (a row of a multi-dimensional array, or what a pointer
+            // to an array points at) cannot be held in a temporary: hold a
+            // pointer to its first element instead
+            if (typ && IsArrayType(typ)) {
+                typ = ArrayToPointerType(typ);
+                val = NewAST(AST_CAST, typ, NewAST(AST_ADDROF, val, NULL));
+            }
             temp = AstTempLocalVariable("_arr_", typ);
-            sideexpr = AstAssign(temp, expr->left);
+            sideexpr = AstAssign(temp, val);
             expr->left = temp;
             if (*preseq) {
                 *preseq = NewAST(AST_SEQUENCE, *preseq, sideexpr);
