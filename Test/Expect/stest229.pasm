@@ -13,12 +13,6 @@ _show_ret
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_var01
-	res	1
-_var02
-	res	1
-_var03
-	res	1
 arg01
 	res	1
 arg02

@@ -12,13 +12,9 @@ _show_ret
 	ret
 
 _main
-	mov	_main_s__0001, #1
-	mov	_main_s__0001_01, #2
-	mov	_main_s__0001_02, #3
-	mov	arg01, _main_s__0001
-	mov	arg02, _main_s__0001_01
-	mov	arg03, _main_s__0001_02
-	call	#_show
+	mov	outa, #1
+	mov	outb, #2
+	mov	ina, #3
 	mov	result1, #0
 _main_ret
 	ret
@@ -28,18 +24,6 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_main_s__0001
-	res	1
-_main_s__0001_01
-	res	1
-_main_s__0001_02
-	res	1
-_var01
-	res	1
-_var02
-	res	1
-_var03
-	res	1
 arg01
 	res	1
 arg02

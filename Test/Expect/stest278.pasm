@@ -5,21 +5,24 @@ dat
 entry
 
 _bump1
-	rdlong	arg04, ptr__dat__
+	rdlong	result1, ptr__dat__
 	add	ptr__dat__, #4
-	rdlong	arg03, ptr__dat__
-	mov	result1, arg04
-	mov	result2, arg03
+	rdlong	result2, ptr__dat__
+	mov	_var01, result1
+	mov	_var02, result2
 	sub	ptr__dat__, #4
-	add	arg04, #1 wc
-	addx	arg03, #0
-	wrlong	arg04, ptr__dat__
+	add	result1, #1 wc
+	addx	result2, #0
+	wrlong	result1, ptr__dat__
 	add	ptr__dat__, #4
-	wrlong	arg03, ptr__dat__
+	wrlong	result2, ptr__dat__
 	sub	ptr__dat__, #4
+	mov	result1, _var01
+	mov	result2, _var02
 _bump1_ret
 	ret
 
+_bump3
 _bump2
 	rdlong	result1, ptr__dat__
 	add	ptr__dat__, #4
@@ -32,21 +35,9 @@ _bump2
 	wrlong	result2, ptr__dat__
 	sub	ptr__dat__, #4
 _bump2_ret
-	ret
-
-_bump3
-	rdlong	result1, ptr__dat__
-	add	ptr__dat__, #4
-	rdlong	result2, ptr__dat__
-	sub	ptr__dat__, #4
-	add	result1, #1 wc
-	addx	result2, #0
-	wrlong	result1, ptr__dat__
-	add	ptr__dat__, #4
-	wrlong	result2, ptr__dat__
-	sub	ptr__dat__, #4
 _bump3_ret
 	ret
+
 
 ptr__dat__
 	long	@@@_dat_
@@ -63,10 +54,6 @@ _dat_
 _var01
 	res	1
 _var02
-	res	1
-_var03
-	res	1
-_var04
 	res	1
 arg01
 	res	1

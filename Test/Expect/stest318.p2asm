@@ -44,14 +44,6 @@ COG_BSS_START
 	fit	480
 	orgh
 	org	COG_BSS_START
-_var01
-	res	1
-_var02
-	res	1
-_var03
-	res	1
-_var04
-	res	1
 arg01
 	res	1
 arg02
